@@ -52,6 +52,16 @@ function message(selector, text, type = "") {
   node.className = `form-status${type ? ` ${type}` : ""}`;
 }
 
+function setStatus(text, type = "") {
+  const node = $("#admin-status");
+  if (!node) return;
+
+  node.textContent = text;
+  node.style.color =
+    type === "error" ? "#b42318" :
+    type === "success" ? "#087f5b" : "";
+}
+
 function slugify(value) {
   return String(value || "producto")
     .normalize("NFD")
@@ -72,10 +82,25 @@ function parseJSON(value, fallback) {
   }
 }
 
-function toOptionalNumber(value, label) {
-  if (value === "" || value === null || value === undefined) {
-    return null;
+/* Valores compatibles con la restricción de public.products.availability. */
+function normalizeProductAvailability(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLocaleLowerCase("es");
+
+  if (["out_of_stock", "agotado temporalmente", "agotado"].includes(normalized)) {
+    return "out_of_stock";
   }
+
+  if (["on_order", "por pedido"].includes(normalized)) {
+    return "on_order";
+  }
+
+  return "available";
+}
+
+function toOptionalNumber(value, label) {
+  if (value === "" || value === null || value === undefined) return null;
 
   const number = Number(value);
 
@@ -87,9 +112,7 @@ function toOptionalNumber(value, label) {
 }
 
 function validHex(value, fallback = "#315A91") {
-  return /^#[0-9a-fA-F]{6}$/.test(String(value || ""))
-    ? value
-    : fallback;
+  return /^#[0-9a-fA-F]{6}$/.test(String(value || "")) ? value : fallback;
 }
 
 function parseSpecs(text) {
@@ -137,17 +160,6 @@ function specsText(specs) {
   return "";
 }
 
-function setStatus(text, type = "") {
-  const node = $("#admin-status");
-  if (!node) return;
-
-  node.textContent = text;
-  node.style.color =
-    type === "error" ? "#b42318"
-    : type === "success" ? "#087f5b"
-    : "";
-}
-
 function getImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
@@ -163,13 +175,15 @@ function normalizeVariants(value) {
   return variants.map(item => {
     if (!item || typeof item !== "object") return null;
 
-    const usd = item.price_usd === "" || item.price_usd === undefined
-      ? null
-      : item.price_usd === null ? null : Number(item.price_usd);
+    const usd =
+      item.price_usd === "" || item.price_usd === undefined || item.price_usd === null
+        ? null
+        : Number(item.price_usd);
 
-    const nio = item.price_nio === "" || item.price_nio === undefined
-      ? null
-      : item.price_nio === null ? null : Number(item.price_nio);
+    const nio =
+      item.price_nio === "" || item.price_nio === undefined || item.price_nio === null
+        ? null
+        : Number(item.price_nio);
 
     return {
       storage: String(item.storage || item.capacity || "").trim(),
@@ -209,7 +223,6 @@ function normalizeColors(value) {
   }).filter(item => item && item.name);
 }
 
-/* Conserva productos antiguos que tenían colores, pero aún no tenían variantes. */
 function legacyVariants(product) {
   const current = normalizeVariants(product?.variants);
   if (current.length) return current;
@@ -230,8 +243,7 @@ function colorPaletteOptions(variant) {
   const match = COLOR_PALETTE.find(item =>
     item.name.toLocaleLowerCase("es") ===
       String(variant.color || "").toLocaleLowerCase("es") &&
-    item.hex.toLowerCase() ===
-      validHex(variant.color_hex).toLowerCase()
+    item.hex.toLowerCase() === validHex(variant.color_hex).toLowerCase()
   );
 
   const selectedValue = !variant.color ? "" : match ? match.hex : "custom";
@@ -240,18 +252,14 @@ function colorPaletteOptions(variant) {
     <option value="" ${selectedValue === "" ? "selected" : ""}>
       Seleccioná un color de la paleta…
     </option>
-
     ${COLOR_PALETTE.map(item => `
-      <option
-        value="${item.hex}"
-        ${selectedValue === item.hex ? "selected" : ""}
-      >${escapeHtml(item.name)}</option>
+      <option value="${item.hex}" ${selectedValue === item.hex ? "selected" : ""}>
+        ${escapeHtml(item.name)}
+      </option>
     `).join("")}
-
-    <option
-      value="custom"
-      ${selectedValue === "custom" ? "selected" : ""}
-    >Color personalizado</option>
+    <option value="custom" ${selectedValue === "custom" ? "selected" : ""}>
+      Color personalizado
+    </option>
   `;
 }
 
@@ -271,33 +279,22 @@ function variantRowMarkup(variant = {}) {
     <article class="variant-admin-row" data-variant-row>
       <div class="variant-row-title">
         <strong data-variant-row-heading>Configuración del producto</strong>
-
-        <button
-          class="admin-mini-button danger"
-          type="button"
-          data-remove-variant
-        >Quitar variante</button>
+        <button class="admin-mini-button danger"
+                type="button"
+                data-remove-variant>Quitar variante</button>
       </div>
 
       <div class="variant-fields-grid">
         <label>
           Almacenamiento / capacidad
-          <input
-            data-variant-storage
-            maxlength="40"
-            value="${escapeHtml(v.storage)}"
-            placeholder="Ej. 512 GB"
-          >
+          <input data-variant-storage maxlength="40"
+                 value="${escapeHtml(v.storage)}" placeholder="Ej. 512 GB">
         </label>
 
         <label>
           Memoria RAM
-          <input
-            data-variant-ram
-            maxlength="40"
-            value="${escapeHtml(v.ram)}"
-            placeholder="Ej. 12 GB"
-          >
+          <input data-variant-ram maxlength="40"
+                 value="${escapeHtml(v.ram)}" placeholder="Ej. 12 GB">
         </label>
 
         <label>
@@ -307,85 +304,54 @@ function variantRowMarkup(variant = {}) {
 
         <label>
           Nombre del color *
-          <input
-            data-variant-color
-            maxlength="60"
-            required
-            value="${escapeHtml(v.color)}"
-            placeholder="Ej. Azul titanio"
-          >
+          <input data-variant-color maxlength="60" required
+                 value="${escapeHtml(v.color)}" placeholder="Ej. Azul titanio">
         </label>
 
         <label class="variant-hex-label">
           Tono del color
           <span class="variant-hex-control">
-            <input
-              data-variant-hex
-              type="color"
-              value="${v.color_hex}"
-              aria-label="Elegir tono del color"
-            >
+            <input data-variant-hex type="color"
+                   value="${v.color_hex}" aria-label="Elegir tono del color">
             <small>Podés ajustar el tono visualmente.</small>
           </span>
         </label>
 
         <label>
           Precio en dólares (opcional)
-          <input
-            data-variant-price-usd
-            type="number"
-            min="0"
-            step="0.01"
-            value="${escapeHtml(v.price_usd)}"
-            placeholder="Ej. 999"
-          >
+          <input data-variant-price-usd type="number" min="0" step="0.01"
+                 value="${escapeHtml(v.price_usd)}" placeholder="Ej. 999">
         </label>
 
         <label>
           Precio en córdobas (opcional)
-          <input
-            data-variant-price-nio
-            type="number"
-            min="0"
-            step="0.01"
-            value="${escapeHtml(v.price_nio)}"
-            placeholder="Ej. 36600"
-          >
+          <input data-variant-price-nio type="number" min="0" step="0.01"
+                 value="${escapeHtml(v.price_nio)}" placeholder="Ej. 36600">
         </label>
 
         <label>
           Estado de esta combinación
           <select data-variant-availability>
-            <option
-              value="available"
-              ${v.availability === "available" ? "selected" : ""}
-            >Disponible</option>
-
-            <option
-              value="order"
-              ${v.availability === "order" ? "selected" : ""}
-            >Por pedido</option>
+            <option value="available" ${v.availability === "available" ? "selected" : ""}>
+              Disponible
+            </option>
+            <option value="order" ${v.availability === "order" ? "selected" : ""}>
+              Por pedido
+            </option>
           </select>
         </label>
 
         <label class="variant-image-label">
           Foto del color (opcional)
-          <input
-            data-variant-image
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
-          >
-          <small>Los tonos iguales pueden reutilizar la misma foto.</small>
+          <input data-variant-image type="file"
+                 accept="image/jpeg,image/png,image/webp,image/avif">
+          <small>Podés reutilizar la foto de ese color en otras capacidades.</small>
         </label>
 
         <label class="variant-image-url-label">
           URL de foto existente (opcional)
-          <input
-            data-variant-image-url
-            type="url"
-            value="${escapeHtml(v.image_url)}"
-            placeholder="https://..."
-          >
+          <input data-variant-image-url type="url"
+                 value="${escapeHtml(v.image_url)}" placeholder="https://...">
         </label>
       </div>
 
@@ -401,8 +367,12 @@ function renderVariantRows(variants = []) {
   const normalized = normalizeVariants(variants);
 
   if (!normalized.length) {
-    container.innerHTML =
-      '<p class="variants-empty-hint">Todavía no agregaste variantes. Podés guardar el producto sin variantes y agregarlas después.</p>';
+    container.innerHTML = `
+      <p class="variants-empty-hint">
+        Todavía no agregaste variantes. Podés guardar el producto sin variantes
+        y agregarlas después.
+      </p>
+    `;
     return;
   }
 
@@ -429,12 +399,12 @@ function updateVariantRowHeadings() {
     const storage = row.querySelector("[data-variant-storage]")?.value.trim();
     const ram = row.querySelector("[data-variant-ram]")?.value.trim();
     const color = row.querySelector("[data-variant-color]")?.value.trim();
-
     const heading = row.querySelector("[data-variant-row-heading]");
-    const description = [storage, ram, color].filter(Boolean).join(" · ");
 
     if (heading) {
-      heading.textContent = description || `Variante ${index + 1}`;
+      heading.textContent =
+        [storage, ram, color].filter(Boolean).join(" · ") ||
+        `Variante ${index + 1}`;
     }
   });
 }
@@ -461,14 +431,7 @@ variantsContainer?.addEventListener("change", event => {
   if (!select) return;
 
   const row = select.closest("[data-variant-row]");
-  if (!row) return;
-
-  if (select.value === "custom" || select.value === "") {
-    if (select.value === "custom") {
-      row.querySelector("[data-variant-color]")?.focus();
-    }
-    return;
-  }
+  if (!row || !select.value || select.value === "custom") return;
 
   const color = COLOR_PALETTE.find(item => item.hex === select.value);
   if (!color) return;
@@ -481,15 +444,12 @@ variantsContainer?.addEventListener("change", event => {
 variantsContainer?.addEventListener("input", event => {
   if (!event.target.matches(
     "[data-variant-color], [data-variant-storage], [data-variant-ram]"
-  )) {
-    return;
-  }
+  )) return;
 
   const row = event.target.closest("[data-variant-row]");
+  if (!row) return;
 
-  if (row && event.target.matches("[data-variant-color]")) {
-    const palette = row.querySelector("[data-variant-palette]");
-
+  if (event.target.matches("[data-variant-color]")) {
     const matchingColor = COLOR_PALETTE.find(item =>
       item.name.toLocaleLowerCase("es") ===
       event.target.value.trim().toLocaleLowerCase("es")
@@ -497,16 +457,73 @@ variantsContainer?.addEventListener("input", event => {
 
     if (matchingColor) {
       row.querySelector("[data-variant-hex]").value = matchingColor.hex;
-      palette.value = matchingColor.hex;
-    } else if (palette) {
-      palette.value = "custom";
+      row.querySelector("[data-variant-palette]").value = matchingColor.hex;
+    } else {
+      row.querySelector("[data-variant-palette]").value = "custom";
     }
   }
 
   updateVariantRowHeadings();
 });
 
-/* El usuario debe existir en admin_users para administrar el catálogo. */
+/* ---------- AUTENTICACIÓN Y SESIÓN ---------- */
+
+function authStorageKey() {
+  try {
+    const projectRef = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
+    return `sb-${projectRef}-auth-token`;
+  } catch {
+    return null;
+  }
+}
+
+function clearLocalAuthStorage() {
+  try {
+    const key = authStorageKey();
+    if (key) localStorage.removeItem(key);
+  } catch (error) {
+    console.warn("No se pudo limpiar el almacenamiento local de sesión.", error);
+  }
+}
+
+async function signOutLocalSafely() {
+  try {
+    if (supabase) {
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.warn("Supabase no confirmó el cierre de sesión local.", error);
+  } finally {
+    clearLocalAuthStorage();
+  }
+}
+
+function clearLoginPassword() {
+  const password = $("#login-password");
+  if (password) {
+    password.value = "";
+    password.setCustomValidity("");
+  }
+}
+
+function showLoginAfterLogout(statusText = "Sesión cerrada.") {
+  currentUser = null;
+  products = [];
+
+  dashboard.classList.add("hidden");
+  loginPanel.classList.remove("hidden");
+
+  form?.reset();
+  clearEditor();
+
+  $("#login-email").value = "";
+  clearLoginPassword();
+
+  setStatus("");
+  message("#login-status", statusText, "success");
+}
+
 async function confirmAdmin(user) {
   if (!supabase || !user?.id) {
     throw new Error("No se pudo verificar la sesión.");
@@ -537,7 +554,6 @@ async function showDashboard(user) {
   dashboard.classList.remove("hidden");
 
   const metadata = user.user_metadata || {};
-
   const profileName =
     metadata.full_name ||
     metadata.name ||
@@ -559,7 +575,6 @@ async function showDashboard(user) {
     .join(" ");
 
   const greeting = $("#admin-greeting");
-
   if (greeting) {
     greeting.textContent = displayName
       ? `¡Bienvenido de nuevo, ${displayName}! 👋`
@@ -574,30 +589,24 @@ async function handleSession() {
   if (!configured) {
     message(
       "#login-status",
-      "Falta configurar la URL y la publishable/anon key de Supabase en config.js.",
+      "Falta configurar la URL y la clave publicable de Supabase en config.js.",
       "error"
     );
     return;
   }
 
-  const {
-    data: { session },
-    error
-  } = await supabase.auth.getSession();
-
+  const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
-  if (!session) return;
+
+  if (!data.session) return;
 
   try {
-    await showDashboard(session.user);
+    await showDashboard(data.session.user);
   } catch (error) {
-    message(
-      "#login-status",
-      error.message || "La sesión no está autorizada.",
-      "error"
+    await signOutLocalSafely();
+    showLoginAfterLogout(
+      error.message || "La sesión no está autorizada."
     );
-
-    await supabase.auth.signOut();
   }
 }
 
@@ -606,6 +615,7 @@ $("#login-form")?.addEventListener("submit", async event => {
 
   if (!supabase) {
     message("#login-status", "Configurá primero Supabase en config.js.", "error");
+    clearLoginPassword();
     return;
   }
 
@@ -625,30 +635,41 @@ $("#login-form")?.addEventListener("submit", async event => {
     await showDashboard(data.user);
     message("#login-status", "Acceso autorizado.", "success");
   } catch (error) {
-    await supabase.auth.signOut();
+    /* Si el acceso o la autorización fallan, no dejamos una sesión local. */
+    await signOutLocalSafely();
+
     dashboard.classList.add("hidden");
     loginPanel.classList.remove("hidden");
 
+    /* Conservamos el correo, borramos la contraseña incorrecta. */
+    clearLoginPassword();
+
     message(
       "#login-status",
-      error.message || "No se pudo iniciar sesión.",
+      error.message || "No se pudo iniciar sesión. Revisá tus datos.",
       "error"
     );
+
+    $("#login-password")?.focus();
   } finally {
     button.disabled = false;
     button.textContent = "Iniciar sesión";
   }
 });
 
-$("#logout-button")?.addEventListener("click", async () => {
-  if (supabase) await supabase.auth.signOut();
+$("#logout-button")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = "Cerrando sesión…";
 
-  currentUser = null;
-  dashboard.classList.add("hidden");
-  loginPanel.classList.remove("hidden");
-  form.reset();
-  clearEditor();
+  await signOutLocalSafely();
+  showLoginAfterLogout("Sesión cerrada correctamente.");
+
+  button.disabled = false;
+  button.textContent = "Cerrar sesión";
 });
+
+/* ---------- INVENTARIO ---------- */
 
 async function loadProducts() {
   const { data, error } = await supabase
@@ -668,13 +689,18 @@ async function loadProducts() {
     `${products.length} producto${products.length === 1 ? "" : "s"} en la base de datos`;
 }
 
-function getStartingUSD(product) {
-  const variants = normalizeVariants(product.variants);
+function minimumPrice(variants, field) {
   const values = variants
-    .map(variant => variant.price_usd)
-    .filter(value => Number.isFinite(value) && value >= 0);
+    .map(variant => variant[field])
+    .filter(value =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+    )
+    .map(Number);
 
-  return values.length ? Math.min(...values) : product.price_usd;
+  return values.length ? Math.min(...values) : null;
 }
 
 function renderAdminList() {
@@ -700,38 +726,36 @@ function renderAdminList() {
       ? '<span class="status-pill published">Publicado</span>'
       : '<span class="status-pill">Borrador</span>';
 
-    const price = getStartingUSD(product);
+    const variantCount = normalizeVariants(product.variants).length;
+    const variantLabel = variantCount
+      ? ` · ${variantCount} variante${variantCount === 1 ? "" : "s"}`
+      : "";
+
+    const price = minimumPrice(normalizeVariants(product.variants), "price_usd")
+      ?? product.price_usd;
 
     const formattedPrice =
       price === null || price === undefined || price === ""
         ? "Consultar"
         : `US$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 
-    const variantCount = normalizeVariants(product.variants).length;
-
-    const variantLabel = variantCount
-      ? ` · ${variantCount} variante${variantCount === 1 ? "" : "s"}`
-      : "";
-
     return `
       <article class="admin-product-row">
         ${thumb}
-
         <div>
           <p class="admin-product-name">${escapeHtml(product.name)}</p>
-
           <div class="admin-product-meta">
             ${escapeHtml(product.category || "Sin categoría")}
             · ${escapeHtml(formattedPrice)}${variantLabel}
             · ${state}
           </div>
-
           <div class="admin-product-buttons">
-            <button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">
-              Editar
-            </button>
-
-            <button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">
+            <button class="admin-mini-button"
+                    type="button"
+                    data-edit="${escapeHtml(product.id)}">Editar</button>
+            <button class="admin-mini-button"
+                    type="button"
+                    data-toggle="${escapeHtml(product.id)}">
               ${product.is_published ? "Despublicar" : "Publicar"}
             </button>
           </div>
@@ -749,18 +773,12 @@ $("#admin-product-list")?.addEventListener("click", async event => {
   const toggle = event.target.closest("[data-toggle]");
 
   if (edit) {
-    const product = products.find(
-      item => String(item.id) === edit.dataset.edit
-    );
-
+    const product = products.find(item => String(item.id) === edit.dataset.edit);
     if (product) fillEditor(product);
   }
 
   if (toggle) {
-    const product = products.find(
-      item => String(item.id) === toggle.dataset.toggle
-    );
-
+    const product = products.find(item => String(item.id) === toggle.dataset.toggle);
     if (!product) return;
 
     try {
@@ -788,7 +806,7 @@ $("#admin-product-list")?.addEventListener("click", async event => {
 });
 
 function clearEditor() {
-  form.reset();
+  form?.reset();
 
   $("#product-id").value = "";
   $("#catalog-key").value = "";
@@ -818,7 +836,7 @@ function fillEditor(product) {
   $("#product-category").value = product.category || "Otros";
 
   $("#product-availability").value =
-    product.availability || "Consultar disponibilidad";
+    normalizeProductAvailability(product.availability);
 
   $("#product-price-usd").value = product.price_usd ?? "";
   $("#product-price-nio").value = product.price_nio ?? "";
@@ -842,7 +860,6 @@ function fillEditor(product) {
   $("#save-product-button").textContent = "Guardar cambios";
 
   message("#product-form-status", `Editando: ${product.name}`);
-
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -868,9 +885,11 @@ async function uploadImage(productId, file, subfolder = "") {
   const path =
     `${productId}/${subfolder ? `${subfolder}/` : ""}${crypto.randomUUID()}-${safeName}.${ext}`;
 
+  const bucket = CONFIG.storageBucket || "product-images";
+
   const { error } = await supabase
     .storage
-    .from(CONFIG.storageBucket || "product-images")
+    .from(bucket)
     .upload(path, file, {
       contentType: file.type,
       upsert: false
@@ -880,11 +899,7 @@ async function uploadImage(productId, file, subfolder = "") {
     throw new Error(`No se pudo subir ${file.name}: ${error.message}`);
   }
 
-  const { data } = supabase
-    .storage
-    .from(CONFIG.storageBucket || "product-images")
-    .getPublicUrl(path);
-
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -908,9 +923,7 @@ async function collectVariants(productId, existingVariants = []) {
     const ram = row.querySelector("[data-variant-ram]").value.trim();
     const color = row.querySelector("[data-variant-color]").value.trim();
 
-    const colorHex = validHex(
-      row.querySelector("[data-variant-hex]").value
-    );
+    const colorHex = validHex(row.querySelector("[data-variant-hex]").value);
 
     const priceUSD = toOptionalNumber(
       row.querySelector("[data-variant-price-usd]").value,
@@ -927,11 +940,8 @@ async function collectVariants(productId, existingVariants = []) {
         ? "order"
         : "available";
 
-    const imageUrl =
-      row.querySelector("[data-variant-image-url]").value.trim();
-
-    const file =
-      row.querySelector("[data-variant-image]").files?.[0] || null;
+    const imageUrl = row.querySelector("[data-variant-image-url]").value.trim();
+    const file = row.querySelector("[data-variant-image]").files?.[0] || null;
 
     if (!color) {
       throw new Error(
@@ -940,24 +950,15 @@ async function collectVariants(productId, existingVariants = []) {
     }
 
     return {
-      storage,
-      ram,
-      color,
-      color_hex: colorHex,
-      price_usd: priceUSD,
-      price_nio: priceNIO,
-      availability,
-      image_url: imageUrl,
-      file,
-      row
+      storage, ram, color, color_hex: colorHex,
+      price_usd: priceUSD, price_nio: priceNIO,
+      availability, image_url: imageUrl, file, row
     };
   });
 
   const seen = new Set();
 
-  for (let index = 0; index < drafts.length; index++) {
-    const variant = drafts[index];
-
+  for (const variant of drafts) {
     const key = [
       variant.storage.toLocaleLowerCase("es"),
       variant.ram.toLocaleLowerCase("es"),
@@ -966,21 +967,18 @@ async function collectVariants(productId, existingVariants = []) {
 
     if (seen.has(key)) {
       throw new Error(
-        `La combinación ${
-          [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ")
-        } está repetida. Cada combinación debe tener una sola fila.`
+        `La combinación ${[variant.storage, variant.ram, variant.color]
+          .filter(Boolean).join(" · ")} está repetida.`
       );
     }
 
     seen.add(key);
   }
 
-  /* Reutilizar las fotografías de colores ya registrados. */
   const imageByColor = new Map();
 
   normalizeVariants(existingVariants).forEach(variant => {
     const key = variant.color.toLocaleLowerCase("es");
-
     if (key && variant.image_url && !imageByColor.has(key)) {
       imageByColor.set(key, variant.image_url);
     }
@@ -991,16 +989,9 @@ async function collectVariants(productId, existingVariants = []) {
     const statusNode = variant.row.querySelector("[data-variant-status]");
 
     if (variant.file) {
-      if (statusNode) {
-        statusNode.textContent = `Subiendo foto de ${variant.color}…`;
-      }
+      if (statusNode) statusNode.textContent = `Subiendo foto de ${variant.color}…`;
 
-      variant.image_url = await uploadImage(
-        productId,
-        variant.file,
-        "variants"
-      );
-
+      variant.image_url = await uploadImage(productId, variant.file, "variants");
       imageByColor.set(key, variant.image_url);
     } else if (variant.image_url) {
       imageByColor.set(key, variant.image_url);
@@ -1009,10 +1000,8 @@ async function collectVariants(productId, existingVariants = []) {
     }
   }
 
-  /* Segunda pasada: comparte la foto recién subida con el mismo color. */
   for (const variant of drafts) {
     const key = variant.color.toLocaleLowerCase("es");
-
     if (!variant.image_url && imageByColor.has(key)) {
       variant.image_url = imageByColor.get(key);
     }
@@ -1032,20 +1021,15 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
 
     const previous = byColor.get(key);
 
-    const entry = {
-      name: variant.color,
-      type: variant.availability,
-      image_url: variant.image_url || "",
-      color_hex: validHex(variant.color_hex)
-    };
-
     if (!previous) {
-      byColor.set(key, entry);
+      byColor.set(key, {
+        name: variant.color,
+        type: variant.availability,
+        image_url: variant.image_url || "",
+        color_hex: validHex(variant.color_hex)
+      });
     } else {
-      if (variant.availability === "available") {
-        previous.type = "available";
-      }
-
+      if (variant.availability === "available") previous.type = "available";
       if (!previous.image_url && variant.image_url) {
         previous.image_url = variant.image_url;
       }
@@ -1055,7 +1039,7 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
   return Array.from(byColor.values());
 }
 
-function minimumPrice(variants, field) {
+function minimumVariantPrice(variants, field) {
   const values = variants
     .map(variant => variant[field])
     .filter(value =>
@@ -1082,10 +1066,7 @@ form?.addEventListener("submit", async event => {
 
   try {
     const name = $("#product-name").value.trim();
-
-    if (!name) {
-      throw new Error("Escribí el nombre del producto.");
-    }
+    if (!name) throw new Error("Escribí el nombre del producto.");
 
     const id = $("#product-id").value || crypto.randomUUID();
 
@@ -1114,36 +1095,23 @@ form?.addEventListener("submit", async event => {
       existingProduct?.colors || []
     );
 
-    const baseUSD = toOptionalNumber(
-      $("#product-price-usd").value,
-      "Precio base en dólares"
-    );
-
-    const baseNIO = toOptionalNumber(
-      $("#product-price-nio").value,
-      "Precio base en córdobas"
-    );
-
-    const warranty = toOptionalNumber(
-      $("#product-warranty").value,
-      "Garantía"
-    );
+    const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
+    const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
+    const warranty = toOptionalNumber($("#product-warranty").value, "Garantía");
 
     const priceUSD = variants.length
-      ? minimumPrice(variants, "price_usd") ?? baseUSD
+      ? minimumVariantPrice(variants, "price_usd") ?? baseUSD
       : baseUSD;
 
     const priceNIO = variants.length
-      ? minimumPrice(variants, "price_nio") ?? baseNIO
+      ? minimumVariantPrice(variants, "price_nio") ?? baseNIO
       : baseNIO;
 
-    const allImages = [
-      ...new Set([...enteredUrls, ...uploadedMainImages])
-    ];
+    const allImages = [...new Set([...enteredUrls, ...uploadedMainImages])];
+    const now = new Date().toISOString();
 
     const payload = {
       catalog_key: catalogKey,
-
       sort_order: wasEditing
         ? Number(existingProduct?.sort_order ?? products.length)
         : products.length,
@@ -1152,7 +1120,7 @@ form?.addEventListener("submit", async event => {
       brand: $("#product-brand").value.trim() || null,
       model: $("#product-model").value.trim() || null,
       category: $("#product-category").value,
-      availability: $("#product-availability").value,
+      availability: normalizeProductAvailability($("#product-availability").value),
 
       price_usd: priceUSD,
       price_nio: priceNIO,
@@ -1168,14 +1136,13 @@ form?.addEventListener("submit", async event => {
       variants,
 
       financing_note: $("#product-financing").value.trim() ||
-        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.",
-
+        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones.",
       shipping_note: $("#product-shipping").value.trim() || null,
 
       featured: $("#product-featured").checked,
       is_published: $("#product-active").checked,
 
-      updated_at: new Date().toISOString(),
+      updated_at: now,
       updated_by: currentUser.id
     };
 
@@ -1192,18 +1159,13 @@ form?.addEventListener("submit", async event => {
         .insert({
           ...payload,
           id,
-          created_at: new Date().toISOString()
+          created_at: now
         });
     }
 
     if (result.error) throw result.error;
 
-    message(
-      "#product-form-status",
-      "Producto guardado correctamente.",
-      "success"
-    );
-
+    message("#product-form-status", "Producto guardado correctamente.", "success");
     setStatus(`Guardado: ${name}`, "success");
 
     clearEditor();
@@ -1224,7 +1186,6 @@ form?.addEventListener("submit", async event => {
 
 $("#import-json-file")?.addEventListener("change", async event => {
   const file = event.target.files?.[0];
-
   if (!file || !supabase || !currentUser) return;
 
   const node = $("#import-status");
@@ -1248,7 +1209,6 @@ $("#import-json-file")?.addEventListener("change", async event => {
       }
 
       const variants = normalizeVariants(product.variants);
-
       const colors = variants.length
         ? deriveColorsFromVariants(variants, product.colors)
         : normalizeColors(product.colors);
@@ -1258,6 +1218,9 @@ $("#import-json-file")?.addEventListener("change", async event => {
         : typeof product.image_url === "string" && product.image_url
           ? [product.image_url]
           : [];
+
+      const baseUSD = toOptionalNumber(product.price_usd, "Precio en dólares");
+      const baseNIO = toOptionalNumber(product.price_nio, "Precio en córdobas");
 
       return {
         catalog_key: product.catalog_key ||
@@ -1274,34 +1237,24 @@ $("#import-json-file")?.addEventListener("change", async event => {
         category: String(product.category),
 
         price_usd: variants.length
-          ? minimumPrice(variants, "price_usd") ??
-            toOptionalNumber(product.price_usd, "Precio en dólares")
-          : toOptionalNumber(product.price_usd, "Precio en dólares"),
-
+          ? minimumVariantPrice(variants, "price_usd") ?? baseUSD
+          : baseUSD,
         price_nio: variants.length
-          ? minimumPrice(variants, "price_nio") ??
-            toOptionalNumber(product.price_nio, "Precio en córdobas")
-          : toOptionalNumber(product.price_nio, "Precio en córdobas"),
+          ? minimumVariantPrice(variants, "price_nio") ?? baseNIO
+          : baseNIO,
 
         description: product.description || null,
-
-        specifications:
-          product.specifications && typeof product.specifications === "object"
+        specifications: product.specifications &&
+          typeof product.specifications === "object"
             ? product.specifications
             : product.specs && typeof product.specs === "object"
-              ? product.specs
-              : {},
+              ? product.specs : {},
 
-        warranty_months: toOptionalNumber(
-          product.warranty_months,
-          "Garantía"
-        ),
-
-        availability: product.availability || "Consultar disponibilidad",
+        warranty_months: toOptionalNumber(product.warranty_months, "Garantía"),
+        availability: normalizeProductAvailability(product.availability),
 
         financing_note: product.financing_note ||
-          "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.",
-
+          "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones.",
         shipping_note: product.shipping_note || null,
 
         images,
@@ -1314,10 +1267,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
       };
     });
 
-    const { error } = await supabase
-      .from("products")
-      .insert(payload);
-
+    const { error } = await supabase.from("products").insert(payload);
     if (error) throw error;
 
     message(
@@ -1328,20 +1278,15 @@ $("#import-json-file")?.addEventListener("change", async event => {
 
     await loadProducts();
   } catch (error) {
-    message(
-      node,
-      error.message || "No se pudo importar el archivo.",
-      "error"
-    );
+    message(node, error.message || "No se pudo importar el archivo.", "error");
   } finally {
     event.target.value = "";
   }
 });
 
-handleSession().catch(error => {
-  message(
-    "#login-status",
-    error.message || "No se pudo comprobar la sesión.",
-    "error"
+handleSession().catch(async error => {
+  await signOutLocalSafely();
+  showLoginAfterLogout(
+    error.message || "No se pudo comprobar la sesión."
   );
 });
