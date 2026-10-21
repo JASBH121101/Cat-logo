@@ -181,11 +181,11 @@
 
               <label>
                 Disponibilidad general
-                <select id="product-availability">
-                  <option value="Consultar disponibilidad">Consultar disponibilidad</option>
-                  <option value="Disponible según confirmación">Disponible según confirmación</option>
-                  <option value="Agotado temporalmente">Agotado temporalmente</option>
-                </select>
+                <select id="product-availability" required>
+                <option value="available">Disponible</option>
+                <option value="on_order">Por pedido</option>
+                <option value="out_of_stock">Agotado temporalmente</option>
+              </select>
               </label>
 
               <label>
