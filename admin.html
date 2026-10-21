@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Administración | Catálogo de Tecnología</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script type="module" src="admin.js"></script>
+</head>
+
+<body class="admin-body">
+  <header class="site-header admin-header">
+    <a class="brand" href="./">
+      <span class="brand-mark">CT</span>
+      <span>Catálogo de Tecnología</span>
+    </a>
+
+    <a href="./" class="back-link">← Ver catálogo público</a>
+  </header>
+
+  <main class="admin-main">
+    <section id="login-panel" class="login-panel">
+      <p class="eyebrow">ÁREA PRIVADA</p>
+      <h1>Administrá tu catálogo.</h1>
+
+      <p class="section-subtitle">
+        Iniciá sesión con el correo autorizado para agregar y actualizar productos.
+      </p>
+
+      <form id="login-form" class="admin-form login-form">
+        <label>
+          Correo electrónico
+          <input
+            id="login-email"
+            type="email"
+            autocomplete="username"
+            required
+            placeholder="tu-correo@ejemplo.com"
+          >
+        </label>
+
+        <label>
+          Contraseña
+          <input
+            id="login-password"
+            type="password"
+            autocomplete="current-password"
+            required
+            placeholder="Tu contraseña"
+          >
+        </label>
+
+        <button class="button button-primary" type="submit">
+          Iniciar sesión
+        </button>
+
+        <p id="login-status" class="form-status" role="status"></p>
+      </form>
+
+      <p class="admin-help">
+        El usuario administrador debe crearse en Supabase y autorizarse en la
+        tabla <code>admin_users</code>. No existe registro público desde esta página.
+      </p>
+    </section>
+
+    <section id="dashboard" class="dashboard hidden">
+      <div class="dashboard-top">
+        <div>
+          <p class="eyebrow">PANEL PRIVADO</p>
+          <h1>Inventario del catálogo</h1>
+          <p class="section-subtitle">
+            Agregá nuevos artículos, editá precios y publicá o desactivá productos.
+          </p>
+        </div>
+
+        <button id="logout-button" class="button button-outline" type="button">
+          Cerrar sesión
+        </button>
+      </div>
+
+      <div id="admin-status" class="admin-alert" role="status"></div>
+
+      <div class="admin-layout">
+        <section class="admin-card product-editor">
+          <div class="card-heading">
+            <div>
+              <h2 id="form-title">Agregar producto</h2>
+              <p>Los campos marcados con * son obligatorios.</p>
+            </div>
+
+            <button id="new-product-button" class="text-button" type="button">
+              + Nuevo
+            </button>
+          </div>
+
+          <form id="product-form" class="admin-form">
+            <input id="product-id" type="hidden">
+            <input id="catalog-key" type="hidden">
+
+            <div class="form-grid">
+              <label class="span-2">
+                Nombre del producto *
+                <input
+                  id="product-name"
+                  required
+                  maxlength="160"
+                  placeholder="Ej. Samsung Smart TV 55 pulgadas"
+                >
+              </label>
+
+              <label>
+                Marca
+                <input id="product-brand" maxlength="80" placeholder="Samsung">
+              </label>
+
+              <label>
+                Modelo
+                <input id="product-model" maxlength="100" placeholder="Modelo exacto">
+              </label>
+
+              <label>
+                Categoría *
+                <select id="product-category" required>
+                  <option value="Celulares">Celulares</option>
+                  <option value="Laptops">Laptops</option>
+                  <option value="Tablets">Tablets</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Televisores">Televisores</option>
+                  <option value="Audio">Audio</option>
+                  <option value="Accesorios">Accesorios</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </label>
+
+              <label>
+                Disponibilidad
+                <select id="product-availability">
+                  <option value="Consultar disponibilidad">Consultar disponibilidad</option>
+                  <option value="Disponible según confirmación">Disponible según confirmación</option>
+                  <option value="Agotado temporalmente">Agotado temporalmente</option>
+                </select>
+              </label>
+
+              <label>
+                Precio de referencia (US$) (opcional)
+                <input
+                  id="product-price-usd"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Dejar vacío para mostrar Consultar"
+                >
+              </label>
+
+              <label>
+                Precio en córdobas (opcional)
+                <input
+                  id="product-price-nio"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ingresá precio confirmado"
+                >
+              </label>
+
+              <label>
+                Garantía en meses
+                <input
+                  id="product-warranty"
+                  type="number"
+                  min="0"
+                  max="120"
+                  step="1"
+                  placeholder="Dejar vacío si no se confirmó"
+                >
+              </label>
+
+              <label class="span-2">
+                Descripción breve
+                <textarea
+                  id="product-description"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Descripción clara, sin características no verificadas."
+                ></textarea>
+              </label>
+
+              <label class="span-2">
+                Especificaciones (una por línea, formato Nombre: valor)
+                <textarea
+                  id="product-specs"
+                  rows="5"
+                  placeholder="Pantalla: 55 pulgadas&#10;Resolución: 4K UHD&#10;Conectividad: Wi-Fi"
+                ></textarea>
+              </label>
+
+              <label class="span-2">
+                Fotografías del producto
+                <input
+                  id="product-images"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  multiple
+                >
+                <small>
+                  Podés subir varias imágenes. Máximo recomendado: 8 MB por imagen.
+                </small>
+              </label>
+
+              <label class="span-2">
+                URLs de fotos existentes (una por línea)
+                <textarea
+                  id="existing-image-urls"
+                  rows="2"
+                  placeholder="https://... (opcional)"
+                ></textarea>
+              </label>
+
+              <section
+                class="span-2 colors-editor-section"
+                aria-labelledby="colors-editor-title"
+              >
+                <div class="colors-editor-heading">
+                  <div>
+                    <h3 id="colors-editor-title">Colores del producto</h3>
+                    <p>
+                      Agregá los colores disponibles o los que se consiguen por pedido.
+                      Cada color puede tener una foto propia.
+                    </p>
+                  </div>
+
+                  <button
+                    id="add-color-button"
+                    class="button button-outline"
+                    type="button"
+                  >+ Agregar color</button>
+                </div>
+
+                <div id="product-colors-list" class="product-colors-list">
+                  <p class="colors-empty-hint">
+                    Todavía no agregaste colores a este producto.
+                  </p>
+                </div>
+              </section>
+
+              <label class="span-2">
+                Nota de financiamiento
+                <textarea id="product-financing" rows="2">Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.</textarea>
+              </label>
+
+              <label class="span-2">
+                Nota de entrega (opcional)
+                <textarea
+                  id="product-shipping"
+                  rows="2"
+                  placeholder="Se muestran las condiciones generales del catálogo."
+                ></textarea>
+              </label>
+
+              <label class="check-label">
+                <input id="product-featured" type="checkbox">
+                Destacar en el catálogo
+              </label>
+
+              <label class="check-label">
+                <input id="product-active" type="checkbox">
+                Publicar en el catálogo
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="save-product-button" class="button button-primary">
+                Guardar producto
+              </button>
+
+              <button type="button" id="cancel-edit-button" class="button button-outline">
+                Cancelar
+              </button>
+            </div>
+
+            <p class="form-status" id="product-form-status" role="status"></p>
+          </form>
+        </section>
+
+        <section class="admin-card product-list-card">
+          <div class="card-heading">
+            <div>
+              <h2>Productos guardados</h2>
+              <p id="product-count">Consultando inventario…</p>
+            </div>
+          </div>
+
+          <label class="search-box admin-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              id="admin-search"
+              type="search"
+              placeholder="Buscar en inventario…"
+              aria-label="Buscar inventario"
+            >
+          </label>
+
+          <div id="admin-product-list" class="admin-product-list"></div>
+        </section>
+      </div>
+
+      <section class="admin-card import-card">
+        <div>
+          <h2>Carga inicial desde JSON</h2>
+          <p>
+            Importá <code>catalogo-inicial.json</code> para precargar productos
+            como borradores. No se publican automáticamente y debés revisar los
+            modelos, precios, garantías y fotos antes de activarlos.
+          </p>
+        </div>
+
+        <label class="file-button">
+          Seleccionar JSON
+          <input id="import-json-file" type="file" accept="application/json,.json">
+        </label>
+
+        <p id="import-status" class="form-status" role="status"></p>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>Catálogo de Tecnología · Área administrativa privada</span>
+    <span>Precios y condiciones deben verificarse antes de publicar.</span>
+  </footer>
+</body>
+</html>
