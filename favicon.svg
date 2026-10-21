@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#101d40"/>
+      <stop offset="55%" stop-color="#11142f"/>
+      <stop offset="100%" stop-color="#241448"/>
+    </linearGradient>
+
+    <linearGradient id="orbit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="42%" stop-color="#397dff"/>
+      <stop offset="72%" stop-color="#974bff"/>
+      <stop offset="100%" stop-color="#ff45da"/>
+    </linearGradient>
+
+    <linearGradient id="letters" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#bfeaff"/>
+      <stop offset="100%" stop-color="#9e83ff"/>
+    </linearGradient>
+
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="1.8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <clipPath id="clip">
+      <rect x="3" y="3" width="58" height="58" rx="16"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo de la aplicación -->
+  <rect x="3" y="3" width="58" height="58" rx="16" fill="#080e20"/>
+  <rect x="4" y="4" width="56" height="56" rx="15" fill="url(#bg)"/>
+
+  <!-- Órbita exterior -->
+  <g clip-path="url(#clip)">
+    <ellipse
+      cx="32" cy="32" rx="24" ry="14"
+      transform="rotate(-34 32 32)"
+      fill="none"
+      stroke="url(#orbit)"
+      stroke-width="2.4"
+      opacity=".95"
+      filter="url(#glow)"
+    />
+
+    <!-- Sombra para dar profundidad -->
+    <ellipse
+      cx="32" cy="32" rx="22" ry="12"
+      transform="rotate(-34 32 32)"
+      fill="none"
+      stroke="#10142f"
+      stroke-width="5"
+      opacity=".8"
+    />
+
+    <!-- Repetición luminosa de la órbita -->
+    <path
+      d="M10 43 A27 16 0 0 0 49 13"
+      fill="none"
+      stroke="url(#orbit)"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      filter="url(#glow)"
+    />
+  </g>
+
+  <!-- Iniciales CT -->
+  <g
+    font-family="Arial, Helvetica, sans-serif"
+    font-weight="900"
+    font-size="23"
+    text-anchor="middle"
+    fill="url(#letters)"
+    stroke="#111a39"
+    stroke-width=".7"
+    paint-order="stroke fill"
+  >
+    <text x="24" y="38">C</text>
+    <text x="43" y="38" fill="#d9c2ff">T</text>
+  </g>
+
+  <!-- Destellos orbitales -->
+  <circle cx="10" cy="43" r="2.1" fill="#53edff" filter="url(#glow)"/>
+  <circle cx="49" cy="13" r="2" fill="#ff68ed" filter="url(#glow)"/>
+
+  <!-- Borde exterior -->
+  <rect
+    x="3.5" y="3.5" width="57" height="57" rx="15.5"
+    fill="none"
+    stroke="url(#orbit)"
+    stroke-width=".8"
+    opacity=".65"
+  />
+</svg>
