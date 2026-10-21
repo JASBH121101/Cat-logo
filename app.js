@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const CONFIG = window.CATALOG_CONFIG || {};
-const whatsappNumber = String(CONFIG.whatsappNumber || "50557683840").replace(/\D/g, "");
+const whatsappNumber = String(CONFIG.whatsappNumber || "").replace(/\D/g, "");
 
 const grid = document.querySelector("#product-grid");
 const statusNode = document.querySelector("#catalog-status");
@@ -16,10 +16,7 @@ let products = [];
 let selectedCategory = "all";
 
 const hasSupabaseConfig = Boolean(
-  CONFIG.supabaseUrl &&
-  CONFIG.supabaseAnonKey &&
-  !String(CONFIG.supabaseUrl).includes("PON_AQUI") &&
-  !String(CONFIG.supabaseAnonKey).includes("PON_AQUI")
+  CONFIG.supabaseUrl && CONFIG.supabaseAnonKey
 );
 
 if (hasSupabaseConfig) {
@@ -33,26 +30,43 @@ document.querySelectorAll(".footer-brand span:last-child").forEach(element => {
   element.textContent = CONFIG.storeName || "Catálogo de Tecnología";
 });
 
-document.querySelector(".site-footer p").textContent =
-  "Precios sujetos a confirmación. Financiamiento sujeto a requisitos y condiciones de aprobación.";
+const footerText = document.querySelector(".site-footer p");
 
-document.querySelector("#year").textContent = new Date().getFullYear();
+if (footerText) {
+  footerText.textContent =
+    "Precios sujetos a confirmación. Financiamiento sujeto a requisitos y condiciones de aprobación.";
+}
+
+const yearNode = document.querySelector("#year");
+if (yearNode) yearNode.textContent = new Date().getFullYear();
 
 const generalMessage =
   "Hola, quisiera consultar por los productos del catálogo, disponibilidad, precio y opciones de pago.";
 
-const genericWhatsapp =
+const financeMessage =
+  "Hola, quisiera conocer las opciones de financiamiento disponibles, los requisitos, las cuotas y las formas de pago para comprar un equipo.";
+
+const generalWhatsapp =
   `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(generalMessage)}`;
 
-["header-whatsapp", "finance-whatsapp", "footer-whatsapp"].forEach(id => {
+["header-whatsapp", "footer-whatsapp"].forEach(id => {
   const element = document.getElementById(id);
+  if (!element) return;
 
-  if (element) {
-    element.href = genericWhatsapp;
-    element.target = "_blank";
-    element.rel = "noopener";
-  }
+  element.href = generalWhatsapp;
+  element.target = "_blank";
+  element.rel = "noopener";
 });
+
+const financeLink = document.getElementById("finance-whatsapp");
+
+if (financeLink) {
+  financeLink.href =
+    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(financeMessage)}`;
+
+  financeLink.target = "_blank";
+  financeLink.rel = "noopener";
+}
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, character => ({
@@ -64,32 +78,51 @@ function escapeHtml(value = "") {
   })[character]);
 }
 
+function parseJSON(value, fallback) {
+  if (typeof value !== "string") return value ?? fallback;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function validHex(value, fallback = "#315A91") {
+  return /^#[0-9a-fA-F]{6}$/.test(String(value || ""))
+    ? value
+    : fallback;
+}
+
 function formatUSD(value) {
   if (value === null || value === undefined || value === "") {
     return "Consultar";
   }
 
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "Consultar";
+
   return "US$" + new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2
-  }).format(Number(value));
+  }).format(number);
 }
 
 function formatNIO(value) {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
+  if (value === null || value === undefined || value === "") return "";
+
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
 
   return new Intl.NumberFormat("es-NI", {
     style: "currency",
     currency: "NIO",
     maximumFractionDigits: 2
-  }).format(Number(value));
+  }).format(number);
 }
 
 function specsArray(specs) {
-  if (!specs) {
-    return [];
-  }
+  specs = parseJSON(specs, {});
+  if (!specs) return [];
 
   if (Array.isArray(specs)) {
     return specs
@@ -109,36 +142,75 @@ function specsArray(specs) {
 }
 
 function getProductImages(product) {
-  let images = product.images;
+  const images = parseJSON(product?.images, []);
+  const list = Array.isArray(images) ? images : [];
 
-  if (typeof images === "string") {
-    try {
-      images = JSON.parse(images);
-    } catch {
-      images = [images];
-    }
-  }
-
-  if (!Array.isArray(images)) {
-    images = [];
-  }
-
-  return [...images, product.image_url]
+  return [...list, product?.image_url]
     .filter(value => typeof value === "string" && value.trim());
 }
 
-/* Lee los colores guardados en la columna JSONB products.colors. */
-function getProductColors(product) {
-  let colors = product?.colors;
+function getProductVariants(product) {
+  const raw = parseJSON(product?.variants, []);
+  if (!Array.isArray(raw)) return [];
 
-  if (typeof colors === "string") {
-    try {
-      colors = JSON.parse(colors);
-    } catch {
-      colors = [];
-    }
+  return raw.map(item => {
+    if (!item || typeof item !== "object") return null;
+
+    const usd = item.price_usd === "" || item.price_usd === undefined
+      ? null
+      : item.price_usd === null ? null : Number(item.price_usd);
+
+    const nio = item.price_nio === "" || item.price_nio === undefined
+      ? null
+      : item.price_nio === null ? null : Number(item.price_nio);
+
+    return {
+      storage: String(item.storage || item.capacity || "").trim(),
+      ram: String(item.ram || "").trim(),
+      color: String(item.color || item.name || "").trim(),
+      color_hex: validHex(item.color_hex || item.hex),
+      price_usd: Number.isFinite(usd) ? usd : null,
+      price_nio: Number.isFinite(nio) ? nio : null,
+      availability: item.availability === "order" ? "order" : "available",
+      image_url: String(item.image_url || item.imageUrl || "").trim()
+    };
+  }).filter(item => item && (item.storage || item.ram || item.color));
+}
+
+function getProductColors(product) {
+  const variants = getProductVariants(product);
+
+  if (variants.length) {
+    const map = new Map();
+
+    variants.forEach(variant => {
+      const key = variant.color.toLocaleLowerCase("es");
+      if (!key) return;
+
+      const previous = map.get(key);
+
+      if (!previous) {
+        map.set(key, {
+          name: variant.color,
+          type: variant.availability,
+          image_url: variant.image_url,
+          color_hex: variant.color_hex
+        });
+      } else {
+        if (variant.availability === "available") {
+          previous.type = "available";
+        }
+
+        if (!previous.image_url && variant.image_url) {
+          previous.image_url = variant.image_url;
+        }
+      }
+    });
+
+    return [...map.values()];
   }
 
+  const colors = parseJSON(product?.colors, []);
   if (!Array.isArray(colors)) return [];
 
   return colors.map(color => {
@@ -146,25 +218,26 @@ function getProductColors(product) {
       return {
         name: color.trim(),
         type: "available",
-        image_url: ""
+        image_url: "",
+        color_hex: "#315A91"
       };
     }
 
     if (!color || typeof color !== "object") return null;
 
     return {
-      name: String(color.name || "").trim(),
+      name: String(color.name || color.color || "").trim(),
       type: color.type === "order" ? "order" : "available",
-      image_url: String(color.image_url || color.imageUrl || "").trim()
+      image_url: String(color.image_url || color.imageUrl || "").trim(),
+      color_hex: validHex(color.color_hex || color.hex)
     };
   }).filter(color => color && color.name);
 }
 
-function colorStatusLabel(color) {
-  return color.type === "order" ? "Por pedido" : "Disponible";
+function colorStatusLabel(availability) {
+  return availability === "order" ? "Por pedido" : "Disponible";
 }
 
-/* Resumen compacto de los colores en la tarjeta del catálogo. */
 function renderColorSummary(product) {
   const colors = getProductColors(product);
   if (!colors.length) return "";
@@ -174,10 +247,10 @@ function renderColorSummary(product) {
       ${
         color.image_url
           ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-          : '<span class="product-color-dot" aria-hidden="true"></span>'
+          : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
       }
       ${escapeHtml(color.name)}
-      ${color.type === "order" ? "<small>Pedido</small>" : ""}
+      ${color.type === "order" ? "<small>Por pedido</small>" : ""}
     </span>
   `).join("");
 
@@ -193,57 +266,12 @@ function renderColorSummary(product) {
   `;
 }
 
-/* Cada color tiene su propio enlace para consultar por WhatsApp. */
-function renderColorOptions(product) {
-  const colors = getProductColors(product);
-  if (!colors.length) return "";
-
-  return `
-    <section class="dialog-colors" aria-labelledby="dialog-colors-title">
-      <h3 id="dialog-colors-title">Colores disponibles y por pedido</h3>
-
-      <div class="dialog-color-grid">
-        ${colors.map(color => `
-          <article class="dialog-color-card">
-            <div class="dialog-color-image">
-              ${
-                color.image_url
-                  ? `<img
-                       src="${escapeHtml(color.image_url)}"
-                       alt="${escapeHtml(`${product.name} color ${color.name}`)}"
-                       loading="lazy"
-                     >`
-                  : '<span class="product-color-dot" aria-hidden="true"></span>'
-              }
-            </div>
-
-            <div class="dialog-color-info">
-              <strong>${escapeHtml(color.name)}</strong>
-
-              <span class="color-availability ${color.type === "order" ? "order" : "available"}">
-                ${escapeHtml(colorStatusLabel(color))}
-              </span>
-
-              <a
-                href="${escapeHtml(whatsAppProductLink(product, color))}"
-                target="_blank"
-                rel="noopener"
-              >Consultar este color ↗</a>
-            </div>
-          </article>
-        `).join("")}
-      </div>
-    </section>
-  `;
-}
-
-function imageMarkup(product, className = "") {
+function imageMarkup(product) {
   const url = getProductImages(product)[0] || "";
 
   if (url) {
     return `
       <img
-        class="${className}"
         src="${escapeHtml(url)}"
         alt="${escapeHtml(product.name)}"
         loading="lazy"
@@ -266,36 +294,81 @@ function productLink(product) {
   return page.href;
 }
 
-function whatsAppProductLink(product, color = null) {
-  const price = formatUSD(product.price_usd);
+function buildWhatsAppLink(product, variant = null, fallbackColor = null) {
+  const parts = [
+    `Hola, me interesa este producto: ${product.name}.`
+  ];
 
-  const selectedColor = color
-    ? `Color de interés: ${color.name} (${colorStatusLabel(color)}). `
-    : "";
+  if (variant) {
+    const configuration = [
+      variant.storage,
+      variant.ram,
+      variant.color
+    ].filter(Boolean).join(" · ");
 
-  const message =
-    `Hola, me interesa este producto: ${product.name}. ` +
-    `Precio de referencia: ${price}. ` +
-    selectedColor +
-    `Enlace del artículo: ${productLink(product)}. ` +
-    "Quisiera confirmar disponibilidad, opciones de financiamiento y costo de entrega.";
+    if (configuration) {
+      parts.push(`Configuración seleccionada: ${configuration}.`);
+    }
 
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
+
+    const nio = formatNIO(variant.price_nio);
+    if (nio) parts.push(`Precio en córdobas: ${nio}.`);
+
+    parts.push(`Estado: ${colorStatusLabel(variant.availability)}.`);
+  } else {
+    parts.push(`Precio de referencia: ${formatUSD(product.price_usd)}.`);
+
+    if (fallbackColor) {
+      parts.push(
+        `Color de interés: ${fallbackColor.name} (${colorStatusLabel(fallbackColor.type)}).`
+      );
+    }
+  }
+
+  parts.push(`Enlace del artículo: ${productLink(product)}.`);
+  parts.push(
+    "Quisiera confirmar disponibilidad, condiciones de financiamiento y costo de entrega."
+  );
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(parts.join(" "))}`;
+}
+
+function startingPrice(product, field = "price_usd") {
+  const variants = getProductVariants(product);
+  if (!variants.length) return product[field];
+
+  const values = variants
+    .map(variant => variant[field])
+    .filter(value =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+    )
+    .map(Number);
+
+  return values.length ? Math.min(...values) : null;
 }
 
 function renderCard(product) {
   const specs = specsArray(product.specifications).slice(0, 3);
   const image = imageMarkup(product);
+  const variants = getProductVariants(product);
 
   const badge = product.featured
     ? '<span class="product-badge featured-badge">DESTACADO</span>'
     : "";
 
-  const availability = product.availability === "Agotado temporalmente"
-    ? '<span class="product-badge">CONSULTAR</span>'
-    : "";
+  const availability =
+    product.availability === "Agotado temporalmente"
+      ? '<span class="product-badge">CONSULTAR</span>'
+      : "";
 
-  const nio = formatNIO(product.price_nio);
+  const price = startingPrice(product, "price_usd");
+  const nioPrice = startingPrice(product, "price_nio");
+  const priceLabel = variants.length ? "Precio desde" : "Precio de referencia";
+  const nio = formatNIO(nioPrice);
 
   return `
     <article class="product-card">
@@ -306,9 +379,7 @@ function renderCard(product) {
       </div>
 
       <div class="product-card-content">
-        <div class="product-category">
-          ${escapeHtml(product.category || "Tecnología")}
-        </div>
+        <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
 
         <h3>${escapeHtml(product.name)}</h3>
 
@@ -331,31 +402,22 @@ function renderCard(product) {
 
         ${renderColorSummary(product)}
 
-        <div class="product-price-label">Precio de referencia</div>
-
-        <div class="product-price">
-          ${escapeHtml(formatUSD(product.price_usd))}
-        </div>
+        <div class="product-price-label">${priceLabel}</div>
+        <div class="product-price">${escapeHtml(formatUSD(price))}</div>
+        ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
 
         ${
-          nio
-            ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>`
-            : ""
+          variants.length
+            ? `<div class="product-financing">Elegí capacidad y color para ver el precio exacto.</div>`
+            : `<div class="product-financing">Financiamiento por crédito o tarjeta · Consultá condiciones</div>`
         }
 
-        <div class="product-financing">
-          Financiamiento por crédito o tarjeta · Consultá condiciones
-        </div>
-
         <div class="product-actions">
-          <a
+          <button
             class="buy-button"
-            href="${escapeHtml(whatsAppProductLink(product))}"
-            target="_blank"
-            rel="noopener"
-          >
-            Consultar / comprar <span aria-hidden="true">↗</span>
-          </a>
+            type="button"
+            data-details="${escapeHtml(product.id)}"
+          >Comprar / configurar <span aria-hidden="true">↗</span></button>
 
           <button
             class="detail-button"
@@ -375,7 +437,10 @@ function visibleProducts() {
   return products.filter(product => {
     const categoryMatches =
       selectedCategory === "all" ||
-      product.category === selectedCategory;
+      String(product.category || "").toLocaleLowerCase("es") ===
+        selectedCategory.toLocaleLowerCase("es");
+
+    const variants = getProductVariants(product);
 
     const searchableFields = [
       product.name,
@@ -384,6 +449,11 @@ function visibleProducts() {
       product.category,
       product.description,
       ...getProductColors(product).map(color => color.name),
+      ...variants.flatMap(variant => [
+        variant.storage,
+        variant.ram,
+        variant.color
+      ]),
       ...specsArray(product.specifications)
     ];
 
@@ -397,11 +467,10 @@ function renderProducts() {
   const list = visibleProducts();
 
   grid.innerHTML = list.map(renderCard).join("");
-
   emptyNode.classList.toggle("hidden", list.length > 0);
 
   statusNode.textContent = products.length
-    ? `${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}`
+    ? `${list.length} de ${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}`
     : "Todavía no hay productos publicados.";
 
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
@@ -412,9 +481,214 @@ function renderProducts() {
   });
 }
 
+function uniqueValues(variants, field) {
+  const seen = new Set();
+  const values = [];
+
+  variants.forEach(variant => {
+    const value = String(variant[field] || "").trim();
+    const key = value.toLocaleLowerCase("es");
+
+    if (value && !seen.has(key)) {
+      seen.add(key);
+      values.push(value);
+    }
+  });
+
+  return values;
+}
+
+/* Busca una combinación válida que respete, cuando pueda, las demás selecciones. */
+function chooseVariant(variants, current, field, value) {
+  const candidates = variants.filter(variant =>
+    String(variant[field] || "").trim() === String(value || "").trim()
+  );
+
+  if (!candidates.length) return current;
+
+  let best = candidates[0];
+  let bestScore = -1;
+
+  candidates.forEach(candidate => {
+    let score = 0;
+
+    ["storage", "ram", "color"].forEach(otherField => {
+      if (
+        otherField !== field &&
+        current[otherField] &&
+        candidate[otherField] === current[otherField]
+      ) {
+        score++;
+      }
+    });
+
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  });
+
+  return best;
+}
+
+function renderVariantButtonGroup(variants, selected, field, title) {
+  const values = uniqueValues(variants, field);
+  if (!values.length) return "";
+
+  if (field === "color") {
+    const buttons = values.map(value => {
+      const candidate = chooseVariant(variants, selected, field, value);
+      const isSelected = selected.color === value;
+      const swatch = validHex(candidate?.color_hex);
+      const status = colorStatusLabel(candidate?.availability);
+
+      return `
+        <button
+          type="button"
+          class="variant-choice color-choice ${isSelected ? "selected" : ""}"
+          data-variant-dimension="color"
+          data-variant-value="${escapeHtml(value)}"
+          aria-pressed="${isSelected ? "true" : "false"}"
+          title="${escapeHtml(`${value} · ${status}`)}"
+        >
+          <span class="variant-color-dot" style="background:${swatch}" aria-hidden="true"></span>
+          <span class="variant-color-name">${escapeHtml(value)}</span>
+          <small>${escapeHtml(status)}</small>
+        </button>
+      `;
+    }).join("");
+
+    return `
+      <section class="variant-option-group">
+        <h3>${title}</h3>
+        <div class="variant-choice-list color-choice-list">${buttons}</div>
+      </section>
+    `;
+  }
+
+  const buttons = values.map(value => {
+    const isSelected = selected[field] === value;
+
+    return `
+      <button
+        type="button"
+        class="variant-choice ${isSelected ? "selected" : ""}"
+        data-variant-dimension="${field}"
+        data-variant-value="${escapeHtml(value)}"
+        aria-pressed="${isSelected ? "true" : "false"}"
+      >${escapeHtml(value)}</button>
+    `;
+  }).join("");
+
+  return `
+    <section class="variant-option-group">
+      <h3>${title}</h3>
+      <div class="variant-choice-list">${buttons}</div>
+    </section>
+  `;
+}
+
+function renderVariantControls(product, variants, selected) {
+  const area = $("#variant-options-area");
+  if (!area || !selected) return;
+
+  const configuration = [
+    selected.storage,
+    selected.ram,
+    selected.color
+  ].filter(Boolean).join(" · ");
+
+  const usd = formatUSD(selected.price_usd);
+  const nio = formatNIO(selected.price_nio);
+  const status = colorStatusLabel(selected.availability);
+  const isOrder = selected.availability === "order";
+
+  area.innerHTML = `
+    <div class="variant-selector">
+      ${renderVariantButtonGroup(
+        variants, selected, "storage", "Capacidad de almacenamiento"
+      )}
+
+      ${renderVariantButtonGroup(variants, selected, "ram", "RAM")}
+
+      ${renderVariantButtonGroup(variants, selected, "color", "Color")}
+    </div>
+
+    <div class="variant-selected-summary">
+      <span>Configuración seleccionada</span>
+      <strong>${escapeHtml(configuration || "Configuración estándar")}</strong>
+      <span class="variant-status-badge ${isOrder ? "order" : "available"}">${status}</span>
+    </div>
+
+    <div class="variant-price-box">
+      <span>Precio de esta configuración</span>
+      <strong>${escapeHtml(usd)}</strong>
+      ${nio ? `<small>${escapeHtml(nio)}</small>` : ""}
+    </div>
+
+    <a
+      id="variant-whatsapp-link"
+      class="button button-primary variant-whatsapp-button"
+      href="${escapeHtml(buildWhatsAppLink(product, selected))}"
+      target="_blank"
+      rel="noopener"
+    >Consultar esta configuración por WhatsApp ↗</a>
+  `;
+
+  const dialogImage = $("#dialog-image");
+
+  if (dialogImage) {
+    const chosenImage = selected.image_url || getProductImages(product)[0] || "";
+
+    dialogImage.innerHTML = chosenImage
+      ? `<img id="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" onerror="this.remove()">`
+      : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
+  }
+}
+
+function renderLegacyColorOptions(product) {
+  const colors = getProductColors(product);
+  if (!colors.length) return "";
+
+  return `
+    <section class="dialog-colors" aria-labelledby="dialog-colors-title">
+      <h3 id="dialog-colors-title">Colores disponibles y por pedido</h3>
+
+      <div class="dialog-color-grid">
+        ${colors.map(color => `
+          <article class="dialog-color-card">
+            <div class="dialog-color-image">
+              ${
+                color.image_url
+                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy">`
+                  : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
+              }
+            </div>
+
+            <div class="dialog-color-info">
+              <strong>${escapeHtml(color.name)}</strong>
+
+              <span class="color-availability ${color.type === "order" ? "order" : "available"}">
+                ${escapeHtml(colorStatusLabel(color.type))}
+              </span>
+
+              <a
+                href="${escapeHtml(buildWhatsAppLink(product, null, color))}"
+                target="_blank"
+                rel="noopener"
+              >Consultar este color ↗</a>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function openProduct(product) {
-  const image = getProductImages(product)[0] || "";
+  const variants = getProductVariants(product);
   const specs = specsArray(product.specifications);
+  const initialImage = getProductImages(product)[0] || "";
 
   const warranty =
     product.warranty_months !== null &&
@@ -427,40 +701,37 @@ function openProduct(product) {
 
   dialogContent.innerHTML = `
     <div class="dialog-layout">
-      <div class="dialog-image">
+      <div class="dialog-image" id="dialog-image">
         ${
-          image
-            ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}">`
-            : `<div class="photo-placeholder">
-                 <span class="placeholder-icon">▧</span>
-                 <span>Foto por agregar</span>
-               </div>`
+          initialImage
+            ? `<img id="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}">`
+            : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`
         }
       </div>
 
       <div class="dialog-detail">
-        <div class="product-category">
-          ${escapeHtml(product.category || "Tecnología")}
-        </div>
+        <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
 
         <h2>${escapeHtml(product.name)}</h2>
 
         <p>
-          ${escapeHtml(
-            product.description ||
-            "Consultá disponibilidad y características."
-          )}
+          ${escapeHtml(product.description || "Consultá disponibilidad y características.")}
         </p>
 
-        <div class="product-price-label">Precio de referencia</div>
+        ${
+          variants.length
+            ? `<p class="variant-intro">Seleccioná la capacidad, RAM y color. El precio cambiará según la configuración registrada.</p>
+               <div id="variant-options-area"></div>`
+            : `<div class="product-price-label">Precio de referencia</div>
+               <div class="product-price">${escapeHtml(formatUSD(product.price_usd))}</div>
+               ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
+               ${renderLegacyColorOptions(product)}
+               <a class="button button-primary" href="${escapeHtml(buildWhatsAppLink(product))}" target="_blank" rel="noopener">
+                 Consultar por WhatsApp ↗
+               </a>`
+        }
 
-        <div class="product-price">
-          ${escapeHtml(formatUSD(product.price_usd))}
-        </div>
-
-        ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
         ${warranty}
-        ${renderColorOptions(product)}
 
         <h3>Especificaciones</h3>
 
@@ -485,21 +756,39 @@ function openProduct(product) {
           Centro de Managua gratis. Fuera del centro, costo según kilometraje.
           Departamentos por CargoTrans, con costo según destino.
         </p>
-
-        <a
-          class="button button-primary"
-          href="${escapeHtml(whatsAppProductLink(product))}"
-          target="_blank"
-          rel="noopener"
-        >
-          Consultar por WhatsApp ↗
-        </a>
       </div>
     </div>
   `;
 
+  if (variants.length) {
+    let selectedVariant =
+      variants.find(variant => variant.availability === "available") ||
+      variants[0];
+
+    const variantArea = $("#variant-options-area");
+
+    renderVariantControls(product, variants, selectedVariant);
+
+    variantArea?.addEventListener("click", event => {
+      const button = event.target.closest("[data-variant-dimension]");
+      if (!button) return;
+
+      const field = button.dataset.variantDimension;
+      const value = button.dataset.variantValue;
+
+      selectedVariant = chooseVariant(
+        variants,
+        selectedVariant,
+        field,
+        value
+      );
+
+      renderVariantControls(product, variants, selectedVariant);
+    });
+  }
+
   if (typeof dialog.showModal === "function") {
-    dialog.showModal();
+    if (!dialog.open) dialog.showModal();
   } else {
     dialog.setAttribute("open", "open");
   }
@@ -507,26 +796,18 @@ function openProduct(product) {
 
 grid.addEventListener("click", event => {
   const button = event.target.closest("[data-details]");
-
-  if (!button) {
-    return;
-  }
+  if (!button) return;
 
   const product = products.find(
     item => String(item.id) === button.dataset.details
   );
 
-  if (product) {
-    openProduct(product);
-  }
+  if (product) openProduct(product);
 });
 
 categoryFilters.addEventListener("click", event => {
   const button = event.target.closest("[data-category]");
-
-  if (!button) {
-    return;
-  }
+  if (!button) return;
 
   selectedCategory = button.dataset.category;
   renderProducts();
@@ -539,9 +820,7 @@ document.querySelector("#dialog-close").addEventListener("click", () => {
 });
 
 dialog.addEventListener("click", event => {
-  if (event.target === dialog) {
-    dialog.close();
-  }
+  if (event.target === dialog) dialog.close();
 });
 
 async function initializeCatalog() {
@@ -560,9 +839,7 @@ async function initializeCatalog() {
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     products = data || [];
     renderProducts();
@@ -573,9 +850,7 @@ async function initializeCatalog() {
       const id = decodeURIComponent(match[1]);
       const product = products.find(item => String(item.id) === id);
 
-      if (product) {
-        openProduct(product);
-      }
+      if (product) openProduct(product);
     }
   } catch (error) {
     statusNode.textContent =
