@@ -4,22 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Administración | Catálogo de Tecnología</title>
+  <title>CT Administración | Catálogo de Tecnología</title>
 
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme-ui.css">
+
   <script src="config.js"></script>
   <script type="module" src="admin.js"></script>
+  <script src="ui.js" defer></script>
 </head>
 
 <body class="admin-body">
   <header class="site-header admin-header">
     <a class="brand" href="./">
       <span class="brand-mark">CT</span>
-      <span>Catálogo de Tecnología</span>
+      <span>CT Administración</span>
     </a>
 
     <a href="./" class="back-link">← Ver catálogo público</a>
@@ -27,7 +31,18 @@
 
   <main class="admin-main">
     <section id="login-panel" class="login-panel">
-      <p class="eyebrow">ÁREA PRIVADA</p>
+      <div class="admin-login-visual">
+        <img
+          src="img/admin-panel.png"
+          alt="Vista ilustrativa de un espacio de administración de inventario"
+        >
+        <div class="admin-login-visual-label">
+          <span class="admin-online-dot"></span>
+          <span>Tu negocio, bajo control</span>
+        </div>
+      </div>
+
+      <p class="eyebrow">ÁREA PRIVADA · CT ADMIN</p>
       <h1>Administrá tu catálogo.</h1>
 
       <p class="section-subtitle">
@@ -74,9 +89,9 @@
       <div class="dashboard-top">
         <div>
           <p class="eyebrow">PANEL PRIVADO</p>
-          <h1>Inventario del catálogo</h1>
+          <h1 id="admin-greeting">¡Bienvenido de nuevo!</h1>
           <p class="section-subtitle">
-            Agregá nuevos artículos, editá precios y publicá o desactivá productos.
+            Agregá productos, administrá variantes y actualizá sus precios.
           </p>
         </div>
 
@@ -86,6 +101,31 @@
       </div>
 
       <div id="admin-status" class="admin-alert" role="status"></div>
+
+      <section class="admin-welcome" aria-label="Resumen del panel">
+        <div class="admin-welcome-copy">
+          <p class="admin-welcome-kicker">CENTRO DE CONTROL</p>
+          <h2>Tu inventario, <span>en orden.</span></h2>
+          <p>
+            Actualizá productos, administrá configuraciones y mantené tu
+            catálogo listo para tus clientes.
+          </p>
+
+          <div class="admin-welcome-tags">
+            <span>✦ Productos</span>
+            <span>◉ Variantes</span>
+            <span>↗ Publicación</span>
+          </div>
+        </div>
+
+        <div class="admin-welcome-image">
+          <img
+            src="img/admin-panel.png"
+            alt="Ilustración de un panel de inventario tecnológico"
+          >
+          <span class="admin-image-badge">CT · INVENTARIO</span>
+        </div>
+      </section>
 
       <div class="admin-layout">
         <section class="admin-card product-editor">
@@ -111,13 +151,13 @@
                   id="product-name"
                   required
                   maxlength="160"
-                  placeholder="Ej. Samsung Smart TV 55 pulgadas"
+                  placeholder="Ej. iPhone 18 Pro Max"
                 >
               </label>
 
               <label>
                 Marca
-                <input id="product-brand" maxlength="80" placeholder="Samsung">
+                <input id="product-brand" maxlength="80" placeholder="Apple">
               </label>
 
               <label>
@@ -140,7 +180,7 @@
               </label>
 
               <label>
-                Disponibilidad
+                Disponibilidad general
                 <select id="product-availability">
                   <option value="Consultar disponibilidad">Consultar disponibilidad</option>
                   <option value="Disponible según confirmación">Disponible según confirmación</option>
@@ -149,24 +189,24 @@
               </label>
 
               <label>
-                Precio de referencia (US$) (opcional)
+                Precio base en dólares (opcional)
                 <input
                   id="product-price-usd"
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Dejar vacío para mostrar Consultar"
+                  placeholder="Se puede dejar vacío"
                 >
               </label>
 
               <label>
-                Precio en córdobas (opcional)
+                Precio base en córdobas (opcional)
                 <input
                   id="product-price-nio"
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Ingresá precio confirmado"
+                  placeholder="Se puede dejar vacío"
                 >
               </label>
 
@@ -178,7 +218,7 @@
                   min="0"
                   max="120"
                   step="1"
-                  placeholder="Dejar vacío si no se confirmó"
+                  placeholder="Si se confirmó"
                 >
               </label>
 
@@ -188,21 +228,21 @@
                   id="product-description"
                   rows="3"
                   maxlength="500"
-                  placeholder="Descripción clara, sin características no verificadas."
+                  placeholder="Descripción del producto."
                 ></textarea>
               </label>
 
               <label class="span-2">
-                Especificaciones (una por línea, formato Nombre: valor)
+                Especificaciones generales (una por línea: Nombre: valor)
                 <textarea
                   id="product-specs"
                   rows="5"
-                  placeholder="Pantalla: 55 pulgadas&#10;Resolución: 4K UHD&#10;Conectividad: Wi-Fi"
+                  placeholder="Pantalla: ...&#10;Conectividad: ...&#10;Sistema: ..."
                 ></textarea>
               </label>
 
               <label class="span-2">
-                Fotografías del producto
+                Fotografías generales del producto
                 <input
                   id="product-images"
                   type="file"
@@ -210,12 +250,12 @@
                   multiple
                 >
                 <small>
-                  Podés subir varias imágenes. Máximo recomendado: 8 MB por imagen.
+                  Máximo recomendado: 8 MB por fotografía.
                 </small>
               </label>
 
               <label class="span-2">
-                URLs de fotos existentes (una por línea)
+                URLs de fotografías existentes (una por línea)
                 <textarea
                   id="existing-image-urls"
                   rows="2"
@@ -224,28 +264,36 @@
               </label>
 
               <section
-                class="span-2 colors-editor-section"
-                aria-labelledby="colors-editor-title"
+                class="span-2 variants-editor-section"
+                aria-labelledby="variants-editor-title"
               >
-                <div class="colors-editor-heading">
+                <div class="variants-editor-heading">
                   <div>
-                    <h3 id="colors-editor-title">Colores del producto</h3>
+                    <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
                     <p>
-                      Agregá los colores disponibles o los que se consiguen por pedido.
-                      Cada color puede tener una foto propia.
+                      Agregá cada combinación de capacidad, RAM y color.
+                      Cada una puede tener su propio precio, estado y fotografía.
+                      El producto aparecerá una sola vez en el catálogo.
                     </p>
                   </div>
 
                   <button
-                    id="add-color-button"
+                    id="add-variant-button"
                     class="button button-outline"
                     type="button"
-                  >+ Agregar color</button>
+                  >+ Agregar variante</button>
                 </div>
 
-                <div id="product-colors-list" class="product-colors-list">
-                  <p class="colors-empty-hint">
-                    Todavía no agregaste colores a este producto.
+                <div class="variant-palette-note">
+                  <span aria-hidden="true">◉</span>
+                  Elegí un color de la paleta o personalizá su nombre y tono.
+                  Podés indicar si esa combinación está disponible o es por pedido.
+                </div>
+
+                <div id="product-variants-list" class="product-variants-list">
+                  <p class="variants-empty-hint">
+                    Todavía no agregaste variantes. El producto puede guardarse
+                    sin variantes y completarse después.
                   </p>
                 </div>
               </section>
@@ -260,7 +308,7 @@
                 <textarea
                   id="product-shipping"
                   rows="2"
-                  placeholder="Se muestran las condiciones generales del catálogo."
+                  placeholder="Condiciones particulares de entrega (opcional)."
                 ></textarea>
               </label>
 
@@ -311,13 +359,57 @@
         </section>
       </div>
 
+      <section class="admin-card team-preview-card" aria-labelledby="team-preview-title">
+        <div class="team-preview-heading">
+          <div>
+            <p class="eyebrow">CRECER CON TU NEGOCIO</p>
+            <h2 id="team-preview-title">Equipo y permisos</h2>
+            <p>Preparado para cuando quieras sumar empleados a tu operación.</p>
+          </div>
+
+          <span class="team-preview-status">SIGUIENTE ETAPA</span>
+        </div>
+
+        <div class="team-role-grid">
+          <article class="team-role-card owner-role">
+            <span class="team-role-icon">♛</span>
+            <h3>Propietario</h3>
+            <p>Control total del catálogo y del equipo.</p>
+          </article>
+
+          <article class="team-role-card admin-role">
+            <span class="team-role-icon">✦</span>
+            <h3>Administrador</h3>
+            <p>Gestiona productos y publicaciones.</p>
+          </article>
+
+          <article class="team-role-card editor-role">
+            <span class="team-role-icon">✎</span>
+            <h3>Editor</h3>
+            <p>Prepara y edita fichas de productos.</p>
+          </article>
+
+          <article class="team-role-card viewer-role">
+            <span class="team-role-icon">◉</span>
+            <h3>Consulta</h3>
+            <p>Revisa el inventario sin modificarlo.</p>
+          </article>
+        </div>
+
+        <p class="team-security-note">
+          <strong>La invitación por correo aún no está activa.</strong>
+          Antes de habilitar empleados configuraremos permisos y autorización
+          en Supabase.
+        </p>
+      </section>
+
       <section class="admin-card import-card">
         <div>
           <h2>Carga inicial desde JSON</h2>
           <p>
             Importá <code>catalogo-inicial.json</code> para precargar productos
-            como borradores. No se publican automáticamente y debés revisar los
-            modelos, precios, garantías y fotos antes de activarlos.
+            como borradores. Revisá modelos, precios, variantes y fotografías
+            antes de publicarlos.
           </p>
         </div>
 
