@@ -1,13 +1,36 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const CONFIG = window.CATALOG_CONFIG || {};
-const configured = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+/* =========================================================
+   CT ADMINISTRACIÓN
+   Sesión temporal por pestaña + inventario + variantes
+   ========================================================= */
 
+const CONFIG = window.CATALOG_CONFIG || {};
+
+const configured = Boolean(
+  CONFIG.supabaseUrl &&
+  CONFIG.supabaseAnonKey &&
+  !String(CONFIG.supabaseUrl).includes("PON_AQUI") &&
+  !String(CONFIG.supabaseAnonKey).includes("PON_AQUI")
+);
+
+/*
+  sessionStorage conserva la sesión durante la vida de la pestaña.
+  Al cerrar la pestaña, el almacenamiento de esa sesión desaparece.
+*/
 const supabase = configured
-  ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey)
+  ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
+      auth: {
+        storage: window.sessionStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
   : null;
 
 const $ = selector => document.querySelector(selector);
+
 const loginPanel = $("#login-panel");
 const dashboard = $("#dashboard");
 const form = $("#product-form");
@@ -34,6 +57,10 @@ const COLOR_PALETTE = [
   { name: "Amarillo", hex: "#E8C94B" }
 ];
 
+/* =========================================================
+   UTILIDADES GENERALES
+   ========================================================= */
+
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, character => ({
     "&": "&amp;",
@@ -45,7 +72,10 @@ function escapeHtml(value = "") {
 }
 
 function message(selector, text, type = "") {
-  const node = typeof selector === "string" ? $(selector) : selector;
+  const node = typeof selector === "string"
+    ? $(selector)
+    : selector;
+
   if (!node) return;
 
   node.textContent = text;
@@ -57,9 +87,11 @@ function setStatus(text, type = "") {
   if (!node) return;
 
   node.textContent = text;
+
   node.style.color =
     type === "error" ? "#b42318" :
-    type === "success" ? "#087f5b" : "";
+    type === "success" ? "#087f5b" :
+    "";
 }
 
 function slugify(value) {
@@ -73,7 +105,9 @@ function slugify(value) {
 }
 
 function parseJSON(value, fallback) {
-  if (typeof value !== "string") return value ?? fallback;
+  if (typeof value !== "string") {
+    return value ?? fallback;
+  }
 
   try {
     return JSON.parse(value);
@@ -82,13 +116,41 @@ function parseJSON(value, fallback) {
   }
 }
 
-/* Valores compatibles con la restricción de public.products.availability. */
+function validHex(value, fallback = "#315A91") {
+  return /^#[0-9a-fA-F]{6}$/.test(String(value || ""))
+    ? value
+    : fallback;
+}
+
+function toOptionalNumber(value, label) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number) || number < 0) {
+    throw new Error(
+      `${label} debe ser un número igual o mayor que cero.`
+    );
+  }
+
+  return number;
+}
+
+/*
+  Valores válidos para public.products.availability:
+  available, on_order, out_of_stock.
+*/
 function normalizeProductAvailability(value) {
   const normalized = String(value || "")
     .trim()
     .toLocaleLowerCase("es");
 
-  if (["out_of_stock", "agotado temporalmente", "agotado"].includes(normalized)) {
+  if (
+    ["out_of_stock", "agotado temporalmente", "agotado"]
+      .includes(normalized)
+  ) {
     return "out_of_stock";
   }
 
@@ -99,21 +161,130 @@ function normalizeProductAvailability(value) {
   return "available";
 }
 
-function toOptionalNumber(value, label) {
-  if (value === "" || value === null || value === undefined) return null;
+function normalizeVariantAvailability(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLocaleLowerCase("es");
 
-  const number = Number(value);
+  return ["order", "on_order", "por pedido"].includes(normalized)
+    ? "order"
+    : "available";
+}
 
-  if (!Number.isFinite(number) || number < 0) {
-    throw new Error(`${label} debe ser un número igual o mayor que cero.`);
+/* =========================================================
+   SESIÓN: ALMACENAMIENTO TEMPORAL POR PESTAÑA
+   ========================================================= */
+
+/*
+  Supabase utiliza por defecto una clave parecida a:
+  sb-<project-ref>-auth-token
+
+  Eliminamos una posible sesión antigua almacenada en localStorage
+  por una versión anterior del panel.
+*/
+
+function authStorageKey() {
+  try {
+    const projectRef = new URL(CONFIG.supabaseUrl)
+      .hostname
+      .split(".")[0];
+
+    return `sb-${projectRef}-auth-token`;
+  } catch {
+    return null;
+  }
+}
+
+function clearLegacyPersistentAuth() {
+  try {
+    const key = authStorageKey();
+
+    if (key) {
+      window.localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn(
+      "No se pudo limpiar una sesión persistente anterior.",
+      error
+    );
+  }
+}
+
+/* No ejecuta nada si Supabase no está configurado. */
+clearLegacyPersistentAuth();
+
+function clearLocalAuthStorage() {
+  try {
+    const key = authStorageKey();
+
+    if (key) {
+      window.sessionStorage.removeItem(key);
+      window.localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn(
+      "No se pudo limpiar el almacenamiento local de sesión.",
+      error
+    );
+  }
+}
+
+async function signOutLocalSafely() {
+  try {
+    if (supabase) {
+      const { error } = await supabase.auth.signOut({
+        scope: "local"
+      });
+
+      if (error) {
+        console.warn(
+          "Supabase no confirmó el cierre de sesión local.",
+          error.message
+        );
+      }
+    }
+  } catch (error) {
+    console.warn(
+      "No se pudo completar el cierre de sesión.",
+      error
+    );
+  } finally {
+    clearLocalAuthStorage();
+  }
+}
+
+function clearLoginPassword() {
+  const password = $("#login-password");
+
+  if (password) {
+    password.value = "";
+    password.setCustomValidity("");
+  }
+}
+
+function showLoginScreen(statusText = "", type = "") {
+  currentUser = null;
+  products = [];
+
+  dashboard.classList.add("hidden");
+  loginPanel.classList.remove("hidden");
+
+  if (form) {
+    form.reset();
   }
 
-  return number;
+  clearEditor();
+
+  $("#login-email").value = "";
+  clearLoginPassword();
+
+  setStatus("");
+  message("#login-status", statusText, type);
 }
 
-function validHex(value, fallback = "#315A91") {
-  return /^#[0-9a-fA-F]{6}$/.test(String(value || "")) ? value : fallback;
-}
+/* =========================================================
+   ESPECIFICACIONES E IMÁGENES
+   ========================================================= */
 
 function parseSpecs(text) {
   const result = {};
@@ -141,7 +312,9 @@ function specsText(specs) {
 
   if (Array.isArray(specs)) {
     return specs.map(item => {
-      if (typeof item === "string") return item;
+      if (typeof item === "string") {
+        return item;
+      }
 
       if (item && typeof item === "object") {
         return `${item.label || item.name || "Dato"}: ${item.value || ""}`;
@@ -165,42 +338,21 @@ function getImages(product) {
   const list = Array.isArray(images) ? images : [];
 
   return [...list, product?.image_url]
-    .filter(value => typeof value === "string" && value.trim());
+    .filter(value =>
+      typeof value === "string" && value.trim()
+    );
 }
 
-function normalizeVariants(value) {
-  const variants = parseJSON(value, []);
-  if (!Array.isArray(variants)) return [];
-
-  return variants.map(item => {
-    if (!item || typeof item !== "object") return null;
-
-    const usd =
-      item.price_usd === "" || item.price_usd === undefined || item.price_usd === null
-        ? null
-        : Number(item.price_usd);
-
-    const nio =
-      item.price_nio === "" || item.price_nio === undefined || item.price_nio === null
-        ? null
-        : Number(item.price_nio);
-
-    return {
-      storage: String(item.storage || item.capacity || "").trim(),
-      ram: String(item.ram || "").trim(),
-      color: String(item.color || item.name || "").trim(),
-      color_hex: validHex(item.color_hex || item.hex),
-      price_usd: Number.isFinite(usd) ? usd : null,
-      price_nio: Number.isFinite(nio) ? nio : null,
-      availability: item.availability === "order" ? "order" : "available",
-      image_url: String(item.image_url || item.imageUrl || "").trim()
-    };
-  }).filter(item => item && (item.storage || item.ram || item.color));
-}
+/* =========================================================
+   COLORES Y VARIANTES
+   ========================================================= */
 
 function normalizeColors(value) {
   const colors = parseJSON(value, []);
-  if (!Array.isArray(colors)) return [];
+
+  if (!Array.isArray(colors)) {
+    return [];
+  }
 
   return colors.map(item => {
     if (typeof item === "string") {
@@ -212,20 +364,87 @@ function normalizeColors(value) {
       };
     }
 
-    if (!item || typeof item !== "object") return null;
+    if (!item || typeof item !== "object") {
+      return null;
+    }
 
     return {
       name: String(item.name || item.color || "").trim(),
-      type: item.type === "order" ? "order" : "available",
-      image_url: String(item.image_url || item.imageUrl || "").trim(),
+      type: normalizeVariantAvailability(item.type),
+      image_url: String(
+        item.image_url || item.imageUrl || ""
+      ).trim(),
       color_hex: validHex(item.color_hex || item.hex)
     };
   }).filter(item => item && item.name);
 }
 
+function normalizeVariants(value) {
+  const variants = parseJSON(value, []);
+
+  if (!Array.isArray(variants)) {
+    return [];
+  }
+
+  return variants.map(item => {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+
+    const usd =
+      item.price_usd === "" ||
+      item.price_usd === undefined ||
+      item.price_usd === null
+        ? null
+        : Number(item.price_usd);
+
+    const nio =
+      item.price_nio === "" ||
+      item.price_nio === undefined ||
+      item.price_nio === null
+        ? null
+        : Number(item.price_nio);
+
+    return {
+      storage: String(
+        item.storage || item.capacity || ""
+      ).trim(),
+
+      ram: String(item.ram || "").trim(),
+
+      color: String(
+        item.color || item.name || ""
+      ).trim(),
+
+      color_hex: validHex(item.color_hex || item.hex),
+
+      price_usd: Number.isFinite(usd) ? usd : null,
+      price_nio: Number.isFinite(nio) ? nio : null,
+
+      availability: normalizeVariantAvailability(
+        item.availability
+      ),
+
+      image_url: String(
+        item.image_url || item.imageUrl || ""
+      ).trim()
+    };
+  }).filter(item =>
+    item &&
+    (item.storage || item.ram || item.color)
+  );
+}
+
+/*
+  Compatibilidad: si un producto antiguo tiene colores, pero no
+  tiene variantes, los mostramos en el editor para no perderlos.
+*/
 function legacyVariants(product) {
-  const current = normalizeVariants(product?.variants);
-  if (current.length) return current;
+  const variants = normalizeVariants(product?.variants);
+
+  if (variants.length) {
+    return variants;
+  }
 
   return normalizeColors(product?.colors).map(color => ({
     storage: "",
@@ -234,7 +453,7 @@ function legacyVariants(product) {
     color_hex: color.color_hex,
     price_usd: product?.price_usd ?? null,
     price_nio: product?.price_nio ?? null,
-    availability: color.type === "order" ? "order" : "available",
+    availability: color.type,
     image_url: color.image_url
   }));
 }
@@ -243,115 +462,172 @@ function colorPaletteOptions(variant) {
   const match = COLOR_PALETTE.find(item =>
     item.name.toLocaleLowerCase("es") ===
       String(variant.color || "").toLocaleLowerCase("es") &&
-    item.hex.toLowerCase() === validHex(variant.color_hex).toLowerCase()
+    item.hex.toLowerCase() ===
+      validHex(variant.color_hex).toLowerCase()
   );
 
-  const selectedValue = !variant.color ? "" : match ? match.hex : "custom";
+  const selectedValue = !variant.color
+    ? ""
+    : match
+      ? match.hex
+      : "custom";
 
   return `
     <option value="" ${selectedValue === "" ? "selected" : ""}>
       Seleccioná un color de la paleta…
     </option>
+
     ${COLOR_PALETTE.map(item => `
-      <option value="${item.hex}" ${selectedValue === item.hex ? "selected" : ""}>
-        ${escapeHtml(item.name)}
-      </option>
+      <option
+        value="${item.hex}"
+        ${selectedValue === item.hex ? "selected" : ""}
+      >${escapeHtml(item.name)}</option>
     `).join("")}
-    <option value="custom" ${selectedValue === "custom" ? "selected" : ""}>
-      Color personalizado
-    </option>
+
+    <option
+      value="custom"
+      ${selectedValue === "custom" ? "selected" : ""}
+    >Color personalizado</option>
   `;
 }
 
 function variantRowMarkup(variant = {}) {
-  const v = {
+  const value = {
     storage: String(variant.storage || "").trim(),
     ram: String(variant.ram || "").trim(),
     color: String(variant.color || "").trim(),
     color_hex: validHex(variant.color_hex || variant.hex),
     price_usd: variant.price_usd ?? "",
     price_nio: variant.price_nio ?? "",
-    availability: variant.availability === "order" ? "order" : "available",
+    availability: normalizeVariantAvailability(variant.availability),
     image_url: String(variant.image_url || "").trim()
   };
 
   return `
     <article class="variant-admin-row" data-variant-row>
       <div class="variant-row-title">
-        <strong data-variant-row-heading>Configuración del producto</strong>
-        <button class="admin-mini-button danger"
-                type="button"
-                data-remove-variant>Quitar variante</button>
+        <strong data-variant-row-heading>
+          Configuración del producto
+        </strong>
+
+        <button
+          class="admin-mini-button danger"
+          type="button"
+          data-remove-variant
+        >Quitar variante</button>
       </div>
 
       <div class="variant-fields-grid">
         <label>
           Almacenamiento / capacidad
-          <input data-variant-storage maxlength="40"
-                 value="${escapeHtml(v.storage)}" placeholder="Ej. 512 GB">
+          <input
+            data-variant-storage
+            maxlength="40"
+            value="${escapeHtml(value.storage)}"
+            placeholder="Ej. 512 GB"
+          >
         </label>
 
         <label>
           Memoria RAM
-          <input data-variant-ram maxlength="40"
-                 value="${escapeHtml(v.ram)}" placeholder="Ej. 12 GB">
+          <input
+            data-variant-ram
+            maxlength="40"
+            value="${escapeHtml(value.ram)}"
+            placeholder="Ej. 12 GB"
+          >
         </label>
 
         <label>
           Paleta de colores
-          <select data-variant-palette>${colorPaletteOptions(v)}</select>
+          <select data-variant-palette>
+            ${colorPaletteOptions(value)}
+          </select>
         </label>
 
         <label>
           Nombre del color *
-          <input data-variant-color maxlength="60" required
-                 value="${escapeHtml(v.color)}" placeholder="Ej. Azul titanio">
+          <input
+            data-variant-color
+            maxlength="60"
+            required
+            value="${escapeHtml(value.color)}"
+            placeholder="Ej. Azul titanio"
+          >
         </label>
 
         <label class="variant-hex-label">
           Tono del color
           <span class="variant-hex-control">
-            <input data-variant-hex type="color"
-                   value="${v.color_hex}" aria-label="Elegir tono del color">
+            <input
+              data-variant-hex
+              type="color"
+              value="${value.color_hex}"
+              aria-label="Elegir tono del color"
+            >
             <small>Podés ajustar el tono visualmente.</small>
           </span>
         </label>
 
         <label>
           Precio en dólares (opcional)
-          <input data-variant-price-usd type="number" min="0" step="0.01"
-                 value="${escapeHtml(v.price_usd)}" placeholder="Ej. 999">
+          <input
+            data-variant-price-usd
+            type="number"
+            min="0"
+            step="0.01"
+            value="${escapeHtml(value.price_usd)}"
+            placeholder="Ej. 999"
+          >
         </label>
 
         <label>
           Precio en córdobas (opcional)
-          <input data-variant-price-nio type="number" min="0" step="0.01"
-                 value="${escapeHtml(v.price_nio)}" placeholder="Ej. 36600">
+          <input
+            data-variant-price-nio
+            type="number"
+            min="0"
+            step="0.01"
+            value="${escapeHtml(value.price_nio)}"
+            placeholder="Ej. 36600"
+          >
         </label>
 
         <label>
           Estado de esta combinación
           <select data-variant-availability>
-            <option value="available" ${v.availability === "available" ? "selected" : ""}>
-              Disponible
-            </option>
-            <option value="order" ${v.availability === "order" ? "selected" : ""}>
-              Por pedido
-            </option>
+            <option
+              value="available"
+              ${value.availability === "available" ? "selected" : ""}
+            >Disponible</option>
+
+            <option
+              value="order"
+              ${value.availability === "order" ? "selected" : ""}
+            >Por pedido</option>
           </select>
         </label>
 
         <label class="variant-image-label">
           Foto del color (opcional)
-          <input data-variant-image type="file"
-                 accept="image/jpeg,image/png,image/webp,image/avif">
-          <small>Podés reutilizar la foto de ese color en otras capacidades.</small>
+          <input
+            data-variant-image
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+          >
+          <small>
+            Podés reutilizar la foto de ese color en otras capacidades.
+          </small>
         </label>
 
         <label class="variant-image-url-label">
           URL de foto existente (opcional)
-          <input data-variant-image-url type="url"
-                 value="${escapeHtml(v.image_url)}" placeholder="https://...">
+          <input
+            data-variant-image-url
+            type="url"
+            value="${escapeHtml(value.image_url)}"
+            placeholder="https://..."
+          >
         </label>
       </div>
 
@@ -362,43 +638,72 @@ function variantRowMarkup(variant = {}) {
 
 function renderVariantRows(variants = []) {
   const container = $("#product-variants-list");
-  if (!container) return;
+
+  if (!container) {
+    return;
+  }
 
   const normalized = normalizeVariants(variants);
 
   if (!normalized.length) {
     container.innerHTML = `
       <p class="variants-empty-hint">
-        Todavía no agregaste variantes. Podés guardar el producto sin variantes
-        y agregarlas después.
+        Todavía no agregaste variantes. Podés guardar el producto
+        sin variantes y agregarlas después.
       </p>
     `;
+
     return;
   }
 
-  container.innerHTML = normalized.map(variantRowMarkup).join("");
+  container.innerHTML = normalized
+    .map(variantRowMarkup)
+    .join("");
+
   updateVariantRowHeadings();
 }
 
 function addVariantRow(variant = {}) {
   const container = $("#product-variants-list");
-  if (!container) return;
+
+  if (!container) {
+    return;
+  }
 
   container.querySelector(".variants-empty-hint")?.remove();
-  container.insertAdjacentHTML("beforeend", variantRowMarkup(variant));
+
+  container.insertAdjacentHTML(
+    "beforeend",
+    variantRowMarkup(variant)
+  );
+
   updateVariantRowHeadings();
 
   const rows = container.querySelectorAll("[data-variant-row]");
-  rows.item(rows.length - 1)?.querySelector("[data-variant-storage]")?.focus();
+
+  rows.item(rows.length - 1)
+    ?.querySelector("[data-variant-storage]")
+    ?.focus();
 }
 
 function updateVariantRowHeadings() {
-  const rows = Array.from(document.querySelectorAll("[data-variant-row]"));
+  const rows = Array.from(
+    document.querySelectorAll("[data-variant-row]")
+  );
 
   rows.forEach((row, index) => {
-    const storage = row.querySelector("[data-variant-storage]")?.value.trim();
-    const ram = row.querySelector("[data-variant-ram]")?.value.trim();
-    const color = row.querySelector("[data-variant-color]")?.value.trim();
+    const storage = row
+      .querySelector("[data-variant-storage]")
+      ?.value.trim();
+
+    const ram = row
+      .querySelector("[data-variant-ram]")
+      ?.value.trim();
+
+    const color = row
+      .querySelector("[data-variant-color]")
+      ?.value.trim();
+
     const heading = row.querySelector("[data-variant-row-heading]");
 
     if (heading) {
@@ -411,11 +716,16 @@ function updateVariantRowHeadings() {
 
 const variantsContainer = $("#product-variants-list");
 
-$("#add-variant-button")?.addEventListener("click", () => addVariantRow());
+$("#add-variant-button")?.addEventListener("click", () => {
+  addVariantRow();
+});
 
 variantsContainer?.addEventListener("click", event => {
   const remove = event.target.closest("[data-remove-variant]");
-  if (!remove) return;
+
+  if (!remove) {
+    return;
+  }
 
   remove.closest("[data-variant-row]")?.remove();
 
@@ -428,36 +738,58 @@ variantsContainer?.addEventListener("click", event => {
 
 variantsContainer?.addEventListener("change", event => {
   const select = event.target.closest("[data-variant-palette]");
-  if (!select) return;
+
+  if (!select) {
+    return;
+  }
 
   const row = select.closest("[data-variant-row]");
-  if (!row || !select.value || select.value === "custom") return;
 
-  const color = COLOR_PALETTE.find(item => item.hex === select.value);
-  if (!color) return;
+  if (!row || !select.value || select.value === "custom") {
+    return;
+  }
+
+  const color = COLOR_PALETTE.find(
+    item => item.hex === select.value
+  );
+
+  if (!color) {
+    return;
+  }
 
   row.querySelector("[data-variant-color]").value = color.name;
   row.querySelector("[data-variant-hex]").value = color.hex;
+
   updateVariantRowHeadings();
 });
 
 variantsContainer?.addEventListener("input", event => {
   if (!event.target.matches(
     "[data-variant-color], [data-variant-storage], [data-variant-ram]"
-  )) return;
+  )) {
+    return;
+  }
 
   const row = event.target.closest("[data-variant-row]");
-  if (!row) return;
+
+  if (!row) {
+    return;
+  }
 
   if (event.target.matches("[data-variant-color]")) {
+    const colorName = event.target.value.trim();
+
     const matchingColor = COLOR_PALETTE.find(item =>
       item.name.toLocaleLowerCase("es") ===
-      event.target.value.trim().toLocaleLowerCase("es")
+      colorName.toLocaleLowerCase("es")
     );
 
     if (matchingColor) {
-      row.querySelector("[data-variant-hex]").value = matchingColor.hex;
-      row.querySelector("[data-variant-palette]").value = matchingColor.hex;
+      row.querySelector("[data-variant-hex]").value =
+        matchingColor.hex;
+
+      row.querySelector("[data-variant-palette]").value =
+        matchingColor.hex;
     } else {
       row.querySelector("[data-variant-palette]").value = "custom";
     }
@@ -466,63 +798,9 @@ variantsContainer?.addEventListener("input", event => {
   updateVariantRowHeadings();
 });
 
-/* ---------- AUTENTICACIÓN Y SESIÓN ---------- */
-
-function authStorageKey() {
-  try {
-    const projectRef = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
-    return `sb-${projectRef}-auth-token`;
-  } catch {
-    return null;
-  }
-}
-
-function clearLocalAuthStorage() {
-  try {
-    const key = authStorageKey();
-    if (key) localStorage.removeItem(key);
-  } catch (error) {
-    console.warn("No se pudo limpiar el almacenamiento local de sesión.", error);
-  }
-}
-
-async function signOutLocalSafely() {
-  try {
-    if (supabase) {
-      const { error } = await supabase.auth.signOut({ scope: "local" });
-      if (error) throw error;
-    }
-  } catch (error) {
-    console.warn("Supabase no confirmó el cierre de sesión local.", error);
-  } finally {
-    clearLocalAuthStorage();
-  }
-}
-
-function clearLoginPassword() {
-  const password = $("#login-password");
-  if (password) {
-    password.value = "";
-    password.setCustomValidity("");
-  }
-}
-
-function showLoginAfterLogout(statusText = "Sesión cerrada.") {
-  currentUser = null;
-  products = [];
-
-  dashboard.classList.add("hidden");
-  loginPanel.classList.remove("hidden");
-
-  form?.reset();
-  clearEditor();
-
-  $("#login-email").value = "";
-  clearLoginPassword();
-
-  setStatus("");
-  message("#login-status", statusText, "success");
-}
+/* =========================================================
+   AUTORIZACIÓN DE ADMINISTRADORES
+   ========================================================= */
 
 async function confirmAdmin(user) {
   if (!supabase || !user?.id) {
@@ -535,7 +813,9 @@ async function confirmAdmin(user) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   if (!data) {
     throw new Error(
@@ -550,18 +830,23 @@ async function showDashboard(user) {
   await confirmAdmin(user);
 
   currentUser = user;
+
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
 
   const metadata = user.user_metadata || {};
+
   const profileName =
     metadata.full_name ||
     metadata.name ||
     metadata.display_name ||
-    [metadata.first_name, metadata.last_name].filter(Boolean).join(" ");
+    [metadata.first_name, metadata.last_name]
+      .filter(Boolean)
+      .join(" ");
 
   const emailName = user.email
-    ? user.email.split("@")[0]
+    ? user.email
+        .split("@")[0]
         .replace(/[._+-]+/g, " ")
         .replace(/\d+/g, " ")
         .trim()
@@ -571,17 +856,23 @@ async function showDashboard(user) {
     .trim()
     .split(/\s+/)
     .filter(Boolean)
-    .map(part => part.charAt(0).toLocaleUpperCase("es") + part.slice(1))
+    .map(part =>
+      part.charAt(0).toLocaleUpperCase("es") + part.slice(1)
+    )
     .join(" ");
 
   const greeting = $("#admin-greeting");
+
   if (greeting) {
     greeting.textContent = displayName
       ? `¡Bienvenido de nuevo, ${displayName}! 👋`
       : "¡Bienvenido de nuevo! 👋";
   }
 
-  setStatus(`Sesión iniciada como ${user.email || "administrador"}`);
+  setStatus(
+    `Sesión iniciada como ${user.email || "administrador"}`
+  );
+
   await loadProducts();
 }
 
@@ -592,36 +883,60 @@ async function handleSession() {
       "Falta configurar la URL y la clave publicable de Supabase en config.js.",
       "error"
     );
+
     return;
   }
 
   const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
 
-  if (!data.session) return;
+  if (error) {
+    throw error;
+  }
+
+  if (!data.session) {
+    loginPanel.classList.remove("hidden");
+    dashboard.classList.add("hidden");
+    return;
+  }
 
   try {
     await showDashboard(data.session.user);
   } catch (error) {
     await signOutLocalSafely();
-    showLoginAfterLogout(
-      error.message || "La sesión no está autorizada."
+
+    showLoginScreen(
+      error.message ||
+      "La sesión no está autorizada para administrar este catálogo.",
+      "error"
     );
   }
 }
+
+/* =========================================================
+   INICIO Y CIERRE DE SESIÓN
+   ========================================================= */
 
 $("#login-form")?.addEventListener("submit", async event => {
   event.preventDefault();
 
   if (!supabase) {
-    message("#login-status", "Configurá primero Supabase en config.js.", "error");
+    message(
+      "#login-status",
+      "Configurá primero Supabase en config.js.",
+      "error"
+    );
+
     clearLoginPassword();
     return;
   }
 
-  const button = event.currentTarget.querySelector('button[type="submit"]');
+  const button = event.currentTarget.querySelector(
+    'button[type="submit"]'
+  );
+
   button.disabled = true;
   button.textContent = "Verificando…";
+
   message("#login-status", "Comprobando acceso…");
 
   try {
@@ -630,18 +945,31 @@ $("#login-form")?.addEventListener("submit", async event => {
       password: $("#login-password").value
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     await showDashboard(data.user);
-    message("#login-status", "Acceso autorizado.", "success");
+
+    message(
+      "#login-status",
+      "Acceso autorizado.",
+      "success"
+    );
   } catch (error) {
-    /* Si el acceso o la autorización fallan, no dejamos una sesión local. */
+    /*
+      Limpia cualquier sesión local si las credenciales fallan
+      o el usuario no está autorizado en admin_users.
+    */
     await signOutLocalSafely();
 
     dashboard.classList.add("hidden");
     loginPanel.classList.remove("hidden");
 
-    /* Conservamos el correo, borramos la contraseña incorrecta. */
+    /*
+      Conservamos el correo para que no tengás que escribirlo
+      nuevamente, pero borramos la contraseña incorrecta.
+    */
     clearLoginPassword();
 
     message(
@@ -659,35 +987,24 @@ $("#login-form")?.addEventListener("submit", async event => {
 
 $("#logout-button")?.addEventListener("click", async event => {
   const button = event.currentTarget;
+
   button.disabled = true;
   button.textContent = "Cerrando sesión…";
 
   await signOutLocalSafely();
-  showLoginAfterLogout("Sesión cerrada correctamente.");
+
+  showLoginScreen(
+    "Sesión cerrada correctamente.",
+    "success"
+  );
 
   button.disabled = false;
   button.textContent = "Cerrar sesión";
 });
 
-/* ---------- INVENTARIO ---------- */
-
-async function loadProducts() {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    setStatus(`No se pudo cargar el inventario: ${error.message}`, "error");
-    return;
-  }
-
-  products = data || [];
-  renderAdminList();
-
-  $("#product-count").textContent =
-    `${products.length} producto${products.length === 1 ? "" : "s"} en la base de datos`;
-}
+/* =========================================================
+   INVENTARIO: CONSULTAR Y LISTAR PRODUCTOS
+   ========================================================= */
 
 function minimumPrice(variants, field) {
   const values = variants
@@ -703,13 +1020,45 @@ function minimumPrice(variants, field) {
   return values.length ? Math.min(...values) : null;
 }
 
+async function loadProducts() {
+  if (!supabase || !currentUser) {
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    setStatus(
+      `No se pudo cargar el inventario: ${error.message}`,
+      "error"
+    );
+
+    return;
+  }
+
+  products = data || [];
+
+  renderAdminList();
+
+  $("#product-count").textContent =
+    `${products.length} producto${products.length === 1 ? "" : "s"} en la base de datos`;
+}
+
 function renderAdminList() {
   const query = ($("#admin-search")?.value || "")
     .trim()
     .toLocaleLowerCase("es");
 
   const matches = products.filter(product =>
-    [product.name, product.brand, product.model, product.category]
+    [
+      product.name,
+      product.brand,
+      product.model,
+      product.category
+    ]
       .join(" ")
       .toLocaleLowerCase("es")
       .includes(query)
@@ -719,45 +1068,63 @@ function renderAdminList() {
     const image = getImages(product)[0];
 
     const thumb = image
-      ? `<img class="admin-product-thumb" src="${escapeHtml(image)}" alt="" loading="lazy">`
-      : '<div class="admin-product-thumb admin-product-placeholder" aria-hidden="true">▧</div>';
+      ? `<img class="admin-product-thumb"
+              src="${escapeHtml(image)}"
+              alt=""
+              loading="lazy">`
+      : `<div class="admin-product-thumb"
+              style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
 
     const state = product.is_published
       ? '<span class="status-pill published">Publicado</span>'
       : '<span class="status-pill">Borrador</span>';
 
-    const variantCount = normalizeVariants(product.variants).length;
+    const variants = normalizeVariants(product.variants);
+
+    const variantCount = variants.length;
+
     const variantLabel = variantCount
       ? ` · ${variantCount} variante${variantCount === 1 ? "" : "s"}`
       : "";
 
-    const price = minimumPrice(normalizeVariants(product.variants), "price_usd")
+    const price = minimumPrice(variants, "price_usd")
       ?? product.price_usd;
 
     const formattedPrice =
       price === null || price === undefined || price === ""
         ? "Consultar"
-        : `US$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+        : `US$${Number(price).toLocaleString("en-US", {
+            maximumFractionDigits: 2
+          })}`;
 
     return `
       <article class="admin-product-row">
         ${thumb}
+
         <div>
-          <p class="admin-product-name">${escapeHtml(product.name)}</p>
+          <p class="admin-product-name">
+            ${escapeHtml(product.name)}
+          </p>
+
           <div class="admin-product-meta">
             ${escapeHtml(product.category || "Sin categoría")}
-            · ${escapeHtml(formattedPrice)}${variantLabel}
+            · ${escapeHtml(formattedPrice)}
+            ${variantLabel}
             · ${state}
           </div>
+
           <div class="admin-product-buttons">
-            <button class="admin-mini-button"
-                    type="button"
-                    data-edit="${escapeHtml(product.id)}">Editar</button>
-            <button class="admin-mini-button"
-                    type="button"
-                    data-toggle="${escapeHtml(product.id)}">
-              ${product.is_published ? "Despublicar" : "Publicar"}
-            </button>
+            <button
+              class="admin-mini-button"
+              type="button"
+              data-edit="${escapeHtml(product.id)}"
+            >Editar</button>
+
+            <button
+              class="admin-mini-button"
+              type="button"
+              data-toggle="${escapeHtml(product.id)}"
+            >${product.is_published ? "Despublicar" : "Publicar"}</button>
           </div>
         </div>
       </article>
@@ -773,40 +1140,67 @@ $("#admin-product-list")?.addEventListener("click", async event => {
   const toggle = event.target.closest("[data-toggle]");
 
   if (edit) {
-    const product = products.find(item => String(item.id) === edit.dataset.edit);
-    if (product) fillEditor(product);
+    const product = products.find(
+      item => String(item.id) === edit.dataset.edit
+    );
+
+    if (product) {
+      fillEditor(product);
+    }
   }
 
-  if (toggle) {
-    const product = products.find(item => String(item.id) === toggle.dataset.toggle);
-    if (!product) return;
+  if (!toggle) {
+    return;
+  }
 
-    try {
-      const { error } = await supabase
-        .from("products")
-        .update({
-          is_published: !product.is_published,
-          updated_at: new Date().toISOString(),
-          updated_by: currentUser.id
-        })
-        .eq("id", product.id);
+  const product = products.find(
+    item => String(item.id) === toggle.dataset.toggle
+  );
 
-      if (error) throw error;
+  if (!product || !currentUser) {
+    return;
+  }
 
-      setStatus(
-        product.is_published ? "Producto despublicado." : "Producto publicado.",
-        "success"
-      );
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({
+        is_published: !product.is_published,
+        updated_at: new Date().toISOString(),
+        updated_by: currentUser.id
+      })
+      .eq("id", product.id);
 
-      await loadProducts();
-    } catch (error) {
-      setStatus(`No se pudo cambiar la publicación: ${error.message}`, "error");
+    if (error) {
+      throw error;
     }
+
+    setStatus(
+      product.is_published
+        ? "Producto despublicado."
+        : "Producto publicado.",
+      "success"
+    );
+
+    await loadProducts();
+  } catch (error) {
+    setStatus(
+      `No se pudo cambiar la publicación: ${error.message}`,
+      "error"
+    );
   }
 });
 
+/* =========================================================
+   FORMULARIO DE PRODUCTOS
+   ========================================================= */
+
 function clearEditor() {
-  form?.reset();
+  if (!form) {
+    return;
+  }
+
+  form.reset();
 
   $("#product-id").value = "";
   $("#catalog-key").value = "";
@@ -830,9 +1224,11 @@ function clearEditor() {
 function fillEditor(product) {
   $("#product-id").value = product.id || "";
   $("#catalog-key").value = product.catalog_key || "";
+
   $("#product-name").value = product.name || "";
   $("#product-brand").value = product.brand || "";
   $("#product-model").value = product.model || "";
+
   $("#product-category").value = product.category || "Otros";
 
   $("#product-availability").value =
@@ -841,14 +1237,22 @@ function fillEditor(product) {
   $("#product-price-usd").value = product.price_usd ?? "";
   $("#product-price-nio").value = product.price_nio ?? "";
   $("#product-warranty").value = product.warranty_months ?? "";
-  $("#product-description").value = product.description || "";
-  $("#product-specs").value = specsText(product.specifications);
 
-  $("#product-financing").value = product.financing_note ||
+  $("#product-description").value = product.description || "";
+
+  $("#product-specs").value =
+    specsText(product.specifications);
+
+  $("#product-financing").value =
+    product.financing_note ||
     "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
 
-  $("#product-shipping").value = product.shipping_note || "";
-  $("#existing-image-urls").value = getImages(product).join("\n");
+  $("#product-shipping").value =
+    product.shipping_note || "";
+
+  $("#existing-image-urls").value =
+    getImages(product).join("\n");
+
   $("#product-images").value = "";
 
   renderVariantRows(legacyVariants(product));
@@ -859,25 +1263,45 @@ function fillEditor(product) {
   $("#form-title").textContent = "Editar producto";
   $("#save-product-button").textContent = "Guardar cambios";
 
-  message("#product-form-status", `Editando: ${product.name}`);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  message(
+    "#product-form-status",
+    `Editando: ${product.name}`
+  );
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
 }
 
 $("#new-product-button")?.addEventListener("click", clearEditor);
 $("#cancel-edit-button")?.addEventListener("click", clearEditor);
 
+/* =========================================================
+   ALMACENAMIENTO DE IMÁGENES
+   ========================================================= */
+
 async function uploadImage(productId, file, subfolder = "") {
-  if (!file) return "";
+  if (!file) {
+    return "";
+  }
 
   if (!file.type.startsWith("image/")) {
-    throw new Error(`El archivo ${file.name} no parece una imagen.`);
+    throw new Error(
+      `El archivo ${file.name} no parece una imagen.`
+    );
   }
 
   if (file.size > 8 * 1024 * 1024) {
-    throw new Error(`${file.name} supera el límite recomendado de 8 MB.`);
+    throw new Error(
+      `${file.name} supera el límite recomendado de 8 MB.`
+    );
   }
 
-  const safeName = slugify(file.name.replace(/\.[^.]+$/, ""));
+  const safeName = slugify(
+    file.name.replace(/\.[^.]+$/, "")
+  );
+
   const ext = (file.name.split(".").pop() || "jpg")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "") || "jpg";
@@ -896,10 +1320,16 @@ async function uploadImage(productId, file, subfolder = "") {
     });
 
   if (error) {
-    throw new Error(`No se pudo subir ${file.name}: ${error.message}`);
+    throw new Error(
+      `No se pudo subir ${file.name}: ${error.message}`
+    );
   }
 
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data } = supabase
+    .storage
+    .from(bucket)
+    .getPublicUrl(path);
+
   return data.publicUrl;
 }
 
@@ -913,17 +1343,32 @@ async function uploadMainImages(productId, files) {
   return urls;
 }
 
+/* =========================================================
+   RECOPILAR Y VALIDAR VARIANTES
+   ========================================================= */
+
 async function collectVariants(productId, existingVariants = []) {
   const rows = Array.from(
-    $("#product-variants-list")?.querySelectorAll("[data-variant-row]") || []
+    $("#product-variants-list")
+      ?.querySelectorAll("[data-variant-row]") || []
   );
 
   const drafts = rows.map((row, index) => {
-    const storage = row.querySelector("[data-variant-storage]").value.trim();
-    const ram = row.querySelector("[data-variant-ram]").value.trim();
-    const color = row.querySelector("[data-variant-color]").value.trim();
+    const storage = row
+      .querySelector("[data-variant-storage]")
+      .value.trim();
 
-    const colorHex = validHex(row.querySelector("[data-variant-hex]").value);
+    const ram = row
+      .querySelector("[data-variant-ram]")
+      .value.trim();
+
+    const color = row
+      .querySelector("[data-variant-color]")
+      .value.trim();
+
+    const colorHex = validHex(
+      row.querySelector("[data-variant-hex]").value
+    );
 
     const priceUSD = toOptionalNumber(
       row.querySelector("[data-variant-price-usd]").value,
@@ -936,12 +1381,16 @@ async function collectVariants(productId, existingVariants = []) {
     );
 
     const availability =
-      row.querySelector("[data-variant-availability]").value === "order"
-        ? "order"
-        : "available";
+      normalizeVariantAvailability(
+        row.querySelector("[data-variant-availability]").value
+      );
 
-    const imageUrl = row.querySelector("[data-variant-image-url]").value.trim();
-    const file = row.querySelector("[data-variant-image]").files?.[0] || null;
+    const imageUrl = row
+      .querySelector("[data-variant-image-url]")
+      .value.trim();
+
+    const file =
+      row.querySelector("[data-variant-image]").files?.[0] || null;
 
     if (!color) {
       throw new Error(
@@ -950,12 +1399,23 @@ async function collectVariants(productId, existingVariants = []) {
     }
 
     return {
-      storage, ram, color, color_hex: colorHex,
-      price_usd: priceUSD, price_nio: priceNIO,
-      availability, image_url: imageUrl, file, row
+      storage,
+      ram,
+      color,
+      color_hex: colorHex,
+      price_usd: priceUSD,
+      price_nio: priceNIO,
+      availability,
+      image_url: imageUrl,
+      file,
+      row
     };
   });
 
+  /*
+    Evita repetir una misma combinación de capacidad + RAM + color.
+    El mismo color puede aparecer con capacidades distintas.
+  */
   const seen = new Set();
 
   for (const variant of drafts) {
@@ -967,18 +1427,25 @@ async function collectVariants(productId, existingVariants = []) {
 
     if (seen.has(key)) {
       throw new Error(
-        `La combinación ${[variant.storage, variant.ram, variant.color]
-          .filter(Boolean).join(" · ")} está repetida.`
+        `La combinación ${[
+          variant.storage,
+          variant.ram,
+          variant.color
+        ].filter(Boolean).join(" · ")} está repetida.`
       );
     }
 
     seen.add(key);
   }
 
+  /*
+    Reutiliza fotografías ya guardadas para el mismo color.
+  */
   const imageByColor = new Map();
 
   normalizeVariants(existingVariants).forEach(variant => {
     const key = variant.color.toLocaleLowerCase("es");
+
     if (key && variant.image_url && !imageByColor.has(key)) {
       imageByColor.set(key, variant.image_url);
     }
@@ -986,12 +1453,22 @@ async function collectVariants(productId, existingVariants = []) {
 
   for (const variant of drafts) {
     const key = variant.color.toLocaleLowerCase("es");
-    const statusNode = variant.row.querySelector("[data-variant-status]");
+
+    const statusNode =
+      variant.row.querySelector("[data-variant-status]");
 
     if (variant.file) {
-      if (statusNode) statusNode.textContent = `Subiendo foto de ${variant.color}…`;
+      if (statusNode) {
+        statusNode.textContent =
+          `Subiendo foto de ${variant.color}…`;
+      }
 
-      variant.image_url = await uploadImage(productId, variant.file, "variants");
+      variant.image_url = await uploadImage(
+        productId,
+        variant.file,
+        "variants"
+      );
+
       imageByColor.set(key, variant.image_url);
     } else if (variant.image_url) {
       imageByColor.set(key, variant.image_url);
@@ -1000,8 +1477,13 @@ async function collectVariants(productId, existingVariants = []) {
     }
   }
 
+  /*
+    Segunda pasada para reutilizar también imágenes subidas durante
+    esta misma operación.
+  */
   for (const variant of drafts) {
     const key = variant.color.toLocaleLowerCase("es");
+
     if (!variant.image_url && imageByColor.has(key)) {
       variant.image_url = imageByColor.get(key);
     }
@@ -1011,13 +1493,18 @@ async function collectVariants(productId, existingVariants = []) {
 }
 
 function deriveColorsFromVariants(variants, fallbackColors = []) {
-  if (!variants.length) return normalizeColors(fallbackColors);
+  if (!variants.length) {
+    return normalizeColors(fallbackColors);
+  }
 
   const byColor = new Map();
 
   variants.forEach(variant => {
     const key = variant.color.toLocaleLowerCase("es");
-    if (!key) return;
+
+    if (!key) {
+      return;
+    }
 
     const previous = byColor.get(key);
 
@@ -1029,7 +1516,10 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
         color_hex: validHex(variant.color_hex)
       });
     } else {
-      if (variant.availability === "available") previous.type = "available";
+      if (variant.availability === "available") {
+        previous.type = "available";
+      }
+
       if (!previous.image_url && variant.image_url) {
         previous.image_url = variant.image_url;
       }
@@ -1039,24 +1529,22 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
   return Array.from(byColor.values());
 }
 
-function minimumVariantPrice(variants, field) {
-  const values = variants
-    .map(variant => variant[field])
-    .filter(value =>
-      value !== null &&
-      value !== undefined &&
-      value !== "" &&
-      Number.isFinite(Number(value))
-    )
-    .map(Number);
-
-  return values.length ? Math.min(...values) : null;
-}
+/* =========================================================
+   GUARDAR PRODUCTOS
+   ========================================================= */
 
 form?.addEventListener("submit", async event => {
   event.preventDefault();
 
-  if (!currentUser || !supabase) return;
+  if (!currentUser || !supabase) {
+    message(
+      "#product-form-status",
+      "Tu sesión administrativa no está activa. Volvé a iniciar sesión.",
+      "error"
+    );
+
+    return;
+  }
 
   const button = $("#save-product-button");
   const wasEditing = Boolean($("#product-id").value);
@@ -1066,9 +1554,13 @@ form?.addEventListener("submit", async event => {
 
   try {
     const name = $("#product-name").value.trim();
-    if (!name) throw new Error("Escribí el nombre del producto.");
 
-    const id = $("#product-id").value || crypto.randomUUID();
+    if (!name) {
+      throw new Error("Escribí el nombre del producto.");
+    }
+
+    const id =
+      $("#product-id").value || crypto.randomUUID();
 
     const existingProduct = products.find(
       product => String(product.id) === String(id)
@@ -1087,47 +1579,79 @@ form?.addEventListener("submit", async event => {
       .map(value => value.trim())
       .filter(Boolean);
 
-    const newImages = Array.from($("#product-images").files || []);
-    const uploadedMainImages = await uploadMainImages(id, newImages);
+    const newImages = Array.from(
+      $("#product-images").files || []
+    );
+
+    const uploadedMainImages = await uploadMainImages(
+      id,
+      newImages
+    );
 
     const colors = deriveColorsFromVariants(
       variants,
       existingProduct?.colors || []
     );
 
-    const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
-    const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
-    const warranty = toOptionalNumber($("#product-warranty").value, "Garantía");
+    const baseUSD = toOptionalNumber(
+      $("#product-price-usd").value,
+      "Precio base en dólares"
+    );
+
+    const baseNIO = toOptionalNumber(
+      $("#product-price-nio").value,
+      "Precio base en córdobas"
+    );
+
+    const warranty = toOptionalNumber(
+      $("#product-warranty").value,
+      "Garantía"
+    );
 
     const priceUSD = variants.length
-      ? minimumVariantPrice(variants, "price_usd") ?? baseUSD
+      ? minimumPrice(variants, "price_usd") ?? baseUSD
       : baseUSD;
 
     const priceNIO = variants.length
-      ? minimumVariantPrice(variants, "price_nio") ?? baseNIO
+      ? minimumPrice(variants, "price_nio") ?? baseNIO
       : baseNIO;
 
-    const allImages = [...new Set([...enteredUrls, ...uploadedMainImages])];
+    const allImages = [
+      ...new Set([
+        ...enteredUrls,
+        ...uploadedMainImages
+      ])
+    ];
+
     const now = new Date().toISOString();
 
     const payload = {
       catalog_key: catalogKey,
+
       sort_order: wasEditing
         ? Number(existingProduct?.sort_order ?? products.length)
         : products.length,
 
       name,
+
       brand: $("#product-brand").value.trim() || null,
       model: $("#product-model").value.trim() || null,
       category: $("#product-category").value,
-      availability: normalizeProductAvailability($("#product-availability").value),
+
+      availability: normalizeProductAvailability(
+        $("#product-availability").value
+      ),
 
       price_usd: priceUSD,
       price_nio: priceNIO,
       warranty_months: warranty,
 
-      description: $("#product-description").value.trim() || null,
-      specifications: parseSpecs($("#product-specs").value),
+      description:
+        $("#product-description").value.trim() || null,
+
+      specifications: parseSpecs(
+        $("#product-specs").value
+      ),
 
       images: allImages,
       image_url: allImages[0] || null,
@@ -1135,9 +1659,12 @@ form?.addEventListener("submit", async event => {
       colors,
       variants,
 
-      financing_note: $("#product-financing").value.trim() ||
-        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones.",
-      shipping_note: $("#product-shipping").value.trim() || null,
+      financing_note:
+        $("#product-financing").value.trim() ||
+        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.",
+
+      shipping_note:
+        $("#product-shipping").value.trim() || null,
 
       featured: $("#product-featured").checked,
       is_published: $("#product-active").checked,
@@ -1163,40 +1690,63 @@ form?.addEventListener("submit", async event => {
         });
     }
 
-    if (result.error) throw result.error;
+    if (result.error) {
+      throw result.error;
+    }
 
-    message("#product-form-status", "Producto guardado correctamente.", "success");
+    message(
+      "#product-form-status",
+      "Producto guardado correctamente.",
+      "success"
+    );
+
     setStatus(`Guardado: ${name}`, "success");
 
     clearEditor();
+
     await loadProducts();
   } catch (error) {
     message(
       "#product-form-status",
-      error.message || "Ocurrió un error al guardar el producto.",
+      error.message ||
+        "Ocurrió un error al guardar el producto.",
       "error"
     );
   } finally {
     button.disabled = false;
+
     button.textContent = $("#product-id").value
       ? "Guardar cambios"
       : "Guardar producto";
   }
 });
 
+/* =========================================================
+   IMPORTAR JSON
+   ========================================================= */
+
 $("#import-json-file")?.addEventListener("change", async event => {
   const file = event.target.files?.[0];
-  if (!file || !supabase || !currentUser) return;
+
+  if (!file || !supabase || !currentUser) {
+    return;
+  }
 
   const node = $("#import-status");
+
   message(node, "Leyendo el archivo…");
 
   try {
     const raw = JSON.parse(await file.text());
-    const rows = Array.isArray(raw) ? raw : raw.products;
+
+    const rows = Array.isArray(raw)
+      ? raw
+      : raw.products;
 
     if (!Array.isArray(rows) || !rows.length) {
-      throw new Error("El JSON debe contener una lista de productos.");
+      throw new Error(
+        "El JSON debe contener una lista de productos."
+      );
     }
 
     const importTime = new Date().toISOString();
@@ -1209,6 +1759,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
       }
 
       const variants = normalizeVariants(product.variants);
+
       const colors = variants.length
         ? deriveColorsFromVariants(variants, product.colors)
         : normalizeColors(product.colors);
@@ -1219,8 +1770,15 @@ $("#import-json-file")?.addEventListener("change", async event => {
           ? [product.image_url]
           : [];
 
-      const baseUSD = toOptionalNumber(product.price_usd, "Precio en dólares");
-      const baseNIO = toOptionalNumber(product.price_nio, "Precio en córdobas");
+      const baseUSD = toOptionalNumber(
+        product.price_usd,
+        "Precio en dólares"
+      );
+
+      const baseNIO = toOptionalNumber(
+        product.price_nio,
+        "Precio en córdobas"
+      );
 
       return {
         catalog_key: product.catalog_key ||
@@ -1237,28 +1795,41 @@ $("#import-json-file")?.addEventListener("change", async event => {
         category: String(product.category),
 
         price_usd: variants.length
-          ? minimumVariantPrice(variants, "price_usd") ?? baseUSD
+          ? minimumPrice(variants, "price_usd") ?? baseUSD
           : baseUSD,
+
         price_nio: variants.length
-          ? minimumVariantPrice(variants, "price_nio") ?? baseNIO
+          ? minimumPrice(variants, "price_nio") ?? baseNIO
           : baseNIO,
 
         description: product.description || null,
-        specifications: product.specifications &&
+
+        specifications:
+          product.specifications &&
           typeof product.specifications === "object"
             ? product.specifications
-            : product.specs && typeof product.specs === "object"
-              ? product.specs : {},
+            : product.specs &&
+              typeof product.specs === "object"
+              ? product.specs
+              : {},
 
-        warranty_months: toOptionalNumber(product.warranty_months, "Garantía"),
-        availability: normalizeProductAvailability(product.availability),
+        warranty_months: toOptionalNumber(
+          product.warranty_months,
+          "Garantía"
+        ),
+
+        availability: normalizeProductAvailability(
+          product.availability
+        ),
 
         financing_note: product.financing_note ||
-          "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones.",
+          "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.",
+
         shipping_note: product.shipping_note || null,
 
         images,
         image_url: images[0] || product.image_url || null,
+
         colors,
         variants,
 
@@ -1267,26 +1838,41 @@ $("#import-json-file")?.addEventListener("change", async event => {
       };
     });
 
-    const { error } = await supabase.from("products").insert(payload);
-    if (error) throw error;
+    const { error } = await supabase
+      .from("products")
+      .insert(payload);
+
+    if (error) {
+      throw error;
+    }
 
     message(
       node,
-      `${payload.length} productos importados como borradores. Revisá variantes, precios y fotos antes de publicar.`,
+      `${payload.length} productos importados como borradores. Revisá variantes, precios y fotografías antes de publicar.`,
       "success"
     );
 
     await loadProducts();
   } catch (error) {
-    message(node, error.message || "No se pudo importar el archivo.", "error");
+    message(
+      node,
+      error.message || "No se pudo importar el archivo.",
+      "error"
+    );
   } finally {
     event.target.value = "";
   }
 });
 
+/* =========================================================
+   INICIALIZACIÓN DEL PANEL
+   ========================================================= */
+
 handleSession().catch(async error => {
   await signOutLocalSafely();
-  showLoginAfterLogout(
-    error.message || "No se pudo comprobar la sesión."
+
+  showLoginScreen(
+    error.message || "No se pudo comprobar la sesión.",
+    "error"
   );
 });
