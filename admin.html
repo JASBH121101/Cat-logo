@@ -25,17 +25,14 @@
       <span class="brand-mark">CT</span>
       <span>CT Administración</span>
     </a>
-
     <a href="./" class="back-link">← Ver catálogo público</a>
   </header>
 
   <main class="admin-main">
     <section id="login-panel" class="login-panel">
       <div class="admin-login-visual">
-        <img
-          src="img/admin-panel.png"
-          alt="Vista ilustrativa de un espacio de administración de inventario"
-        >
+        <img src="img/admin-panel.png"
+             alt="Panel de administración de inventario">
         <div class="admin-login-visual-label">
           <span class="admin-online-dot"></span>
           <span>Tu negocio, bajo control</span>
@@ -44,7 +41,6 @@
 
       <p class="eyebrow">ÁREA PRIVADA · CT ADMIN</p>
       <h1>Administrá tu catálogo.</h1>
-
       <p class="section-subtitle">
         Iniciá sesión con el correo autorizado para agregar y actualizar productos.
       </p>
@@ -52,24 +48,20 @@
       <form id="login-form" class="admin-form login-form">
         <label>
           Correo electrónico
-          <input
-            id="login-email"
-            type="email"
-            autocomplete="username"
-            required
-            placeholder="tu-correo@ejemplo.com"
-          >
+          <input id="login-email"
+                 type="email"
+                 autocomplete="username"
+                 required
+                 placeholder="tu-correo@ejemplo.com">
         </label>
 
         <label>
           Contraseña
-          <input
-            id="login-password"
-            type="password"
-            autocomplete="current-password"
-            required
-            placeholder="Tu contraseña"
-          >
+          <input id="login-password"
+                 type="password"
+                 autocomplete="current-password"
+                 required
+                 placeholder="Tu contraseña">
         </label>
 
         <button class="button button-primary" type="submit">
@@ -95,7 +87,9 @@
           </p>
         </div>
 
-        <button id="logout-button" class="button button-outline" type="button">
+        <button id="logout-button"
+                class="button button-outline"
+                type="button">
           Cerrar sesión
         </button>
       </div>
@@ -110,7 +104,6 @@
             Actualizá productos, administrá configuraciones y mantené tu
             catálogo listo para tus clientes.
           </p>
-
           <div class="admin-welcome-tags">
             <span>✦ Productos</span>
             <span>◉ Variantes</span>
@@ -119,10 +112,8 @@
         </div>
 
         <div class="admin-welcome-image">
-          <img
-            src="img/admin-panel.png"
-            alt="Ilustración de un panel de inventario tecnológico"
-          >
+          <img src="img/admin-panel.png"
+               alt="Ilustración de un panel de inventario tecnológico">
           <span class="admin-image-badge">CT · INVENTARIO</span>
         </div>
       </section>
@@ -134,10 +125,9 @@
               <h2 id="form-title">Agregar producto</h2>
               <p>Los campos marcados con * son obligatorios.</p>
             </div>
-
-            <button id="new-product-button" class="text-button" type="button">
-              + Nuevo
-            </button>
+            <button id="new-product-button"
+                    class="text-button"
+                    type="button">+ Nuevo</button>
           </div>
 
           <form id="product-form" class="admin-form">
@@ -147,12 +137,10 @@
             <div class="form-grid">
               <label class="span-2">
                 Nombre del producto *
-                <input
-                  id="product-name"
-                  required
-                  maxlength="160"
-                  placeholder="Ej. iPhone 18 Pro Max"
-                >
+                <input id="product-name"
+                       required
+                       maxlength="160"
+                       placeholder="Ej. iPhone 18 Pro Max">
               </label>
 
               <label>
@@ -182,91 +170,66 @@
               <label>
                 Disponibilidad general
                 <select id="product-availability" required>
-                <option value="available">Disponible</option>
-                <option value="on_order">Por pedido</option>
-                <option value="out_of_stock">Agotado temporalmente</option>
-              </select>
+                  <option value="available">Disponible</option>
+                  <option value="on_order">Por pedido</option>
+                  <option value="out_of_stock">Agotado temporalmente</option>
+                </select>
               </label>
 
               <label>
                 Precio base en dólares (opcional)
-                <input
-                  id="product-price-usd"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Se puede dejar vacío"
-                >
+                <input id="product-price-usd"
+                       type="number" min="0" step="0.01"
+                       placeholder="Se puede dejar vacío">
               </label>
 
               <label>
                 Precio base en córdobas (opcional)
-                <input
-                  id="product-price-nio"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Se puede dejar vacío"
-                >
+                <input id="product-price-nio"
+                       type="number" min="0" step="0.01"
+                       placeholder="Se puede dejar vacío">
               </label>
 
               <label>
                 Garantía en meses
-                <input
-                  id="product-warranty"
-                  type="number"
-                  min="0"
-                  max="120"
-                  step="1"
-                  placeholder="Si se confirmó"
-                >
+                <input id="product-warranty"
+                       type="number" min="0" max="120" step="1"
+                       placeholder="Si se confirmó">
               </label>
 
               <label class="span-2">
                 Descripción breve
-                <textarea
-                  id="product-description"
-                  rows="3"
-                  maxlength="500"
-                  placeholder="Descripción del producto."
-                ></textarea>
+                <textarea id="product-description"
+                          rows="3"
+                          maxlength="500"
+                          placeholder="Descripción del producto."></textarea>
               </label>
 
               <label class="span-2">
                 Especificaciones generales (una por línea: Nombre: valor)
-                <textarea
-                  id="product-specs"
-                  rows="5"
-                  placeholder="Pantalla: ...&#10;Conectividad: ...&#10;Sistema: ..."
-                ></textarea>
+                <textarea id="product-specs"
+                          rows="5"
+                          placeholder="Pantalla: ...&#10;Conectividad: ...&#10;Sistema: ..."></textarea>
               </label>
 
               <label class="span-2">
                 Fotografías generales del producto
-                <input
-                  id="product-images"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  multiple
-                >
-                <small>
-                  Máximo recomendado: 8 MB por fotografía.
-                </small>
+                <input id="product-images"
+                       type="file"
+                       accept="image/jpeg,image/png,image/webp,image/avif"
+                       multiple>
+                <small>Máximo recomendado: 8 MB por fotografía.</small>
               </label>
 
               <label class="span-2">
                 URLs de fotografías existentes (una por línea)
-                <textarea
-                  id="existing-image-urls"
-                  rows="2"
-                  placeholder="https://... (opcional)"
-                ></textarea>
+                <textarea id="existing-image-urls"
+                          rows="2"
+                          placeholder="https://... (opcional)"></textarea>
               </label>
 
-              <section
-                class="span-2 variants-editor-section"
-                aria-labelledby="variants-editor-title"
-              >
+              <section class="span-2 variants-editor-section"
+                       aria-labelledby="variants-editor-title">
                 <div class="variants-editor-heading">
                   <div>
                     <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
@@ -276,12 +239,9 @@
                       El producto aparecerá una sola vez en el catálogo.
                     </p>
                   </div>
-
-                  <button
-                    id="add-variant-button"
-                    class="button button-outline"
-                    type="button"
-                  >+ Agregar variante</button>
+                  <button id="add-variant-button"
+                          class="button button-outline"
+                          type="button">+ Agregar variante</button>
                 </div>
 
                 <div class="variant-palette-note">
@@ -305,11 +265,9 @@
 
               <label class="span-2">
                 Nota de entrega (opcional)
-                <textarea
-                  id="product-shipping"
-                  rows="2"
-                  placeholder="Condiciones particulares de entrega (opcional)."
-                ></textarea>
+                <textarea id="product-shipping"
+                          rows="2"
+                          placeholder="Condiciones particulares de entrega (opcional)."></textarea>
               </label>
 
               <label class="check-label">
@@ -324,13 +282,12 @@
             </div>
 
             <div class="form-actions">
-              <button type="submit" id="save-product-button" class="button button-primary">
-                Guardar producto
-              </button>
-
-              <button type="button" id="cancel-edit-button" class="button button-outline">
-                Cancelar
-              </button>
+              <button type="submit"
+                      id="save-product-button"
+                      class="button button-primary">Guardar producto</button>
+              <button type="button"
+                      id="cancel-edit-button"
+                      class="button button-outline">Cancelar</button>
             </div>
 
             <p class="form-status" id="product-form-status" role="status"></p>
@@ -347,26 +304,24 @@
 
           <label class="search-box admin-search">
             <span aria-hidden="true">⌕</span>
-            <input
-              id="admin-search"
-              type="search"
-              placeholder="Buscar en inventario…"
-              aria-label="Buscar inventario"
-            >
+            <input id="admin-search"
+                   type="search"
+                   placeholder="Buscar en inventario…"
+                   aria-label="Buscar inventario">
           </label>
 
           <div id="admin-product-list" class="admin-product-list"></div>
         </section>
       </div>
 
-      <section class="admin-card team-preview-card" aria-labelledby="team-preview-title">
+      <section class="admin-card team-preview-card"
+               aria-labelledby="team-preview-title">
         <div class="team-preview-heading">
           <div>
             <p class="eyebrow">CRECER CON TU NEGOCIO</p>
             <h2 id="team-preview-title">Equipo y permisos</h2>
             <p>Preparado para cuando quieras sumar empleados a tu operación.</p>
           </div>
-
           <span class="team-preview-status">SIGUIENTE ETAPA</span>
         </div>
 
@@ -376,19 +331,16 @@
             <h3>Propietario</h3>
             <p>Control total del catálogo y del equipo.</p>
           </article>
-
           <article class="team-role-card admin-role">
             <span class="team-role-icon">✦</span>
             <h3>Administrador</h3>
             <p>Gestiona productos y publicaciones.</p>
           </article>
-
           <article class="team-role-card editor-role">
             <span class="team-role-icon">✎</span>
             <h3>Editor</h3>
             <p>Prepara y edita fichas de productos.</p>
           </article>
-
           <article class="team-role-card viewer-role">
             <span class="team-role-icon">◉</span>
             <h3>Consulta</h3>
