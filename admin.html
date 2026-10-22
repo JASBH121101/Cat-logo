@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261022-sidebar1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261022-loginhidecatalog">
+  <link rel="stylesheet" href="theme-ui.css?v=20261022-logoutsidebar">
 
   <script src="config.js?v=20261022-0233"></script>
   <script type="module" src="admin.js?v=20261022-adminfix1"></script>
@@ -99,11 +99,6 @@
           </p>
         </div>
 
-        <button id="logout-button"
-                class="button button-outline"
-                type="button">
-          Cerrar sesión
-        </button>
       </div>
 
       <div id="admin-status" class="admin-alert" role="status"></div>
@@ -134,6 +129,11 @@
             <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Productos no publicados</span><span class="admin-nav-count" id="draft-nav-count">0</span>
           </button>
         </nav>
+
+        <button id="logout-button" class="admin-sidebar-logout" type="button">
+          <span aria-hidden="true">↪</span>
+          <span>Cerrar sesión</span>
+        </button>
 
         <div class="admin-sidebar-footer">
           <span class="admin-sidebar-footer-mark" aria-hidden="true">✦</span>

@@ -5472,3 +5472,73 @@ body.admin-body:not(.admin-dashboard-active) .admin-header > .theme-toggle .them
 body.admin-body:not(.admin-dashboard-active) .admin-header > .back-link {
   display: none !important;
 }
+
+
+/* Cerrar sesión integrado al menú lateral en escritorio y móvil. */
+body.admin-body .admin-sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  width: 100%;
+  min-height: 44px;
+  margin: 18px 0 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--admin-logout-border, rgba(237, 93, 125, .3));
+  border-radius: 12px;
+  color: var(--admin-logout-text, #b72f55);
+  background: var(--admin-logout-bg, rgba(255, 237, 242, .82));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+body.admin-body .admin-sidebar-logout > span:first-child {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: inherit;
+  background: rgba(220, 65, 103, .1);
+  font-size: 18px;
+}
+body.admin-body .admin-sidebar-logout:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(224, 74, 111, .58);
+  background: var(--admin-logout-hover-bg, #ffe1e9);
+  box-shadow: 0 5px 12px rgba(191, 48, 85, .1);
+}
+body.admin-body .admin-sidebar-logout:active:not(:disabled) {
+  transform: translateY(1px);
+}
+body.admin-body .admin-sidebar-logout:focus-visible {
+  outline: 3px solid rgba(109, 139, 255, .8);
+  outline-offset: 3px;
+}
+body.admin-body .admin-sidebar-logout:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+html[data-theme="dark"] body.admin-body .admin-sidebar-logout {
+  --admin-logout-border: rgba(255, 105, 142, .32);
+  --admin-logout-text: #ffc0d0;
+  --admin-logout-bg: rgba(110, 25, 55, .24);
+  --admin-logout-hover-bg: rgba(151, 36, 71, .4);
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-logout {
+  --admin-logout-border: rgba(207, 58, 95, .24);
+  --admin-logout-text: #ad2449;
+  --admin-logout-bg: #fff0f4;
+  --admin-logout-hover-bg: #ffe2ea;
+}
+@media (max-width: 760px) {
+  body.admin-body .admin-sidebar-logout {
+    min-height: 42px;
+    margin: 14px 0 12px;
+    padding: 9px 11px;
+  }
+}
