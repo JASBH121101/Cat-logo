@@ -1013,9 +1013,8 @@ async function showDashboard(user) {
       : "¡Bienvenido de nuevo! 👋";
   }
 
-  setStatus(
-    `Sesión iniciada como ${user.email || "administrador"}`
-  );
+  setStatus("Sesión iniciada");
+  window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
 
   await loadProducts();
 }
@@ -1409,7 +1408,6 @@ function clearEditor() {
   $("#product-financing").value =
     "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
 
-  $("#existing-image-urls").value = "";
   $("#product-images").value = "";
   renderMainImagePreviews();
 
@@ -1774,11 +1772,6 @@ form?.addEventListener("submit", async event => {
       existingProduct?.variants || []
     );
 
-    const enteredUrls = $("#existing-image-urls").value
-      .split(/\r?\n/)
-      .map(value => value.trim())
-      .filter(Boolean);
-
     const newImages = Array.from(
       $("#product-images").files || []
     );
@@ -1818,7 +1811,7 @@ form?.addEventListener("submit", async event => {
 
     const allImages = [
       ...new Set([
-        ...enteredUrls,
+        ...(existingProduct?.images || (existingProduct?.image_url ? [existingProduct.image_url] : [])),
         ...uploadedMainImages
       ])
     ];
