@@ -647,6 +647,21 @@ function renderVariantImagePreview(row,file=null,fallbackUrl=""){
 
 const variantsContainer = $("#product-variants-list");
 
+$("#add-base-color-button")?.addEventListener("click", event => {
+  event.preventDefault();
+  const container = $("#product-variants-list");
+  if (!container) return;
+  let baseGroup = container.querySelector('[data-variant-group][data-base-group="true"]');
+  if (!baseGroup) {
+    renderVariantRows([]);
+    baseGroup = container.querySelector('[data-variant-group][data-base-group="true"]');
+  }
+  if (baseGroup) {
+    addVariantRow({color:"",color_hex:"#242424",image_url:"",availability:"available"}, baseGroup);
+    updateEditorDirtyState();
+  }
+});
+
 $("#add-variant-button")?.addEventListener("click", event => {
   event.preventDefault();
   const container = $("#product-variants-list");
