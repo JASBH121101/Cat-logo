@@ -1291,7 +1291,7 @@ async function loadProducts() {
 }
 
 function formatAnalyticsCapacity(value) {
-  const text = String(value ?? "").trim().replace(/\\s*GB\\s*/i, "");
+  const text = String(value ?? "").trim().replace(/\s*GB\s*/i, "");
   return text ? `${text} GB` : "";
 }
 
