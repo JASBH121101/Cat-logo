@@ -658,7 +658,7 @@ function renderVariantControls(product, variants, selected) {
     const chosenImage = selected.image_url || getProductImages(product)[0] || "";
 
     dialogImage.innerHTML = chosenImage
-      ? `<img id="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" style="display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;margin:auto;box-sizing:border-box" onerror="this.remove()">`
+      ? `<img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'">`
       : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
   }
 }
@@ -717,7 +717,7 @@ function openProduct(product) {
       <div class="dialog-image" id="dialog-image">
         ${
           initialImage
-            ? `<img id="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}">`
+            ? `<img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'">`
             : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`
         }
       </div>
