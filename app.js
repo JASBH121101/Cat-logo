@@ -18,6 +18,20 @@ let supabase = null;
 let products = [];
 let selectedCategory = "all";
 
+// Analytics: count product-detail opens and WhatsApp intent without blocking navigation.
+async function recordCatalogEvent(productId, eventType) {
+  if (!supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
+  try {
+    const { error } = await supabase.from("catalog_events").insert({
+      product_id: productId,
+      event_type: eventType
+    });
+    if (error) console.warn("No se pudo registrar el evento de analítica:", error.message);
+  } catch (error) {
+    console.warn("No se pudo registrar el evento de analítica.", error);
+  }
+}
+
 const hasSupabaseConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
 
 if (hasSupabaseConfig) {
@@ -720,6 +734,11 @@ function renderLegacyColorOptions(product) {
 }
 
 dialogContent.addEventListener("click", event => {
+  const whatsappLink = event.target.closest('a[href*="wa.me"], a[href*="api.whatsapp.com"]');
+  if (whatsappLink) {
+    const product = products.find(item => String(item.id) === String(dialogContent.dataset.analyticsProductId));
+    if (product) recordCatalogEvent(product.id, "whatsapp_click");
+  }
   const thumbnail = event.target.closest("[data-gallery-image]");
   if (!thumbnail) return;
   const mainImage = dialogContent.querySelector("#dialog-main-image");
@@ -733,6 +752,8 @@ dialogContent.addEventListener("click", event => {
 });
 
 function openProduct(product) {
+  dialogContent.dataset.analyticsProductId = String(product.id);
+  recordCatalogEvent(product.id, "view");
   const variants = getProductVariants(product);
   const specs = specsArray(product.specifications);
   const initialImage = getProductImages(product)[0] || "";
