@@ -3937,7 +3937,7 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
   flex-direction: column !important;
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 52px !important;
+  min-height: 45px !important;
   gap: 4px !important;
   padding: 5px 3px !important;
   border: 1px solid transparent !important;
@@ -3962,9 +3962,9 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
 }
 .admin-add-color-slot .quick-color-dot {
   display: block !important;
-  width: 21px !important;
-  height: 21px !important;
-  flex: 0 0 21px !important;
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px !important;
   border: 2px solid rgba(255,255,255,.78) !important;
   border-radius: 50% !important;
   box-shadow: 0 2px 3px rgba(0,0,0,.26),inset 0 0 0 1px rgba(0,0,0,.10) !important;
@@ -4126,6 +4126,14 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
   min-width: 0 !important;
 }
 .variant-config-group:not(.variant-base-group) .variant-color-list > .variants-empty-hint { grid-column: 1 / -1 !important; }
+.variant-config-group:not(.variant-base-group) .variant-add-color {
+  justify-self: start !important;
+  width: auto !important;
+  min-height: 31px !important;
+  margin-top: 7px !important;
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+}
 .variant-config-group:not(.variant-base-group) .inline-color-card { width:100% !important; padding:7px !important; }
 .variant-config-group:not(.variant-base-group) .inline-color-main { grid-template-columns:18px minmax(0,1fr) 32px 25px !important; }
 .variant-config-group:not(.variant-base-group) .inline-color-name-field input { min-height:30px !important; padding:5px 6px !important; font-size:11px !important; }
@@ -4184,4 +4192,5 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
 .warranty-specs-stack > label { min-width: 0 !important; }
 .warranty-specs-stack .admin-specs-field { grid-column: auto !important; }
 .admin-form #product-specs { min-height: 90px !important; height: auto !important; resize: vertical !important; overflow: auto !important; }
-.quick-color-status { display: none !important; }
+ .quick-color-status { display: none !important; margin: 0 !important; font-size: 11px !important; }
+.quick-color-status[data-state="error"] { display: block !important; color: #ff9da6 !important; }
