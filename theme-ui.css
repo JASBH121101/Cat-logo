@@ -3294,3 +3294,200 @@ html[data-theme] .filter-chip {
     padding-bottom: 54px;
   }
 }
+
+
+/* Ficha pública compacta: selectores y precio de la variante. */
+html[data-theme] .product-dialog .dialog-detail {
+  padding: 22px;
+}
+html[data-theme] .product-dialog .dialog-detail h2 {
+  margin: 5px 0 14px;
+  font-size: clamp(22px, 4vw, 27px);
+}
+html[data-theme] .product-dialog .variant-intro {
+  display: none;
+}
+html[data-theme] .product-dialog .variant-selector {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+html[data-theme] .product-dialog .variant-option-group {
+  padding: 11px 12px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+html[data-theme] .product-dialog .variant-option-group h3 {
+  margin: 0 0 9px;
+  font-size: 15px;
+}
+html[data-theme] .product-dialog .variant-choice-list {
+  gap: 8px;
+}
+html[data-theme] .product-dialog .variant-choice:not(.color-choice) {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+html[data-theme] .product-dialog .color-choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+html[data-theme] .product-dialog .variant-choice.color-choice {
+  display: inline-flex;
+  flex: 0 0 66px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 66px;
+  min-height: 0;
+  padding: 4px 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text, #24365f);
+}
+html[data-theme] .product-dialog .variant-choice.color-choice:hover {
+  transform: translateY(-1px);
+  border-color: var(--border, #dbe3f0);
+  background: rgba(89,109,245,.05);
+  box-shadow: none;
+}
+html[data-theme] .product-dialog .variant-choice.color-choice.selected {
+  border-color: rgba(83,109,226,.42);
+  background: rgba(83,109,226,.07);
+  box-shadow: none;
+  color: var(--text, #24365f);
+}
+html[data-theme] .product-dialog .variant-color-dot {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+html[data-theme] .product-dialog .variant-choice.color-choice.selected .variant-color-dot {
+  outline: 2px solid #536de2;
+  outline-offset: 2px;
+  border-color: #fff;
+}
+html[data-theme] .product-dialog .variant-color-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+html[data-theme] .product-dialog .variant-bottom-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(135px, .85fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+html[data-theme] .product-dialog .variant-selected-summary {
+  min-width: 0;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+html[data-theme] .product-dialog .variant-selected-summary > span:first-child {
+  font-size: 11px;
+  line-height: 1.3;
+}
+html[data-theme] .product-dialog .variant-selected-summary strong {
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+html[data-theme] .product-dialog .variant-status-badge {
+  align-self: flex-start;
+  padding: 3px 7px;
+  font-size: 10px;
+}
+html[data-theme] .product-dialog .variant-price-box {
+  min-width: 0;
+  gap: 3px;
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 11px;
+}
+html[data-theme] .product-dialog .variant-price-box > span {
+  font-size: 10px;
+  line-height: 1.3;
+}
+html[data-theme] .product-dialog .variant-price-box strong {
+  font-size: clamp(18px, 4.5vw, 23px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+html[data-theme] .product-dialog .variant-price-box small {
+  font-size: 11px;
+}
+html[data-theme] .product-dialog .variant-whatsapp-button {
+  display: flex;
+  width: fit-content;
+  min-height: 42px;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+}
+html[data-theme] .product-dialog .variant-option-group h3:before {
+  height: 15px;
+}
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice,
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
+  color: #d3def6;
+  background: transparent;
+}
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice:hover {
+  border-color: #3a4a6a;
+  background: rgba(113,132,220,.1);
+}
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
+  border-color: rgba(113,132,220,.65);
+  background: rgba(113,132,220,.12);
+}
+@media (max-width: 520px) {
+  html[data-theme] .product-dialog .dialog-detail {
+    padding: 17px 15px 20px;
+  }
+  html[data-theme] .product-dialog .variant-selector {
+    gap: 9px;
+  }
+  html[data-theme] .product-dialog .variant-option-group {
+    padding: 9px 10px;
+  }
+  html[data-theme] .product-dialog .variant-choice.color-choice {
+    flex-basis: 60px;
+    min-width: 60px;
+  }
+  html[data-theme] .product-dialog .variant-bottom-row {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, .8fr);
+    gap: 8px;
+  }
+  html[data-theme] .product-dialog .variant-price-box {
+    padding: 8px;
+  }
+  html[data-theme] .product-dialog .variant-whatsapp-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-width: 360px) {
+  html[data-theme] .product-dialog .variant-bottom-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html[data-theme] .product-dialog .variant-price-box {
+    width: fit-content;
+    min-width: 135px;
+  }
+}
