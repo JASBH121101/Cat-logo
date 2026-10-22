@@ -9,22 +9,31 @@
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261022-colors6">
-  <link rel="stylesheet" href="theme-ui.css?v=20261022-admin-font5">
+  <link rel="stylesheet" href="styles.css?v=20261022-sidebar1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261022-sidebar1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261022-storage-label1"></script>
+  <script type="module" src="admin.js?v=20261022-sidebar1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
 <body class="admin-body">
   <header class="site-header admin-header">
-    <a class="brand" href="./">
+    <button class="admin-menu-toggle" id="admin-menu-toggle" type="button"
+            aria-controls="admin-sidebar" aria-expanded="false"
+            aria-label="Abrir menú de administración" title="Abrir menú">
+      <span aria-hidden="true">☰</span>
+    </button>
+    <a class="brand" href="./" aria-label="Catálogo de Tecnología">
       <span class="brand-mark">CT</span>
       <span>CT Administración</span>
     </a>
+    <div class="admin-header-context" aria-hidden="true">
+      <strong>Panel de control</strong>
+      <small>CAT-LOGO · INVENTARIO</small>
+    </div>
     <a href="./" class="back-link">← Ver catálogo público</a>
   </header>
 
@@ -99,12 +108,38 @@
 
       <div id="admin-status" class="admin-alert" role="status"></div>
 
-      <nav class="admin-section-nav" aria-label="Secciones de administración">
-        <button type="button" class="admin-nav-button active" data-admin-section="home" aria-current="page">⌂ Inicio</button>
-        <button type="button" class="admin-nav-button" data-admin-section="add">＋ Añadir</button>
-        <button type="button" class="admin-nav-button" data-admin-section="published">✓ Productos publicados <span id="published-nav-count">0</span></button>
-        <button type="button" class="admin-nav-button" data-admin-section="drafts">◷ Productos no publicados <span id="draft-nav-count">0</span></button>
-      </nav>
+      <button class="admin-sidebar-backdrop" id="admin-sidebar-backdrop"
+              type="button" aria-label="Cerrar menú de administración" hidden></button>
+      <aside class="admin-sidebar" id="admin-sidebar" aria-label="Menú de administración">
+        <a class="admin-sidebar-brand" href="./" aria-label="Cat-logo, volver al catálogo público">
+          <span class="brand-mark">CT</span>
+          <span class="admin-sidebar-brand-copy">
+            <strong>Cat-logo</strong>
+            <small>Administración</small>
+          </span>
+        </a>
+
+        <p class="admin-sidebar-section-label">GESTIÓN DEL CATÁLOGO</p>
+        <nav class="admin-section-nav" aria-label="Secciones de administración">
+          <button type="button" class="admin-nav-button active" data-admin-section="home" aria-current="page">
+            <span class="admin-nav-icon" aria-hidden="true">⌂</span><span class="admin-nav-label">Inicio</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="add">
+            <span class="admin-nav-icon" aria-hidden="true">＋</span><span class="admin-nav-label">Añadir producto</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="published">
+            <span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Productos publicados</span><span class="admin-nav-count" id="published-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="drafts">
+            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Productos no publicados</span><span class="admin-nav-count" id="draft-nav-count">0</span>
+          </button>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <span class="admin-sidebar-footer-mark" aria-hidden="true">✦</span>
+          <span><strong>Catálogo de Tecnología</strong><small>Panel administrativo</small></span>
+        </div>
+      </aside>
 
       <div id="admin-section-home" class="admin-nav-panel" data-admin-panel="home">
       <section class="admin-welcome" aria-label="Resumen del panel">
