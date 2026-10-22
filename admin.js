@@ -1207,8 +1207,60 @@ async function loadProducts() {
   products = data || [];
 
   renderAdminList();
+  renderDashboardOverview();
 
 }
+
+function renderDashboardOverview() {
+  const published = products.filter(product => Boolean(product.is_published));
+  const drafts = products.filter(product => !product.is_published);
+  const needsImage = products.filter(product => {
+    const images = Array.isArray(product.images) ? product.images : [];
+    return !(product.image_url || product.image || images.length || (Array.isArray(product.gallery) && product.gallery.length));
+  });
+  const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+  const total = products.length;
+  const percent = total ? Math.round((published.length / total) * 100) : 0;
+  setText("dashboard-total", total);
+  setText("dashboard-published", published.length);
+  setText("dashboard-drafts", drafts.length);
+  setText("dashboard-review", needsImage.length);
+  setText("dashboard-chart-total", total);
+  setText("dashboard-legend-published", published.length);
+  setText("dashboard-legend-drafts", drafts.length);
+  setText("dashboard-task-drafts", drafts.length);
+  setText("dashboard-task-images", needsImage.length);
+  setText("dashboard-publication-summary", total ? `${percent}% del catálogo está publicado.` : "Agregá tu primer producto para comenzar.");
+  setText("dashboard-task-status", total ? "Inventario cargado correctamente" : "Todavía no hay productos en el inventario");
+  const ring = document.getElementById("dashboard-chart-ring");
+  if (ring) ring.style.setProperty("--published-ratio", `${percent}%`);
+  const progress = document.getElementById("dashboard-progress-published");
+  if (progress) progress.style.width = `${percent}%`;
+  const activity = document.getElementById("dashboard-activity-list");
+  if (activity) {
+    const recent = [...products].sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0,4);
+    activity.innerHTML = recent.length ? recent.map(product => {
+      const title = escapeHtml(product.name || "Producto sin nombre");
+      const status = product.is_published ? "Publicado en el catálogo" : "Guardado como borrador";
+      const dateValue = product.updated_at || product.created_at;
+      const date = dateValue ? new Date(dateValue).toLocaleDateString("es-NI", { day:"2-digit", month:"short" }) : "Fecha no disponible";
+      return `<div class="dashboard-activity-item"><span class="dashboard-activity-mark ${product.is_published ? "activity-mark-published" : "activity-mark-draft"}">${product.is_published ? "✓" : "◷"}</span><div><strong>${title}</strong><small>${status}</small></div><time>${escapeHtml(date)}</time></div>`;
+    }).join("") : '<p class="dashboard-empty-state">Todavía no hay actividad. Añadí un producto para comenzar.</p>';
+  }
+}
+
+document.querySelectorAll("[data-dashboard-action]").forEach(button => {
+  button.addEventListener("click", () => {
+    const action = button.dataset.dashboardAction;
+    if (action === "review") {
+      showAdminSection("published");
+      const search = document.getElementById("published-search");
+      if (search) { search.value = ""; search.dispatchEvent(new Event("input")); }
+      return;
+    }
+    showAdminSection(action === "add" ? "add" : action);
+  });
+});
 
 function renderAdminList() {
   const searchable = product => [product.name, product.brand, product.model, product.category].join(" ").toLocaleLowerCase("es");
