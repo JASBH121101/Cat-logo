@@ -353,15 +353,19 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
 function startingPrice(product, field = "price_usd") {
   const variants = getProductVariants(product);
 
-  const values = variants
-    .map(variant => variant[field])
-    .filter(value =>
-      value !== null &&
-      value !== undefined &&
-      value !== "" &&
-      Number.isFinite(Number(value))
-    )
-    .map(Number);
+  const pricedVariants = variants.filter(variant =>
+    variant[field] !== null &&
+    variant[field] !== undefined &&
+    variant[field] !== "" &&
+    Number.isFinite(Number(variant[field]))
+  );
+
+  /* Priorizar configuraciones disponibles para no anunciar primero un precio agotado. */
+  const availableVariants = pricedVariants.filter(
+    variant => variant.availability === "available"
+  );
+  const candidates = availableVariants.length ? availableVariants : pricedVariants;
+  const values = candidates.map(variant => Number(variant[field]));
 
   /* Si las variantes no tienen precio, mostrar el precio base registrado. */
   return values.length ? Math.min(...values) : product[field];
