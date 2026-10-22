@@ -18,13 +18,22 @@ let supabase = null;
 let products = [];
 let selectedCategory = "all";
 
-// Analytics: count product-detail opens and WhatsApp intent without blocking navigation.
-async function recordCatalogEvent(productId, eventType) {
+// Analytics: record product views and WhatsApp intent, including the selected variant.
+async function recordCatalogEvent(productId, eventType, variant = {}) {
   if (!supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
+
+  const cleanValue = value => {
+    const normalized = String(value ?? "").trim();
+    return normalized || null;
+  };
+
   try {
     const { error } = await supabase.from("catalog_events").insert({
       product_id: productId,
-      event_type: eventType
+      event_type: eventType,
+      variant_color: cleanValue(variant.color),
+      variant_ram: cleanValue(variant.ram),
+      variant_storage: cleanValue(variant.storage)
     });
     if (error) console.warn("No se pudo registrar el evento de analítica:", error.message);
   } catch (error) {
@@ -627,6 +636,10 @@ function renderVariantControls(product, variants, selected) {
   const area = $("#variant-options-area");
   if (!area || !selected) return;
 
+  dialogContent.dataset.analyticsVariantColor = String(selected.color || "");
+  dialogContent.dataset.analyticsVariantRam = String(selected.ram || "");
+  dialogContent.dataset.analyticsVariantStorage = String(selected.storage || "");
+
   const configuration = [
     selected.storage,
     selected.ram,
@@ -723,6 +736,7 @@ function renderLegacyColorOptions(product) {
                 ${escapeHtml(colorStatusLabel(color.type))}
               </span>
               <a href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product, null, color)))}"
+                 data-analytics-color="${escapeHtml(color.name)}"
                  target="_blank"
                  rel="noopener">Consultar este color ↗</a>
             </div>
@@ -734,12 +748,19 @@ function renderLegacyColorOptions(product) {
 }
 
 dialogContent.addEventListener("click", event => {
-  const whatsappLink = event.target.closest('a[href*="wa.me"], a[href*="api.whatsapp.com"]');
+  const target = event.target instanceof Element ? event.target : null;
+  const whatsappLink = target?.closest('a[href*="wa.me"], a[href*="api.whatsapp.com"]');
   if (whatsappLink) {
     const product = products.find(item => String(item.id) === String(dialogContent.dataset.analyticsProductId));
-    if (product) recordCatalogEvent(product.id, "whatsapp_click");
+    if (product) {
+      recordCatalogEvent(product.id, "whatsapp_click", {
+        color: whatsappLink.dataset.analyticsColor || dialogContent.dataset.analyticsVariantColor || "",
+        ram: whatsappLink.dataset.analyticsRam || dialogContent.dataset.analyticsVariantRam || "",
+        storage: whatsappLink.dataset.analyticsStorage || dialogContent.dataset.analyticsVariantStorage || ""
+      });
+    }
   }
-  const thumbnail = event.target.closest("[data-gallery-image]");
+  const thumbnail = target?.closest("[data-gallery-image]");
   if (!thumbnail) return;
   const mainImage = dialogContent.querySelector("#dialog-main-image");
   if (mainImage) {
@@ -753,6 +774,9 @@ dialogContent.addEventListener("click", event => {
 
 function openProduct(product) {
   dialogContent.dataset.analyticsProductId = String(product.id);
+  dialogContent.dataset.analyticsVariantColor = "";
+  dialogContent.dataset.analyticsVariantRam = "";
+  dialogContent.dataset.analyticsVariantStorage = "";
   recordCatalogEvent(product.id, "view");
   const variants = getProductVariants(product);
   const specs = specsArray(product.specifications);
