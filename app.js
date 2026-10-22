@@ -479,14 +479,24 @@ function startingPrice(product, field = "price_usd") {
     Number.isFinite(Number(variant[field]))
   );
 
-  /* Priorizar configuraciones disponibles para no anunciar primero un precio agotado. */
+  /* Priorizar precios de variantes disponibles. */
   const availableVariants = pricedVariants.filter(
     variant => variant.availability === "available"
   );
-  const candidates = availableVariants.length ? availableVariants : pricedVariants;
-  const values = candidates.map(variant => Number(variant[field]));
+  if (availableVariants.length) {
+    return Math.min(...availableVariants.map(variant => Number(variant[field])));
+  }
 
-  /* Si las variantes no tienen precio, mostrar el precio base registrado. */
+  /* Si hay variantes disponibles pero no tienen precio, no anunciar el precio
+     de una variante agotada o solo por pedido como si fuera la opción disponible. */
+  const hasAvailableUnpricedVariant = variants.some(
+    variant => variant.availability === "available"
+  );
+  if (hasAvailableUnpricedVariant) return product[field];
+
+  const values = pricedVariants.map(variant => Number(variant[field]));
+
+  /* Si no existe una variante disponible, conservar el precio de referencia existente. */
   return values.length ? Math.min(...values) : product[field];
 }
 
@@ -524,7 +534,7 @@ function renderCard(product) {
   const capacity = cardRam && cardStorage
     ? `${/\bram\b/i.test(cardRam) ? cardRam : `${cardRam} RAM`} / ${cardStorage}`
     : cardRam || cardStorage;
-  const nioPrice = cardConfiguration?.price_nio ?? startingPrice(product, "price_nio");
+  const nioPrice = cardConfiguration ? cardConfiguration.price_nio : startingPrice(product, "price_nio");
   const nio = formatNIO(nioPrice);
 
   return `
