@@ -47,7 +47,7 @@
 
       <form id="login-form" class="admin-form login-form">
         <label>
-          Correo electrónico
+          Correo electrónico <span class="required-mark" aria-hidden="true">*</span>
           <input id="login-email"
                  type="email"
                  autocomplete="username"
@@ -55,7 +55,7 @@
         </label>
 
         <label class="password-field-label">
-          Contraseña
+          Contraseña <span class="required-mark" aria-hidden="true">*</span>
           <span class="password-input-wrap">
             <input id="login-password"
                    type="password"
@@ -169,7 +169,7 @@
               </label>
 
               <label>
-                Disponibilidad general
+                Disponibilidad general <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-availability" required>
                   <option value="available">Disponible</option>
                   <option value="on_order">Por pedido</option>
