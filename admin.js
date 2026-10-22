@@ -18,6 +18,30 @@ const configured = Boolean(
   sessionStorage conserva la sesión durante la vida de la pestaña.
   Al cerrar la pestaña, el almacenamiento de esa sesión desaparece.
 */
+/*
+  Una recarga confirmada cierra la sesión de administración.
+  Si hay cambios en el formulario, beforeunload permite al navegador
+  preguntar primero; si el usuario cancela, la página no se recarga.
+*/
+const isPageReload = (() => {
+  try {
+    return performance.getEntriesByType("navigation")[0]?.type === "reload";
+  } catch {
+    return false;
+  }
+})();
+
+if (isPageReload) {
+  try {
+    const projectRef = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
+    const key = `sb-${projectRef}-auth-token`;
+    window.sessionStorage.removeItem(key);
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    console.warn("No se pudo limpiar la sesión durante la recarga.", error);
+  }
+}
+
 const supabase = configured
   ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
       auth: {
