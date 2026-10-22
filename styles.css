@@ -2873,3 +2873,29 @@ button:disabled {
 .variant-image-preview span { min-width:0; overflow-wrap:anywhere; color:var(--muted); font-size:12px; }
 .variant-image-placeholder { padding:10px; }
 @media (max-width:480px) { .admin-file-picker { width:100%; min-height:48px; } .admin-image-preview-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+
+/* Inicio de sesión: control de visibilidad de contraseña. */
+.password-field-label { min-width:0; }
+.password-input-wrap { position:relative; display:block; width:100%; }
+.password-input-wrap input { padding-right:50px !important; }
+.password-visibility-button {
+  position:absolute;
+  top:50%;
+  right:8px;
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  padding:7px;
+  border:1px solid transparent;
+  border-radius:10px;
+  color:var(--muted);
+  background:transparent;
+  cursor:pointer;
+  transform:translateY(-50%);
+  transition:color .18s ease,background .18s ease,border-color .18s ease;
+}
+.password-visibility-button:hover { color:var(--ink); background:rgba(116,137,190,.12); border-color:rgba(116,137,190,.2); }
+.password-visibility-button:focus-visible { outline:2px solid #7188ef; outline-offset:2px; }
+.password-visibility-button svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
