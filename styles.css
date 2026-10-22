@@ -3330,3 +3330,11 @@ html[data-theme="dark"] .admin-section-nav,
 .admin-specs-field { grid-column:span 1; min-width:0; }
 .admin-form #product-specs { display:block; width:100%; min-height:66px; height:auto; resize:none; overflow-y:hidden; line-height:1.55; }
 @media(max-width:700px) { .admin-specs-field { grid-column:1 / -1; } }
+
+
+/* Colores independientes por cada configuración técnica en el administrador. */
+.variant-color-section{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(116,143,207,.18)}
+.variant-color-section-title{font-size:12px;color:var(--muted,#aebdda)}
+.variant-config-group:not(.variant-base-group)>.variant-color-section .variant-color-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:8px}
+.variant-config-group:not(.variant-base-group)>.variant-color-section .variant-color-list>.variants-empty-hint{grid-column:1/-1}
+@media(max-width:760px){.variant-config-group:not(.variant-base-group)>.variant-color-section .variant-color-list{grid-template-columns:minmax(0,1fr)}}
