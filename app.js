@@ -368,16 +368,12 @@ function startingPrice(product, field = "price_usd") {
 }
 
 function renderCard(product) {
-  const specs = specsArray(product.specifications).slice(0, 3);
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
-
   const badge = product.featured
     ? '<span class="product-badge featured-badge">DESTACADO</span>'
     : "";
-
   const productStatus = normalizeProductAvailability(product.availability);
-
   const availabilityBadge =
     productStatus === "out_of_stock"
       ? '<span class="product-badge">AGOTADO</span>'
@@ -385,9 +381,18 @@ function renderCard(product) {
         ? '<span class="product-badge">POR PEDIDO</span>'
         : "";
 
+  const brand = String(product.brand || "").trim();
+  const model = String(product.model || "").trim();
+  const title = [brand, model].filter(Boolean).join(" ") || String(product.name || "Producto");
+  const configurations = [...new Set(variants.map(variant => {
+    const storage = String(variant.storage || "").trim();
+    const ram = String(variant.ram || "").trim();
+    if (storage && ram) return `${ram} RAM / ${storage}`;
+    return ram || storage;
+  }).filter(Boolean))];
+  const capacity = configurations[0] || "";
   const price = startingPrice(product, "price_usd");
   const nioPrice = startingPrice(product, "price_nio");
-  const priceLabel = variants.length ? "Precio desde" : "Precio de referencia";
   const nio = formatNIO(nioPrice);
 
   return `
@@ -397,50 +402,20 @@ function renderCard(product) {
         ${availabilityBadge}
         ${image}
       </div>
-
       <div class="product-card-content">
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
-
-        <h3>${escapeHtml(product.name)}</h3>
-
-        <p class="product-description">
-          ${escapeHtml(
-            product.description ||
-            "Consultá características, disponibilidad y precio final."
-          )}
-        </p>
-
-        ${
-          specs.length
-            ? `<div class="product-specs">
-                ${specs.map(spec => `<span class="spec-pill">${escapeHtml(spec)}</span>`).join("")}
-              </div>`
-            : ""
-        }
-
-        ${renderColorSummary(product)}
-
-        <div class="product-price-label">${priceLabel}</div>
+        <h3>${escapeHtml(title)}</h3>
+        ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
+        <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
-
-        ${
-          variants.length
-            ? '<div class="product-financing">Elegí capacidad y color para ver el precio exacto.</div>'
-            : '<div class="product-financing">Financiamiento por crédito o tarjeta · Consultá condiciones</div>'
-        }
-
         <div class="product-actions">
-          <button class="buy-button"
-                  type="button"
-                  data-details="${escapeHtml(product.id)}">
-            Comprar / configurar <span aria-hidden="true">↗</span>
-          </button>
-
-          <button class="detail-button"
+          <button class="buy-button product-view-button"
                   type="button"
                   data-details="${escapeHtml(product.id)}"
-                  aria-label="Ver detalles de ${escapeHtml(product.name)}">＋</button>
+                  aria-label="Ver producto: ${escapeHtml(title)}">
+            Ver producto <span aria-hidden="true">↗</span>
+          </button>
         </div>
       </div>
     </article>
