@@ -550,6 +550,23 @@ function chooseVariant(variants, current, field, value) {
 }
 
 function renderVariantButtonGroup(variants, selected, field, title) {
+  if (field === "storage") {
+    const values = [];
+    const seen = new Set();
+    variants.forEach(variant => {
+      const storage = String(variant.storage || "").trim();
+      const ram = String(variant.ram || "").trim();
+      const label = storage && ram ? `${storage} / ${ram}` : storage || ram;
+      const key = `${storage.toLocaleLowerCase("es")}| ${ram.toLocaleLowerCase("es")}`;
+      if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram}); }
+    });
+    const buttons = values.map(item => {
+      const isSelected = selected.storage === item.storage && selected.ram === item.ram;
+      return `<button type="button" class="variant-choice ${isSelected ? "selected" : ""}" data-variant-dimension="configuration" data-variant-storage="${escapeHtml(item.storage)}" data-variant-ram="${escapeHtml(item.ram)}" aria-pressed="${isSelected ? "true" : "false"}">${escapeHtml(item.label)}</button>`;
+    }).join("");
+    return `<section class="variant-option-group"><h3>${title}</h3><div class="variant-choice-list">${buttons}</div></section>`;
+  }
+
   const values = uniqueValues(variants, field);
   if (!values.length) return "";
 
@@ -620,8 +637,7 @@ function renderVariantControls(product, variants, selected) {
 
   area.innerHTML = `
     <div class="variant-selector">
-      ${renderVariantButtonGroup(variants, selected, "storage", "Capacidad de almacenamiento")}
-      ${renderVariantButtonGroup(variants, selected, "ram", "RAM")}
+      ${renderVariantButtonGroup(variants, selected, "storage", "Configuración")}
       ${renderVariantButtonGroup(variants, selected, "color", "Color")}
     </div>
 
@@ -771,13 +787,19 @@ function openProduct(product) {
       const button = event.target.closest("[data-variant-dimension]");
       if (!button) return;
 
-      selectedVariant = chooseVariant(
-        variants,
-        selectedVariant,
-        button.dataset.variantDimension,
-        button.dataset.variantValue
-      );
-
+      if (button.dataset.variantDimension === "configuration") {
+        const matching = variants.filter(variant =>
+          variant.storage === (button.dataset.variantStorage || "") &&
+          variant.ram === (button.dataset.variantRam || "")
+        );
+        selectedVariant = matching.find(variant => variant.color === selectedVariant.color && variant.availability === "available")
+          || matching.find(variant => variant.availability === "available")
+          || matching.find(variant => variant.color === selectedVariant.color)
+          || matching[0]
+          || selectedVariant;
+      } else {
+        selectedVariant = chooseVariant(variants, selectedVariant, button.dataset.variantDimension, button.dataset.variantValue);
+      }
       renderVariantControls(product, variants, selectedVariant);
     });
   }
