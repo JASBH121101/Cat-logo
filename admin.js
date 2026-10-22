@@ -555,27 +555,40 @@ function variantRowMarkup(variant = {}) {
           type="button"
           data-remove-variant
         >Quitar variante</button>
+        <button class="admin-mini-button" type="button" data-add-sibling-color>Añadir color a esta configuración</button>
       </div>
 
       <div class="variant-fields-grid">
         <label>
           Almacenamiento / capacidad
-          <input
-            data-variant-storage
-            maxlength="40"
-            value="${escapeHtml(value.storage)}"
-            placeholder="Ej. 512 GB"
-          >
+          <span class="variant-number-unit">
+            <input
+              data-variant-storage
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              value="${escapeHtml(String(value.storage).replace(/\s*GB\s*/i, ""))}"
+              aria-label="Capacidad de almacenamiento en GB"
+            >
+            <span aria-hidden="true">GB</span>
+          </span>
         </label>
 
         <label>
           Memoria RAM
-          <input
-            data-variant-ram
-            maxlength="40"
-            value="${escapeHtml(value.ram)}"
-            placeholder="Ej. 12 GB"
-          >
+          <span class="variant-number-unit">
+            <input
+              data-variant-ram
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              value="${escapeHtml(String(value.ram).replace(/\s*GB\s*/i, ""))}"
+              aria-label="Memoria RAM en GB"
+            >
+            <span aria-hidden="true">GB</span>
+          </span>
         </label>
 
         <label>
@@ -830,11 +843,29 @@ $("#add-variant-button")?.addEventListener("click", () => {
 });
 
 variantsContainer?.addEventListener("click", event => {
-  const remove = event.target.closest("[data-remove-variant]");
-
-  if (!remove) {
+  const addColor = event.target.closest("[data-add-sibling-color]");
+  if (addColor) {
+    const source = addColor.closest("[data-variant-row]");
+    if (!source) return;
+    const read = selector => source.querySelector(selector)?.value || "";
+    addVariantRow({
+      storage: read("[data-variant-storage]") ? `${read("[data-variant-storage]")} GB` : "",
+      ram: read("[data-variant-ram]") ? `${read("[data-variant-ram]")} GB` : "",
+      color: "",
+      color_hex: "#242424",
+      price_usd: read("[data-variant-price-usd]"),
+      price_nio: read("[data-variant-price-nio]"),
+      availability: read("[data-variant-availability]"),
+      image_url: read("[data-variant-image-url]")
+    });
+    const rows = Array.from(variantsContainer.querySelectorAll("[data-variant-row]"));
+    const added = rows[rows.length - 1];
+    added?.querySelector("[data-variant-color]")?.focus();
     return;
   }
+
+  const remove = event.target.closest("[data-remove-variant]");
+  if (!remove) return;
 
   remove.closest("[data-variant-row]")?.remove();
 
@@ -1537,13 +1568,10 @@ async function collectVariants(productId, existingVariants = []) {
   );
 
   const drafts = rows.map((row, index) => {
-    const storage = row
-      .querySelector("[data-variant-storage]")
-      .value.trim();
-
-    const ram = row
-      .querySelector("[data-variant-ram]")
-      .value.trim();
+    const storageValue = row.querySelector("[data-variant-storage]").value.trim();
+    const ramValue = row.querySelector("[data-variant-ram]").value.trim();
+    const storage = storageValue ? `${storageValue} GB` : "";
+    const ram = ramValue ? `${ramValue} GB` : "";
 
     const color = row
       .querySelector("[data-variant-color]")
