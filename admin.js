@@ -557,7 +557,9 @@ function variantRowMarkup(variant = {}) {
       <details class="inline-color-details">
         <summary>Disponibilidad y fotografías</summary>
         <div class="variant-fields-grid variant-color-fields">
+          <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
+          <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${COLOR_PALETTE.map(item => `<button type="button" class="variant-swatch" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
           <label>Disponibilidad de este color<select data-variant-availability>
             <option value="available" ${v.availability === "available" ? "selected" : ""}>Disponible</option>
             <option value="order" ${v.availability === "order" ? "selected" : ""}>Por pedido</option>
@@ -775,15 +777,65 @@ const quickColorPalette = $("#quick-color-palette");
 const quickColorButton = $("#add-base-color-button");
 const quickColorStatus = $("#quick-color-status");
 
-if (quickColorPalette) {
-  quickColorPalette.innerHTML = COLOR_PALETTE.map(color => `
+const quickColorSwatches = $("#quick-color-swatches");
+const quickColorSearch = $("#quick-color-search");
+const quickColorCustomHex = $("#quick-color-custom-hex");
+
+function renderQuickColorPalette(query = "") {
+  if (!quickColorSwatches) return;
+  const q = query.trim().toLowerCase();
+  const hexQuery = q.startsWith("#") ? q : "";
+  const filtered = COLOR_PALETTE.filter(color =>
+    color.name.toLocaleLowerCase("es").includes(q) ||
+    color.hex.toLowerCase().includes(q) ||
+    (hexQuery && color.hex.toLowerCase().includes(hexQuery))
+  );
+  quickColorSwatches.innerHTML = filtered.map(color => `
     <button class="quick-color-swatch" type="button" data-quick-color="${escapeHtml(color.name)}"
-      data-quick-color-hex="${color.hex}" title="${escapeHtml(color.name)}"
-      aria-label="Añadir color ${escapeHtml(color.name)}">
+      data-quick-color-hex="${color.hex}" title="${escapeHtml(color.name)} · ${color.hex}"
+      aria-label="Añadir color ${escapeHtml(color.name)} ${color.hex}">
       <span class="quick-color-dot" style="--quick-color:${color.hex}"></span>
       <span class="quick-color-name">${escapeHtml(color.name)}</span>
-    </button>`).join("");
+      <span class="quick-color-code">${color.hex}</span>
+    </button>`).join("") || '<p class="quick-color-no-results">No hay coincidencias. Podés usar un código HEX personalizado.</p>';
 }
+renderQuickColorPalette();
+quickColorSearch?.addEventListener("input", () => renderQuickColorPalette(quickColorSearch.value));
+
+function addCustomHexColor() {
+  const hex = (quickColorCustomHex?.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
+    if (quickColorStatus) quickColorStatus.textContent = "Escribí un código HEX válido, por ejemplo #0833A2.";
+    quickColorCustomHex?.focus();
+    return;
+  }
+  const known = COLOR_PALETTE.find(item => item.hex.toLowerCase() === hex.toLowerCase());
+  const name = known?.name || hex.toUpperCase();
+  const container = $("#product-variants-list");
+  const colorManager = $("#base-color-manager");
+  if (!container || !colorManager) return;
+  let baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
+  if (!baseGroup) {
+    renderVariantRows([]);
+    baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
+  }
+  if (!baseGroup) return;
+  const duplicate = Array.from(baseGroup.querySelectorAll("[data-variant-color]"))
+    .some(input => input.value.trim().toLocaleLowerCase("es") === name.toLocaleLowerCase("es"));
+  if (duplicate) {
+    if (quickColorStatus) quickColorStatus.textContent = `${name} ya está añadido.`;
+    return;
+  }
+  addVariantRow({color:name,color_hex:hex.toUpperCase(),image_url:"",availability:"available"}, baseGroup, {focus:false});
+  if (quickColorStatus) quickColorStatus.textContent = "";
+  updateEditorDirtyState();
+  if (quickColorCustomHex) quickColorCustomHex.value = "";
+}
+
+$("#quick-color-add-hex")?.addEventListener("click", addCustomHexColor);
+quickColorCustomHex?.addEventListener("keydown", event => {
+  if (event.key === "Enter") { event.preventDefault(); addCustomHexColor(); }
+});
 
 quickColorButton?.addEventListener("click", event => {
   event.preventDefault();
@@ -888,33 +940,47 @@ form?.addEventListener("change", event => {
   const urlInput = event.target.closest("[data-variant-image-url]");
   if (urlInput) return;
   if (event.target.matches("[data-variant-images]")) return;
+  const swatch = event.target.closest("[data-variant-swatch]");
+  if (swatch) {
+    const row = swatch.closest("[data-variant-row]");
+    if (!row) return;
+    const hex = swatch.dataset.variantSwatch;
+    const name = swatch.dataset.variantSwatchName || "";
+    row.querySelector("[data-variant-color]").value = name;
+    row.querySelector("[data-variant-hex]").value = hex;
+    row.querySelector("[data-variant-hex-text]").value = hex;
+    row.querySelector("[data-variant-palette]").value = hex;
+    updateVariantRowHeadings();
+    updateEditorDirtyState();
+    return;
+  }
+
   const select = event.target.closest("[data-variant-palette]");
-
-  if (!select) {
-    return;
-  }
-
+  if (!select) return;
   const row = select.closest("[data-variant-row]");
-
-  if (!row || !select.value || select.value === "custom") {
-    return;
-  }
-
-  const color = COLOR_PALETTE.find(
-    item => item.hex === select.value
-  );
-
-  if (!color) {
-    return;
-  }
-
+  if (!row || !select.value || select.value === "custom") return;
+  const color = COLOR_PALETTE.find(item => item.hex === select.value);
+  if (!color) return;
   row.querySelector("[data-variant-color]").value = color.name;
   row.querySelector("[data-variant-hex]").value = color.hex;
-
+  row.querySelector("[data-variant-hex-text]").value = color.hex;
   updateVariantRowHeadings();
 });
 
 form?.addEventListener("input", event => {
+  if (event.target.matches("[data-variant-hex-text]")) {
+    const row = event.target.closest("[data-variant-row]");
+    const value = event.target.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(value) && row) {
+      row.querySelector("[data-variant-hex]").value = value;
+      const matching = COLOR_PALETTE.find(item => item.hex.toLowerCase() === value.toLowerCase());
+      row.querySelector("[data-variant-palette]").value = matching ? matching.hex : "custom";
+      if (matching) row.querySelector("[data-variant-color]").value = matching.name;
+      updateVariantRowHeadings();
+      updateEditorDirtyState();
+    }
+    return;
+  }
   if (!event.target.matches("[data-variant-color], [data-variant-hex], [data-group-storage], [data-group-ram]")) return;
   const row = event.target.closest("[data-variant-row]");
   if (event.target.matches("[data-group-storage], [data-group-ram]")) {
@@ -924,6 +990,8 @@ form?.addEventListener("input", event => {
   if (!row) return;
 
   if (event.target.matches("[data-variant-hex]")) {
+    const hexText = row.querySelector("[data-variant-hex-text]");
+    if (hexText) hexText.value = event.target.value.toUpperCase();
     updateVariantRowHeadings();
     updateEditorDirtyState();
     return;
@@ -940,6 +1008,7 @@ form?.addEventListener("input", event => {
     if (matchingColor) {
       row.querySelector("[data-variant-hex]").value =
         matchingColor.hex;
+      row.querySelector("[data-variant-hex-text]").value = matchingColor.hex;
 
       row.querySelector("[data-variant-palette]").value =
         matchingColor.hex;
