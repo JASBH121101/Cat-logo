@@ -2915,3 +2915,10 @@ button:disabled {
 .variant-config-group .variant-row-title strong { font-size:13px; }
 .variant-config-group .variant-fields-grid { gap:11px; }
 @media (max-width:480px) { .variant-config-group { padding:9px; } .variant-config-group-heading { align-items:stretch; flex-direction:column; } .variant-config-group-heading .admin-mini-button { width:100%; } }
+
+.variant-config-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.variant-config-fields label{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--ink);font-size:13px;font-weight:700}
+.variant-config-fields input,.variant-config-fields select{width:100%;min-width:0}
+.variant-color-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+.variant-add-color{width:100%;margin-top:12px}
+@media(max-width:480px){.variant-config-fields,.variant-color-fields{grid-template-columns:minmax(0,1fr)}}
