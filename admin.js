@@ -817,7 +817,7 @@ quickColorPalette?.addEventListener("click", event => {
 
   addVariantRow({color, color_hex:hex, image_url:"", availability:"available"}, baseGroup, {focus:false});
   updateEditorDirtyState();
-  if (quickColorStatus) quickColorStatus.textContent = `Color ${color} añadido. Editá su nombre y tono aquí; abrí “Disponibilidad y fotografías” para cargar imágenes.`;
+  if (quickColorStatus) quickColorStatus.textContent = "";
   choice.classList.add("is-selected");
 });
 
@@ -989,40 +989,8 @@ async function showDashboard(user) {
   dashboard.classList.remove("hidden");
   showAdminSection("home");
 
-  const metadata = user.user_metadata || {};
-
-  const profileName =
-    metadata.full_name ||
-    metadata.name ||
-    metadata.display_name ||
-    [metadata.first_name, metadata.last_name]
-      .filter(Boolean)
-      .join(" ");
-
-  const emailName = user.email
-    ? user.email
-        .split("@")[0]
-        .replace(/[._+-]+/g, " ")
-        .replace(/\d+/g, " ")
-        .trim()
-    : "";
-
-  const displayName = String(profileName || emailName || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(part =>
-      part.charAt(0).toLocaleUpperCase("es") + part.slice(1)
-    )
-    .join(" ");
-
   const greeting = $("#admin-greeting");
-
-  if (greeting) {
-    greeting.textContent = displayName
-      ? `¡Bienvenido de nuevo, ${displayName}! 👋`
-      : "¡Bienvenido de nuevo! 👋";
-  }
+  if (greeting) greeting.textContent = "¡Bienvenido de nuevo, Steven! 👋";
 
   setStatus("Sesión iniciada");
   window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
