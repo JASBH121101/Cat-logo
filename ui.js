@@ -348,8 +348,9 @@
       const nav = header.querySelector(".header-nav");
       const backLink = header.querySelector(".back-link");
 
+      /* Mantener el selector como hijo directo del encabezado en móvil. */
       if (nav) {
-        nav.appendChild(themeButton);
+        header.insertBefore(themeButton, nav);
       } else if (backLink) {
         header.insertBefore(themeButton, backLink);
       } else {
