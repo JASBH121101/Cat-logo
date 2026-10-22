@@ -4021,3 +4021,9 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+
+/* Ensure the quick palette respects its hidden state despite grid display overrides. */
+.admin-add-color-slot .quick-color-palette[hidden] {
+  display: none !important;
+}
