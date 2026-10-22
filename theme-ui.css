@@ -4272,3 +4272,47 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
   .inline-color-details > summary { font-size: 12px !important; }
 }
 
+
+
+/* Último ajuste de tipografía: pequeño incremento de ~5% en los elementos de lectura frecuente. */
+.variant-config-group-heading strong { font-size: 16.8px !important; }
+.variant-config-group-heading small { font-size: 13.1px !important; }
+.variant-config-fields > label { font-size: 15.8px !important; }
+.variant-config-fields input { font-size: 14.7px !important; }
+.variant-color-section-title { font-size: 15.2px !important; }
+.inline-color-details > summary { font-size: 13.1px !important; }
+.inline-color-name-field,
+.inline-color-tone-field { font-size: 11px !important; }
+.inline-color-name-field input { font-size: 13.1px !important; }
+.inline-color-details .variant-color-fields > label { font-size: 12.6px !important; }
+.inline-color-details .variant-color-fields select,
+.inline-color-details [data-variant-hex-text] { font-size: 13.7px !important; }
+.variant-config-group:not(.variant-base-group) .variant-add-color { font-size: 13.1px !important; }
+.admin-add-color-heading .button { font-size: 13.1px !important; }
+.variants-editor-heading p { font-size: 13.7px !important; }
+
+/* Unidades siempre alineadas al lado del campo, sin saltar debajo del input. */
+.variant-config-fields .admin-input-unit {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.variant-config-fields .admin-input-unit input {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.variant-config-fields .admin-input-unit > span {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  font-size: 13.2px !important;
+}
+@media(max-width:600px) {
+  .variant-config-group-heading strong { font-size: 15.8px !important; }
+  .variant-config-fields > label { font-size: 14.7px !important; }
+  .variant-color-section-title { font-size: 14.2px !important; }
+  .inline-color-details > summary { font-size: 12.6px !important; }
+}
