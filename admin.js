@@ -713,6 +713,11 @@ function updateVariantRowHeadings() {
 }
 
 /* Galerías editables: orden, portada y fotos múltiples por variante. */
+const specsTextarea = $("#product-specs");
+function resizeSpecsTextarea(){ if(!specsTextarea)return; specsTextarea.style.height="auto"; specsTextarea.style.height=`${Math.max(66,specsTextarea.scrollHeight)}px`; }
+specsTextarea?.addEventListener("input",resizeSpecsTextarea);
+requestAnimationFrame(resizeSpecsTextarea);
+
 const variantsContainer = $("#product-variants-list");
 const baseColorManager = $("#base-color-manager");
 const mainImagesInput = $("#product-images"), mainImagesPreview = $("#product-images-preview"), mainImagesSummary = $("#product-images-summary");
