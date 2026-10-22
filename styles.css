@@ -3437,3 +3437,90 @@ html[data-theme="dark"] .admin-section-nav,
 .form-grid {
   align-items: start;
 }
+
+
+/* Corrección de selectores: la lista está dentro de .variant-color-section. */
+.base-color-manager .variant-base-group .variant-color-section .variant-color-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.base-color-manager .variant-base-group .variant-color-section .variant-color-list > .variants-empty-hint {
+  grid-column: 1 / -1;
+}
+.base-color-manager .variant-base-group .variant-color-section .inline-color-card {
+  min-width: 0;
+  padding: 7px;
+}
+.base-color-manager .variant-base-group .variant-color-section .inline-color-main {
+  grid-template-columns: 18px minmax(0, 1fr) 32px 24px;
+  align-items: center;
+  gap: 5px;
+}
+.base-color-manager .variant-base-group .variant-color-section .inline-color-dot {
+  width: 17px;
+  height: 17px;
+}
+.base-color-manager .variant-base-group .variant-color-section .inline-color-name-field input {
+  min-height: 31px;
+  padding: 5px 6px !important;
+  font-size: 11px;
+}
+.base-color-manager .variant-base-group .variant-color-section .inline-color-tone-field input[type="color"] {
+  width: 32px;
+  height: 31px;
+  padding: 2px;
+}
+.base-color-manager .variant-base-group .variant-color-section .inline-color-remove {
+  min-width: 24px;
+  min-height: 30px;
+  padding: 2px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)) !important;
+  align-items: start;
+  gap: 8px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .inline-color-card {
+  min-width: 0;
+  padding: 7px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .inline-color-main {
+  grid-template-columns: 18px minmax(0, 1fr) 32px 24px;
+  align-items: center;
+  gap: 5px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .inline-color-dot {
+  width: 17px;
+  height: 17px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .inline-color-name-field input {
+  min-height: 31px;
+  padding: 5px 6px !important;
+  font-size: 11px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .inline-color-tone-field input[type="color"] {
+  width: 32px;
+  height: 31px;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section .inline-color-remove {
+  min-width: 24px;
+  min-height: 30px;
+  padding: 2px;
+}
+.quick-color-status { display: none !important; }
+@media (max-width: 760px) {
+  .base-color-manager .variant-base-group .variant-color-section .variant-color-list,
+  .variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 480px) {
+  .base-color-manager .variant-base-group .variant-color-section .variant-color-list,
+  .variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
