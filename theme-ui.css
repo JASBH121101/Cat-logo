@@ -3491,3 +3491,33 @@ html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
     min-width: 135px;
   }
 }
+
+
+/* Refuerzo final para que ninguna regla general recorte la foto de la ficha. */
+#dialog-image {
+  display: grid !important;
+  place-items: center !important;
+  height: 260px !important;
+  min-height: 260px !important;
+  max-height: 260px !important;
+  overflow: hidden !important;
+}
+#dialog-image > img#dialog-main-image {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 6px !important;
+  margin: auto !important;
+  box-sizing: border-box !important;
+}
+@media (min-width: 761px) {
+  #dialog-image {
+    height: 390px !important;
+    min-height: 390px !important;
+    max-height: 390px !important;
+  }
+}
