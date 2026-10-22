@@ -3493,31 +3493,151 @@ html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
 }
 
 
-/* Refuerzo final para que ninguna regla general recorte la foto de la ficha. */
-#dialog-image {
-  display: grid !important;
-  place-items: center !important;
-  height: 260px !important;
-  min-height: 260px !important;
-  max-height: 260px !important;
-  overflow: hidden !important;
+
+/* =========================================================
+   FICHA DE PRODUCTO RESPONSIVE — REGLAS ÚNICAS
+   La caja conserva su tamaño mientras la imagen se adapta.
+   ========================================================= */
+.product-dialog {
+  box-sizing: border-box;
+  width: min(1040px, calc(100vw - 32px));
+  max-width: 1040px;
+  max-height: min(88vh, 900px);
+  max-height: min(88dvh, 900px);
+  margin: auto;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 18px;
+  scrollbar-gutter: stable;
 }
-#dialog-image > img#dialog-main-image {
-  display: block !important;
-  width: auto !important;
-  height: auto !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  padding: 6px !important;
-  margin: auto !important;
-  box-sizing: border-box !important;
+#dialog-content,
+.product-dialog .dialog-layout,
+.product-dialog .dialog-detail {
+  min-width: 0;
+  box-sizing: border-box;
 }
-@media (min-width: 761px) {
-  #dialog-image {
-    height: 390px !important;
-    min-height: 390px !important;
-    max-height: 390px !important;
+.product-dialog .dialog-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, .86fr) minmax(0, 1.14fr);
+  align-items: start;
+  gap: 0;
+}
+.product-dialog #dialog-image,
+.product-dialog .dialog-image {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: clamp(300px, 54vh, 540px);
+  min-height: 0;
+  max-height: 540px;
+  aspect-ratio: auto;
+  align-self: start;
+  overflow: hidden;
+  padding: 10px;
+  box-sizing: border-box;
+  background: var(--surface-soft, #f2f5fc);
+}
+.product-dialog #dialog-image > img,
+.product-dialog .dialog-image > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  object-fit: contain;
+  object-position: center;
+  mix-blend-mode: normal;
+}
+.product-dialog .dialog-detail {
+  padding: clamp(18px, 2.4vw, 30px);
+  overflow-wrap: anywhere;
+}
+.product-dialog .dialog-detail p,
+.product-dialog .dialog-detail li,
+.product-dialog .dialog-detail strong {
+  overflow-wrap: anywhere;
+}
+.product-dialog .dialog-close {
+  position: sticky;
+  top: 10px;
+  z-index: 10;
+}
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .product-dialog {
+    width: calc(100vw - 16px);
+    max-width: 680px;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 16px;
+  }
+  .product-dialog .dialog-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .product-dialog #dialog-image,
+  .product-dialog .dialog-image {
+    position: relative;
+    width: 100%;
+    height: clamp(180px, 32vh, 290px);
+    height: clamp(180px, 32dvh, 290px);
+    min-height: 180px;
+    max-height: 290px;
+    padding: 8px;
+    aspect-ratio: auto;
+  }
+  .product-dialog #dialog-image > img,
+  .product-dialog .dialog-image > img {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    object-fit: contain;
+  }
+  .product-dialog .dialog-detail {
+    padding: 16px 15px 22px;
+  }
+  .product-dialog .dialog-detail h2 {
+    font-size: clamp(22px, 5vw, 28px);
+    line-height: 1.2;
+  }
+  .product-dialog .variant-selector {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+  .product-dialog .variant-option-group {
+    min-width: 0;
+    padding: 10px;
+  }
+  .product-dialog .variant-choice-list {
+    flex-wrap: wrap;
+  }
+  .product-dialog .variant-bottom-row {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, .8fr);
+    gap: 8px;
+  }
+  .product-dialog .variant-price-box {
+    min-width: 0;
+    padding: 8px;
+  }
+  .product-dialog .variant-whatsapp-button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    white-space: normal;
+  }
+}
+@media (max-width: 380px) {
+  .product-dialog .variant-bottom-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .product-dialog .variant-price-box {
+    width: fit-content;
+    max-width: 100%;
   }
 }
