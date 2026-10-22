@@ -1358,7 +1358,40 @@ async function collectVariants(productId,existingVariants=[]){
   return {storage,ram,color,color_hex,price_usd,price_nio,availability,image_url,file,row};
  });
  const seen=new Set();for(const v of drafts){const key=[v.storage,v.ram,v.color].join("|").toLocaleLowerCase("es");if(seen.has(key))throw new Error(`La combinación ${[v.storage,v.ram,v.color].filter(Boolean).join(" · ")} está repetida.`);seen.add(key);}
- for(const v of drafts){if(v.file){const status=v.row.querySelector("[data-variant-status]");if(status)status.textContent=`Subiendo foto de ${v.color}…`;v.image_url=await uploadImage(productId,v.file,"variants");}}
+ for (const v of drafts) {
+  if (!v.file) continue;
+
+  const status = v.row.querySelector("[data-variant-status]");
+  const fileInput = v.row.querySelector("[data-variant-image]");
+  const urlInput = v.row.querySelector("[data-variant-image-url]");
+
+  if (status) {
+   status.textContent = `Subiendo foto de ${v.color}…`;
+   status.dataset.state = "uploading";
+  }
+
+  try {
+   v.image_url = await uploadImage(productId, v.file, "variants");
+
+   // Conserva la URL si falla otra parte del guardado y hay que reintentar.
+   if (urlInput) urlInput.value = v.image_url;
+   if (fileInput) fileInput.value = "";
+   renderVariantImagePreview(v.row, null, v.image_url);
+
+   if (status) {
+    status.textContent = `Foto de ${v.color} cargada correctamente.`;
+    status.dataset.state = "success";
+   }
+
+   updateEditorDirtyState();
+  } catch (error) {
+   if (status) {
+    status.textContent = `No se pudo subir la foto de ${v.color}: ${error.message || "error desconocido"}`;
+    status.dataset.state = "error";
+   }
+   throw error;
+  }
+ }
  return drafts.map(({file,row,...v})=>v);
 }
 
