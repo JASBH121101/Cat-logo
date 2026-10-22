@@ -3574,3 +3574,14 @@ html[data-theme="dark"] .admin-section-nav,
  .variant-config-group:not(.variant-base-group) .variant-color-list { grid-template-columns:minmax(0,1fr); }
  .variant-swatch-palette { grid-template-columns:repeat(8,minmax(20px,1fr)); }
 }
+
+
+/* La garantía y las especificaciones forman una columna independiente: la lista de colores ya no empuja las especificaciones hacia abajo. */
+.warranty-specs-stack { display:flex; flex-direction:column; gap:16px; align-self:start; min-width:0; }
+.warranty-specs-stack > label { min-width:0; }
+.warranty-specs-stack .admin-specs-field { grid-column:auto; }
+.admin-form #product-specs { min-height:90px; height:auto; resize:vertical; overflow:auto; }
+.admin-add-color-slot { grid-column:auto; min-width:0; align-self:start; }
+@media(max-width:700px) {
+  .warranty-specs-stack { gap:13px; }
+}
