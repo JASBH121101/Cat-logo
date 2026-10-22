@@ -99,6 +99,14 @@
 
       <div id="admin-status" class="admin-alert" role="status"></div>
 
+      <nav class="admin-section-nav" aria-label="Secciones de administración">
+        <button type="button" class="admin-nav-button active" data-admin-section="home" aria-current="page">⌂ Inicio</button>
+        <button type="button" class="admin-nav-button" data-admin-section="add">＋ Añadir</button>
+        <button type="button" class="admin-nav-button" data-admin-section="published">✓ Productos publicados <span id="published-nav-count">0</span></button>
+        <button type="button" class="admin-nav-button" data-admin-section="drafts">◷ Productos no publicados <span id="draft-nav-count">0</span></button>
+      </nav>
+
+      <div id="admin-section-home" class="admin-nav-panel" data-admin-panel="home">
       <section class="admin-welcome" aria-label="Resumen del panel">
         <div class="admin-welcome-copy">
           <p class="admin-welcome-kicker">CENTRO DE CONTROL</p>
@@ -121,6 +129,9 @@
         </div>
       </section>
 
+      </div>
+
+      <section id="admin-section-add" class="admin-nav-panel hidden" data-admin-panel="add">
       <div class="admin-layout">
         <section class="admin-card product-editor">
           <div class="card-heading">
@@ -195,7 +206,7 @@
               </label>
 
               <label class="span-2">
-                Características y especificaciones (una por línea: Nombre: valor)
+                Características y especificaciones.
                 <textarea id="product-specs"
                           rows="5"></textarea>
               </label>
@@ -273,25 +284,26 @@
           </form>
         </section>
 
-        <section class="admin-card product-list-card">
-          <div class="card-heading">
-            <div>
-              <h2>Productos guardados</h2>
-              <p id="product-count">Consultando inventario…</p>
-            </div>
-          </div>
-
-          <label class="search-box admin-search">
-            <span aria-hidden="true">⌕</span>
-            <input id="admin-search"
-                   type="search"
-                   aria-label="Buscar inventario">
-          </label>
-
-          <div id="admin-product-list" class="admin-product-list"></div>
-        </section>
       </div>
+      </section>
 
+      <section id="admin-section-published" class="admin-nav-panel hidden" data-admin-panel="published">
+        <section class="admin-card product-list-card">
+          <div class="card-heading"><div><h2>Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados" placeholder="Buscar producto publicado"></label>
+          <div id="published-product-list" class="admin-product-list"></div>
+        </section>
+      </section>
+
+      <section id="admin-section-drafts" class="admin-nav-panel hidden" data-admin-panel="drafts">
+        <section class="admin-card product-list-card">
+          <div class="card-heading"><div><h2>Productos no publicados</h2><p id="draft-count">Consultando borradores…</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
+          <div id="draft-product-list" class="admin-product-list"></div>
+        </section>
+      </section>
+
+      <div class="admin-nav-panel" data-admin-panel="home">
       <section class="admin-card team-preview-card"
                aria-labelledby="team-preview-title">
         <div class="team-preview-heading">
@@ -350,6 +362,7 @@
 
         <p id="import-status" class="form-status" role="status"></p>
       </section>
+      </div>
     </section>
   </main>
 
