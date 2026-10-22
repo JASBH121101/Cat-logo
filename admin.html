@@ -206,9 +206,12 @@
               </label>
 
               <div class="admin-add-color-slot">
-                <span class="admin-add-color-caption">Elegí un color</span>
-                <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Elegir color</button>
+                <div class="admin-add-color-heading">
+                  <span class="admin-add-color-caption">Colores del producto</span>
+                  <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Añadir color</button>
+                </div>
                 <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden></div>
+                <div id="base-color-manager" class="base-color-manager" aria-label="Colores configurados"></div>
                 <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
               </div>
 
@@ -234,7 +237,7 @@
                   <div class="variants-editor-copy">
                     <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
                     <p>
-                      La configuración base usa el precio del producto. Añadí sus colores y marcá la disponibilidad de cada uno. Si cambia la capacidad o la RAM, creá otra configuración.
+                      Usá esta sección únicamente cuando cambie la capacidad de almacenamiento o la memoria RAM. Los colores se administran en el formulario principal.
                     </p>
                   </div>
                   <div class="variants-editor-actions" aria-label="Acciones para variantes">
@@ -242,15 +245,9 @@
                   </div>
                 </div>
 
-                <div class="variant-palette-note">
-                  <span aria-hidden="true">◉</span>
-                  Elegí un color de la paleta o personalizá su nombre y tono.
-                  Podés indicar si esa combinación está disponible o es por pedido.
-                </div>
-
                 <div id="product-variants-list" class="product-variants-list">
                   <p class="variants-empty-hint">
-                    Añadí los colores disponibles para la configuración base.
+                    No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.
                   </p>
                 </div>
               </section>
