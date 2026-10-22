@@ -1068,6 +1068,7 @@ document.querySelectorAll("#published-product-list, #draft-product-list").forEac
 
     if (product) {
       fillEditor(product);
+      showAdminSection("add");
     }
   }
 
