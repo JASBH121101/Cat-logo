@@ -588,9 +588,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const title = isBase
     ? "Colores del producto"
     : [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
-  const colorControls = isBase
-    ? '<div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button>'
-    : "";
+  const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></div>';
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
     <div class="variant-config-group-heading">
@@ -613,61 +611,58 @@ function renderVariantRows(variants = []) {
 
   const normalized = normalizeVariants(variants);
   const groups = new Map();
-  const colorsByName = new Map();
-
   normalized.forEach(variant => {
-    const groupKey = variantGroupKey(variant);
-    if (!groups.has(groupKey)) groups.set(groupKey, []);
-    groups.get(groupKey).push(variant);
-
-    const name = String(variant.color || "").trim();
-    if (!name) return;
-    const colorKey = name.toLocaleLowerCase("es");
-    const imageList = Array.isArray(variant.images) && variant.images.length
-      ? variant.images
-      : [variant.image_url || variant.imageUrl || ""].filter(Boolean);
-    if (!colorsByName.has(colorKey)) {
-      colorsByName.set(colorKey, {
-        color: name,
-        color_hex: validHex(variant.color_hex || variant.hex),
-        availability: normalizeVariantAvailability(variant.availability),
-        images: [...new Set(imageList.filter(Boolean))],
-        image_url: imageList[0] || ""
-      });
-    } else {
-      const current = colorsByName.get(colorKey);
-      current.images = [...new Set([...(current.images || []), ...imageList.filter(Boolean)])];
-      current.image_url = current.images[0] || "";
-      if (normalizeVariantAvailability(variant.availability) === "available") {
-        current.availability = "available";
-      } else if (
-        current.availability !== "available" &&
-        normalizeVariantAvailability(variant.availability) === "order"
-      ) {
-        current.availability = "order";
-      }
-    }
+    const key = variantGroupKey(variant);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(variant);
   });
+
+  const makeColors = items => {
+    const byName = new Map();
+    (items || []).forEach(variant => {
+      const name = String(variant.color || "").trim();
+      if (!name) return;
+      const key = name.toLocaleLowerCase("es");
+      const images = Array.isArray(variant.images) && variant.images.length
+        ? variant.images
+        : [variant.image_url || ""].filter(Boolean);
+      if (!byName.has(key)) {
+        byName.set(key, {
+          color: name,
+          color_hex: validHex(variant.color_hex || variant.hex),
+          availability: normalizeVariantAvailability(variant.availability),
+          images: [...new Set(images)],
+          image_url: images[0] || ""
+        });
+      } else {
+        const current = byName.get(key);
+        current.images = [...new Set([...(current.images || []), ...images])];
+        current.image_url = current.images[0] || "";
+      }
+    });
+    return [...byName.values()];
+  };
 
   container.innerHTML = "";
   colorManager.innerHTML = "";
-
   colorManager.insertAdjacentHTML("beforeend", variantGroupMarkup({}, true));
-  const colorGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
-  const colorList = colorGroup?.querySelector("[data-variant-color-list]");
-  const uniqueColors = Array.from(colorsByName.values());
-  uniqueColors.forEach(color => colorList?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
-  if (colorList && !uniqueColors.length) {
-    colorList.innerHTML = '<p class="variants-empty-hint">Elegí un color para este producto.</p>';
-  }
+  const baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
+  const baseList = baseGroup?.querySelector("[data-variant-color-list]");
+  const baseColors = makeColors(groups.get("|") || []);
+  baseColors.forEach(color => baseList?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
+  if (baseList && !baseColors.length) baseList.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para la configuración principal.</p>';
 
   groups.delete("|");
   groups.forEach(items => {
-    container.insertAdjacentHTML("beforeend", variantGroupMarkup(items[0], false));
+    const first = items[0] || {};
+    container.insertAdjacentHTML("beforeend", variantGroupMarkup(first, false));
+    const group = container.lastElementChild;
+    const list = group?.querySelector("[data-variant-color-list]");
+    const colors = makeColors(items);
+    colors.forEach(color => list?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
+    if (list && !colors.length) list.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para esta configuración.</p>';
   });
-  if (!groups.size) {
-    container.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
-  }
+  if (!groups.size) container.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
 
   updateVariantRowHeadings();
   form?.querySelectorAll("[data-variant-row]").forEach(row => renderVariantImagePreview(row));
@@ -1592,106 +1587,104 @@ async function uploadMainImages(productId, files) {
    ========================================================= */
 
 async function collectVariants(productId, existingVariants = []) {
-  const colorRows = Array.from(baseColorManager?.querySelectorAll('[data-variant-group][data-base-group="true"] [data-variant-row]') || []);
   const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
   const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
+  const allGroups = [
+    ...Array.from(baseColorManager?.querySelectorAll('[data-variant-group][data-base-group="true"]') || []),
+    ...Array.from(variantsContainer?.querySelectorAll('[data-variant-group][data-base-group="false"]') || [])
+  ];
 
-  const colorDrafts = colorRows.map((row, index) => {
-    const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
-    const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
-    const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
-    initVariantImageItems(row);
-    if (!color) throw new Error(`Completá el nombre del color ${index + 1}.`);
-    return { color, color_hex, availability, row, imageItems: row._variantImageItems || [] };
-  });
-
-  const seenColors = new Set();
-  for (const color of colorDrafts) {
-    const key = color.color.toLocaleLowerCase("es");
-    if (seenColors.has(key)) throw new Error(`El color "${color.color}" está repetido. Cada color debe tener un nombre único.`);
-    seenColors.add(key);
-  }
-
-  const groupNodes = Array.from(variantsContainer?.querySelectorAll('[data-variant-group][data-base-group="false"]') || []);
-  const configurations = groupNodes.map((group, index) => {
-    const read = selector => group.querySelector(selector)?.value.trim() || "";
-    const storageRaw = read("[data-group-storage]");
-    const ramRaw = read("[data-group-ram]");
-    if (!storageRaw && !ramRaw) {
-      throw new Error(`Indicá almacenamiento o RAM en la configuración ${index + 1}.`);
-    }
-    return {
-      storage: storageRaw ? `${storageRaw} GB` : "",
-      ram: ramRaw ? `${ramRaw} GB` : "",
-      price_usd: toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${index + 1}`),
-      price_nio: toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${index + 1}`)
-    };
-  });
-
+  const configs = [];
   const seenConfigurations = new Set();
-  configurations.forEach((config, index) => {
-    const key = [config.storage, config.ram].join("|").toLocaleLowerCase("es");
-    if (seenConfigurations.has(key)) {
-      throw new Error(`La configuración ${index + 1} repite una combinación de almacenamiento y RAM.`);
-    }
-    seenConfigurations.add(key);
-  });
 
-  for (const color of colorDrafts) {
-    const urls = [];
-    const status = color.row.querySelector("[data-variant-status]");
-    if (status && color.imageItems.some(item => item.kind === "new")) {
-      status.textContent = `Subiendo fotografías de ${color.color}…`;
-      status.dataset.state = "uploading";
+  for (let groupIndex = 0; groupIndex < allGroups.length; groupIndex++) {
+    const group = allGroups[groupIndex];
+    const isBase = group.dataset.baseGroup === "true";
+    const read = selector => group.querySelector(selector)?.value.trim() || "";
+    const storageRaw = isBase ? "" : read("[data-group-storage]");
+    const ramRaw = isBase ? "" : read("[data-group-ram]");
+
+    if (!isBase && !storageRaw && !ramRaw) {
+      throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex}.`);
     }
-    try {
-      for (const item of color.imageItems) {
-        if (item.kind === "new") {
-          const url = await uploadImage(productId, item.file, "variants");
-          urls.push(url);
-          item.kind = "existing";
-          item.url = url;
-          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-          delete item.previewUrl;
-          delete item.file;
-        } else if (item.url) {
-          urls.push(item.url);
+
+    const storage = storageRaw ? `${storageRaw} GB` : "";
+    const ram = ramRaw ? `${ramRaw} GB` : "";
+    const key = variantGroupKey({storage,ram});
+    if (!isBase && seenConfigurations.has(key)) throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
+    if (!isBase) seenConfigurations.add(key);
+
+    const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
+    const colors = [];
+
+    for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
+      const row = rows[colorIndex];
+      const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
+      if (!color) throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
+      const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
+      const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
+      initVariantImageItems(row);
+      const imageItems = row._variantImageItems || [];
+      const urls = [];
+      const status = row.querySelector("[data-variant-status]");
+      if (status && imageItems.some(item => item.kind === "new")) {
+        status.textContent = `Subiendo fotografías de ${color}…`;
+        status.dataset.state = "uploading";
+      }
+      try {
+        for (const item of imageItems) {
+          if (item.kind === "new") {
+            const url = await uploadImage(productId, item.file, "variants");
+            urls.push(url);
+            item.kind = "existing";
+            item.url = url;
+            if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+            delete item.previewUrl;
+            delete item.file;
+          } else if (item.url) urls.push(item.url);
         }
+        row._variantImageItems = imageItems;
+        syncVariantImageFields(row);
+        renderVariantImagePreview(row);
+        if (status) {
+          status.textContent = urls.length ? `${urls.length} fotografía(s) guardadas para ${color}.` : "";
+          status.dataset.state = "success";
+        }
+      } catch (error) {
+        if (status) {
+          status.textContent = `No se pudieron subir las fotografías de ${color}: ${error.message || "error desconocido"}`;
+          status.dataset.state = "error";
+        }
+        throw error;
       }
-      color.row._variantImageItems = color.imageItems;
-      syncVariantImageFields(color.row);
-      renderVariantImagePreview(color.row);
-      color.images = urls;
-      color.image_url = urls[0] || "";
-      if (status) {
-        status.textContent = urls.length ? `${urls.length} fotografía(s) guardadas para ${color.color}.` : "";
-        status.dataset.state = "success";
-      }
-    } catch (error) {
-      if (status) {
-        status.textContent = `No se pudieron subir las fotografías de ${color.color}: ${error.message || "error desconocido"}`;
-        status.dataset.state = "error";
-      }
-      throw error;
+      colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
+
+    const seenColors = new Set();
+    colors.forEach(item => {
+      const key = item.color.toLocaleLowerCase("es");
+      if (seenColors.has(key)) throw new Error(`El color "${item.color}" está repetido dentro de una misma configuración.`);
+      seenColors.add(key);
+    });
+
+    configs.push({
+      storage, ram,
+      price_usd: isBase ? baseUSD : toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex}`),
+      price_nio: isBase ? baseNIO : toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex}`),
+      colors, isBase
+    });
   }
 
-  if (!colorDrafts.length) return [];
-
-  const configsToSave = configurations.length
-    ? configurations
-    : [{ storage: "", ram: "", price_usd: baseUSD, price_nio: baseNIO, isBase: true }];
-
-  return configsToSave.flatMap(config => colorDrafts.map(color => ({
+  return configs.flatMap(config => config.colors.map(color => ({
     storage: config.storage,
     ram: config.ram,
     color: color.color,
     color_hex: color.color_hex,
-    price_usd: config.isBase ? baseUSD : config.price_usd,
-    price_nio: config.isBase ? baseNIO : config.price_nio,
+    price_usd: config.price_usd,
+    price_nio: config.price_nio,
     availability: color.availability,
-    images: color.images || [],
-    image_url: color.image_url || ""
+    images: color.images,
+    image_url: color.image_url
   })));
 }
 
