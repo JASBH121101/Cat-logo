@@ -3027,3 +3027,49 @@ html[data-theme="dark"] .hero-sticker {
 
 
 /* La ficha del producto y sus imágenes se controlan desde theme-ui.css para evitar reglas duplicadas. */
+
+
+/* Galerías ordenables y portada del catálogo. */
+.sortable-image-card { position:relative; cursor:grab; transition:border-color .16s,transform .16s,opacity .16s; }
+.sortable-image-card:hover { border-color:#7489ef; }
+.sortable-image-card.is-dragging { opacity:.45; transform:scale(.98); }
+.admin-image-order-badge { position:absolute; top:13px; left:13px; z-index:1; padding:4px 7px; border:1px solid rgba(255,255,255,.25); border-radius:7px; color:#fff; background:linear-gradient(110deg,#2555bd,#5c42bd); font-size:10px; font-weight:800; box-shadow:0 2px 7px rgba(0,0,0,.18); }
+.admin-image-controls { display:flex; align-items:center; justify-content:center; gap:5px; margin-top:8px; }
+.admin-image-controls .admin-mini-button { min-width:29px; min-height:29px; padding:3px 7px; }
+.admin-image-controls .admin-mini-button:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+.variant-image-preview { display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); align-items:stretch; gap:9px; min-height:72px; }
+.variant-gallery-item { position:relative; min-width:0; margin:0; padding:6px; border:1px solid var(--line,rgba(130,150,200,.24)); border-radius:11px; background:rgba(127,145,190,.07); cursor:grab; }
+.variant-gallery-item img { display:block; width:100%; height:88px; object-fit:contain; }
+.variant-gallery-item .admin-image-order-badge { top:9px; left:9px; }
+.variant-image-placeholder { grid-column:1/-1; padding:12px; color:var(--muted); font-size:12px; }
+.variant-image-label { min-width:0; }
+.variant-image-label .admin-file-picker { margin-top:2px; }
+
+/* Ficha pública con miniaturas intercambiables. */
+.dialog-image { display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:12px; min-width:0; padding:16px; }
+.dialog-gallery-main { display:grid; place-items:center; width:100%; min-height:270px; flex:1 1 auto; }
+.dialog-image .dialog-gallery-main .dialog-main-image { display:block; width:100%; height:100%; max-height:420px; padding:18px; object-fit:contain; mix-blend-mode:multiply; }
+.dialog-gallery-thumbs { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; width:100%; padding:3px 0 5px; }
+.dialog-gallery-thumb { display:grid; place-items:center; width:62px; height:62px; padding:3px; border:1px solid var(--line,#dce3f2); border-radius:9px; background:#fff; cursor:pointer; transition:border-color .16s,transform .16s; }
+.dialog-gallery-thumb:hover { transform:translateY(-1px); border-color:#647be9; }
+.dialog-gallery-thumb.active { border:2px solid #586be8; box-shadow:0 0 0 2px rgba(88,107,232,.12); }
+.dialog-gallery-thumb img { display:block; width:100%; height:100%; padding:0; object-fit:contain; mix-blend-mode:multiply; }
+html[data-theme="dark"] .dialog-gallery-thumb { border-color:#344366; background:#111a30; }
+html[data-theme="dark"] .dialog-gallery-thumb img { mix-blend-mode:normal; }
+
+/* Encabezado público limpio, con título centrado y selector de tema. */
+.site-header:not(.admin-header) { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:10px; justify-content:initial; padding-inline:max(3vw,16px); }
+.site-header:not(.admin-header) > .brand { grid-column:2; justify-self:center; max-width:100%; gap:11px; font-size:clamp(17px,2vw,24px); letter-spacing:-.6px; white-space:nowrap; }
+.site-header:not(.admin-header) > [data-theme-toggle] { grid-column:3; justify-self:end; }
+@media (max-width:600px) {
+ .site-header:not(.admin-header) { height:66px; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); padding-inline:10px; gap:4px; }
+ .site-header:not(.admin-header) > .brand { gap:7px; font-size:clamp(12px,3.8vw,16px); letter-spacing:-.45px; }
+ .site-header:not(.admin-header) > .brand .brand-mark { width:29px; height:29px; border-radius:9px; font-size:10px; }
+ .site-header:not(.admin-header) > [data-theme-toggle] { min-height:34px; padding:6px 8px; gap:5px; font-size:11px; }
+ .site-header:not(.admin-header) > [data-theme-toggle] .theme-toggle-icon { font-size:15px; }
+ .dialog-image { min-height:250px; padding:12px; }
+ .dialog-gallery-main { min-height:180px; }
+ .dialog-image .dialog-gallery-main .dialog-main-image { max-height:300px; padding:8px; }
+ .dialog-gallery-thumb { width:50px; height:50px; }
+ .variant-image-preview { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
