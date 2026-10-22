@@ -658,7 +658,7 @@ function renderVariantControls(product, variants, selected) {
     const chosenImage = selected.image_url || getProductImages(product)[0] || "";
 
     dialogImage.innerHTML = chosenImage
-      ? `<img id="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" onerror="this.remove()">`
+      ? `<img id="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" style="display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;object-position:center;margin:auto" onerror="this.remove()">`
       : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
   }
 }
