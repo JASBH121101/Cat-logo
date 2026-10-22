@@ -31,6 +31,22 @@ const supabase = configured
 
 const $ = selector => document.querySelector(selector);
 
+/* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
+const passwordInput = $("#login-password");
+const passwordVisibilityButton = $("#toggle-password-visibility");
+
+passwordVisibilityButton?.addEventListener("click", () => {
+  if (!passwordInput) return;
+  const reveal = passwordInput.type === "password";
+  passwordInput.type = reveal ? "text" : "password";
+  passwordVisibilityButton.setAttribute("aria-label", reveal ? "Ocultar contraseña" : "Mostrar contraseña");
+  passwordVisibilityButton.setAttribute("title", reveal ? "Ocultar contraseña" : "Mostrar contraseña");
+  passwordVisibilityButton.setAttribute("aria-pressed", String(reveal));
+  passwordVisibilityButton.innerHTML = reveal
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a16 16 0 01-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 004-.8"></path></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+});
+
 const loginPanel = $("#login-panel");
 const dashboard = $("#dashboard");
 const form = $("#product-form");
@@ -1275,6 +1291,61 @@ $("#admin-product-list")?.addEventListener("click", async event => {
   }
 });
 
+
+/* =========================================================
+   PROTECCIÓN ANTE RECARGA CON CAMBIOS SIN GUARDAR
+   ========================================================= */
+
+let editorBaseline = "";
+let editorIsDirty = false;
+
+function getEditorSnapshot() {
+  if (!form) return "";
+  const fields = Array.from(form.elements).map(field => {
+    if (!field || !field.name && !field.id && !field.matches?.("[data-variant-row]")) return null;
+    if (field.type === "file") {
+      return [field.id || field.getAttribute("data-variant-image") || "file", Array.from(field.files || []).map(file => [file.name, file.size, file.lastModified])];
+    }
+    if (field.type === "checkbox" || field.type === "radio") return [field.id || field.name, field.checked];
+    return [field.id || field.name || field.getAttribute("data-variant-storage") || field.getAttribute("data-variant-ram") || field.getAttribute("data-variant-color") || field.getAttribute("data-variant-price-usd") || field.getAttribute("data-variant-price-nio") || field.getAttribute("data-variant-availability") || field.getAttribute("data-variant-image-url") || field.tagName, field.value];
+  }).filter(Boolean);
+  const variants = Array.from(form.querySelectorAll("[data-variant-row]")).map(row => ({
+    storage: row.querySelector("[data-variant-storage]")?.value || "",
+    ram: row.querySelector("[data-variant-ram]")?.value || "",
+    color: row.querySelector("[data-variant-color]")?.value || "",
+    hex: row.querySelector("[data-variant-hex]")?.value || "",
+    usd: row.querySelector("[data-variant-price-usd]")?.value || "",
+    nio: row.querySelector("[data-variant-price-nio]")?.value || "",
+    availability: row.querySelector("[data-variant-availability]")?.value || "",
+    url: row.querySelector("[data-variant-image-url]")?.value || "",
+    file: Array.from(row.querySelector("[data-variant-image]")?.files || []).map(file => [file.name,file.size,file.lastModified])
+  }));
+  return JSON.stringify({fields, variants});
+}
+
+function markEditorClean() {
+  editorBaseline = getEditorSnapshot();
+  editorIsDirty = false;
+}
+
+function updateEditorDirtyState() {
+  editorIsDirty = getEditorSnapshot() !== editorBaseline;
+}
+
+form?.addEventListener("input", updateEditorDirtyState);
+form?.addEventListener("change", updateEditorDirtyState);
+form?.addEventListener("click", event => {
+  if (event.target.closest("#add-variant-button, [data-remove-variant]")) {
+    queueMicrotask(updateEditorDirtyState);
+  }
+});
+
+window.addEventListener("beforeunload", event => {
+  if (!editorIsDirty || !dashboard || dashboard.classList.contains("hidden")) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 /* =========================================================
    FORMULARIO DE PRODUCTOS
    ========================================================= */
@@ -1304,6 +1375,7 @@ function clearEditor() {
   $("#save-product-button").textContent = "Guardar producto";
 
   message("#product-form-status", "");
+  markEditorClean();
 }
 
 function fillEditor(product) {
@@ -1358,6 +1430,7 @@ function fillEditor(product) {
     top: 0,
     behavior: "smooth"
   });
+  markEditorClean();
 }
 
 $("#new-product-button")?.addEventListener("click", clearEditor);
