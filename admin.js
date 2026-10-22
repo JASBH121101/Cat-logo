@@ -559,7 +559,7 @@ function variantRowMarkup(variant = {}) {
         <div class="variant-fields-grid variant-color-fields">
           <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
-          <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${COLOR_PALETTE.map(item => `<button type="button" class="variant-swatch" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
+          <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${COLOR_PALETTE.map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
           <label>Disponibilidad de este color<select data-variant-availability>
             <option value="available" ${v.availability === "available" ? "selected" : ""}>Disponible</option>
             <option value="order" ${v.availability === "order" ? "selected" : ""}>Por pedido</option>
@@ -779,63 +779,40 @@ const quickColorStatus = $("#quick-color-status");
 
 const quickColorSwatches = $("#quick-color-swatches");
 const quickColorSearch = $("#quick-color-search");
-const quickColorCustomHex = $("#quick-color-custom-hex");
 
 function renderQuickColorPalette(query = "") {
   if (!quickColorSwatches) return;
   const q = query.trim().toLowerCase();
-  const hexQuery = q.startsWith("#") ? q : "";
   const filtered = COLOR_PALETTE.filter(color =>
     color.name.toLocaleLowerCase("es").includes(q) ||
-    color.hex.toLowerCase().includes(q) ||
-    (hexQuery && color.hex.toLowerCase().includes(hexQuery))
+    color.hex.toLowerCase().includes(q)
   );
-  quickColorSwatches.innerHTML = filtered.map(color => `
+  const exactHex = /^#[0-9a-f]{6}$/i.test(query.trim())
+    ? query.trim().toUpperCase()
+    : "";
+  const exactIsKnown = exactHex && COLOR_PALETTE.some(item => item.hex.toLowerCase() === exactHex.toLowerCase());
+  const customHexOption = exactHex && !exactIsKnown
+    ? `<button class="quick-color-swatch quick-color-custom-swatch" type="button"
+         data-quick-color="${exactHex}" data-quick-color-hex="${exactHex}"
+         title="Añadir color personalizado ${exactHex}" aria-label="Añadir color personalizado ${exactHex}">
+         <span class="quick-color-dot" style="--quick-color:${exactHex}"></span>
+         <span class="quick-color-name">Personalizado</span>
+         <span class="quick-color-code">${exactHex}</span>
+       </button>`
+    : "";
+  const paletteButtons = filtered.map(color => `
     <button class="quick-color-swatch" type="button" data-quick-color="${escapeHtml(color.name)}"
       data-quick-color-hex="${color.hex}" title="${escapeHtml(color.name)} · ${color.hex}"
       aria-label="Añadir color ${escapeHtml(color.name)} ${color.hex}">
       <span class="quick-color-dot" style="--quick-color:${color.hex}"></span>
       <span class="quick-color-name">${escapeHtml(color.name)}</span>
       <span class="quick-color-code">${color.hex}</span>
-    </button>`).join("") || '<p class="quick-color-no-results">No hay coincidencias. Podés usar un código HEX personalizado.</p>';
+    </button>`).join("");
+  quickColorSwatches.innerHTML = paletteButtons + customHexOption ||
+    '<p class="quick-color-no-results">No hay coincidencias. Probá con otro nombre o un HEX completo como #0833A2.</p>';
 }
 renderQuickColorPalette();
 quickColorSearch?.addEventListener("input", () => renderQuickColorPalette(quickColorSearch.value));
-
-function addCustomHexColor() {
-  const hex = (quickColorCustomHex?.value || "").trim();
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
-    if (quickColorStatus) quickColorStatus.textContent = "Escribí un código HEX válido, por ejemplo #0833A2.";
-    quickColorCustomHex?.focus();
-    return;
-  }
-  const known = COLOR_PALETTE.find(item => item.hex.toLowerCase() === hex.toLowerCase());
-  const name = known?.name || hex.toUpperCase();
-  const container = $("#product-variants-list");
-  const colorManager = $("#base-color-manager");
-  if (!container || !colorManager) return;
-  let baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
-  if (!baseGroup) {
-    renderVariantRows([]);
-    baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
-  }
-  if (!baseGroup) return;
-  const duplicate = Array.from(baseGroup.querySelectorAll("[data-variant-color]"))
-    .some(input => input.value.trim().toLocaleLowerCase("es") === name.toLocaleLowerCase("es"));
-  if (duplicate) {
-    if (quickColorStatus) quickColorStatus.textContent = `${name} ya está añadido.`;
-    return;
-  }
-  addVariantRow({color:name,color_hex:hex.toUpperCase(),image_url:"",availability:"available"}, baseGroup, {focus:false});
-  if (quickColorStatus) quickColorStatus.textContent = "";
-  updateEditorDirtyState();
-  if (quickColorCustomHex) quickColorCustomHex.value = "";
-}
-
-$("#quick-color-add-hex")?.addEventListener("click", addCustomHexColor);
-quickColorCustomHex?.addEventListener("keydown", event => {
-  if (event.key === "Enter") { event.preventDefault(); addCustomHexColor(); }
-});
 
 quickColorButton?.addEventListener("click", event => {
   event.preventDefault();
@@ -848,7 +825,7 @@ quickColorPalette?.addEventListener("click", event => {
   const choice = event.target.closest("[data-quick-color]");
   if (!choice) return;
   const color = choice.dataset.quickColor || "";
-  const hex = choice.dataset.quickColorHex || "#242424";
+  const hex = (choice.dataset.quickColorHex || "#242424").toUpperCase();
   const container = $("#product-variants-list");
   const colorManager = $("#base-color-manager");
   if (!container || !colorManager) return;
@@ -870,7 +847,9 @@ quickColorPalette?.addEventListener("click", event => {
   addVariantRow({color, color_hex:hex, image_url:"", availability:"available"}, baseGroup, {focus:false});
   updateEditorDirtyState();
   if (quickColorStatus) quickColorStatus.textContent = "";
-  choice.classList.add("is-selected");
+  quickColorSwatches?.querySelectorAll("[data-quick-color]").forEach(button => {
+    button.classList.toggle("is-selected", button.dataset.quickColorHex?.toUpperCase() === hex);
+  });
 });
 
 $("#add-variant-button")?.addEventListener("click", event => {
@@ -891,6 +870,28 @@ $("#add-variant-button")?.addEventListener("click", event => {
 });
 
 form?.addEventListener("click", event => {
+  const swatch = event.target.closest("[data-variant-swatch]");
+  if (swatch) {
+    const row = swatch.closest("[data-variant-row]");
+    if (!row) return;
+    const hex = swatch.dataset.variantSwatch || "#242424";
+    const name = swatch.dataset.variantSwatchName || hex.toUpperCase();
+    row.querySelector("[data-variant-color]").value = name;
+    row.querySelector("[data-variant-hex]").value = hex;
+    const hexText = row.querySelector("[data-variant-hex-text]");
+    if (hexText) hexText.value = hex.toUpperCase();
+    const palette = row.querySelector("[data-variant-palette]");
+    if (palette) palette.value = COLOR_PALETTE.some(item => item.hex.toLowerCase() === hex.toLowerCase()) ? hex : "custom";
+    row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+      const selected = button.dataset.variantSwatch?.toLowerCase() === hex.toLowerCase();
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    updateVariantRowHeadings();
+    updateEditorDirtyState();
+    return;
+  }
+
   const add = event.target.closest("[data-add-group-color]");
   if (add) {
     const group = add.closest("[data-variant-group]");
@@ -940,21 +941,6 @@ form?.addEventListener("change", event => {
   const urlInput = event.target.closest("[data-variant-image-url]");
   if (urlInput) return;
   if (event.target.matches("[data-variant-images]")) return;
-  const swatch = event.target.closest("[data-variant-swatch]");
-  if (swatch) {
-    const row = swatch.closest("[data-variant-row]");
-    if (!row) return;
-    const hex = swatch.dataset.variantSwatch;
-    const name = swatch.dataset.variantSwatchName || "";
-    row.querySelector("[data-variant-color]").value = name;
-    row.querySelector("[data-variant-hex]").value = hex;
-    row.querySelector("[data-variant-hex-text]").value = hex;
-    row.querySelector("[data-variant-palette]").value = hex;
-    updateVariantRowHeadings();
-    updateEditorDirtyState();
-    return;
-  }
-
   const select = event.target.closest("[data-variant-palette]");
   if (!select) return;
   const row = select.closest("[data-variant-row]");
@@ -975,7 +961,12 @@ form?.addEventListener("input", event => {
       row.querySelector("[data-variant-hex]").value = value;
       const matching = COLOR_PALETTE.find(item => item.hex.toLowerCase() === value.toLowerCase());
       row.querySelector("[data-variant-palette]").value = matching ? matching.hex : "custom";
-      if (matching) row.querySelector("[data-variant-color]").value = matching.name;
+      row.querySelector("[data-variant-color]").value = matching ? matching.name : value.toUpperCase();
+      row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+        const selected = button.dataset.variantSwatch?.toLowerCase() === value.toLowerCase();
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
       updateVariantRowHeadings();
       updateEditorDirtyState();
     }
