@@ -791,24 +791,18 @@ function openProduct(product) {
 }
 
 grid.addEventListener("click", event => {
-  const button = event.target.closest("[data-details]");
-  if (!button) return;
+  const target = event.target instanceof Element ? event.target : null;
+  const link = target?.closest("a[data-details]");
+  if (!link) return;
 
-  const product = products.find(
-    item => String(item.id) === button.dataset.details
-  );
-
+  const productId = link.getAttribute("data-details");
+  const product = products.find(item => String(item.id) === productId);
   if (!product) return;
 
-  /* Abrir la ficha sin recargar si JavaScript está activo. El enlace conserva
-     una ruta #producto=ID como alternativa para abrirla al cargar la página. */
   event.preventDefault();
+  const productUrl = productLink(product);
   if (window.location.hash !== `#producto=${encodeURIComponent(product.id)}`) {
-    window.history.replaceState(
-      window.history.state,
-      document.title,
-      productLink(product)
-    );
+    window.history.pushState(window.history.state, document.title, productUrl);
   }
   openProduct(product);
 });
@@ -824,11 +818,20 @@ categoryFilters.addEventListener("click", event => {
 searchInput.addEventListener("input", renderProducts);
 
 document.querySelector("#dialog-close").addEventListener("click", () => {
-  dialog.close();
+  if (dialog.open && typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+  if (window.location.hash.startsWith("#producto=")) {
+    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
+  }
 });
 
 dialog.addEventListener("click", event => {
-  if (event.target === dialog) dialog.close();
+  if (event.target !== dialog) return;
+  if (dialog.open && typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+  if (window.location.hash.startsWith("#producto=")) {
+    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
+  }
 });
 
 async function initializeCatalog() {
@@ -852,13 +855,17 @@ async function initializeCatalog() {
     products = data || [];
     renderProducts();
 
-    const match = window.location.hash.match(/^#producto=(.+)$/);
-
-    if (match) {
-      const id = decodeURIComponent(match[1]);
+    const openProductFromHash = () => {
+      const match = window.location.hash.match(/^#producto=(.+)$/);
+      if (!match) return;
+      let id = match[1];
+      try { id = decodeURIComponent(id); } catch { /* Usa el ID recibido. */ }
       const product = products.find(item => String(item.id) === id);
       if (product) openProduct(product);
-    }
+    };
+
+    openProductFromHash();
+    window.addEventListener("hashchange", openProductFromHash);
   } catch (error) {
     statusNode.textContent =
       "No pudimos cargar el catálogo. Revisá la conexión de Supabase y las políticas de acceso.";
