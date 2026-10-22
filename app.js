@@ -70,9 +70,6 @@ function buildWhatsAppLink(message) {
 const generalMessage =
   "Hola, quisiera consultar por los productos del catálogo, disponibilidad, precio y opciones de pago.";
 
-const financeMessage =
-  "Hola, quisiera conocer las opciones de financiamiento disponibles, los requisitos, las cuotas y las formas de pago para comprar un equipo.";
-
 ["header-whatsapp", "footer-whatsapp"].forEach(id => {
   const element = document.getElementById(id);
   if (!element) return;
@@ -82,12 +79,6 @@ const financeMessage =
   element.rel = "noopener";
 });
 
-const financeLink = document.getElementById("finance-whatsapp");
-if (financeLink) {
-  financeLink.href = buildWhatsAppLink(financeMessage);
-  financeLink.target = "_blank";
-  financeLink.rel = "noopener";
-}
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, character => ({
@@ -232,13 +223,19 @@ function colorStatusLabel(value) {
   return value === "order" || value === "on_order" ? "Por pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
 }
 
-function getProductColors(product) {
+function getProductColors(product, configuration = null) {
   const variants = getProductVariants(product);
 
   if (variants.length) {
+    const scopedVariants = configuration
+      ? variants.filter(variant =>
+          variant.storage === configuration.storage &&
+          variant.ram === configuration.ram
+        )
+      : variants;
     const map = new Map();
 
-    variants.forEach(variant => {
+    scopedVariants.forEach(variant => {
       const key = variant.color.toLocaleLowerCase("es");
       if (!key) return;
 
@@ -252,7 +249,11 @@ function getProductColors(product) {
           color_hex: variant.color_hex
         });
       } else {
-        if (variant.availability === "available") previous.type = "available";
+        if (variant.availability === "available") {
+          previous.type = "available";
+        } else if (variant.availability === "order" && previous.type !== "available") {
+          previous.type = "order";
+        }
         if (!previous.image_url && variant.image_url) {
           previous.image_url = variant.image_url;
         }
@@ -284,6 +285,60 @@ function getProductColors(product) {
       color_hex: validHex(color.color_hex || color.hex)
     };
   }).filter(color => color && color.name);
+}
+
+function displayColorHex(name, hex) {
+  const normalized = String(name || "").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const inferred = [
+    [/negro|black|onyx|phantom|graphite|grafito|carbon|obsidian/, "#20242d"],
+    [/blanco|white|pearl|perla|ivory|marfil/, "#f3f4f6"],
+    [/silver|plata|plateado|gris|gray|grey|titanium silver/, "#aeb7c4"],
+    [/azul|blue|navy|ocean|cobalt|celeste/, "#3568d4"],
+    [/verde|green|mint|menta|emerald/, "#2f9567"],
+    [/rojo|red|coral|burgundy|vino/, "#c8424b"],
+    [/rosa|pink|rose/, "#e78cae"],
+    [/morado|purple|violet|violeta|lavender|lila/, "#8a65c7"],
+    [/dorado|gold|champagne/, "#c8a34f"],
+    [/beige|cream|crema/, "#d9c9a8"],
+    [/naranja|orange/, "#e77a35"],
+    [/cafe|brown|marron/, "#80583f"]
+  ];
+  if (!hex || String(hex).toUpperCase() === "#315A91") {
+    const match = inferred.find(([pattern]) => pattern.test(normalized));
+    if (match) return match[1];
+  }
+  return validHex(hex);
+}
+
+function renderProductColorSwatches(product, configuration = null) {
+  const colors = getProductColors(product, configuration)
+    .filter(color => color.name && color.type !== "out_of_stock");
+  if (!colors.length) return "";
+
+  const visible = colors.slice(0, 6).map(color => {
+    const hex = displayColorHex(color.name, color.color_hex);
+    const status = color.type === "order" ? "Disponible por pedido" : "Disponible";
+    return `
+      <span class="product-card-color-option"
+            title="${escapeHtml(color.name)} · ${status}">
+        <span class="product-card-color-swatch"
+              role="img"
+              aria-label="${escapeHtml(color.name)}"
+              style="--swatch-color: ${hex}"></span>
+        <span class="product-card-color-name">${escapeHtml(color.name)}</span>
+      </span>
+    `;
+  }).join("");
+  const more = colors.length > 6
+    ? `<span class="product-card-color-more" aria-label="${colors.length - 6} colores más">+${colors.length - 6}</span>`
+    : "";
+
+  return `
+    <div class="product-card-colors" aria-label="Colores disponibles">
+      <span class="product-card-colors-label">Colores disponibles</span>
+      <div class="product-card-color-list" role="group" aria-label="Colores disponibles">${visible}${more}</div>
+    </div>
+  `;
 }
 
 function renderColorSummary(product) {
@@ -376,6 +431,34 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
   return parts.join(" ");
 }
 
+function buildFinancingWhatsAppMessage(product, variant = null) {
+  const displayName = [product.brand, product.model].filter(Boolean).join(" ") ||
+    String(product.name || "este producto");
+  const parts = [`Hola, quisiera consultar las opciones de financiación para ${displayName}.`];
+
+  if (variant) {
+    const configuration = [variant.ram, variant.storage, variant.color].filter(Boolean).join(" · ");
+    if (configuration) parts.push(`Versión de interés: ${configuration}.`);
+    if (variant.price_usd !== null && variant.price_usd !== undefined) {
+      parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
+    }
+    const nio = formatNIO(variant.price_nio);
+    if (nio) parts.push(`Precio en córdobas: ${nio}.`);
+    parts.push(`Disponibilidad informada: ${colorStatusLabel(variant.availability)}.`);
+  } else {
+    const usdPrice = startingPrice(product, "price_usd");
+    if (usdPrice !== null && usdPrice !== undefined) {
+      parts.push(`Precio de referencia: ${formatUSD(usdPrice)}.`);
+    }
+    const nio = formatNIO(startingPrice(product, "price_nio"));
+    if (nio) parts.push(`Precio en córdobas: ${nio}.`);
+  }
+
+  parts.push(`Enlace del producto: ${productLink(product)}.`);
+  parts.push("Quisiera conocer los requisitos, plazos, cuotas y condiciones de aprobación disponibles.");
+  return parts.join(" ");
+}
+
 function startingPrice(product, field = "price_usd") {
   const variants = getProductVariants(product);
 
@@ -401,7 +484,7 @@ function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const badge = product.featured
-    ? '<span class="product-badge featured-badge">DESTACADO</span>'
+    ? '<span class="product-badge featured-badge">✦ DESTACADO</span>'
     : "";
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
@@ -414,19 +497,28 @@ function renderCard(product) {
   const brand = String(product.brand || "").trim();
   const model = String(product.model || "").trim();
   const title = brand && model ? `${brand} ${model}` : String(product.name || brand || model || "Producto");
-  const configurations = [...new Set(variants.map(variant => {
-    const storage = String(variant.storage || "").trim();
-    const ram = String(variant.ram || "").trim();
-    if (storage && ram) return `${/\bram\b/i.test(ram) ? ram : `${ram} RAM`} / ${storage}`;
-    return ram || storage;
-  }).filter(Boolean))];
-  const capacity = configurations[0] || "";
   const price = startingPrice(product, "price_usd");
-  const nioPrice = startingPrice(product, "price_nio");
+  const cardConfiguration =
+    variants
+      .filter(variant =>
+        variant.availability === "available" &&
+        variant.price_usd !== null &&
+        Number.isFinite(variant.price_usd)
+      )
+      .sort((left, right) => left.price_usd - right.price_usd)[0] ||
+    variants.find(variant => variant.availability === "available") ||
+    variants[0] ||
+    null;
+  const cardRam = String(cardConfiguration?.ram || "").trim();
+  const cardStorage = String(cardConfiguration?.storage || "").trim();
+  const capacity = cardRam && cardStorage
+    ? `${/\bram\b/i.test(cardRam) ? cardRam : `${cardRam} RAM`} / ${cardStorage}`
+    : cardRam || cardStorage;
+  const nioPrice = cardConfiguration?.price_nio ?? startingPrice(product, "price_nio");
   const nio = formatNIO(nioPrice);
 
   return `
-    <article class="product-card">
+    <article class="product-card${product.featured ? " featured-product-card" : ""}">
       <div class="product-image">
         ${badge}
         ${availabilityBadge}
@@ -436,6 +528,7 @@ function renderCard(product) {
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
+        ${renderProductColorSwatches(product, cardConfiguration)}
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
@@ -652,6 +745,11 @@ function renderVariantControls(product, variants, selected) {
   const isOrder = selected.availability === "order";
   const isUnavailable = selected.availability === "out_of_stock";
 
+  const financingLink = $("#dialog-financing-link");
+  if (financingLink) {
+    financingLink.href = buildWhatsAppLink(buildFinancingWhatsAppMessage(product, selected));
+  }
+
   area.innerHTML = `
     <div class="variant-selector">
       ${renderVariantButtonGroup(variants, selected, "storage", "Configuración")}
@@ -831,6 +929,12 @@ function openProduct(product) {
         <p><b>Financiamiento:</b>
           ${escapeHtml(product.financing_note || "Mediante crédito o tarjeta; consultar requisitos y condiciones.")}
         </p>
+
+        <a id="dialog-financing-link"
+           class="button button-secondary dialog-financing-button"
+           href="${escapeHtml(buildWhatsAppLink(buildFinancingWhatsAppMessage(product)))}"
+           target="_blank"
+           rel="noopener">Consultar financiación por WhatsApp ↗</a>
 
         <p><b>Disponibilidad general:</b>
           ${escapeHtml(productAvailabilityLabel(product.availability))}
