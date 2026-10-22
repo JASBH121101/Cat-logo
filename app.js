@@ -179,6 +179,16 @@ function getProductImages(product) {
   return [...new Set([...list, product?.image_url].filter(value => typeof value === "string" && value.trim()))];
 }
 
+function normalizeVariantAvailability(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("es")
+    .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  if (["order", "on_order", "por pedido"].includes(normalized)) return "order";
+  if (["out_of_stock", "unavailable", "no disponible", "agotado", "agotado temporalmente"].includes(normalized)) {
+    return "out_of_stock";
+  }
+  return "available";
+}
+
 function getProductVariants(product) {
   const raw = parseJSON(product?.variants, []);
   if (!Array.isArray(raw)) return [];
@@ -201,7 +211,7 @@ function getProductVariants(product) {
       color_hex: validHex(item.color_hex || item.hex),
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
-      availability: item.availability === "order" ? "order" : item.availability === "out_of_stock" ? "out_of_stock" : "available",
+      availability: normalizeVariantAvailability(item.availability),
       images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
       image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
     };
@@ -280,7 +290,7 @@ function getProductColors(product, configuration = null) {
 
     return {
       name: String(color.name || color.color || "").trim(),
-      type: color.type === "order" ? "order" : "available",
+      type: normalizeVariantAvailability(color.type),
       image_url: String(color.image_url || color.imageUrl || "").trim(),
       color_hex: validHex(color.color_hex || color.hex)
     };
@@ -830,7 +840,7 @@ function renderLegacyColorOptions(product) {
 
             <div class="dialog-color-info">
               <strong>${escapeHtml(color.name)}</strong>
-              <span class="color-availability ${color.type === "order" ? "order" : "available"}">
+              <span class="color-availability ${color.type === "order" ? "order" : color.type === "out_of_stock" ? "unavailable" : "available"}">
                 ${escapeHtml(colorStatusLabel(color.type))}
               </span>
               <a href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product, null, color)))}"

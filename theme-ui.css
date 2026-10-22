@@ -6369,3 +6369,14 @@ body:not(.admin-body) .product-card-color-name {
   body:not(.admin-body) .product-card-color-option { min-width: 28px; max-width: 52px; gap: 3px; }
   body:not(.admin-body) .product-card-color-name { max-width: 52px; font-size: 8px; }
 }
+
+
+/* La ficha debe distinguir claramente colores agotados de los disponibles. */
+body:not(.admin-body) .color-availability.unavailable {
+  color: #a12735;
+  background: #ffe7e9;
+}
+html[data-theme="dark"] body:not(.admin-body) .color-availability.unavailable {
+  color: #ffc0c6;
+  background: #4a222b;
+}
