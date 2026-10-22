@@ -3324,3 +3324,9 @@ html[data-theme="dark"] .admin-section-nav,
 .dashboard-top-product-stats { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; color:var(--muted,#9aacca); font-size:.78rem; }
 .dashboard-top-product-stats b { color:var(--text,#edf3ff); }
 @media (max-width:700px) { .dashboard-analytics-summary,.dashboard-top-products { grid-template-columns:1fr; } .dashboard-top-product { flex-wrap:wrap; } }
+
+
+/* Campo de especificaciones compacto con altura automática según el contenido. */
+.admin-specs-field { grid-column:span 1; min-width:0; }
+.admin-form #product-specs { display:block; width:100%; min-height:66px; height:auto; resize:none; overflow-y:hidden; line-height:1.55; }
+@media(max-width:700px) { .admin-specs-field { grid-column:1 / -1; } }
