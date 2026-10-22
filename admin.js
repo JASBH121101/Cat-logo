@@ -837,16 +837,25 @@ quickColorPalette?.addEventListener("click", event => {
   }
   if (!baseGroup) return;
 
-  const duplicate = Array.from(baseGroup.querySelectorAll("[data-variant-color]"))
-    .some(input => input.value.trim().toLocaleLowerCase("es") === color.toLocaleLowerCase("es"));
+  const duplicate = Array.from(baseGroup.querySelectorAll("[data-variant-row]")).some(row => {
+    const existingName = row.querySelector("[data-variant-color]")?.value.trim().toLocaleLowerCase("es");
+    const existingHex = row.querySelector("[data-variant-hex]")?.value.trim().toLowerCase();
+    return existingName === color.toLocaleLowerCase("es") || existingHex === hex.toLowerCase();
+  });
   if (duplicate) {
-    if (quickColorStatus) quickColorStatus.textContent = `${color} ya está añadido. Elegí otro color.`;
+    if (quickColorStatus) {
+      quickColorStatus.textContent = `${color} ya está añadido. Elegí otro color.`;
+      quickColorStatus.dataset.state = "error";
+    }
     return;
   }
 
   addVariantRow({color, color_hex:hex, image_url:"", availability:"available"}, baseGroup, {focus:false});
   updateEditorDirtyState();
-  if (quickColorStatus) quickColorStatus.textContent = "";
+  if (quickColorStatus) {
+    quickColorStatus.textContent = "";
+    delete quickColorStatus.dataset.state;
+  }
   quickColorSwatches?.querySelectorAll("[data-quick-color]").forEach(button => {
     button.classList.toggle("is-selected", button.dataset.quickColorHex?.toUpperCase() === hex);
   });
@@ -1003,8 +1012,17 @@ form?.addEventListener("input", event => {
 
       row.querySelector("[data-variant-palette]").value =
         matchingColor.hex;
+      row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+        const selected = button.dataset.variantSwatch?.toLowerCase() === matchingColor.hex.toLowerCase();
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
     } else {
       row.querySelector("[data-variant-palette]").value = "custom";
+      row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+        button.classList.remove("is-selected");
+        button.setAttribute("aria-pressed", "false");
+      });
     }
   }
 
