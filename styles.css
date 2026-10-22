@@ -3154,3 +3154,32 @@ html[data-theme="dark"] .admin-section-nav,
   .admin-section-nav { gap: 8px; padding: 9px; }
   .admin-nav-button { min-height: 43px; padding: 9px 8px; font-size: 12px; }
 }
+
+
+/* Acceso rápido a variantes de color junto a garantía, aprovechando la columna libre. */
+.admin-add-color-slot {
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+.admin-add-color-caption {
+  color: var(--muted, #9aaaca);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+.admin-add-color-slot .button {
+  min-height: 42px;
+  padding: 9px 15px;
+  border-radius: 11px;
+}
+@media(max-width:600px) {
+  .admin-add-color-slot { gap: 5px; }
+  .admin-add-color-caption { font-size: 11px; }
+  .admin-add-color-slot .button { min-height: 40px; padding: 8px 11px; font-size: 12px; }
+}
