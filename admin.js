@@ -1290,32 +1290,116 @@ async function loadProducts() {
   return true;
 }
 
+function formatAnalyticsCapacity(value) {
+  const text = String(value ?? "").trim().replace(/\\s*GB\\s*/i, "");
+  return text ? `${text} GB` : "";
+}
+
+function renderAnalyticsRanking(node, rows, labelFor) {
+  if (!node) return;
+  if (!rows.length) {
+    node.innerHTML = '<p class="dashboard-empty-state">Todavía no hay consultas con esta información.</p>';
+    return;
+  }
+  const max = Math.max(...rows.map(row => row.count), 1);
+  node.innerHTML = rows.map(row => {
+    const label = escapeHtml(labelFor(row));
+    const percentage = Math.max(3, Math.round((row.count / max) * 100));
+    return `<div class="dashboard-interest-rank-row">
+      <div class="dashboard-interest-rank-main">
+        <strong title="${label}">${label}</strong>
+        <span class="dashboard-interest-rank-track"><i style="width:${percentage}%"></i></span>
+      </div>
+      <b>${row.count.toLocaleString("es-NI")}</b>
+    </div>`;
+  }).join("");
+}
+
+function renderAnalyticsPie(node, legendNode, totalNode, rows) {
+  if (!node || !legendNode) return;
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  if (totalNode) totalNode.textContent = total.toLocaleString("es-NI");
+  if (!total) {
+    node.style.background = "var(--interest-pie-empty)";
+    node.setAttribute("aria-label", "Aún no hay clics de WhatsApp registrados.");
+    legendNode.innerHTML = '<p class="dashboard-empty-state">El gráfico aparecerá cuando haya consultas por WhatsApp.</p>';
+    node.classList.remove("is-animated");
+    return;
+  }
+
+  const visibleRows = rows.slice(0, 5);
+  const tailRows = rows.slice(5);
+  if (tailRows.length) {
+    visibleRows.push({
+      label: "Otros",
+      count: tailRows.reduce((sum, row) => sum + row.count, 0)
+    });
+  }
+  const sum = visibleRows.reduce((acc, row) => acc + row.count, 0);
+  let cumulative = 0;
+  const stops = visibleRows.map((row, index) => {
+    const startPercent = cumulative / sum * 100;
+    cumulative += row.count;
+    const endPercent = cumulative / sum * 100;
+    return `var(--interest-slice-${index + 1}) ${startPercent.toFixed(2)}% ${endPercent.toFixed(2)}%`;
+  });
+  node.style.background = `conic-gradient(${stops.join(", ")})`;
+  node.setAttribute("aria-label", `Distribución de ${sum} clics de WhatsApp por combinación solicitada.`);
+  node.classList.remove("is-animated");
+  void node.offsetWidth;
+  node.classList.add("is-animated");
+
+  legendNode.innerHTML = visibleRows.map((row, index) => {
+    const percentage = Math.round((row.count / sum) * 100);
+    return `<div class="dashboard-interest-legend-row">
+      <i class="dashboard-interest-legend-dot interest-slice-${index + 1}" aria-hidden="true"></i>
+      <span class="dashboard-interest-legend-label" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}</span>
+      <strong>${row.count.toLocaleString("es-NI")}</strong>
+      <small>${percentage}%</small>
+    </div>`;
+  }).join("");
+}
+
 async function loadCatalogAnalytics() {
   const note = document.getElementById("dashboard-analytics-note");
   const topNode = document.getElementById("dashboard-top-products");
+  const colorNode = document.getElementById("dashboard-interest-colors");
+  const configNode = document.getElementById("dashboard-interest-configs");
+  const pieNode = document.getElementById("dashboard-interest-pie");
+  const legendNode = document.getElementById("dashboard-interest-legend");
+  const pieTotalNode = document.getElementById("dashboard-interest-pie-total");
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+
   if (!supabase || !currentUser) return;
+
   const { data, error } = await supabase
     .from("catalog_events")
-    .select("product_id,event_type,created_at")
+    .select("product_id,event_type,created_at,variant_color,variant_ram,variant_storage")
     .order("created_at", { ascending: false })
     .limit(10000);
+
   if (error) {
     setText("dashboard-views-total", "—");
     setText("dashboard-whatsapp-total", "—");
-    if (note) note.textContent = "Falta instalar la tabla de analítica en Supabase o revisar sus políticas. El resto del panel sigue funcionando.";
+    if (note) note.textContent = "No se pudieron cargar las estadísticas. Verificá que las columnas de variantes de catalog_events estén instaladas y que las políticas permitan la lectura administrativa.";
     if (topNode) topNode.innerHTML = '<p class="dashboard-empty-state">No se pudieron cargar las estadísticas.</p>';
+    if (colorNode) colorNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
+    if (configNode) configNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
+    renderAnalyticsPie(pieNode, legendNode, pieTotalNode, []);
     console.info("Analítica de catálogo no disponible:", error.message);
     return;
   }
+
   const events = data || [];
   const views = events.filter(event => event.event_type === "view");
   const clicks = events.filter(event => event.event_type === "whatsapp_click");
   setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
   setText("dashboard-whatsapp-total", clicks.length.toLocaleString("es-NI"));
+
   if (note) note.textContent = events.length
-    ? "Eventos registrados desde la activación de la analítica. Cada apertura de ficha cuenta como una visita; no son personas únicas."
+    ? "Eventos registrados desde la activación de la analítica. Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
     : "La tabla está lista, pero aún no hay eventos. Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp.";
+
   const byProduct = new Map();
   for (const event of events) {
     if (!event.product_id) continue;
@@ -1324,15 +1408,52 @@ async function loadCatalogAnalytics() {
     if (event.event_type === "whatsapp_click") stats.clicks++;
     byProduct.set(String(event.product_id), stats);
   }
-  const ranked = products.filter(product => product.is_published).map(product => ({
-    product, stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
-  })).sort((a,b) => b.stats.views - a.stats.views || b.stats.clicks - a.stats.clicks).slice(0,6);
-  if (topNode) topNode.innerHTML = ranked.length ? ranked.map(({product,stats},index) => {
+
+  const rankedProducts = products.filter(product => product.is_published).map(product => ({
+    product,
+    stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
+  })).sort((a, b) => b.stats.views - a.stats.views || b.stats.clicks - a.stats.clicks).slice(0, 6);
+
+  if (topNode) topNode.innerHTML = rankedProducts.length ? rankedProducts.map(({product, stats}, index) => {
     const name = escapeHtml(product.name || "Producto sin nombre");
     return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">'+(index+1)+'</span><div class="dashboard-top-product-info"><strong>'+name+'</strong><small>Interés registrado</small></div><div class="dashboard-top-product-stats"><span>👁 <b>'+stats.views+'</b> visitas</span><span>↗ <b>'+stats.clicks+'</b> clics</span></div></div>';
   }).join("") : '<p class="dashboard-empty-state">Publicá productos para ver aquí su rendimiento.</p>';
-}
 
+  const variantClicks = clicks.map(event => ({
+    color: String(event.variant_color || "").trim(),
+    ram: String(event.variant_ram || "").trim(),
+    storage: String(event.variant_storage || "").trim()
+  }));
+
+  const comboCounts = new Map();
+  const colorCounts = new Map();
+  const configCounts = new Map();
+
+  for (const variant of variantClicks) {
+    const color = variant.color || "";
+    const ram = variant.ram || "";
+    const storage = variant.storage || "";
+    const capacityParts = [ram ? `${formatAnalyticsCapacity(ram)} RAM` : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean);
+    const configurationLabel = capacityParts.length ? capacityParts.join(" / ") : "";
+    const comboLabel = [configurationLabel, color].filter(Boolean).join(" · ") || "Sin variante registrada";
+    comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
+    if (color) colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+    if (ram || storage) {
+      const configLabel = [ram ? `${formatAnalyticsCapacity(ram)} RAM` : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean).join(" / ") || "Configuración estándar";
+      configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
+    }
+  }
+
+  const toRankedRows = counts => Array.from(counts, ([label, count]) => ({label, count}))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
+    .slice(0, 5);
+
+  const rankedCombos = Array.from(comboCounts, ([label, count]) => ({label, count}))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"));
+  renderAnalyticsPie(pieNode, legendNode, pieTotalNode, rankedCombos);
+  renderAnalyticsRanking(colorNode, toRankedRows(colorCounts), row => row.label);
+  renderAnalyticsRanking(configNode, toRankedRows(configCounts), row => row.label);
+}
 
 /* Actualizar actividad reciente y los indicadores a partir de los datos actuales. */
 const dashboardActivityRefresh = document.getElementById("dashboard-activity-refresh");
