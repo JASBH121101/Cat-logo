@@ -3860,59 +3860,114 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
 @media(prefers-reduced-motion:reduce){.dashboard-metric,.dashboard-progress-track span,.dashboard-public-link{transition:none}}
 
 
-/* Compact, symmetric color editor — overrides earlier legacy rules. */
+
+/* Editor de colores: reglas consolidadas. Este archivo carga después de styles.css. */
 .admin-add-color-slot {
-  gap: 6px !important;
-  padding: 0 0 1px !important;
-  align-self: stretch !important;
+  align-self: start !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
 }
-.admin-add-color-heading { gap: 8px !important; }
-.admin-add-color-caption { font-size: 11px !important; letter-spacing: .035em; }
-.admin-add-color-heading .button { min-height: 32px !important; padding: 5px 10px !important; }
+.admin-add-color-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+.admin-add-color-caption { font-size: 11px !important; letter-spacing: .03em; }
+.admin-add-color-heading .button {
+  width: auto !important;
+  min-height: 32px !important;
+  padding: 5px 10px !important;
+  flex: 0 0 auto !important;
+}
 .admin-add-color-slot .quick-color-palette {
   display: grid !important;
-  grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
-  align-items: stretch !important;
-  gap: 4px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 8px !important;
   width: 100% !important;
   max-width: 100% !important;
-  padding: 7px !important;
-  border: 1px solid rgba(122, 151, 205, .32) !important;
+  min-width: 0 !important;
+  padding: 10px !important;
+  border: 1px solid rgba(122,151,205,.32) !important;
   border-radius: 12px !important;
-  background: linear-gradient(145deg, #17233b 0%, #121d32 56%, #101a2d 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 4px 0 rgba(3,8,19,.28), 0 9px 18px rgba(0,0,0,.14) !important;
+  background: linear-gradient(145deg,#17233b 0%,#121d32 56%,#101a2d 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045),0 4px 0 rgba(3,8,19,.28),0 9px 18px rgba(0,0,0,.14) !important;
+}
+.admin-add-color-slot .quick-color-palette[hidden] { display: none !important; }
+.quick-color-search-label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  font-size: 11px !important;
+}
+.quick-color-search-label input {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding: 7px 9px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+.quick-color-swatches {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)) !important;
+  align-items: start !important;
+  gap: 5px !important;
+  width: 100% !important;
+  max-height: 230px !important;
+  min-width: 0 !important;
+  overflow: auto !important;
+  padding: 1px !important;
 }
 .admin-add-color-slot .quick-color-swatch {
   display: flex !important;
-  min-width: 0 !important;
-  width: 100% !important;
-  min-height: 49px !important;
-  gap: 4px !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding: 5px 2px !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 52px !important;
+  gap: 4px !important;
+  padding: 5px 3px !important;
   border: 1px solid transparent !important;
   border-radius: 8px !important;
   background: transparent !important;
   box-shadow: none !important;
+  cursor: pointer !important;
+  color: #e8eefc !important;
+  font-size: 10px !important;
 }
 .admin-add-color-slot .quick-color-swatch:hover,
 .admin-add-color-slot .quick-color-swatch:focus-visible {
   transform: translateY(-1px) !important;
   border-color: rgba(113,143,255,.55) !important;
   background: rgba(80,111,220,.10) !important;
-  box-shadow: 0 3px 8px rgba(45,75,160,.14) !important;
+  outline: 2px solid rgba(127,156,255,.35) !important;
+  outline-offset: 1px !important;
 }
 .admin-add-color-slot .quick-color-swatch.is-selected {
   border-color: #7f9cff !important;
   background: rgba(84,112,220,.13) !important;
-  box-shadow: inset 0 0 0 1px rgba(127,156,255,.12) !important;
 }
 .admin-add-color-slot .quick-color-dot {
-  width: 20px !important;
-  height: 20px !important;
-  flex: 0 0 20px !important;
+  display: block !important;
+  width: 21px !important;
+  height: 21px !important;
+  flex: 0 0 21px !important;
   border: 2px solid rgba(255,255,255,.78) !important;
-  box-shadow: 0 2px 3px rgba(0,0,0,.26), inset 0 0 0 1px rgba(0,0,0,.10) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.26),inset 0 0 0 1px rgba(0,0,0,.10) !important;
 }
 .admin-add-color-slot .quick-color-name {
   max-width: 100% !important;
@@ -3920,110 +3975,213 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
   white-space: normal !important;
   text-align: center !important;
   font-size: 9px !important;
-  line-height: 1.1 !important;
+  line-height: 1.15 !important;
   color: #aab9d5 !important;
 }
-.base-color-manager {
+.quick-color-code { font: 9px ui-monospace,monospace !important; color: #8fa3c7 !important; }
+.quick-color-no-results { grid-column: 1 / -1; margin: 4px; color: #aab9d5; font-size: 11px; }
+
+/* No mantener el gestor de colores comprimido en una sola columna. */
+.base-color-manager { display: block !important; width: 100% !important; min-width: 0 !important; }
+.base-color-manager .variant-base-group {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.base-color-manager .variant-base-group > .variant-config-group-heading,
+.base-color-manager .variant-base-group > .variant-config-fields,
+.base-color-manager .variant-base-group > .variant-add-color { display: none !important; }
+.base-color-manager .variant-base-group .variant-color-section {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  align-items: start !important;
-  gap: 8px !important;
-}
-.base-color-manager .variant-base-group > .variant-color-list {
-  display: contents !important;
-}
-.base-color-manager .variant-base-group > .variant-color-list > .inline-color-card {
-  align-self: start !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  width: 100% !important;
   min-width: 0 !important;
-  padding: 7px 8px !important;
-  border: 1px solid rgba(112,139,190,.27) !important;
-  border-radius: 10px !important;
-  background: linear-gradient(145deg, #17233a 0%, #121d31 100%) !important;
-  box-shadow: 0 3px 0 rgba(2,7,17,.25), inset 0 1px 0 rgba(255,255,255,.035) !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
 }
-.base-color-manager .variant-base-group > .variant-color-list > .variants-empty-hint {
+.base-color-manager .variant-base-group .variant-color-section-title { margin: 0 !important; }
+.base-color-manager .variant-base-group .variant-color-section .variant-color-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr)) !important;
+  align-items: start !important;
+  gap: 7px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.base-color-manager .variant-base-group .variant-color-section .variant-color-list > .variants-empty-hint {
   grid-column: 1 / -1 !important;
 }
-.base-color-manager .inline-color-main {
-  grid-template-columns: 20px minmax(0,1fr) 34px 27px !important;
+.inline-color-card {
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 7px !important;
+  border: 1px solid rgba(112,139,190,.27) !important;
+  border-radius: 10px !important;
+  background: linear-gradient(145deg,#17233a 0%,#121d31 100%) !important;
+  box-shadow: 0 3px 0 rgba(2,7,17,.25),inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+.inline-color-main {
+  grid-template-columns: 18px minmax(0,1fr) 32px 25px !important;
   align-items: center !important;
   gap: 5px !important;
+  min-width: 0 !important;
 }
-.base-color-manager .inline-color-dot {
-  width: 18px !important;
-  height: 18px !important;
-}
-.base-color-manager .inline-color-name-field,
-.base-color-manager .inline-color-tone-field {
+.inline-color-dot { width: 17px !important; height: 17px !important; }
+.inline-color-name-field,
+.inline-color-tone-field {
+  min-width: 0 !important;
   gap: 3px !important;
   font-size: 9px !important;
 }
-.base-color-manager .inline-color-name-field input {
+.inline-color-name-field input {
+  min-width: 0 !important;
   min-height: 30px !important;
-  padding: 5px 7px !important;
+  padding: 5px 6px !important;
   font-size: 11px !important;
 }
-.base-color-manager .inline-color-tone-field input[type="color"] {
-  width: 34px !important;
+.inline-color-tone-field input[type="color"] {
+  width: 32px !important;
   height: 30px !important;
   padding: 2px !important;
 }
-.base-color-manager .inline-color-remove {
-  min-width: 27px !important;
+.inline-color-remove {
+  min-width: 25px !important;
   min-height: 29px !important;
+  padding: 2px !important;
 }
-.base-color-manager .inline-color-details {
-  margin-top: 5px !important;
-  padding-top: 4px !important;
+.inline-color-details { margin-top: 5px !important; padding-top: 4px !important; }
+.inline-color-details > summary { font-size: 10px !important; cursor: pointer !important; }
+.inline-color-details[open] > summary { margin-bottom: 7px !important; }
+.inline-color-details .variant-color-fields {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  gap: 7px !important;
+  min-width: 0 !important;
 }
-.base-color-manager .inline-color-details > summary {
+.inline-color-details .variant-color-fields > label { min-width: 0 !important; font-size: 10px !important; }
+.inline-color-details .variant-image-label { grid-column: 1 / -1 !important; }
+.inline-color-details [data-variant-hex-text] {
+  text-transform: uppercase !important;
+  font-family: ui-monospace,monospace !important;
+  letter-spacing: .02em !important;
+}
+.inline-color-details .variant-image-preview { min-height: 36px !important; gap: 5px !important; }
+.inline-color-details .variant-image-preview img { width: 38px !important; height: 38px !important; flex-basis: 38px !important; }
+.inline-color-details .admin-file-picker {
+  width: auto !important;
+  align-self: flex-start !important;
+  min-height: 32px !important;
+  padding: 6px 9px !important;
   font-size: 10px !important;
 }
-.base-color-manager .inline-color-details[open] > summary { margin-bottom: 7px !important; }
-.base-color-manager .inline-color-details .variant-color-fields { gap: 7px !important; }
-.base-color-manager .inline-color-details .variant-image-preview { min-height: 36px !important; }
-.base-color-manager .inline-color-details .variant-image-preview img { width: 38px !important; height: 38px !important; flex-basis: 38px !important; }
-@media (min-width: 1000px) {
-  .admin-add-color-slot .quick-color-palette { grid-template-columns: repeat(12, minmax(0,1fr)) !important; }
-}
-@media (max-width: 650px) {
-  .admin-add-color-slot .quick-color-palette { grid-template-columns: repeat(6, minmax(0,1fr)) !important; gap: 3px !important; padding: 5px !important; }
-  .admin-add-color-slot .quick-color-swatch { min-height: 45px !important; padding: 4px 1px !important; }
-  .admin-add-color-slot .quick-color-dot { width: 18px !important; height: 18px !important; flex-basis: 18px !important; }
-  .admin-add-color-slot .quick-color-name { font-size: 8px !important; }
-  .base-color-manager { grid-template-columns: minmax(0,1fr) !important; gap: 6px !important; }
-}
 
-
-/* Fix: custom product colors flow into two balanced columns. */
-.base-color-manager {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  align-items: start !important;
-  gap: 8px !important;
-}
-.base-color-manager .variant-base-group {
-  display: contents !important;
-}
-.base-color-manager .variant-base-group > .variant-color-list {
-  display: contents !important;
-}
-.base-color-manager .variant-base-group > .variant-color-list > .inline-color-card {
+/* Una configuración técnica ocupa la fila completa; las tarjetas llenan su ancho. */
+.product-variants-list {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
   width: 100% !important;
   min-width: 0 !important;
-  align-self: start !important;
 }
-.base-color-manager .variant-base-group > .variant-color-list > .variants-empty-hint {
+.product-variants-list > [data-variant-group],
+.product-variants-list > .variants-empty-hint {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+.variant-config-group:not(.variant-base-group) {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 10px !important;
+}
+.variant-config-group:not(.variant-base-group) .variant-config-fields {
+  display: grid !important;
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  gap: 9px !important;
+  width: 100% !important;
+  margin: 8px 0 !important;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-section {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px),1fr)) !important;
+  align-items: start !important;
+  gap: 7px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.variant-config-group:not(.variant-base-group) .variant-color-list > .variants-empty-hint { grid-column: 1 / -1 !important; }
+.variant-config-group:not(.variant-base-group) .inline-color-card { width:100% !important; padding:7px !important; }
+.variant-config-group:not(.variant-base-group) .inline-color-main { grid-template-columns:18px minmax(0,1fr) 32px 25px !important; }
+.variant-config-group:not(.variant-base-group) .inline-color-name-field input { min-height:30px !important; padding:5px 6px !important; font-size:11px !important; }
+.variant-config-group:not(.variant-base-group) .inline-color-tone-field input[type="color"] { width:32px !important; height:30px !important; }
+
+/* Selector de muestras de 16 tonos: pequeño, interactivo y accesible. */
+.variant-swatch-palette {
   grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(8, minmax(0,1fr)) !important;
+  gap: 4px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 6px !important;
+  border: 1px solid rgba(122,151,205,.32) !important;
+  border-radius: 9px !important;
+  background: rgba(20,31,54,.45) !important;
 }
-@media (max-width: 650px) {
-  .base-color-manager {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
+.variant-swatch {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  aspect-ratio: 1 / 1 !important;
+  min-height: 20px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255,255,255,.42) !important;
+  border-radius: 5px !important;
+  background: var(--swatch-color) !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  touch-action: manipulation;
+}
+.variant-swatch:hover,
+.variant-swatch:focus-visible { outline: 2px solid #9bb8ff !important; outline-offset: 1px !important; transform: scale(1.04) !important; }
+.variant-swatch.is-selected { outline: 2px solid #a9bcff !important; outline-offset: 1px !important; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35) !important; }
+.variant-swatch:focus-visible { z-index: 1 !important; }
+@media (max-width: 900px) {
+  .variant-config-group:not(.variant-base-group) .variant-color-list { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .quick-color-swatches { grid-template-columns: repeat(auto-fit,minmax(64px,1fr)) !important; }
+}
+@media (max-width: 480px) {
+  .variant-config-group:not(.variant-base-group) .variant-color-list { grid-template-columns: minmax(0,1fr) !important; }
+  .variant-swatch-palette { grid-template-columns: repeat(8,minmax(0,1fr)) !important; }
+  .inline-color-main { grid-template-columns: 18px minmax(0,1fr) 32px 25px !important; }
+  .variant-config-group:not(.variant-base-group) .variant-config-fields { grid-template-columns: minmax(0,1fr) !important; }
 }
 
-
-/* Ensure the quick palette respects its hidden state despite grid display overrides. */
-.admin-add-color-slot .quick-color-palette[hidden] {
-  display: none !important;
+/* Especificaciones junto a garantía: no se desplazan al crecer la lista de colores. */
+.warranty-specs-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: start !important;
+  gap: 14px !important;
+  min-width: 0 !important;
 }
+.warranty-specs-stack > label { min-width: 0 !important; }
+.warranty-specs-stack .admin-specs-field { grid-column: auto !important; }
+.admin-form #product-specs { min-height: 90px !important; height: auto !important; resize: vertical !important; overflow: auto !important; }
+.quick-color-status { display: none !important; }
