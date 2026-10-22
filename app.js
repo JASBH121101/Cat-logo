@@ -252,7 +252,11 @@ function getProductColors(product) {
           color_hex: variant.color_hex
         });
       } else {
-        if (variant.availability === "available") previous.type = "available";
+        if (variant.availability === "available") {
+          previous.type = "available";
+        } else if (variant.availability === "order" && previous.type !== "available") {
+          previous.type = "order";
+        }
         if (!previous.image_url && variant.image_url) {
           previous.image_url = variant.image_url;
         }
@@ -284,6 +288,57 @@ function getProductColors(product) {
       color_hex: validHex(color.color_hex || color.hex)
     };
   }).filter(color => color && color.name);
+}
+
+function displayColorHex(name, hex) {
+  const normalized = String(name || "").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const inferred = [
+    [/negro|black|onyx|phantom|graphite|grafito|carbon|obsidian/, "#20242d"],
+    [/blanco|white|pearl|perla|ivory|marfil/, "#f3f4f6"],
+    [/silver|plata|plateado|gris|gray|grey|titanium silver/, "#aeb7c4"],
+    [/azul|blue|navy|ocean|cobalt|celeste/, "#3568d4"],
+    [/verde|green|mint|menta|emerald/, "#2f9567"],
+    [/rojo|red|coral|burgundy|vino/, "#c8424b"],
+    [/rosa|pink|rose/, "#e78cae"],
+    [/morado|purple|violet|violeta|lavender|lila/, "#8a65c7"],
+    [/dorado|gold|champagne/, "#c8a34f"],
+    [/beige|cream|crema/, "#d9c9a8"],
+    [/naranja|orange/, "#e77a35"],
+    [/cafe|brown|marron/, "#80583f"]
+  ];
+  if (!hex || String(hex).toUpperCase() === "#315A91") {
+    const match = inferred.find(([pattern]) => pattern.test(normalized));
+    if (match) return match[1];
+  }
+  return validHex(hex);
+}
+
+function renderProductColorSwatches(product) {
+  const colors = getProductColors(product)
+    .filter(color => color.name && color.type !== "out_of_stock");
+  if (!colors.length) return "";
+
+  const visible = colors.slice(0, 6).map(color => {
+    const hex = displayColorHex(color.name, color.color_hex);
+    const status = color.type === "order" ? "Disponible por pedido" : "Disponible";
+    return `
+      <span class="product-card-color-swatch"
+            style="--swatch-color: ${hex}"
+            title="${escapeHtml(color.name)} · ${status}"
+            role="listitem"
+            aria-label="${escapeHtml(color.name)} · ${status}"></span>
+    `;
+  }).join("");
+  const more = colors.length > 6
+    ? `<span class="product-card-color-more" aria-label="${colors.length - 6} colores más">+${colors.length - 6}</span>`
+    : "";
+
+  return `
+    <div class="product-card-colors" aria-label="Colores disponibles">
+      <span class="product-card-colors-label">Colores</span>
+      <div class="product-card-color-list" role="list">${visible}${more}</div>
+    </div>
+  `;
 }
 
 function renderColorSummary(product) {
@@ -436,6 +491,7 @@ function renderCard(product) {
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
+        ${renderProductColorSwatches(product)}
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
