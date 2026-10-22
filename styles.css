@@ -3024,3 +3024,27 @@ html[data-theme="dark"] .hero-floating-tag {
 html[data-theme="dark"] .hero-sticker {
   background: rgba(19, 31, 69, 0.78);
 }
+
+
+/* Estabiliza el espacio de la foto de producto al cambiar de color/configuración. */
+.dialog-image {
+  height: 350px;
+  min-height: 0;
+  overflow: hidden;
+  align-self: start;
+}
+.dialog-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+@media (max-width: 760px) {
+  .dialog-image {
+    height: clamp(190px, 48vw, 270px);
+  }
+  .dialog-image img {
+    padding: 14px;
+  }
+}
