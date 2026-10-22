@@ -804,6 +804,7 @@ async function showDashboard(user) {
 
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
+  showAdminSection("home");
 
   const metadata = user.user_metadata || {};
 
@@ -990,6 +991,17 @@ function minimumPrice(variants, field) {
   return values.length ? Math.min(...values) : null;
 }
 
+function showAdminSection(section) {
+  document.querySelectorAll("[data-admin-panel]").forEach(panel => panel.classList.toggle("hidden", panel.dataset.adminPanel !== section));
+  document.querySelectorAll("[data-admin-section]").forEach(button => {
+    const active = button.dataset.adminSection === section;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+}
+document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
+
 async function loadProducts() {
   if (!supabase || !currentUser) {
     return;
@@ -1018,94 +1030,34 @@ async function loadProducts() {
 }
 
 function renderAdminList() {
-  const query = ($("#admin-search")?.value || "")
-    .trim()
-    .toLocaleLowerCase("es");
-
-  const matches = products.filter(product =>
-    [
-      product.name,
-      product.brand,
-      product.model,
-      product.category
-    ]
-      .join(" ")
-      .toLocaleLowerCase("es")
-      .includes(query)
-  );
-
-  $("#admin-product-list").innerHTML = matches.map(product => {
+  const searchable = product => [product.name, product.brand, product.model, product.category].join(" ").toLocaleLowerCase("es");
+  const published = products.filter(product => Boolean(product.is_published));
+  const drafts = products.filter(product => !product.is_published);
+  const filter = (items, selector) => {
+    const query = ($(selector)?.value || "").trim().toLocaleLowerCase("es");
+    return items.filter(product => searchable(product).includes(query));
+  };
+  const cards = (items, emptyText) => items.map(product => {
     const image = getImages(product)[0];
-
-    const thumb = image
-      ? `<img class="admin-product-thumb"
-              src="${escapeHtml(image)}"
-              alt=""
-              loading="lazy">`
-      : `<div class="admin-product-thumb"
-              style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
-
-    const state = product.is_published
-      ? '<span class="status-pill published">Publicado</span>'
-      : '<span class="status-pill">Borrador</span>';
-
+    const thumb = image ? `<img class="admin-product-thumb" src="${escapeHtml(image)}" alt="" loading="lazy">` : `<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
     const variants = normalizeVariants(product.variants);
-
-    const variantCount = variants.length;
-
-    const variantLabel = variantCount
-      ? ` · ${variantCount} variante${variantCount === 1 ? "" : "s"}`
-      : "";
-
-    const price = minimumPrice(variants, "price_usd")
-      ?? product.price_usd;
-
-    const formattedPrice =
-      price === null || price === undefined || price === ""
-        ? "Consultar"
-        : `US$${Number(price).toLocaleString("en-US", {
-            maximumFractionDigits: 2
-          })}`;
-
-    return `
-      <article class="admin-product-row">
-        ${thumb}
-
-        <div>
-          <p class="admin-product-name">
-            ${escapeHtml(product.name)}
-          </p>
-
-          <div class="admin-product-meta">
-            ${escapeHtml(product.category || "Sin categoría")}
-            · ${escapeHtml(formattedPrice)}
-            ${variantLabel}
-            · ${state}
-          </div>
-
-          <div class="admin-product-buttons">
-            <button
-              class="admin-mini-button"
-              type="button"
-              data-edit="${escapeHtml(product.id)}"
-            >Editar</button>
-
-            <button
-              class="admin-mini-button"
-              type="button"
-              data-toggle="${escapeHtml(product.id)}"
-            >${product.is_published ? "Despublicar" : "Publicar"}</button>
-          </div>
-        </div>
-      </article>
-    `;
-  }).join("") ||
-    '<p class="form-status">No hay productos que coincidan con la búsqueda.</p>';
+    const variantLabel = variants.length ? ` · ${variants.length} variante${variants.length === 1 ? "" : "s"}` : "";
+    const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
+    const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel}</div><div class="admin-product-buttons"><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
+  }).join("") || `<p class="form-status">${emptyText}</p>`;
+  $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.");
+  $("#draft-product-list").innerHTML = cards(filter(drafts, "#draft-search"), "No hay productos pendientes de publicar.");
+  $("#published-count").textContent = `${published.length} producto${published.length === 1 ? "" : "s"} publicados`;
+  $("#draft-count").textContent = `${drafts.length} producto${drafts.length === 1 ? "" : "s"} sin publicar`;
+  $("#published-nav-count").textContent = published.length;
+  $("#draft-nav-count").textContent = drafts.length;
 }
 
-$("#admin-search")?.addEventListener("input", renderAdminList);
+$("#published-search")?.addEventListener("input", renderAdminList);
+$("#draft-search")?.addEventListener("input", renderAdminList);
 
-$("#admin-product-list")?.addEventListener("click", async event => {
+document.querySelectorAll("#published-product-list, #draft-product-list").forEach(list => list.addEventListener("click", async event => {
   const edit = event.target.closest("[data-edit]");
   const toggle = event.target.closest("[data-toggle]");
 
@@ -1159,7 +1111,7 @@ $("#admin-product-list")?.addEventListener("click", async event => {
       "error"
     );
   }
-});
+}));
 
 
 /* =========================================================
