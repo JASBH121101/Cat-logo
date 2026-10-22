@@ -740,17 +740,13 @@ variantsContainer?.addEventListener("change", event => {
 });
 
 variantsContainer?.addEventListener("input", event => {
-  if (!event.target.matches(
-    "[data-variant-color], [data-variant-storage], [data-variant-ram]"
-  )) {
-    return;
-  }
-
+  if (!event.target.matches("[data-variant-color], [data-group-storage], [data-group-ram]")) return;
   const row = event.target.closest("[data-variant-row]");
-
-  if (!row) {
+  if (event.target.matches("[data-group-storage], [data-group-ram]")) {
+    updateVariantRowHeadings();
     return;
   }
+  if (!row) return;
 
   if (event.target.matches("[data-variant-color]")) {
     const colorName = event.target.value.trim();
@@ -1177,25 +1173,25 @@ let editorIsDirty = false;
 function getEditorSnapshot() {
   if (!form) return "";
   const fields = Array.from(form.elements).map(field => {
-    if (!field || !field.name && !field.id && !field.matches?.("[data-variant-row]")) return null;
-    if (field.type === "file") {
-      return [field.id || field.getAttribute("data-variant-image") || "file", Array.from(field.files || []).map(file => [file.name, file.size, file.lastModified])];
-    }
-    if (field.type === "checkbox" || field.type === "radio") return [field.id || field.name, field.checked];
-    return [field.id || field.name || field.getAttribute("data-variant-storage") || field.getAttribute("data-variant-ram") || field.getAttribute("data-variant-color") || field.getAttribute("data-variant-price-usd") || field.getAttribute("data-variant-price-nio") || field.getAttribute("data-variant-availability") || field.getAttribute("data-variant-image-url") || field.tagName, field.value];
+    if (!field || (!field.name && !field.id && !field.matches?.("[data-variant-row], [data-variant-group]"))) return null;
+    if (field.type === "file") return [field.id || field.getAttribute("data-variant-image") || "file", Array.from(field.files || []).map(file => [file.name,file.size,file.lastModified])];
+    if (field.type === "checkbox" || field.type === "radio") return [field.id || field.name,field.checked];
+    return [field.id || field.name || field.getAttribute("data-variant-color") || field.getAttribute("data-group-storage") || field.getAttribute("data-group-ram") || field.getAttribute("data-group-price-usd") || field.getAttribute("data-group-price-nio") || field.getAttribute("data-group-availability") || field.getAttribute("data-variant-image-url") || field.tagName,field.value];
   }).filter(Boolean);
-  const variants = Array.from(form.querySelectorAll("[data-variant-row]")).map(row => ({
-    storage: row.querySelector("[data-variant-storage]")?.value || "",
-    ram: row.querySelector("[data-variant-ram]")?.value || "",
-    color: row.querySelector("[data-variant-color]")?.value || "",
-    hex: row.querySelector("[data-variant-hex]")?.value || "",
-    usd: row.querySelector("[data-variant-price-usd]")?.value || "",
-    nio: row.querySelector("[data-variant-price-nio]")?.value || "",
-    availability: row.querySelector("[data-variant-availability]")?.value || "",
-    url: row.querySelector("[data-variant-image-url]")?.value || "",
-    file: Array.from(row.querySelector("[data-variant-image]")?.files || []).map(file => [file.name,file.size,file.lastModified])
+  const variants = Array.from(form.querySelectorAll("[data-variant-group]")).map(group => ({
+    storage:group.querySelector("[data-group-storage]")?.value||"",
+    ram:group.querySelector("[data-group-ram]")?.value||"",
+    usd:group.querySelector("[data-group-price-usd]")?.value||"",
+    nio:group.querySelector("[data-group-price-nio]")?.value||"",
+    availability:group.querySelector("[data-group-availability]")?.value||"",
+    colors:Array.from(group.querySelectorAll("[data-variant-row]")).map(row=>({
+      color:row.querySelector("[data-variant-color]")?.value||"",
+      hex:row.querySelector("[data-variant-hex]")?.value||"",
+      url:row.querySelector("[data-variant-image-url]")?.value||"",
+      file:Array.from(row.querySelector("[data-variant-image]")?.files||[]).map(file=>[file.name,file.size,file.lastModified])
+    }))
   }));
-  return JSON.stringify({fields, variants});
+  return JSON.stringify({fields,variants});
 }
 
 function markEditorClean() {
@@ -1280,9 +1276,6 @@ function fillEditor(product) {
 
   $("#product-shipping").value =
     product.shipping_note || "";
-
-  $("#existing-image-urls").value =
-    getImages(product).join("\n");
 
   $("#product-images").value = "";
   renderMainImagePreviews();
