@@ -261,7 +261,15 @@
                   <span class="admin-add-color-caption">Colores del producto</span>
                   <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Añadir color</button>
                 </div>
-                <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden></div>
+                <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden>
+                  <label class="quick-color-search-label">Buscar color por nombre o código HEX
+                    <input id="quick-color-search" type="search" placeholder="Ej. Azul o #0833A2" autocomplete="off">
+                  </label>
+                  <label class="quick-color-hex-label">Código HEX personalizado
+                    <span class="quick-color-hex-entry"><input id="quick-color-custom-hex" type="text" maxlength="7" placeholder="#0833A2" aria-label="Código HEX personalizado"><button id="quick-color-add-hex" type="button" class="admin-mini-button">Usar color</button></span>
+                  </label>
+                  <div id="quick-color-swatches" class="quick-color-swatches"></div>
+                </div>
                 <div id="base-color-manager" class="base-color-manager" aria-label="Colores configurados"></div>
                 <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
               </div>
