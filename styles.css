@@ -3338,3 +3338,102 @@ html[data-theme="dark"] .admin-section-nav,
 .variant-config-group:not(.variant-base-group)>.variant-color-section .variant-color-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:8px}
 .variant-config-group:not(.variant-base-group)>.variant-color-section .variant-color-list>.variants-empty-hint{grid-column:1/-1}
 @media(max-width:760px){.variant-config-group:not(.variant-base-group)>.variant-color-section .variant-color-list{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Ajustes de distribución: tarjetas de color compactas y columnas estables. */
+.base-color-manager .variant-base-group > .variant-color-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 8px;
+}
+.base-color-manager .variant-base-group > .variant-color-list > .variants-empty-hint {
+  grid-column: 1 / -1;
+}
+.base-color-manager .inline-color-card {
+  min-width: 0;
+  padding: 7px;
+}
+.base-color-manager .inline-color-main {
+  grid-template-columns: 18px minmax(0, 1fr) 32px 24px;
+  align-items: center;
+  gap: 5px;
+}
+.base-color-manager .inline-color-dot {
+  width: 17px;
+  height: 17px;
+}
+.base-color-manager .inline-color-name-field,
+.base-color-manager .inline-color-tone-field {
+  font-size: 9px;
+}
+.base-color-manager .inline-color-name-field input {
+  min-height: 31px;
+  padding: 5px 6px !important;
+  font-size: 11px;
+}
+.base-color-manager .inline-color-tone-field input[type="color"] {
+  width: 32px;
+  height: 31px;
+  padding: 2px;
+}
+.base-color-manager .inline-color-remove {
+  min-width: 24px;
+  min-height: 30px;
+  padding: 2px;
+}
+.base-color-manager .inline-color-details {
+  margin-top: 5px;
+  padding-top: 4px;
+}
+.variant-config-group:not(.variant-base-group) > .variant-color-section .variant-color-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  align-items: start;
+  gap: 8px;
+}
+.variant-config-group:not(.variant-base-group) > .variant-color-section .variant-color-list > .variants-empty-hint {
+  grid-column: 1 / -1;
+}
+.variant-config-group:not(.variant-base-group) .inline-color-card {
+  padding: 7px;
+}
+.variant-config-group:not(.variant-base-group) .inline-color-main {
+  grid-template-columns: 18px minmax(0, 1fr) 34px 26px;
+  gap: 5px;
+}
+.variant-config-group:not(.variant-base-group) .inline-color-dot {
+  width: 17px;
+  height: 17px;
+}
+.variant-config-group:not(.variant-base-group) .inline-color-name-field input {
+  min-height: 31px;
+  padding: 5px 6px !important;
+  font-size: 11px;
+}
+.variant-config-group:not(.variant-base-group) .inline-color-tone-field input[type="color"] {
+  width: 34px;
+  height: 31px;
+}
+.variant-config-group:not(.variant-base-group) .inline-color-remove {
+  min-width: 26px;
+  min-height: 30px;
+  padding: 2px;
+}
+@media (max-width: 760px) {
+  .base-color-manager .variant-base-group > .variant-color-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .variant-config-group:not(.variant-base-group) > .variant-color-section .variant-color-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .base-color-manager .variant-base-group > .variant-color-list,
+  .variant-config-group:not(.variant-base-group) > .variant-color-section .variant-color-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Evita que los campos vecinos se estiren innecesariamente al crecer una sección. */
+.form-grid {
+  align-items: start;
+}
