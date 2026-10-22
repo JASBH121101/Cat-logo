@@ -3026,41 +3026,44 @@ html[data-theme="dark"] .hero-sticker {
 }
 
 
-/* Foto del producto: espacio estable, sin recortar el equipo ni alterar el scroll. */
+/* Foto del producto: caja estable y archivo completo con su proporción original. */
 .dialog-image {
   position: relative;
   display: grid;
   place-items: center;
   width: 100%;
-  height: auto;
-  min-height: 0;
-  aspect-ratio: 1 / 1;
+  height: 300px;
+  min-height: 300px;
+  max-height: 300px;
   overflow: hidden;
   align-self: start;
 }
 .dialog-image img {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: auto !important;
+  height: auto !important;
   max-width: 100%;
   max-height: 100%;
-  padding: 12px;
+  padding: 10px;
+  margin: 0 auto;
   box-sizing: border-box;
-  object-fit: contain;
+  object-fit: contain !important;
   object-position: center;
 }
 @media (min-width: 761px) {
   .dialog-image {
-    aspect-ratio: 4 / 5;
-    max-height: 440px;
+    height: 390px;
+    min-height: 390px;
+    max-height: 390px;
   }
 }
 @media (max-width: 760px) {
   .dialog-image {
-    aspect-ratio: 4 / 3;
-    max-height: 280px;
+    height: 260px;
+    min-height: 260px;
+    max-height: 260px;
   }
   .dialog-image img {
-    padding: 10px;
+    padding: 6px;
   }
 }
