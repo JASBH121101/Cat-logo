@@ -251,10 +251,16 @@
                 <span class="admin-input-unit"><span>C$</span><input id="product-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></span>
               </label>
 
-              <label>
-                Garantía en meses
-                <span class="admin-input-unit"><input id="product-warranty" type="number" min="0" max="120" step="1" inputmode="numeric"><span>meses</span></span>
-              </label>
+              <div class="warranty-specs-stack">
+                <label>
+                  Garantía en meses
+                  <span class="admin-input-unit"><input id="product-warranty" type="number" min="0" max="120" step="1" inputmode="numeric"><span>meses</span></span>
+                </label>
+                <label class="admin-specs-field">
+                  Características y especificaciones.
+                  <textarea id="product-specs" rows="2"></textarea>
+                </label>
+              </div>
 
               <div class="admin-add-color-slot">
                 <div class="admin-add-color-heading">
@@ -273,11 +279,6 @@
                 <div id="base-color-manager" class="base-color-manager" aria-label="Colores configurados"></div>
                 <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
               </div>
-
-              <label class="admin-specs-field">
-                Características y especificaciones.
-                <textarea id="product-specs" rows="2"></textarea>
-              </label>
 
 <section class="span-2 variants-editor-section"
                        aria-labelledby="variants-editor-title">
