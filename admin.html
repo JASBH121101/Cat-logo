@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261022-colors5">
-  <link rel="stylesheet" href="theme-ui.css?v=20261022-gallery4">
+  <link rel="stylesheet" href="styles.css?v=20261022-colors6">
+  <link rel="stylesheet" href="theme-ui.css?v=20261022-colors6">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261022-analytics1"></script>
+  <script type="module" src="admin.js?v=20261022-colors6"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -268,11 +268,8 @@
                   <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Añadir color</button>
                 </div>
                 <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden>
-                  <label class="quick-color-search-label">Buscar color por nombre o código HEX
-                    <input id="quick-color-search" type="search" placeholder="Ej. Azul o #0833A2" autocomplete="off">
-                  </label>
-                  <label class="quick-color-hex-label">Código HEX personalizado
-                    <span class="quick-color-hex-entry"><input id="quick-color-custom-hex" type="text" maxlength="7" placeholder="#0833A2" aria-label="Código HEX personalizado"><button id="quick-color-add-hex" type="button" class="admin-mini-button">Usar color</button></span>
+                  <label class="quick-color-search-label">Buscar por nombre o código HEX
+                    <input id="quick-color-search" type="search" placeholder="Ej. Azul, #315A91 o #0833A2" autocomplete="off" aria-label="Buscar color por nombre o código HEX">
                   </label>
                   <div id="quick-color-swatches" class="quick-color-swatches"></div>
                 </div>
