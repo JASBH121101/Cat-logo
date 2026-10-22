@@ -3653,3 +3653,164 @@ html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
   .variants-editor-actions .button { width:100%; }
 }
 html[data-theme="dark"] .variants-editor-actions .button { color:#e6ecff; }
+
+
+/* Galería de imágenes del producto: reglas definitivas sobre el layout del diálogo. */
+.product-dialog #dialog-image,
+.product-dialog .dialog-image {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:stretch;
+  gap:12px;
+  height:clamp(320px,54vh,540px);
+  min-height:0;
+  max-height:540px;
+  overflow:auto;
+  padding:16px;
+  box-sizing:border-box;
+}
+.product-dialog #dialog-image .dialog-gallery-main {
+  display:grid;
+  place-items:center;
+  width:100%;
+  min-height:180px;
+  flex:1 1 auto;
+}
+.product-dialog #dialog-image .dialog-gallery-main .dialog-main-image {
+  display:block;
+  width:100%;
+  height:100%;
+  max-height:390px;
+  padding:14px;
+  object-fit:contain;
+  mix-blend-mode:multiply;
+}
+.product-dialog #dialog-image .dialog-gallery-thumbs {
+  display:flex;
+  flex:0 0 auto;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+  padding:3px 0 5px;
+}
+.product-dialog #dialog-image .dialog-gallery-thumb {
+  display:grid;
+  place-items:center;
+  width:58px;
+  height:58px;
+  padding:3px;
+  border:1px solid var(--line,#dce3f2);
+  border-radius:9px;
+  background:#fff;
+  cursor:pointer;
+}
+.product-dialog #dialog-image .dialog-gallery-thumb.active {
+  border:2px solid #586be8;
+  box-shadow:0 0 0 2px rgba(88,107,232,.12);
+}
+.product-dialog #dialog-image .dialog-gallery-thumb img {
+  display:block;
+  width:100%;
+  height:100%;
+  max-height:none;
+  padding:0;
+  object-fit:contain;
+  mix-blend-mode:multiply;
+}
+html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-thumb {
+  border-color:#344366;
+  background:#111a30;
+}
+html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-thumb img,
+html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dialog-main-image {
+  mix-blend-mode:normal;
+}
+
+/* Encabezado público: nombre centrado, selector de tema a la derecha. */
+.site-header:not(.admin-header) {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  gap:10px;
+  justify-content:initial;
+  padding-inline:max(3vw,16px);
+}
+.site-header:not(.admin-header) > .brand {
+  grid-column:2;
+  justify-self:center;
+  max-width:100%;
+  gap:11px;
+  font-size:clamp(17px,2vw,24px);
+  letter-spacing:-.6px;
+  white-space:nowrap;
+}
+.site-header:not(.admin-header) > [data-theme-toggle] {
+  grid-column:3;
+  justify-self:end;
+}
+@media (max-width:760px) {
+  .site-header:not(.admin-header) {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    grid-auto-flow:row;
+    gap:4px;
+    width:100%;
+    height:66px !important;
+    min-height:66px !important;
+    padding:8px 10px !important;
+    overflow:visible;
+  }
+  .site-header:not(.admin-header) > .brand {
+    grid-column:2;
+    grid-row:1;
+    display:inline-flex;
+    flex:0 1 auto;
+    justify-self:center;
+    justify-content:center;
+    min-width:0;
+    gap:7px;
+    margin:0;
+    font-size:clamp(12px,3.8vw,16px);
+    letter-spacing:-.45px;
+    line-height:1.2;
+  }
+  .site-header:not(.admin-header) > .brand .brand-mark {
+    flex:0 0 29px;
+    width:29px;
+    height:29px;
+    border-radius:9px;
+    font-size:10px;
+  }
+  .site-header:not(.admin-header) > [data-theme-toggle] {
+    position:relative !important;
+    top:auto !important;
+    right:auto !important;
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    align-self:center;
+    transform:none !important;
+    min-height:34px;
+    padding:6px 8px;
+    gap:5px;
+    font-size:11px;
+  }
+  .site-header:not(.admin-header) > [data-theme-toggle] .theme-toggle-icon { font-size:15px; }
+  .product-dialog #dialog-image,
+  .product-dialog .dialog-image {
+    height:clamp(220px,38vh,310px);
+    min-height:220px;
+    max-height:310px;
+    padding:9px;
+    gap:7px;
+  }
+  .product-dialog #dialog-image .dialog-gallery-main { min-height:140px; }
+  .product-dialog #dialog-image .dialog-gallery-main .dialog-main-image { max-height:230px; padding:5px; }
+  .product-dialog #dialog-image .dialog-gallery-thumb { width:46px; height:46px; }
+}
+@media (max-width:380px) {
+  .site-header:not(.admin-header) > .brand .brand-mark { display:none; }
+  .site-header:not(.admin-header) > .brand { font-size:14px; }
+  .site-header:not(.admin-header) > [data-theme-toggle] { width:auto; min-width:0; }
+}
