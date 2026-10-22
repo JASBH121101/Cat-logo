@@ -383,11 +383,11 @@ function renderCard(product) {
 
   const brand = String(product.brand || "").trim();
   const model = String(product.model || "").trim();
-  const title = [brand, model].filter(Boolean).join(" ") || String(product.name || "Producto");
+  const title = brand && model ? `${brand} ${model}` : String(product.name || brand || model || "Producto");
   const configurations = [...new Set(variants.map(variant => {
     const storage = String(variant.storage || "").trim();
     const ram = String(variant.ram || "").trim();
-    if (storage && ram) return `${ram} RAM / ${storage}`;
+    if (storage && ram) return `${/\\bram\\b/i.test(ram) ? ram : `${ram} RAM`} / ${storage}`;
     return ram || storage;
   }).filter(Boolean))];
   const capacity = configurations[0] || "";
