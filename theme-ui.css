@@ -5706,3 +5706,165 @@ body:not(.admin-body) .product-card .product-view-button {
     font-size: 10px;
   }
 }
+
+
+/* Cat-logo: botones y superficies públicas con más color, profundidad y respuesta.
+   Alcance exclusivo del catálogo del cliente; el panel admin queda intacto. */
+body:not(.admin-body) .button,
+body:not(.admin-body) .buy-button,
+body:not(.admin-body) .header-contact,
+body:not(.admin-body) .finance-banner .button,
+body:not(.admin-body) .product-view-button {
+  border: 1px solid rgba(116, 145, 255, .58);
+  border-radius: 11px;
+  color: #fff !important;
+  background: linear-gradient(115deg, #2468e8 0%, #5149df 56%, #7a43d2 100%);
+  box-shadow:
+    0 4px 0 #273b9d,
+    0 8px 16px rgba(39, 75, 205, .24),
+    inset 0 1px 0 rgba(255, 255, 255, .2);
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    background .2s ease,
+    box-shadow .2s ease,
+    filter .2s ease;
+}
+body:not(.admin-body) .button:hover,
+body:not(.admin-body) .buy-button:hover,
+body:not(.admin-body) .header-contact:hover,
+body:not(.admin-body) .finance-banner .button:hover,
+body:not(.admin-body) .product-view-button:hover {
+  border-color: rgba(178, 194, 255, .95);
+  color: #fff !important;
+  background: linear-gradient(115deg, #3182f6 0%, #6558ef 55%, #9555e8 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 #293b9a,
+    0 12px 23px rgba(53, 82, 221, .32),
+    0 0 18px rgba(107, 92, 255, .17),
+    inset 0 1px 0 rgba(255, 255, 255, .24);
+  filter: saturate(1.08);
+}
+body:not(.admin-body) .button:active,
+body:not(.admin-body) .buy-button:active,
+body:not(.admin-body) .header-contact:active,
+body:not(.admin-body) .finance-banner .button:active,
+body:not(.admin-body) .product-view-button:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 #273b9d,
+    0 3px 8px rgba(39, 75, 205, .18);
+}
+body:not(.admin-body) .button:focus-visible,
+body:not(.admin-body) .buy-button:focus-visible,
+body:not(.admin-body) .header-contact:focus-visible,
+body:not(.admin-body) .finance-banner .button:focus-visible,
+body:not(.admin-body) .product-view-button:focus-visible,
+body:not(.admin-body) .filter-chip:focus-visible {
+  outline: 3px solid rgba(112, 160, 255, .9);
+  outline-offset: 3px;
+}
+body:not(.admin-body) .theme-toggle,
+body:not(.admin-body) .back-to-top {
+  border: 1px solid rgba(104, 139, 255, .62);
+  color: #fff;
+  background: linear-gradient(135deg, #172d59, #34265e 58%, #452b78);
+  box-shadow: 0 3px 0 #101d43, 0 7px 15px rgba(25, 42, 103, .24);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+body:not(.admin-body) .theme-toggle:hover,
+body:not(.admin-body) .back-to-top:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.16);
+  box-shadow: 0 5px 0 #101d43, 0 10px 20px rgba(66, 77, 190, .32);
+}
+body:not(.admin-body) .theme-toggle:active,
+body:not(.admin-body) .back-to-top:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #101d43;
+}
+body:not(.admin-body) .filter-chip {
+  border-color: #cbd7f4;
+  transition: transform .16s ease, color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+body:not(.admin-body) .filter-chip:hover {
+  border-color: #778df1;
+  color: #3349b9;
+  background: linear-gradient(120deg, #eef3ff, #f7efff);
+  transform: translateY(-1px);
+}
+body:not(.admin-body) .filter-chip.active {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(110deg, #286be8, #6547d7);
+  box-shadow: 0 3px 0 #283d9c, 0 6px 14px rgba(56, 82, 205, .2);
+}
+body:not(.admin-body) .finance-banner {
+  border-color: rgba(101, 130, 224, .62);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 95% 4%, rgba(95, 115, 255, .24), transparent 36%),
+    radial-gradient(ellipse at 0% 100%, rgba(22, 151, 222, .13), transparent 40%),
+    linear-gradient(118deg, #101b36 0%, #1b2850 58%, #30204f 100%);
+  box-shadow: 0 5px 0 #080f20, 0 14px 30px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .045);
+}
+body:not(.admin-body) .finance-symbol {
+  border-color: rgba(135, 157, 255, .72);
+  border-radius: 12px;
+  background: linear-gradient(140deg, #3478f6, #7446d6);
+  box-shadow: 0 4px 0 #273b91, 0 7px 15px rgba(60, 76, 200, .26);
+}
+body:not(.admin-body) .product-card {
+  border-color: rgba(106, 130, 190, .36);
+  box-shadow: 0 4px 0 rgba(10, 17, 38, .85), 0 8px 18px rgba(7, 14, 31, .15);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+body:not(.admin-body) .product-card:hover {
+  border-color: rgba(111, 139, 255, .78);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 0 rgba(10, 17, 38, .8), 0 12px 24px rgba(45, 67, 155, .2), 0 0 15px rgba(102, 90, 231, .09);
+}
+body:not(.admin-body) .product-image {
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(91, 120, 220, .10), transparent 65%),
+    linear-gradient(145deg, #f8faff, #edf2ff);
+}
+html[data-theme="dark"] body:not(.admin-body) .product-image {
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(92, 118, 238, .16), transparent 65%),
+    linear-gradient(145deg, #1b2a4c, #131d34);
+}
+html[data-theme="light"] body:not(.admin-body) .finance-banner {
+  border-color: rgba(104, 128, 218, .38);
+  color: #f6f8ff;
+  background:
+    radial-gradient(ellipse at 96% 0%, rgba(124, 91, 231, .38), transparent 37%),
+    radial-gradient(ellipse at 0% 100%, rgba(37, 145, 230, .25), transparent 40%),
+    linear-gradient(115deg, #18366d, #3c3a91 63%, #62409c);
+  box-shadow: 0 5px 0 #202d71, 0 12px 25px rgba(43, 64, 151, .2);
+}
+html[data-theme="light"] body:not(.admin-body) .finance-banner h2,
+html[data-theme="light"] body:not(.admin-body) .finance-banner p:not(.eyebrow) {
+  color: #f5f7ff;
+}
+html[data-theme="light"] body:not(.admin-body) .finance-banner .eyebrow {
+  color: #c7d6ff;
+}
+html[data-theme="light"] body:not(.admin-body) .finance-banner .button {
+  border-color: rgba(189, 203, 255, .75);
+  background: linear-gradient(115deg, #2569e8, #5546dc 58%, #7c43d4);
+  box-shadow: 0 4px 0 #252d83, 0 8px 16px rgba(12, 23, 68, .25);
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.admin-body) .button,
+  body:not(.admin-body) .buy-button,
+  body:not(.admin-body) .header-contact,
+  body:not(.admin-body) .finance-banner .button,
+  body:not(.admin-body) .product-view-button,
+  body:not(.admin-body) .theme-toggle,
+  body:not(.admin-body) .back-to-top,
+  body:not(.admin-body) .product-card {
+    transition: none !important;
+  }
+}
