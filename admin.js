@@ -1208,7 +1208,51 @@ async function loadProducts() {
 
   renderAdminList();
   renderDashboardOverview();
+  await loadCatalogAnalytics();
 
+}
+
+async function loadCatalogAnalytics() {
+  const note = document.getElementById("dashboard-analytics-note");
+  const topNode = document.getElementById("dashboard-top-products");
+  const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+  if (!supabase || !currentUser) return;
+  const { data, error } = await supabase
+    .from("catalog_events")
+    .select("product_id,event_type,created_at")
+    .order("created_at", { ascending: false })
+    .limit(10000);
+  if (error) {
+    setText("dashboard-views-total", "—");
+    setText("dashboard-whatsapp-total", "—");
+    if (note) note.textContent = "Falta instalar la tabla de analítica en Supabase o revisar sus políticas. El resto del panel sigue funcionando.";
+    if (topNode) topNode.innerHTML = '<p class="dashboard-empty-state">No se pudieron cargar las estadísticas.</p>';
+    console.info("Analítica de catálogo no disponible:", error.message);
+    return;
+  }
+  const events = data || [];
+  const views = events.filter(event => event.event_type === "view");
+  const clicks = events.filter(event => event.event_type === "whatsapp_click");
+  setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
+  setText("dashboard-whatsapp-total", clicks.length.toLocaleString("es-NI"));
+  if (note) note.textContent = events.length
+    ? "Eventos registrados desde la activación de la analítica. Cada apertura de ficha cuenta como una visita; no son personas únicas."
+    : "La tabla está lista, pero aún no hay eventos. Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp.";
+  const byProduct = new Map();
+  for (const event of events) {
+    if (!event.product_id) continue;
+    const stats = byProduct.get(String(event.product_id)) || { views: 0, clicks: 0 };
+    if (event.event_type === "view") stats.views++;
+    if (event.event_type === "whatsapp_click") stats.clicks++;
+    byProduct.set(String(event.product_id), stats);
+  }
+  const ranked = products.filter(product => product.is_published).map(product => ({
+    product, stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
+  })).sort((a,b) => b.stats.views - a.stats.views || b.stats.clicks - a.stats.clicks).slice(0,6);
+  if (topNode) topNode.innerHTML = ranked.length ? ranked.map(({product,stats},index) => {
+    const name = escapeHtml(product.name || "Producto sin nombre");
+    return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">'+(index+1)+'</span><div class="dashboard-top-product-info"><strong>'+name+'</strong><small>Interés registrado</small></div><div class="dashboard-top-product-stats"><span>👁 <b>'+stats.views+'</b> visitas</span><span>↗ <b>'+stats.clicks+'</b> clics</span></div></div>';
+  }).join("") : '<p class="dashboard-empty-state">Publicá productos para ver aquí su rendimiento.</p>';
 }
 
 function renderDashboardOverview() {
