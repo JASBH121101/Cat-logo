@@ -414,12 +414,12 @@ function renderCard(product) {
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
         <div class="product-actions">
-          <button class="buy-button product-view-button"
-                  type="button"
-                  data-details="${escapeHtml(product.id)}"
-                  aria-label="Ver producto: ${escapeHtml(title)}">
+          <a class="buy-button product-view-button"
+             href="${escapeHtml(productLink(product))}"
+             data-details="${escapeHtml(product.id)}"
+             aria-label="Ver producto: ${escapeHtml(title)}">
             Ver producto <span aria-hidden="true">↗</span>
-          </button>
+          </a>
         </div>
       </div>
     </article>
@@ -798,7 +798,19 @@ grid.addEventListener("click", event => {
     item => String(item.id) === button.dataset.details
   );
 
-  if (product) openProduct(product);
+  if (!product) return;
+
+  /* Abrir la ficha sin recargar si JavaScript está activo. El enlace conserva
+     una ruta #producto=ID como alternativa para abrirla al cargar la página. */
+  event.preventDefault();
+  if (window.location.hash !== `#producto=${encodeURIComponent(product.id)}`) {
+    window.history.replaceState(
+      window.history.state,
+      document.title,
+      productLink(product)
+    );
+  }
+  openProduct(product);
 });
 
 categoryFilters.addEventListener("click", event => {
