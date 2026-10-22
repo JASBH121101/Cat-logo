@@ -1025,8 +1025,6 @@ async function loadProducts() {
 
   renderAdminList();
 
-  $("#product-count").textContent =
-    `${products.length} producto${products.length === 1 ? "" : "s"} en la base de datos`;
 }
 
 function renderAdminList() {
