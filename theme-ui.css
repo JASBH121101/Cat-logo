@@ -4961,3 +4961,50 @@ html[data-theme="light"] body.admin-body .admin-menu-toggle {
   body.admin-body .admin-nav-button,
   body.admin-body .theme-toggle { transition: none !important; }
 }
+
+/* Botón funcional para recargar la actividad reciente desde el inventario. */
+body.admin-body .dashboard-activity-refresh {
+  flex: 0 0 35px;
+  padding: 0;
+  border: 1px solid var(--line, rgba(130,155,200,.22));
+  cursor: pointer;
+}
+body.admin-body .dashboard-activity-refresh > span {
+  display: inline-block;
+  line-height: 1;
+}
+body.admin-body .dashboard-activity-refresh:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+body.admin-body .dashboard-activity-refresh:disabled {
+  opacity: .72;
+  cursor: progress;
+}
+body.admin-body .dashboard-activity-refresh.is-refreshing > span {
+  animation: admin-activity-refresh-spin .8s linear infinite;
+}
+body.admin-body .dashboard-activity-refresh-status {
+  display: none;
+  margin: 10px 0 0;
+  color: var(--muted, #91a2c0);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+body.admin-body .dashboard-activity-refresh-status:not(:empty) {
+  display: block;
+}
+html[data-theme="light"] body.admin-body .dashboard-activity-refresh-status {
+  color: #52668e;
+}
+html[data-theme="dark"] body.admin-body .dashboard-activity-refresh-status {
+  color: #9fb5df;
+}
+@keyframes admin-activity-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.admin-body .dashboard-activity-refresh.is-refreshing > span {
+    animation: none;
+  }
+}
