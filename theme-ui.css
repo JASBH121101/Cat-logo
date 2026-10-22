@@ -5292,3 +5292,75 @@ html[data-theme="dark"] body.admin-body .dashboard-interest-products-heading > s
     animation: none !important;
   }
 }
+
+/* Cat-logo admin fixes: galería principal del producto y pie alineado con el área útil. */
+body.admin-body .admin-product-gallery {
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line, rgba(130, 150, 200, .24));
+  border-radius: 14px;
+  background: rgba(127, 145, 190, .055);
+}
+body.admin-body .admin-product-gallery-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+body.admin-body .admin-product-gallery-heading > div {
+  flex: 1 1 250px;
+  min-width: 0;
+}
+body.admin-body .admin-product-gallery-heading h3 {
+  margin: 0;
+  color: var(--ink, #172544);
+  font-size: 15px;
+  line-height: 1.4;
+}
+body.admin-body .admin-product-gallery-heading p {
+  margin: 6px 0 0;
+  color: var(--muted, #73809e);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+body.admin-body .admin-product-gallery .file-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  white-space: normal;
+}
+body.admin-body .admin-product-gallery-summary {
+  margin: 12px 0 0;
+  color: var(--muted, #73809e);
+  font-size: 12px;
+  line-height: 1.45;
+}
+body.admin-body #product-images-preview:empty {
+  display: none;
+}
+
+/* El menú lateral es fijo solo en escritorio; el pie no debe quedar debajo. */
+body.admin-body.admin-dashboard-active .site-footer {
+  width: calc(100% - var(--admin-sidebar-width));
+  margin-left: var(--admin-sidebar-width);
+}
+@media (max-width: 760px) {
+  body.admin-body .admin-product-gallery {
+    padding: 13px;
+  }
+  body.admin-body .admin-product-gallery .file-button {
+    width: 100%;
+  }
+  body.admin-body.admin-dashboard-active .site-footer {
+    width: 100%;
+    margin-left: 0;
+  }
+}
