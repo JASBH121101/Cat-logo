@@ -3189,3 +3189,31 @@ html[data-theme] .product-card .product-view-button { font-size: 13px; }
     min-height: 38px;
   }
 }
+
+
+/* Contraste visible del selector de tema en ambos modos. */
+.site-header > .theme-toggle {
+  border: 1px solid #9eafe0;
+  color: #263f8d;
+  background: linear-gradient(145deg, #ffffff, #eaf0ff);
+  box-shadow: 0 3px 0 #c8d4f1, 0 5px 12px rgba(37, 61, 128, .12);
+}
+html[data-theme="light"] .site-header > .theme-toggle {
+  border-color: #9eafe0;
+  color: #263f8d;
+  background: linear-gradient(145deg, #ffffff, #eaf0ff);
+}
+html[data-theme="dark"] .site-header > .theme-toggle {
+  border-color: #596aa8;
+  color: #f3f5ff;
+  background: linear-gradient(145deg, #1b2b50, #29274f);
+}
+@media (max-width:760px) {
+  .site-header > .theme-toggle {
+    right: 10px;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+  }
+}
