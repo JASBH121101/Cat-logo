@@ -842,36 +842,60 @@ async function initializeCatalog() {
     return;
   }
 
+  let data;
   try {
-    const { data, error } = await supabase
+    const response = await supabase
       .from("products")
       .select("*")
       .eq("is_published", true)
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
-
-    products = data || [];
-    renderProducts();
-
-    const openProductFromHash = () => {
-      const match = window.location.hash.match(/^#producto=(.+)$/);
-      if (!match) return;
-      let id = match[1];
-      try { id = decodeURIComponent(id); } catch { /* Usa el ID recibido. */ }
-      const product = products.find(item => String(item.id) === id);
-      if (product) openProduct(product);
-    };
-
-    openProductFromHash();
-    window.addEventListener("hashchange", openProductFromHash);
+    if (response.error) throw response.error;
+    data = response.data || [];
   } catch (error) {
     statusNode.textContent =
-      "No pudimos cargar el catálogo. Revisá la conexión de Supabase y las políticas de acceso.";
-
-    console.error("Error al cargar productos", error);
+      "No pudimos consultar los productos en Supabase. " +
+      (error?.message || "Revisá la conexión, la tabla products y sus políticas de lectura.");
+    grid.innerHTML = "";
+    console.error("Error real al consultar productos en Supabase:", error);
+    return;
   }
+
+  products = data;
+  try {
+    renderProducts();
+  } catch (error) {
+    statusNode.textContent =
+      "Los productos llegaron, pero hubo un error al mostrarlos. Revisá la consola del navegador.";
+    console.error("Error al dibujar las tarjetas del catálogo:", error);
+    return;
+  }
+
+  const openProductFromHash = () => {
+    const match = window.location.hash.match(/^#producto=(.+)$/);
+    if (!match) return;
+    let id = match[1];
+    try { id = decodeURIComponent(id); } catch { /* Usa el ID recibido. */ }
+    const product = products.find(item => String(item.id) === id);
+    if (!product) {
+      statusNode.textContent =
+        "El producto solicitado no está publicado o el enlace ya no es válido.";
+      return;
+    }
+
+    try {
+      openProduct(product);
+    } catch (error) {
+      statusNode.textContent =
+        "Encontramos el producto, pero falló la ficha de detalles. " +
+        (error?.message || "Revisá la consola del navegador.");
+      console.error("Error al abrir la ficha del producto:", error);
+    }
+  };
+
+  openProductFromHash();
+  window.addEventListener("hashchange", openProductFromHash);
 }
 
 initializeCatalog();
