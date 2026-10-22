@@ -54,12 +54,17 @@
                  required>
         </label>
 
-        <label>
+        <label class="password-field-label">
           Contraseña
-          <input id="login-password"
-                 type="password"
-                 autocomplete="current-password"
-                 required>
+          <span class="password-input-wrap">
+            <input id="login-password"
+                   type="password"
+                   autocomplete="current-password"
+                   required>
+            <button class="password-visibility-button" id="toggle-password-visibility" type="button" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </span>
         </label>
 
         <button class="button button-primary" type="submit">
