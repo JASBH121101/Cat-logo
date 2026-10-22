@@ -2,10 +2,11 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 /* =========================================================
    CT ADMINISTRACIÓN
-   Sesión temporal por pestaña + inventario + variantes
+   Inicio de sesión, inventario y variantes
    ========================================================= */
 
 const CONFIG = window.CATALOG_CONFIG || {};
+const $ = selector => document.querySelector(selector);
 
 const configured = Boolean(
   CONFIG.supabaseUrl &&
@@ -14,26 +15,21 @@ const configured = Boolean(
   !String(CONFIG.supabaseAnonKey).includes("PON_AQUI")
 );
 
-/* =========================================================
-   SESIÓN: CERRAR AL RECARGAR
-   ========================================================= */
+const loginPanel = $("#login-panel");
+const dashboard = $("#dashboard");
+const form = $("#product-form");
 
-/*
-  Esta marca permanece en sessionStorage durante la vida de
-  la pestaña. Si admin.js vuelve a ejecutarse, eliminamos la
-  sesión anterior antes de inicializar el cliente de Supabase.
-
-  Esto permite que una recarga normal del panel solicite
-  nuevamente las credenciales.
-*/
+let currentUser = null;
+let products = [];
+let editorDirty = false;
+let initialFormSnapshot = "";
 
 const ADMIN_PAGE_MARKER = "ct-admin-page-has-loaded";
 
-function getSupabaseStorageKey() {
+function authStorageKey() {
   try {
     const projectRef = new URL(CONFIG.supabaseUrl)
-      .hostname
-      .split(".")[0];
+      .hostname.split(".")[0];
 
     return `sb-${projectRef}-auth-token`;
   } catch {
@@ -41,40 +37,47 @@ function getSupabaseStorageKey() {
   }
 }
 
-function clearSessionBeforeReloadedPanel() {
+/*
+  Al recargar, se elimina la sesión local antes de crear el
+  cliente Supabase. La primera carga de la pestaña no la elimina.
+*/
+function clearSessionOnReload() {
   try {
-    const pageWasAlreadyLoaded =
-      window.sessionStorage.getItem(ADMIN_PAGE_MARKER) === "1";
+    const previousLoad =
+      sessionStorage.getItem(ADMIN_PAGE_MARKER) === "1";
 
-    if (pageWasAlreadyLoaded) {
-      const storageKey = getSupabaseStorageKey();
+    if (previousLoad) {
+      const key = authStorageKey();
 
-      if (storageKey) {
-        window.sessionStorage.removeItem(storageKey);
-        window.localStorage.removeItem(storageKey);
+      if (key) {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
       }
     }
 
-    window.sessionStorage.setItem(ADMIN_PAGE_MARKER, "1");
+    sessionStorage.setItem(ADMIN_PAGE_MARKER, "1");
   } catch (error) {
-    console.warn(
-      "No se pudo comprobar el estado previo de la sesión.",
-      error
-    );
+    console.warn("No se pudo comprobar la sesión anterior.", error);
   }
 }
 
-/*
-  IMPORTANTE:
-  Debe ejecutarse antes de createClient(), para evitar que
-  Supabase recupere la sesión anterior al recargar la página.
-*/
-clearSessionBeforeReloadedPanel();
+clearSessionOnReload();
+
+/* Elimina posibles sesiones persistentes de una versión anterior. */
+try {
+  const oldKey = authStorageKey();
+
+  if (oldKey) {
+    localStorage.removeItem(oldKey);
+  }
+} catch (error) {
+  console.warn("No se pudo limpiar la sesión anterior.", error);
+}
 
 const supabase = configured
   ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
       auth: {
-        storage: window.sessionStorage,
+        storage: sessionStorage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
@@ -82,36 +85,8 @@ const supabase = configured
     })
   : null;
 
-const $ = selector => document.querySelector(selector);
-
-const loginPanel = $("#login-panel");
-const dashboard = $("#dashboard");
-const form = $("#product-form");
-
-let currentUser = null;
-let products = [];
-
-const COLOR_PALETTE = [
-  { name: "Negro", hex: "#242424" },
-  { name: "Blanco", hex: "#F4F4F4" },
-  { name: "Plata", hex: "#C5C9D0" },
-  { name: "Gris", hex: "#777E8B" },
-  { name: "Grafito", hex: "#454952" },
-  { name: "Azul", hex: "#315A91" },
-  { name: "Azul claro", hex: "#78A9E8" },
-  { name: "Verde", hex: "#39785A" },
-  { name: "Verde menta", hex: "#8ECDB8" },
-  { name: "Dorado", hex: "#C8A45D" },
-  { name: "Champán", hex: "#D8C3A0" },
-  { name: "Morado", hex: "#7952A8" },
-  { name: "Rosa", hex: "#D986A7" },
-  { name: "Rojo", hex: "#C13A4B" },
-  { name: "Naranja", hex: "#DE783E" },
-  { name: "Amarillo", hex: "#E8C94B" }
-];
-
 /* =========================================================
-   UTILIDADES GENERALES
+   UTILIDADES
    ========================================================= */
 
 function escapeHtml(value = "") {
@@ -137,14 +112,13 @@ function message(selector, text, type = "") {
 
 function setStatus(text, type = "") {
   const node = $("#admin-status");
+
   if (!node) return;
 
   node.textContent = text;
-
   node.style.color =
     type === "error" ? "#b42318" :
-    type === "success" ? "#087f5b" :
-    "";
+    type === "success" ? "#087f5b" : "";
 }
 
 function slugify(value) {
@@ -183,27 +157,18 @@ function toOptionalNumber(value, label) {
   const number = Number(value);
 
   if (!Number.isFinite(number) || number < 0) {
-    throw new Error(
-      `${label} debe ser un número igual o mayor que cero.`
-    );
+    throw new Error(`${label} debe ser igual o mayor que cero.`);
   }
 
   return number;
 }
 
-/*
-  Valores válidos para public.products.availability:
-  available, on_order, out_of_stock.
-*/
 function normalizeProductAvailability(value) {
   const normalized = String(value || "")
     .trim()
-    .toLocaleLowerCase("es");
+    .toLowerCase();
 
-  if (
-    ["out_of_stock", "agotado temporalmente", "agotado"]
-      .includes(normalized)
-  ) {
+  if (["out_of_stock", "agotado", "agotado temporalmente"].includes(normalized)) {
     return "out_of_stock";
   }
 
@@ -215,116 +180,11 @@ function normalizeProductAvailability(value) {
 }
 
 function normalizeVariantAvailability(value) {
-  const normalized = String(value || "")
-    .trim()
-    .toLocaleLowerCase("es");
-
-  return ["order", "on_order", "por pedido"].includes(normalized)
-    ? "order"
-    : "available";
+  return ["order", "on_order", "por pedido"]
+    .includes(String(value || "").trim().toLowerCase())
+      ? "order"
+      : "available";
 }
-
-/* =========================================================
-   ALMACENAMIENTO Y CIERRE DE SESIÓN
-   ========================================================= */
-
-function authStorageKey() {
-  return getSupabaseStorageKey();
-}
-
-/*
-  Elimina una posible sesión antigua almacenada en localStorage
-  por una versión anterior del panel.
-*/
-function clearLegacyPersistentAuth() {
-  try {
-    const key = authStorageKey();
-
-    if (key) {
-      window.localStorage.removeItem(key);
-    }
-  } catch (error) {
-    console.warn(
-      "No se pudo limpiar una sesión persistente anterior.",
-      error
-    );
-  }
-}
-
-clearLegacyPersistentAuth();
-
-function clearLocalAuthStorage() {
-  try {
-    const key = authStorageKey();
-
-    if (key) {
-      window.sessionStorage.removeItem(key);
-      window.localStorage.removeItem(key);
-    }
-  } catch (error) {
-    console.warn(
-      "No se pudo limpiar el almacenamiento local de sesión.",
-      error
-    );
-  }
-}
-
-async function signOutLocalSafely() {
-  try {
-    if (supabase) {
-      const { error } = await supabase.auth.signOut({
-        scope: "local"
-      });
-
-      if (error) {
-        console.warn(
-          "Supabase no confirmó el cierre de sesión local.",
-          error.message
-        );
-      }
-    }
-  } catch (error) {
-    console.warn(
-      "No se pudo completar el cierre de sesión.",
-      error
-    );
-  } finally {
-    clearLocalAuthStorage();
-  }
-}
-
-function clearLoginPassword() {
-  const password = $("#login-password");
-
-  if (password) {
-    password.value = "";
-    password.setCustomValidity("");
-  }
-}
-
-function showLoginScreen(statusText = "", type = "") {
-  currentUser = null;
-  products = [];
-
-  dashboard.classList.add("hidden");
-  loginPanel.classList.remove("hidden");
-
-  if (form) {
-    form.reset();
-  }
-
-  clearEditor();
-
-  $("#login-email").value = "";
-  clearLoginPassword();
-
-  setStatus("");
-  message("#login-status", statusText, type);
-}
-
-/* =========================================================
-   ESPECIFICACIONES E IMÁGENES
-   ========================================================= */
 
 function parseSpecs(text) {
   const result = {};
@@ -352,9 +212,7 @@ function specsText(specs) {
 
   if (Array.isArray(specs)) {
     return specs.map(item => {
-      if (typeof item === "string") {
-        return item;
-      }
+      if (typeof item === "string") return item;
 
       if (item && typeof item === "object") {
         return `${item.label || item.name || "Dato"}: ${item.value || ""}`;
@@ -378,21 +236,13 @@ function getImages(product) {
   const list = Array.isArray(images) ? images : [];
 
   return [...list, product?.image_url]
-    .filter(value =>
-      typeof value === "string" && value.trim()
-    );
+    .filter(value => typeof value === "string" && value.trim());
 }
-
-/* =========================================================
-   COLORES Y VARIANTES
-   ========================================================= */
 
 function normalizeColors(value) {
   const colors = parseJSON(value, []);
 
-  if (!Array.isArray(colors)) {
-    return [];
-  }
+  if (!Array.isArray(colors)) return [];
 
   return colors.map(item => {
     if (typeof item === "string") {
@@ -404,16 +254,12 @@ function normalizeColors(value) {
       };
     }
 
-    if (!item || typeof item !== "object") {
-      return null;
-    }
+    if (!item || typeof item !== "object") return null;
 
     return {
       name: String(item.name || item.color || "").trim(),
       type: normalizeVariantAvailability(item.type),
-      image_url: String(
-        item.image_url || item.imageUrl || ""
-      ).trim(),
+      image_url: String(item.image_url || item.imageUrl || "").trim(),
       color_hex: validHex(item.color_hex || item.hex)
     };
   }).filter(item => item && item.name);
@@ -422,69 +268,36 @@ function normalizeColors(value) {
 function normalizeVariants(value) {
   const variants = parseJSON(value, []);
 
-  if (!Array.isArray(variants)) {
-    return [];
-  }
+  if (!Array.isArray(variants)) return [];
 
   return variants.map(item => {
-    if (!item || typeof item !== "object") {
-      return null;
-    }
+    if (!item || typeof item !== "object") return null;
 
-    const usd =
-      item.price_usd === "" ||
-      item.price_usd === undefined ||
-      item.price_usd === null
-        ? null
-        : Number(item.price_usd);
+    const usd = item.price_usd == null || item.price_usd === ""
+      ? null
+      : Number(item.price_usd);
 
-    const nio =
-      item.price_nio === "" ||
-      item.price_nio === undefined ||
-      item.price_nio === null
-        ? null
-        : Number(item.price_nio);
+    const nio = item.price_nio == null || item.price_nio === ""
+      ? null
+      : Number(item.price_nio);
 
     return {
-      storage: String(
-        item.storage || item.capacity || ""
-      ).trim(),
-
+      storage: String(item.storage || item.capacity || "").trim(),
       ram: String(item.ram || "").trim(),
-
-      color: String(
-        item.color || item.name || ""
-      ).trim(),
-
+      color: String(item.color || item.name || "").trim(),
       color_hex: validHex(item.color_hex || item.hex),
-
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
-
-      availability: normalizeVariantAvailability(
-        item.availability
-      ),
-
-      image_url: String(
-        item.image_url || item.imageUrl || ""
-      ).trim()
+      availability: normalizeVariantAvailability(item.availability),
+      image_url: String(item.image_url || item.imageUrl || "").trim()
     };
-  }).filter(item =>
-    item &&
-    (item.storage || item.ram || item.color)
-  );
+  }).filter(item => item && (item.storage || item.ram || item.color));
 }
 
-/*
-  Compatibilidad: si un producto antiguo tiene colores, pero no
-  tiene variantes, los mostramos en el editor para no perderlos.
-*/
 function legacyVariants(product) {
   const variants = normalizeVariants(product?.variants);
 
-  if (variants.length) {
-    return variants;
-  }
+  if (variants.length) return variants;
 
   return normalizeColors(product?.colors).map(color => ({
     storage: "",
@@ -498,36 +311,377 @@ function legacyVariants(product) {
   }));
 }
 
+function minimumPrice(variants, field) {
+  const values = variants
+    .map(variant => variant[field])
+    .filter(value =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+    )
+    .map(Number);
+
+  return values.length ? Math.min(...values) : null;
+}
+
+/* =========================================================
+   CAMBIOS PENDIENTES Y ADVERTENCIA AL SALIR
+   ========================================================= */
+
+function getFormSnapshot() {
+  if (!form) return "";
+
+  return Array.from(form.elements)
+    .filter(element =>
+      element.name ||
+      element.id
+    )
+    .map(element => {
+      const key = element.name || element.id;
+
+      if (element.type === "file") {
+        return [key, Array.from(element.files || []).map(file => ({
+          name: file.name,
+          size: file.size,
+          modified: file.lastModified
+        }))];
+      }
+
+      if (element.type === "checkbox" || element.type === "radio") {
+        return [key, element.checked];
+      }
+
+      return [key, element.value];
+    });
+}
+
+function snapshotString() {
+  return JSON.stringify(getFormSnapshot());
+}
+
+function markEditorClean() {
+  initialFormSnapshot = snapshotString();
+  editorDirty = false;
+}
+
+function hasUnsavedChanges() {
+  if (!form || dashboard.classList.contains("hidden")) {
+    return false;
+  }
+
+  return editorDirty || snapshotString() !== initialFormSnapshot;
+}
+
+form?.addEventListener("input", () => {
+  editorDirty = snapshotString() !== initialFormSnapshot;
+});
+
+form?.addEventListener("change", () => {
+  editorDirty = snapshotString() !== initialFormSnapshot;
+});
+
+/*
+  El navegador muestra su propia advertencia si hay cambios
+  pendientes. Si el usuario cancela, continúa en el panel.
+  Si confirma la salida, la nueva carga limpiará la sesión.
+*/
+window.addEventListener("beforeunload", event => {
+  if (!hasUnsavedChanges()) return;
+
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+/* =========================================================
+   CIERRE LOCAL DE SESIÓN
+   ========================================================= */
+
+function clearLocalAuthStorage() {
+  try {
+    const key = authStorageKey();
+
+    if (key) {
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn("No se pudo limpiar el almacenamiento de sesión.", error);
+  }
+}
+
+async function signOutLocalSafely() {
+  try {
+    if (supabase) {
+      const { error } = await supabase.auth.signOut({
+        scope: "local"
+      });
+
+      if (error) {
+        console.warn("Supabase informó un error al cerrar sesión:", error.message);
+      }
+    }
+  } catch (error) {
+    console.warn("No se pudo cerrar la sesión:", error);
+  } finally {
+    clearLocalAuthStorage();
+  }
+}
+
+function clearLoginPassword() {
+  const password = $("#login-password");
+
+  if (password) {
+    password.value = "";
+    password.setCustomValidity("");
+  }
+}
+
+function showLoginScreen(statusText = "", type = "") {
+  currentUser = null;
+  products = [];
+
+  dashboard?.classList.add("hidden");
+  loginPanel?.classList.remove("hidden");
+
+  if (form) form.reset();
+
+  clearEditor();
+
+  if ($("#login-email")) {
+    $("#login-email").value = "";
+  }
+
+  clearLoginPassword();
+  setStatus("");
+  message("#login-status", statusText, type);
+}
+
+/* =========================================================
+   AUTORIZACIÓN DE ADMINISTRADORES
+   ========================================================= */
+
+async function confirmAdmin(user) {
+  if (!supabase || !user?.id) {
+    throw new Error("No se pudo verificar la sesión.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (!data) {
+    throw new Error(
+      "El usuario inició sesión, pero no está autorizado en admin_users."
+    );
+  }
+
+  return true;
+}
+
+async function showDashboard(user) {
+  await confirmAdmin(user);
+
+  currentUser = user;
+
+  loginPanel.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+
+  const metadata = user.user_metadata || {};
+  const greeting = $("#admin-greeting");
+
+  const displayName =
+    metadata.full_name ||
+    metadata.name ||
+    metadata.display_name ||
+    user.email?.split("@")[0] ||
+    "";
+
+  if (greeting) {
+    greeting.textContent = displayName
+      ? `¡Bienvenido de nuevo, ${displayName}! 👋`
+      : "¡Bienvenido de nuevo! 👋";
+  }
+
+  setStatus(`Sesión iniciada como ${user.email || "administrador"}`);
+
+  await loadProducts();
+  markEditorClean();
+}
+
+async function handleSession() {
+  if (!configured) {
+    message(
+      "#login-status",
+      "Falta configurar Supabase en config.js.",
+      "error"
+    );
+    return;
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) throw error;
+
+  if (!data.session) {
+    loginPanel.classList.remove("hidden");
+    dashboard.classList.add("hidden");
+    return;
+  }
+
+  try {
+    await showDashboard(data.session.user);
+  } catch (error) {
+    await signOutLocalSafely();
+
+    showLoginScreen(
+      error.message || "La sesión no está autorizada.",
+      "error"
+    );
+  }
+}
+
+/* =========================================================
+   INICIAR SESIÓN
+   ========================================================= */
+
+$("#login-form")?.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!supabase) {
+    message("#login-status", "Supabase no está configurado.", "error");
+    clearLoginPassword();
+    return;
+  }
+
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+
+  button.disabled = true;
+  button.textContent = "Verificando…";
+
+  message("#login-status", "Comprobando acceso…");
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: $("#login-email").value.trim(),
+      password: $("#login-password").value
+    });
+
+    if (error) throw error;
+
+    await showDashboard(data.user);
+
+    message("#login-status", "Acceso autorizado.", "success");
+  } catch (error) {
+    await signOutLocalSafely();
+
+    dashboard.classList.add("hidden");
+    loginPanel.classList.remove("hidden");
+
+    clearLoginPassword();
+
+    message(
+      "#login-status",
+      error.message || "No se pudo iniciar sesión. Revisá tus datos.",
+      "error"
+    );
+
+    $("#login-password")?.focus();
+  } finally {
+    button.disabled = false;
+    button.textContent = "Iniciar sesión";
+  }
+});
+
+/* =========================================================
+   CERRAR SESIÓN CON CONFIRMACIÓN
+   ========================================================= */
+
+$("#logout-button")?.addEventListener("click", async event => {
+  event.preventDefault();
+
+  if (hasUnsavedChanges()) {
+    const leave = window.confirm(
+      "Hay cambios sin guardar en el formulario.\n\n" +
+      "Si cerrás sesión, podrías perderlos.\n\n" +
+      "¿Querés continuar?"
+    );
+
+    if (!leave) return;
+  } else {
+    const confirmed = window.confirm(
+      "¿Querés cerrar la sesión de administración?"
+    );
+
+    if (!confirmed) return;
+  }
+
+  const button = event.currentTarget;
+
+  button.disabled = true;
+  button.textContent = "Cerrando sesión…";
+
+  try {
+    await signOutLocalSafely();
+
+    showLoginScreen("Sesión cerrada correctamente.", "success");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Cerrar sesión";
+  }
+});
+
+/* =========================================================
+   EDITOR DE VARIANTES ACTUAL
+   ========================================================= */
+
+const COLOR_PALETTE = [
+  { name: "Negro", hex: "#242424" },
+  { name: "Blanco", hex: "#F4F4F4" },
+  { name: "Plata", hex: "#C5C9D0" },
+  { name: "Gris", hex: "#777E8B" },
+  { name: "Grafito", hex: "#454952" },
+  { name: "Azul", hex: "#315A91" },
+  { name: "Azul claro", hex: "#78A9E8" },
+  { name: "Verde", hex: "#39785A" },
+  { name: "Verde menta", hex: "#8ECDB8" },
+  { name: "Dorado", hex: "#C8A45D" },
+  { name: "Champán", hex: "#D8C3A0" },
+  { name: "Morado", hex: "#7952A8" },
+  { name: "Rosa", hex: "#D986A7" },
+  { name: "Rojo", hex: "#C13A4B" },
+  { name: "Naranja", hex: "#DE783E" },
+  { name: "Amarillo", hex: "#E8C94B" }
+];
+
 function colorPaletteOptions(variant) {
-  const match = COLOR_PALETTE.find(item =>
-    item.name.toLocaleLowerCase("es") ===
-      String(variant.color || "").toLocaleLowerCase("es") &&
-    item.hex.toLowerCase() ===
-      validHex(variant.color_hex).toLowerCase()
+  const matching = COLOR_PALETTE.find(item =>
+    item.name.toLowerCase() === String(variant.color || "").toLowerCase() &&
+    item.hex.toLowerCase() === validHex(variant.color_hex).toLowerCase()
   );
 
-  const selectedValue = !variant.color
+  const selected = !variant.color
     ? ""
-    : match
-      ? match.hex
+    : matching
+      ? matching.hex
       : "custom";
 
   return `
-    <option value="" ${selectedValue === "" ? "selected" : ""}>
-      Seleccioná un color de la paleta…
+    <option value="" ${selected === "" ? "selected" : ""}>
+      Seleccioná un color…
     </option>
-
     ${COLOR_PALETTE.map(item => `
-      <option
-        value="${item.hex}"
-        ${selectedValue === item.hex ? "selected" : ""}
-      >${escapeHtml(item.name)}</option>
+      <option value="${item.hex}" ${selected === item.hex ? "selected" : ""}>
+        ${escapeHtml(item.name)}
+      </option>
     `).join("")}
-
-    <option
-      value="custom"
-      ${selectedValue === "custom" ? "selected" : ""}
-    >Color personalizado</option>
+    <option value="custom" ${selected === "custom" ? "selected" : ""}>
+      Color personalizado
+    </option>
   `;
 }
 
@@ -546,128 +700,86 @@ function variantRowMarkup(variant = {}) {
   return `
     <article class="variant-admin-row" data-variant-row>
       <div class="variant-row-title">
-        <strong data-variant-row-heading>
-          Configuración del producto
-        </strong>
-
-        <button
-          class="admin-mini-button danger"
-          type="button"
-          data-remove-variant
-        >Quitar variante</button>
+        <strong data-variant-row-heading>Configuración del producto</strong>
+        <button class="admin-mini-button danger"
+                type="button"
+                data-remove-variant>Quitar variante</button>
       </div>
 
       <div class="variant-fields-grid">
         <label>
           Almacenamiento / capacidad
-          <input
-            data-variant-storage
-            maxlength="40"
-            value="${escapeHtml(value.storage)}"
-            placeholder="Ej. 512 GB"
-          >
+          <input data-variant-storage maxlength="40"
+                 value="${escapeHtml(value.storage)}"
+                 placeholder="Ej. 256 GB">
         </label>
 
         <label>
           Memoria RAM
-          <input
-            data-variant-ram
-            maxlength="40"
-            value="${escapeHtml(value.ram)}"
-            placeholder="Ej. 12 GB"
-          >
+          <input data-variant-ram maxlength="40"
+                 value="${escapeHtml(value.ram)}"
+                 placeholder="Ej. 8 GB">
         </label>
 
         <label>
           Paleta de colores
-          <select data-variant-palette>
-            ${colorPaletteOptions(value)}
-          </select>
+          <select data-variant-palette>${colorPaletteOptions(value)}</select>
         </label>
 
         <label>
           Nombre del color *
-          <input
-            data-variant-color
-            maxlength="60"
-            required
-            value="${escapeHtml(value.color)}"
-            placeholder="Ej. Azul titanio"
-          >
+          <input data-variant-color maxlength="60" required
+                 value="${escapeHtml(value.color)}"
+                 placeholder="Ej. Azul titanio">
         </label>
 
         <label class="variant-hex-label">
           Tono del color
           <span class="variant-hex-control">
-            <input
-              data-variant-hex
-              type="color"
-              value="${value.color_hex}"
-              aria-label="Elegir tono del color"
-            >
-            <small>Podés ajustar el tono visualmente.</small>
+            <input data-variant-hex type="color"
+                   value="${value.color_hex}"
+                   aria-label="Elegir tono del color">
           </span>
         </label>
 
         <label>
-          Precio en dólares (opcional)
-          <input
-            data-variant-price-usd
-            type="number"
-            min="0"
-            step="0.01"
-            value="${escapeHtml(value.price_usd)}"
-            placeholder="Ej. 999"
-          >
+          Precio en dólares
+          <input data-variant-price-usd type="number" min="0" step="0.01"
+                 value="${escapeHtml(value.price_usd)}">
         </label>
 
         <label>
-          Precio en córdobas (opcional)
-          <input
-            data-variant-price-nio
-            type="number"
-            min="0"
-            step="0.01"
-            value="${escapeHtml(value.price_nio)}"
-            placeholder="Ej. 36600"
-          >
+          Precio en córdobas
+          <input data-variant-price-nio type="number" min="0" step="0.01"
+                 value="${escapeHtml(value.price_nio)}">
         </label>
 
         <label>
-          Estado de esta combinación
+          Disponibilidad
           <select data-variant-availability>
-            <option
-              value="available"
-              ${value.availability === "available" ? "selected" : ""}
-            >Disponible</option>
-
-            <option
-              value="order"
-              ${value.availability === "order" ? "selected" : ""}
-            >Por pedido</option>
+            <option value="available"
+              ${value.availability === "available" ? "selected" : ""}>
+              Disponible
+            </option>
+            <option value="order"
+              ${value.availability === "order" ? "selected" : ""}>
+              Por pedido
+            </option>
           </select>
         </label>
 
         <label class="variant-image-label">
-          Foto del color (opcional)
-          <input
-            data-variant-image
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
-          >
-          <small>
-            Podés reutilizar la foto de ese color en otras capacidades.
-          </small>
+          Foto del color
+          <input data-variant-image type="file"
+                 accept="image/jpeg,image/png,image/webp,image/avif">
+          <small>Opcional; máximo recomendado de 8 MB.</small>
         </label>
 
         <label class="variant-image-url-label">
-          URL de foto existente (opcional)
-          <input
-            data-variant-image-url
-            type="url"
-            value="${escapeHtml(value.image_url)}"
-            placeholder="https://..."
-          >
+          URL de fotografía existente
+          <input data-variant-image-url type="url"
+                 value="${escapeHtml(value.image_url)}"
+                 placeholder="https://...">
         </label>
       </div>
 
@@ -676,172 +788,4 @@ function variantRowMarkup(variant = {}) {
   `;
 }
 
-function renderVariantRows(variants = []) {
-  const container = $("#product-variants-list");
-
-  if (!container) {
-    return;
-  }
-
-  const normalized = normalizeVariants(variants);
-
-  if (!normalized.length) {
-    container.innerHTML = `
-      <p class="variants-empty-hint">
-        Todavía no agregaste variantes. Podés guardar el producto
-        sin variantes y agregarlas después.
-      </p>
-    `;
-
-    return;
-  }
-
-  container.innerHTML = normalized
-    .map(variantRowMarkup)
-    .join("");
-
-  updateVariantRowHeadings();
-}
-
-function addVariantRow(variant = {}) {
-  const container = $("#product-variants-list");
-
-  if (!container) {
-    return;
-  }
-
-  container.querySelector(".variants-empty-hint")?.remove();
-
-  container.insertAdjacentHTML(
-    "beforeend",
-    variantRowMarkup(variant)
-  );
-
-  updateVariantRowHeadings();
-
-  const rows = container.querySelectorAll("[data-variant-row]");
-
-  rows.item(rows.length - 1)
-    ?.querySelector("[data-variant-storage]")
-    ?.focus();
-}
-
-function updateVariantRowHeadings() {
-  const rows = Array.from(
-    document.querySelectorAll("[data-variant-row]")
-  );
-
-  rows.forEach((row, index) => {
-    const storage = row
-      .querySelector("[data-variant-storage]")
-      ?.value.trim();
-
-    const ram = row
-      .querySelector("[data-variant-ram]")
-      ?.value.trim();
-
-    const color = row
-      .querySelector("[data-variant-color]")
-      ?.value.trim();
-
-    const heading = row.querySelector("[data-variant-row-heading]");
-
-    if (heading) {
-      heading.textContent =
-        [storage, ram, color].filter(Boolean).join(" · ") ||
-        `Variante ${index + 1}`;
-    }
-  });
-}
-
-const variantsContainer = $("#product-variants-list");
-
-$("#add-variant-button")?.addEventListener("click", () => {
-  addVariantRow();
-});
-
-variantsContainer?.addEventListener("click", event => {
-  const remove = event.target.closest("[data-remove-variant]");
-
-  if (!remove) {
-    return;
-  }
-
-  remove.closest("[data-variant-row]")?.remove();
-
-  if (!variantsContainer.querySelector("[data-variant-row]")) {
-    renderVariantRows([]);
-  } else {
-    updateVariantRowHeadings();
-  }
-});
-
-variantsContainer?.addEventListener("change", event => {
-  const select = event.target.closest("[data-variant-palette]");
-
-  if (!select) {
-    return;
-  }
-
-  const row = select.closest("[data-variant-row]");
-
-  if (!row || !select.value || select.value === "custom") {
-    return;
-  }
-
-  const color = COLOR_PALETTE.find(
-    item => item.hex === select.value
-  );
-
-  if (!color) {
-    return;
-  }
-
-  row.querySelector("[data-variant-color]").value = color.name;
-  row.querySelector("[data-variant-hex]").value = color.hex;
-
-  updateVariantRowHeadings();
-});
-
-variantsContainer?.addEventListener("input", event => {
-  if (!event.target.matches(
-    "[data-variant-color], [data-variant-storage], [data-variant-ram]"
-  )) {
-    return;
-  }
-
-  const row = event.target.closest("[data-variant-row]");
-
-  if (!row) {
-    return;
-  }
-
-  if (event.target.matches("[data-variant-color]")) {
-    const colorName = event.target.value.trim();
-
-    const matchingColor = COLOR_PALETTE.find(item =>
-      item.name.toLocaleLowerCase("es") ===
-      colorName.toLocaleLowerCase("es")
-    );
-
-    if (matchingColor) {
-      row.querySelector("[data-variant-hex]").value =
-        matchingColor.hex;
-
-      row.querySelector("[data-variant-palette]").value =
-        matchingColor.hex;
-    } else {
-      row.querySelector("[data-variant-palette]").value = "custom";
-    }
-  }
-
-  updateVariantRowHeadings();
-});
-
-/* =========================================================
-   AUTORIZACIÓN DE ADMINISTRADORES
-   ========================================================= */
-
-async function confirmAdmin(user) {
-  if (!supabase || !user?.id) {
-    throw new Error("No se pudo verificar la s
+function updateVariantRow
