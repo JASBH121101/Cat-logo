@@ -3078,3 +3078,15 @@ html[data-theme="dark"] .dialog-gallery-thumb img { mix-blend-mode:normal; }
   .site-header:not(.admin-header) > .brand .brand-mark { display:none; }
   .site-header:not(.admin-header) > .brand { font-size:14px; }
 }
+
+
+/* Navegación del panel administrativo y listas separadas por publicación. */
+.admin-section-nav{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 24px;padding:10px;border:1px solid var(--line,#2d3c5d);border-radius:16px;background:var(--surface,#111b31)}
+.admin-nav-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border:1px solid var(--line,#344568);border-radius:11px;background:transparent;color:var(--text,#e8eeff);font:inherit;font-weight:700;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
+.admin-nav-button:hover{transform:translateY(-1px);border-color:#6478ed}
+.admin-nav-button.active{color:#fff;border-color:#5368e8;background:linear-gradient(135deg,#315fe0,#6449cb)}
+.admin-nav-button span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12px}
+.admin-nav-panel{min-width:0}.admin-nav-panel.hidden{display:none!important}
+.admin-nav-panel[data-admin-panel="add"] .admin-layout{display:block}
+.admin-nav-panel[data-admin-panel="add"] .product-editor,.admin-nav-panel .product-list-card{width:100%;max-width:none}
+@media(max-width:650px){.admin-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:8px}.admin-nav-button{padding:10px 8px;font-size:13px}}
