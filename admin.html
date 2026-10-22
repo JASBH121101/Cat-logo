@@ -206,8 +206,10 @@
               </label>
 
               <div class="admin-add-color-slot">
-                <span class="admin-add-color-caption">Variantes de color</span>
-                <button id="add-base-color-button" class="button button-outline" type="button">＋ Añadir color</button>
+                <span class="admin-add-color-caption">Elegí un color</span>
+                <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Elegir color</button>
+                <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden></div>
+                <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
               </div>
 
               <label class="span-2">
