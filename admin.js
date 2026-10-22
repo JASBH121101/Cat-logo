@@ -303,6 +303,8 @@ function showLoginScreen(statusText = "", type = "") {
   currentUser = null;
   products = [];
 
+  document.body.classList.remove("admin-dashboard-active");
+  setMobileSidebarOpen(false);
   dashboard.classList.add("hidden");
   loginPanel.classList.remove("hidden");
 
@@ -1065,6 +1067,8 @@ async function showDashboard(user) {
 
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
+  document.body.classList.add("admin-dashboard-active");
+  setMobileSidebarOpen(false);
   showAdminSection("home");
 
   const greeting = $("#admin-greeting");
@@ -1220,6 +1224,33 @@ function minimumPrice(variants, field) {
   return values.length ? Math.min(...values) : null;
 }
 
+function setMobileSidebarOpen(open) {
+  const toggle = document.getElementById("admin-menu-toggle");
+  const backdrop = document.getElementById("admin-sidebar-backdrop");
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const shouldOpen = Boolean(open && isMobile);
+
+  document.body.classList.toggle("admin-sidebar-open", shouldOpen);
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(shouldOpen));
+    toggle.setAttribute("aria-label", shouldOpen ? "Cerrar menú de administración" : "Abrir menú de administración");
+    toggle.setAttribute("title", shouldOpen ? "Cerrar menú" : "Abrir menú");
+    toggle.querySelector("span").textContent = shouldOpen ? "×" : "☰";
+  }
+  if (backdrop) backdrop.hidden = !shouldOpen;
+}
+
+document.getElementById("admin-menu-toggle")?.addEventListener("click", () => {
+  setMobileSidebarOpen(!document.body.classList.contains("admin-sidebar-open"));
+});
+document.getElementById("admin-sidebar-backdrop")?.addEventListener("click", () => setMobileSidebarOpen(false));
+window.addEventListener("keydown", event => {
+  if (event.key === "Escape") setMobileSidebarOpen(false);
+});
+window.addEventListener("resize", () => {
+  if (!window.matchMedia("(max-width: 760px)").matches) setMobileSidebarOpen(false);
+});
+
 function showAdminSection(section) {
   document.querySelectorAll("[data-admin-panel]").forEach(panel => panel.classList.toggle("hidden", panel.dataset.adminPanel !== section));
   document.querySelectorAll("[data-admin-section]").forEach(button => {
@@ -1228,6 +1259,7 @@ function showAdminSection(section) {
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  setMobileSidebarOpen(false);
 }
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
 
