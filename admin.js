@@ -598,7 +598,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
       ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
     </div>
     <div class="variant-config-fields">
-      <label>GB de almacenamiento<input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
+      <label class="variant-storage-label"><span class="variant-storage-label-row"><span class="variant-storage-unit">GB</span><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
       ${isBase ? "" : '<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_usd ?? "") + '"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_nio ?? "") + '"></span></label>'}
     </div>
