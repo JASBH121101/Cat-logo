@@ -3993,3 +3993,31 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
   .admin-add-color-slot .quick-color-name { font-size: 8px !important; }
   .base-color-manager { grid-template-columns: minmax(0,1fr) !important; gap: 6px !important; }
 }
+
+
+/* Fix: custom product colors flow into two balanced columns. */
+.base-color-manager {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start !important;
+  gap: 8px !important;
+}
+.base-color-manager .variant-base-group {
+  display: contents !important;
+}
+.base-color-manager .variant-base-group > .variant-color-list {
+  display: contents !important;
+}
+.base-color-manager .variant-base-group > .variant-color-list > .inline-color-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  align-self: start !important;
+}
+.base-color-manager .variant-base-group > .variant-color-list > .variants-empty-hint {
+  grid-column: 1 / -1 !important;
+}
+@media (max-width: 650px) {
+  .base-color-manager {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
