@@ -303,6 +303,8 @@ function showLoginScreen(statusText = "", type = "") {
   currentUser = null;
   products = [];
 
+  document.body.classList.remove("admin-dashboard-active");
+  setMobileSidebarOpen(false);
   dashboard.classList.add("hidden");
   loginPanel.classList.remove("hidden");
 
@@ -462,9 +464,8 @@ function normalizeVariants(value) {
         item.availability
       ),
 
-      image_url: String(
-        item.image_url || item.imageUrl || ""
-      ).trim()
+      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
+      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
     };
   }).filter(item =>
     item &&
@@ -491,7 +492,8 @@ function legacyVariants(product) {
     price_usd: product?.price_usd ?? null,
     price_nio: product?.price_nio ?? null,
     availability: color.type,
-    image_url: color.image_url
+    image_url: color.image_url,
+    images: color.image_url ? [color.image_url] : []
   }));
 }
 
@@ -529,16 +531,53 @@ function colorPaletteOptions(variant) {
 }
 
 function variantRowMarkup(variant = {}) {
- const v={color:String(variant.color||"").trim(),color_hex:validHex(variant.color_hex||variant.hex),image_url:String(variant.image_url||"").trim(),availability:normalizeVariantAvailability(variant.availability)};
- return `<article class="variant-admin-row" data-variant-row>
- <div class="variant-row-title"><strong data-variant-row-heading>${escapeHtml(v.color||"Nuevo color")}</strong><button class="admin-mini-button danger" type="button" data-remove-variant>Quitar color</button></div>
- <div class="variant-fields-grid variant-color-fields">
- <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
- <label>Nombre del color <span class="required-mark" aria-hidden="true">*</span><input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}"></label>
- <label>Disponibilidad de este color<select data-variant-availability><option value="available" ${v.availability==="available"?"selected":""}>Disponible</option><option value="order" ${v.availability==="order"?"selected":""}>Por pedido</option><option value="out_of_stock" ${v.availability==="out_of_stock"?"selected":""}>No disponible</option></select></label>
- <label class="variant-hex-label">Tono del color<span class="variant-hex-control"><input data-variant-hex type="color" value="${v.color_hex}" aria-label="Elegir tono del color"><small>Ajustá el tono visualmente.</small></span></label>
- <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${v.image_url?`<img src="${escapeHtml(v.image_url)}" alt="Foto de ${escapeHtml(v.color||"la variante")}" loading="lazy"><span>Foto actual</span><button type="button" class="admin-mini-button danger admin-preview-remove" data-remove-variant-image aria-label="Quitar foto" title="Quitar foto">×</button>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
- </div><p class="color-row-status" data-variant-status role="status"></p></article>`;
+  const images = Array.isArray(variant.images)
+    ? variant.images.filter(Boolean)
+    : [variant.image_url || variant.imageUrl || ""].filter(Boolean);
+  const v = {
+    color: String(variant.color || "").trim(),
+    color_hex: validHex(variant.color_hex || variant.hex),
+    images,
+    image_url: images[0] || String(variant.image_url || variant.imageUrl || "").trim(),
+    availability: normalizeVariantAvailability(variant.availability)
+  };
+
+  return `
+    <article class="variant-admin-row inline-color-card" data-variant-row>
+      <div class="inline-color-main">
+        <span class="inline-color-dot" data-variant-color-dot style="--inline-color:${v.color_hex}" aria-hidden="true"></span>
+        <label class="inline-color-name-field">
+          <span>Nombre del color</span>
+          <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color" placeholder="Ej. Gris titanio">
+        </label>
+        <label class="inline-color-tone-field" title="Personalizar el tono">
+          <span>Tono</span>
+          <input data-variant-hex type="color" value="${v.color_hex}" aria-label="Personalizar el tono del color">
+        </label>
+        <button class="admin-mini-button danger inline-color-remove" type="button" data-remove-variant aria-label="Quitar color" title="Quitar color">×</button>
+      </div>
+      <details class="inline-color-details">
+        <summary>Disponibilidad y fotografías</summary>
+        <div class="variant-fields-grid variant-color-fields">
+          <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
+          <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
+          <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${COLOR_PALETTE.map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
+          <label>Disponibilidad de este color<select data-variant-availability>
+            <option value="available" ${v.availability === "available" ? "selected" : ""}>Disponible</option>
+            <option value="order" ${v.availability === "order" ? "selected" : ""}>Por pedido</option>
+            <option value="out_of_stock" ${v.availability === "out_of_stock" ? "selected" : ""}>No disponible</option>
+          </select></label>
+          <label class="variant-image-label">Fotografías del color
+            <input data-variant-image data-variant-image-input class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple>
+            <span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Añadir fotografías</span></span>
+            <div class="variant-image-preview" data-variant-image-preview></div>
+          </label>
+        </div>
+        <input data-variant-images type="hidden" value="${escapeHtml(JSON.stringify(v.images))}">
+        <input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
+        <p class="color-row-status" data-variant-status role="status"></p>
+      </details>
+    </article>`;
 }
 
 function variantGroupKey(variant) {
@@ -547,119 +586,281 @@ function variantGroupKey(variant) {
   return `${storage}|${ram}`;
 }
 
-function variantGroupMarkup(v={},isBase=false){
- const storage=String(v.storage||"").trim().replace(/\s*GB\s*/i,""),ram=String(v.ram||"").trim().replace(/\s*GB\s*/i,"");
- const title=isBase?"Configuración base":[storage?storage+" GB":"",ram?ram+" GB RAM":""].filter(Boolean).join(" · ")||"Nueva configuración";
- return `<section class="variant-config-group ${isBase?"variant-base-group":""}" data-variant-group data-base-group="${isBase?"true":"false"}">
- <div class="variant-config-group-heading"><div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase?"Usa el precio base del producto":"Precio compartido por los colores de esta capacidad y RAM"}</small></div>${isBase?"":'<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}</div>
- <div class="variant-config-fields">
- <label>Almacenamiento<span class="variant-number-unit"><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"><span>GB</span></span></label>
- <label>Memoria RAM<span class="variant-number-unit"><input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"><span>GB</span></span></label>
- ${isBase?"":'<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="'+escapeHtml(v.price_usd??"")+'"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="'+escapeHtml(v.price_nio??"")+'"></span></label>'}
- </div><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></section>`;
+function variantGroupMarkup(v = {}, isBase = false) {
+  const storage = String(v.storage || "").trim().replace(/\s*GB\s*/i, "");
+  const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
+  const title = isBase
+    ? "Colores del producto"
+    : [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+  const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></div>';
+
+  return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
+    <div class="variant-config-group-heading">
+      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Los colores se configuran en este formulario" : "Configuración técnica"}</small></div>
+      ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
+    </div>
+    <div class="variant-config-fields">
+      <label class="variant-storage-label"><span class="variant-storage-label-row"><span class="variant-storage-unit">GB</span><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
+      <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
+      ${isBase ? "" : '<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_usd ?? "") + '"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_nio ?? "") + '"></span></label>'}
+    </div>
+    ${colorControls}
+  </section>`;
 }
 
-function renderVariantRows(variants=[]){
- const container=$("#product-variants-list");if(!container)return;
- const normalized=normalizeVariants(variants),groups=new Map();
- normalized.forEach(v=>{const k=variantGroupKey(v);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(v);});
- container.innerHTML="";
- const base=groups.get("|")||[];
- container.insertAdjacentHTML("beforeend",variantGroupMarkup(base[0]||{},true));
- const baseGroup=container.lastElementChild,list=baseGroup.querySelector("[data-variant-color-list]");
- base.forEach(v=>list.insertAdjacentHTML("beforeend",variantRowMarkup(v)));groups.delete("|");
- groups.forEach(items=>{container.insertAdjacentHTML("beforeend",variantGroupMarkup(items[0],false));const list=container.lastElementChild.querySelector("[data-variant-color-list]");items.forEach(v=>list.insertAdjacentHTML("beforeend",variantRowMarkup(v)));});
- updateVariantRowHeadings();
+function renderVariantRows(variants = []) {
+  const container = $("#product-variants-list");
+  const colorManager = $("#base-color-manager");
+  if (!container || !colorManager) return;
+
+  const normalized = normalizeVariants(variants);
+  const groups = new Map();
+  normalized.forEach(variant => {
+    const key = variantGroupKey(variant);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(variant);
+  });
+
+  const makeColors = items => {
+    const byName = new Map();
+    (items || []).forEach(variant => {
+      const name = String(variant.color || "").trim();
+      if (!name) return;
+      const key = name.toLocaleLowerCase("es");
+      const images = Array.isArray(variant.images) && variant.images.length
+        ? variant.images
+        : [variant.image_url || ""].filter(Boolean);
+      if (!byName.has(key)) {
+        byName.set(key, {
+          color: name,
+          color_hex: validHex(variant.color_hex || variant.hex),
+          availability: normalizeVariantAvailability(variant.availability),
+          images: [...new Set(images)],
+          image_url: images[0] || ""
+        });
+      } else {
+        const current = byName.get(key);
+        current.images = [...new Set([...(current.images || []), ...images])];
+        current.image_url = current.images[0] || "";
+      }
+    });
+    return [...byName.values()];
+  };
+
+  container.innerHTML = "";
+  colorManager.innerHTML = "";
+  colorManager.insertAdjacentHTML("beforeend", variantGroupMarkup({}, true));
+  const baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
+  const baseList = baseGroup?.querySelector("[data-variant-color-list]");
+  const baseColors = makeColors(groups.get("|") || []);
+  baseColors.forEach(color => baseList?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
+  if (baseList && !baseColors.length) baseList.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para la configuración principal.</p>';
+
+  groups.delete("|");
+  groups.forEach(items => {
+    const first = items[0] || {};
+    container.insertAdjacentHTML("beforeend", variantGroupMarkup(first, false));
+    const group = container.lastElementChild;
+    const list = group?.querySelector("[data-variant-color-list]");
+    const colors = makeColors(items);
+    colors.forEach(color => list?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
+    if (list && !colors.length) list.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para esta configuración.</p>';
+  });
+  if (!groups.size) container.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
+
+  updateVariantRowHeadings();
+  form?.querySelectorAll("[data-variant-row]").forEach(row => renderVariantImagePreview(row));
 }
 
-function addVariantRow(variant = {}, targetGroup = null) {
+function addVariantRow(variant = {}, targetGroup = null, options = {}) {
   const container = $("#product-variants-list");
   if (!container) return;
-  container.querySelector(".variants-empty-hint")?.remove();
   let group = targetGroup;
   if (!group) {
+    container.querySelector(".variants-empty-hint")?.remove();
     container.insertAdjacentHTML("beforeend", variantGroupMarkup(variant, false));
     group = container.lastElementChild;
   }
   const list = group.querySelector("[data-variant-color-list]");
   if (!list) return;
+  list.querySelector(".variants-empty-hint")?.remove();
   list.insertAdjacentHTML("beforeend", variantRowMarkup(variant));
+  renderVariantImagePreview(list.lastElementChild);
   updateVariantRowHeadings();
   const rows = list.querySelectorAll("[data-variant-row]");
-  rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
+  if (options.focus !== false) rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
 }
 
 function updateVariantRowHeadings() {
- document.querySelectorAll("[data-variant-group]").forEach(group=>{
- const s=group.querySelector("[data-group-storage]")?.value.trim(),r=group.querySelector("[data-group-ram]")?.value.trim();
- const title=[s?s+" GB":"",r?r+" GB RAM":""].filter(Boolean).join(" · ")||"Nueva configuración";
- const head=group.querySelector("[data-variant-group-title]");if(head)head.textContent=title;
- group.querySelectorAll("[data-variant-row]").forEach((row,i)=>{const color=row.querySelector("[data-variant-color]")?.value.trim(),heading=row.querySelector("[data-variant-row-heading]");if(heading)heading.textContent=color||"Color "+(i+1);});
- });
-}
-
-/* Vista previa de fotografías seleccionadas, antes de subirlas. */
-const mainImagesInput = $("#product-images");
-const mainImagesPreview = $("#product-images-preview");
-const mainImagesSummary = $("#product-images-summary");
-let mainImageObjectUrls = [];
-
-function clearMainImagePreviews() {
-  mainImageObjectUrls.forEach(url => URL.revokeObjectURL(url));
-  mainImageObjectUrls = [];
-  mainImagesPreview?.replaceChildren();
-}
-
-function renderMainImagePreviews() {
-  if (!mainImagesInput || !mainImagesPreview || !mainImagesSummary) return;
-  clearMainImagePreviews();
-  const files = Array.from(mainImagesInput.files || []);
-  mainImagesSummary.textContent = files.length
-    ? `${files.length} fotografía${files.length === 1 ? "" : "s"} seleccionada${files.length === 1 ? "" : "s"}`
-    : "Ninguna fotografía seleccionada";
-
-  files.forEach(file => {
-    const url = URL.createObjectURL(file);
-    mainImageObjectUrls.push(url);
-    const card = document.createElement("figure");
-    card.className = "admin-image-preview-card";
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = `Vista previa de ${file.name}`;
-    const name = document.createElement("figcaption");
-    name.textContent = file.name;
-    const size = document.createElement("small");
-    size.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-    const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger admin-preview-remove";remove.textContent="×";remove.setAttribute("aria-label",`Quitar ${file.name}`);remove.setAttribute("title",`Quitar ${file.name}`);remove.addEventListener("click",()=>removeMainImageFile(file));card.append(img,name,size,remove);
-    mainImagesPreview.append(card);
+  document.querySelectorAll("[data-variant-group]").forEach(group => {
+    const storage = group.querySelector("[data-group-storage]")?.value.trim();
+    const ram = group.querySelector("[data-group-ram]")?.value.trim();
+    const title = [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+    const heading = group.querySelector("[data-variant-group-title]");
+    if (heading) heading.textContent = title;
+    group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
+      const colorName = row.querySelector("[data-variant-color]")?.value.trim();
+      const rowHeading = row.querySelector("[data-variant-row-heading]");
+      if (rowHeading) rowHeading.textContent = colorName || "Color " + (index + 1);
+      const hex = validHex(row.querySelector("[data-variant-hex]")?.value);
+      const dot = row.querySelector("[data-variant-color-dot]");
+      if (dot) dot.style.setProperty("--inline-color", hex);
+      const removeButton = row.querySelector("[data-remove-variant]");
+      if (removeButton) removeButton.setAttribute("aria-label", "Quitar " + (colorName || "color"));
+    });
   });
 }
-function removeMainImageFile(target){if(!mainImagesInput)return;const transfer=new DataTransfer();Array.from(mainImagesInput.files||[]).forEach(file=>{if(!(file.name===target.name&&file.size===target.size&&file.lastModified===target.lastModified))transfer.items.add(file);});mainImagesInput.files=transfer.files;renderMainImagePreviews();updateEditorDirtyState();}
-mainImagesInput?.addEventListener("change", renderMainImagePreviews);
 
-function renderVariantImagePreview(row,file=null,fallbackUrl=""){
- const preview=row?.querySelector("[data-variant-image-preview]");if(!preview)return;preview.replaceChildren();
- const addRemove=()=>{const b=document.createElement("button");b.type="button";b.className="admin-mini-button danger admin-preview-remove";b.textContent="×";b.setAttribute("aria-label","Quitar foto");b.setAttribute("title","Quitar foto");b.addEventListener("click",()=>{row.querySelector("[data-variant-image]").value="";row.querySelector("[data-variant-image-url]").value="";renderVariantImagePreview(row);updateEditorDirtyState();});preview.append(b);};
- if(file){const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt=`Vista previa de ${file.name}`;const cap=document.createElement("span");cap.textContent=file.name;preview.append(img,cap);addRemove();}
- else if(fallbackUrl){const img=document.createElement("img");img.src=fallbackUrl;img.alt="Foto actual de la variante";img.loading="lazy";const cap=document.createElement("span");cap.textContent="Foto actual";preview.append(img,cap);addRemove();}
- else{const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="La vista previa aparecerá aquí";preview.append(empty);}
-}
+/* Galerías editables: orden, portada y fotos múltiples por variante. */
+const specsTextarea = $("#product-specs");
+function resizeSpecsTextarea(){ if(!specsTextarea)return; specsTextarea.style.height="auto"; specsTextarea.style.height=`${Math.max(66,specsTextarea.scrollHeight)}px`; }
+specsTextarea?.addEventListener("input",resizeSpecsTextarea);
+requestAnimationFrame(resizeSpecsTextarea);
 
 const variantsContainer = $("#product-variants-list");
+const baseColorManager = $("#base-color-manager");
+const mainImagesInput = $("#product-images"), mainImagesPreview = $("#product-images-preview"), mainImagesSummary = $("#product-images-summary");
+let mainImageItems = [], draggingMainImageId = null, draggingVariantImage = null;
+const imageId = () => crypto.randomUUID();
+const imagePreviewUrl = item => item.kind === "new" ? item.previewUrl : item.url;
+function disposeImageItems(items){items.forEach(item=>{if(item.kind==="new"&&item.previewUrl)URL.revokeObjectURL(item.previewUrl);});}
+function clearMainImagePreviews(){disposeImageItems(mainImageItems);mainImageItems=[];mainImagesPreview?.replaceChildren();}
+function setExistingMainImages(urls=[]){disposeImageItems(mainImageItems);mainImageItems=[...new Set(urls.filter(url=>typeof url==="string"&&url.trim()))].map(url=>({id:imageId(),kind:"existing",url}));renderMainImagePreviews();}
+function renderMainImagePreviews(){
+ if(!mainImagesInput||!mainImagesPreview||!mainImagesSummary)return;
+ mainImagesPreview.replaceChildren();
+ mainImagesSummary.textContent=mainImageItems.length?`${mainImageItems.length} fotografía${mainImageItems.length===1?"":"s"} · la primera será la portada`:"Ninguna fotografía seleccionada";
+ mainImageItems.forEach((item,index)=>{
+  const card=document.createElement("figure");card.className="admin-image-preview-card sortable-image-card";card.draggable=true;card.dataset.imageItemId=item.id;
+  const img=document.createElement("img");img.src=imagePreviewUrl(item);img.alt=`Fotografía ${index+1} del producto`;img.loading="lazy";
+  const badge=document.createElement("span");badge.className="admin-image-order-badge";badge.textContent=index===0?"Portada":String(index+1);
+  const caption=document.createElement("figcaption");caption.textContent=item.kind==="new"?item.file.name:"Imagen guardada";
+  const controls=document.createElement("div");controls.className="admin-image-controls";
+  for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===mainImageItems.length-1]]){
+   const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.mainImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);
+  }
+  const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.mainImageRemove="true";remove.title="Quitar fotografía";
+  controls.append(remove);card.append(badge,img,caption,controls);mainImagesPreview.append(card);
+ });
+}
+function moveMainImage(id,offset){const from=mainImageItems.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=mainImageItems.length)return;const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}
+function removeMainImage(id){const from=mainImageItems.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([mainImageItems[from]]);mainImageItems.splice(from,1);renderMainImagePreviews();updateEditorDirtyState();}
+mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();});
+mainImagesPreview?.addEventListener("click",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;const m=e.target.closest("[data-main-image-move]");if(m)moveMainImage(card.dataset.imageItemId,Number(m.dataset.mainImageMove));else if(e.target.closest("[data-main-image-remove]"))removeMainImage(card.dataset.imageItemId);});
+mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;draggingMainImageId=card.dataset.imageItemId;card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingMainImageId);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
+mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
+mainImagesPreview?.addEventListener("drop",e=>{const card=e.target.closest("[data-image-item-id]");if(!card||!draggingMainImageId)return;e.preventDefault();const from=mainImageItems.findIndex(i=>i.id===draggingMainImageId),to=mainImageItems.findIndex(i=>i.id===card.dataset.imageItemId);if(from>=0&&to>=0&&from!==to){const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}draggingMainImageId=null;});
+mainImagesPreview?.addEventListener("dragend",()=>{draggingMainImageId=null;mainImagesPreview.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
+function readVariantImageUrls(row){try{const v=JSON.parse(row.querySelector("[data-variant-images]")?.value||"[]");if(Array.isArray(v))return v.filter(u=>typeof u==="string"&&u.trim());}catch{}const u=row.querySelector("[data-variant-image-url]")?.value.trim();return u?[u]:[];}
+function initVariantImageItems(row){if(!row||Array.isArray(row._variantImageItems))return;row._variantImageItems=readVariantImageUrls(row).map(url=>({id:imageId(),kind:"existing",url}));}
+function syncVariantImageFields(row){const items=row?._variantImageItems||[],urls=items.filter(i=>i.kind==="existing").map(i=>i.url),json=row?.querySelector("[data-variant-images]"),legacy=row?.querySelector("[data-variant-image-url]");if(json)json.value=JSON.stringify(urls);if(legacy)legacy.value=urls[0]||"";}
+function renderVariantImagePreview(row){
+ const preview=row?.querySelector("[data-variant-image-preview]");if(!preview)return;initVariantImageItems(row);preview.replaceChildren();const items=row._variantImageItems;
+ if(!items.length){const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="Añadí fotografías de este color";preview.append(empty);return;}
+ items.forEach((item,index)=>{const card=document.createElement("figure");card.className="variant-gallery-item sortable-image-card";card.draggable=true;card.dataset.variantImageId=item.id;
+  const img=document.createElement("img");img.src=imagePreviewUrl(item);img.alt=`Fotografía ${index+1} del color`;img.loading="lazy";
+  const badge=document.createElement("span");badge.className="admin-image-order-badge";badge.textContent=index===0?"Portada":String(index+1);
+  const controls=document.createElement("div");controls.className="admin-image-controls";
+  for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===items.length-1]]){const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.variantImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);}
+  const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.variantImageRemove="true";remove.title="Quitar fotografía";controls.append(remove);card.append(badge,img,controls);preview.append(card);
+ });
+}
+function moveVariantImage(row,id,offset){initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=a.length)return;const [item]=a.splice(from,1);a.splice(to,0,item);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}
+function removeVariantImage(row,id){initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([a[from]]);a.splice(from,1);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}
+form?.addEventListener("click",e=>{const card=e.target.closest("[data-variant-image-id]");if(!card)return;const row=card.closest("[data-variant-row]");if(!row)return;const m=e.target.closest("[data-variant-image-move]");if(m)moveVariantImage(row,card.dataset.variantImageId,Number(m.dataset.variantImageMove));else if(e.target.closest("[data-variant-image-remove]"))removeVariantImage(row,card.dataset.variantImageId);});
+form?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-variant-image-id]");if(!card)return;draggingVariantImage={id:card.dataset.variantImageId,row:card.closest("[data-variant-row]")};card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingVariantImage.id);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
+form?.addEventListener("dragover",e=>{if(e.target.closest("[data-variant-image-id]"))e.preventDefault();});
+form?.addEventListener("drop",e=>{const card=e.target.closest("[data-variant-image-id]");if(!card||!draggingVariantImage)return;const row=card.closest("[data-variant-row]");if(row!==draggingVariantImage.row)return;e.preventDefault();initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===draggingVariantImage.id),to=a.findIndex(i=>i.id===card.dataset.variantImageId);if(from>=0&&to>=0&&from!==to){const [item]=a.splice(from,1);a.splice(to,0,item);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}draggingVariantImage=null;});
+form?.addEventListener("dragend",()=>{draggingVariantImage=null;form.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
 
-$("#add-base-color-button")?.addEventListener("click", event => {
+
+/* Selector rápido: permite elegir el color junto al precio/garantía sin saltar de sección. */
+const quickColorPalette = $("#quick-color-palette");
+const quickColorButton = $("#add-base-color-button");
+const quickColorStatus = $("#quick-color-status");
+
+const quickColorSwatches = $("#quick-color-swatches");
+const quickColorSearch = $("#quick-color-search");
+
+function renderQuickColorPalette(query = "") {
+  if (!quickColorSwatches) return;
+  const q = query.trim().toLowerCase();
+  const filtered = COLOR_PALETTE.filter(color =>
+    color.name.toLocaleLowerCase("es").includes(q) ||
+    color.hex.toLowerCase().includes(q)
+  );
+  const exactHex = /^#[0-9a-f]{6}$/i.test(query.trim())
+    ? query.trim().toUpperCase()
+    : "";
+  const exactIsKnown = exactHex && COLOR_PALETTE.some(item => item.hex.toLowerCase() === exactHex.toLowerCase());
+  const customHexOption = exactHex && !exactIsKnown
+    ? `<button class="quick-color-swatch quick-color-custom-swatch" type="button"
+         data-quick-color="${exactHex}" data-quick-color-hex="${exactHex}"
+         title="Añadir color personalizado ${exactHex}" aria-label="Añadir color personalizado ${exactHex}">
+         <span class="quick-color-dot" style="--quick-color:${exactHex}"></span>
+         <span class="quick-color-name">Personalizado</span>
+         <span class="quick-color-code">${exactHex}</span>
+       </button>`
+    : "";
+  const paletteButtons = filtered.map(color => `
+    <button class="quick-color-swatch" type="button" data-quick-color="${escapeHtml(color.name)}"
+      data-quick-color-hex="${color.hex}" title="${escapeHtml(color.name)} · ${color.hex}"
+      aria-label="Añadir color ${escapeHtml(color.name)} ${color.hex}">
+      <span class="quick-color-dot" style="--quick-color:${color.hex}"></span>
+      <span class="quick-color-name">${escapeHtml(color.name)}</span>
+      <span class="quick-color-code">${color.hex}</span>
+    </button>`).join("");
+  quickColorSwatches.innerHTML = paletteButtons + customHexOption ||
+    '<p class="quick-color-no-results">No hay coincidencias. Probá con otro nombre o un HEX completo como #0833A2.</p>';
+}
+renderQuickColorPalette();
+quickColorSearch?.addEventListener("input", () => renderQuickColorPalette(quickColorSearch.value));
+
+quickColorButton?.addEventListener("click", event => {
   event.preventDefault();
+  const expanded = quickColorButton.getAttribute("aria-expanded") === "true";
+  quickColorButton.setAttribute("aria-expanded", String(!expanded));
+  quickColorPalette?.toggleAttribute("hidden", expanded);
+});
+
+quickColorPalette?.addEventListener("click", event => {
+  const choice = event.target.closest("[data-quick-color]");
+  if (!choice) return;
+  const color = choice.dataset.quickColor || "";
+  const hex = (choice.dataset.quickColorHex || "#242424").toUpperCase();
   const container = $("#product-variants-list");
-  if (!container) return;
-  let baseGroup = container.querySelector('[data-variant-group][data-base-group="true"]');
+  const colorManager = $("#base-color-manager");
+  if (!container || !colorManager) return;
+
+  let baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
   if (!baseGroup) {
     renderVariantRows([]);
-    baseGroup = container.querySelector('[data-variant-group][data-base-group="true"]');
+    baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
   }
-  if (baseGroup) {
-    addVariantRow({color:"",color_hex:"#242424",image_url:"",availability:"available"}, baseGroup);
-    updateEditorDirtyState();
+  if (!baseGroup) return;
+
+  const duplicate = Array.from(baseGroup.querySelectorAll("[data-variant-row]")).some(row => {
+    const existingName = row.querySelector("[data-variant-color]")?.value.trim().toLocaleLowerCase("es");
+    const existingHex = row.querySelector("[data-variant-hex]")?.value.trim().toLowerCase();
+    return existingName === color.toLocaleLowerCase("es") || existingHex === hex.toLowerCase();
+  });
+  if (duplicate) {
+    if (quickColorStatus) {
+      quickColorStatus.textContent = `${color} ya está añadido. Elegí otro color.`;
+      quickColorStatus.dataset.state = "error";
+    }
+    return;
   }
+
+  addVariantRow({color, color_hex:hex, image_url:"", availability:"available"}, baseGroup, {focus:false});
+  updateEditorDirtyState();
+  if (quickColorStatus) {
+    quickColorStatus.textContent = "";
+    delete quickColorStatus.dataset.state;
+  }
+  quickColorSwatches?.querySelectorAll("[data-quick-color]").forEach(button => {
+    button.classList.toggle("is-selected", button.dataset.quickColorHex?.toUpperCase() === hex);
+  });
 });
 
 $("#add-variant-button")?.addEventListener("click", event => {
@@ -679,67 +880,124 @@ $("#add-variant-button")?.addEventListener("click", event => {
   updateEditorDirtyState();
 });
 
-variantsContainer?.addEventListener("click",event=>{
- const add=event.target.closest("[data-add-group-color]");
- if(add){const group=add.closest("[data-variant-group]");if(group){addVariantRow({color:"",color_hex:"#242424",image_url:"",availability:"available"},group);updateEditorDirtyState();}return;}
- const removeGroup=event.target.closest("[data-remove-group]");
- if(removeGroup){removeGroup.closest("[data-variant-group]")?.remove();if(!variantsContainer.querySelector("[data-variant-group]"))renderVariantRows([]);updateEditorDirtyState();return;}
- const remove=event.target.closest("[data-remove-variant]");if(!remove)return;
- const group=remove.closest("[data-variant-group]");remove.closest("[data-variant-row]")?.remove();
- if(group&&!group.querySelector("[data-variant-row]"))group.remove();
- if(!variantsContainer.querySelector("[data-variant-group]"))renderVariantRows([]);else updateVariantRowHeadings();
+form?.addEventListener("click", event => {
+  const swatch = event.target.closest("[data-variant-swatch]");
+  if (swatch) {
+    const row = swatch.closest("[data-variant-row]");
+    if (!row) return;
+    const hex = swatch.dataset.variantSwatch || "#242424";
+    const name = swatch.dataset.variantSwatchName || hex.toUpperCase();
+    row.querySelector("[data-variant-color]").value = name;
+    row.querySelector("[data-variant-hex]").value = hex;
+    const hexText = row.querySelector("[data-variant-hex-text]");
+    if (hexText) hexText.value = hex.toUpperCase();
+    const palette = row.querySelector("[data-variant-palette]");
+    if (palette) palette.value = COLOR_PALETTE.some(item => item.hex.toLowerCase() === hex.toLowerCase()) ? hex : "custom";
+    row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+      const selected = button.dataset.variantSwatch?.toLowerCase() === hex.toLowerCase();
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    updateVariantRowHeadings();
+    updateEditorDirtyState();
+    return;
+  }
+
+  const add = event.target.closest("[data-add-group-color]");
+  if (add) {
+    const group = add.closest("[data-variant-group]");
+    if (group) {
+      addVariantRow({color:"",color_hex:"#242424",image_url:"",availability:"available"}, group);
+      updateEditorDirtyState();
+    }
+    return;
+  }
+
+  const removeGroup = event.target.closest("[data-remove-group]");
+  if (removeGroup) {
+    removeGroup.closest("[data-variant-group]")?.remove();
+    if (!variantsContainer.querySelector("[data-variant-group]")) {
+      variantsContainer.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
+    }
+    updateEditorDirtyState();
+    return;
+  }
+
+  const remove = event.target.closest("[data-remove-variant]");
+  if (!remove) return;
+  const group = remove.closest("[data-variant-group]");
+  const isBaseGroup = group?.dataset.baseGroup === "true";
+  remove.closest("[data-variant-row]")?.remove();
+  if (group && !group.querySelector("[data-variant-row]")) {
+    if (isBaseGroup) {
+      const list = group.querySelector("[data-variant-color-list]");
+      if (list) list.innerHTML = '<p class="variants-empty-hint">Elegí un color para este producto.</p>';
+    } else {
+      group.remove();
+    }
+  }
+  if (!form.querySelector('[data-variant-group][data-base-group="true"]')) renderVariantRows([]);
+  updateVariantRowHeadings();
+  updateEditorDirtyState();
 });
 
-variantsContainer?.addEventListener("change", event => {
+form?.addEventListener("change", event => {
   const imageInput = event.target.closest("[data-variant-image]");
   if (imageInput) {
-    const row = imageInput.closest("[data-variant-row]");
-    const file = imageInput.files?.[0] || null;
-    const url = row?.querySelector("[data-variant-image-url]")?.value.trim() || "";
-    renderVariantImagePreview(row, file, file ? "" : url);
-    return;
+    const row=imageInput.closest("[data-variant-row]"); if(!row)return;
+    initVariantImageItems(row);
+    for(const file of Array.from(imageInput.files||[]))row._variantImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});
+    imageInput.value="";syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();return;
   }
   const urlInput = event.target.closest("[data-variant-image-url]");
-  if (urlInput) {
-    const row = urlInput.closest("[data-variant-row]");
-    const file = row?.querySelector("[data-variant-image]")?.files?.[0] || null;
-    renderVariantImagePreview(row, file, urlInput.value.trim());
-    return;
-  }
+  if (urlInput) return;
+  if (event.target.matches("[data-variant-images]")) return;
   const select = event.target.closest("[data-variant-palette]");
-
-  if (!select) {
-    return;
-  }
-
+  if (!select) return;
   const row = select.closest("[data-variant-row]");
-
-  if (!row || !select.value || select.value === "custom") {
-    return;
-  }
-
-  const color = COLOR_PALETTE.find(
-    item => item.hex === select.value
-  );
-
-  if (!color) {
-    return;
-  }
-
+  if (!row || !select.value || select.value === "custom") return;
+  const color = COLOR_PALETTE.find(item => item.hex === select.value);
+  if (!color) return;
   row.querySelector("[data-variant-color]").value = color.name;
   row.querySelector("[data-variant-hex]").value = color.hex;
-
+  row.querySelector("[data-variant-hex-text]").value = color.hex;
   updateVariantRowHeadings();
 });
 
-variantsContainer?.addEventListener("input", event => {
-  if (!event.target.matches("[data-variant-color], [data-group-storage], [data-group-ram]")) return;
+form?.addEventListener("input", event => {
+  if (event.target.matches("[data-variant-hex-text]")) {
+    const row = event.target.closest("[data-variant-row]");
+    const value = event.target.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(value) && row) {
+      row.querySelector("[data-variant-hex]").value = value;
+      const matching = COLOR_PALETTE.find(item => item.hex.toLowerCase() === value.toLowerCase());
+      row.querySelector("[data-variant-palette]").value = matching ? matching.hex : "custom";
+      row.querySelector("[data-variant-color]").value = matching ? matching.name : value.toUpperCase();
+      row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+        const selected = button.dataset.variantSwatch?.toLowerCase() === value.toLowerCase();
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+      updateVariantRowHeadings();
+      updateEditorDirtyState();
+    }
+    return;
+  }
+  if (!event.target.matches("[data-variant-color], [data-variant-hex], [data-group-storage], [data-group-ram]")) return;
   const row = event.target.closest("[data-variant-row]");
   if (event.target.matches("[data-group-storage], [data-group-ram]")) {
     updateVariantRowHeadings();
     return;
   }
   if (!row) return;
+
+  if (event.target.matches("[data-variant-hex]")) {
+    const hexText = row.querySelector("[data-variant-hex-text]");
+    if (hexText) hexText.value = event.target.value.toUpperCase();
+    updateVariantRowHeadings();
+    updateEditorDirtyState();
+    return;
+  }
 
   if (event.target.matches("[data-variant-color]")) {
     const colorName = event.target.value.trim();
@@ -752,15 +1010,26 @@ variantsContainer?.addEventListener("input", event => {
     if (matchingColor) {
       row.querySelector("[data-variant-hex]").value =
         matchingColor.hex;
+      row.querySelector("[data-variant-hex-text]").value = matchingColor.hex;
 
       row.querySelector("[data-variant-palette]").value =
         matchingColor.hex;
+      row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+        const selected = button.dataset.variantSwatch?.toLowerCase() === matchingColor.hex.toLowerCase();
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
     } else {
       row.querySelector("[data-variant-palette]").value = "custom";
+      row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+        button.classList.remove("is-selected");
+        button.setAttribute("aria-pressed", "false");
+      });
     }
   }
 
   updateVariantRowHeadings();
+  updateEditorDirtyState();
 });
 
 /* =========================================================
@@ -798,41 +1067,12 @@ async function showDashboard(user) {
 
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
-
-  const metadata = user.user_metadata || {};
-
-  const profileName =
-    metadata.full_name ||
-    metadata.name ||
-    metadata.display_name ||
-    [metadata.first_name, metadata.last_name]
-      .filter(Boolean)
-      .join(" ");
-
-  const emailName = user.email
-    ? user.email
-        .split("@")[0]
-        .replace(/[._+-]+/g, " ")
-        .replace(/\d+/g, " ")
-        .trim()
-    : "";
-
-  const displayName = String(profileName || emailName || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(part =>
-      part.charAt(0).toLocaleUpperCase("es") + part.slice(1)
-    )
-    .join(" ");
+  document.body.classList.add("admin-dashboard-active");
+  setMobileSidebarOpen(false);
+  showAdminSection("home");
 
   const greeting = $("#admin-greeting");
-
-  if (greeting) {
-    greeting.textContent = displayName
-      ? `¡Bienvenido de nuevo, ${displayName}! 👋`
-      : "¡Bienvenido de nuevo! 👋";
-  }
+  if (greeting) greeting.textContent = "¡Bienvenido de nuevo, Steven! 👋";
 
   setStatus("Sesión iniciada");
   window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
@@ -984,9 +1224,48 @@ function minimumPrice(variants, field) {
   return values.length ? Math.min(...values) : null;
 }
 
+function setMobileSidebarOpen(open) {
+  const toggle = document.getElementById("admin-menu-toggle");
+  const backdrop = document.getElementById("admin-sidebar-backdrop");
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const shouldOpen = Boolean(open && isMobile);
+
+  document.body.classList.toggle("admin-sidebar-open", shouldOpen);
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(shouldOpen));
+    toggle.setAttribute("aria-label", shouldOpen ? "Cerrar menú de administración" : "Abrir menú de administración");
+    toggle.setAttribute("title", shouldOpen ? "Cerrar menú" : "Abrir menú");
+    toggle.querySelector("span").textContent = shouldOpen ? "×" : "☰";
+  }
+  if (backdrop) backdrop.hidden = !shouldOpen;
+}
+
+document.getElementById("admin-menu-toggle")?.addEventListener("click", () => {
+  setMobileSidebarOpen(!document.body.classList.contains("admin-sidebar-open"));
+});
+document.getElementById("admin-sidebar-backdrop")?.addEventListener("click", () => setMobileSidebarOpen(false));
+window.addEventListener("keydown", event => {
+  if (event.key === "Escape") setMobileSidebarOpen(false);
+});
+window.addEventListener("resize", () => {
+  if (!window.matchMedia("(max-width: 760px)").matches) setMobileSidebarOpen(false);
+});
+
+function showAdminSection(section) {
+  document.querySelectorAll("[data-admin-panel]").forEach(panel => panel.classList.toggle("hidden", panel.dataset.adminPanel !== section));
+  document.querySelectorAll("[data-admin-section]").forEach(button => {
+    const active = button.dataset.adminSection === section;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  setMobileSidebarOpen(false);
+}
+document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
+
 async function loadProducts() {
   if (!supabase || !currentUser) {
-    return;
+    return false;
   }
 
   const { data, error } = await supabase
@@ -1000,106 +1279,299 @@ async function loadProducts() {
       "error"
     );
 
-    return;
+    return false;
   }
 
   products = data || [];
 
   renderAdminList();
-
-  $("#product-count").textContent =
-    `${products.length} producto${products.length === 1 ? "" : "s"} en la base de datos`;
+  renderDashboardOverview();
+  await loadCatalogAnalytics();
+  return true;
 }
+
+function formatAnalyticsCapacity(value) {
+  const text = String(value ?? "").trim().replace(/\s*GB\s*/i, "");
+  return text ? `${text} GB` : "";
+}
+
+function renderAnalyticsRanking(node, rows, labelFor) {
+  if (!node) return;
+  if (!rows.length) {
+    node.innerHTML = '<p class="dashboard-empty-state">Todavía no hay consultas con esta información.</p>';
+    return;
+  }
+  const max = Math.max(...rows.map(row => row.count), 1);
+  node.innerHTML = rows.map(row => {
+    const label = escapeHtml(labelFor(row));
+    const percentage = Math.max(3, Math.round((row.count / max) * 100));
+    return `<div class="dashboard-interest-rank-row">
+      <div class="dashboard-interest-rank-main">
+        <strong title="${label}">${label}</strong>
+        <span class="dashboard-interest-rank-track"><i style="width:${percentage}%"></i></span>
+      </div>
+      <b>${row.count.toLocaleString("es-NI")}</b>
+    </div>`;
+  }).join("");
+}
+
+function renderAnalyticsPie(node, legendNode, totalNode, rows) {
+  if (!node || !legendNode) return;
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  if (totalNode) totalNode.textContent = total.toLocaleString("es-NI");
+  if (!total) {
+    node.style.background = "var(--interest-pie-empty)";
+    node.setAttribute("aria-label", "Aún no hay clics de WhatsApp registrados.");
+    legendNode.innerHTML = '<p class="dashboard-empty-state">El gráfico aparecerá cuando haya consultas por WhatsApp.</p>';
+    node.classList.remove("is-animated");
+    return;
+  }
+
+  const visibleRows = rows.slice(0, 5);
+  const tailRows = rows.slice(5);
+  if (tailRows.length) {
+    visibleRows.push({
+      label: "Otros",
+      count: tailRows.reduce((sum, row) => sum + row.count, 0)
+    });
+  }
+  const sum = visibleRows.reduce((acc, row) => acc + row.count, 0);
+  let cumulative = 0;
+  const stops = visibleRows.map((row, index) => {
+    const startPercent = cumulative / sum * 100;
+    cumulative += row.count;
+    const endPercent = cumulative / sum * 100;
+    return `var(--interest-slice-${index + 1}) ${startPercent.toFixed(2)}% ${endPercent.toFixed(2)}%`;
+  });
+  node.style.background = `conic-gradient(${stops.join(", ")})`;
+  node.setAttribute("aria-label", `Distribución de ${sum} clics de WhatsApp por combinación solicitada.`);
+  node.classList.remove("is-animated");
+  void node.offsetWidth;
+  node.classList.add("is-animated");
+
+  legendNode.innerHTML = visibleRows.map((row, index) => {
+    const percentage = Math.round((row.count / sum) * 100);
+    return `<div class="dashboard-interest-legend-row">
+      <i class="dashboard-interest-legend-dot interest-slice-${index + 1}" aria-hidden="true"></i>
+      <span class="dashboard-interest-legend-label" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}</span>
+      <strong>${row.count.toLocaleString("es-NI")}</strong>
+      <small>${percentage}%</small>
+    </div>`;
+  }).join("");
+}
+
+async function loadCatalogAnalytics() {
+  const note = document.getElementById("dashboard-analytics-note");
+  const topNode = document.getElementById("dashboard-top-products");
+  const colorNode = document.getElementById("dashboard-interest-colors");
+  const configNode = document.getElementById("dashboard-interest-configs");
+  const pieNode = document.getElementById("dashboard-interest-pie");
+  const legendNode = document.getElementById("dashboard-interest-legend");
+  const pieTotalNode = document.getElementById("dashboard-interest-pie-total");
+  const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+
+  if (!supabase || !currentUser) return;
+
+  const { data, error } = await supabase
+    .from("catalog_events")
+    .select("product_id,event_type,created_at,variant_color,variant_ram,variant_storage")
+    .order("created_at", { ascending: false })
+    .limit(10000);
+
+  if (error) {
+    setText("dashboard-views-total", "—");
+    setText("dashboard-whatsapp-total", "—");
+    if (note) note.textContent = "No se pudieron cargar las estadísticas. Verificá que las columnas de variantes de catalog_events estén instaladas y que las políticas permitan la lectura administrativa.";
+    if (topNode) topNode.innerHTML = '<p class="dashboard-empty-state">No se pudieron cargar las estadísticas.</p>';
+    if (colorNode) colorNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
+    if (configNode) configNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
+    renderAnalyticsPie(pieNode, legendNode, pieTotalNode, []);
+    console.info("Analítica de catálogo no disponible:", error.message);
+    return;
+  }
+
+  const events = data || [];
+  const views = events.filter(event => event.event_type === "view");
+  const clicks = events.filter(event => event.event_type === "whatsapp_click");
+  setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
+  setText("dashboard-whatsapp-total", clicks.length.toLocaleString("es-NI"));
+
+  if (note) note.textContent = events.length
+    ? "Eventos registrados desde la activación de la analítica. Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
+    : "La tabla está lista, pero aún no hay eventos. Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp.";
+
+  const byProduct = new Map();
+  for (const event of events) {
+    if (!event.product_id) continue;
+    const stats = byProduct.get(String(event.product_id)) || { views: 0, clicks: 0 };
+    if (event.event_type === "view") stats.views++;
+    if (event.event_type === "whatsapp_click") stats.clicks++;
+    byProduct.set(String(event.product_id), stats);
+  }
+
+  const rankedProducts = products.filter(product => product.is_published).map(product => ({
+    product,
+    stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
+  })).sort((a, b) => b.stats.views - a.stats.views || b.stats.clicks - a.stats.clicks).slice(0, 6);
+
+  if (topNode) topNode.innerHTML = rankedProducts.length ? rankedProducts.map(({product, stats}, index) => {
+    const name = escapeHtml(product.name || "Producto sin nombre");
+    return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">'+(index+1)+'</span><div class="dashboard-top-product-info"><strong>'+name+'</strong><small>Interés registrado</small></div><div class="dashboard-top-product-stats"><span>👁 <b>'+stats.views+'</b> visitas</span><span>↗ <b>'+stats.clicks+'</b> clics</span></div></div>';
+  }).join("") : '<p class="dashboard-empty-state">Publicá productos para ver aquí su rendimiento.</p>';
+
+  const variantClicks = clicks.map(event => ({
+    color: String(event.variant_color || "").trim(),
+    ram: String(event.variant_ram || "").trim(),
+    storage: String(event.variant_storage || "").trim()
+  }));
+
+  const comboCounts = new Map();
+  const colorCounts = new Map();
+  const configCounts = new Map();
+
+  for (const variant of variantClicks) {
+    const color = variant.color || "";
+    const ram = variant.ram || "";
+    const storage = variant.storage || "";
+    const capacityParts = [ram ? `${formatAnalyticsCapacity(ram)} RAM` : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean);
+    const configurationLabel = capacityParts.length ? capacityParts.join(" / ") : "";
+    const comboLabel = [configurationLabel, color].filter(Boolean).join(" · ") || "Sin variante registrada";
+    comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
+    if (color) colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+    if (ram || storage) {
+      const configLabel = [ram ? `${formatAnalyticsCapacity(ram)} RAM` : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean).join(" / ") || "Configuración estándar";
+      configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
+    }
+  }
+
+  const toRankedRows = counts => Array.from(counts, ([label, count]) => ({label, count}))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
+    .slice(0, 5);
+
+  const rankedCombos = Array.from(comboCounts, ([label, count]) => ({label, count}))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"));
+  renderAnalyticsPie(pieNode, legendNode, pieTotalNode, rankedCombos);
+  renderAnalyticsRanking(colorNode, toRankedRows(colorCounts), row => row.label);
+  renderAnalyticsRanking(configNode, toRankedRows(configCounts), row => row.label);
+}
+
+/* Actualizar actividad reciente y los indicadores a partir de los datos actuales. */
+const dashboardActivityRefresh = document.getElementById("dashboard-activity-refresh");
+dashboardActivityRefresh?.addEventListener("click", async () => {
+  if (dashboardActivityRefresh.disabled) return;
+
+  const status = document.getElementById("dashboard-activity-refresh-status");
+  if (!supabase || !currentUser) {
+    if (status) status.textContent = "Iniciá sesión para actualizar la actividad.";
+    return;
+  }
+
+  dashboardActivityRefresh.disabled = true;
+  dashboardActivityRefresh.classList.add("is-refreshing");
+  dashboardActivityRefresh.setAttribute("aria-busy", "true");
+  dashboardActivityRefresh.setAttribute("aria-label", "Actualizando actividad reciente");
+  dashboardActivityRefresh.title = "Actualizando actividad…";
+  if (status) status.textContent = "Actualizando actividad…";
+
+  try {
+    const refreshed = await loadProducts();
+    if (status) {
+      status.textContent = refreshed
+        ? "Actividad actualizada."
+        : "No se pudo actualizar la actividad. Revisá el aviso del panel.";
+    }
+  } catch (error) {
+    if (status) status.textContent = "No se pudo actualizar la actividad. Revisá el aviso del panel.";
+    console.warn("No se pudo actualizar la actividad reciente:", error);
+  } finally {
+    dashboardActivityRefresh.disabled = false;
+    dashboardActivityRefresh.classList.remove("is-refreshing");
+    dashboardActivityRefresh.removeAttribute("aria-busy");
+    dashboardActivityRefresh.setAttribute("aria-label", "Actualizar actividad reciente");
+    dashboardActivityRefresh.title = "Actualizar actividad reciente";
+  }
+});
+
+function renderDashboardOverview() {
+  const published = products.filter(product => Boolean(product.is_published));
+  const drafts = products.filter(product => !product.is_published);
+  const needsImage = products.filter(product => {
+    const images = Array.isArray(product.images) ? product.images : [];
+    return !(product.image_url || product.image || images.length || (Array.isArray(product.gallery) && product.gallery.length));
+  });
+  const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+  const total = products.length;
+  const percent = total ? Math.round((published.length / total) * 100) : 0;
+  setText("dashboard-total", total);
+  setText("dashboard-published", published.length);
+  setText("dashboard-drafts", drafts.length);
+  setText("dashboard-review", needsImage.length);
+  setText("dashboard-chart-total", total);
+  setText("dashboard-legend-published", published.length);
+  setText("dashboard-legend-drafts", drafts.length);
+  setText("dashboard-task-drafts", drafts.length);
+  setText("dashboard-task-images", needsImage.length);
+  setText("dashboard-publication-summary", total ? `${percent}% del catálogo está publicado.` : "Agregá tu primer producto para comenzar.");
+  setText("dashboard-task-status", total ? "Inventario cargado correctamente" : "Todavía no hay productos en el inventario");
+  const ring = document.getElementById("dashboard-chart-ring");
+  if (ring) ring.style.setProperty("--published-ratio", `${percent}%`);
+  const progress = document.getElementById("dashboard-progress-published");
+  if (progress) progress.style.width = `${percent}%`;
+  const activity = document.getElementById("dashboard-activity-list");
+  if (activity) {
+    const recent = [...products].sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0,4);
+    activity.innerHTML = recent.length ? recent.map(product => {
+      const title = escapeHtml(product.name || "Producto sin nombre");
+      const status = product.is_published ? "Publicado en el catálogo" : "Guardado como borrador";
+      const dateValue = product.updated_at || product.created_at;
+      const date = dateValue ? new Date(dateValue).toLocaleDateString("es-NI", { day:"2-digit", month:"short" }) : "Fecha no disponible";
+      return `<div class="dashboard-activity-item"><span class="dashboard-activity-mark ${product.is_published ? "activity-mark-published" : "activity-mark-draft"}">${product.is_published ? "✓" : "◷"}</span><div><strong>${title}</strong><small>${status}</small></div><time>${escapeHtml(date)}</time></div>`;
+    }).join("") : '<p class="dashboard-empty-state">Todavía no hay actividad. Añadí un producto para comenzar.</p>';
+  }
+}
+
+document.querySelectorAll("[data-dashboard-action]").forEach(button => {
+  button.addEventListener("click", () => {
+    const action = button.dataset.dashboardAction;
+    if (action === "review") {
+      showAdminSection("published");
+      const search = document.getElementById("published-search");
+      if (search) { search.value = ""; search.dispatchEvent(new Event("input")); }
+      return;
+    }
+    showAdminSection(action === "add" ? "add" : action);
+  });
+});
 
 function renderAdminList() {
-  const query = ($("#admin-search")?.value || "")
-    .trim()
-    .toLocaleLowerCase("es");
-
-  const matches = products.filter(product =>
-    [
-      product.name,
-      product.brand,
-      product.model,
-      product.category
-    ]
-      .join(" ")
-      .toLocaleLowerCase("es")
-      .includes(query)
-  );
-
-  $("#admin-product-list").innerHTML = matches.map(product => {
+  const searchable = product => [product.name, product.brand, product.model, product.category].join(" ").toLocaleLowerCase("es");
+  const published = products.filter(product => Boolean(product.is_published));
+  const drafts = products.filter(product => !product.is_published);
+  const filter = (items, selector) => {
+    const query = ($(selector)?.value || "").trim().toLocaleLowerCase("es");
+    return items.filter(product => searchable(product).includes(query));
+  };
+  const cards = (items, emptyText) => items.map(product => {
     const image = getImages(product)[0];
-
-    const thumb = image
-      ? `<img class="admin-product-thumb"
-              src="${escapeHtml(image)}"
-              alt=""
-              loading="lazy">`
-      : `<div class="admin-product-thumb"
-              style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
-
-    const state = product.is_published
-      ? '<span class="status-pill published">Publicado</span>'
-      : '<span class="status-pill">Borrador</span>';
-
+    const thumb = image ? `<img class="admin-product-thumb" src="${escapeHtml(image)}" alt="" loading="lazy">` : `<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
     const variants = normalizeVariants(product.variants);
-
-    const variantCount = variants.length;
-
-    const variantLabel = variantCount
-      ? ` · ${variantCount} variante${variantCount === 1 ? "" : "s"}`
-      : "";
-
-    const price = minimumPrice(variants, "price_usd")
-      ?? product.price_usd;
-
-    const formattedPrice =
-      price === null || price === undefined || price === ""
-        ? "Consultar"
-        : `US$${Number(price).toLocaleString("en-US", {
-            maximumFractionDigits: 2
-          })}`;
-
-    return `
-      <article class="admin-product-row">
-        ${thumb}
-
-        <div>
-          <p class="admin-product-name">
-            ${escapeHtml(product.name)}
-          </p>
-
-          <div class="admin-product-meta">
-            ${escapeHtml(product.category || "Sin categoría")}
-            · ${escapeHtml(formattedPrice)}
-            ${variantLabel}
-            · ${state}
-          </div>
-
-          <div class="admin-product-buttons">
-            <button
-              class="admin-mini-button"
-              type="button"
-              data-edit="${escapeHtml(product.id)}"
-            >Editar</button>
-
-            <button
-              class="admin-mini-button"
-              type="button"
-              data-toggle="${escapeHtml(product.id)}"
-            >${product.is_published ? "Despublicar" : "Publicar"}</button>
-          </div>
-        </div>
-      </article>
-    `;
-  }).join("") ||
-    '<p class="form-status">No hay productos que coincidan con la búsqueda.</p>';
+    const variantLabel = variants.length ? ` · ${variants.length} variante${variants.length === 1 ? "" : "s"}` : "";
+    const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
+    const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel}</div><div class="admin-product-buttons"><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
+  }).join("") || `<p class="form-status">${emptyText}</p>`;
+  $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.");
+  $("#draft-product-list").innerHTML = cards(filter(drafts, "#draft-search"), "No hay productos pendientes de publicar.");
+  $("#published-count").textContent = `${published.length} producto${published.length === 1 ? "" : "s"} publicados`;
+  $("#draft-count").textContent = `${drafts.length} producto${drafts.length === 1 ? "" : "s"} sin publicar`;
+  $("#published-nav-count").textContent = published.length;
+  $("#draft-nav-count").textContent = drafts.length;
 }
 
-$("#admin-search")?.addEventListener("input", renderAdminList);
+$("#published-search")?.addEventListener("input", renderAdminList);
+$("#draft-search")?.addEventListener("input", renderAdminList);
 
-$("#admin-product-list")?.addEventListener("click", async event => {
+document.querySelectorAll("#published-product-list, #draft-product-list").forEach(list => list.addEventListener("click", async event => {
   const edit = event.target.closest("[data-edit]");
   const toggle = event.target.closest("[data-toggle]");
 
@@ -1110,6 +1582,7 @@ $("#admin-product-list")?.addEventListener("click", async event => {
 
     if (product) {
       fillEditor(product);
+      showAdminSection("add");
     }
   }
 
@@ -1153,7 +1626,7 @@ $("#admin-product-list")?.addEventListener("click", async event => {
       "error"
     );
   }
-});
+}));
 
 
 /* =========================================================
@@ -1167,7 +1640,9 @@ function getEditorSnapshot(){
  if(!form)return "";
  const fields=Array.from(form.elements).map(f=>{if(!f||(!f.name&&!f.id&&!f.matches?.("[data-variant-row],[data-variant-group]")))return null;if(f.type==="file")return [f.id||f.getAttribute("data-variant-image")||"file",Array.from(f.files||[]).map(x=>[x.name,x.size,x.lastModified])];if(f.type==="checkbox"||f.type==="radio")return [f.id||f.name,f.checked];return [f.id||f.name||f.getAttribute("data-variant-color")||f.getAttribute("data-group-storage")||f.getAttribute("data-group-ram")||f.getAttribute("data-group-price-usd")||f.getAttribute("data-group-price-nio")||f.getAttribute("data-variant-availability")||f.getAttribute("data-variant-image-url")||f.tagName,f.value];}).filter(Boolean);
  const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({storage:g.querySelector("[data-group-storage]")?.value||"",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||""}))}));
- return JSON.stringify({fields,variants});
+ const mainGallery=mainImageItems.map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}));
+ const variantGalleries=Array.from(form.querySelectorAll("[data-variant-row]")).map(row=>({color:row.querySelector("[data-variant-color]")?.value||"",images:(row._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}));
+ return JSON.stringify({fields,variants,mainGallery,variantGalleries});
 }
 
 function markEditorClean() {
@@ -1213,6 +1688,7 @@ function clearEditor() {
     "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
 
   $("#product-images").value = "";
+  clearMainImagePreviews();
   renderMainImagePreviews();
 
   renderVariantRows([]);
@@ -1252,7 +1728,7 @@ function fillEditor(product) {
     product.shipping_note || "";
 
   $("#product-images").value = "";
-  renderMainImagePreviews();
+  setExistingMainImages(getImages(product));
 
   renderVariantRows(legacyVariants(product));
 
@@ -1347,57 +1823,111 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId,existingVariants=[]){
- const rows=Array.from($("#product-variants-list")?.querySelectorAll("[data-variant-row]")||[]);
- const baseUSD=toOptionalNumber($("#product-price-usd").value,"Precio base en dólares"),baseNIO=toOptionalNumber($("#product-price-nio").value,"Precio base en córdobas");
- const drafts=rows.map((row,i)=>{
-  const group=row.closest("[data-variant-group]"),base=group?.dataset.baseGroup==="true",read=sel=>group?.querySelector(sel)?.value.trim()||"",sv=read("[data-group-storage]"),rv=read("[data-group-ram]"),storage=sv?`${sv} GB`:"",ram=rv?`${rv} GB`:"",color=row.querySelector("[data-variant-color]").value.trim(),color_hex=validHex(row.querySelector("[data-variant-hex]").value);
-  const price_usd=base?baseUSD:toOptionalNumber(read("[data-group-price-usd]"),`Precio en dólares de configuración ${i+1}`),price_nio=base?baseNIO:toOptionalNumber(read("[data-group-price-nio]"),`Precio en córdobas de configuración ${i+1}`),availability=normalizeVariantAvailability(row.querySelector("[data-variant-availability]").value),image_url=row.querySelector("[data-variant-image-url]").value.trim(),file=row.querySelector("[data-variant-image]").files?.[0]||null;
-  if(!color)throw new Error(`Completá el nombre del color en la variante ${i+1}.`);
-  if(!storage&&!ram)throw new Error(`Indicá almacenamiento o RAM en la configuración ${i+1}.`);
-  return {storage,ram,color,color_hex,price_usd,price_nio,availability,image_url,file,row};
- });
- const seen=new Set();for(const v of drafts){const key=[v.storage,v.ram,v.color].join("|").toLocaleLowerCase("es");if(seen.has(key))throw new Error(`La combinación ${[v.storage,v.ram,v.color].filter(Boolean).join(" · ")} está repetida.`);seen.add(key);}
- for (const v of drafts) {
-  if (!v.file) continue;
+async function collectVariants(productId, existingVariants = []) {
+  const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
+  const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
+  const allGroups = [
+    ...Array.from(baseColorManager?.querySelectorAll('[data-variant-group][data-base-group="true"]') || []),
+    ...Array.from(variantsContainer?.querySelectorAll('[data-variant-group][data-base-group="false"]') || [])
+  ];
 
-  const status = v.row.querySelector("[data-variant-status]");
-  const fileInput = v.row.querySelector("[data-variant-image]");
-  const urlInput = v.row.querySelector("[data-variant-image-url]");
+  const configs = [];
+  const seenConfigurations = new Set();
 
-  if (status) {
-   status.textContent = `Subiendo foto de ${v.color}…`;
-   status.dataset.state = "uploading";
+  for (let groupIndex = 0; groupIndex < allGroups.length; groupIndex++) {
+    const group = allGroups[groupIndex];
+    const isBase = group.dataset.baseGroup === "true";
+    const read = selector => group.querySelector(selector)?.value.trim() || "";
+    const storageRaw = isBase ? "" : read("[data-group-storage]");
+    const ramRaw = isBase ? "" : read("[data-group-ram]");
+
+    if (!isBase && !storageRaw && !ramRaw) {
+      throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex}.`);
+    }
+
+    const storage = storageRaw ? `${storageRaw} GB` : "";
+    const ram = ramRaw ? `${ramRaw} GB` : "";
+    const key = variantGroupKey({storage,ram});
+    if (!isBase && seenConfigurations.has(key)) throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
+    if (!isBase) seenConfigurations.add(key);
+
+    const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
+    const colors = [];
+
+    for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
+      const row = rows[colorIndex];
+      const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
+      if (!color) throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
+      const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
+      const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
+      initVariantImageItems(row);
+      const imageItems = row._variantImageItems || [];
+      const urls = [];
+      const status = row.querySelector("[data-variant-status]");
+      if (status && imageItems.some(item => item.kind === "new")) {
+        status.textContent = `Subiendo fotografías de ${color}…`;
+        status.dataset.state = "uploading";
+      }
+      try {
+        for (const item of imageItems) {
+          if (item.kind === "new") {
+            const url = await uploadImage(productId, item.file, "variants");
+            urls.push(url);
+            item.kind = "existing";
+            item.url = url;
+            if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+            delete item.previewUrl;
+            delete item.file;
+          } else if (item.url) urls.push(item.url);
+        }
+        row._variantImageItems = imageItems;
+        syncVariantImageFields(row);
+        renderVariantImagePreview(row);
+        if (status) {
+          status.textContent = urls.length ? `${urls.length} fotografía(s) guardadas para ${color}.` : "";
+          status.dataset.state = "success";
+        }
+      } catch (error) {
+        if (status) {
+          status.textContent = `No se pudieron subir las fotografías de ${color}: ${error.message || "error desconocido"}`;
+          status.dataset.state = "error";
+        }
+        throw error;
+      }
+      colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
+    }
+
+    const seenColors = new Set();
+    colors.forEach(item => {
+      const key = item.color.toLocaleLowerCase("es");
+      if (seenColors.has(key)) throw new Error(`El color "${item.color}" está repetido dentro de una misma configuración.`);
+      seenColors.add(key);
+    });
+
+    configs.push({
+      storage, ram,
+      price_usd: isBase ? baseUSD : toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex}`),
+      price_nio: isBase ? baseNIO : toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex}`),
+      colors, isBase
+    });
   }
 
-  try {
-   v.image_url = await uploadImage(productId, v.file, "variants");
-
-   // Conserva la URL si falla otra parte del guardado y hay que reintentar.
-   if (urlInput) urlInput.value = v.image_url;
-   if (fileInput) fileInput.value = "";
-   renderVariantImagePreview(v.row, null, v.image_url);
-
-   if (status) {
-    status.textContent = `Foto de ${v.color} cargada correctamente.`;
-    status.dataset.state = "success";
-   }
-
-   updateEditorDirtyState();
-  } catch (error) {
-   if (status) {
-    status.textContent = `No se pudo subir la foto de ${v.color}: ${error.message || "error desconocido"}`;
-    status.dataset.state = "error";
-   }
-   throw error;
-  }
- }
- return drafts.map(({file,row,...v})=>v);
+  return configs.flatMap(config => config.colors.map(color => ({
+    storage: config.storage,
+    ram: config.ram,
+    color: color.color,
+    color_hex: color.color_hex,
+    price_usd: config.price_usd,
+    price_nio: config.price_nio,
+    availability: color.availability,
+    images: color.images,
+    image_url: color.image_url
+  })));
 }
 
 function deriveColorsFromVariants(variants, fallbackColors = []) {
   if (!variants.length) {
-    return normalizeColors(fallbackColors);
+    return [];
   }
 
   const byColor = new Map();
@@ -1415,7 +1945,8 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
       byColor.set(key, {
         name: variant.color,
         type: variant.availability,
-        image_url: variant.image_url || "",
+        image_url: (variant.images && variant.images[0]) || variant.image_url || "",
+        images: variant.images || (variant.image_url ? [variant.image_url] : []),
         color_hex: validHex(variant.color_hex)
       });
     } else {
@@ -1423,9 +1954,8 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
         previous.type = "available";
       }
 
-      if (!previous.image_url && variant.image_url) {
-        previous.image_url = variant.image_url;
-      }
+      if (!previous.image_url && (variant.images?.[0] || variant.image_url)) previous.image_url = variant.images?.[0] || variant.image_url;
+      if ((!previous.images || !previous.images.length) && variant.images?.length) previous.images = variant.images;
     }
   });
 
@@ -1477,14 +2007,16 @@ form?.addEventListener("submit", async event => {
       existingProduct?.variants || []
     );
 
-    const newImages = Array.from(
-      $("#product-images").files || []
-    );
-
-    const uploadedMainImages = await uploadMainImages(
-      id,
-      newImages
-    );
+    const uploadedMainImages = [];
+    for (let imageIndex=0; imageIndex<mainImageItems.length; imageIndex++) {
+      const item=mainImageItems[imageIndex];
+      if(item.kind==="new"){
+        message("#product-form-status", `Subiendo fotografía ${imageIndex+1} de ${mainImageItems.length}…`);
+        const url=await uploadImage(id,item.file);uploadedMainImages.push(url);item.kind="existing";item.url=url;
+        if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;delete item.file;
+      }else uploadedMainImages.push(item.url);
+    }
+    renderMainImagePreviews();
 
     const colors = deriveColorsFromVariants(
       variants,
@@ -1514,12 +2046,7 @@ form?.addEventListener("submit", async event => {
       ? minimumPrice(variants, "price_nio") ?? baseNIO
       : baseNIO;
 
-    const allImages = [
-      ...new Set([
-        ...(existingProduct?.images || (existingProduct?.image_url ? [existingProduct.image_url] : [])),
-        ...uploadedMainImages
-      ])
-    ];
+    const allImages = [...new Set(uploadedMainImages)];
 
     const now = new Date().toISOString();
 

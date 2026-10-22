@@ -9,22 +9,31 @@
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261022-mobile2">
-  <link rel="stylesheet" href="theme-ui.css?v=20261022-mobile2">
+  <link rel="stylesheet" href="styles.css?v=20261022-sidebar1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261022-analytics-pie1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261022-uploadfix1"></script>
+  <script type="module" src="admin.js?v=20261022-analytics-pie1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
 <body class="admin-body">
   <header class="site-header admin-header">
-    <a class="brand" href="./">
+    <button class="admin-menu-toggle" id="admin-menu-toggle" type="button"
+            aria-controls="admin-sidebar" aria-expanded="false"
+            aria-label="Abrir menú de administración" title="Abrir menú">
+      <span aria-hidden="true">☰</span>
+    </button>
+    <a class="brand" href="./" aria-label="Catálogo de Tecnología">
       <span class="brand-mark">CT</span>
       <span>CT Administración</span>
     </a>
+    <div class="admin-header-context" aria-hidden="true">
+      <strong>Panel de control</strong>
+      <small>CAT-LOGO · INVENTARIO</small>
+    </div>
     <a href="./" class="back-link">← Ver catálogo público</a>
   </header>
 
@@ -99,6 +108,40 @@
 
       <div id="admin-status" class="admin-alert" role="status"></div>
 
+      <button class="admin-sidebar-backdrop" id="admin-sidebar-backdrop"
+              type="button" aria-label="Cerrar menú de administración" hidden></button>
+      <aside class="admin-sidebar" id="admin-sidebar" aria-label="Menú de administración">
+        <a class="admin-sidebar-brand" href="./" aria-label="Cat-logo, volver al catálogo público">
+          <span class="brand-mark">CT</span>
+          <span class="admin-sidebar-brand-copy">
+            <strong>Cat-logo</strong>
+            <small>Administración</small>
+          </span>
+        </a>
+
+        <p class="admin-sidebar-section-label">GESTIÓN DEL CATÁLOGO</p>
+        <nav class="admin-section-nav" aria-label="Secciones de administración">
+          <button type="button" class="admin-nav-button active" data-admin-section="home" aria-current="page">
+            <span class="admin-nav-icon" aria-hidden="true">⌂</span><span class="admin-nav-label">Inicio</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="add">
+            <span class="admin-nav-icon" aria-hidden="true">＋</span><span class="admin-nav-label">Añadir producto</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="published">
+            <span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Productos publicados</span><span class="admin-nav-count" id="published-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="drafts">
+            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Productos no publicados</span><span class="admin-nav-count" id="draft-nav-count">0</span>
+          </button>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <span class="admin-sidebar-footer-mark" aria-hidden="true">✦</span>
+          <span><strong>Catálogo de Tecnología</strong><small>Panel administrativo</small></span>
+        </div>
+      </aside>
+
+      <div id="admin-section-home" class="admin-nav-panel" data-admin-panel="home">
       <section class="admin-welcome" aria-label="Resumen del panel">
         <div class="admin-welcome-copy">
           <p class="admin-welcome-kicker">CENTRO DE CONTROL</p>
@@ -121,6 +164,87 @@
         </div>
       </section>
 
+      <section class="dashboard-overview" aria-label="Indicadores del catálogo">
+        <div class="dashboard-section-heading">
+          <div><p class="dashboard-eyebrow">VISTA GENERAL</p><h3>Resumen del catálogo</h3></div>
+          <span class="dashboard-updated"><span class="dashboard-live-dot"></span> Datos de Supabase</span>
+        </div>
+        <div class="dashboard-metrics">
+          <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label">Productos totales</span><strong id="dashboard-total">—</strong><small>En tu catálogo</small></article>
+          <article class="dashboard-metric metric-published"><span class="metric-icon">✓</span><span class="metric-label">Productos publicados</span><strong id="dashboard-published">—</strong><small>Visibles para clientes</small></article>
+          <article class="dashboard-metric metric-drafts"><span class="metric-icon">◷</span><span class="metric-label">No publicados</span><strong id="dashboard-drafts">—</strong><small>Borradores por revisar</small></article>
+          <article class="dashboard-metric metric-review"><span class="metric-icon">▧</span><span class="metric-label">Por revisar</span><strong id="dashboard-review">—</strong><small>Sin fotografía principal</small></article>
+        </div>
+        <div class="dashboard-content-grid">
+          <article class="dashboard-widget dashboard-chart-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">DISTRIBUCIÓN</p><h3>Estado de publicaciones</h3></div><span class="dashboard-widget-icon">◔</span></div>
+            <div class="dashboard-status-chart" role="img" aria-label="Distribución entre productos publicados y no publicados">
+              <div class="dashboard-chart-ring" id="dashboard-chart-ring"><div><strong id="dashboard-chart-total">—</strong><span>productos</span></div></div>
+              <div class="dashboard-chart-legend"><p><i class="legend-dot legend-published"></i><span>Publicados</span><strong id="dashboard-legend-published">—</strong></p><p><i class="legend-dot legend-drafts"></i><span>No publicados</span><strong id="dashboard-legend-drafts">—</strong></p></div>
+            </div>
+            <div class="dashboard-progress-track"><span id="dashboard-progress-published"></span></div>
+            <p class="dashboard-widget-note" id="dashboard-publication-summary">Los indicadores se actualizarán al cargar el inventario.</p>
+          </article>
+          <article class="dashboard-widget dashboard-tasks-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">SIGUIENTE PASO</p><h3>Tareas y alertas</h3></div><span class="dashboard-widget-icon">!</span></div>
+            <button class="dashboard-task-row" type="button" data-dashboard-action="drafts"><span class="dashboard-task-symbol task-symbol-amber">◷</span><span><strong>Revisar borradores</strong><small>Productos que aún no están publicados</small></span><b id="dashboard-task-drafts">0</b><span class="dashboard-task-arrow">›</span></button>
+            <button class="dashboard-task-row" type="button" data-dashboard-action="review"><span class="dashboard-task-symbol task-symbol-blue">▧</span><span><strong>Completar fotografías</strong><small>Productos sin imagen principal</small></span><b id="dashboard-task-images">0</b><span class="dashboard-task-arrow">›</span></button>
+            <div class="dashboard-task-footer"><span class="dashboard-live-dot"></span><span id="dashboard-task-status">Inventario sincronizado</span></div>
+          </article>
+          <article class="dashboard-widget dashboard-activity-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">MOVIMIENTOS</p><h3>Actividad reciente</h3></div><button id="dashboard-activity-refresh" class="dashboard-widget-icon dashboard-activity-refresh" type="button" aria-label="Actualizar actividad reciente" title="Actualizar actividad reciente"><span aria-hidden="true">↻</span></button></div>
+            <div id="dashboard-activity-list" class="dashboard-activity-list"><p class="dashboard-empty-state">La actividad aparecerá cuando haya productos cargados.</p></div>
+            <p id="dashboard-activity-refresh-status" class="dashboard-activity-refresh-status" role="status" aria-live="polite"></p>
+          </article>
+          <article class="dashboard-widget dashboard-quick-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">ATAJOS</p><h3>Accesos rápidos</h3></div><span class="dashboard-widget-icon">↗</span></div>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="add"><span class="quick-action-icon">＋</span><span><strong>Añadir producto</strong><small>Registrar un equipo nuevo</small></span><span>›</span></button>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="published"><span class="quick-action-icon">✓</span><span><strong>Ver publicados</strong><small>Administrar el catálogo visible</small></span><span>›</span></button>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="drafts"><span class="quick-action-icon">◷</span><span><strong>Ver no publicados</strong><small>Continuar productos pendientes</small></span><span>›</span></button>
+            <a class="dashboard-public-link" href="./index.html" target="_blank" rel="noopener"><span>↗</span> Abrir catálogo público</a>
+          </article>
+
+          <article class="dashboard-widget dashboard-analytics-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">INTERÉS DE CLIENTES</p><h3>Visitas y consultas</h3></div><span class="dashboard-widget-icon">↗</span></div>
+            <div class="dashboard-analytics-summary">
+              <div><span>Visitas a fichas</span><strong id="dashboard-views-total">—</strong></div>
+              <div><span>Clics en WhatsApp</span><strong id="dashboard-whatsapp-total">—</strong></div>
+            </div>
+            <p class="dashboard-widget-note" id="dashboard-analytics-note">Las estadísticas aparecerán cuando se registren visitas y consultas.</p>
+
+            <section class="dashboard-interest-chart-section" aria-labelledby="dashboard-interest-chart-title">
+              <div class="dashboard-interest-section-heading">
+                <div><p class="dashboard-eyebrow">COMBINACIONES</p><h4 id="dashboard-interest-chart-title">Qué versiones consultan</h4></div>
+                <span class="dashboard-interest-pill">WhatsApp</span>
+              </div>
+              <div class="dashboard-interest-chart-layout">
+                <div class="dashboard-interest-pie-wrap">
+                  <div id="dashboard-interest-pie" class="dashboard-interest-pie" role="img" aria-label="Aún no hay clics de WhatsApp registrados."><span class="dashboard-interest-pie-total" id="dashboard-interest-pie-total">0</span><small>clics</small></div>
+                </div>
+                <div id="dashboard-interest-legend" class="dashboard-interest-legend"><p class="dashboard-empty-state">El gráfico aparecerá cuando haya consultas por WhatsApp.</p></div>
+              </div>
+            </section>
+
+            <div class="dashboard-interest-rankings">
+              <section class="dashboard-interest-ranking">
+                <div class="dashboard-interest-section-heading"><div><p class="dashboard-eyebrow">COLOR</p><h4>Más consultados</h4></div></div>
+                <div id="dashboard-interest-colors" class="dashboard-interest-rank-list"><p class="dashboard-empty-state">Todavía no hay datos de colores.</p></div>
+              </section>
+              <section class="dashboard-interest-ranking">
+                <div class="dashboard-interest-section-heading"><div><p class="dashboard-eyebrow">RAM / ROM</p><h4>Configuraciones más pedidas</h4></div></div>
+                <div id="dashboard-interest-configs" class="dashboard-interest-rank-list"><p class="dashboard-empty-state">Todavía no hay datos de configuraciones.</p></div>
+              </section>
+            </div>
+
+            <div class="dashboard-interest-products-heading"><h4>Teléfonos con más interés</h4><span>Visitas / WhatsApp</span></div>
+            <div class="dashboard-top-products" id="dashboard-top-products"><p class="dashboard-empty-state">Aún no hay datos de visitas.</p></div>
+          </article>
+        </div>
+      </section>
+
+      </div>
+
+      <section id="admin-section-add" class="admin-nav-panel hidden" data-admin-panel="add">
       <div class="admin-layout">
         <section class="admin-card product-editor">
           <div class="card-heading">
@@ -157,6 +281,7 @@
               <label>
                 Categoría <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-category" required>
+                  <option value="" disabled selected>Seleccionar categoría…</option>
                   <option value="Celulares">Celulares</option>
                   <option value="Laptops">Laptops</option>
                   <option value="Tablets">Tablets</option>
@@ -171,6 +296,7 @@
               <label>
                 Disponibilidad general <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-availability" required>
+                  <option value="" disabled selected>Seleccionar disponibilidad…</option>
                   <option value="available">Disponible</option>
                   <option value="on_order">Por pedido</option>
                   <option value="out_of_stock">Agotado temporalmente</option>
@@ -187,51 +313,49 @@
                 <span class="admin-input-unit"><span>C$</span><input id="product-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></span>
               </label>
 
-              <label>
-                Garantía en meses
-                <span class="admin-input-unit"><input id="product-warranty" type="number" min="0" max="120" step="1" inputmode="numeric"><span>meses</span></span>
-              </label>
-
-              <label class="span-2">
-                Especificaciones generales (una por línea: Nombre: valor)
-                <textarea id="product-specs"
-                          rows="5"></textarea>
-              </label>
-
-              <div class="span-2 admin-upload-field">
-                <label for="product-images">Fotografías generales del producto</label>
-                <input id="product-images" class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple>
-                <label class="admin-file-picker" for="product-images">
-                  <span class="admin-file-picker-icon" aria-hidden="true">＋</span>
-                  <span>Elegir fotografías</span>
+              <div class="warranty-specs-stack">
+                <label>
+                  Garantía en meses
+                  <span class="admin-input-unit"><input id="product-warranty" type="number" min="0" max="120" step="1" inputmode="numeric"><span>meses</span></span>
                 </label>
-                <p class="admin-file-summary" id="product-images-summary" aria-live="polite">Ninguna fotografía seleccionada</p>
-                <div class="admin-image-preview-grid" id="product-images-preview" aria-live="polite"></div>
-                <small>Podés seleccionar varias fotografías. Máximo recomendado: 8 MB por fotografía.</small>
-              </div><section class="span-2 variants-editor-section"
+                <label class="admin-specs-field">
+                  Características y especificaciones.
+                  <textarea id="product-specs" rows="2"></textarea>
+                </label>
+              </div>
+
+              <div class="admin-add-color-slot">
+                <div class="admin-add-color-heading">
+                  <span class="admin-add-color-caption">Colores del producto</span>
+                  <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Añadir color</button>
+                </div>
+                <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden>
+                  <label class="quick-color-search-label">Buscar por nombre o código HEX
+                    <input id="quick-color-search" type="search" placeholder="Ej. Azul, #315A91 o #0833A2" autocomplete="off" aria-label="Buscar color por nombre o código HEX">
+                  </label>
+                  <div id="quick-color-swatches" class="quick-color-swatches"></div>
+                </div>
+                <div id="base-color-manager" class="base-color-manager" aria-label="Colores configurados"></div>
+                <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
+              </div>
+
+<section class="span-2 variants-editor-section"
                        aria-labelledby="variants-editor-title">
                 <div class="variants-editor-heading">
-                  <div>
+                  <div class="variants-editor-copy">
                     <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
                     <p>
-                      La configuración base usa el precio del producto. Añadí sus colores y marcá la disponibilidad de cada uno. Si cambia la capacidad o la RAM, creá otra configuración.
+                      Usá esta sección únicamente cuando cambie la capacidad de almacenamiento o la memoria RAM. Los colores se administran en el formulario principal.
                     </p>
                   </div>
-                  <div class="variants-editor-actions">
-                    <button id="add-base-color-button" class="button button-outline" type="button">＋ Añadir color</button>
+                  <div class="variants-editor-actions" aria-label="Acciones para variantes">
                     <button id="add-variant-button" class="button button-outline" type="button">＋ Añadir capacidad / RAM</button>
                   </div>
                 </div>
 
-                <div class="variant-palette-note">
-                  <span aria-hidden="true">◉</span>
-                  Elegí un color de la paleta o personalizá su nombre y tono.
-                  Podés indicar si esa combinación está disponible o es por pedido.
-                </div>
-
                 <div id="product-variants-list" class="product-variants-list">
                   <p class="variants-empty-hint">
-                    Añadí los colores disponibles para la configuración base.
+                    No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.
                   </p>
                 </div>
               </section>
@@ -271,25 +395,26 @@
           </form>
         </section>
 
-        <section class="admin-card product-list-card">
-          <div class="card-heading">
-            <div>
-              <h2>Productos guardados</h2>
-              <p id="product-count">Consultando inventario…</p>
-            </div>
-          </div>
-
-          <label class="search-box admin-search">
-            <span aria-hidden="true">⌕</span>
-            <input id="admin-search"
-                   type="search"
-                   aria-label="Buscar inventario">
-          </label>
-
-          <div id="admin-product-list" class="admin-product-list"></div>
-        </section>
       </div>
+      </section>
 
+      <section id="admin-section-published" class="admin-nav-panel hidden" data-admin-panel="published">
+        <section class="admin-card product-list-card">
+          <div class="card-heading"><div><h2>Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados" placeholder="Buscar producto publicado"></label>
+          <div id="published-product-list" class="admin-product-list"></div>
+        </section>
+      </section>
+
+      <section id="admin-section-drafts" class="admin-nav-panel hidden" data-admin-panel="drafts">
+        <section class="admin-card product-list-card">
+          <div class="card-heading"><div><h2>Productos no publicados</h2><p id="draft-count">Consultando borradores…</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
+          <div id="draft-product-list" class="admin-product-list"></div>
+        </section>
+      </section>
+
+      <div class="admin-nav-panel" data-admin-panel="home">
       <section class="admin-card team-preview-card"
                aria-labelledby="team-preview-title">
         <div class="team-preview-heading">
@@ -348,6 +473,7 @@
 
         <p id="import-status" class="form-status" role="status"></p>
       </section>
+      </div>
     </section>
   </main>
 

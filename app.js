@@ -18,6 +18,29 @@ let supabase = null;
 let products = [];
 let selectedCategory = "all";
 
+// Analytics: record product views and WhatsApp intent, including the selected variant.
+async function recordCatalogEvent(productId, eventType, variant = {}) {
+  if (!supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
+
+  const cleanValue = value => {
+    const normalized = String(value ?? "").trim();
+    return normalized || null;
+  };
+
+  try {
+    const { error } = await supabase.from("catalog_events").insert({
+      product_id: productId,
+      event_type: eventType,
+      variant_color: cleanValue(variant.color),
+      variant_ram: cleanValue(variant.ram),
+      variant_storage: cleanValue(variant.storage)
+    });
+    if (error) console.warn("No se pudo registrar el evento de analítica:", error.message);
+  } catch (error) {
+    console.warn("No se pudo registrar el evento de analítica.", error);
+  }
+}
+
 const hasSupabaseConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
 
 if (hasSupabaseConfig) {
@@ -162,8 +185,7 @@ function getProductImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
 
-  return [...list, product?.image_url]
-    .filter(value => typeof value === "string" && value.trim());
+  return [...new Set([...list, product?.image_url].filter(value => typeof value === "string" && value.trim()))];
 }
 
 function getProductVariants(product) {
@@ -189,7 +211,8 @@ function getProductVariants(product) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
       availability: item.availability === "order" ? "order" : item.availability === "out_of_stock" ? "out_of_stock" : "available",
-      image_url: String(item.image_url || item.imageUrl || "").trim()
+      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
+      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
     };
   }).filter(item => item && (item.storage || item.ram || item.color))
     .sort((left, right) => {
@@ -546,7 +569,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
     variants.forEach(variant => {
       const storage = String(variant.storage || "").trim();
       const ram = String(variant.ram || "").trim();
-      const label = storage && ram ? `${storage} / ${ram}` : storage || ram;
+      const label = storage && ram ? `${storage} / ${ram}` : storage || ram || "Estándar";
       const key = `${storage.toLocaleLowerCase("es")}| ${ram.toLocaleLowerCase("es")}`;
       if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram}); }
     });
@@ -613,6 +636,10 @@ function renderVariantControls(product, variants, selected) {
   const area = $("#variant-options-area");
   if (!area || !selected) return;
 
+  dialogContent.dataset.analyticsVariantColor = String(selected.color || "");
+  dialogContent.dataset.analyticsVariantRam = String(selected.ram || "");
+  dialogContent.dataset.analyticsVariantStorage = String(selected.storage || "");
+
   const configuration = [
     selected.storage,
     selected.ram,
@@ -653,12 +680,33 @@ function renderVariantControls(product, variants, selected) {
   `;
 
   const dialogImage = $("#dialog-image");
-
   if (dialogImage) {
-    const chosenImage = selected.image_url || getProductImages(product)[0] || "";
-
-    dialogImage.innerHTML = chosenImage
-      ? `<img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'">`
+    const chosenImages = selected.images?.length
+      ? selected.images
+      : selected.image_url
+        ? [selected.image_url]
+        : getProductImages(product);
+    dialogImage.innerHTML = chosenImages.length
+      ? `
+        <div class="dialog-gallery-main">
+          <img id="dialog-main-image" class="dialog-main-image"
+               src="${escapeHtml(chosenImages[0])}"
+               alt="${escapeHtml(`${product.name} ${configuration}`)}"
+               loading="eager" decoding="async">
+        </div>
+        ${chosenImages.length > 1
+          ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
+              ${chosenImages.map((url, index) => `
+                <button type="button"
+                        class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
+                        data-gallery-image="${escapeHtml(url)}"
+                        aria-label="Ver fotografía ${index + 1}">
+                  <img src="${escapeHtml(url)}" alt="" loading="lazy">
+                </button>
+              `).join("")}
+            </div>`
+          : ""}
+      `
       : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
   }
 }
@@ -688,6 +736,7 @@ function renderLegacyColorOptions(product) {
                 ${escapeHtml(colorStatusLabel(color.type))}
               </span>
               <a href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product, null, color)))}"
+                 data-analytics-color="${escapeHtml(color.name)}"
                  target="_blank"
                  rel="noopener">Consultar este color ↗</a>
             </div>
@@ -698,7 +747,37 @@ function renderLegacyColorOptions(product) {
   `;
 }
 
+dialogContent.addEventListener("click", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  const whatsappLink = target?.closest('a[href*="wa.me"], a[href*="api.whatsapp.com"]');
+  if (whatsappLink) {
+    const product = products.find(item => String(item.id) === String(dialogContent.dataset.analyticsProductId));
+    if (product) {
+      recordCatalogEvent(product.id, "whatsapp_click", {
+        color: whatsappLink.dataset.analyticsColor || dialogContent.dataset.analyticsVariantColor || "",
+        ram: whatsappLink.dataset.analyticsRam || dialogContent.dataset.analyticsVariantRam || "",
+        storage: whatsappLink.dataset.analyticsStorage || dialogContent.dataset.analyticsVariantStorage || ""
+      });
+    }
+  }
+  const thumbnail = target?.closest("[data-gallery-image]");
+  if (!thumbnail) return;
+  const mainImage = dialogContent.querySelector("#dialog-main-image");
+  if (mainImage) {
+    mainImage.src = thumbnail.dataset.galleryImage;
+    mainImage.style.visibility = "visible";
+  }
+  dialogContent.querySelectorAll("[data-gallery-image]").forEach(button => {
+    button.classList.toggle("active", button === thumbnail);
+  });
+});
+
 function openProduct(product) {
+  dialogContent.dataset.analyticsProductId = String(product.id);
+  dialogContent.dataset.analyticsVariantColor = "";
+  dialogContent.dataset.analyticsVariantRam = "";
+  dialogContent.dataset.analyticsVariantStorage = "";
+  recordCatalogEvent(product.id, "view");
   const variants = getProductVariants(product);
   const specs = specsArray(product.specifications);
   const initialImage = getProductImages(product)[0] || "";
