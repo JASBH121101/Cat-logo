@@ -5008,3 +5008,287 @@ html[data-theme="dark"] body.admin-body .dashboard-activity-refresh-status {
     animation: none;
   }
 }
+
+
+/* Interés de clientes: gráfico de pastel animado y rankings por variante. */
+body.admin-body {
+  --interest-slice-1: #4b76ff;
+  --interest-slice-2: #8b5cf6;
+  --interest-slice-3: #10b981;
+  --interest-slice-4: #f59e0b;
+  --interest-slice-5: #ec4899;
+  --interest-slice-6: #06b6d4;
+  --interest-pie-empty: #dce5f8;
+}
+body.admin-body .dashboard-analytics-widget {
+  display: grid;
+  gap: 16px;
+}
+body.admin-body .dashboard-interest-chart-section {
+  padding: 17px;
+  border: 1px solid var(--line, rgba(130,155,200,.22));
+  border-radius: 16px;
+  background: linear-gradient(140deg, var(--card, #fff), var(--card-2, #f5f8ff));
+}
+body.admin-body .dashboard-interest-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+body.admin-body .dashboard-interest-section-heading h4,
+body.admin-body .dashboard-interest-products-heading h4 {
+  margin: 3px 0 0;
+  color: var(--text, #17264c);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: .98rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+body.admin-body .dashboard-interest-pill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid var(--line, #dce6fa);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--muted, #6a7ba0);
+  background: var(--soft-accent, #edf0ff);
+  font-size: .68rem;
+  font-weight: 700;
+}
+body.admin-body .dashboard-interest-chart-layout {
+  display: grid;
+  grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 20px;
+}
+body.admin-body .dashboard-interest-pie-wrap {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 7px 0;
+}
+body.admin-body .dashboard-interest-pie {
+  display: grid;
+  position: relative;
+  width: clamp(138px, 16vw, 174px);
+  aspect-ratio: 1;
+  place-content: center;
+  justify-items: center;
+  border: 5px solid color-mix(in srgb, var(--card, #fff) 85%, transparent);
+  border-radius: 50%;
+  background: var(--interest-pie-empty);
+  box-shadow: 0 9px 22px rgba(39, 64, 128, .13), 0 0 0 1px var(--line, #dce6fa);
+  color: var(--text, #17264c);
+  line-height: 1;
+  transition: background .35s ease, box-shadow .25s ease;
+}
+body.admin-body .dashboard-interest-pie::before {
+  content: "";
+  position: absolute;
+  inset: 27%;
+  border: 1px solid var(--line, #dce6fa);
+  border-radius: 50%;
+  background: var(--card, #fff);
+  box-shadow: 0 2px 12px rgba(28, 49, 100, .12);
+}
+body.admin-body .dashboard-interest-pie > span,
+body.admin-body .dashboard-interest-pie > small {
+  position: relative;
+  z-index: 1;
+}
+body.admin-body .dashboard-interest-pie.is-animated {
+  animation: dashboard-interest-pie-in .72s cubic-bezier(.2,.75,.25,1) both;
+}
+body.admin-body .dashboard-interest-pie-total {
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: -.06em;
+}
+body.admin-body .dashboard-interest-pie small {
+  margin-top: 5px;
+  color: var(--muted, #6a7ba0);
+  font-size: .72rem;
+  font-weight: 700;
+}
+body.admin-body .dashboard-interest-legend {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+body.admin-body .dashboard-interest-legend-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+body.admin-body .dashboard-interest-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--interest-slice-1);
+}
+body.admin-body .dashboard-interest-legend-row .interest-slice-1 { background: var(--interest-slice-1); }
+body.admin-body .dashboard-interest-legend-row .interest-slice-2 { background: var(--interest-slice-2); }
+body.admin-body .dashboard-interest-legend-row .interest-slice-3 { background: var(--interest-slice-3); }
+body.admin-body .dashboard-interest-legend-row .interest-slice-4 { background: var(--interest-slice-4); }
+body.admin-body .dashboard-interest-legend-row .interest-slice-5 { background: var(--interest-slice-5); }
+body.admin-body .dashboard-interest-legend-row .interest-slice-6 { background: var(--interest-slice-6); }
+body.admin-body .dashboard-interest-legend-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text, #263963);
+  font-size: .76rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.admin-body .dashboard-interest-legend-row > strong {
+  color: var(--text, #17264c);
+  font-size: .78rem;
+  font-weight: 700;
+}
+body.admin-body .dashboard-interest-legend-row > small {
+  min-width: 31px;
+  color: var(--muted, #6a7ba0);
+  font-size: .68rem;
+  text-align: right;
+}
+body.admin-body .dashboard-interest-rankings {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 14px;
+}
+body.admin-body .dashboard-interest-ranking {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line, #dce6fa);
+  border-radius: 14px;
+  background: var(--card, #fff);
+}
+body.admin-body .dashboard-interest-ranking .dashboard-interest-section-heading {
+  margin-bottom: 10px;
+}
+body.admin-body .dashboard-interest-ranking .dashboard-interest-section-heading h4 {
+  font-size: .86rem;
+}
+body.admin-body .dashboard-interest-rank-list {
+  display: grid;
+  gap: 12px;
+}
+body.admin-body .dashboard-interest-rank-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+body.admin-body .dashboard-interest-rank-main {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+body.admin-body .dashboard-interest-rank-main > strong {
+  overflow: hidden;
+  color: var(--text, #17264c);
+  font-size: .73rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.admin-body .dashboard-interest-rank-row > b {
+  color: var(--text, #17264c);
+  font-size: .76rem;
+}
+body.admin-body .dashboard-interest-rank-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line, #dce6fa);
+}
+body.admin-body .dashboard-interest-rank-track > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--interest-slice-1), var(--interest-slice-2));
+  animation: dashboard-interest-bar-in .7s ease both;
+}
+body.admin-body .dashboard-interest-products-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 2px;
+}
+body.admin-body .dashboard-interest-products-heading > h4 {
+  margin: 0;
+}
+body.admin-body .dashboard-interest-products-heading > span {
+  color: var(--muted, #6a7ba0);
+  font-size: .68rem;
+}
+html[data-theme="light"] body.admin-body {
+  --interest-slice-1: #4978ff;
+  --interest-slice-2: #8b5cf6;
+  --interest-slice-3: #10b981;
+  --interest-slice-4: #f59e0b;
+  --interest-slice-5: #ed4899;
+  --interest-slice-6: #06a6c9;
+  --interest-pie-empty: linear-gradient(135deg, #e8eeff, #dbe8ff);
+}
+html[data-theme="dark"] body.admin-body {
+  --interest-slice-1: #37c9ff;
+  --interest-slice-2: #a878ff;
+  --interest-slice-3: #20e0ac;
+  --interest-slice-4: #ffb347;
+  --interest-slice-5: #ff62be;
+  --interest-slice-6: #4b8dff;
+  --interest-pie-empty: linear-gradient(135deg, #142648, #171333);
+}
+html[data-theme="dark"] body.admin-body .dashboard-interest-chart-section {
+  border-color: rgba(68, 131, 239, .30);
+  background: linear-gradient(140deg, rgba(15, 29, 57, .94), rgba(10, 18, 39, .94));
+  box-shadow: inset 0 1px 0 rgba(156, 193, 255, .035);
+}
+html[data-theme="dark"] body.admin-body .dashboard-interest-ranking {
+  border-color: rgba(62, 119, 221, .30);
+  background: linear-gradient(145deg, rgba(13, 25, 51, .95), rgba(8, 15, 33, .96));
+}
+html[data-theme="dark"] body.admin-body .dashboard-interest-pie {
+  box-shadow: 0 9px 25px rgba(0,0,0,.26), 0 0 20px rgba(46, 137, 255, .12), 0 0 34px rgba(151, 62, 255, .07);
+}
+html[data-theme="dark"] body.admin-body .dashboard-interest-legend-label,
+html[data-theme="dark"] body.admin-body .dashboard-interest-legend-row > strong,
+html[data-theme="dark"] body.admin-body .dashboard-interest-rank-main > strong,
+html[data-theme="dark"] body.admin-body .dashboard-interest-rank-row > b,
+html[data-theme="dark"] body.admin-body .dashboard-interest-section-heading h4,
+html[data-theme="dark"] body.admin-body .dashboard-interest-products-heading h4 {
+  color: #eaf2ff;
+}
+html[data-theme="dark"] body.admin-body .dashboard-interest-legend-row > small,
+html[data-theme="dark"] body.admin-body .dashboard-interest-products-heading > span {
+  color: #94acd6;
+}
+@keyframes dashboard-interest-pie-in {
+  from { opacity: .45; transform: scale(.88) rotate(-10deg); filter: saturate(.7); }
+  to { opacity: 1; transform: scale(1) rotate(0); filter: saturate(1); }
+}
+@keyframes dashboard-interest-bar-in {
+  from { transform: scaleX(.2); transform-origin: left; opacity: .5; }
+  to { transform: scaleX(1); transform-origin: left; opacity: 1; }
+}
+@media(max-width:760px) {
+  body.admin-body .dashboard-interest-chart-layout { grid-template-columns: minmax(0,1fr); gap: 13px; }
+  body.admin-body .dashboard-interest-pie { width: min(174px, 55vw); }
+  body.admin-body .dashboard-interest-legend { gap: 9px; }
+  body.admin-body .dashboard-interest-rankings { grid-template-columns: minmax(0,1fr); }
+}
+@media(prefers-reduced-motion:reduce) {
+  body.admin-body .dashboard-interest-pie.is-animated,
+  body.admin-body .dashboard-interest-rank-track > i {
+    animation: none !important;
+  }
+}
