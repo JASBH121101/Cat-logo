@@ -51,8 +51,7 @@
           <input id="login-email"
                  type="email"
                  autocomplete="username"
-                 required
-                 placeholder="tu-correo@ejemplo.com">
+                 required>
         </label>
 
         <label>
@@ -60,8 +59,7 @@
           <input id="login-password"
                  type="password"
                  autocomplete="current-password"
-                 required
-                 placeholder="Tu contraseña">
+                 required>
         </label>
 
         <button class="button button-primary" type="submit">
@@ -212,14 +210,17 @@
                           placeholder="Pantalla: ...&#10;Conectividad: ...&#10;Sistema: ..."></textarea>
               </label>
 
-              <label class="span-2">
-                Fotografías generales del producto
-                <input id="product-images"
-                       type="file"
-                       accept="image/jpeg,image/png,image/webp,image/avif"
-                       multiple>
-                <small>Máximo recomendado: 8 MB por fotografía.</small>
-              </label>
+              <div class="span-2 admin-upload-field">
+                <label for="product-images">Fotografías generales del producto</label>
+                <input id="product-images" class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple>
+                <label class="admin-file-picker" for="product-images">
+                  <span class="admin-file-picker-icon" aria-hidden="true">＋</span>
+                  <span>Elegir fotografías</span>
+                </label>
+                <p class="admin-file-summary" id="product-images-summary" aria-live="polite">Ninguna fotografía seleccionada</p>
+                <div class="admin-image-preview-grid" id="product-images-preview" aria-live="polite"></div>
+                <small>Podés seleccionar varias fotografías. Máximo recomendado: 8 MB por fotografía.</small>
+              </div>
 
               <label class="span-2">
                 URLs de fotografías existentes (una por línea)
