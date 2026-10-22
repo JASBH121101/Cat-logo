@@ -2899,3 +2899,19 @@ button:disabled {
 .password-visibility-button:hover { color:var(--ink); background:rgba(116,137,190,.12); border-color:rgba(116,137,190,.2); }
 .password-visibility-button:focus-visible { outline:2px solid #7188ef; outline-offset:2px; }
 .password-visibility-button svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+
+/* Compactación de campos, etiquetas y variantes agrupadas. */
+.required-mark { display:inline; margin-left:2px; color:#f04452; font-weight:800; }
+.variant-config-group { min-width:0; margin:0 0 14px; padding:12px; border:1px solid rgba(119,143,220,.34); border-radius:15px; background:rgba(89,112,194,.055); }
+.variant-config-group-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding:2px 2px 10px; border-bottom:1px solid rgba(119,143,220,.22); }
+.variant-config-group-heading > div { display:flex; flex-direction:column; gap:3px; }
+.variant-config-group-heading strong { color:var(--ink); font-size:14px; }
+.variant-config-group-heading small { color:var(--muted); font-size:11px; }
+.variant-color-list { display:grid; gap:10px; min-width:0; }
+.variant-color-list .variant-admin-row { margin:0; }
+.variant-config-group .variant-admin-row { padding:12px; }
+.variant-config-group .variant-row-title { gap:7px; }
+.variant-config-group .variant-row-title strong { font-size:13px; }
+.variant-config-group .variant-fields-grid { gap:11px; }
+@media (max-width:480px) { .variant-config-group { padding:9px; } .variant-config-group-heading { align-items:stretch; flex-direction:column; } .variant-config-group-heading .admin-mini-button { width:100%; } }
