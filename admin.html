@@ -129,6 +129,47 @@
         </div>
       </section>
 
+      <section class="dashboard-overview" aria-label="Indicadores del catálogo">
+        <div class="dashboard-section-heading">
+          <div><p class="dashboard-eyebrow">VISTA GENERAL</p><h3>Resumen del catálogo</h3></div>
+          <span class="dashboard-updated"><span class="dashboard-live-dot"></span> Datos de Supabase</span>
+        </div>
+        <div class="dashboard-metrics">
+          <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label">Productos totales</span><strong id="dashboard-total">—</strong><small>En tu catálogo</small></article>
+          <article class="dashboard-metric metric-published"><span class="metric-icon">✓</span><span class="metric-label">Productos publicados</span><strong id="dashboard-published">—</strong><small>Visibles para clientes</small></article>
+          <article class="dashboard-metric metric-drafts"><span class="metric-icon">◷</span><span class="metric-label">No publicados</span><strong id="dashboard-drafts">—</strong><small>Borradores por revisar</small></article>
+          <article class="dashboard-metric metric-review"><span class="metric-icon">▧</span><span class="metric-label">Por revisar</span><strong id="dashboard-review">—</strong><small>Sin fotografía principal</small></article>
+        </div>
+        <div class="dashboard-content-grid">
+          <article class="dashboard-widget dashboard-chart-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">DISTRIBUCIÓN</p><h3>Estado de publicaciones</h3></div><span class="dashboard-widget-icon">◔</span></div>
+            <div class="dashboard-status-chart" role="img" aria-label="Distribución entre productos publicados y no publicados">
+              <div class="dashboard-chart-ring" id="dashboard-chart-ring"><div><strong id="dashboard-chart-total">—</strong><span>productos</span></div></div>
+              <div class="dashboard-chart-legend"><p><i class="legend-dot legend-published"></i><span>Publicados</span><strong id="dashboard-legend-published">—</strong></p><p><i class="legend-dot legend-drafts"></i><span>No publicados</span><strong id="dashboard-legend-drafts">—</strong></p></div>
+            </div>
+            <div class="dashboard-progress-track"><span id="dashboard-progress-published"></span></div>
+            <p class="dashboard-widget-note" id="dashboard-publication-summary">Los indicadores se actualizarán al cargar el inventario.</p>
+          </article>
+          <article class="dashboard-widget dashboard-tasks-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">SIGUIENTE PASO</p><h3>Tareas y alertas</h3></div><span class="dashboard-widget-icon">!</span></div>
+            <button class="dashboard-task-row" type="button" data-dashboard-action="drafts"><span class="dashboard-task-symbol task-symbol-amber">◷</span><span><strong>Revisar borradores</strong><small>Productos que aún no están publicados</small></span><b id="dashboard-task-drafts">0</b><span class="dashboard-task-arrow">›</span></button>
+            <button class="dashboard-task-row" type="button" data-dashboard-action="review"><span class="dashboard-task-symbol task-symbol-blue">▧</span><span><strong>Completar fotografías</strong><small>Productos sin imagen principal</small></span><b id="dashboard-task-images">0</b><span class="dashboard-task-arrow">›</span></button>
+            <div class="dashboard-task-footer"><span class="dashboard-live-dot"></span><span id="dashboard-task-status">Inventario sincronizado</span></div>
+          </article>
+          <article class="dashboard-widget dashboard-activity-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">MOVIMIENTOS</p><h3>Actividad reciente</h3></div><span class="dashboard-widget-icon">↻</span></div>
+            <div id="dashboard-activity-list" class="dashboard-activity-list"><p class="dashboard-empty-state">La actividad aparecerá cuando haya productos cargados.</p></div>
+          </article>
+          <article class="dashboard-widget dashboard-quick-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">ATAJOS</p><h3>Accesos rápidos</h3></div><span class="dashboard-widget-icon">↗</span></div>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="add"><span class="quick-action-icon">＋</span><span><strong>Añadir producto</strong><small>Registrar un equipo nuevo</small></span><span>›</span></button>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="published"><span class="quick-action-icon">✓</span><span><strong>Ver publicados</strong><small>Administrar el catálogo visible</small></span><span>›</span></button>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="drafts"><span class="quick-action-icon">◷</span><span><strong>Ver no publicados</strong><small>Continuar productos pendientes</small></span><span>›</span></button>
+            <a class="dashboard-public-link" href="./index.html" target="_blank" rel="noopener"><span>↗</span> Abrir catálogo público</a>
+          </article>
+        </div>
+      </section>
+
       </div>
 
       <section id="admin-section-add" class="admin-nav-panel hidden" data-admin-panel="add">
