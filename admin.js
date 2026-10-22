@@ -537,7 +537,7 @@ function variantRowMarkup(variant = {}) {
  <label>Nombre del color <span class="required-mark" aria-hidden="true">*</span><input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}"></label>
  <label>Disponibilidad de este color<select data-variant-availability><option value="available" ${v.availability==="available"?"selected":""}>Disponible</option><option value="order" ${v.availability==="order"?"selected":""}>Por pedido</option><option value="out_of_stock" ${v.availability==="out_of_stock"?"selected":""}>No disponible</option></select></label>
  <label class="variant-hex-label">Tono del color<span class="variant-hex-control"><input data-variant-hex type="color" value="${v.color_hex}" aria-label="Elegir tono del color"><small>Ajustá el tono visualmente.</small></span></label>
- <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${v.image_url?`<img src="${escapeHtml(v.image_url)}" alt="Foto de ${escapeHtml(v.color||"la variante")}" loading="lazy"><span>Foto actual</span><button type="button" class="admin-mini-button danger" data-remove-variant-image>Quitar foto</button>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
+ <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${v.image_url?`<img src="${escapeHtml(v.image_url)}" alt="Foto de ${escapeHtml(v.color||"la variante")}" loading="lazy"><span>Foto actual</span><button type="button" class="admin-mini-button danger admin-preview-remove" data-remove-variant-image aria-label="Quitar foto" title="Quitar foto">×</button>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
  </div><p class="color-row-status" data-variant-status role="status"></p></article>`;
 }
 
@@ -630,7 +630,7 @@ function renderMainImagePreviews() {
     name.textContent = file.name;
     const size = document.createElement("small");
     size.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-    const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger admin-preview-remove";remove.textContent="Quitar";remove.setAttribute("aria-label",`Quitar ${file.name}`);remove.addEventListener("click",()=>removeMainImageFile(file));card.append(img,name,size,remove);
+    const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger admin-preview-remove";remove.textContent="×";remove.setAttribute("aria-label",`Quitar ${file.name}`);remove.setAttribute("title",`Quitar ${file.name}`);remove.addEventListener("click",()=>removeMainImageFile(file));card.append(img,name,size,remove);
     mainImagesPreview.append(card);
   });
 }
@@ -639,7 +639,7 @@ mainImagesInput?.addEventListener("change", renderMainImagePreviews);
 
 function renderVariantImagePreview(row,file=null,fallbackUrl=""){
  const preview=row?.querySelector("[data-variant-image-preview]");if(!preview)return;preview.replaceChildren();
- const addRemove=()=>{const b=document.createElement("button");b.type="button";b.className="admin-mini-button danger";b.textContent="Quitar foto";b.addEventListener("click",()=>{row.querySelector("[data-variant-image]").value="";row.querySelector("[data-variant-image-url]").value="";renderVariantImagePreview(row);updateEditorDirtyState();});preview.append(b);};
+ const addRemove=()=>{const b=document.createElement("button");b.type="button";b.className="admin-mini-button danger admin-preview-remove";b.textContent="×";b.setAttribute("aria-label","Quitar foto");b.setAttribute("title","Quitar foto");b.addEventListener("click",()=>{row.querySelector("[data-variant-image]").value="";row.querySelector("[data-variant-image-url]").value="";renderVariantImagePreview(row);updateEditorDirtyState();});preview.append(b);};
  if(file){const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt=`Vista previa de ${file.name}`;const cap=document.createElement("span");cap.textContent=file.name;preview.append(img,cap);addRemove();}
  else if(fallbackUrl){const img=document.createElement("img");img.src=fallbackUrl;img.alt="Foto actual de la variante";img.loading="lazy";const cap=document.createElement("span");cap.textContent="Foto actual";preview.append(img,cap);addRemove();}
  else{const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="La vista previa aparecerá aquí";preview.append(empty);}
