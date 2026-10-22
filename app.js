@@ -546,7 +546,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
     variants.forEach(variant => {
       const storage = String(variant.storage || "").trim();
       const ram = String(variant.ram || "").trim();
-      const label = storage && ram ? `${storage} / ${ram}` : storage || ram;
+      const label = storage && ram ? `${storage} / ${ram}` : storage || ram || "Estándar";
       const key = `${storage.toLocaleLowerCase("es")}| ${ram.toLocaleLowerCase("es")}`;
       if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram}); }
     });
