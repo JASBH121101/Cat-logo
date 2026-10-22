@@ -387,7 +387,7 @@ function renderCard(product) {
   const configurations = [...new Set(variants.map(variant => {
     const storage = String(variant.storage || "").trim();
     const ram = String(variant.ram || "").trim();
-    if (storage && ram) return `${/\\bram\\b/i.test(ram) ? ram : `${ram} RAM`} / ${storage}`;
+    if (storage && ram) return `${/\bram\b/i.test(ram) ? ram : `${ram} RAM`} / ${storage}`;
     return ram || storage;
   }).filter(Boolean))];
   const capacity = configurations[0] || "";
