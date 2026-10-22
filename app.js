@@ -162,8 +162,7 @@ function getProductImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
 
-  return [...list, product?.image_url]
-    .filter(value => typeof value === "string" && value.trim());
+  return [...new Set([...list, product?.image_url].filter(value => typeof value === "string" && value.trim()))];
 }
 
 function getProductVariants(product) {
@@ -189,7 +188,8 @@ function getProductVariants(product) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
       availability: item.availability === "order" ? "order" : item.availability === "out_of_stock" ? "out_of_stock" : "available",
-      image_url: String(item.image_url || item.imageUrl || "").trim()
+      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
+      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
     };
   }).filter(item => item && (item.storage || item.ram || item.color))
     .sort((left, right) => {
@@ -653,12 +653,33 @@ function renderVariantControls(product, variants, selected) {
   `;
 
   const dialogImage = $("#dialog-image");
-
   if (dialogImage) {
-    const chosenImage = selected.image_url || getProductImages(product)[0] || "";
-
-    dialogImage.innerHTML = chosenImage
-      ? `<img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(chosenImage)}" alt="${escapeHtml(`${product.name} ${configuration}`)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'">`
+    const chosenImages = selected.images?.length
+      ? selected.images
+      : selected.image_url
+        ? [selected.image_url]
+        : getProductImages(product);
+    dialogImage.innerHTML = chosenImages.length
+      ? `
+        <div class="dialog-gallery-main">
+          <img id="dialog-main-image" class="dialog-main-image"
+               src="${escapeHtml(chosenImages[0])}"
+               alt="${escapeHtml(`${product.name} ${configuration}`)}"
+               loading="eager" decoding="async">
+        </div>
+        ${chosenImages.length > 1
+          ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
+              ${chosenImages.map((url, index) => `
+                <button type="button"
+                        class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
+                        data-gallery-image="${escapeHtml(url)}"
+                        aria-label="Ver fotografía ${index + 1}">
+                  <img src="${escapeHtml(url)}" alt="" loading="lazy">
+                </button>
+              `).join("")}
+            </div>`
+          : ""}
+      `
       : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
   }
 }
@@ -697,6 +718,19 @@ function renderLegacyColorOptions(product) {
     </section>
   `;
 }
+
+dialogContent.addEventListener("click", event => {
+  const thumbnail = event.target.closest("[data-gallery-image]");
+  if (!thumbnail) return;
+  const mainImage = dialogContent.querySelector("#dialog-main-image");
+  if (mainImage) {
+    mainImage.src = thumbnail.dataset.galleryImage;
+    mainImage.style.visibility = "visible";
+  }
+  dialogContent.querySelectorAll("[data-gallery-image]").forEach(button => {
+    button.classList.toggle("active", button === thumbnail);
+  });
+});
 
 function openProduct(product) {
   const variants = getProductVariants(product);
