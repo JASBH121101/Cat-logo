@@ -714,6 +714,7 @@ function updateVariantRowHeadings() {
 
 /* Galerías editables: orden, portada y fotos múltiples por variante. */
 const variantsContainer = $("#product-variants-list");
+const baseColorManager = $("#base-color-manager");
 const mainImagesInput = $("#product-images"), mainImagesPreview = $("#product-images-preview"), mainImagesSummary = $("#product-images-summary");
 let mainImageItems = [], draggingMainImageId = null, draggingVariantImage = null;
 const imageId = () => crypto.randomUUID();
@@ -797,7 +798,8 @@ quickColorPalette?.addEventListener("click", event => {
   const color = choice.dataset.quickColor || "";
   const hex = choice.dataset.quickColorHex || "#242424";
   const container = $("#product-variants-list");
-  if (!container) return;
+  const colorManager = $("#base-color-manager");
+  if (!container || !colorManager) return;
 
   let baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
   if (!baseGroup) {
