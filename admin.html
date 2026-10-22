@@ -192,8 +192,9 @@
             <div class="dashboard-task-footer"><span class="dashboard-live-dot"></span><span id="dashboard-task-status">Inventario sincronizado</span></div>
           </article>
           <article class="dashboard-widget dashboard-activity-widget">
-            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">MOVIMIENTOS</p><h3>Actividad reciente</h3></div><span class="dashboard-widget-icon">↻</span></div>
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">MOVIMIENTOS</p><h3>Actividad reciente</h3></div><button id="dashboard-activity-refresh" class="dashboard-widget-icon dashboard-activity-refresh" type="button" aria-label="Actualizar actividad reciente" title="Actualizar actividad reciente"><span aria-hidden="true">↻</span></button></div>
             <div id="dashboard-activity-list" class="dashboard-activity-list"><p class="dashboard-empty-state">La actividad aparecerá cuando haya productos cargados.</p></div>
+            <p id="dashboard-activity-refresh-status" class="dashboard-activity-refresh-status" role="status" aria-live="polite"></p>
           </article>
           <article class="dashboard-widget dashboard-quick-widget">
             <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">ATAJOS</p><h3>Accesos rápidos</h3></div><span class="dashboard-widget-icon">↗</span></div>
