@@ -1265,7 +1265,7 @@ document.querySelectorAll("[data-admin-section]").forEach(button => button.addEv
 
 async function loadProducts() {
   if (!supabase || !currentUser) {
-    return;
+    return false;
   }
 
   const { data, error } = await supabase
@@ -1279,7 +1279,7 @@ async function loadProducts() {
       "error"
     );
 
-    return;
+    return false;
   }
 
   products = data || [];
@@ -1287,7 +1287,7 @@ async function loadProducts() {
   renderAdminList();
   renderDashboardOverview();
   await loadCatalogAnalytics();
-
+  return true;
 }
 
 async function loadCatalogAnalytics() {
@@ -1332,6 +1332,44 @@ async function loadCatalogAnalytics() {
     return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">'+(index+1)+'</span><div class="dashboard-top-product-info"><strong>'+name+'</strong><small>Interés registrado</small></div><div class="dashboard-top-product-stats"><span>👁 <b>'+stats.views+'</b> visitas</span><span>↗ <b>'+stats.clicks+'</b> clics</span></div></div>';
   }).join("") : '<p class="dashboard-empty-state">Publicá productos para ver aquí su rendimiento.</p>';
 }
+
+
+/* Actualizar actividad reciente y los indicadores a partir de los datos actuales. */
+const dashboardActivityRefresh = document.getElementById("dashboard-activity-refresh");
+dashboardActivityRefresh?.addEventListener("click", async () => {
+  if (dashboardActivityRefresh.disabled) return;
+
+  const status = document.getElementById("dashboard-activity-refresh-status");
+  if (!supabase || !currentUser) {
+    if (status) status.textContent = "Iniciá sesión para actualizar la actividad.";
+    return;
+  }
+
+  dashboardActivityRefresh.disabled = true;
+  dashboardActivityRefresh.classList.add("is-refreshing");
+  dashboardActivityRefresh.setAttribute("aria-busy", "true");
+  dashboardActivityRefresh.setAttribute("aria-label", "Actualizando actividad reciente");
+  dashboardActivityRefresh.title = "Actualizando actividad…";
+  if (status) status.textContent = "Actualizando actividad…";
+
+  try {
+    const refreshed = await loadProducts();
+    if (status) {
+      status.textContent = refreshed
+        ? "Actividad actualizada."
+        : "No se pudo actualizar la actividad. Revisá el aviso del panel.";
+    }
+  } catch (error) {
+    if (status) status.textContent = "No se pudo actualizar la actividad. Revisá el aviso del panel.";
+    console.warn("No se pudo actualizar la actividad reciente:", error);
+  } finally {
+    dashboardActivityRefresh.disabled = false;
+    dashboardActivityRefresh.classList.remove("is-refreshing");
+    dashboardActivityRefresh.removeAttribute("aria-busy");
+    dashboardActivityRefresh.setAttribute("aria-label", "Actualizar actividad reciente");
+    dashboardActivityRefresh.title = "Actualizar actividad reciente";
+  }
+});
 
 function renderDashboardOverview() {
   const published = products.filter(product => Boolean(product.is_published));
