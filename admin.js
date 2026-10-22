@@ -2,672 +2,6 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 /* =========================================================
    CT ADMINISTRACIÓN
-   Inicio de sesión, inventario y variantes
-   ========================================================= */
-
-const CONFIG = window.CATALOG_CONFIG || {};
-const $ = selector => document.querySelector(selector);
-
-const configured = Boolean(
-  CONFIG.supabaseUrl &&
-  CONFIG.supabaseAnonKey &&
-  !String(CONFIG.supabaseUrl).includes("PON_AQUI") &&
-  !String(CONFIG.supabaseAnonKey).includes("PON_AQUI")
-);
-
-const loginPanel = $("#login-panel");
-const dashboard = $("#dashboard");
-const form = $("#product-form");
-
-let currentUser = null;
-let products = [];
-let editorDirty = false;
-let initialFormSnapshot = "";
-
-const ADMIN_PAGE_MARKER = "ct-admin-page-has-loaded";
-
-function authStorageKey() {
-  try {
-    const projectRef = new URL(CONFIG.supabaseUrl)
-      .hostname.split(".")[0];
-
-    return `sb-${projectRef}-auth-token`;
-  } catch {
-    return null;
-  }
-}
-
-/*
-  Al recargar, se elimina la sesión local antes de crear el
-  cliente Supabase. La primera carga de la pestaña no la elimina.
-*/
-function clearSessionOnReload() {
-  try {
-    const previousLoad =
-      sessionStorage.getItem(ADMIN_PAGE_MARKER) === "1";
-
-    if (previousLoad) {
-      const key = authStorageKey();
-
-      if (key) {
-        sessionStorage.removeItem(key);
-        localStorage.removeItem(key);
-      }
-    }
-
-    sessionStorage.setItem(ADMIN_PAGE_MARKER, "1");
-  } catch (error) {
-    console.warn("No se pudo comprobar la sesión anterior.", error);
-  }
-}
-
-clearSessionOnReload();
-
-/* Elimina posibles sesiones persistentes de una versión anterior. */
-try {
-  const oldKey = authStorageKey();
-
-  if (oldKey) {
-    localStorage.removeItem(oldKey);
-  }
-} catch (error) {
-  console.warn("No se pudo limpiar la sesión anterior.", error);
-}
-
-const supabase = configured
-  ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
-      auth: {
-        storage: sessionStorage,
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
-  : null;
-
-/* =========================================================
-   UTILIDADES
-   ========================================================= */
-
-function escapeHtml(value = "") {
-  return String(value).replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
-}
-
-function message(selector, text, type = "") {
-  const node = typeof selector === "string"
-    ? $(selector)
-    : selector;
-
-  if (!node) return;
-
-  node.textContent = text;
-  node.className = `form-status${type ? ` ${type}` : ""}`;
-}
-
-function setStatus(text, type = "") {
-  const node = $("#admin-status");
-
-  if (!node) return;
-
-  node.textContent = text;
-  node.style.color =
-    type === "error" ? "#b42318" :
-    type === "success" ? "#087f5b" : "";
-}
-
-function slugify(value) {
-  return String(value || "producto")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 90) || "producto";
-}
-
-function parseJSON(value, fallback) {
-  if (typeof value !== "string") {
-    return value ?? fallback;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-
-function validHex(value, fallback = "#315A91") {
-  return /^#[0-9a-fA-F]{6}$/.test(String(value || ""))
-    ? value
-    : fallback;
-}
-
-function toOptionalNumber(value, label) {
-  if (value === "" || value === null || value === undefined) {
-    return null;
-  }
-
-  const number = Number(value);
-
-  if (!Number.isFinite(number) || number < 0) {
-    throw new Error(`${label} debe ser igual o mayor que cero.`);
-  }
-
-  return number;
-}
-
-function normalizeProductAvailability(value) {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-
-  if (["out_of_stock", "agotado", "agotado temporalmente"].includes(normalized)) {
-    return "out_of_stock";
-  }
-
-  if (["on_order", "por pedido"].includes(normalized)) {
-    return "on_order";
-  }
-
-  return "available";
-}
-
-function normalizeVariantAvailability(value) {
-  return ["order", "on_order", "por pedido"]
-    .includes(String(value || "").trim().toLowerCase())
-      ? "order"
-      : "available";
-}
-
-function parseSpecs(text) {
-  const result = {};
-
-  String(text || "")
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .forEach(line => {
-      const colon = line.indexOf(":");
-
-      if (colon > 0) {
-        result[line.slice(0, colon).trim()] =
-          line.slice(colon + 1).trim();
-      } else {
-        result[`Dato ${Object.keys(result).length + 1}`] = line;
-      }
-    });
-
-  return result;
-}
-
-function specsText(specs) {
-  specs = parseJSON(specs, {});
-
-  if (Array.isArray(specs)) {
-    return specs.map(item => {
-      if (typeof item === "string") return item;
-
-      if (item && typeof item === "object") {
-        return `${item.label || item.name || "Dato"}: ${item.value || ""}`;
-      }
-
-      return String(item ?? "");
-    }).join("\n");
-  }
-
-  if (specs && typeof specs === "object") {
-    return Object.entries(specs)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join("\n");
-  }
-
-  return "";
-}
-
-function getImages(product) {
-  const images = parseJSON(product?.images, []);
-  const list = Array.isArray(images) ? images : [];
-
-  return [...list, product?.image_url]
-    .filter(value => typeof value === "string" && value.trim());
-}
-
-function normalizeColors(value) {
-  const colors = parseJSON(value, []);
-
-  if (!Array.isArray(colors)) return [];
-
-  return colors.map(item => {
-    if (typeof item === "string") {
-      return {
-        name: item.trim(),
-        type: "available",
-        image_url: "",
-        color_hex: "#315A91"
-      };
-    }
-
-    if (!item || typeof item !== "object") return null;
-
-    return {
-      name: String(item.name || item.color || "").trim(),
-      type: normalizeVariantAvailability(item.type),
-      image_url: String(item.image_url || item.imageUrl || "").trim(),
-      color_hex: validHex(item.color_hex || item.hex)
-    };
-  }).filter(item => item && item.name);
-}
-
-function normalizeVariants(value) {
-  const variants = parseJSON(value, []);
-
-  if (!Array.isArray(variants)) return [];
-
-  return variants.map(item => {
-    if (!item || typeof item !== "object") return null;
-
-    const usd = item.price_usd == null || item.price_usd === ""
-      ? null
-      : Number(item.price_usd);
-
-    const nio = item.price_nio == null || item.price_nio === ""
-      ? null
-      : Number(item.price_nio);
-
-    return {
-      storage: String(item.storage || item.capacity || "").trim(),
-      ram: String(item.ram || "").trim(),
-      color: String(item.color || item.name || "").trim(),
-      color_hex: validHex(item.color_hex || item.hex),
-      price_usd: Number.isFinite(usd) ? usd : null,
-      price_nio: Number.isFinite(nio) ? nio : null,
-      availability: normalizeVariantAvailability(item.availability),
-      image_url: String(item.image_url || item.imageUrl || "").trim()
-    };
-  }).filter(item => item && (item.storage || item.ram || item.color));
-}
-
-function legacyVariants(product) {
-  const variants = normalizeVariants(product?.variants);
-
-  if (variants.length) return variants;
-
-  return normalizeColors(product?.colors).map(color => ({
-    storage: "",
-    ram: "",
-    color: color.name,
-    color_hex: color.color_hex,
-    price_usd: product?.price_usd ?? null,
-    price_nio: product?.price_nio ?? null,
-    availability: color.type,
-    image_url: color.image_url
-  }));
-}
-
-function minimumPrice(variants, field) {
-  const values = variants
-    .map(variant => variant[field])
-    .filter(value =>
-      value !== null &&
-      value !== undefined &&
-      value !== "" &&
-      Number.isFinite(Number(value))
-    )
-    .map(Number);
-
-  return values.length ? Math.min(...values) : null;
-}
-
-/* =========================================================
-   CAMBIOS PENDIENTES Y ADVERTENCIA AL SALIR
-   ========================================================= */
-
-function getFormSnapshot() {
-  if (!form) return "";
-
-  return Array.from(form.elements)
-    .filter(element =>
-      element.name ||
-      element.id
-    )
-    .map(element => {
-      const key = element.name || element.id;
-
-      if (element.type === "file") {
-        return [key, Array.from(element.files || []).map(file => ({
-          name: file.name,
-          size: file.size,
-          modified: file.lastModified
-        }))];
-      }
-
-      if (element.type === "checkbox" || element.type === "radio") {
-        return [key, element.checked];
-      }
-
-      return [key, element.value];
-    });
-}
-
-function snapshotString() {
-  return JSON.stringify(getFormSnapshot());
-}
-
-function markEditorClean() {
-  initialFormSnapshot = snapshotString();
-  editorDirty = false;
-}
-
-function hasUnsavedChanges() {
-  if (!form || dashboard.classList.contains("hidden")) {
-    return false;
-  }
-
-  return editorDirty || snapshotString() !== initialFormSnapshot;
-}
-
-form?.addEventListener("input", () => {
-  editorDirty = snapshotString() !== initialFormSnapshot;
-});
-
-form?.addEventListener("change", () => {
-  editorDirty = snapshotString() !== initialFormSnapshot;
-});
-
-/*
-  El navegador muestra su propia advertencia si hay cambios
-  pendientes. Si el usuario cancela, continúa en el panel.
-  Si confirma la salida, la nueva carga limpiará la sesión.
-*/
-window.addEventListener("beforeunload", event => {
-  if (!hasUnsavedChanges()) return;
-
-  event.preventDefault();
-  event.returnValue = "";
-});
-
-/* =========================================================
-   CIERRE LOCAL DE SESIÓN
-   ========================================================= */
-
-function clearLocalAuthStorage() {
-  try {
-    const key = authStorageKey();
-
-    if (key) {
-      sessionStorage.removeItem(key);
-      localStorage.removeItem(key);
-    }
-  } catch (error) {
-    console.warn("No se pudo limpiar el almacenamiento de sesión.", error);
-  }
-}
-
-async function signOutLocalSafely() {
-  try {
-    if (supabase) {
-      const { error } = await supabase.auth.signOut({
-        scope: "local"
-      });
-
-      if (error) {
-        console.warn("Supabase informó un error al cerrar sesión:", error.message);
-      }
-    }
-  } catch (error) {
-    console.warn("No se pudo cerrar la sesión:", error);
-  } finally {
-    clearLocalAuthStorage();
-  }
-}
-
-function clearLoginPassword() {
-  const password = $("#login-password");
-
-  if (password) {
-    password.value = "";
-    password.setCustomValidity("");
-  }
-}
-
-function showLoginScreen(statusText = "", type = "") {
-  currentUser = null;
-  products = [];
-
-  dashboard?.classList.add("hidden");
-  loginPanel?.classList.remove("hidden");
-
-  if (form) form.reset();
-
-  clearEditor();
-
-  if ($("#login-email")) {
-    $("#login-email").value = "";
-  }
-
-  clearLoginPassword();
-  setStatus("");
-  message("#login-status", statusText, type);
-}
-
-/* =========================================================
-   AUTORIZACIÓN DE ADMINISTRADORES
-   ========================================================= */
-
-async function confirmAdmin(user) {
-  if (!supabase || !user?.id) {
-    throw new Error("No se pudo verificar la sesión.");
-  }
-
-  const { data, error } = await supabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) throw error;
-
-  if (!data) {
-    throw new Error(
-      "El usuario inició sesión, pero no está autorizado en admin_users."
-    );
-  }
-
-  return true;
-}
-
-async function showDashboard(user) {
-  await confirmAdmin(user);
-
-  currentUser = user;
-
-  loginPanel.classList.add("hidden");
-  dashboard.classList.remove("hidden");
-
-  const metadata = user.user_metadata || {};
-  const greeting = $("#admin-greeting");
-
-  const displayName =
-    metadata.full_name ||
-    metadata.name ||
-    metadata.display_name ||
-    user.email?.split("@")[0] ||
-    "";
-
-  if (greeting) {
-    greeting.textContent = displayName
-      ? `¡Bienvenido de nuevo, ${displayName}! 👋`
-      : "¡Bienvenido de nuevo! 👋";
-  }
-
-  setStatus(`Sesión iniciada como ${user.email || "administrador"}`);
-
-  await loadProducts();
-  markEditorClean();
-}
-
-async function handleSession() {
-  if (!configured) {
-    message(
-      "#login-status",
-      "Falta configurar Supabase en config.js.",
-      "error"
-    );
-    return;
-  }
-
-  const { data, error } = await supabase.auth.getSession();
-
-  if (error) throw error;
-
-  if (!data.session) {
-    loginPanel.classList.remove("hidden");
-    dashboard.classList.add("hidden");
-    return;
-  }
-
-  try {
-    await showDashboard(data.session.user);
-  } catch (error) {
-    await signOutLocalSafely();
-
-    showLoginScreen(
-      error.message || "La sesión no está autorizada.",
-      "error"
-    );
-  }
-}
-
-/* =========================================================
-   INICIAR SESIÓN
-   ========================================================= */
-
-$("#login-form")?.addEventListener("submit", async event => {
-  event.preventDefault();
-
-  if (!supabase) {
-    message("#login-status", "Supabase no está configurado.", "error");
-    clearLoginPassword();
-    return;
-  }
-
-  const button = event.currentTarget.querySelector('button[type="submit"]');
-
-  button.disabled = true;
-  button.textContent = "Verificando…";
-
-  message("#login-status", "Comprobando acceso…");
-
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: $("#login-email").value.trim(),
-      password: $("#login-password").value
-    });
-
-    if (error) throw error;
-
-    await showDashboard(data.user);
-
-    message("#login-status", "Acceso autorizado.", "success");
-  } catch (error) {
-    await signOutLocalSafely();
-
-    dashboard.classList.add("hidden");
-    loginPanel.classList.remove("hidden");
-
-    clearLoginPassword();
-
-    message(
-      "#login-status",
-      error.message || "No se pudo iniciar sesión. Revisá tus datos.",
-      "error"
-    );
-
-    $("#login-password")?.focus();
-  } finally {
-    button.disabled = false;
-    button.textContent = "Iniciar sesión";
-  }
-});
-
-/* =========================================================
-   CERRAR SESIÓN CON CONFIRMACIÓN
-   ========================================================= */
-
-$("#logout-button")?.addEventListener("click", async event => {
-  event.preventDefault();
-
-  if (hasUnsavedChanges()) {
-    const leave = window.confirm(
-      "Hay cambios sin guardar en el formulario.\n\n" +
-      "Si cerrás sesión, podrías perderlos.\n\n" +
-      "¿Querés continuar?"
-    );
-
-    if (!leave) return;
-  } else {
-    const confirmed = window.confirm(
-      "¿Querés cerrar la sesión de administración?"
-    );
-
-    if (!confirmed) return;
-  }
-
-  const button = event.currentTarget;
-
-  button.disabled = true;
-  button.textContent = "Cerrando sesión…";
-
-  try {
-    await signOutLocalSafely();
-
-    showLoginScreen("Sesión cerrada correctamente.", "success");
-  } finally {
-    button.disabled = false;
-    button.textContent = "Cerrar sesión";
-  }
-});
-
-/* =========================================================
-   EDITOR DE VARIANTES ACTUAL
-   ========================================================= */
-
-const COLOR_PALETTE = [
-  { name: "Negro", hex: "#242424" },
-  { name: "Blanco", hex: "#F4F4F4" },
-  { name: "Plata", hex: "#C5C9D0" },
-  { name: "Gris", hex: "#777E8B" },
-  { name: "Grafito", hex: "#454952" },
-  { name: "Azul", hex: "#315A91" },
-  { name: "Azul claro", hex: "#78A9E8" },
-  { name: "Verde", hex: "#39785A" },
-  { name: "Verde menta", hex: "#8ECDB8" },
-  { name: "Dorado", hex: "#C8A45D" },
-  { name: "Champán", hex: "#D8C3A0" },
-  { name: "Morado", hex: "#7952A8" },
-  { name: "Rosa", hex: "#D986A7" },
-  { name: "Rojo", hex: "#C13A4B" },
-  { name: "Naranja", hex: "#DE783E" },
-  { name: "Amarillo", hex: "#E8C94B" }
-];
-
-function colorPaletteOptions(variant) {
-  const matching = COLOR_PALETTE.find(item =>
-    item.name.toLowerCase() === String(variant.color || "").toLowerCase() &&
-    item.hex.toLowerCase() === validHex(variant.color_hex).toLowerCase()
-  );
-
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-/* =========================================================
-   CT ADMINISTRACIÓN
    Sesión temporal por pestaña + inventario + variantes
    ========================================================= */
 
@@ -1520,6 +854,672 @@ async function showDashboard(user) {
 
   const displayName = String(profileName || emailName || "")
     .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part =>
+      part.charAt(0).toLocaleUpperCase("es") + part.slice(1)
+    )
+    .join(" ");
+
+  const greeting = $("#admin-greeting");
+
+  if (greeting) {
+    greeting.textContent = displayName
+      ? `¡Bienvenido de nuevo, ${displayName}! 👋`
+      : "¡Bienvenido de nuevo! 👋";
+  }
+
+  setStatus(
+    `Sesión iniciada como ${user.email || "administrador"}`
+  );
+
+  await loadProducts();
+}
+
+async function handleSession() {
+  if (!configured) {
+    message(
+      "#login-status",
+      "Falta configurar la URL y la clave publicable de Supabase en config.js.",
+      "error"
+    );
+
+    return;
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data.session) {
+    loginPanel.classList.remove("hidden");
+    dashboard.classList.add("hidden");
+    return;
+  }
+
+  try {
+    await showDashboard(data.session.user);
+  } catch (error) {
+    await signOutLocalSafely();
+
+    showLoginScreen(
+      error.message ||
+      "La sesión no está autorizada para administrar este catálogo.",
+      "error"
+    );
+  }
+}
+
+/* =========================================================
+   INICIO Y CIERRE DE SESIÓN
+   ========================================================= */
+
+$("#login-form")?.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!supabase) {
+    message(
+      "#login-status",
+      "Configurá primero Supabase en config.js.",
+      "error"
+    );
+
+    clearLoginPassword();
+    return;
+  }
+
+  const button = event.currentTarget.querySelector(
+    'button[type="submit"]'
+  );
+
+  button.disabled = true;
+  button.textContent = "Verificando…";
+
+  message("#login-status", "Comprobando acceso…");
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: $("#login-email").value.trim(),
+      password: $("#login-password").value
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    await showDashboard(data.user);
+
+    message(
+      "#login-status",
+      "Acceso autorizado.",
+      "success"
+    );
+  } catch (error) {
+    /*
+      Limpia cualquier sesión local si las credenciales fallan
+      o el usuario no está autorizado en admin_users.
+    */
+    await signOutLocalSafely();
+
+    dashboard.classList.add("hidden");
+    loginPanel.classList.remove("hidden");
+
+    /*
+      Conservamos el correo para que no tengás que escribirlo
+      nuevamente, pero borramos la contraseña incorrecta.
+    */
+    clearLoginPassword();
+
+    message(
+      "#login-status",
+      error.message || "No se pudo iniciar sesión. Revisá tus datos.",
+      "error"
+    );
+
+    $("#login-password")?.focus();
+  } finally {
+    button.disabled = false;
+    button.textContent = "Iniciar sesión";
+  }
+});
+
+$("#logout-button")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+
+  button.disabled = true;
+  button.textContent = "Cerrando sesión…";
+
+  await signOutLocalSafely();
+
+  showLoginScreen(
+    "Sesión cerrada correctamente.",
+    "success"
+  );
+
+  button.disabled = false;
+  button.textContent = "Cerrar sesión";
+});
+
+/* =========================================================
+   INVENTARIO: CONSULTAR Y LISTAR PRODUCTOS
+   ========================================================= */
+
+function minimumPrice(variants, field) {
+  const values = variants
+    .map(variant => variant[field])
+    .filter(value =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+    )
+    .map(Number);
+
+  return values.length ? Math.min(...values) : null;
+}
+
+async function loadProducts() {
+  if (!supabase || !currentUser) {
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    setStatus(
+      `No se pudo cargar el inventario: ${error.message}`,
+      "error"
+    );
+
+    return;
+  }
+
+  products = data || [];
+
+  renderAdminList();
+
+  $("#product-count").textContent =
+    `${products.length} producto${products.length === 1 ? "" : "s"} en la base de datos`;
+}
+
+function renderAdminList() {
+  const query = ($("#admin-search")?.value || "")
+    .trim()
+    .toLocaleLowerCase("es");
+
+  const matches = products.filter(product =>
+    [
+      product.name,
+      product.brand,
+      product.model,
+      product.category
+    ]
+      .join(" ")
+      .toLocaleLowerCase("es")
+      .includes(query)
+  );
+
+  $("#admin-product-list").innerHTML = matches.map(product => {
+    const image = getImages(product)[0];
+
+    const thumb = image
+      ? `<img class="admin-product-thumb"
+              src="${escapeHtml(image)}"
+              alt=""
+              loading="lazy">`
+      : `<div class="admin-product-thumb"
+              style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
+
+    const state = product.is_published
+      ? '<span class="status-pill published">Publicado</span>'
+      : '<span class="status-pill">Borrador</span>';
+
+    const variants = normalizeVariants(product.variants);
+
+    const variantCount = variants.length;
+
+    const variantLabel = variantCount
+      ? ` · ${variantCount} variante${variantCount === 1 ? "" : "s"}`
+      : "";
+
+    const price = minimumPrice(variants, "price_usd")
+      ?? product.price_usd;
+
+    const formattedPrice =
+      price === null || price === undefined || price === ""
+        ? "Consultar"
+        : `US$${Number(price).toLocaleString("en-US", {
+            maximumFractionDigits: 2
+          })}`;
+
+    return `
+      <article class="admin-product-row">
+        ${thumb}
+
+        <div>
+          <p class="admin-product-name">
+            ${escapeHtml(product.name)}
+          </p>
+
+          <div class="admin-product-meta">
+            ${escapeHtml(product.category || "Sin categoría")}
+            · ${escapeHtml(formattedPrice)}
+            ${variantLabel}
+            · ${state}
+          </div>
+
+          <div class="admin-product-buttons">
+            <button
+              class="admin-mini-button"
+              type="button"
+              data-edit="${escapeHtml(product.id)}"
+            >Editar</button>
+
+            <button
+              class="admin-mini-button"
+              type="button"
+              data-toggle="${escapeHtml(product.id)}"
+            >${product.is_published ? "Despublicar" : "Publicar"}</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("") ||
+    '<p class="form-status">No hay productos que coincidan con la búsqueda.</p>';
+}
+
+$("#admin-search")?.addEventListener("input", renderAdminList);
+
+$("#admin-product-list")?.addEventListener("click", async event => {
+  const edit = event.target.closest("[data-edit]");
+  const toggle = event.target.closest("[data-toggle]");
+
+  if (edit) {
+    const product = products.find(
+      item => String(item.id) === edit.dataset.edit
+    );
+
+    if (product) {
+      fillEditor(product);
+    }
+  }
+
+  if (!toggle) {
+    return;
+  }
+
+  const product = products.find(
+    item => String(item.id) === toggle.dataset.toggle
+  );
+
+  if (!product || !currentUser) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({
+        is_published: !product.is_published,
+        updated_at: new Date().toISOString(),
+        updated_by: currentUser.id
+      })
+      .eq("id", product.id);
+
+    if (error) {
+      throw error;
+    }
+
+    setStatus(
+      product.is_published
+        ? "Producto despublicado."
+        : "Producto publicado.",
+      "success"
+    );
+
+    await loadProducts();
+  } catch (error) {
+    setStatus(
+      `No se pudo cambiar la publicación: ${error.message}`,
+      "error"
+    );
+  }
+});
+
+/* =========================================================
+   FORMULARIO DE PRODUCTOS
+   ========================================================= */
+
+function clearEditor() {
+  if (!form) {
+    return;
+  }
+
+  form.reset();
+
+  $("#product-id").value = "";
+  $("#catalog-key").value = "";
+  $("#product-active").checked = false;
+  $("#product-featured").checked = false;
+
+  $("#product-financing").value =
+    "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
+
+  $("#existing-image-urls").value = "";
+  $("#product-images").value = "";
+
+  renderVariantRows([]);
+
+  $("#form-title").textContent = "Agregar producto";
+  $("#save-product-button").textContent = "Guardar producto";
+
+  message("#product-form-status", "");
+}
+
+function fillEditor(product) {
+  $("#product-id").value = product.id || "";
+  $("#catalog-key").value = product.catalog_key || "";
+
+  $("#product-name").value = product.name || "";
+  $("#product-brand").value = product.brand || "";
+  $("#product-model").value = product.model || "";
+
+  $("#product-category").value = product.category || "Otros";
+
+  $("#product-availability").value =
+    normalizeProductAvailability(product.availability);
+
+  $("#product-price-usd").value = product.price_usd ?? "";
+  $("#product-price-nio").value = product.price_nio ?? "";
+  $("#product-warranty").value = product.warranty_months ?? "";
+
+  $("#product-description").value = product.description || "";
+
+  $("#product-specs").value =
+    specsText(product.specifications);
+
+  $("#product-financing").value =
+    product.financing_note ||
+    "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
+
+  $("#product-shipping").value =
+    product.shipping_note || "";
+
+  $("#existing-image-urls").value =
+    getImages(product).join("\n");
+
+  $("#product-images").value = "";
+
+  renderVariantRows(legacyVariants(product));
+
+  $("#product-featured").checked = Boolean(product.featured);
+  $("#product-active").checked = Boolean(product.is_published);
+
+  $("#form-title").textContent = "Editar producto";
+  $("#save-product-button").textContent = "Guardar cambios";
+
+  message(
+    "#product-form-status",
+    `Editando: ${product.name}`
+  );
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+$("#new-product-button")?.addEventListener("click", clearEditor);
+$("#cancel-edit-button")?.addEventListener("click", clearEditor);
+
+/* =========================================================
+   ALMACENAMIENTO DE IMÁGENES
+   ========================================================= */
+
+async function uploadImage(productId, file, subfolder = "") {
+  if (!file) {
+    return "";
+  }
+
+  if (!file.type.startsWith("image/")) {
+    throw new Error(
+      `El archivo ${file.name} no parece una imagen.`
+    );
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error(
+      `${file.name} supera el límite recomendado de 8 MB.`
+    );
+  }
+
+  const safeName = slugify(
+    file.name.replace(/\.[^.]+$/, "")
+  );
+
+  const ext = (file.name.split(".").pop() || "jpg")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "") || "jpg";
+
+  const path =
+    `${productId}/${subfolder ? `${subfolder}/` : ""}${crypto.randomUUID()}-${safeName}.${ext}`;
+
+  const bucket = CONFIG.storageBucket || "product-images";
+
+  const { error } = await supabase
+    .storage
+    .from(bucket)
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: false
+    });
+
+  if (error) {
+    throw new Error(
+      `No se pudo subir ${file.name}: ${error.message}`
+    );
+  }
+
+  const { data } = supabase
+    .storage
+    .from(bucket)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+async function uploadMainImages(productId, files) {
+  const urls = [];
+
+  for (const file of files) {
+    urls.push(await uploadImage(productId, file));
+  }
+
+  return urls;
+}
+
+/* =========================================================
+   RECOPILAR Y VALIDAR VARIANTES
+   ========================================================= */
+
+async function collectVariants(productId, existingVariants = []) {
+  const rows = Array.from(
+    $("#product-variants-list")
+      ?.querySelectorAll("[data-variant-row]") || []
+  );
+
+  const drafts = rows.map((row, index) => {
+    const storage = row
+      .querySelector("[data-variant-storage]")
+      .value.trim();
+
+    const ram = row
+      .querySelector("[data-variant-ram]")
+      .value.trim();
+
+    const color = row
+      .querySelector("[data-variant-color]")
+      .value.trim();
+
+    const colorHex = validHex(
+      row.querySelector("[data-variant-hex]").value
+    );
+
+    const priceUSD = toOptionalNumber(
+      row.querySelector("[data-variant-price-usd]").value,
+      `Precio en dólares de la variante ${index + 1}`
+    );
+
+    const priceNIO = toOptionalNumber(
+      row.querySelector("[data-variant-price-nio]").value,
+      `Precio en córdobas de la variante ${index + 1}`
+    );
+
+    const availability =
+      normalizeVariantAvailability(
+        row.querySelector("[data-variant-availability]").value
+      );
+
+    const imageUrl = row
+      .querySelector("[data-variant-image-url]")
+      .value.trim();
+
+    const file =
+      row.querySelector("[data-variant-image]").files?.[0] || null;
+
+    if (!color) {
+      throw new Error(
+        `Completá el nombre del color en la variante ${index + 1}.`
+      );
+    }
+
+    return {
+      storage,
+      ram,
+      color,
+      color_hex: colorHex,
+      price_usd: priceUSD,
+      price_nio: priceNIO,
+      availability,
+      image_url: imageUrl,
+      file,
+      row
+    };
+  });
+
+  /*
+    Evita repetir una misma combinación de capacidad + RAM + color.
+    El mismo color puede aparecer con capacidades distintas.
+  */
+  const seen = new Set();
+
+  for (const variant of drafts) {
+    const key = [
+      variant.storage.toLocaleLowerCase("es"),
+      variant.ram.toLocaleLowerCase("es"),
+      variant.color.toLocaleLowerCase("es")
+    ].join("|");
+
+    if (seen.has(key)) {
+      throw new Error(
+        `La combinación ${[
+          variant.storage,
+          variant.ram,
+          variant.color
+        ].filter(Boolean).join(" · ")} está repetida.`
+      );
+    }
+
+    seen.add(key);
+  }
+
+  /*
+    Reutiliza fotografías ya guardadas para el mismo color.
+  */
+  const imageByColor = new Map();
+
+  normalizeVariants(existingVariants).forEach(variant => {
+    const key = variant.color.toLocaleLowerCase("es");
+
+    if (key && variant.image_url && !imageByColor.has(key)) {
+      imageByColor.set(key, variant.image_url);
+    }
+  });
+
+  for (const variant of drafts) {
+    const key = variant.color.toLocaleLowerCase("es");
+
+    const statusNode =
+      variant.row.querySelector("[data-variant-status]");
+
+    if (variant.file) {
+      if (statusNode) {
+        statusNode.textContent =
+          `Subiendo foto de ${variant.color}…`;
+      }
+
+      variant.image_url = await uploadImage(
+        productId,
+        variant.file,
+        "variants"
+      );
+
+      imageByColor.set(key, variant.image_url);
+    } else if (variant.image_url) {
+      imageByColor.set(key, variant.image_url);
+    } else if (imageByColor.has(key)) {
+      variant.image_url = imageByColor.get(key);
+    }
+  }
+
+  /*
+    Segunda pasada para reutilizar también imágenes subidas durante
+    esta misma operación.
+  */
+  for (const variant of drafts) {
+    const key = variant.color.toLocaleLowerCase("es");
+
+    if (!variant.image_url && imageByColor.has(key)) {
+      variant.image_url = imageByColor.get(key);
+    }
+  }
+
+  return drafts.map(({ file, row, ...variant }) => variant);
+}
+
+function deriveColorsFromVariants(variants, fallbackColors = []) {
+  if (!variants.length) {
+    return normalizeColors(fallbackColors);
+  }
+
+  const byColor = new Map();
+
+  variants.forEach(variant => {
+    const key = variant.color.toLocaleLowerCase("es");
+
+    if (!key) {
+      return;
+    }
+
+    const previous = byColor.get(key);
+
+    if (!previous) {
+      byColor.set(key, {
+        name: variant.color,
+        type: variant.availability,
+        image_url: variant.image_url || "",
+        color_hex: validHex(variant.color_hex)
+      });
+    } else {
+      if (variant.availability === "available") {
+        previous.type = "available";
+      }
+
       if (!previous.image_url && variant.image_url) {
         previous.image_url = variant.image_url;
       }
