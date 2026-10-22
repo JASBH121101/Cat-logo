@@ -3261,3 +3261,49 @@ html[data-theme="dark"] .admin-section-nav,
   .quick-color-dot { width: 20px; height: 20px; }
   .quick-color-name { font-size: 9px; }
 }
+
+
+/* Colores del producto: junto a garantía, independientes de variantes técnicas. */
+.admin-add-color-slot { align-self:stretch; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:8px; min-width:0; padding:0 0 2px; }
+.admin-add-color-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.admin-add-color-caption { color:var(--muted,#9aaaca); font-size:12px; font-weight:800; letter-spacing:.025em; }
+.admin-add-color-heading .button { min-height:36px; padding:7px 11px; border-radius:10px; font-size:12px; }
+.base-color-manager { display:grid; gap:8px; min-width:0; }
+.base-color-manager .variant-base-group { margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+.base-color-manager .variant-base-group > .variant-config-group-heading,
+.base-color-manager .variant-base-group > .variant-config-fields,
+.base-color-manager .variant-base-group > .variant-add-color { display:none !important; }
+.base-color-manager .variant-base-group > .variant-color-list { display:grid; grid-template-columns:minmax(0,1fr); gap:7px; }
+.base-color-manager .variant-base-group > .variant-color-list > .variants-empty-hint { margin:0; padding:9px 10px; border:1px dashed rgba(120,148,207,.34); border-radius:10px; color:var(--muted,#9aaaca); font-size:11px; }
+.inline-color-card { min-width:0; margin:0; padding:8px 9px; border:1px solid rgba(105,132,192,.35); border-radius:12px; background:linear-gradient(145deg,rgba(23,39,70,.56),rgba(14,24,44,.64)); box-shadow:0 3px 0 rgba(4,9,22,.22),inset 0 1px 0 rgba(255,255,255,.035); }
+.inline-color-main { display:grid; grid-template-columns:24px minmax(0,1fr) 42px 30px; align-items:end; gap:7px; min-width:0; }
+.inline-color-dot { align-self:center; display:block; width:22px; height:22px; border:2px solid rgba(255,255,255,.78); border-radius:50%; background:var(--inline-color,#454952); box-shadow:0 2px 5px rgba(0,0,0,.32),0 0 0 2px rgba(106,132,210,.12); }
+.inline-color-name-field,.inline-color-tone-field { display:flex; flex-direction:column; gap:4px; min-width:0; margin:0; color:var(--muted,#aebdda); font-size:10px; font-weight:750; }
+.inline-color-name-field input { width:100%; min-width:0; min-height:34px; padding:6px 8px !important; font-size:12px; }
+.inline-color-tone-field input[type="color"] { display:block; width:42px; height:34px; padding:3px; border:1px solid rgba(116,143,207,.45); border-radius:9px; background:rgba(9,18,36,.9); cursor:pointer; }
+.inline-color-remove { min-width:30px; min-height:33px; padding:3px; align-self:end; border-radius:8px; }
+.inline-color-details { margin-top:7px; border-top:1px solid rgba(116,143,207,.16); padding-top:5px; }
+.inline-color-details > summary { color:#8fbaff; font-size:11px; font-weight:750; cursor:pointer; list-style-position:inside; }
+.inline-color-details[open] > summary { margin-bottom:9px; }
+.inline-color-details .variant-color-fields { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }
+.inline-color-details .variant-color-fields > label { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:11px; }
+.inline-color-details .variant-image-label { grid-column:1/-1; }
+.inline-color-details .variant-image-preview { min-height:42px; gap:6px; padding:5px; }
+.inline-color-details .variant-image-preview img { width:45px; height:45px; flex-basis:45px; }
+.inline-color-details .admin-file-picker { width:auto; align-self:flex-start; min-height:33px; padding:6px 9px; font-size:11px !important; }
+.inline-color-details .color-row-status { margin:5px 0 0; font-size:10px; }
+.admin-add-color-slot .quick-color-palette { gap:5px; padding:7px; }
+.admin-add-color-slot .quick-color-swatch { min-width:43px; padding:4px 5px; }
+.admin-add-color-slot .quick-color-dot { width:22px; height:22px; }
+.admin-add-color-slot .quick-color-name { font-size:9px; }
+.variant-config-group:not(.variant-base-group) .variant-color-list { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+.variant-config-group:not(.variant-base-group) .inline-color-main { grid-template-columns:24px minmax(0,1fr) 42px 30px; }
+@media(max-width:650px) {
+  .admin-add-color-slot { gap:7px; }
+  .base-color-manager .variant-base-group > .variant-color-list { grid-template-columns:minmax(0,1fr); }
+  .inline-color-card { padding:7px; }
+  .inline-color-main { grid-template-columns:22px minmax(0,1fr) 38px 28px; gap:5px; }
+  .inline-color-dot { width:20px; height:20px; }
+  .inline-color-name-field input { min-height:32px; padding:5px 6px !important; font-size:11px; }
+  .inline-color-tone-field input[type="color"] { width:38px; height:32px; }
+}
