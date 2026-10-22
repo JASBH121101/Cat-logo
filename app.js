@@ -188,7 +188,18 @@ function getProductVariants(product) {
       availability: item.availability === "order" ? "order" : item.availability === "out_of_stock" ? "out_of_stock" : "available",
       image_url: String(item.image_url || item.imageUrl || "").trim()
     };
-  }).filter(item => item && (item.storage || item.ram || item.color));
+  }).filter(item => item && (item.storage || item.ram || item.color))
+    .sort((left, right) => {
+      const dimension = value => {
+        const match = String(value || "").match(/[0-9]+(?:[.,][0-9]+)?/);
+        return match ? Number(match[0].replace(",", ".")) : Number.POSITIVE_INFINITY;
+      };
+      const storageDiff = dimension(left.storage) - dimension(right.storage);
+      if (storageDiff) return storageDiff;
+      const ramDiff = dimension(left.ram) - dimension(right.ram);
+      if (ramDiff) return ramDiff;
+      return left.color.localeCompare(right.color, "es");
+    });
 }
 
 function colorStatusLabel(value) {
@@ -489,12 +500,19 @@ function uniqueValues(variants, field) {
   variants.forEach(variant => {
     const value = String(variant[field] || "").trim();
     const key = value.toLocaleLowerCase("es");
-
     if (value && !seen.has(key)) {
       seen.add(key);
       values.push(value);
     }
   });
+
+  if (field === "storage" || field === "ram") {
+    const amount = value => {
+      const match = String(value || "").match(/[0-9]+(?:[.,][0-9]+)?/);
+      return match ? Number(match[0].replace(",", ".")) : Number.POSITIVE_INFINITY;
+    };
+    values.sort((left, right) => amount(left) - amount(right) || left.localeCompare(right, "es"));
+  }
 
   return values;
 }
@@ -598,6 +616,7 @@ function renderVariantControls(product, variants, selected) {
   const nio = formatNIO(selected.price_nio);
   const status = colorStatusLabel(selected.availability);
   const isOrder = selected.availability === "order";
+  const isUnavailable = selected.availability === "out_of_stock";
 
   area.innerHTML = `
     <div class="variant-selector">
@@ -609,7 +628,7 @@ function renderVariantControls(product, variants, selected) {
     <div class="variant-selected-summary">
       <span>Configuración seleccionada</span>
       <strong>${escapeHtml(configuration || "Configuración estándar")}</strong>
-      <span class="variant-status-badge ${isOrder ? "order" : "available"}">${status}</span>
+      <span class="variant-status-badge ${isOrder ? "order" : isUnavailable ? "unavailable" : "available"}">${status}</span>
     </div>
 
     <div class="variant-price-box">
