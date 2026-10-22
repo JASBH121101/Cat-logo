@@ -532,158 +532,15 @@ function colorPaletteOptions(variant) {
 }
 
 function variantRowMarkup(variant = {}) {
-  const value = {
-    storage: String(variant.storage || "").trim(),
-    ram: String(variant.ram || "").trim(),
-    color: String(variant.color || "").trim(),
-    color_hex: validHex(variant.color_hex || variant.hex),
-    price_usd: variant.price_usd ?? "",
-    price_nio: variant.price_nio ?? "",
-    availability: normalizeVariantAvailability(variant.availability),
-    image_url: String(variant.image_url || "").trim()
-  };
-
-  return `
-    <article class="variant-admin-row" data-variant-row>
-      <div class="variant-row-title">
-        <strong data-variant-row-heading>
-          Configuración del producto
-        </strong>
-
-        <button
-          class="admin-mini-button danger"
-          type="button"
-          data-remove-variant
-        >Quitar color</button>
-        <button class="admin-mini-button" type="button" data-add-sibling-color>＋ Añadir color</button>
-      </div>
-
-      <div class="variant-fields-grid">
-        <label>
-          Almacenamiento / capacidad
-          <span class="variant-number-unit">
-            <input
-              data-variant-storage
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              value="${escapeHtml(String(value.storage).replace(/\s*GB\s*/i, ""))}"
-              aria-label="Capacidad de almacenamiento en GB"
-            >
-            <span aria-hidden="true">GB</span>
-          </span>
-        </label>
-
-        <label>
-          Memoria RAM
-          <span class="variant-number-unit">
-            <input
-              data-variant-ram
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              value="${escapeHtml(String(value.ram).replace(/\s*GB\s*/i, ""))}"
-              aria-label="Memoria RAM en GB"
-            >
-            <span aria-hidden="true">GB</span>
-          </span>
-        </label>
-
-        <label>
-          Paleta de colores
-          <select data-variant-palette>
-            ${colorPaletteOptions(value)}
-          </select>
-        </label>
-
-        <label>
-          Nombre del color <span class="required-mark" aria-hidden="true">*</span>
-          <input
-            data-variant-color
-            maxlength="60"
-            required
-            value="${escapeHtml(value.color)}"
-          >
-        </label>
-
-        <label class="variant-hex-label">
-          Tono del color
-          <span class="variant-hex-control">
-            <input
-              data-variant-hex
-              type="color"
-              value="${value.color_hex}"
-              aria-label="Elegir tono del color"
-            >
-            <small>Podés ajustar el tono visualmente.</small>
-          </span>
-        </label>
-
-        <label>
-          Precio en dólares
-          <input
-            data-variant-price-usd
-            type="number"
-            min="0"
-            step="0.01"
-            value="${escapeHtml(value.price_usd)}"
-          >
-        </label>
-
-        <label>
-          Precio en córdobas
-          <input
-            data-variant-price-nio
-            type="number"
-            min="0"
-            step="0.01"
-            value="${escapeHtml(value.price_nio)}"
-          >
-        </label>
-
-        <label>
-          Estado de esta combinación
-          <select data-variant-availability>
-            <option
-              value="available"
-              ${value.availability === "available" ? "selected" : ""}
-            >Disponible</option>
-
-            <option
-              value="order"
-              ${value.availability === "order" ? "selected" : ""}
-            >Por pedido</option>
-          </select>
-        </label>
-
-        <label class="variant-image-label">
-          Foto del color
-          <input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
-          <span class="admin-file-picker admin-file-picker-compact">
-            <span class="admin-file-picker-icon" aria-hidden="true">＋</span>
-            <span>Elegir foto</span>
-          </span>
-          <div class="variant-image-preview" data-variant-image-preview>
-            ${value.image_url ? `<img src="${escapeHtml(value.image_url)}" alt="Vista previa de ${escapeHtml(value.color || "la variante")}" loading="lazy"><span>Foto actual</span>` : `<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}
-          </div>
-          <small>La foto seleccionada se mostrará aquí antes de guardar.</small>
-        </label>
-
-        <label class="variant-image-url-label">
-          URL de foto existente
-          <input
-            data-variant-image-url
-            type="url"
-            value="${escapeHtml(value.image_url)}"
-          >
-        </label>
-      </div>
-
-      <p class="color-row-status" data-variant-status role="status"></p>
-    </article>
-  `;
+ const value={color:String(variant.color||"").trim(),color_hex:validHex(variant.color_hex||variant.hex),image_url:String(variant.image_url||"").trim()};
+ return `<article class="variant-admin-row" data-variant-row>
+ <div class="variant-row-title"><strong data-variant-row-heading>${escapeHtml(value.color||"Nuevo color")}</strong><button class="admin-mini-button danger" type="button" data-remove-variant>Quitar color</button></div>
+ <div class="variant-fields-grid variant-color-fields">
+ <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(value)}</select></label>
+ <label>Nombre del color <span class="required-mark" aria-hidden="true">*</span><input data-variant-color maxlength="60" required value="${escapeHtml(value.color)}"></label>
+ <label class="variant-hex-label">Tono del color<span class="variant-hex-control"><input data-variant-hex type="color" value="${value.color_hex}" aria-label="Elegir tono del color"><small>Ajustá el tono visualmente.</small></span></label>
+ <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${value.image_url?`<img src="${escapeHtml(value.image_url)}" alt="Vista previa de ${escapeHtml(value.color||"la variante")}" loading="lazy"><span>Foto actual</span>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label>
+ <input data-variant-image-url type="hidden" value="${escapeHtml(value.image_url)}"></div><p class="color-row-status" data-variant-status role="status"></p></article>`;
 }
 
 function variantGroupKey(variant) {
@@ -693,15 +550,17 @@ function variantGroupKey(variant) {
 }
 
 function variantGroupMarkup(variant = {}) {
-  const title = [String(variant.storage || "").trim(), String(variant.ram || "").trim()].filter(Boolean).join(" · ") || "Capacidad y RAM sin especificar";
-  return `
-    <section class="variant-config-group" data-variant-group>
-      <div class="variant-config-group-heading">
-        <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>Colores de esta configuración</small></div>
-        <button class="admin-mini-button" type="button" data-add-group-color>＋ Añadir color</button>
-      </div>
-      <div class="variant-color-list" data-variant-color-list></div>
-    </section>`;
+ const storage=String(variant.storage||"").trim().replace(/\s*GB\s*/i,""),ram=String(variant.ram||"").trim().replace(/\s*GB\s*/i,""),availability=normalizeVariantAvailability(variant.availability);
+ const title=[storage?storage+" GB":"",ram?ram+" GB RAM":""].filter(Boolean).join(" · ")||"Nueva configuración";
+ return `<section class="variant-config-group" data-variant-group>
+ <div class="variant-config-group-heading"><div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>Precio y disponibilidad compartidos por los colores</small></div><button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button></div>
+ <div class="variant-config-fields">
+ <label>Almacenamiento<span class="variant-number-unit"><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"><span>GB</span></span></label>
+ <label>Memoria RAM<span class="variant-number-unit"><input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"><span>GB</span></span></label>
+ <label>Precio en dólares<input data-group-price-usd type="number" min="0" step="0.01" value="${escapeHtml(variant.price_usd??"")}"></label>
+ <label>Precio en córdobas<input data-group-price-nio type="number" min="0" step="0.01" value="${escapeHtml(variant.price_nio??"")}"></label>
+ <label>Disponibilidad<select data-group-availability><option value="available" ${availability==="available"?"selected":""}>Disponible</option><option value="order" ${availability==="order"?"selected":""}>Por pedido</option></select></label>
+ </div><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></section>`;
 }
 
 function renderVariantRows(variants = []) {
@@ -745,21 +604,12 @@ function addVariantRow(variant = {}, targetGroup = null) {
 }
 
 function updateVariantRowHeadings() {
-  const groups = Array.from(document.querySelectorAll("[data-variant-group]"));
-  groups.forEach(group => {
-    const first = group.querySelector("[data-variant-row]");
-    if (!first) return;
-    const storage = first.querySelector("[data-variant-storage]")?.value.trim();
-    const ram = first.querySelector("[data-variant-ram]")?.value.trim();
-    const title = [storage ? `${storage} GB` : "", ram ? `${ram} GB` : ""].filter(Boolean).join(" · ") || "Capacidad y RAM sin especificar";
-    const groupTitle = group.querySelector("[data-variant-group-title]");
-    if (groupTitle) groupTitle.textContent = title;
-    Array.from(group.querySelectorAll("[data-variant-row]")).forEach((row, index) => {
-      const color = row.querySelector("[data-variant-color]")?.value.trim();
-      const heading = row.querySelector("[data-variant-row-heading]");
-      if (heading) heading.textContent = color || `Color ${index + 1}`;
-    });
-  });
+ document.querySelectorAll("[data-variant-group]").forEach(group=>{
+ const s=group.querySelector("[data-group-storage]")?.value.trim(),r=group.querySelector("[data-group-ram]")?.value.trim();
+ const title=[s?s+" GB":"",r?r+" GB RAM":""].filter(Boolean).join(" · ")||"Nueva configuración";
+ const head=group.querySelector("[data-variant-group-title]");if(head)head.textContent=title;
+ group.querySelectorAll("[data-variant-row]").forEach((row,i)=>{const color=row.querySelector("[data-variant-color]")?.value.trim(),heading=row.querySelector("[data-variant-row-heading]");if(heading)heading.textContent=color||"Color "+(i+1);});
+ });
 }
 
 /* Vista previa de fotografías seleccionadas, antes de subirlas. */
@@ -836,33 +686,15 @@ $("#add-variant-button")?.addEventListener("click", () => {
   addVariantRow();
 });
 
-variantsContainer?.addEventListener("click", event => {
-  const addButton = event.target.closest("[data-add-group-color], [data-add-sibling-color]");
-  if (addButton) {
-    const group = addButton.closest("[data-variant-group]");
-    const source = addButton.closest("[data-variant-row]");
-    const read = selector => source?.querySelector(selector)?.value || "";
-    const first = group?.querySelector("[data-variant-row]");
-    const readFirst = selector => first?.querySelector(selector)?.value || "";
-    addVariantRow({
-      storage: readFirst("[data-variant-storage]") ? `${readFirst("[data-variant-storage]")} GB` : "",
-      ram: readFirst("[data-variant-ram]") ? `${readFirst("[data-variant-ram]")} GB` : "",
-      color: "",
-      color_hex: "#242424",
-      price_usd: read("[data-variant-price-usd]") || readFirst("[data-variant-price-usd]"),
-      price_nio: read("[data-variant-price-nio]") || readFirst("[data-variant-price-nio]"),
-      availability: read("[data-variant-availability]") || readFirst("[data-variant-availability]"),
-      image_url: ""
-    }, group);
-    return;
-  }
-  const remove = event.target.closest("[data-remove-variant]");
-  if (!remove) return;
-  const group = remove.closest("[data-variant-group]");
-  remove.closest("[data-variant-row]")?.remove();
-  if (group && !group.querySelector("[data-variant-row]")) group.remove();
-  if (!variantsContainer.querySelector("[data-variant-row]")) renderVariantRows([]);
-  else updateVariantRowHeadings();
+variantsContainer?.addEventListener("click",event=>{
+ const add=event.target.closest("[data-add-group-color]");
+ if(add){const group=add.closest("[data-variant-group]");if(group)addVariantRow({color:"",color_hex:"#242424",image_url:""},group);return;}
+ const removeGroup=event.target.closest("[data-remove-group]");
+ if(removeGroup){removeGroup.closest("[data-variant-group]")?.remove();if(!variantsContainer.querySelector("[data-variant-group]"))renderVariantRows([]);return;}
+ const remove=event.target.closest("[data-remove-variant]");if(!remove)return;
+ const group=remove.closest("[data-variant-group]");remove.closest("[data-variant-row]")?.remove();
+ if(group&&!group.querySelector("[data-variant-row]"))group.remove();
+ if(!variantsContainer.querySelector("[data-variant-group]"))renderVariantRows([]);else updateVariantRowHeadings();
 });
 
 variantsContainer?.addEventListener("change", event => {
@@ -1554,60 +1386,15 @@ async function collectVariants(productId, existingVariants = []) {
       ?.querySelectorAll("[data-variant-row]") || []
   );
 
-  const drafts = rows.map((row, index) => {
-    const storageValue = row.querySelector("[data-variant-storage]").value.trim();
-    const ramValue = row.querySelector("[data-variant-ram]").value.trim();
-    const storage = storageValue ? `${storageValue} GB` : "";
-    const ram = ramValue ? `${ramValue} GB` : "";
-
-    const color = row
-      .querySelector("[data-variant-color]")
-      .value.trim();
-
-    const colorHex = validHex(
-      row.querySelector("[data-variant-hex]").value
-    );
-
-    const priceUSD = toOptionalNumber(
-      row.querySelector("[data-variant-price-usd]").value,
-      `Precio en dólares de la variante ${index + 1}`
-    );
-
-    const priceNIO = toOptionalNumber(
-      row.querySelector("[data-variant-price-nio]").value,
-      `Precio en córdobas de la variante ${index + 1}`
-    );
-
-    const availability =
-      normalizeVariantAvailability(
-        row.querySelector("[data-variant-availability]").value
-      );
-
-    const imageUrl = row
-      .querySelector("[data-variant-image-url]")
-      .value.trim();
-
-    const file =
-      row.querySelector("[data-variant-image]").files?.[0] || null;
-
-    if (!color) {
-      throw new Error(
-        `Completá el nombre del color en la variante ${index + 1}.`
-      );
-    }
-
-    return {
-      storage,
-      ram,
-      color,
-      color_hex: colorHex,
-      price_usd: priceUSD,
-      price_nio: priceNIO,
-      availability,
-      image_url: imageUrl,
-      file,
-      row
-    };
+  const drafts=rows.map((row,index)=>{
+   const group=row.closest("[data-variant-group]"),read=selector=>group?.querySelector(selector)?.value.trim()||"";
+   const sv=read("[data-group-storage]"),rv=read("[data-group-ram]"),storage=sv?`${sv} GB`:"",ram=rv?`${rv} GB`:"";
+   const color=row.querySelector("[data-variant-color]").value.trim(),colorHex=validHex(row.querySelector("[data-variant-hex]").value);
+   const priceUSD=toOptionalNumber(read("[data-group-price-usd]"),`Precio en dólares de la configuración ${index+1}`),priceNIO=toOptionalNumber(read("[data-group-price-nio]"),`Precio en córdobas de la configuración ${index+1}`);
+   const availability=normalizeVariantAvailability(read("[data-group-availability]")),imageUrl=row.querySelector("[data-variant-image-url]").value.trim(),file=row.querySelector("[data-variant-image]").files?.[0]||null;
+   if(!color)throw new Error(`Completá el nombre del color en la variante ${index+1}.`);
+   if(!storage&&!ram)throw new Error(`Indicá almacenamiento o RAM en la configuración ${index+1}.`);
+   return {storage,ram,color,color_hex:colorHex,price_usd:priceUSD,price_nio:priceNIO,availability,image_url:imageUrl,file,row};
   });
 
   /*
