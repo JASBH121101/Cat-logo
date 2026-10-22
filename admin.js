@@ -462,9 +462,8 @@ function normalizeVariants(value) {
         item.availability
       ),
 
-      image_url: String(
-        item.image_url || item.imageUrl || ""
-      ).trim()
+      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
+      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
     };
   }).filter(item =>
     item &&
@@ -491,7 +490,8 @@ function legacyVariants(product) {
     price_usd: product?.price_usd ?? null,
     price_nio: product?.price_nio ?? null,
     availability: color.type,
-    image_url: color.image_url
+    image_url: color.image_url,
+    images: color.image_url ? [color.image_url] : []
   }));
 }
 
@@ -529,7 +529,8 @@ function colorPaletteOptions(variant) {
 }
 
 function variantRowMarkup(variant = {}) {
- const v={color:String(variant.color||"").trim(),color_hex:validHex(variant.color_hex||variant.hex),image_url:String(variant.image_url||"").trim(),availability:normalizeVariantAvailability(variant.availability)};
+ const images=Array.isArray(variant.images)?variant.images.filter(Boolean):[variant.image_url||variant.imageUrl||""].filter(Boolean);
+ const v={color:String(variant.color||"").trim(),color_hex:validHex(variant.color_hex||variant.hex),images,image_url:images[0]||String(variant.image_url||variant.imageUrl||"").trim(),availability:normalizeVariantAvailability(variant.availability)};
  return `<article class="variant-admin-row" data-variant-row>
  <div class="variant-row-title"><strong data-variant-row-heading>${escapeHtml(v.color||"Nuevo color")}</strong><button class="admin-mini-button danger" type="button" data-remove-variant>Quitar color</button></div>
  <div class="variant-fields-grid variant-color-fields">
@@ -537,7 +538,7 @@ function variantRowMarkup(variant = {}) {
  <label>Nombre del color <span class="required-mark" aria-hidden="true">*</span><input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}"></label>
  <label>Disponibilidad de este color<select data-variant-availability><option value="available" ${v.availability==="available"?"selected":""}>Disponible</option><option value="order" ${v.availability==="order"?"selected":""}>Por pedido</option><option value="out_of_stock" ${v.availability==="out_of_stock"?"selected":""}>No disponible</option></select></label>
  <label class="variant-hex-label">Tono del color<span class="variant-hex-control"><input data-variant-hex type="color" value="${v.color_hex}" aria-label="Elegir tono del color"><small>Ajustá el tono visualmente.</small></span></label>
- <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${v.image_url?`<img src="${escapeHtml(v.image_url)}" alt="Foto de ${escapeHtml(v.color||"la variante")}" loading="lazy"><span>Foto actual</span><button type="button" class="admin-mini-button danger admin-preview-remove" data-remove-variant-image aria-label="Quitar foto" title="Quitar foto">×</button>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
+ <label class="variant-image-label">Fotografías del color<input data-variant-image data-variant-image-input class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Añadir fotografías</span></span><div class="variant-image-preview" data-variant-image-preview></div></label><input data-variant-images type="hidden" value="${escapeHtml(JSON.stringify(v.images))}"><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
  </div><p class="color-row-status" data-variant-status role="status"></p></article>`;
 }
 
@@ -570,6 +571,7 @@ function renderVariantRows(variants=[]){
  base.forEach(v=>list.insertAdjacentHTML("beforeend",variantRowMarkup(v)));groups.delete("|");
  groups.forEach(items=>{container.insertAdjacentHTML("beforeend",variantGroupMarkup(items[0],false));const list=container.lastElementChild.querySelector("[data-variant-color-list]");items.forEach(v=>list.insertAdjacentHTML("beforeend",variantRowMarkup(v)));});
  updateVariantRowHeadings();
+ container.querySelectorAll("[data-variant-row]").forEach(row => renderVariantImagePreview(row));
 }
 
 function addVariantRow(variant = {}, targetGroup = null) {
@@ -584,6 +586,7 @@ function addVariantRow(variant = {}, targetGroup = null) {
   const list = group.querySelector("[data-variant-color-list]");
   if (!list) return;
   list.insertAdjacentHTML("beforeend", variantRowMarkup(variant));
+  renderVariantImagePreview(list.lastElementChild);
   updateVariantRowHeadings();
   const rows = list.querySelectorAll("[data-variant-row]");
   rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
@@ -598,54 +601,62 @@ function updateVariantRowHeadings() {
  });
 }
 
-/* Vista previa de fotografías seleccionadas, antes de subirlas. */
-const mainImagesInput = $("#product-images");
-const mainImagesPreview = $("#product-images-preview");
-const mainImagesSummary = $("#product-images-summary");
-let mainImageObjectUrls = [];
-
-function clearMainImagePreviews() {
-  mainImageObjectUrls.forEach(url => URL.revokeObjectURL(url));
-  mainImageObjectUrls = [];
-  mainImagesPreview?.replaceChildren();
-}
-
-function renderMainImagePreviews() {
-  if (!mainImagesInput || !mainImagesPreview || !mainImagesSummary) return;
-  clearMainImagePreviews();
-  const files = Array.from(mainImagesInput.files || []);
-  mainImagesSummary.textContent = files.length
-    ? `${files.length} fotografía${files.length === 1 ? "" : "s"} seleccionada${files.length === 1 ? "" : "s"}`
-    : "Ninguna fotografía seleccionada";
-
-  files.forEach(file => {
-    const url = URL.createObjectURL(file);
-    mainImageObjectUrls.push(url);
-    const card = document.createElement("figure");
-    card.className = "admin-image-preview-card";
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = `Vista previa de ${file.name}`;
-    const name = document.createElement("figcaption");
-    name.textContent = file.name;
-    const size = document.createElement("small");
-    size.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-    const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger admin-preview-remove";remove.textContent="×";remove.setAttribute("aria-label",`Quitar ${file.name}`);remove.setAttribute("title",`Quitar ${file.name}`);remove.addEventListener("click",()=>removeMainImageFile(file));card.append(img,name,size,remove);
-    mainImagesPreview.append(card);
-  });
-}
-function removeMainImageFile(target){if(!mainImagesInput)return;const transfer=new DataTransfer();Array.from(mainImagesInput.files||[]).forEach(file=>{if(!(file.name===target.name&&file.size===target.size&&file.lastModified===target.lastModified))transfer.items.add(file);});mainImagesInput.files=transfer.files;renderMainImagePreviews();updateEditorDirtyState();}
-mainImagesInput?.addEventListener("change", renderMainImagePreviews);
-
-function renderVariantImagePreview(row,file=null,fallbackUrl=""){
- const preview=row?.querySelector("[data-variant-image-preview]");if(!preview)return;preview.replaceChildren();
- const addRemove=()=>{const b=document.createElement("button");b.type="button";b.className="admin-mini-button danger admin-preview-remove";b.textContent="×";b.setAttribute("aria-label","Quitar foto");b.setAttribute("title","Quitar foto");b.addEventListener("click",()=>{row.querySelector("[data-variant-image]").value="";row.querySelector("[data-variant-image-url]").value="";renderVariantImagePreview(row);updateEditorDirtyState();});preview.append(b);};
- if(file){const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt=`Vista previa de ${file.name}`;const cap=document.createElement("span");cap.textContent=file.name;preview.append(img,cap);addRemove();}
- else if(fallbackUrl){const img=document.createElement("img");img.src=fallbackUrl;img.alt="Foto actual de la variante";img.loading="lazy";const cap=document.createElement("span");cap.textContent="Foto actual";preview.append(img,cap);addRemove();}
- else{const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="La vista previa aparecerá aquí";preview.append(empty);}
-}
-
+/* Galerías editables: orden, portada y fotos múltiples por variante. */
 const variantsContainer = $("#product-variants-list");
+const mainImagesInput = $("#product-images"), mainImagesPreview = $("#product-images-preview"), mainImagesSummary = $("#product-images-summary");
+let mainImageItems = [], draggingMainImageId = null, draggingVariantImage = null;
+const imageId = () => crypto.randomUUID();
+const imagePreviewUrl = item => item.kind === "new" ? item.previewUrl : item.url;
+function disposeImageItems(items){items.forEach(item=>{if(item.kind==="new"&&item.previewUrl)URL.revokeObjectURL(item.previewUrl);});}
+function clearMainImagePreviews(){disposeImageItems(mainImageItems);mainImageItems=[];mainImagesPreview?.replaceChildren();}
+function setExistingMainImages(urls=[]){disposeImageItems(mainImageItems);mainImageItems=[...new Set(urls.filter(url=>typeof url==="string"&&url.trim()))].map(url=>({id:imageId(),kind:"existing",url}));renderMainImagePreviews();}
+function renderMainImagePreviews(){
+ if(!mainImagesInput||!mainImagesPreview||!mainImagesSummary)return;
+ mainImagesPreview.replaceChildren();
+ mainImagesSummary.textContent=mainImageItems.length?`${mainImageItems.length} fotografía${mainImageItems.length===1?"":"s"} · la primera será la portada`:"Ninguna fotografía seleccionada";
+ mainImageItems.forEach((item,index)=>{
+  const card=document.createElement("figure");card.className="admin-image-preview-card sortable-image-card";card.draggable=true;card.dataset.imageItemId=item.id;
+  const img=document.createElement("img");img.src=imagePreviewUrl(item);img.alt=`Fotografía ${index+1} del producto`;img.loading="lazy";
+  const badge=document.createElement("span");badge.className="admin-image-order-badge";badge.textContent=index===0?"Portada":String(index+1);
+  const caption=document.createElement("figcaption");caption.textContent=item.kind==="new"?item.file.name:"Imagen guardada";
+  const controls=document.createElement("div");controls.className="admin-image-controls";
+  for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===mainImageItems.length-1]]){
+   const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.mainImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);
+  }
+  const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.mainImageRemove="true";remove.title="Quitar fotografía";
+  controls.append(remove);card.append(badge,img,caption,controls);mainImagesPreview.append(card);
+ });
+}
+function moveMainImage(id,offset){const from=mainImageItems.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=mainImageItems.length)return;const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}
+function removeMainImage(id){const from=mainImageItems.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([mainImageItems[from]]);mainImageItems.splice(from,1);renderMainImagePreviews();updateEditorDirtyState();}
+mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();});
+mainImagesPreview?.addEventListener("click",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;const m=e.target.closest("[data-main-image-move]");if(m)moveMainImage(card.dataset.imageItemId,Number(m.dataset.mainImageMove));else if(e.target.closest("[data-main-image-remove]"))removeMainImage(card.dataset.imageItemId);});
+mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;draggingMainImageId=card.dataset.imageItemId;card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingMainImageId);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
+mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
+mainImagesPreview?.addEventListener("drop",e=>{const card=e.target.closest("[data-image-item-id]");if(!card||!draggingMainImageId)return;e.preventDefault();const from=mainImageItems.findIndex(i=>i.id===draggingMainImageId),to=mainImageItems.findIndex(i=>i.id===card.dataset.imageItemId);if(from>=0&&to>=0&&from!==to){const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}draggingMainImageId=null;});
+mainImagesPreview?.addEventListener("dragend",()=>{draggingMainImageId=null;mainImagesPreview.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
+function readVariantImageUrls(row){try{const v=JSON.parse(row.querySelector("[data-variant-images]")?.value||"[]");if(Array.isArray(v))return v.filter(u=>typeof u==="string"&&u.trim());}catch{}const u=row.querySelector("[data-variant-image-url]")?.value.trim();return u?[u]:[];}
+function initVariantImageItems(row){if(!row||Array.isArray(row._variantImageItems))return;row._variantImageItems=readVariantImageUrls(row).map(url=>({id:imageId(),kind:"existing",url}));}
+function syncVariantImageFields(row){const items=row?._variantImageItems||[],urls=items.filter(i=>i.kind==="existing").map(i=>i.url),json=row?.querySelector("[data-variant-images]"),legacy=row?.querySelector("[data-variant-image-url]");if(json)json.value=JSON.stringify(urls);if(legacy)legacy.value=urls[0]||"";}
+function renderVariantImagePreview(row){
+ const preview=row?.querySelector("[data-variant-image-preview]");if(!preview)return;initVariantImageItems(row);preview.replaceChildren();const items=row._variantImageItems;
+ if(!items.length){const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="Añadí fotografías de este color";preview.append(empty);return;}
+ items.forEach((item,index)=>{const card=document.createElement("figure");card.className="variant-gallery-item sortable-image-card";card.draggable=true;card.dataset.variantImageId=item.id;
+  const img=document.createElement("img");img.src=imagePreviewUrl(item);img.alt=`Fotografía ${index+1} del color`;img.loading="lazy";
+  const badge=document.createElement("span");badge.className="admin-image-order-badge";badge.textContent=index===0?"Portada":String(index+1);
+  const controls=document.createElement("div");controls.className="admin-image-controls";
+  for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===items.length-1]]){const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.variantImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);}
+  const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.variantImageRemove="true";remove.title="Quitar fotografía";controls.append(remove);card.append(badge,img,controls);preview.append(card);
+ });
+}
+function moveVariantImage(row,id,offset){initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=a.length)return;const [item]=a.splice(from,1);a.splice(to,0,item);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}
+function removeVariantImage(row,id){initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([a[from]]);a.splice(from,1);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}
+variantsContainer?.addEventListener("click",e=>{const card=e.target.closest("[data-variant-image-id]");if(!card)return;const row=card.closest("[data-variant-row]");if(!row)return;const m=e.target.closest("[data-variant-image-move]");if(m)moveVariantImage(row,card.dataset.variantImageId,Number(m.dataset.variantImageMove));else if(e.target.closest("[data-variant-image-remove]"))removeVariantImage(row,card.dataset.variantImageId);});
+variantsContainer?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-variant-image-id]");if(!card)return;draggingVariantImage={id:card.dataset.variantImageId,row:card.closest("[data-variant-row]")};card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingVariantImage.id);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
+variantsContainer?.addEventListener("dragover",e=>{if(e.target.closest("[data-variant-image-id]"))e.preventDefault();});
+variantsContainer?.addEventListener("drop",e=>{const card=e.target.closest("[data-variant-image-id]");if(!card||!draggingVariantImage)return;const row=card.closest("[data-variant-row]");if(row!==draggingVariantImage.row)return;e.preventDefault();initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===draggingVariantImage.id),to=a.findIndex(i=>i.id===card.dataset.variantImageId);if(from>=0&&to>=0&&from!==to){const [item]=a.splice(from,1);a.splice(to,0,item);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}draggingVariantImage=null;});
+variantsContainer?.addEventListener("dragend",()=>{draggingVariantImage=null;variantsContainer.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
+
 
 $("#add-base-color-button")?.addEventListener("click", event => {
   event.preventDefault();
@@ -693,19 +704,14 @@ variantsContainer?.addEventListener("click",event=>{
 variantsContainer?.addEventListener("change", event => {
   const imageInput = event.target.closest("[data-variant-image]");
   if (imageInput) {
-    const row = imageInput.closest("[data-variant-row]");
-    const file = imageInput.files?.[0] || null;
-    const url = row?.querySelector("[data-variant-image-url]")?.value.trim() || "";
-    renderVariantImagePreview(row, file, file ? "" : url);
-    return;
+    const row=imageInput.closest("[data-variant-row]"); if(!row)return;
+    initVariantImageItems(row);
+    for(const file of Array.from(imageInput.files||[]))row._variantImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});
+    imageInput.value="";syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();return;
   }
   const urlInput = event.target.closest("[data-variant-image-url]");
-  if (urlInput) {
-    const row = urlInput.closest("[data-variant-row]");
-    const file = row?.querySelector("[data-variant-image]")?.files?.[0] || null;
-    renderVariantImagePreview(row, file, urlInput.value.trim());
-    return;
-  }
+  if (urlInput) return;
+  if (event.target.matches("[data-variant-images]")) return;
   const select = event.target.closest("[data-variant-palette]");
 
   if (!select) {
@@ -1167,7 +1173,9 @@ function getEditorSnapshot(){
  if(!form)return "";
  const fields=Array.from(form.elements).map(f=>{if(!f||(!f.name&&!f.id&&!f.matches?.("[data-variant-row],[data-variant-group]")))return null;if(f.type==="file")return [f.id||f.getAttribute("data-variant-image")||"file",Array.from(f.files||[]).map(x=>[x.name,x.size,x.lastModified])];if(f.type==="checkbox"||f.type==="radio")return [f.id||f.name,f.checked];return [f.id||f.name||f.getAttribute("data-variant-color")||f.getAttribute("data-group-storage")||f.getAttribute("data-group-ram")||f.getAttribute("data-group-price-usd")||f.getAttribute("data-group-price-nio")||f.getAttribute("data-variant-availability")||f.getAttribute("data-variant-image-url")||f.tagName,f.value];}).filter(Boolean);
  const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({storage:g.querySelector("[data-group-storage]")?.value||"",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||""}))}));
- return JSON.stringify({fields,variants});
+ const mainGallery=mainImageItems.map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}));
+ const variantGalleries=Array.from(form.querySelectorAll("[data-variant-row]")).map(row=>({color:row.querySelector("[data-variant-color]")?.value||"",images:(row._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}));
+ return JSON.stringify({fields,variants,mainGallery,variantGalleries});
 }
 
 function markEditorClean() {
@@ -1213,6 +1221,7 @@ function clearEditor() {
     "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
 
   $("#product-images").value = "";
+  clearMainImagePreviews();
   renderMainImagePreviews();
 
   renderVariantRows([]);
@@ -1252,7 +1261,7 @@ function fillEditor(product) {
     product.shipping_note || "";
 
   $("#product-images").value = "";
-  renderMainImagePreviews();
+  setExistingMainImages(getImages(product));
 
   renderVariantRows(legacyVariants(product));
 
@@ -1347,52 +1356,21 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId,existingVariants=[]){
+async function collectVariants(productId, existingVariants = []) {
  const rows=Array.from($("#product-variants-list")?.querySelectorAll("[data-variant-row]")||[]);
  const baseUSD=toOptionalNumber($("#product-price-usd").value,"Precio base en dólares"),baseNIO=toOptionalNumber($("#product-price-nio").value,"Precio base en córdobas");
- const drafts=rows.map((row,i)=>{
-  const group=row.closest("[data-variant-group]"),base=group?.dataset.baseGroup==="true",read=sel=>group?.querySelector(sel)?.value.trim()||"",sv=read("[data-group-storage]"),rv=read("[data-group-ram]"),storage=sv?`${sv} GB`:"",ram=rv?`${rv} GB`:"",color=row.querySelector("[data-variant-color]").value.trim(),color_hex=validHex(row.querySelector("[data-variant-hex]").value);
-  const price_usd=base?baseUSD:toOptionalNumber(read("[data-group-price-usd]"),`Precio en dólares de configuración ${i+1}`),price_nio=base?baseNIO:toOptionalNumber(read("[data-group-price-nio]"),`Precio en córdobas de configuración ${i+1}`),availability=normalizeVariantAvailability(row.querySelector("[data-variant-availability]").value),image_url=row.querySelector("[data-variant-image-url]").value.trim(),file=row.querySelector("[data-variant-image]").files?.[0]||null;
-  if(!color)throw new Error(`Completá el nombre del color en la variante ${i+1}.`);
-  if(!storage&&!ram)throw new Error(`Indicá almacenamiento o RAM en la configuración ${i+1}.`);
-  return {storage,ram,color,color_hex,price_usd,price_nio,availability,image_url,file,row};
+ const drafts=rows.map((row,index)=>{
+  const group=row.closest("[data-variant-group]"),base=group?.dataset.baseGroup==="true",read=s=>group?.querySelector(s)?.value.trim()||"",sv=read("[data-group-storage]"),rv=read("[data-group-ram]"),storage=sv?`${sv} GB`:"",ram=rv?`${rv} GB`:"",color=row.querySelector("[data-variant-color]").value.trim(),color_hex=validHex(row.querySelector("[data-variant-hex]").value),price_usd=base?baseUSD:toOptionalNumber(read("[data-group-price-usd]"),`Precio en dólares de configuración ${index+1}`),price_nio=base?baseNIO:toOptionalNumber(read("[data-group-price-nio]"),`Precio en córdobas de configuración ${index+1}`),availability=normalizeVariantAvailability(row.querySelector("[data-variant-availability]").value);
+  initVariantImageItems(row);if(!color)throw new Error(`Completá el nombre del color en la variante ${index+1}.`);if(!storage&&!ram)throw new Error(`Indicá almacenamiento o RAM en la configuración ${index+1}.`);
+  return {storage,ram,color,color_hex,price_usd,price_nio,availability,row,imageItems:row._variantImageItems||[]};
  });
  const seen=new Set();for(const v of drafts){const key=[v.storage,v.ram,v.color].join("|").toLocaleLowerCase("es");if(seen.has(key))throw new Error(`La combinación ${[v.storage,v.ram,v.color].filter(Boolean).join(" · ")} está repetida.`);seen.add(key);}
- for (const v of drafts) {
-  if (!v.file) continue;
-
-  const status = v.row.querySelector("[data-variant-status]");
-  const fileInput = v.row.querySelector("[data-variant-image]");
-  const urlInput = v.row.querySelector("[data-variant-image-url]");
-
-  if (status) {
-   status.textContent = `Subiendo foto de ${v.color}…`;
-   status.dataset.state = "uploading";
-  }
-
-  try {
-   v.image_url = await uploadImage(productId, v.file, "variants");
-
-   // Conserva la URL si falla otra parte del guardado y hay que reintentar.
-   if (urlInput) urlInput.value = v.image_url;
-   if (fileInput) fileInput.value = "";
-   renderVariantImagePreview(v.row, null, v.image_url);
-
-   if (status) {
-    status.textContent = `Foto de ${v.color} cargada correctamente.`;
-    status.dataset.state = "success";
-   }
-
-   updateEditorDirtyState();
-  } catch (error) {
-   if (status) {
-    status.textContent = `No se pudo subir la foto de ${v.color}: ${error.message || "error desconocido"}`;
-    status.dataset.state = "error";
-   }
-   throw error;
-  }
+ for(const v of drafts){const urls=[],status=v.row.querySelector("[data-variant-status]");if(status&&v.imageItems.some(i=>i.kind==="new")){status.textContent=`Subiendo fotografías de ${v.color}…`;status.dataset.state="uploading";}
+  try{for(const item of v.imageItems){if(item.kind==="new"){const url=await uploadImage(productId,item.file,"variants");urls.push(url);item.kind="existing";item.url=url;if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;delete item.file;}else if(item.url)urls.push(item.url);}
+   v.row._variantImageItems=v.imageItems;syncVariantImageFields(v.row);renderVariantImagePreview(v.row);v.images=urls;v.image_url=urls[0]||"";if(status){status.textContent=urls.length?`${urls.length} fotografía(s) guardadas para ${v.color}.`:"";status.dataset.state="success";}
+  }catch(error){if(status){status.textContent=`No se pudieron subir las fotografías de ${v.color}: ${error.message||"error desconocido"}`;status.dataset.state="error";}throw error;}
  }
- return drafts.map(({file,row,...v})=>v);
+ return drafts.map(({row,imageItems,...variant})=>variant);
 }
 
 function deriveColorsFromVariants(variants, fallbackColors = []) {
@@ -1415,7 +1393,8 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
       byColor.set(key, {
         name: variant.color,
         type: variant.availability,
-        image_url: variant.image_url || "",
+        image_url: (variant.images && variant.images[0]) || variant.image_url || "",
+        images: variant.images || (variant.image_url ? [variant.image_url] : []),
         color_hex: validHex(variant.color_hex)
       });
     } else {
@@ -1423,9 +1402,8 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
         previous.type = "available";
       }
 
-      if (!previous.image_url && variant.image_url) {
-        previous.image_url = variant.image_url;
-      }
+      if (!previous.image_url && (variant.images?.[0] || variant.image_url)) previous.image_url = variant.images?.[0] || variant.image_url;
+      if ((!previous.images || !previous.images.length) && variant.images?.length) previous.images = variant.images;
     }
   });
 
@@ -1477,14 +1455,16 @@ form?.addEventListener("submit", async event => {
       existingProduct?.variants || []
     );
 
-    const newImages = Array.from(
-      $("#product-images").files || []
-    );
-
-    const uploadedMainImages = await uploadMainImages(
-      id,
-      newImages
-    );
+    const uploadedMainImages = [];
+    for (let imageIndex=0; imageIndex<mainImageItems.length; imageIndex++) {
+      const item=mainImageItems[imageIndex];
+      if(item.kind==="new"){
+        message("#product-form-status", `Subiendo fotografía ${imageIndex+1} de ${mainImageItems.length}…`);
+        const url=await uploadImage(id,item.file);uploadedMainImages.push(url);item.kind="existing";item.url=url;
+        if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;delete item.file;
+      }else uploadedMainImages.push(item.url);
+    }
+    renderMainImagePreviews();
 
     const colors = deriveColorsFromVariants(
       variants,
@@ -1514,12 +1494,7 @@ form?.addEventListener("submit", async event => {
       ? minimumPrice(variants, "price_nio") ?? baseNIO
       : baseNIO;
 
-    const allImages = [
-      ...new Set([
-        ...(existingProduct?.images || (existingProduct?.image_url ? [existingProduct.image_url] : [])),
-        ...uploadedMainImages
-      ])
-    ];
+    const allImages = [...new Set(uploadedMainImages)];
 
     const now = new Date().toISOString();
 
