@@ -5364,3 +5364,104 @@ body.admin-body.admin-dashboard-active .site-footer {
     margin-left: 0;
   }
 }
+
+
+/* Encabezado compacto de inicio de sesión: sin menú lateral hasta autenticar. */
+body.admin-body:not(.admin-dashboard-active) .site-header.admin-header {
+  min-height: 68px;
+  height: auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px clamp(12px, 3vw, 24px);
+}
+body.admin-body:not(.admin-dashboard-active) .admin-menu-toggle {
+  display: none !important;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header-context {
+  display: none !important;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header > .brand {
+  order: 1;
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(14px, 2.3vw, 18px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header > .brand .brand-mark {
+  display: inline-flex;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border-radius: 13px;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header > .brand > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header > .back-link {
+  order: 2;
+  flex: 0 0 auto;
+  max-width: none;
+  margin: 0;
+  padding: 6px 0;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header > .theme-toggle {
+  order: 3;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+  border-radius: 13px;
+}
+body.admin-body:not(.admin-dashboard-active) .admin-header > .theme-toggle .theme-toggle-label {
+  display: none;
+}
+@media (max-width: 430px) {
+  body.admin-body:not(.admin-dashboard-active) .site-header.admin-header {
+    min-height: 62px;
+    gap: 7px;
+    padding: 8px 10px;
+  }
+  body.admin-body:not(.admin-dashboard-active) .admin-header > .brand {
+    gap: 7px;
+    font-size: 14px;
+  }
+  body.admin-body:not(.admin-dashboard-active) .admin-header > .brand .brand-mark {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+  body.admin-body:not(.admin-dashboard-active) .admin-header > .back-link {
+    font-size: 10px;
+  }
+  body.admin-body:not(.admin-dashboard-active) .admin-header > .theme-toggle {
+    flex-basis: 38px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    border-radius: 11px;
+  }
+}
