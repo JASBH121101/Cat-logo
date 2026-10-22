@@ -70,9 +70,6 @@ function buildWhatsAppLink(message) {
 const generalMessage =
   "Hola, quisiera consultar por los productos del catálogo, disponibilidad, precio y opciones de pago.";
 
-const financeMessage =
-  "Hola, quisiera conocer las opciones de financiamiento disponibles, los requisitos, las cuotas y las formas de pago para comprar un equipo.";
-
 ["header-whatsapp", "footer-whatsapp"].forEach(id => {
   const element = document.getElementById(id);
   if (!element) return;
@@ -82,12 +79,6 @@ const financeMessage =
   element.rel = "noopener";
 });
 
-const financeLink = document.getElementById("finance-whatsapp");
-if (financeLink) {
-  financeLink.href = buildWhatsAppLink(financeMessage);
-  financeLink.target = "_blank";
-  financeLink.rel = "noopener";
-}
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, character => ({
@@ -322,13 +313,16 @@ function renderProductColorSwatches(product) {
     const hex = displayColorHex(color.name, color.color_hex);
     const status = color.type === "order" ? "Disponible por pedido" : "Disponible";
     return `
-      <button class="product-card-color-swatch"
-              type="button"
-              style="--swatch-color: ${hex}"
-              title="${escapeHtml(color.name)}"
-              data-product-color="${escapeHtml(color.name)}"
-              aria-label="Mostrar color ${escapeHtml(color.name)} · ${status}"
-              aria-pressed="false"></button>
+      <span class="product-card-color-option">
+        <button class="product-card-color-swatch"
+                type="button"
+                style="--swatch-color: ${hex}"
+                title="${escapeHtml(color.name)}"
+                data-product-color="${escapeHtml(color.name)}"
+                aria-label="${escapeHtml(color.name)} · ${status}"
+                aria-pressed="false"></button>
+        <span class="product-card-color-name">${escapeHtml(color.name)}</span>
+      </span>
     `;
   }).join("");
   const more = colors.length > 6
@@ -337,9 +331,8 @@ function renderProductColorSwatches(product) {
 
   return `
     <div class="product-card-colors" aria-label="Colores disponibles">
-      <span class="product-card-colors-label">Colores</span>
-      <div class="product-card-color-list" role="group" aria-label="Elegí un color para ver su nombre">${visible}${more}</div>
-      <span class="product-card-color-selected-name" aria-live="polite"></span>
+      <span class="product-card-colors-label">Colores disponibles</span>
+      <div class="product-card-color-list" role="group" aria-label="Colores disponibles">${visible}${more}</div>
     </div>
   `;
 }
@@ -711,6 +704,11 @@ function renderVariantControls(product, variants, selected) {
   const isOrder = selected.availability === "order";
   const isUnavailable = selected.availability === "out_of_stock";
 
+  const financingLink = $("#dialog-financing-link");
+  if (financingLink) {
+    financingLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, selected));
+  }
+
   area.innerHTML = `
     <div class="variant-selector">
       ${renderVariantButtonGroup(variants, selected, "storage", "Configuración")}
@@ -891,6 +889,12 @@ function openProduct(product) {
           ${escapeHtml(product.financing_note || "Mediante crédito o tarjeta; consultar requisitos y condiciones.")}
         </p>
 
+        <a id="dialog-financing-link"
+           class="button button-secondary dialog-financing-button"
+           href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product)))}"
+           target="_blank"
+           rel="noopener">Consultar financiación por WhatsApp ↗</a>
+
         <p><b>Disponibilidad general:</b>
           ${escapeHtml(productAvailabilityLabel(product.availability))}
         </p>
@@ -957,8 +961,6 @@ grid.addEventListener("click", event => {
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-pressed", String(selected));
     });
-    const selectedName = card.querySelector(".product-card-color-selected-name");
-    if (selectedName) selectedName.textContent = colorButton.dataset.productColor || "";
     return;
   }
 
