@@ -3183,3 +3183,81 @@ html[data-theme="dark"] .admin-section-nav,
   .admin-add-color-caption { font-size: 11px; }
   .admin-add-color-slot .button { min-height: 40px; padding: 8px 11px; font-size: 12px; }
 }
+
+
+/* Selector de colores junto al formulario: no desplaza la página al elegir. */
+.admin-add-color-slot {
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+.admin-add-color-caption {
+  color: var(--muted, #9aaaca);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+.admin-add-color-slot .button {
+  min-height: 42px;
+  padding: 9px 15px;
+  border-radius: 11px;
+}
+.quick-color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 7px;
+  max-width: 100%;
+  padding: 9px;
+  border: 1px solid var(--border, #334567);
+  border-radius: 12px;
+  background: var(--surface, #101a30);
+  box-shadow: 0 8px 22px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.quick-color-palette[hidden] { display: none !important; }
+.quick-color-swatch {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 39px;
+  padding: 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--text, #e8eefc);
+  background: transparent;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+.quick-color-swatch:hover, .quick-color-swatch:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent, #536dfe);
+  background: rgba(82,105,255,.12);
+  box-shadow: 0 4px 12px rgba(73,92,255,.18);
+  outline: none;
+}
+.quick-color-swatch.is-selected { border-color: var(--accent, #536dfe); }
+.quick-color-dot {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: var(--quick-color);
+  border: 2px solid rgba(255,255,255,.68);
+  box-shadow: 0 2px 5px rgba(0,0,0,.3), inset 0 0 0 1px rgba(0,0,0,.12);
+}
+.quick-color-name { font-size: 10px; line-height: 1.2; white-space: nowrap; }
+.quick-color-status { margin: 0; color: var(--muted, #9aaaca); font-size: 11px; line-height: 1.4; }
+@media(max-width:600px) {
+  .admin-add-color-slot { gap: 5px; }
+  .admin-add-color-caption { font-size: 11px; }
+  .admin-add-color-slot .button { min-height: 40px; padding: 8px 11px; font-size: 12px; }
+  .quick-color-palette { gap: 3px; padding: 6px; }
+  .quick-color-swatch { min-width: 33px; padding: 3px; }
+  .quick-color-dot { width: 20px; height: 20px; }
+  .quick-color-name { font-size: 9px; }
+}
