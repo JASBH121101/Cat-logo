@@ -610,14 +610,15 @@ function variantRowMarkup(variant = {}) {
 
         <label class="variant-image-label">
           Foto del color (opcional)
-          <input
-            data-variant-image
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
-          >
-          <small>
-            Podés reutilizar la foto de ese color en otras capacidades.
-          </small>
+          <input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
+          <span class="admin-file-picker admin-file-picker-compact">
+            <span class="admin-file-picker-icon" aria-hidden="true">＋</span>
+            <span>Elegir foto</span>
+          </span>
+          <div class="variant-image-preview" data-variant-image-preview>
+            ${value.image_url ? `<img src="${escapeHtml(value.image_url)}" alt="Vista previa de ${escapeHtml(value.color || "la variante")}" loading="lazy"><span>Foto actual</span>` : `<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}
+          </div>
+          <small>La foto seleccionada se mostrará aquí antes de guardar.</small>
         </label>
 
         <label class="variant-image-url-label">
@@ -714,6 +715,74 @@ function updateVariantRowHeadings() {
   });
 }
 
+/* Vista previa de fotografías seleccionadas, antes de subirlas. */
+const mainImagesInput = $("#product-images");
+const mainImagesPreview = $("#product-images-preview");
+const mainImagesSummary = $("#product-images-summary");
+let mainImageObjectUrls = [];
+
+function clearMainImagePreviews() {
+  mainImageObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  mainImageObjectUrls = [];
+  mainImagesPreview?.replaceChildren();
+}
+
+function renderMainImagePreviews() {
+  if (!mainImagesInput || !mainImagesPreview || !mainImagesSummary) return;
+  clearMainImagePreviews();
+  const files = Array.from(mainImagesInput.files || []);
+  mainImagesSummary.textContent = files.length
+    ? `${files.length} fotografía${files.length === 1 ? "" : "s"} seleccionada${files.length === 1 ? "" : "s"}`
+    : "Ninguna fotografía seleccionada";
+
+  files.forEach(file => {
+    const url = URL.createObjectURL(file);
+    mainImageObjectUrls.push(url);
+    const card = document.createElement("figure");
+    card.className = "admin-image-preview-card";
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = `Vista previa de ${file.name}`;
+    const name = document.createElement("figcaption");
+    name.textContent = file.name;
+    const size = document.createElement("small");
+    size.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+    card.append(img, name, size);
+    mainImagesPreview.append(card);
+  });
+}
+mainImagesInput?.addEventListener("change", renderMainImagePreviews);
+
+function renderVariantImagePreview(row, file = null, fallbackUrl = "") {
+  const preview = row?.querySelector("[data-variant-image-preview]");
+  if (!preview) return;
+  preview.replaceChildren();
+
+  if (file) {
+    const url = URL.createObjectURL(file);
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = `Vista previa de ${file.name}`;
+    img.onload = () => URL.revokeObjectURL(url);
+    const caption = document.createElement("span");
+    caption.textContent = file.name;
+    preview.append(img, caption);
+  } else if (fallbackUrl) {
+    const img = document.createElement("img");
+    img.src = fallbackUrl;
+    img.alt = "Foto actual de la variante";
+    img.loading = "lazy";
+    const caption = document.createElement("span");
+    caption.textContent = "Foto actual";
+    preview.append(img, caption);
+  } else {
+    const empty = document.createElement("span");
+    empty.className = "variant-image-placeholder";
+    empty.textContent = "La vista previa aparecerá aquí";
+    preview.append(empty);
+  }
+}
+
 const variantsContainer = $("#product-variants-list");
 
 $("#add-variant-button")?.addEventListener("click", () => {
@@ -737,6 +806,21 @@ variantsContainer?.addEventListener("click", event => {
 });
 
 variantsContainer?.addEventListener("change", event => {
+  const imageInput = event.target.closest("[data-variant-image]");
+  if (imageInput) {
+    const row = imageInput.closest("[data-variant-row]");
+    const file = imageInput.files?.[0] || null;
+    const url = row?.querySelector("[data-variant-image-url]")?.value.trim() || "";
+    renderVariantImagePreview(row, file, file ? "" : url);
+    return;
+  }
+  const urlInput = event.target.closest("[data-variant-image-url]");
+  if (urlInput) {
+    const row = urlInput.closest("[data-variant-row]");
+    const file = row?.querySelector("[data-variant-image]")?.files?.[0] || null;
+    renderVariantImagePreview(row, file, urlInput.value.trim());
+    return;
+  }
   const select = event.target.closest("[data-variant-palette]");
 
   if (!select) {
@@ -1212,6 +1296,7 @@ function clearEditor() {
 
   $("#existing-image-urls").value = "";
   $("#product-images").value = "";
+  renderMainImagePreviews();
 
   renderVariantRows([]);
 
@@ -1254,6 +1339,7 @@ function fillEditor(product) {
     getImages(product).join("\n");
 
   $("#product-images").value = "";
+  renderMainImagePreviews();
 
   renderVariantRows(legacyVariants(product));
 
