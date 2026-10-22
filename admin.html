@@ -12,10 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261022-sidebar1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261022-analytics-pie1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261022-adminfix1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261022-analytics-pie1"></script>
+  <script type="module" src="admin.js?v=20261022-adminfix1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -323,6 +323,21 @@
                   <textarea id="product-specs" rows="2"></textarea>
                 </label>
               </div>
+
+              <section class="span-2 admin-product-gallery" aria-labelledby="product-images-title">
+                <div class="admin-product-gallery-heading">
+                  <div>
+                    <h3 id="product-images-title">Fotografías generales del producto</h3>
+                    <p>La primera fotografía será la portada predeterminada. Cada color o variante puede mantener su propia galería.</p>
+                  </div>
+                  <label class="file-button">
+                    Seleccionar fotografías
+                    <input id="product-images" type="file" accept="image/*" multiple>
+                  </label>
+                </div>
+                <p id="product-images-summary" class="admin-product-gallery-summary" aria-live="polite">Ninguna fotografía seleccionada</p>
+                <div id="product-images-preview" class="admin-image-preview-grid" aria-live="polite"></div>
+              </section>
 
               <div class="admin-add-color-slot">
                 <div class="admin-add-color-heading">
