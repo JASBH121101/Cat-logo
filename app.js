@@ -514,7 +514,7 @@ function renderCard(product) {
   const capacity = cardRam && cardStorage
     ? `${/\bram\b/i.test(cardRam) ? cardRam : `${cardRam} RAM`} / ${cardStorage}`
     : cardRam || cardStorage;
-  const nioPrice = startingPrice(product, "price_nio");
+  const nioPrice = cardConfiguration?.price_nio ?? startingPrice(product, "price_nio");
   const nio = formatNIO(nioPrice);
 
   return `
