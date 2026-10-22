@@ -574,7 +574,7 @@ function renderVariantRows(variants=[]){
  container.querySelectorAll("[data-variant-row]").forEach(row => renderVariantImagePreview(row));
 }
 
-function addVariantRow(variant = {}, targetGroup = null) {
+function addVariantRow(variant = {}, targetGroup = null, options = {}) {
   const container = $("#product-variants-list");
   if (!container) return;
   container.querySelector(".variants-empty-hint")?.remove();
@@ -589,7 +589,7 @@ function addVariantRow(variant = {}, targetGroup = null) {
   renderVariantImagePreview(list.lastElementChild);
   updateVariantRowHeadings();
   const rows = list.querySelectorAll("[data-variant-row]");
-  rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
+  if (options.focus !== false) rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
 }
 
 function updateVariantRowHeadings() {
@@ -658,19 +658,54 @@ variantsContainer?.addEventListener("drop",e=>{const card=e.target.closest("[dat
 variantsContainer?.addEventListener("dragend",()=>{draggingVariantImage=null;variantsContainer.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
 
 
-$("#add-base-color-button")?.addEventListener("click", event => {
+/* Selector rápido: permite elegir el color junto al precio/garantía sin saltar de sección. */
+const quickColorPalette = $("#quick-color-palette");
+const quickColorButton = $("#add-base-color-button");
+const quickColorStatus = $("#quick-color-status");
+
+if (quickColorPalette) {
+  quickColorPalette.innerHTML = COLOR_PALETTE.map(color => `
+    <button class="quick-color-swatch" type="button" data-quick-color="${escapeHtml(color.name)}"
+      data-quick-color-hex="${color.hex}" title="${escapeHtml(color.name)}"
+      aria-label="Añadir color ${escapeHtml(color.name)}">
+      <span class="quick-color-dot" style="--quick-color:${color.hex}"></span>
+      <span class="quick-color-name">${escapeHtml(color.name)}</span>
+    </button>`).join("");
+}
+
+quickColorButton?.addEventListener("click", event => {
   event.preventDefault();
+  const expanded = quickColorButton.getAttribute("aria-expanded") === "true";
+  quickColorButton.setAttribute("aria-expanded", String(!expanded));
+  quickColorPalette?.toggleAttribute("hidden", expanded);
+});
+
+quickColorPalette?.addEventListener("click", event => {
+  const choice = event.target.closest("[data-quick-color]");
+  if (!choice) return;
+  const color = choice.dataset.quickColor || "";
+  const hex = choice.dataset.quickColorHex || "#242424";
   const container = $("#product-variants-list");
   if (!container) return;
+
   let baseGroup = container.querySelector('[data-variant-group][data-base-group="true"]');
   if (!baseGroup) {
     renderVariantRows([]);
     baseGroup = container.querySelector('[data-variant-group][data-base-group="true"]');
   }
-  if (baseGroup) {
-    addVariantRow({color:"",color_hex:"#242424",image_url:"",availability:"available"}, baseGroup);
-    updateEditorDirtyState();
+  if (!baseGroup) return;
+
+  const duplicate = Array.from(baseGroup.querySelectorAll("[data-variant-color]"))
+    .some(input => input.value.trim().toLocaleLowerCase("es") === color.toLocaleLowerCase("es"));
+  if (duplicate) {
+    if (quickColorStatus) quickColorStatus.textContent = `${color} ya está añadido. Elegí otro color.`;
+    return;
   }
+
+  addVariantRow({color, color_hex:hex, image_url:"", availability:"available"}, baseGroup, {focus:false});
+  updateEditorDirtyState();
+  if (quickColorStatus) quickColorStatus.textContent = `Color ${color} añadido. Podés cargar sus fotografías en Variantes.`;
+  choice.classList.add("is-selected");
 });
 
 $("#add-variant-button")?.addEventListener("click", event => {
