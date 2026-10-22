@@ -1,6 +1,9 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const CONFIG = window.CATALOG_CONFIG || {};
+
+// Selector breve usado por los controles de la ficha de producto.
+const $ = selector => document.querySelector(selector);
 const whatsappNumber = String(CONFIG.whatsappNumber || "").replace(/\D/g, "");
 
 const grid = document.querySelector("#product-grid");
