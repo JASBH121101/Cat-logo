@@ -2926,7 +2926,7 @@ button:disabled {
 .admin-input-unit{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line,var(--border,#394765));border-radius:12px;padding:0 13px;background:var(--input-bg,transparent)}
 .admin-input-unit>span{flex:0 0 auto;color:var(--muted,#9eabc4);font-weight:700}
 .admin-input-unit input{min-width:0;flex:1;width:100%;border:0!important;background:transparent!important;box-shadow:none!important;padding-left:0!important;padding-right:0!important}
-.admin-preview-remove{margin-top:7px}
+.admin-preview-remove{display:inline-grid;place-items:center;min-width:36px;min-height:36px;margin-top:5px;padding:0;font-size:23px;font-weight:500;line-height:1;touch-action:manipulation}
 .variant-config-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
 .variant-config-fields label{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--ink);font-size:13px;font-weight:700}
 .variant-config-fields input,.variant-config-fields select{width:100%;min-width:0}
@@ -2950,3 +2950,14 @@ button:disabled {
 .variant-selected-summary{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:14px 0}
 .variant-status-badge.unavailable{background:#fee2e2;color:#991b1b}
 @media(max-width:520px){.variant-option-group{padding:13px}.variant-choice-list{gap:8px}.variant-choice{padding:10px 12px}.color-choice{min-width:0;flex:1 1 calc(50% - 8px)}}
+
+
+/* Acciones para retirar fotografías: compactas, pero accesibles al tacto. */
+.admin-image-preview-card .admin-preview-remove { width:36px; height:36px; }
+.variant-image-preview .admin-preview-remove { flex:0 0 36px; margin:0 0 0 auto; }
+.admin-preview-remove:focus-visible { outline:3px solid rgba(91,116,255,.55); outline-offset:2px; }
+@media (max-width:480px) {
+  .admin-image-preview-card { padding:7px; }
+  .admin-image-preview-grid { gap:9px; }
+  .variant-image-preview { gap:7px; flex-wrap:wrap; }
+}
