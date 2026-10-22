@@ -676,14 +676,15 @@ function renderVariantRows(variants = []) {
 function addVariantRow(variant = {}, targetGroup = null, options = {}) {
   const container = $("#product-variants-list");
   if (!container) return;
-  container.querySelector(".variants-empty-hint")?.remove();
   let group = targetGroup;
   if (!group) {
+    container.querySelector(".variants-empty-hint")?.remove();
     container.insertAdjacentHTML("beforeend", variantGroupMarkup(variant, false));
     group = container.lastElementChild;
   }
   const list = group.querySelector("[data-variant-color-list]");
   if (!list) return;
+  list.querySelector(".variants-empty-hint")?.remove();
   list.insertAdjacentHTML("beforeend", variantRowMarkup(variant));
   renderVariantImagePreview(list.lastElementChild);
   updateVariantRowHeadings();
