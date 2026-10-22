@@ -5465,3 +5465,10 @@ body.admin-body:not(.admin-dashboard-active) .admin-header > .theme-toggle .them
     border-radius: 11px;
   }
 }
+
+
+/* En el inicio de sesión, ocultar el enlace público.
+   Al iniciar sesión, admin-dashboard-active se añade al body y el enlace vuelve a mostrarse. */
+body.admin-body:not(.admin-dashboard-active) .admin-header > .back-link {
+  display: none !important;
+}
