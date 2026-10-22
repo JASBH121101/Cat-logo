@@ -3064,3 +3064,24 @@ html[data-theme="dark"] .variant-price-box small {
     font-size: 27px;
   }
 }
+
+/* Neutraliza el aumento tipográfico global dentro de las tarjetas resumidas. */
+html[data-theme] .product-card .product-category { font-size: 10px; }
+html[data-theme] .product-card h3 { font-size: 16px; line-height: 1.35; }
+html[data-theme] .product-card-capacity { font-size: 12px; line-height: 1.4; }
+html[data-theme] .product-card .product-price-label { font-size: 10px; }
+html[data-theme] .product-card .product-price { font-size: 22px; line-height: 1.25; }
+html[data-theme] .product-card .product-price-secondary { font-size: 11px; }
+html[data-theme] .product-card .product-view-button { font-size: 13px; }
+@media (max-width:760px) {
+  html[data-theme] .product-card .product-category { font-size: 10px; }
+  html[data-theme] .product-card h3 { font-size: 14px; }
+  html[data-theme] .product-card-capacity { font-size: 11px; }
+  html[data-theme] .product-card .product-price-label { font-size: 10px; }
+  html[data-theme] .product-card .product-price { font-size: clamp(17px,4.6vw,22px); }
+  html[data-theme] .product-card .product-price-secondary { font-size: 10px; }
+  html[data-theme] .product-card .product-view-button { font-size: 12px; }
+}
+@media (max-width:360px) {
+  html[data-theme] .product-card .product-price { font-size: 16px; }
+}
