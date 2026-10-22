@@ -12,10 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261022-sidebar1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261022-sidebar1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261022-analytics-pie1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261022-sidebar1"></script>
+  <script type="module" src="admin.js?v=20261022-analytics-pie1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -210,7 +210,33 @@
               <div><span>Visitas a fichas</span><strong id="dashboard-views-total">—</strong></div>
               <div><span>Clics en WhatsApp</span><strong id="dashboard-whatsapp-total">—</strong></div>
             </div>
-            <p class="dashboard-widget-note" id="dashboard-analytics-note">La analítica estará disponible después de instalar la tabla de eventos en Supabase.</p>
+            <p class="dashboard-widget-note" id="dashboard-analytics-note">Las estadísticas aparecerán cuando se registren visitas y consultas.</p>
+
+            <section class="dashboard-interest-chart-section" aria-labelledby="dashboard-interest-chart-title">
+              <div class="dashboard-interest-section-heading">
+                <div><p class="dashboard-eyebrow">COMBINACIONES</p><h4 id="dashboard-interest-chart-title">Qué versiones consultan</h4></div>
+                <span class="dashboard-interest-pill">WhatsApp</span>
+              </div>
+              <div class="dashboard-interest-chart-layout">
+                <div class="dashboard-interest-pie-wrap">
+                  <div id="dashboard-interest-pie" class="dashboard-interest-pie" role="img" aria-label="Aún no hay clics de WhatsApp registrados."><span class="dashboard-interest-pie-total" id="dashboard-interest-pie-total">0</span><small>clics</small></div>
+                </div>
+                <div id="dashboard-interest-legend" class="dashboard-interest-legend"><p class="dashboard-empty-state">El gráfico aparecerá cuando haya consultas por WhatsApp.</p></div>
+              </div>
+            </section>
+
+            <div class="dashboard-interest-rankings">
+              <section class="dashboard-interest-ranking">
+                <div class="dashboard-interest-section-heading"><div><p class="dashboard-eyebrow">COLOR</p><h4>Más consultados</h4></div></div>
+                <div id="dashboard-interest-colors" class="dashboard-interest-rank-list"><p class="dashboard-empty-state">Todavía no hay datos de colores.</p></div>
+              </section>
+              <section class="dashboard-interest-ranking">
+                <div class="dashboard-interest-section-heading"><div><p class="dashboard-eyebrow">RAM / ROM</p><h4>Configuraciones más pedidas</h4></div></div>
+                <div id="dashboard-interest-configs" class="dashboard-interest-rank-list"><p class="dashboard-empty-state">Todavía no hay datos de configuraciones.</p></div>
+              </section>
+            </div>
+
+            <div class="dashboard-interest-products-heading"><h4>Teléfonos con más interés</h4><span>Visitas / WhatsApp</span></div>
             <div class="dashboard-top-products" id="dashboard-top-products"><p class="dashboard-empty-state">Aún no hay datos de visitas.</p></div>
           </article>
         </div>
