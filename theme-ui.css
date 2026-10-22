@@ -4194,3 +4194,81 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
 .admin-form #product-specs { min-height: 90px !important; height: auto !important; resize: vertical !important; overflow: auto !important; }
  .quick-color-status { display: none !important; margin: 0 !important; font-size: 11px !important; }
 .quick-color-status[data-state="error"] { display: block !important; color: #ff9da6 !important; }
+
+/* Legibilidad selectiva del editor: más tamaño y contraste sin agrandar las tarjetas. */
+.variant-config-group-heading strong {
+  color: #edf3ff !important;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+.variant-config-group-heading small {
+  color: #b2c4e5 !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+.variant-config-fields > label {
+  color: #d9e5ff !important;
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  gap: 6px !important;
+}
+.variant-config-fields input {
+  font-size: 14px !important;
+}
+.variant-color-section-title {
+  color: #bacbf0 !important;
+  font-size: 14.5px !important;
+  line-height: 1.4 !important;
+  font-weight: 750 !important;
+}
+.inline-color-details > summary {
+  color: #a9c9ff !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  font-weight: 750 !important;
+  padding: 2px 0 !important;
+}
+.inline-color-details[open] > summary {
+  margin-bottom: 8px !important;
+}
+.inline-color-name-field,
+.inline-color-tone-field {
+  color: #c4d3f0 !important;
+  font-size: 10.5px !important;
+  line-height: 1.35 !important;
+}
+.inline-color-name-field input {
+  font-size: 12.5px !important;
+}
+.inline-color-details .variant-color-fields > label {
+  color: #d5e1fa !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+.inline-color-details .variant-color-fields select,
+.inline-color-details [data-variant-hex-text] {
+  font-size: 13px !important;
+  min-height: 36px !important;
+}
+.variant-config-group:not(.variant-base-group) .variant-add-color {
+  min-height: 33px !important;
+  padding: 6px 12px !important;
+  font-size: 12.5px !important;
+  line-height: 1.3 !important;
+}
+.admin-add-color-heading .button {
+  font-size: 12.5px !important;
+}
+.variants-editor-heading p {
+  color: #bac8e4 !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+@media(max-width: 600px) {
+  .variant-config-group-heading strong { font-size: 15px !important; }
+  .variant-config-fields > label { font-size: 14px !important; }
+  .variant-color-section-title { font-size: 13.5px !important; }
+  .inline-color-details > summary { font-size: 12px !important; }
+}
+
