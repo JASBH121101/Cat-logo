@@ -185,16 +185,14 @@ function getProductVariants(product) {
       color_hex: validHex(item.color_hex || item.hex),
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
-      availability: item.availability === "order" ? "order" : "available",
+      availability: item.availability === "order" ? "order" : item.availability === "out_of_stock" ? "out_of_stock" : "available",
       image_url: String(item.image_url || item.imageUrl || "").trim()
     };
   }).filter(item => item && (item.storage || item.ram || item.color));
 }
 
 function colorStatusLabel(value) {
-  return value === "order" || value === "on_order"
-    ? "Por pedido"
-    : "Disponible";
+  return value === "order" || value === "on_order" ? "Por pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
 }
 
 function getProductColors(product) {
