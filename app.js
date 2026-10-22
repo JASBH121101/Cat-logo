@@ -565,10 +565,10 @@ function renderVariantButtonGroup(variants, selected, field, title) {
                 data-variant-dimension="color"
                 data-variant-value="${escapeHtml(value)}"
                 aria-pressed="${isSelected ? "true" : "false"}"
-                title="${escapeHtml(`${value} · ${status}`)}">
+                title="${escapeHtml(`${value} · ${status}`)}"
+                aria-label="${escapeHtml(`${value}: ${status}`)}">
           <span class="variant-color-dot" style="background:${swatch}" aria-hidden="true"></span>
           <span class="variant-color-name">${escapeHtml(value)}</span>
-          <small>${escapeHtml(status)}</small>
         </button>
       `;
     }).join("");
@@ -623,23 +623,25 @@ function renderVariantControls(product, variants, selected) {
       ${renderVariantButtonGroup(variants, selected, "color", "Color")}
     </div>
 
-    <div class="variant-selected-summary">
-      <span>Configuración seleccionada</span>
-      <strong>${escapeHtml(configuration || "Configuración estándar")}</strong>
-      <span class="variant-status-badge ${isOrder ? "order" : isUnavailable ? "unavailable" : "available"}">${status}</span>
-    </div>
+    <div class="variant-bottom-row">
+      <div class="variant-selected-summary">
+        <span>Versión seleccionada</span>
+        <strong>${escapeHtml(configuration || "Configuración estándar")}</strong>
+        <span class="variant-status-badge ${isOrder ? "order" : isUnavailable ? "unavailable" : "available"}">${status}</span>
+      </div>
 
-    <div class="variant-price-box">
-      <span>Precio de esta configuración</span>
-      <strong>${escapeHtml(usd)}</strong>
-      ${nio ? `<small>${escapeHtml(nio)}</small>` : ""}
+      <div class="variant-price-box">
+        <span>Precio de esta versión</span>
+        <strong>${escapeHtml(usd)}</strong>
+        ${nio ? `<small>${escapeHtml(nio)}</small>` : ""}
+      </div>
     </div>
 
     <a id="variant-whatsapp-link"
        class="button button-primary variant-whatsapp-button"
        href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product, selected)))}"
        target="_blank"
-       rel="noopener">Consultar esta configuración por WhatsApp ↗</a>
+       rel="noopener">Consultar por WhatsApp ↗</a>
   `;
 
   const dialogImage = $("#dialog-image");
@@ -720,8 +722,7 @@ function openProduct(product) {
 
         ${
           variants.length
-            ? `<p class="variant-intro">Seleccioná la capacidad, RAM y color. El precio cambiará según la configuración registrada.</p>
-               <div id="variant-options-area"></div>`
+            ? `<div id="variant-options-area"></div>`
             : `<div class="product-price-label">Precio de referencia</div>
                <div class="product-price">${escapeHtml(formatUSD(product.price_usd))}</div>
                ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
