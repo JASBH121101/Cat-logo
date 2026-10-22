@@ -532,6 +532,14 @@ function chooseVariant(variants, current, field, value) {
 }
 
 function renderVariantButtonGroup(variants, selected, field, title) {
+  // Los colores pertenecen a la configuración RAM/almacenamiento seleccionada.
+  if (field === "color") {
+    variants = variants.filter(variant =>
+      String(variant.storage || "").trim() === String(selected.storage || "").trim() &&
+      String(variant.ram || "").trim() === String(selected.ram || "").trim()
+    );
+  }
+
   if (field === "storage") {
     const values = [];
     const seen = new Set();
@@ -781,7 +789,13 @@ function openProduct(product) {
           || matching[0]
           || selectedVariant;
       } else {
-        selectedVariant = chooseVariant(variants, selectedVariant, button.dataset.variantDimension, button.dataset.variantValue);
+        const candidates = button.dataset.variantDimension === "color"
+          ? variants.filter(variant =>
+              String(variant.storage || "").trim() === String(selectedVariant.storage || "").trim() &&
+              String(variant.ram || "").trim() === String(selectedVariant.ram || "").trim()
+            )
+          : variants;
+        selectedVariant = chooseVariant(candidates, selectedVariant, button.dataset.variantDimension, button.dataset.variantValue);
       }
       renderVariantControls(product, variants, selectedVariant);
     });
