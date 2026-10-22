@@ -180,8 +180,7 @@ function getProductImages(product) {
 }
 
 function normalizeVariantAvailability(value) {
-  const normalized = String(value || "").trim().toLocaleLowerCase("es")
-    .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  const normalized = String(value || "").trim().toLocaleLowerCase("es");
   if (["order", "on_order", "por pedido"].includes(normalized)) return "order";
   if (["out_of_stock", "unavailable", "no disponible", "agotado", "agotado temporalmente"].includes(normalized)) {
     return "out_of_stock";
