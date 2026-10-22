@@ -223,13 +223,19 @@ function colorStatusLabel(value) {
   return value === "order" || value === "on_order" ? "Por pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
 }
 
-function getProductColors(product) {
+function getProductColors(product, configuration = null) {
   const variants = getProductVariants(product);
 
   if (variants.length) {
+    const scopedVariants = configuration
+      ? variants.filter(variant =>
+          variant.storage === configuration.storage &&
+          variant.ram === configuration.ram
+        )
+      : variants;
     const map = new Map();
 
-    variants.forEach(variant => {
+    scopedVariants.forEach(variant => {
       const key = variant.color.toLocaleLowerCase("es");
       if (!key) return;
 
@@ -304,8 +310,8 @@ function displayColorHex(name, hex) {
   return validHex(hex);
 }
 
-function renderProductColorSwatches(product) {
-  const colors = getProductColors(product)
+function renderProductColorSwatches(product, configuration = null) {
+  const colors = getProductColors(product, configuration)
     .filter(color => color.name && color.type !== "out_of_stock");
   if (!colors.length) return "";
 
@@ -313,14 +319,12 @@ function renderProductColorSwatches(product) {
     const hex = displayColorHex(color.name, color.color_hex);
     const status = color.type === "order" ? "Disponible por pedido" : "Disponible";
     return `
-      <span class="product-card-color-option">
-        <button class="product-card-color-swatch"
-                type="button"
-                style="--swatch-color: ${hex}"
-                title="${escapeHtml(color.name)}"
-                data-product-color="${escapeHtml(color.name)}"
-                aria-label="${escapeHtml(color.name)} · ${status}"
-                aria-pressed="false"></button>
+      <span class="product-card-color-option"
+            title="${escapeHtml(color.name)} · ${status}">
+        <span class="product-card-color-swatch"
+              role="img"
+              aria-label="${escapeHtml(color.name)}"
+              style="--swatch-color: ${hex}"></span>
         <span class="product-card-color-name">${escapeHtml(color.name)}</span>
       </span>
     `;
@@ -427,6 +431,34 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
   return parts.join(" ");
 }
 
+function buildFinancingWhatsAppMessage(product, variant = null) {
+  const displayName = [product.brand, product.model].filter(Boolean).join(" ") ||
+    String(product.name || "este producto");
+  const parts = [`Hola, quisiera consultar las opciones de financiación para ${displayName}.`];
+
+  if (variant) {
+    const configuration = [variant.ram, variant.storage, variant.color].filter(Boolean).join(" · ");
+    if (configuration) parts.push(`Versión de interés: ${configuration}.`);
+    if (variant.price_usd !== null && variant.price_usd !== undefined) {
+      parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
+    }
+    const nio = formatNIO(variant.price_nio);
+    if (nio) parts.push(`Precio en córdobas: ${nio}.`);
+    parts.push(`Disponibilidad informada: ${colorStatusLabel(variant.availability)}.`);
+  } else {
+    const usdPrice = startingPrice(product, "price_usd");
+    if (usdPrice !== null && usdPrice !== undefined) {
+      parts.push(`Precio de referencia: ${formatUSD(usdPrice)}.`);
+    }
+    const nio = formatNIO(startingPrice(product, "price_nio"));
+    if (nio) parts.push(`Precio en córdobas: ${nio}.`);
+  }
+
+  parts.push(`Enlace del producto: ${productLink(product)}.`);
+  parts.push("Quisiera conocer los requisitos, plazos, cuotas y condiciones de aprobación disponibles.");
+  return parts.join(" ");
+}
+
 function startingPrice(product, field = "price_usd") {
   const variants = getProductVariants(product);
 
@@ -465,14 +497,23 @@ function renderCard(product) {
   const brand = String(product.brand || "").trim();
   const model = String(product.model || "").trim();
   const title = brand && model ? `${brand} ${model}` : String(product.name || brand || model || "Producto");
-  const configurations = [...new Set(variants.map(variant => {
-    const storage = String(variant.storage || "").trim();
-    const ram = String(variant.ram || "").trim();
-    if (storage && ram) return `${/\bram\b/i.test(ram) ? ram : `${ram} RAM`} / ${storage}`;
-    return ram || storage;
-  }).filter(Boolean))];
-  const capacity = configurations[0] || "";
   const price = startingPrice(product, "price_usd");
+  const cardConfiguration =
+    variants
+      .filter(variant =>
+        variant.availability === "available" &&
+        variant.price_usd !== null &&
+        Number.isFinite(variant.price_usd)
+      )
+      .sort((left, right) => left.price_usd - right.price_usd)[0] ||
+    variants.find(variant => variant.availability === "available") ||
+    variants[0] ||
+    null;
+  const cardRam = String(cardConfiguration?.ram || "").trim();
+  const cardStorage = String(cardConfiguration?.storage || "").trim();
+  const capacity = cardRam && cardStorage
+    ? `${/\bram\b/i.test(cardRam) ? cardRam : `${cardRam} RAM`} / ${cardStorage}`
+    : cardRam || cardStorage;
   const nioPrice = startingPrice(product, "price_nio");
   const nio = formatNIO(nioPrice);
 
@@ -487,7 +528,7 @@ function renderCard(product) {
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
-        ${renderProductColorSwatches(product)}
+        ${renderProductColorSwatches(product, cardConfiguration)}
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
@@ -706,7 +747,7 @@ function renderVariantControls(product, variants, selected) {
 
   const financingLink = $("#dialog-financing-link");
   if (financingLink) {
-    financingLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, selected));
+    financingLink.href = buildWhatsAppLink(buildFinancingWhatsAppMessage(product, selected));
   }
 
   area.innerHTML = `
@@ -891,7 +932,7 @@ function openProduct(product) {
 
         <a id="dialog-financing-link"
            class="button button-secondary dialog-financing-button"
-           href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product)))}"
+           href="${escapeHtml(buildWhatsAppLink(buildFinancingWhatsAppMessage(product)))}"
            target="_blank"
            rel="noopener">Consultar financiación por WhatsApp ↗</a>
 
@@ -952,18 +993,6 @@ function openProduct(product) {
 
 grid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
-  const colorButton = target?.closest("button[data-product-color]");
-  if (colorButton) {
-    const card = colorButton.closest(".product-card");
-    if (!card) return;
-    card.querySelectorAll("button[data-product-color]").forEach(button => {
-      const selected = button === colorButton;
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
-    return;
-  }
-
   const link = target?.closest("a[data-details]");
   if (!link) return;
 

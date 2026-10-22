@@ -6055,34 +6055,6 @@ html[data-theme="dark"] body:not(.admin-body) .benefit-row {
 }
 
 
-/* Interacción de colores en las tarjetas: el nombre aparece al tocar o hacer clic. */
-body:not(.admin-body) .product-card-color-swatch {
-  appearance: none;
-  -webkit-appearance: none;
-  padding: 0;
-  cursor: pointer;
-  transition: transform .16s ease, box-shadow .16s ease, outline-color .16s ease;
-}
-body:not(.admin-body) .product-card-color-swatch:hover { transform: scale(1.12); }
-body:not(.admin-body) .product-card-color-swatch:focus-visible,
-body:not(.admin-body) .product-card-color-swatch.is-selected {
-  outline: 2px solid var(--catalog-swatch-selected, #4568e8);
-  outline-offset: 2px;
-  transform: scale(1.08);
-}
-body:not(.admin-body) .product-card-color-selected-name {
-  display: block;
-  min-height: 0;
-  margin-top: 3px;
-  color: var(--catalog-color-label, #647391);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-body:not(.admin-body) .product-card-color-selected-name:empty { display: none; }
-html[data-theme="light"] body:not(.admin-body) { --catalog-swatch-selected: #315de0; }
-html[data-theme="dark"] body:not(.admin-body) { --catalog-swatch-selected: #9daaff; }
-
 /* Producto destacado: énfasis visible, sin cambiar el tamaño de la tarjeta. */
 body:not(.admin-body) .featured-product-card {
   position: relative;
@@ -6217,4 +6189,39 @@ html[data-theme="dark"] body:not(.admin-body) {
     padding: 12px;
     text-align: center;
   }
+}
+
+
+/* Nombres de colores permanentes bajo sus muestras, también en dispositivos táctiles. */
+body:not(.admin-body) .product-card-color-list {
+  align-items: flex-start;
+  gap: 7px 9px;
+}
+body:not(.admin-body) .product-card-color-option {
+  display: inline-flex;
+  flex: 0 1 auto;
+  min-width: 30px;
+  max-width: 64px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+body:not(.admin-body) .product-card-color-swatch {
+  cursor: default;
+  transition: none;
+}
+body:not(.admin-body) .product-card-color-name {
+  max-width: 64px;
+  color: var(--catalog-color-label, #647391);
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  body:not(.admin-body) .product-card-color-list { gap: 7px 6px; }
+  body:not(.admin-body) .product-card-color-option { min-width: 28px; max-width: 52px; gap: 3px; }
+  body:not(.admin-body) .product-card-color-name { max-width: 52px; font-size: 8px; }
 }
