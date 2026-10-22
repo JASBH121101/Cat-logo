@@ -3641,3 +3641,15 @@ html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
     max-width: 100%;
   }
 }
+
+
+/* Acciones de variantes en el flujo principal, debajo de la explicación. */
+.variants-editor-heading { display:flex; flex-direction:column; align-items:stretch; gap:12px; }
+.variants-editor-copy { width:100%; }
+.variants-editor-actions { display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:10px; width:100%; margin-top:2px; }
+.variants-editor-actions .button { min-height:40px; padding:10px 14px; }
+@media (max-width:520px) {
+  .variants-editor-actions { display:grid; grid-template-columns:1fr; }
+  .variants-editor-actions .button { width:100%; }
+}
+html[data-theme="dark"] .variants-editor-actions .button { color:#e6ecff; }
