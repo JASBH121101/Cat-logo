@@ -3217,3 +3217,80 @@ html[data-theme="dark"] .site-header > .theme-toggle {
     min-height: 42px;
   }
 }
+
+
+/* Catálogo: búsqueda y filtros compactos, con overrides para ambos temas. */
+html[data-theme] .section-heading h2 {
+  font-size: clamp(25px, 2.5vw, 34px);
+}
+html[data-theme] .section-subtitle {
+  font-size: 14px;
+  line-height: 1.45;
+}
+html[data-theme] .search-box {
+  min-height: 44px;
+  height: 44px;
+  gap: 8px;
+  padding: 0 11px;
+}
+html[data-theme] .search-box input {
+  font-size: 14px;
+}
+html[data-theme] .search-box kbd {
+  font-size: 11px;
+}
+html[data-theme] .filter-row {
+  gap: 7px;
+  margin: 14px 0 18px;
+}
+html[data-theme] .filter-chip {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+@media (max-width:760px) {
+  html[data-theme] .catalog-section {
+    padding: 30px 16px 38px;
+  }
+  html[data-theme] .section-heading {
+    gap: 12px;
+  }
+  html[data-theme] .section-heading h2 {
+    font-size: clamp(23px, 6vw, 29px);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  html[data-theme] .section-subtitle {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  html[data-theme] .search-box {
+    min-height: 43px;
+    height: 43px;
+    margin-top: 2px;
+  }
+  html[data-theme] .search-box input {
+    font-size: 14px;
+  }
+  html[data-theme] .search-box kbd {
+    display: none;
+  }
+  html[data-theme] .filter-row {
+    gap: 6px;
+    margin: 10px 0 14px;
+  }
+  html[data-theme] .filter-chip {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  html[data-theme] .mobile-category-toggle {
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+@media (min-width:761px) {
+  html[data-theme] .catalog-section {
+    padding-top: 54px;
+    padding-bottom: 54px;
+  }
+}
