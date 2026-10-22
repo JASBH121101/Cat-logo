@@ -1226,8 +1226,6 @@ function fillEditor(product) {
   $("#product-price-nio").value = product.price_nio ?? "";
   $("#product-warranty").value = product.warranty_months ?? "";
 
-  $("#product-description").value = product.description || "";
-
   $("#product-specs").value =
     specsText(product.specifications);
 
@@ -1498,8 +1496,8 @@ form?.addEventListener("submit", async event => {
       price_nio: priceNIO,
       warranty_months: warranty,
 
-      description:
-        $("#product-description").value.trim() || null,
+      // Se conserva la descripción anterior sin mostrar un campo redundante en el editor.
+      description: existingProduct?.description || null,
 
       specifications: parseSpecs(
         $("#product-specs").value
