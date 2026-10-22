@@ -3073,3 +3073,8 @@ html[data-theme="dark"] .dialog-gallery-thumb img { mix-blend-mode:normal; }
  .dialog-gallery-thumb { width:50px; height:50px; }
  .variant-image-preview { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+@media (max-width:380px) {
+  .site-header:not(.admin-header) > .brand .brand-mark { display:none; }
+  .site-header:not(.admin-header) > .brand { font-size:14px; }
+}
