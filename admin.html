@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261022-gallery4">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261022-colors5"></script>
+  <script type="module" src="admin.js?v=20261022-analytics1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -166,6 +166,16 @@
             <button type="button" class="dashboard-quick-action" data-dashboard-action="published"><span class="quick-action-icon">✓</span><span><strong>Ver publicados</strong><small>Administrar el catálogo visible</small></span><span>›</span></button>
             <button type="button" class="dashboard-quick-action" data-dashboard-action="drafts"><span class="quick-action-icon">◷</span><span><strong>Ver no publicados</strong><small>Continuar productos pendientes</small></span><span>›</span></button>
             <a class="dashboard-public-link" href="./index.html" target="_blank" rel="noopener"><span>↗</span> Abrir catálogo público</a>
+          </article>
+
+          <article class="dashboard-widget dashboard-analytics-widget">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">INTERÉS DE CLIENTES</p><h3>Visitas y consultas</h3></div><span class="dashboard-widget-icon">↗</span></div>
+            <div class="dashboard-analytics-summary">
+              <div><span>Visitas a fichas</span><strong id="dashboard-views-total">—</strong></div>
+              <div><span>Clics en WhatsApp</span><strong id="dashboard-whatsapp-total">—</strong></div>
+            </div>
+            <p class="dashboard-widget-note" id="dashboard-analytics-note">La analítica estará disponible después de instalar la tabla de eventos en Supabase.</p>
+            <div class="dashboard-top-products" id="dashboard-top-products"><p class="dashboard-empty-state">Aún no hay datos de visitas.</p></div>
           </article>
         </div>
       </section>
