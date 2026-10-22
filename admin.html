@@ -126,8 +126,7 @@
           <div class="card-heading">
             <div>
               <h2 id="form-title">Agregar producto</h2>
-              <p>Los campos marcados con * son obligatorios.</p>
-            </div>
+</div>
             <button id="new-product-button"
                     class="text-button"
                     type="button">+ Nuevo</button>
@@ -139,25 +138,24 @@
 
             <div class="form-grid">
               <label class="span-2">
-                Nombre del producto *
+                Nombre del producto <span class="required-mark" aria-hidden="true">*</span>
                 <input id="product-name"
                        required
-                       maxlength="160"
-                       placeholder="Ej. iPhone 18 Pro Max">
+                       maxlength="160">
               </label>
 
               <label>
                 Marca
-                <input id="product-brand" maxlength="80" placeholder="Apple">
+                <input id="product-brand" maxlength="80">
               </label>
 
               <label>
                 Modelo
-                <input id="product-model" maxlength="100" placeholder="Modelo exacto">
+                <input id="product-model" maxlength="100">
               </label>
 
               <label>
-                Categoría *
+                Categoría <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-category" required>
                   <option value="Celulares">Celulares</option>
                   <option value="Laptops">Laptops</option>
@@ -180,39 +178,34 @@
               </label>
 
               <label>
-                Precio base en dólares (opcional)
+                Precio base en dólares
                 <input id="product-price-usd"
-                       type="number" min="0" step="0.01"
-                       placeholder="Se puede dejar vacío">
+                       type="number" min="0" step="0.01">
               </label>
 
               <label>
-                Precio base en córdobas (opcional)
+                Precio base en córdobas
                 <input id="product-price-nio"
-                       type="number" min="0" step="0.01"
-                       placeholder="Se puede dejar vacío">
+                       type="number" min="0" step="0.01">
               </label>
 
               <label>
                 Garantía en meses
                 <input id="product-warranty"
-                       type="number" min="0" max="120" step="1"
-                       placeholder="Si se confirmó">
+                       type="number" min="0" max="120" step="1">
               </label>
 
               <label class="span-2">
                 Descripción breve
                 <textarea id="product-description"
                           rows="3"
-                          maxlength="500"
-                          placeholder="Descripción del producto."></textarea>
+                          maxlength="500"></textarea>
               </label>
 
               <label class="span-2">
                 Especificaciones generales (una por línea: Nombre: valor)
                 <textarea id="product-specs"
-                          rows="5"
-                          placeholder="Pantalla: ...&#10;Conectividad: ...&#10;Sistema: ..."></textarea>
+                          rows="5"></textarea>
               </label>
 
               <div class="span-2 admin-upload-field">
@@ -228,10 +221,9 @@
               </div>
 
               <label class="span-2">
-                URLs de fotografías existentes (una por línea)
+                Fotografías existentes por URL
                 <textarea id="existing-image-urls"
-                          rows="2"
-                          placeholder="https://... (opcional)"></textarea>
+                          rows="2"></textarea>
               </label>
 
               <section class="span-2 variants-editor-section"
@@ -240,9 +232,7 @@
                   <div>
                     <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
                     <p>
-                      Agregá cada combinación de capacidad, RAM y color.
-                      Cada una puede tener su propio precio, estado y fotografía.
-                      El producto aparecerá una sola vez en el catálogo.
+                      Agrupá por capacidad y RAM, y agregá los colores disponibles. Cada color puede tener precio, estado y fotografía propios.
                     </p>
                   </div>
                   <button id="add-variant-button"
@@ -270,10 +260,9 @@
               </label>
 
               <label class="span-2">
-                Nota de entrega (opcional)
+                Nota de entrega
                 <textarea id="product-shipping"
-                          rows="2"
-                          placeholder="Condiciones particulares de entrega (opcional)."></textarea>
+                          rows="2"></textarea>
               </label>
 
               <label class="check-label">
@@ -312,7 +301,6 @@
             <span aria-hidden="true">⌕</span>
             <input id="admin-search"
                    type="search"
-                   placeholder="Buscar en inventario…"
                    aria-label="Buscar inventario">
           </label>
 
