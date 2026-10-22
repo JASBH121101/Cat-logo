@@ -322,11 +322,13 @@ function renderProductColorSwatches(product) {
     const hex = displayColorHex(color.name, color.color_hex);
     const status = color.type === "order" ? "Disponible por pedido" : "Disponible";
     return `
-      <span class="product-card-color-swatch"
-            style="--swatch-color: ${hex}"
-            title="${escapeHtml(color.name)} · ${status}"
-            role="listitem"
-            aria-label="${escapeHtml(color.name)} · ${status}"></span>
+      <button class="product-card-color-swatch"
+              type="button"
+              style="--swatch-color: ${hex}"
+              title="${escapeHtml(color.name)}"
+              data-product-color="${escapeHtml(color.name)}"
+              aria-label="Mostrar color ${escapeHtml(color.name)} · ${status}"
+              aria-pressed="false"></button>
     `;
   }).join("");
   const more = colors.length > 6
@@ -336,7 +338,8 @@ function renderProductColorSwatches(product) {
   return `
     <div class="product-card-colors" aria-label="Colores disponibles">
       <span class="product-card-colors-label">Colores</span>
-      <div class="product-card-color-list" role="list">${visible}${more}</div>
+      <div class="product-card-color-list" role="group" aria-label="Elegí un color para ver su nombre">${visible}${more}</div>
+      <span class="product-card-color-selected-name" aria-live="polite"></span>
     </div>
   `;
 }
@@ -456,7 +459,7 @@ function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const badge = product.featured
-    ? '<span class="product-badge featured-badge">DESTACADO</span>'
+    ? '<span class="product-badge featured-badge">✦ DESTACADO</span>'
     : "";
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
@@ -481,7 +484,7 @@ function renderCard(product) {
   const nio = formatNIO(nioPrice);
 
   return `
-    <article class="product-card">
+    <article class="product-card${product.featured ? " featured-product-card" : ""}">
       <div class="product-image">
         ${badge}
         ${availabilityBadge}
@@ -945,6 +948,20 @@ function openProduct(product) {
 
 grid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const colorButton = target?.closest("button[data-product-color]");
+  if (colorButton) {
+    const card = colorButton.closest(".product-card");
+    if (!card) return;
+    card.querySelectorAll("button[data-product-color]").forEach(button => {
+      const selected = button === colorButton;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    const selectedName = card.querySelector(".product-card-color-selected-name");
+    if (selectedName) selectedName.textContent = colorButton.dataset.productColor || "";
+    return;
+  }
+
   const link = target?.closest("a[data-details]");
   if (!link) return;
 
