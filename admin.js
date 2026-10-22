@@ -202,13 +202,10 @@ function normalizeProductAvailability(value) {
 }
 
 function normalizeVariantAvailability(value) {
-  const normalized = String(value || "")
-    .trim()
-    .toLocaleLowerCase("es");
-
-  return ["order", "on_order", "por pedido"].includes(normalized)
-    ? "order"
-    : "available";
+ const v=String(value||"").trim().toLocaleLowerCase("es");
+ if(["order","on_order","por pedido"].includes(v))return "order";
+ if(["out_of_stock","unavailable","no disponible","agotado"].includes(v))return "out_of_stock";
+ return "available";
 }
 
 /* =========================================================
@@ -532,16 +529,18 @@ function colorPaletteOptions(variant) {
 }
 
 function variantRowMarkup(variant = {}) {
- const value={color:String(variant.color||"").trim(),color_hex:validHex(variant.color_hex||variant.hex),image_url:String(variant.image_url||"").trim()};
+ const v={color:String(variant.color||"").trim(),color_hex:validHex(variant.color_hex||variant.hex),image_url:String(variant.image_url||"").trim(),availability:normalizeVariantAvailability(variant.availability)};
  return `<article class="variant-admin-row" data-variant-row>
- <div class="variant-row-title"><strong data-variant-row-heading>${escapeHtml(value.color||"Nuevo color")}</strong><button class="admin-mini-button danger" type="button" data-remove-variant>Quitar color</button></div>
+ <div class="variant-row-title"><strong data-variant-row-heading>${escapeHtml(v.color||"Nuevo color")}</strong><button class="admin-mini-button danger" type="button" data-remove-variant>Quitar color</button></div>
  <div class="variant-fields-grid variant-color-fields">
- <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(value)}</select></label>
- <label>Nombre del color <span class="required-mark" aria-hidden="true">*</span><input data-variant-color maxlength="60" required value="${escapeHtml(value.color)}"></label>
- <label class="variant-hex-label">Tono del color<span class="variant-hex-control"><input data-variant-hex type="color" value="${value.color_hex}" aria-label="Elegir tono del color"><small>Ajustá el tono visualmente.</small></span></label>
- <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${value.image_url?`<img src="${escapeHtml(value.image_url)}" alt="Vista previa de ${escapeHtml(value.color||"la variante")}" loading="lazy"><span>Foto actual</span>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label>
- <input data-variant-image-url type="hidden" value="${escapeHtml(value.image_url)}"></div><p class="color-row-status" data-variant-status role="status"></p></article>`;
+ <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
+ <label>Nombre del color <span class="required-mark" aria-hidden="true">*</span><input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}"></label>
+ <label>Disponibilidad de este color<select data-variant-availability><option value="available" ${v.availability==="available"?"selected":""}>Disponible</option><option value="order" ${v.availability==="order"?"selected":""}>Por pedido</option><option value="out_of_stock" ${v.availability==="out_of_stock"?"selected":""}>No disponible</option></select></label>
+ <label class="variant-hex-label">Tono del color<span class="variant-hex-control"><input data-variant-hex type="color" value="${v.color_hex}" aria-label="Elegir tono del color"><small>Ajustá el tono visualmente.</small></span></label>
+ <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${v.image_url?`<img src="${escapeHtml(v.image_url)}" alt="Foto de ${escapeHtml(v.color||"la variante")}" loading="lazy"><span>Foto actual</span><button type="button" class="admin-mini-button danger" data-remove-variant-image>Quitar foto</button>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
+ </div><p class="color-row-status" data-variant-status role="status"></p></article>`;
 }
+function variantGroupKey(v){return `${String(v.storage||"").trim().toLocaleLowerCase("es")}|${String(v.ram||"").trim().toLocaleLowerCase("es")}`;}
 
 function variantGroupKey(variant) {
   const storage = String(variant.storage || "").trim().toLocaleLowerCase("es");
@@ -549,41 +548,29 @@ function variantGroupKey(variant) {
   return `${storage}|${ram}`;
 }
 
-function variantGroupMarkup(variant = {}) {
- const storage=String(variant.storage||"").trim().replace(/\s*GB\s*/i,""),ram=String(variant.ram||"").trim().replace(/\s*GB\s*/i,""),availability=normalizeVariantAvailability(variant.availability);
- const title=[storage?storage+" GB":"",ram?ram+" GB RAM":""].filter(Boolean).join(" · ")||"Nueva configuración";
- return `<section class="variant-config-group" data-variant-group>
- <div class="variant-config-group-heading"><div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>Precio y disponibilidad compartidos por los colores</small></div><button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button></div>
+function variantGroupMarkup(v={},isBase=false){
+ const storage=String(v.storage||"").trim().replace(/\s*GB\s*/i,""),ram=String(v.ram||"").trim().replace(/\s*GB\s*/i,"");
+ const title=isBase?"Configuración base":[storage?storage+" GB":"",ram?ram+" GB RAM":""].filter(Boolean).join(" · ")||"Nueva configuración";
+ return `<section class="variant-config-group ${isBase?"variant-base-group":""}" data-variant-group data-base-group="${isBase?"true":"false"}">
+ <div class="variant-config-group-heading"><div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase?"Usa el precio base del producto":"Precio compartido por los colores de esta capacidad y RAM"}</small></div>${isBase?"":'<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}</div>
  <div class="variant-config-fields">
  <label>Almacenamiento<span class="variant-number-unit"><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"><span>GB</span></span></label>
  <label>Memoria RAM<span class="variant-number-unit"><input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"><span>GB</span></span></label>
- <label>Precio en dólares<input data-group-price-usd type="number" min="0" step="0.01" value="${escapeHtml(variant.price_usd??"")}"></label>
- <label>Precio en córdobas<input data-group-price-nio type="number" min="0" step="0.01" value="${escapeHtml(variant.price_nio??"")}"></label>
- <label>Disponibilidad<select data-group-availability><option value="available" ${availability==="available"?"selected":""}>Disponible</option><option value="order" ${availability==="order"?"selected":""}>Por pedido</option></select></label>
+ ${isBase?"":'<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="'+escapeHtml(v.price_usd??"")+'"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="'+escapeHtml(v.price_nio??"")+'"></span></label>'}
  </div><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></section>`;
 }
 
-function renderVariantRows(variants = []) {
-  const container = $("#product-variants-list");
-  if (!container) return;
-  const normalized = normalizeVariants(variants);
-  if (!normalized.length) {
-    container.innerHTML = `<p class="variants-empty-hint">Todavía no agregaste configuraciones. Podés guardar el producto sin variantes y agregarlas después.</p>`;
-    return;
-  }
-  const groups = new Map();
-  normalized.forEach(variant => {
-    const key = variantGroupKey(variant);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(variant);
-  });
-  container.innerHTML = "";
-  groups.forEach(groupVariants => {
-    container.insertAdjacentHTML("beforeend", variantGroupMarkup(groupVariants[0]));
-    const list = container.lastElementChild.querySelector("[data-variant-color-list]");
-    groupVariants.forEach(variant => list.insertAdjacentHTML("beforeend", variantRowMarkup(variant)));
-  });
-  updateVariantRowHeadings();
+function renderVariantRows(variants=[]){
+ const container=$("#product-variants-list");if(!container)return;
+ const normalized=normalizeVariants(variants),groups=new Map();
+ normalized.forEach(v=>{const k=variantGroupKey(v);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(v);});
+ container.innerHTML="";
+ const base=groups.get("|")||[];
+ container.insertAdjacentHTML("beforeend",variantGroupMarkup(base[0]||{},true));
+ const baseGroup=container.lastElementChild,list=baseGroup.querySelector("[data-variant-color-list]");
+ base.forEach(v=>list.insertAdjacentHTML("beforeend",variantRowMarkup(v)));groups.delete("|");
+ groups.forEach(items=>{container.insertAdjacentHTML("beforeend",variantGroupMarkup(items[0],false));const list=container.lastElementChild.querySelector("[data-variant-color-list]");items.forEach(v=>list.insertAdjacentHTML("beforeend",variantRowMarkup(v)));});
+ updateVariantRowHeadings();
 }
 
 function addVariantRow(variant = {}, targetGroup = null) {
@@ -592,7 +579,7 @@ function addVariantRow(variant = {}, targetGroup = null) {
   container.querySelector(".variants-empty-hint")?.remove();
   let group = targetGroup;
   if (!group) {
-    container.insertAdjacentHTML("beforeend", variantGroupMarkup(variant));
+    container.insertAdjacentHTML("beforeend", variantGroupMarkup(variant, false));
     group = container.lastElementChild;
   }
   const list = group.querySelector("[data-variant-color-list]");
@@ -644,47 +631,24 @@ function renderMainImagePreviews() {
     name.textContent = file.name;
     const size = document.createElement("small");
     size.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-    card.append(img, name, size);
+    const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger admin-preview-remove";remove.textContent="Quitar";remove.setAttribute("aria-label",`Quitar ${file.name}`);remove.addEventListener("click",()=>removeMainImageFile(file));card.append(img,name,size,remove);
     mainImagesPreview.append(card);
   });
 }
+function removeMainImageFile(target){if(!mainImagesInput)return;const transfer=new DataTransfer();Array.from(mainImagesInput.files||[]).forEach(file=>{if(!(file.name===target.name&&file.size===target.size&&file.lastModified===target.lastModified))transfer.items.add(file);});mainImagesInput.files=transfer.files;renderMainImagePreviews();updateEditorDirtyState();}
 mainImagesInput?.addEventListener("change", renderMainImagePreviews);
 
-function renderVariantImagePreview(row, file = null, fallbackUrl = "") {
-  const preview = row?.querySelector("[data-variant-image-preview]");
-  if (!preview) return;
-  preview.replaceChildren();
-
-  if (file) {
-    const url = URL.createObjectURL(file);
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = `Vista previa de ${file.name}`;
-    img.onload = () => URL.revokeObjectURL(url);
-    const caption = document.createElement("span");
-    caption.textContent = file.name;
-    preview.append(img, caption);
-  } else if (fallbackUrl) {
-    const img = document.createElement("img");
-    img.src = fallbackUrl;
-    img.alt = "Foto actual de la variante";
-    img.loading = "lazy";
-    const caption = document.createElement("span");
-    caption.textContent = "Foto actual";
-    preview.append(img, caption);
-  } else {
-    const empty = document.createElement("span");
-    empty.className = "variant-image-placeholder";
-    empty.textContent = "La vista previa aparecerá aquí";
-    preview.append(empty);
-  }
+function renderVariantImagePreview(row,file=null,fallbackUrl=""){
+ const preview=row?.querySelector("[data-variant-image-preview]");if(!preview)return;preview.replaceChildren();
+ const addRemove=()=>{const b=document.createElement("button");b.type="button";b.className="admin-mini-button danger";b.textContent="Quitar foto";b.addEventListener("click",()=>{row.querySelector("[data-variant-image]").value="";row.querySelector("[data-variant-image-url]").value="";renderVariantImagePreview(row);updateEditorDirtyState();});preview.append(b);};
+ if(file){const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt=`Vista previa de ${file.name}`;const cap=document.createElement("span");cap.textContent=file.name;preview.append(img,cap);addRemove();}
+ else if(fallbackUrl){const img=document.createElement("img");img.src=fallbackUrl;img.alt="Foto actual de la variante";img.loading="lazy";const cap=document.createElement("span");cap.textContent="Foto actual";preview.append(img,cap);addRemove();}
+ else{const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="La vista previa aparecerá aquí";preview.append(empty);}
 }
 
 const variantsContainer = $("#product-variants-list");
 
-$("#add-variant-button")?.addEventListener("click", () => {
-  addVariantRow();
-});
+$("#add-variant-button")?.addEventListener("click", () => { addVariantRow({storage:"",ram:"",price_usd:"",price_nio:""}); });
 
 variantsContainer?.addEventListener("click",event=>{
  const add=event.target.closest("[data-add-group-color]");
@@ -1170,28 +1134,11 @@ $("#admin-product-list")?.addEventListener("click", async event => {
 let editorBaseline = "";
 let editorIsDirty = false;
 
-function getEditorSnapshot() {
-  if (!form) return "";
-  const fields = Array.from(form.elements).map(field => {
-    if (!field || (!field.name && !field.id && !field.matches?.("[data-variant-row], [data-variant-group]"))) return null;
-    if (field.type === "file") return [field.id || field.getAttribute("data-variant-image") || "file", Array.from(field.files || []).map(file => [file.name,file.size,file.lastModified])];
-    if (field.type === "checkbox" || field.type === "radio") return [field.id || field.name,field.checked];
-    return [field.id || field.name || field.getAttribute("data-variant-color") || field.getAttribute("data-group-storage") || field.getAttribute("data-group-ram") || field.getAttribute("data-group-price-usd") || field.getAttribute("data-group-price-nio") || field.getAttribute("data-group-availability") || field.getAttribute("data-variant-image-url") || field.tagName,field.value];
-  }).filter(Boolean);
-  const variants = Array.from(form.querySelectorAll("[data-variant-group]")).map(group => ({
-    storage:group.querySelector("[data-group-storage]")?.value||"",
-    ram:group.querySelector("[data-group-ram]")?.value||"",
-    usd:group.querySelector("[data-group-price-usd]")?.value||"",
-    nio:group.querySelector("[data-group-price-nio]")?.value||"",
-    availability:group.querySelector("[data-group-availability]")?.value||"",
-    colors:Array.from(group.querySelectorAll("[data-variant-row]")).map(row=>({
-      color:row.querySelector("[data-variant-color]")?.value||"",
-      hex:row.querySelector("[data-variant-hex]")?.value||"",
-      url:row.querySelector("[data-variant-image-url]")?.value||"",
-      file:Array.from(row.querySelector("[data-variant-image]")?.files||[]).map(file=>[file.name,file.size,file.lastModified])
-    }))
-  }));
-  return JSON.stringify({fields,variants});
+function getEditorSnapshot(){
+ if(!form)return "";
+ const fields=Array.from(form.elements).map(f=>{if(!f||(!f.name&&!f.id&&!f.matches?.("[data-variant-row],[data-variant-group]")))return null;if(f.type==="file")return [f.id||f.getAttribute("data-variant-image")||"file",Array.from(f.files||[]).map(x=>[x.name,x.size,x.lastModified])];if(f.type==="checkbox"||f.type==="radio")return [f.id||f.name,f.checked];return [f.id||f.name||f.getAttribute("data-variant-color")||f.getAttribute("data-group-storage")||f.getAttribute("data-group-ram")||f.getAttribute("data-group-price-usd")||f.getAttribute("data-group-price-nio")||f.getAttribute("data-variant-availability")||f.getAttribute("data-variant-image-url")||f.tagName,f.value];}).filter(Boolean);
+ const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({storage:g.querySelector("[data-group-storage]")?.value||"",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||""}))}));
+ return JSON.stringify({fields,variants});
 }
 
 function markEditorClean() {
@@ -1373,101 +1320,19 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId, existingVariants = []) {
-  const rows = Array.from(
-    $("#product-variants-list")
-      ?.querySelectorAll("[data-variant-row]") || []
-  );
-
-  const drafts=rows.map((row,index)=>{
-   const group=row.closest("[data-variant-group]"),read=selector=>group?.querySelector(selector)?.value.trim()||"";
-   const sv=read("[data-group-storage]"),rv=read("[data-group-ram]"),storage=sv?`${sv} GB`:"",ram=rv?`${rv} GB`:"";
-   const color=row.querySelector("[data-variant-color]").value.trim(),colorHex=validHex(row.querySelector("[data-variant-hex]").value);
-   const priceUSD=toOptionalNumber(read("[data-group-price-usd]"),`Precio en dólares de la configuración ${index+1}`),priceNIO=toOptionalNumber(read("[data-group-price-nio]"),`Precio en córdobas de la configuración ${index+1}`);
-   const availability=normalizeVariantAvailability(read("[data-group-availability]")),imageUrl=row.querySelector("[data-variant-image-url]").value.trim(),file=row.querySelector("[data-variant-image]").files?.[0]||null;
-   if(!color)throw new Error(`Completá el nombre del color en la variante ${index+1}.`);
-   if(!storage&&!ram)throw new Error(`Indicá almacenamiento o RAM en la configuración ${index+1}.`);
-   return {storage,ram,color,color_hex:colorHex,price_usd:priceUSD,price_nio:priceNIO,availability,image_url:imageUrl,file,row};
-  });
-
-  /*
-    Evita repetir una misma combinación de capacidad + RAM + color.
-    El mismo color puede aparecer con capacidades distintas.
-  */
-  const seen = new Set();
-
-  for (const variant of drafts) {
-    const key = [
-      variant.storage.toLocaleLowerCase("es"),
-      variant.ram.toLocaleLowerCase("es"),
-      variant.color.toLocaleLowerCase("es")
-    ].join("|");
-
-    if (seen.has(key)) {
-      throw new Error(
-        `La combinación ${[
-          variant.storage,
-          variant.ram,
-          variant.color
-        ].filter(Boolean).join(" · ")} está repetida.`
-      );
-    }
-
-    seen.add(key);
-  }
-
-  /*
-    Reutiliza fotografías ya guardadas para el mismo color.
-  */
-  const imageByColor = new Map();
-
-  normalizeVariants(existingVariants).forEach(variant => {
-    const key = variant.color.toLocaleLowerCase("es");
-
-    if (key && variant.image_url && !imageByColor.has(key)) {
-      imageByColor.set(key, variant.image_url);
-    }
-  });
-
-  for (const variant of drafts) {
-    const key = variant.color.toLocaleLowerCase("es");
-
-    const statusNode =
-      variant.row.querySelector("[data-variant-status]");
-
-    if (variant.file) {
-      if (statusNode) {
-        statusNode.textContent =
-          `Subiendo foto de ${variant.color}…`;
-      }
-
-      variant.image_url = await uploadImage(
-        productId,
-        variant.file,
-        "variants"
-      );
-
-      imageByColor.set(key, variant.image_url);
-    } else if (variant.image_url) {
-      imageByColor.set(key, variant.image_url);
-    } else if (imageByColor.has(key)) {
-      variant.image_url = imageByColor.get(key);
-    }
-  }
-
-  /*
-    Segunda pasada para reutilizar también imágenes subidas durante
-    esta misma operación.
-  */
-  for (const variant of drafts) {
-    const key = variant.color.toLocaleLowerCase("es");
-
-    if (!variant.image_url && imageByColor.has(key)) {
-      variant.image_url = imageByColor.get(key);
-    }
-  }
-
-  return drafts.map(({ file, row, ...variant }) => variant);
+async function collectVariants(productId,existingVariants=[]){
+ const rows=Array.from($("#product-variants-list")?.querySelectorAll("[data-variant-row]")||[]);
+ const baseUSD=toOptionalNumber($("#product-price-usd").value,"Precio base en dólares"),baseNIO=toOptionalNumber($("#product-price-nio").value,"Precio base en córdobas");
+ const drafts=rows.map((row,i)=>{
+  const group=row.closest("[data-variant-group]"),base=group?.dataset.baseGroup==="true",read=sel=>group?.querySelector(sel)?.value.trim()||"",sv=read("[data-group-storage]"),rv=read("[data-group-ram]"),storage=sv?`${sv} GB`:"",ram=rv?`${rv} GB`:"",color=row.querySelector("[data-variant-color]").value.trim(),color_hex=validHex(row.querySelector("[data-variant-hex]").value);
+  const price_usd=base?baseUSD:toOptionalNumber(read("[data-group-price-usd]"),`Precio en dólares de configuración ${i+1}`),price_nio=base?baseNIO:toOptionalNumber(read("[data-group-price-nio]"),`Precio en córdobas de configuración ${i+1}`),availability=normalizeVariantAvailability(row.querySelector("[data-variant-availability]").value),image_url=row.querySelector("[data-variant-image-url]").value.trim(),file=row.querySelector("[data-variant-image]").files?.[0]||null;
+  if(!color)throw new Error(`Completá el nombre del color en la variante ${i+1}.`);
+  if(!storage&&!ram)throw new Error(`Indicá almacenamiento o RAM en la configuración ${i+1}.`);
+  return {storage,ram,color,color_hex,price_usd,price_nio,availability,image_url,file,row};
+ });
+ const seen=new Set();for(const v of drafts){const key=[v.storage,v.ram,v.color].join("|").toLocaleLowerCase("es");if(seen.has(key))throw new Error(`La combinación ${[v.storage,v.ram,v.color].filter(Boolean).join(" · ")} está repetida.`);seen.add(key);}
+ for(const v of drafts){if(v.file){const status=v.row.querySelector("[data-variant-status]");if(status)status.textContent=`Subiendo foto de ${v.color}…`;v.image_url=await uploadImage(productId,v.file,"variants");}}
+ return drafts.map(({file,row,...v})=>v);
 }
 
 function deriveColorsFromVariants(variants, fallbackColors = []) {
