@@ -540,7 +540,6 @@ function variantRowMarkup(variant = {}) {
  <label class="variant-image-label">Fotografía del color<input data-variant-image class="admin-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><span class="admin-file-picker admin-file-picker-compact"><span class="admin-file-picker-icon" aria-hidden="true">＋</span><span>Elegir foto</span></span><div class="variant-image-preview" data-variant-image-preview>${v.image_url?`<img src="${escapeHtml(v.image_url)}" alt="Foto de ${escapeHtml(v.color||"la variante")}" loading="lazy"><span>Foto actual</span><button type="button" class="admin-mini-button danger" data-remove-variant-image>Quitar foto</button>`:`<span class="variant-image-placeholder">La vista previa aparecerá aquí</span>`}</div></label><input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
  </div><p class="color-row-status" data-variant-status role="status"></p></article>`;
 }
-function variantGroupKey(v){return `${String(v.storage||"").trim().toLocaleLowerCase("es")}|${String(v.ram||"").trim().toLocaleLowerCase("es")}`;}
 
 function variantGroupKey(variant) {
   const storage = String(variant.storage || "").trim().toLocaleLowerCase("es");
@@ -648,20 +647,28 @@ function renderVariantImagePreview(row,file=null,fallbackUrl=""){
 
 const variantsContainer = $("#product-variants-list");
 
-$("#add-variant-button")?.addEventListener("click", () => {
+$("#add-variant-button")?.addEventListener("click", event => {
+  event.preventDefault();
   const container = $("#product-variants-list");
   if (!container) return;
+  const groupHtml = variantGroupMarkup({ storage: "", ram: "", price_usd: "", price_nio: "" }, false);
   container.querySelector(".variants-empty-hint")?.remove();
-  container.insertAdjacentHTML("beforeend", variantGroupMarkup({storage:"",ram:"",price_usd:"",price_nio:""}, false));
+  container.insertAdjacentHTML("beforeend", groupHtml);
+  const newGroup = container.lastElementChild;
+  if (!newGroup?.matches("[data-variant-group]")) {
+    message("#product-form-status", "No se pudo crear la configuración. Recargá el panel e intentá nuevamente.", "error");
+    return;
+  }
   updateVariantRowHeadings();
-  container.lastElementChild?.querySelector("[data-group-storage]")?.focus();
+  newGroup.querySelector("[data-group-storage]")?.focus();
+  updateEditorDirtyState();
 });
 
 variantsContainer?.addEventListener("click",event=>{
  const add=event.target.closest("[data-add-group-color]");
- if(add){const group=add.closest("[data-variant-group]");if(group)addVariantRow({color:"",color_hex:"#242424",image_url:""},group);return;}
+ if(add){const group=add.closest("[data-variant-group]");if(group){addVariantRow({color:"",color_hex:"#242424",image_url:"",availability:"available"},group);updateEditorDirtyState();}return;}
  const removeGroup=event.target.closest("[data-remove-group]");
- if(removeGroup){removeGroup.closest("[data-variant-group]")?.remove();if(!variantsContainer.querySelector("[data-variant-group]"))renderVariantRows([]);return;}
+ if(removeGroup){removeGroup.closest("[data-variant-group]")?.remove();if(!variantsContainer.querySelector("[data-variant-group]"))renderVariantRows([]);updateEditorDirtyState();return;}
  const remove=event.target.closest("[data-remove-variant]");if(!remove)return;
  const group=remove.closest("[data-variant-group]");remove.closest("[data-variant-row]")?.remove();
  if(group&&!group.querySelector("[data-variant-row]"))group.remove();
