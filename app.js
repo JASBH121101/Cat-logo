@@ -710,7 +710,17 @@ function renderVariantButtonGroup(variants, selected, field, title) {
   if (field === "storage") {
     const values = [];
     const seen = new Set();
-    variants.forEach(variant => {
+    const hasTechnicalConfigurations = variants.some(variant =>
+      String(variant.storage || "").trim() || String(variant.ram || "").trim()
+    );
+    // Base-color rows have no RAM or capacity. Do not expose them as an extra
+    // "Estándar" choice when this product has explicit technical configurations.
+    const configurationVariants = hasTechnicalConfigurations
+      ? variants.filter(variant =>
+          String(variant.storage || "").trim() || String(variant.ram || "").trim()
+        )
+      : variants;
+    configurationVariants.forEach(variant => {
       const storage = String(variant.storage || "").trim();
       const ram = String(variant.ram || "").trim();
       const label = storage && ram ? `${storage} / ${ram}` : storage || ram || "Estándar";
