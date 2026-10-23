@@ -176,7 +176,10 @@ function getProductImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
 
-  return [...new Set([...list, product?.image_url].filter(value => typeof value === "string" && value.trim()))];
+  return [...new Set([...list, product?.image_url]
+    .filter(value => typeof value === "string")
+    .map(value => value.trim())
+    .filter(Boolean))];
 }
 
 function normalizeVariantAvailability(value) {
@@ -211,8 +214,23 @@ function getProductVariants(product) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
       availability: normalizeVariantAvailability(item.availability),
-      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
-      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
+      images: (() => {
+        const legacyImage = String(item.image_url || item.imageUrl || "").trim();
+        const storedImages = Array.isArray(item.images)
+          ? [...new Set(item.images
+              .filter(url => typeof url === "string")
+              .map(url => url.trim())
+              .filter(Boolean))]
+          : [];
+        return storedImages.length ? storedImages : (legacyImage ? [legacyImage] : []);
+      })(),
+      image_url: (() => {
+        const legacyImage = String(item.image_url || item.imageUrl || "").trim();
+        const firstStoredImage = Array.isArray(item.images)
+          ? item.images.find(url => typeof url === "string" && url.trim())
+          : "";
+        return String(firstStoredImage || legacyImage).trim();
+      })()
     };
   }).filter(item => item && (item.storage || item.ram || item.color))
     .sort((left, right) => {
@@ -389,7 +407,7 @@ function imageMarkup(product) {
       <img src="${escapeHtml(url)}"
            alt="${escapeHtml(product.name)}"
            loading="lazy"
-           onerror="this.remove()">
+           data-product-image>
     `;
   }
 
@@ -400,6 +418,17 @@ function imageMarkup(product) {
     </div>
   `;
 }
+
+// Sustituir imágenes de catálogo rotas por un estado visible, no por un hueco vacío.
+grid.addEventListener("error", event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
+  const container = img.closest(".product-image");
+  img.remove();
+  if (container && !container.querySelector(".photo-placeholder")) {
+    container.insertAdjacentHTML("beforeend", `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Imagen no disponible</span></div>`);
+  }
+}, true);
 
 function productLink(product) {
   const page = new URL("./", window.location.href);
