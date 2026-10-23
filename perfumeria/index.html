@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17120e">
+  <meta name="description" content="Descubrí perfumes árabes, de nicho y de diseñador. Explorá familias olfativas, presentaciones y precios en nuestro catálogo de fragancias.">
+  <title>Perfumería | Fragancias árabes, nicho y diseñador</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css?v=20261023-layout-symmetry1">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261023-gallery-contain2">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261023-header-gallery-fix1">
+  <script src="../config.js"></script>
+  <script type="module" src="../perfumeria.js?v=20261023-coming-soon2"></script>
+  <script src="../ui.js?v=20261022-fix1" defer></script>
+</head>
+<body class="perfume-page">
+  <header class="site-header perfume-header">
+    <a class="brand perfume-brand" href="./" aria-label="Inicio Perfumería">
+      <span class="perfume-brand-mark" aria-hidden="true">✦</span>
+      <span>MAISON <span class="perfume-brand-light">CAT-LOGO</span></span>
+    </a>
+    <nav class="perfume-header-nav" aria-label="Navegación de perfumería">
+      <a href="#coleccion">Colección</a>
+      <a href="#familias">Familias</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="perfume-hero">
+      <div class="perfume-hero-copy">
+        <p class="perfume-kicker"><span></span> PERFUMERÍA · SELECCIÓN DE FRAGANCIAS</p>
+        <h1>Una fragancia.<br><em>Una firma personal.</em></h1>
+        <p class="perfume-hero-description">Descubrí aromas árabes, creaciones de nicho y clásicos de diseñador elegidos para dejar huella.</p>
+        <a class="perfume-primary-link" href="#coleccion">Explorar fragancias <span aria-hidden="true">↘</span></a>
+        <div class="perfume-hero-notes"><span>AROMAS CON IDENTIDAD</span><i></i><span>SELECCIÓN ESPECIAL</span></div>
+      </div>
+      <div class="perfume-hero-art" aria-hidden="true">
+        <div class="perfume-orbit orbit-one"></div>
+        <div class="perfume-orbit orbit-two"></div>
+        <div class="perfume-hero-plinth"></div>
+        <div class="perfume-hero-shadow"></div>
+        <div class="perfume-hero-bottle">
+          <div class="perfume-bottle-cap"></div>
+          <div class="perfume-bottle-neck"></div>
+          <div class="perfume-bottle-body">
+            <span class="perfume-bottle-label-top">MAISON</span>
+            <span class="perfume-bottle-symbol">✦</span>
+            <span class="perfume-bottle-label-bottom">FRAGRANCE</span>
+          </div>
+        </div>
+        <span class="perfume-hero-number">01 / OLFACTORY EDITION</span>
+      </div>
+    </section>
+
+    <section class="perfume-family-band" id="familias" aria-label="Familias de perfumería">
+      <div><span class="perfume-family-number">01</span><strong>Árabes</strong><small>Intensos · Envolventes</small></div>
+      <div><span class="perfume-family-number">02</span><strong>Nicho</strong><small>Creativos · Distintivos</small></div>
+      <div><span class="perfume-family-number">03</span><strong>Diseñador</strong><small>Icónicos · Atemporales</small></div>
+    </section>
+
+    <section class="perfume-catalog-section" id="coleccion">
+      <div class="perfume-section-heading">
+        <div>
+          <p class="perfume-kicker">LA COLECCIÓN</p>
+          <h2>Encontrá tu <em>próximo aroma.</em></h2>
+          <p class="perfume-section-subtitle">Explorá por familia, buscá tu fragancia favorita o encontrá una opción dentro de tu presupuesto.</p>
+        </div>
+        <label class="perfume-search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="perfume-search-input" type="search" placeholder="Buscar fragancia o marca…" aria-label="Buscar fragancias">
+          <kbd>Buscar</kbd>
+        </label>
+      </div>
+
+      <div class="filter-row perfume-family-filters" id="category-filters" aria-label="Filtrar por familia de fragancia">
+        <button class="filter-chip active" type="button" data-category="all">Todas las fragancias</button>
+        <button class="filter-chip" type="button" data-category="arabes">Árabes</button>
+        <button class="filter-chip" type="button" data-category="nicho">Nicho</button>
+        <button class="filter-chip" type="button" data-category="disenador">Diseñador</button>
+      </div>
+
+      <section class="budget-filter-bar perfume-budget-filter" aria-label="Filtrar por presupuesto">
+        <div class="budget-filter-heading"><strong>Tu presupuesto</strong><small>Precio en dólares</small></div>
+        <label class="budget-price-field" for="price-min-input"><span>Desde</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-min-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Mínimo" aria-label="Precio mínimo en dólares"></span></label>
+        <label class="budget-price-field" for="price-max-input"><span>Hasta</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-max-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Máximo" aria-label="Precio máximo en dólares"></span></label>
+        <button id="clear-price-filter" class="budget-clear-button" type="button" disabled>Limpiar</button>
+        <span id="budget-filter-feedback" class="budget-filter-feedback" aria-live="polite"></span>
+      </section>
+
+      <section id="featured-section" class="perfume-featured-section hidden" aria-labelledby="featured-section-title">
+        <div class="perfume-featured-heading">
+          <div><p class="perfume-kicker">CURADURÍA EXCLUSIVA</p><h2 id="featured-section-title">Fragancias <em>destacadas</em></h2></div>
+          <span id="featured-count" class="perfume-featured-count"></span>
+        </div>
+        <div id="featured-grid" class="featured-grid perfume-product-grid"></div>
+      </section>
+
+      <div class="perfume-results-heading" id="catalog-results-heading">
+        <div><p class="perfume-kicker" id="catalog-results-eyebrow">DESCUBRÍ</p><h2 id="catalog-results-title">Toda la colección</h2></div>
+        <span id="catalog-status" role="status" aria-live="polite">Cargando fragancias…</span>
+      </div>
+      <div id="product-grid" class="product-grid perfume-product-grid"></div>
+      <div id="empty-results" class="empty-state hidden">
+        <span aria-hidden="true">✦</span>
+        <h3>No encontramos esa fragancia</h3>
+        <p>Probá con otra búsqueda, familia o rango de precio.</p>
+      </div>
+    </section>
+
+    <section class="perfume-cross-promo" aria-label="Conocé el catálogo de tecnología">
+      <div class="perfume-cross-promo-emblem" aria-hidden="true">CT</div>
+      <div class="perfume-cross-promo-copy">
+        <p class="perfume-kicker">TAMBIÉN PARA TU ESTILO DE VIDA</p>
+        <h2>La tecnología también tiene su lugar.</h2>
+        <p>Descubrí smartphones, laptops y accesorios en nuestro catálogo tecnológico.</p>
+      </div>
+      <a class="perfume-outline-link" href="../index.html">Explorar Cat-logo <span aria-hidden="true">↗</span></a>
+    </section>
+
+    <section class="perfume-contact" id="contacto">
+      <p class="perfume-kicker">ATENCIÓN PERSONALIZADA</p>
+      <h2>Encontrá una fragancia que hable por vos.</h2>
+      <p>Consultá disponibilidad, presentaciones y detalles de tu aroma favorito.</p>
+      <a id="perfume-footer-whatsapp" class="perfume-primary-link" href="#" target="_blank" rel="noopener">Consultar por WhatsApp <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+
+  <footer class="perfume-footer">
+    <a class="perfume-brand" href="./"><span class="perfume-brand-mark" aria-hidden="true">✦</span><span>MAISON <span class="perfume-brand-light">CAT-LOGO</span></span></a>
+    <p>Disponibilidad y precios sujetos a confirmación.</p>
+    <span>© <span id="perfume-year"></span> Perfumería</span>
+  </footer>
+
+  <dialog id="perfume-dialog" class="perfume-dialog">
+    <button class="perfume-dialog-close" id="perfume-dialog-close" type="button" aria-label="Cerrar">×</button>
+    <div id="perfume-dialog-content"></div>
+  </dialog>
+</body>
+</html>
