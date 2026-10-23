@@ -188,9 +188,9 @@ function updateProductFormMode() {
   if (dashboardQuickAdd) dashboardQuickAdd.textContent = isPerfume ? "✦" : "＋";
 
   const publicLink = document.querySelector(".dashboard-public-link");
-  if (publicLink) publicLink.href = isPerfume ? "./perfumeria.html" : "./index.html";
+  if (publicLink) publicLink.href = isPerfume ? "./perfumeria/" : "./index.html";
   const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
-  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria.html" : "./index.html";
+  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./index.html";
 }
 
 function setActiveCatalogType(value) {
