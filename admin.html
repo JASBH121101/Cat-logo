@@ -12,10 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261022-sidebar1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261023-main-variant-colors1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261023-color-library-layout2">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261023-main-variant-images1"></script>
+  <script type="module" src="admin.js?v=20261023-color-library2"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -347,12 +347,18 @@
               <div class="admin-add-color-slot">
                 <div class="admin-add-color-heading">
                   <span class="admin-add-color-caption">Colores del producto</span>
-                  <button id="add-base-color-button" class="button button-outline" type="button" aria-expanded="false" aria-controls="quick-color-palette">＋ Añadir color</button>
+                  <button id="add-base-color-button" class="button button-outline" type="button" aria-label="Añadir color del producto" aria-expanded="false" aria-controls="quick-color-palette">+ Color</button>
                 </div>
                 <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden>
                   <label class="quick-color-search-label">Buscar por nombre o código HEX
                     <input id="quick-color-search" type="search" placeholder="Ej. Azul, #315A91 o #0833A2" autocomplete="off" aria-label="Buscar color por nombre o código HEX">
                   </label>
+                  <div class="color-library-toolbar" role="group" aria-label="Filtros de la biblioteca de colores">
+                    <button type="button" class="is-active" data-color-library-filter="all" aria-pressed="true">Todos</button>
+                    <button type="button" data-color-library-filter="favorites" aria-pressed="false">★ Favoritos</button>
+                    <button type="button" data-color-library-filter="recent" aria-pressed="false">↻ Recientes</button>
+                    <span class="color-library-storage-note">Se guarda en este navegador</span>
+                  </div>
                   <div id="quick-color-swatches" class="quick-color-swatches"></div>
                 </div>
                 <div id="base-color-manager" class="base-color-manager" aria-label="Colores configurados"></div>
@@ -369,7 +375,7 @@
                     </p>
                   </div>
                   <div class="variants-editor-actions" aria-label="Acciones para variantes">
-                    <button id="add-variant-button" class="button button-outline" type="button">＋ Añadir capacidad / RAM</button>
+                    <button id="add-variant-button" class="button button-outline" type="button">+ RAM / almacenamiento</button>
                   </div>
                 </div>
 
@@ -412,6 +418,7 @@
             </div>
 
             <p class="form-status" id="product-form-status" role="status"></p>
+            <datalist id="catalog-color-library-options"></datalist>
           </form>
         </section>
 
