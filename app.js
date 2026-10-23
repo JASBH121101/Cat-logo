@@ -477,7 +477,7 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
   }
 
   parts.push(`Enlace del artículo: ${productLink(product)}.`);
-  parts.push("Quisiera confirmar disponibilidad, condiciones de financiamiento y costo de entrega.");
+  parts.push("Quisiera confirmar la disponibilidad final, la forma de pago y el costo de entrega para realizar la compra.");
 
   return parts.join(" ");
 }
@@ -1096,7 +1096,7 @@ function openProduct(product) {
   }
 }
 
-grid.addEventListener("click", event => {
+document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   const link = target?.closest("a[data-details]");
   if (!link) return;
@@ -1111,7 +1111,7 @@ grid.addEventListener("click", event => {
     window.history.pushState(window.history.state, document.title, productUrl);
   }
   openProduct(product);
-});
+}));
 
 categoryFilters.addEventListener("click", event => {
   const button = event.target.closest("[data-category]");
