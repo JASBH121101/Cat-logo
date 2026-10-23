@@ -1,0 +1,80 @@
+/* Cat-logo brand system: JB TECH neón controlado + JB Parfums editorial. */
+.brand-name-sr {
+  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;
+}
+.brand-logo-image {
+  display:block;width:clamp(168px,23vw,280px);max-width:100%;max-height:58px;height:auto;object-fit:contain;
+  filter:drop-shadow(0 3px 9px rgba(0,116,255,.12));
+}
+.site-header:not(.admin-header) .brand { min-width:0; }
+body:not(.perfume-page):not(.admin-body) .site-header:not(.admin-header) {
+  border-bottom-color:rgba(0,153,255,.19);box-shadow:0 5px 22px rgba(25,65,125,.07);
+}
+body:not(.perfume-page):not(.admin-body) .hero {
+  background:radial-gradient(circle at 85% 24%,rgba(0,213,255,.13),transparent 34%),
+    radial-gradient(circle at 72% 75%,rgba(139,92,246,.10),transparent 31%),
+    linear-gradient(118deg,#fbfdff 0%,#eff6ff 59%,#f5f0ff 100%);
+}
+body:not(.perfume-page):not(.admin-body) .hero h1 span {
+  background:linear-gradient(100deg,#087cf2 0%,#00bfe8 38%,#4c50f4 70%,#8b45ea 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-ctas { display:flex;flex-wrap:wrap;align-items:center;gap:10px; }
+.hero-ctas>.button { min-height:45px; }
+body:not(.perfume-page):not(.admin-body) .hero-ctas .button-primary {
+  background:linear-gradient(105deg,#00bfe8 0%,#2864ff 58%,#7c3aed 100%);border-color:transparent;color:#fff;
+  box-shadow:0 5px 0 #263cb2,0 10px 24px rgba(49,94,232,.20),0 0 22px rgba(0,213,255,.12);
+}
+body:not(.perfume-page):not(.admin-body) .hero-ctas .button-primary:hover {
+  filter:saturate(1.12) brightness(1.04);box-shadow:0 4px 0 #263cb2,0 13px 28px rgba(49,94,232,.24),0 0 28px rgba(0,213,255,.2);
+}
+body:not(.perfume-page):not(.admin-body) .hero-whatsapp-button {
+  border:1px solid rgba(49,94,232,.34);color:#213b81;background:rgba(255,255,255,.8);box-shadow:0 5px 15px rgba(24,48,98,.06);
+}
+body:not(.perfume-page):not(.admin-body) .hero-image-frame {
+  border-color:rgba(0,187,255,.32);box-shadow:0 16px 42px rgba(23,48,111,.15),0 0 26px rgba(0,213,255,.08);
+}
+body:not(.perfume-page):not(.admin-body) .product-card {
+  border-color:#dce7f6;box-shadow:0 7px 20px rgba(22,43,89,.045);
+}
+body:not(.perfume-page):not(.admin-body) .product-card:hover {
+  border-color:rgba(0,174,255,.72);box-shadow:0 7px 0 rgba(50,86,210,.12),0 15px 28px rgba(36,64,129,.12),0 0 18px rgba(0,213,255,.08);
+}
+body:not(.perfume-page):not(.admin-body) .product-view-button {
+  background:linear-gradient(105deg,#00bfe8 0%,#2864ff 58%,#7c3aed 100%);border-color:transparent;color:#fff;box-shadow:0 3px 0 #263cb2;
+}
+body:not(.perfume-page):not(.admin-body) .product-view-button:hover { filter:saturate(1.1) brightness(1.05); }
+html[data-theme="dark"] body:not(.perfume-page):not(.admin-body) .hero {
+  background:radial-gradient(circle at 82% 25%,rgba(0,213,255,.11),transparent 32%),
+    radial-gradient(circle at 70% 80%,rgba(124,58,237,.13),transparent 34%),
+    linear-gradient(118deg,#0b1427 0%,#101c36 58%,#16152e 100%);
+}
+html[data-theme="dark"] body:not(.perfume-page):not(.admin-body) .hero-whatsapp-button {
+  color:#eaf4ff;border-color:rgba(0,213,255,.36);background:rgba(8,22,41,.78);
+}
+/* JB Parfums: el favicon blanco y dorado aprobado se conserva por separado. */
+.perfume-brand-logo { display:block;width:clamp(184px,25vw,272px);max-width:100%;max-height:62px;height:auto;object-fit:contain; }
+.perfume-footer .perfume-brand-logo { width:235px;max-height:54px; }
+.perfume-hero-actions { display:flex;flex-wrap:wrap;align-items:center;gap:10px; }
+.perfume-hero-actions>a { min-height:45px; }
+.perfume-cross-promo-emblem img { display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit; }
+.perfume-page .perfume-dialog-actions .perfume-outline-link { white-space:normal;line-height:1.35;overflow-wrap:anywhere; }
+@media(max-width:600px) {
+  .site-header:not(.admin-header)>.brand-logo-image,.site-header:not(.admin-header)>.brand .brand-logo-image { width:min(206px,55vw);max-height:47px; }
+  .site-header:not(.admin-header) .brand { gap:3px; }
+  .site-footer .footer-brand .brand-logo-image { width:min(230px,68vw); }
+  body.perfume-page .site-header.perfume-header>.perfume-brand .perfume-brand-logo { width:min(198px,54vw);max-height:46px; }
+  body.perfume-page .perfume-footer .perfume-brand-logo { width:min(220px,70vw);max-height:50px; }
+  .hero-ctas,.perfume-hero-actions { align-items:stretch; }
+  .hero-ctas>.button,.perfume-hero-actions>a { flex:1 1 100%;width:100%; }
+}
+@media(max-width:380px) {
+  .site-header:not(.admin-header)>.brand .brand-logo-image { width:min(172px,51vw); }
+  body.perfume-page .site-header.perfume-header>.perfume-brand .perfume-brand-logo { width:min(174px,49vw); }
+}
+@media(prefers-reduced-motion:reduce) {
+  body:not(.admin-body) *,body:not(.admin-body) *::before,body:not(.admin-body) *::after {
+    scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+  }
+}
