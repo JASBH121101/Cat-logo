@@ -428,3 +428,72 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+
+/* Force the mobile composition on touch devices in portrait, even when
+   Android Chrome requests the desktop site and reports a wide layout viewport. */
+@media (pointer: coarse) and (orientation: portrait) {
+  .collections-stage {
+    display:flex;
+    flex-direction:column;
+    min-height:100svh;
+    overflow:clip;
+  }
+  .collections-worlds { display:contents; }
+  .collections-masthead {
+    position:relative;
+    top:auto;
+    left:auto;
+    order:0;
+    width:100%;
+    padding:22px 16px 19px;
+    border:0;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    border-radius:0;
+    background:linear-gradient(110deg,rgba(48,26,15,.97),rgba(15,21,39,.98) 54%,rgba(5,12,28,.97));
+    box-shadow:0 9px 28px rgba(0,0,0,.24);
+    transform:none;
+    animation:none;
+  }
+  .collections-lockup { gap:10px; }
+  .collections-monogram { font-size:48px; }
+  .collections-name { font-size:11px; letter-spacing:.37em; }
+  .collections-divider { margin:8px 0 7px; }
+  .collections-tagline { font-size:clamp(19px,5.2vw,27px); letter-spacing:.02em; }
+  .collections-subtitle { max-width:330px; margin-top:7px; font-size:8px; letter-spacing:.15em; }
+  .world-panel {
+    display:flex;
+    flex:0 0 auto;
+    width:100%;
+    min-width:0;
+    min-height:clamp(510px,60svh,650px);
+    padding:30px 22px 48px;
+    justify-content:center;
+  }
+  .world-panel--parfums { border-right:0; border-bottom:1px solid rgba(255,220,160,.55); }
+  .world-panel--parfums::before { background-position:center 45%; }
+  .world-panel--tech::before { background-position:center 52%; }
+  .world-content { width:min(100%,430px); margin:auto; }
+  .world-brand { min-height:0; gap:9px; }
+  .world-emblem { width:66px; }
+  .world-tech-logo { width:clamp(120px,27vw,148px); max-height:150px; }
+  .world-title { font-size:clamp(31px,8vw,42px); }
+  .world-eyebrow { margin-top:9px; font-size:9px; letter-spacing:.19em; }
+  .world-copy { margin-top:11px; font-size:13px; line-height:1.65; }
+  .world-cta { width:min(100%,360px); min-height:52px; margin-top:18px; font-size:10px; }
+  .collections-footer {
+    position:relative; right:auto; bottom:auto; left:auto;
+    min-height:42px; padding:11px 14px; background:#070d19;
+  }
+}
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 390px) {
+  .collections-masthead { padding:18px 13px 16px; }
+  .collections-monogram { font-size:43px; }
+  .collections-name { font-size:10px; letter-spacing:.28em; }
+  .collections-tagline { font-size:18px; }
+  .collections-subtitle { font-size:7px; letter-spacing:.12em; }
+  .world-panel { min-height:510px; padding:27px 16px 39px; }
+  .world-copy { font-size:12.5px; }
+  .world-cta { gap:8px; padding-inline:14px; letter-spacing:.12em; }
+  .collections-footer { gap:7px; font-size:8px; letter-spacing:.15em; }
+}
