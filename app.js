@@ -78,9 +78,9 @@ function buildWhatsAppLink(message) {
 }
 
 const generalMessage =
-  "Hola, quisiera consultar por los productos del catálogo, disponibilidad, precio y opciones de pago.";
+  "Hola, vi el catálogo de JB TECH y quisiera consultar por disponibilidad, precio, entrega y opciones de pago.";
 
-["header-whatsapp", "footer-whatsapp"].forEach(id => {
+["header-whatsapp", "footer-whatsapp", "hero-whatsapp"].forEach(id => {
   const element = document.getElementById(id);
   if (!element) return;
 
