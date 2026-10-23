@@ -69,7 +69,7 @@ a { color: inherit; }
   content: "";
   background: linear-gradient(180deg, rgba(7,9,16,.18) 0%, rgba(6,9,17,.22) 26%, rgba(5,8,15,.56) 62%, rgba(4,7,13,.83) 100%);
 }
-.world-panel--parfums { border-right: 1px solid rgba(255,220,160,.6); }
+.world-panel--parfums { border-right: 1px solid rgba(255,220,160,.6); background-color:#21130d; }
 .world-panel--parfums::before {
   background-image: url("https://images.unsplash.com/photo-1672848700906-2b8ca62639e4?auto=format&fit=crop&fm=jpg&q=85&w=1800");
 }
@@ -79,6 +79,7 @@ a { color: inherit; }
     linear-gradient(180deg, rgba(19,10,6,.13) 0%, rgba(25,13,6,.32) 31%, rgba(22,12,6,.7) 68%, rgba(16,8,4,.9) 100%),
     linear-gradient(90deg, rgba(32,15,4,.2), transparent 75%);
 }
+.world-panel--tech { background-color:#07152d; }
 .world-panel--tech::before {
   background-image: url("./img/hero-catalogo.png");
 }
@@ -197,6 +198,15 @@ a { color: inherit; }
   min-width: 0;
   margin: auto 0 0;
   animation: rise-in .85s .12s ease both;
+}
+.world-tech-logo {
+  display:block;
+  width:clamp(124px, 13vw, 168px);
+  max-width:100%;
+  max-height:180px;
+  height:auto;
+  object-fit:contain;
+  filter:drop-shadow(0 4px 18px rgba(0,0,0,.45)) drop-shadow(0 0 13px rgba(0,140,255,.12));
 }
 .world-brand {
   display: flex;
@@ -396,6 +406,7 @@ a { color: inherit; }
   .world-content { width: min(100%, 430px); margin: auto; }
   .world-brand { min-height: 0; gap: 9px; }
   .world-emblem { width: 66px; }
+  .world-tech-logo { width:clamp(120px, 27vw, 148px); max-height:150px; }
   .world-title { font-size: clamp(31px, 8vw, 42px); }
   .world-eyebrow { margin-top: 9px; font-size: 9px; letter-spacing: .19em; }
   .world-copy { margin-top: 11px; font-size: 13px; line-height: 1.65; }
