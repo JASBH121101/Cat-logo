@@ -586,12 +586,29 @@ function variantGroupKey(variant) {
   return `${storage}|${ram}`;
 }
 
+function parseStorageValue(value) {
+  const raw = String(value ?? "").trim();
+  const match = raw.match(/^([0-9]+(?:[.,][0-9]+)?)\s*(TB|GB)?$/i);
+  return {
+    amount: match ? match[1].replace(",", ".") : raw.replace(/\s*(?:TB|GB)\s*/i, ""),
+    unit: match?.[2]?.toUpperCase() === "TB" ? "TB" : "GB"
+  };
+}
+
+function formatStorageLabel(amount, unit = "GB") {
+  const value = String(amount ?? "").trim();
+  const normalizedUnit = String(unit || "GB").toUpperCase() === "TB" ? "TB" : "GB";
+  return value ? `${value} ${normalizedUnit}` : "";
+}
+
 function variantGroupMarkup(v = {}, isBase = false) {
-  const storage = String(v.storage || "").trim().replace(/\s*GB\s*/i, "");
+  const parsedStorage = parseStorageValue(v.storage || "");
+  const storage = parsedStorage.amount;
+  const storageUnit = parsedStorage.unit;
   const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
   const title = isBase
     ? "Colores del producto"
-    : [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+    : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
   const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></div>';
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
@@ -600,7 +617,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
       ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
     </div>
     <div class="variant-config-fields">
-      <label class="variant-storage-label"><span class="variant-storage-label-row"><span class="variant-storage-unit">GB</span><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
+      <label class="variant-storage-label"><span class="variant-storage-label-row"><select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"><option value="GB" ${storageUnit === "GB" ? "selected" : ""}>GB</option><option value="TB" ${storageUnit === "TB" ? "selected" : ""}>TB</option></select><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
       ${isBase ? "" : '<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_usd ?? "") + '"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_nio ?? "") + '"></span></label>'}
     </div>
@@ -695,7 +712,8 @@ function updateVariantRowHeadings() {
   document.querySelectorAll("[data-variant-group]").forEach(group => {
     const storage = group.querySelector("[data-group-storage]")?.value.trim();
     const ram = group.querySelector("[data-group-ram]")?.value.trim();
-    const title = [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+    const storageUnit = group.querySelector("[data-group-storage-unit]")?.value || "GB";
+    const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
     const heading = group.querySelector("[data-variant-group-title]");
     if (heading) heading.textContent = title;
     group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
@@ -983,9 +1001,9 @@ form?.addEventListener("input", event => {
     }
     return;
   }
-  if (!event.target.matches("[data-variant-color], [data-variant-hex], [data-group-storage], [data-group-ram]")) return;
+  if (!event.target.matches("[data-variant-color], [data-variant-hex], [data-group-storage], [data-group-storage-unit], [data-group-ram]")) return;
   const row = event.target.closest("[data-variant-row]");
-  if (event.target.matches("[data-group-storage], [data-group-ram]")) {
+  if (event.target.matches("[data-group-storage], [data-group-storage-unit], [data-group-ram]")) {
     updateVariantRowHeadings();
     return;
   }
@@ -1291,8 +1309,8 @@ async function loadProducts() {
 }
 
 function formatAnalyticsCapacity(value) {
-  const text = String(value ?? "").trim().replace(/\s*GB\s*/i, "");
-  return text ? `${text} GB` : "";
+  const parsed = parseStorageValue(value);
+  return parsed.amount ? formatStorageLabel(parsed.amount, parsed.unit) : "";
 }
 
 function renderAnalyticsRanking(node, rows, labelFor) {
@@ -1787,17 +1805,24 @@ async function uploadImage(productId, file, subfolder = "") {
 
   const bucket = CONFIG.storageBucket || "product-images";
 
-  const { error } = await supabase
-    .storage
-    .from(bucket)
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false
-    });
-
-  if (error) {
+  let uploadResult;
+  try {
+    uploadResult = await supabase
+      .storage
+      .from(bucket)
+      .upload(path, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false
+      });
+  } catch (error) {
     throw new Error(
-      `No se pudo subir ${file.name}: ${error.message}`
+      `No se pudo conectar con Supabase Storage al subir ${file.name}. Revisá la conexión, la URL del proyecto y las políticas de Storage. Detalle: ${error.message || "fallo de red"}`
+    );
+  }
+
+  if (uploadResult.error) {
+    throw new Error(
+      `No se pudo subir ${file.name}: ${uploadResult.error.message}`
     );
   }
 
@@ -1823,7 +1848,7 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId, existingVariants = []) {
+async function collectVariants(productId, existingVariants = [], uploadIssues = []) {
   const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
   const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
   const allGroups = [
@@ -1845,7 +1870,8 @@ async function collectVariants(productId, existingVariants = []) {
       throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex}.`);
     }
 
-    const storage = storageRaw ? `${storageRaw} GB` : "";
+    const storageUnit = read("[data-group-storage-unit]") || "GB";
+    const storage = storageRaw ? formatStorageLabel(storageRaw, storageUnit) : "";
     const ram = ramRaw ? `${ramRaw} GB` : "";
     const key = variantGroupKey({storage,ram});
     if (!isBase && seenConfigurations.has(key)) throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
@@ -1868,31 +1894,37 @@ async function collectVariants(productId, existingVariants = []) {
         status.textContent = `Subiendo fotografías de ${color}…`;
         status.dataset.state = "uploading";
       }
-      try {
-        for (const item of imageItems) {
-          if (item.kind === "new") {
+      for (const item of imageItems) {
+        if (item.kind === "new") {
+          try {
             const url = await uploadImage(productId, item.file, "variants");
             urls.push(url);
             item.kind = "existing";
             item.url = url;
+            delete item.uploadError;
             if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
             delete item.previewUrl;
             delete item.file;
-          } else if (item.url) urls.push(item.url);
+          } catch (error) {
+            uploadIssues.push(`${color}: ${error.message || "error desconocido"}`);
+            item.uploadError = error.message || "Error desconocido";
+          }
+        } else if (item.url) {
+          urls.push(item.url);
         }
-        row._variantImageItems = imageItems;
-        syncVariantImageFields(row);
-        renderVariantImagePreview(row);
-        if (status) {
+      }
+      row._variantImageItems = imageItems;
+      syncVariantImageFields(row);
+      renderVariantImagePreview(row);
+      const failedUploads = imageItems.filter(item => item.kind === "new");
+      if (status) {
+        if (failedUploads.length) {
+          status.textContent = `No se pudieron subir ${failedUploads.length} fotografía(s) de ${color}. Los datos se conservarán; podés reintentar.`;
+          status.dataset.state = "error";
+        } else {
           status.textContent = urls.length ? `${urls.length} fotografía(s) guardadas para ${color}.` : "";
           status.dataset.state = "success";
         }
-      } catch (error) {
-        if (status) {
-          status.textContent = `No se pudieron subir las fotografías de ${color}: ${error.message || "error desconocido"}`;
-          status.dataset.state = "error";
-        }
-        throw error;
       }
       colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
@@ -1981,6 +2013,7 @@ form?.addEventListener("submit", async event => {
 
   const button = $("#save-product-button");
   const wasEditing = Boolean($("#product-id").value);
+  const imageUploadErrors = [];
 
   button.disabled = true;
   button.textContent = "Guardando…";
@@ -2004,17 +2037,31 @@ form?.addEventListener("submit", async event => {
 
     const variants = await collectVariants(
       id,
-      existingProduct?.variants || []
+      existingProduct?.variants || [],
+      imageUploadErrors
     );
 
     const uploadedMainImages = [];
-    for (let imageIndex=0; imageIndex<mainImageItems.length; imageIndex++) {
-      const item=mainImageItems[imageIndex];
-      if(item.kind==="new"){
-        message("#product-form-status", `Subiendo fotografía ${imageIndex+1} de ${mainImageItems.length}…`);
-        const url=await uploadImage(id,item.file);uploadedMainImages.push(url);item.kind="existing";item.url=url;
-        if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;delete item.file;
-      }else uploadedMainImages.push(item.url);
+    for (let imageIndex = 0; imageIndex < mainImageItems.length; imageIndex++) {
+      const item = mainImageItems[imageIndex];
+      if (item.kind === "new") {
+        message("#product-form-status", `Subiendo fotografía ${imageIndex + 1} de ${mainImageItems.length}…`);
+        try {
+          const url = await uploadImage(id, item.file);
+          uploadedMainImages.push(url);
+          item.kind = "existing";
+          item.url = url;
+          delete item.uploadError;
+          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+          delete item.previewUrl;
+          delete item.file;
+        } catch (error) {
+          imageUploadErrors.push(`${item.file?.name || "Fotografía principal"}: ${error.message || "error desconocido"}`);
+          item.uploadError = error.message || "Error desconocido";
+        }
+      } else if (item.url) {
+        uploadedMainImages.push(item.url);
+      }
     }
     renderMainImagePreviews();
 
@@ -2119,17 +2166,24 @@ form?.addEventListener("submit", async event => {
       throw result.error;
     }
 
-    message(
-      "#product-form-status",
-      "Producto guardado correctamente.",
-      "success"
-    );
-
-    setStatus(`Guardado: ${name}`, "success");
-
-    clearEditor();
-
-    await loadProducts();
+    if (imageUploadErrors.length) {
+      // Conservar el ID evita crear duplicados al reintentar las fotografías.
+      $("#product-id").value = id;
+      $("#catalog-key").value = catalogKey;
+      $("#form-title").textContent = "Producto guardado · fotografías pendientes";
+      message(
+        "#product-form-status",
+        `Producto guardado, pero ${imageUploadErrors.length} fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”.`,
+        "error"
+      );
+      setStatus(`Guardado con fotografías pendientes: ${name}`, "error");
+      await loadProducts();
+    } else {
+      message("#product-form-status", "Producto guardado correctamente.", "success");
+      setStatus(`Guardado: ${name}`, "success");
+      clearEditor();
+      await loadProducts();
+    }
   } catch (error) {
     message(
       "#product-form-status",
@@ -2139,10 +2193,9 @@ form?.addEventListener("submit", async event => {
     );
   } finally {
     button.disabled = false;
-
-    button.textContent = $("#product-id").value
-      ? "Guardar cambios"
-      : "Guardar producto";
+    button.textContent = imageUploadErrors.length
+      ? "Reintentar fotografías"
+      : ($("#product-id").value ? "Guardar cambios" : "Guardar producto");
   }
 });
 
