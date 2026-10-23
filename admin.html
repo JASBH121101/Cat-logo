@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>CT Administración | Catálogo de Tecnología</title>
+  <title>Catálogo Manager | Administración</title>
 
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,13 +26,13 @@
             aria-label="Abrir menú de administración" title="Abrir menú">
       <span aria-hidden="true">☰</span>
     </button>
-    <a class="brand" href="./" aria-label="Catálogo de Tecnología">
+    <a class="brand" href="./" aria-label="Administración de Cat-logo y Perfumería">
       <span class="brand-mark">CT</span>
-      <span>CT Administración</span>
+      <span>Catálogo Manager</span>
     </a>
     <div class="admin-header-context" aria-hidden="true">
       <strong>Panel de control</strong>
-      <small>CAT-LOGO · INVENTARIO</small>
+      <small>TECNOLOGÍA · PERFUMERÍA</small>
     </div>
   </header>
 
@@ -91,13 +91,18 @@
     <section id="dashboard" class="dashboard hidden">
       <div class="dashboard-top">
         <div>
-          <p class="eyebrow">PANEL PRIVADO</p>
+          <p class="eyebrow">PANEL PRIVADO · CENTRO DE CONTROL</p>
           <h1 id="admin-greeting">¡Bienvenido de nuevo!</h1>
-          <p class="section-subtitle">
-            Agregá productos, administrá variantes y actualizá sus precios.
-          </p>
+          <p id="admin-context-description" class="section-subtitle">Gestioná tecnología y fragancias desde espacios de trabajo separados.</p>
         </div>
-
+        <div class="admin-catalog-context">
+          <label for="active-catalog-selector">Catálogo activo</label>
+          <select id="active-catalog-selector">
+            <option value="technology">Cat-logo · Tecnología</option>
+            <option value="perfumery">Perfumería</option>
+          </select>
+          <small id="admin-context-hint">Las listas y los indicadores corresponden al catálogo seleccionado.</small>
+        </div>
       </div>
 
       <div id="admin-status" class="admin-alert" role="status"></div>
@@ -142,7 +147,7 @@
 
         <div class="admin-sidebar-footer">
           <span class="admin-sidebar-footer-mark" aria-hidden="true">✦</span>
-          <span><strong>Catálogo de Tecnología</strong><small>Panel administrativo</small></span>
+          <span><strong>Catálogo Manager</strong><small>Dos catálogos · Un panel</small></span>
         </div>
       </aside>
 
@@ -232,16 +237,16 @@
 
             <div class="dashboard-interest-rankings">
               <section class="dashboard-interest-ranking">
-                <div class="dashboard-interest-section-heading"><div><p class="dashboard-eyebrow">COLOR</p><h4>Más consultados</h4></div></div>
+                <div class="dashboard-interest-section-heading"><div><p id="dashboard-interest-family-eyebrow" class="dashboard-eyebrow">COLOR</p><h4 id="dashboard-interest-family-title">Más consultados</h4></div></div>
                 <div id="dashboard-interest-colors" class="dashboard-interest-rank-list"><p class="dashboard-empty-state">Todavía no hay datos de colores.</p></div>
               </section>
               <section class="dashboard-interest-ranking">
-                <div class="dashboard-interest-section-heading"><div><p class="dashboard-eyebrow">RAM / ROM</p><h4>Configuraciones más pedidas</h4></div></div>
+                <div class="dashboard-interest-section-heading"><div><p id="dashboard-interest-config-eyebrow" class="dashboard-eyebrow">RAM / ROM</p><h4 id="dashboard-interest-config-title">Configuraciones más pedidas</h4></div></div>
                 <div id="dashboard-interest-configs" class="dashboard-interest-rank-list"><p class="dashboard-empty-state">Todavía no hay datos de configuraciones.</p></div>
               </section>
             </div>
 
-            <div class="dashboard-interest-products-heading"><h4>Teléfonos con más interés</h4><span>Visitas / WhatsApp</span></div>
+            <div class="dashboard-interest-products-heading"><h4 id="dashboard-interest-products-title">Productos con más interés</h4><span>Visitas / WhatsApp</span></div>
             <div class="dashboard-top-products" id="dashboard-top-products"><p class="dashboard-empty-state">Aún no hay datos de visitas.</p></div>
           </article>
         </div>
@@ -278,7 +283,7 @@
                 <input id="product-brand" maxlength="80">
               </label>
 
-              <label>
+              <label id="product-model-field">
                 Modelo
                 <input id="product-model" maxlength="100">
               </label>
@@ -287,21 +292,77 @@
                 Categoría <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-category" required>
                   <option value="" disabled selected>Seleccionar categoría…</option>
-                  <option value="Celulares">Celulares</option>
-                  <option value="Laptops">Laptops</option>
-                  <option value="Tablets">Tablets</option>
-                  <option value="Gaming">Gaming</option>
-                  <option value="Televisores">Televisores</option>
-                  <option value="Audio">Audio</option>
-                  <option value="Accesorios">Accesorios</option>
-                  <optgroup label="Perfumes / Fragancias">
-                    <option value="Perfumes árabes">Perfumes — Árabes</option>
-                    <option value="Perfumes nicho">Perfumes — Nicho</option>
-                    <option value="Perfumes diseñador">Perfumes — Diseñador</option>
-                  </optgroup>
-                  <option value="Otros">Otros</option>
                 </select>
               </label>
+
+              <label class="span-2">
+                Descripción comercial
+                <textarea id="product-description" rows="3" maxlength="1800" placeholder="Describí brevemente el producto y sus puntos principales."></textarea>
+              </label>
+
+              <section id="product-perfume-fields" class="span-2 admin-perfume-fields hidden" aria-labelledby="perfume-fields-title">
+                <div class="admin-perfume-fields-heading">
+                  <p class="eyebrow">FICHA OLFATIVA</p>
+                  <h3 id="perfume-fields-title">Detalles de la fragancia</h3>
+                  <p>Estos datos se guardan en la ficha propia de Perfumería, separada de las variantes tecnológicas.</p>
+                </div>
+                <div class="admin-perfume-fields-grid">
+                  <label>
+                    Familia <span class="required-mark" aria-hidden="true">*</span>
+                    <select id="product-perfume-family">
+                      <option value="">Seleccionar familia…</option>
+                      <option value="arabes">Árabes</option>
+                      <option value="nicho">Nicho</option>
+                      <option value="disenador">Diseñador</option>
+                    </select>
+                  </label>
+                  <label>
+                    Concentración
+                    <select id="product-perfume-concentration">
+                      <option value="">Seleccionar concentración…</option>
+                      <option value="Parfum">Parfum</option>
+                      <option value="Extrait de Parfum">Extrait de Parfum</option>
+                      <option value="EDP">Eau de Parfum (EDP)</option>
+                      <option value="EDT">Eau de Toilette (EDT)</option>
+                      <option value="EDC">Eau de Cologne (EDC)</option>
+                      <option value="Otro">Otra / no especificada</option>
+                    </select>
+                  </label>
+                  <label>
+                    Contenido (ml)
+                    <span class="admin-input-unit"><input id="product-perfume-volume" type="number" min="0.1" step="0.1" inputmode="decimal"><span>ml</span></span>
+                  </label>
+                  <label>
+                    Público
+                    <select id="product-perfume-audience">
+                      <option value="">No especificado</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Femenino">Femenino</option>
+                      <option value="Unisex">Unisex</option>
+                    </select>
+                  </label>
+                  <label class="span-2">
+                    Familia olfativa
+                    <input id="product-perfume-scent-family" maxlength="120" placeholder="Ej. Amaderada, oriental, floral, cítrica">
+                  </label>
+                  <label>
+                    Notas de salida
+                    <textarea id="product-perfume-top-notes" rows="2" placeholder="Separá las notas con comas"></textarea>
+                  </label>
+                  <label>
+                    Notas de corazón
+                    <textarea id="product-perfume-heart-notes" rows="2" placeholder="Separá las notas con comas"></textarea>
+                  </label>
+                  <label class="span-2">
+                    Notas de fondo
+                    <textarea id="product-perfume-base-notes" rows="2" placeholder="Separá las notas con comas"></textarea>
+                  </label>
+                  <label class="check-label admin-perfume-original">
+                    <input id="product-perfume-original" type="checkbox">
+                    Original confirmado
+                  </label>
+                </div>
+              </section>
 
               <label>
                 Disponibilidad general <span class="required-mark" aria-hidden="true">*</span>
@@ -324,11 +385,11 @@
               </label>
 
               <div class="warranty-specs-stack">
-                <label>
+                <label id="product-warranty-field">
                   Garantía en meses
                   <span class="admin-input-unit"><input id="product-warranty" type="number" min="0" max="120" step="1" inputmode="numeric"><span>meses</span></span>
                 </label>
-                <label class="admin-specs-field">
+                <label id="product-specs-field" class="admin-specs-field">
                   Características y especificaciones.
                   <textarea id="product-specs" rows="2"></textarea>
                 </label>
@@ -349,7 +410,7 @@
                 <div id="product-images-preview" class="admin-image-preview-grid" aria-live="polite"></div>
               </section>
 
-              <div class="admin-add-color-slot">
+              <div id="technology-color-manager" class="admin-add-color-slot">
                 <div class="admin-add-color-heading">
                   <span class="admin-add-color-caption">Colores del producto</span>
                   <button id="add-base-color-button" class="button button-outline" type="button" aria-label="Añadir color del producto" aria-expanded="false" aria-controls="quick-color-palette">+ Color</button>
@@ -370,7 +431,7 @@
                 <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
               </div>
 
-<section class="span-2 variants-editor-section"
+<section id="technology-variants-section" class="span-2 variants-editor-section"
                        aria-labelledby="variants-editor-title">
                 <div class="variants-editor-heading">
                   <div class="variants-editor-copy">
@@ -391,7 +452,7 @@
                 </div>
               </section>
 
-              <label class="span-2">
+              <label id="product-financing-field" class="span-2">
                 Nota de financiamiento
                 <textarea id="product-financing" rows="2">Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.</textarea>
               </label>
@@ -496,7 +557,7 @@
         </p>
       </section>
 
-      <section class="admin-card import-card">
+      <section id="technology-import-card" class="admin-card import-card">
         <div>
           <h2>Carga inicial desde JSON</h2>
           <p>
@@ -531,7 +592,7 @@
   </dialog>
 
   <footer class="site-footer">
-    <span>Catálogo de Tecnología · Área administrativa privada</span>
+    <span>Catálogo Manager · Área administrativa privada</span>
     <span>Precios y condiciones deben verificarse antes de publicar.</span>
   </footer>
 </body>
