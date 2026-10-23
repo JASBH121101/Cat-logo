@@ -8,6 +8,9 @@ const statusNode = $("#catalog-status");
 const emptyNode = $("#empty-results");
 const searchInput = $("#perfume-search-input");
 const categoryFilters = $("#category-filters");
+const audienceFilters = $("#audience-filters");
+const clearAllFiltersButton = $("#clear-all-filters");
+const filterSummary = $("#perfume-filter-summary");
 const featuredSection = $("#featured-section");
 const featuredGrid = $("#featured-grid");
 const featuredCount = $("#featured-count");
@@ -23,7 +26,8 @@ const dialogContent = $("#perfume-dialog-content");
 
 let supabase = null;
 let perfumes = [];
-let selectedFamily = "all";
+const selectedFamilies = new Set();
+const selectedAudiences = new Set();
 
 const hasConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
 if (hasConfig) supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
@@ -59,8 +63,26 @@ function familyLabel(family) {
   })[normalizeText(family)] || "Perfumería";
 }
 
-function familyMatches(product, family) {
-  return family === "all" || normalizeText(product.perfume_details?.family) === family;
+function familyMatches(product) {
+  return !selectedFamilies.size || selectedFamilies.has(normalizeText(product.perfume_details?.family));
+}
+function canonicalAudience(value) {
+  const audience = normalizeText(value);
+  if (["hombre","masculino","male","man"].includes(audience)) return "hombre";
+  if (["mujer","femenino","female","woman"].includes(audience)) return "mujer";
+  return audience === "unisex" ? "unisex" : "";
+}
+function audienceMatches(product) {
+  return !selectedAudiences.size || selectedAudiences.has(canonicalAudience(product.perfume_details?.audience));
+}
+function updateFilterButtons(container, attribute, selectedSet) {
+  if (!container) return;
+  container.querySelectorAll(".filter-chip").forEach(button => {
+    const value = button.dataset[attribute] || "all";
+    const active = value === "all" ? selectedSet.size === 0 : selectedSet.has(value);
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
 }
 
 function formatUSD(value) {
@@ -96,7 +118,8 @@ function priceBound(input) {
 function hasActiveFilters() {
   return Boolean(
     (searchInput?.value || "").trim() ||
-    selectedFamily !== "all" ||
+    selectedFamilies.size > 0 ||
+    selectedAudiences.size > 0 ||
     priceBound(minPriceInput) !== null ||
     priceBound(maxPriceInput) !== null
   );
@@ -192,7 +215,7 @@ function visibleProducts() {
   if (!validRange) return [];
 
   return perfumes.filter(product => {
-    if (!familyMatches(product, selectedFamily)) return false;
+    if (!familyMatches(product) || !audienceMatches(product)) return false;
     const detail = product.perfume_details || {};
     const searchable = [
       product.name, product.brand, product.model, product.description,
@@ -233,7 +256,7 @@ function renderProducts() {
   if (emptyDescription) {
     emptyDescription.textContent = isComingSoon
       ? "Estamos preparando nuestra selección de fragancias. Volvé pronto para descubrirla."
-      : "Probá con otra búsqueda, familia o rango de precio.";
+      : "Probá con otro nombre, tipo de fragancia, público o rango de precio.";
   }
   statusNode.textContent = perfumes.length
     ? (filtering
@@ -241,11 +264,12 @@ function renderProducts() {
       : perfumes.length + (perfumes.length === 1 ? " fragancia publicada" : " fragancias publicadas") + (featured.length ? " · " + featured.length + " destacadas" : ""))
     : "Próximamente: estamos preparando la colección.";
   if (clearPriceButton) clearPriceButton.disabled = priceBound(minPriceInput) === null && priceBound(maxPriceInput) === null;
-  categoryFilters.querySelectorAll("[data-category]").forEach(button => {
-    const active = button.dataset.category === selectedFamily;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
+  updateFilterButtons(categoryFilters, "category", selectedFamilies);
+  updateFilterButtons(audienceFilters, "audience", selectedAudiences);
+  const typeLabels = [...selectedFamilies].map(value => ({arabes:"Árabes",nicho:"Nicho",disenador:"Diseñador"})[value] || value);
+  const audienceLabels = [...selectedAudiences].map(value => ({hombre:"Hombre",mujer:"Mujer",unisex:"Unisex"})[value] || value);
+  if (filterSummary) filterSummary.textContent = [typeLabels.length ? typeLabels.join(" + ") : "Todos los tipos", audienceLabels.length ? audienceLabels.join(" + ") : "Todos los públicos"].join(" · ");
+  if (clearAllFiltersButton) clearAllFiltersButton.disabled = !hasActiveFilters();
 }
 
 function notesSection(title, values) {
@@ -328,16 +352,31 @@ function loadDeepLink() {
   }
 }
 
-categoryFilters.addEventListener("click", event => {
-  const button = event.target.closest("[data-category]");
-  if (!button) return;
-  selectedFamily = button.dataset.category || "all";
-  renderProducts();
-});
+function bindMultiSelect(container, attribute, selectedSet) {
+  container?.addEventListener("click", event => {
+    const button = event.target.closest(`.filter-chip[data-${attribute}]`);
+    if (!button) return;
+    const value = button.dataset[attribute] || "all";
+    if (value === "all") selectedSet.clear();
+    else if (selectedSet.has(value)) selectedSet.delete(value);
+    else selectedSet.add(value);
+    renderProducts();
+  });
+}
+bindMultiSelect(categoryFilters, "category", selectedFamilies);
+bindMultiSelect(audienceFilters, "audience", selectedAudiences);
 searchInput.addEventListener("input", renderProducts);
 minPriceInput.addEventListener("input", renderProducts);
 maxPriceInput.addEventListener("input", renderProducts);
 clearPriceButton.addEventListener("click", () => {
+  minPriceInput.value = "";
+  maxPriceInput.value = "";
+  renderProducts();
+});
+clearAllFiltersButton?.addEventListener("click", () => {
+  selectedFamilies.clear();
+  selectedAudiences.clear();
+  searchInput.value = "";
   minPriceInput.value = "";
   maxPriceInput.value = "";
   renderProducts();
