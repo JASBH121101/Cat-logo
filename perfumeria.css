@@ -155,9 +155,12 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
 .perfume-page .perfume-view-button { display:flex; align-items:center; justify-content:space-between; min-height:43px; padding:11px 13px; border:1px solid var(--perfume-gold); border-radius:2px; color:var(--perfume-ink); background:transparent; font-size:11px; font-weight:850; text-decoration:none; }
 .perfume-page .perfume-view-button:hover { color:#18130d; background:var(--perfume-gold-light); }
 .perfume-page .empty-state { margin:20px 0; padding:36px 20px; border:1px solid var(--perfume-border); color:var(--perfume-muted); text-align:center; background:var(--perfume-card); }
+.perfume-page .empty-state.is-coming-soon { max-width:960px; margin:28px auto 42px; padding:clamp(38px,6vw,64px) 24px; border-color:var(--perfume-gold); background:radial-gradient(ellipse at 50% 0%,rgba(185,148,84,.10),transparent 60%),var(--perfume-card); }
+.perfume-page .empty-state.is-coming-soon > span { display:inline-block; margin-bottom:8px; font-size:34px; }
+.perfume-page .empty-state.is-coming-soon h3 { font-size:clamp(28px,4vw,36px); }
 .perfume-page .empty-state > span { color:var(--perfume-gold); font-size:28px; }
 .perfume-page .empty-state h3 { color:var(--perfume-ink); font-family:"Playfair Display",Georgia,serif; font-size:24px; font-weight:500; }
-.perfume-cross-promo { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:22px; margin:0 0 55px; padding:24px; border:1px solid var(--perfume-border); background:var(--perfume-card); }
+.perfume-cross-promo { display:grid; width:min(1200px,calc(100% - 48px)); grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:22px; margin:0 auto 55px; padding:24px; border:1px solid var(--perfume-border); background:var(--perfume-card); }
 .perfume-cross-promo-emblem { display:grid; place-items:center; width:74px; height:74px; border:1px solid var(--perfume-gold); border-radius:50%; color:var(--perfume-gold); font-family:"Playfair Display",Georgia,serif; font-size:25px; }
 .perfume-cross-promo-copy { min-width:0; }
 .perfume-cross-promo-copy .perfume-kicker { margin-bottom:7px; }
@@ -211,6 +214,8 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
   .perfume-dialog-detail { padding:0; }
 }
 @media (max-width:640px) {
+  .perfume-cross-promo { width:calc(100% - 28px); grid-template-columns:minmax(0,1fr); gap:14px; margin-bottom:35px; padding:18px; }
+  .perfume-cross-promo-emblem { width:58px; height:58px; font-size:21px; }
   .perfume-page .site-header { flex-wrap:wrap; gap:12px; }
   .perfume-header-nav { order:3; flex:1 0 100%; justify-content:space-between; gap:12px; padding-top:11px; border-top:1px solid var(--perfume-border); }
   .perfume-header-nav a { font-size:10px; }

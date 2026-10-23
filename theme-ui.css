@@ -7515,7 +7515,8 @@ body.admin-body .admin-perfume-fields textarea:focus-visible {
   grid-template-columns:minmax(0,1.2fr) minmax(180px,.8fr);
   align-items:center;
   gap:24px;
-  margin:28px 0;
+  width:min(1200px,calc(100% - 48px));
+  margin:28px auto;
   padding:clamp(20px,3vw,34px);
   overflow:hidden;
   border:1px solid var(--cross-promo-border,#d1dcf0);
@@ -7550,7 +7551,31 @@ html[data-theme="light"] {
   --cross-promo-mark:#fffdf9;
 }
 @media (max-width:760px) {
-  .cross-catalog-promo { grid-template-columns:minmax(0,1fr); gap:15px; margin:22px 0; padding:18px; }
+  .cross-catalog-promo { width:calc(100% - 28px); grid-template-columns:minmax(0,1fr); gap:15px; margin:22px auto; padding:18px; }
   .cross-catalog-promo-mark { min-height:95px; grid-template-columns:auto auto; gap:12px; }
   .cross-catalog-promo-mark > span { font-size:42px; }
+}
+
+
+/* Nota prudente para completar la ficha de perfumería con datos confirmados. */
+.admin-perfume-data-note {
+  margin:0;
+  padding:12px 14px;
+  border:1px solid #d9e4f5;
+  border-radius:10px;
+  color:#5c6b86;
+  background:#f4f7ff;
+  font-size:12px;
+  line-height:1.6;
+}
+
+html[data-theme="dark"] .admin-perfume-data-note {
+  border-color:#34476c;
+  color:#b0bed8;
+  background:linear-gradient(120deg,#101b30,#151f36);
+}
+html[data-theme="light"] .admin-perfume-data-note {
+  border-color:#d7e0f0;
+  color:#637392;
+  background:linear-gradient(120deg,#f8faff,#eef3ff);
 }
