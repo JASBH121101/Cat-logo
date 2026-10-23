@@ -1709,9 +1709,7 @@ function showAdminSection(section) {
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
 
 async function loadProducts() {
-  if (!supabase || !currentUser) {
-    return false;
-  }
+  if (!supabase || !currentUser) return false;
 
   const { data, error } = await supabase
     .from("products")
@@ -1719,22 +1717,44 @@ async function loadProducts() {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    setStatus(
-      `No se pudo cargar el inventario: ${error.message}`,
-      "error"
-    );
-
+    setStatus("No se pudo cargar el inventario: " + error.message, "error");
     return false;
   }
 
-  products = data || [];
+  products = (data || []).map(product => ({
+    ...product,
+    catalog_type: normalizeCatalogType(product.catalog_type),
+    perfume_details: null
+  }));
 
+  const perfumeIds = products
+    .filter(product => product.catalog_type === "perfumery")
+    .map(product => product.id);
+
+  if (perfumeIds.length) {
+    const { data: perfumeDetails, error: perfumeError } = await supabase
+      .from("perfume_details")
+      .select("*")
+      .in("product_id", perfumeIds);
+
+    if (perfumeError) {
+      console.warn("No se pudieron cargar los detalles de perfumería:", perfumeError.message);
+      setStatus("Los productos cargaron, pero no se pudieron leer los detalles de perfumes. Revisá las políticas y los permisos de perfume_details.", "error");
+    } else {
+      const detailsById = new Map((perfumeDetails || []).map(item => [String(item.product_id), item]));
+      products = products.map(product => ({
+        ...product,
+        perfume_details: detailsById.get(String(product.id)) || null
+      }));
+    }
+  }
+
+  updateProductFormMode();
   renderAdminList();
   renderDashboardOverview();
   await loadCatalogAnalytics();
   return true;
 }
-
 function formatAnalyticsCapacity(value) {
   const parsed = parseStorageValue(value);
   return parsed.amount ? formatStorageLabel(parsed.amount, parsed.unit) : "";
