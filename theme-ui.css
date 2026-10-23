@@ -7362,3 +7362,53 @@ html[data-theme="light"] .budget-filter-bar, html[data-theme="light"] .featured-
   .featured-grid .product-card-color-list { gap:4px 6px; }
   .featured-grid .product-card-color-name { font-size:10px; }
 }
+
+
+/* PERFUMES / FRAGANCIAS · FILTRO SECUNDARIO */
+.perfume-family-row {
+  align-items:center;
+  gap:8px;
+  margin-top:-12px;
+  margin-bottom:20px;
+  padding:10px 12px;
+  border:1px solid var(--perfume-family-border,#d7dfef);
+  border-radius:13px;
+  background:var(--perfume-family-surface,#f8faff);
+}
+.perfume-family-row.hidden { display:none !important; }
+.perfume-family-label {
+  padding:0 4px 0 2px;
+  color:var(--perfume-family-muted,#71809c);
+  font-size:11px;
+  font-weight:850;
+  white-space:nowrap;
+}
+.perfume-family-row .filter-chip {
+  min-height:34px;
+  padding:7px 12px;
+  font-size:12px;
+}
+html[data-theme="dark"] {
+  --perfume-family-border:#303f60;
+  --perfume-family-surface:#101a30;
+  --perfume-family-muted:#9eafcf;
+}
+html[data-theme="light"] {
+  --perfume-family-border:#d7e0f0;
+  --perfume-family-surface:#f8faff;
+  --perfume-family-muted:#71809c;
+}
+@media (max-width:760px) {
+  .perfume-family-row {
+    gap:7px;
+    margin-top:-8px;
+    margin-bottom:17px;
+    padding:9px;
+  }
+  .perfume-family-label { flex-basis:100%; }
+  .perfume-family-row .filter-chip {
+    min-height:36px;
+    padding:8px 11px;
+    font-size:12px;
+  }
+}
