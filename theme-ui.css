@@ -6386,3 +6386,221 @@ html[data-theme="dark"] body:not(.admin-body) .color-availability.unavailable {
   color: #ffc0c6;
   background: #4a222b;
 }
+
+
+/* =========================================================
+   CAT-LOGO ADMIN — contraste claro/oscuro y acciones de variantes
+   Corrección de etiquetas pálidas en tema claro y jerarquía de botones.
+   ========================================================= */
+
+/* Separación y estructura entre la acción y las configuraciones nuevas. */
+body.admin-body .variants-editor-actions {
+  gap: 12px !important;
+  margin: 5px 0 14px !important;
+}
+body.admin-body .variants-editor-actions .button {
+  min-height: 44px !important;
+  padding: 11px 16px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+body.admin-body .product-variants-list {
+  gap: 18px !important;
+  padding-top: 3px !important;
+}
+body.admin-body .variant-config-group:not(.variant-base-group) {
+  border-radius: 16px !important;
+  padding: 14px !important;
+}
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-config-fields {
+  gap: 12px !important;
+  margin: 14px 0 18px !important;
+}
+
+/* El botón de nueva capacidad es la acción principal. */
+body.admin-body #add-variant-button {
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+}
+body.admin-body #add-base-color-button,
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color {
+  border-radius: 11px !important;
+  font-weight: 800 !important;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+body.admin-body #add-base-color-button {
+  min-height: 42px !important;
+  padding: 9px 14px !important;
+}
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color {
+  min-height: 40px !important;
+  margin-top: 12px !important;
+  padding: 8px 13px !important;
+  font-size: 13px !important;
+}
+body.admin-body #add-variant-button:hover,
+body.admin-body #add-base-color-button:hover,
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.035);
+}
+body.admin-body #add-variant-button:active,
+body.admin-body #add-base-color-button:active,
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color:active {
+  transform: translateY(1px);
+}
+body.admin-body #add-variant-button:focus-visible,
+body.admin-body #add-base-color-button:focus-visible,
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color:focus-visible {
+  outline: 3px solid #8da4ff !important;
+  outline-offset: 3px !important;
+}
+
+/* TEMA CLARO: texto oscuro sobre tarjetas y controles claros. */
+html[data-theme="light"] body.admin-body .variant-config-group-heading strong {
+  color: #1f3156 !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-group-heading small {
+  color: #52627e !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-fields > label {
+  color: #293956 !important;
+}
+html[data-theme="light"] body.admin-body .variant-color-section-title {
+  color: #314574 !important;
+}
+html[data-theme="light"] body.admin-body .inline-color-details > summary {
+  color: #304b8c !important;
+}
+html[data-theme="light"] body.admin-body .inline-color-name-field,
+html[data-theme="light"] body.admin-body .inline-color-tone-field,
+html[data-theme="light"] body.admin-body .inline-color-details .variant-color-fields > label {
+  color: #43536f !important;
+}
+html[data-theme="light"] body.admin-body .variants-editor-heading p {
+  color: #53627d !important;
+}
+html[data-theme="light"] body.admin-body .variant-storage-unit {
+  border-color: #b7c6f2 !important;
+  color: #263e91 !important;
+  background: #e9efff !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-fields input:not([type="color"]):not([type="file"]),
+html[data-theme="light"] body.admin-body .variant-config-fields select,
+html[data-theme="light"] body.admin-body .inline-color-name-field input,
+html[data-theme="light"] body.admin-body .inline-color-details .variant-color-fields select,
+html[data-theme="light"] body.admin-body .inline-color-details [data-variant-hex-text] {
+  border-color: #c8d4ed !important;
+  color: #172744 !important;
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-fields .admin-input-unit {
+  border-color: #c8d4ed !important;
+  background: #ffffff !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-fields .admin-input-unit > span {
+  color: #415474 !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-fields .admin-input-unit input {
+  color: #172744 !important;
+}
+html[data-theme="light"] body.admin-body .inline-color-card {
+  border-color: #cbd7f1 !important;
+  background: linear-gradient(145deg, #ffffff, #f1f5ff) !important;
+  box-shadow: 0 3px 0 #e0e7f7, 0 7px 16px rgba(41, 67, 125, .07) !important;
+}
+html[data-theme="light"] body.admin-body .variant-color-list > .variants-empty-hint {
+  border-color: #cbd7ed !important;
+  color: #566782 !important;
+  background: #ffffff !important;
+}
+html[data-theme="light"] body.admin-body #add-variant-button {
+  border-color: #3c4bd2 !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #315fe0, #5b42cf) !important;
+  box-shadow: 0 4px 0 #293ca0, 0 8px 17px rgba(59, 72, 190, .20) !important;
+}
+html[data-theme="light"] body.admin-body #add-variant-button:hover {
+  box-shadow: 0 5px 0 #293ca0, 0 12px 22px rgba(59, 72, 190, .25) !important;
+}
+html[data-theme="light"] body.admin-body #add-base-color-button {
+  border: 1px solid #9caef0 !important;
+  color: #2d469f !important;
+  background: linear-gradient(135deg, #f4f6ff, #e7f8f5) !important;
+  box-shadow: 0 3px 0 #d3dcf8, 0 6px 13px rgba(56, 78, 153, .10) !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color {
+  border: 1px solid #9bd9cf !important;
+  color: #12685f !important;
+  background: linear-gradient(135deg, #edfffb, #e5f4ff) !important;
+  box-shadow: 0 3px 0 #c5e7e3, 0 5px 12px rgba(27, 114, 119, .09) !important;
+}
+
+/* TEMA OSCURO: conservar el contraste y la jerarquía con superficies profundas. */
+html[data-theme="dark"] body.admin-body .variant-config-group-heading strong {
+  color: #edf3ff !important;
+}
+html[data-theme="dark"] body.admin-body .variant-config-group-heading small {
+  color: #b2c4e5 !important;
+}
+html[data-theme="dark"] body.admin-body .variant-config-fields > label {
+  color: #d9e5ff !important;
+}
+html[data-theme="dark"] body.admin-body .variant-color-section-title {
+  color: #bacbf0 !important;
+}
+html[data-theme="dark"] body.admin-body .inline-color-details > summary {
+  color: #a9c9ff !important;
+}
+html[data-theme="dark"] body.admin-body .inline-color-name-field,
+html[data-theme="dark"] body.admin-body .inline-color-tone-field,
+html[data-theme="dark"] body.admin-body .inline-color-details .variant-color-fields > label {
+  color: #c4d3f0 !important;
+}
+html[data-theme="dark"] body.admin-body .variants-editor-heading p {
+  color: #bac8e4 !important;
+}
+html[data-theme="dark"] body.admin-body .variant-storage-unit {
+  border-color: #526ba8 !important;
+  color: #e1eaff !important;
+  background: #20345c !important;
+}
+html[data-theme="dark"] body.admin-body .inline-color-card {
+  border-color: #415780 !important;
+  background: linear-gradient(145deg, #172543, #101a30) !important;
+}
+html[data-theme="dark"] body.admin-body .variant-color-list > .variants-empty-hint {
+  border-color: #435376 !important;
+  color: #aab9d7 !important;
+  background: #111c33 !important;
+}
+html[data-theme="dark"] body.admin-body #add-variant-button {
+  border-color: #5975ec !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2259c9, #5840bb) !important;
+  box-shadow: 0 4px 0 #172e73, 0 8px 18px rgba(0, 0, 0, .24) !important;
+}
+html[data-theme="dark"] body.admin-body #add-base-color-button {
+  border: 1px solid #6179c1 !important;
+  color: #e5edff !important;
+  background: linear-gradient(135deg, #1d2e52, #253b5d) !important;
+  box-shadow: 0 3px 0 #111d36, 0 6px 13px rgba(0, 0, 0, .2) !important;
+}
+html[data-theme="dark"] body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color {
+  border: 1px solid #347e80 !important;
+  color: #c7fff1 !important;
+  background: linear-gradient(135deg, #143b42, #173052) !important;
+  box-shadow: 0 3px 0 #0c222c, 0 5px 12px rgba(0, 0, 0, .2) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.admin-body #add-variant-button,
+  body.admin-body #add-base-color-button,
+  body.admin-body .variant-config-group:not(.variant-base-group) .variant-add-color {
+    transition: none !important;
+  }
+}
