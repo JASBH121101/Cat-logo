@@ -5425,3 +5425,66 @@ html[data-theme="dark"] body.admin-body .admin-add-color-slot .quick-color-swatc
 html[data-theme="dark"] body.admin-body .admin-add-color-slot .quick-color-name {
   color: #aab9d5 !important;
 }
+
+/* Improve light-mode readability for all configuration fields around color variants. */
+html[data-theme="light"] body.admin-body .variant-config-fields > label {
+  color: #35435a !important;
+}
+html[data-theme="light"] body.admin-body .variant-config-fields input:not([type="checkbox"]):not([type="file"]):not([type="color"]),
+html[data-theme="light"] body.admin-body .variant-config-fields select {
+  border-color: #c7d2e2 !important;
+  color: #1f2937 !important;
+  background: #ffffff !important;
+}
+html[data-theme="light"] body.admin-body .variant-color-section-title {
+  color: #273853 !important;
+}
+html[data-theme="light"] body.admin-body .inline-color-details .variant-image-preview {
+  border-color: #d5deed !important;
+  background: #f8faff !important;
+}
+html[data-theme="light"] body.admin-body .inline-color-details .variant-image-placeholder {
+  color: #596980 !important;
+}
+html[data-theme="light"] body.admin-body .inline-color-details .admin-file-picker {
+  border-color: #c5d2e6 !important;
+  color: #30456b !important;
+  background: #eef3ff !important;
+}
+html[data-theme="light"] body.admin-body .variant-swatch-palette {
+  border-color: #d8e1ee !important;
+  background: #f8faff !important;
+}
+html[data-theme="light"] body.admin-body .variant-storage-unit {
+  border-color: #c9d5f0 !important;
+  color: #354d9d !important;
+  background: #eef2ff !important;
+}
+html[data-theme="light"] body.admin-body .color-row-status[data-state="error"] {
+  color: #b42332 !important;
+}
+html[data-theme="light"] body.admin-body .color-row-status[data-state="success"] {
+  color: #067647 !important;
+}
+html[data-theme="dark"] body.admin-body .inline-color-details .variant-image-preview {
+  border-color: #3b4d70 !important;
+  background: #0d162a !important;
+}
+html[data-theme="dark"] body.admin-body .inline-color-details .variant-image-placeholder {
+  color: #aab9d5 !important;
+}
+html[data-theme="dark"] body.admin-body .inline-color-details .admin-file-picker {
+  border-color: #415780 !important;
+  color: #dbe6ff !important;
+  background: #1b2948 !important;
+}
+html[data-theme="dark"] body.admin-body .variant-swatch-palette {
+  border-color: #344666 !important;
+  background: #101a2d !important;
+}
+html[data-theme="dark"] body.admin-body .color-row-status[data-state="error"] {
+  color: #ff9caa !important;
+}
+html[data-theme="dark"] body.admin-body .color-row-status[data-state="success"] {
+  color: #82e3ba !important;
+}
