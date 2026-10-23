@@ -380,10 +380,6 @@ window.addEventListener("hashchange", loadDeepLink);
   if (cardImage) {
     image.remove();
     if (!cardImage.querySelector(".perfume-photo-placeholder")) cardImage.appendChild(placeholder);
-  } else if (image.id === "perfume-dialog-main-image") {
-    image.remove();
-    const gallery = $("#perfume-dialog-main-image")?.parentElement;
-    if (gallery && !gallery.querySelector(".perfume-photo-placeholder")) gallery.appendChild(placeholder);
   }
 }, true));
 
