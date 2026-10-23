@@ -2714,50 +2714,42 @@ form?.addEventListener("submit", async event => {
   event.preventDefault();
 
   if (!currentUser || !supabase) {
-    message(
-      "#product-form-status",
-      "Tu sesión administrativa no está activa. Volvé a iniciar sesión.",
-      "error"
-    );
-
+    message("#product-form-status", "Tu sesión administrativa no está activa. Volvé a iniciar sesión.", "error");
     return;
   }
 
   const button = $("#save-product-button");
   const wasEditing = Boolean($("#product-id").value);
   const imageUploadErrors = [];
-
+  const isPerfume = activeCatalogType === "perfumery";
   button.disabled = true;
   button.textContent = "Guardando…";
 
   try {
     const name = $("#product-name").value.trim();
+    if (!name) throw new Error("Escribí el nombre del producto.");
+    if (isPerfume && !$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume.");
 
-    if (!name) {
-      throw new Error("Escribí el nombre del producto.");
+    const rawVolume = $("#product-perfume-volume").value.trim();
+    const perfumeVolume = isPerfume && rawVolume ? toOptionalNumber(rawVolume, "Contenido en ml") : null;
+    if (isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
+
+    const id = $("#product-id").value || crypto.randomUUID();
+    const existingProduct = products.find(product => String(product.id) === String(id));
+    if (wasEditing && existingProduct && normalizeCatalogType(existingProduct.catalog_type) !== activeCatalogType) {
+      throw new Error("El catálogo del producto no coincide con el catálogo activo. Cancelá y volvé a abrir el producto desde su catálogo.");
     }
 
-    const id =
-      $("#product-id").value || crypto.randomUUID();
-
-    const existingProduct = products.find(
-      product => String(product.id) === String(id)
-    );
-
-    const catalogKey = $("#catalog-key").value.trim() ||
-      `${slugify(name)}-${id.slice(0, 8)}`;
-
-    const variants = await collectVariants(
-      id,
-      existingProduct?.variants || [],
-      imageUploadErrors
-    );
+    const catalogKey = $("#catalog-key").value.trim() || (slugify(name) + "-" + id.slice(0, 8));
+    const variants = isPerfume
+      ? []
+      : await collectVariants(id, existingProduct?.variants || [], imageUploadErrors);
 
     const uploadedMainImages = [];
     for (let imageIndex = 0; imageIndex < mainImageItems.length; imageIndex++) {
       const item = mainImageItems[imageIndex];
       if (item.kind === "new") {
-        message("#product-form-status", `Subiendo fotografía ${imageIndex + 1} de ${mainImageItems.length}…`);
+        message("#product-form-status", "Subiendo fotografía " + (imageIndex + 1) + " de " + mainImageItems.length + "…");
         try {
           const url = await uploadImage(id, item.file);
           uploadedMainImages.push(url);
@@ -2768,7 +2760,7 @@ form?.addEventListener("submit", async event => {
           delete item.previewUrl;
           delete item.file;
         } catch (error) {
-          imageUploadErrors.push(`${item.file?.name || "Fotografía principal"}: ${error.message || "error desconocido"}`);
+          imageUploadErrors.push((item.file?.name || "Fotografía principal") + ": " + (error.message || "error desconocido"));
           item.uploadError = error.message || "Error desconocido";
         }
       } else if (item.url) {
@@ -2777,133 +2769,96 @@ form?.addEventListener("submit", async event => {
     }
     renderMainImagePreviews();
 
-    const colors = deriveColorsFromVariants(
-      variants,
-      existingProduct?.colors || []
-    );
-
-    const baseUSD = toOptionalNumber(
-      $("#product-price-usd").value,
-      "Precio base en dólares"
-    );
-
-    const baseNIO = toOptionalNumber(
-      $("#product-price-nio").value,
-      "Precio base en córdobas"
-    );
-
-    const warranty = toOptionalNumber(
-      $("#product-warranty").value,
-      "Garantía"
-    );
-
-    const priceUSD = variants.length
-      ? minimumPrice(variants, "price_usd") ?? baseUSD
-      : baseUSD;
-
-    const priceNIO = variants.length
-      ? minimumPrice(variants, "price_nio") ?? baseNIO
-      : baseNIO;
-
+    const colors = isPerfume ? [] : deriveColorsFromVariants(variants, existingProduct?.colors || []);
+    const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
+    const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
+    const warranty = isPerfume ? null : toOptionalNumber($("#product-warranty").value, "Garantía");
+    const priceUSD = variants.length ? (minimumPrice(variants, "price_usd") ?? baseUSD) : baseUSD;
+    const priceNIO = variants.length ? (minimumPrice(variants, "price_nio") ?? baseNIO) : baseNIO;
     const allImages = [...new Set(uploadedMainImages)];
-
     const now = new Date().toISOString();
 
     const payload = {
       catalog_key: catalogKey,
-
-      sort_order: wasEditing
-        ? Number(existingProduct?.sort_order ?? products.length)
-        : products.length,
-
+      catalog_type: activeCatalogType,
+      sort_order: wasEditing ? Number(existingProduct?.sort_order ?? getActiveCatalogProducts().length) : getActiveCatalogProducts().length,
       name,
-
       brand: $("#product-brand").value.trim() || null,
-      model: $("#product-model").value.trim() || null,
-      category: $("#product-category").value,
-
-      availability: normalizeProductAvailability(
-        $("#product-availability").value
-      ),
-
+      model: isPerfume ? null : ($("#product-model").value.trim() || null),
+      category: isPerfume ? "Perfumería" : $("#product-category").value,
+      availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
       price_nio: priceNIO,
       warranty_months: warranty,
-
-      // Se conserva la descripción anterior sin mostrar un campo redundante en el editor.
-      description: existingProduct?.description || null,
-
-      specifications: parseSpecs(
-        $("#product-specs").value
-      ),
-
+      description: $("#product-description").value.trim() || null,
+      specifications: isPerfume ? {} : parseSpecs($("#product-specs").value),
       images: allImages,
       image_url: allImages[0] || null,
-
       colors,
       variants,
-
-      financing_note:
+      financing_note: isPerfume ? null : (
         $("#product-financing").value.trim() ||
-        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.",
-
-      shipping_note:
-        $("#product-shipping").value.trim() || null,
-
+        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación."
+      ),
+      shipping_note: $("#product-shipping").value.trim() || null,
       featured: $("#product-featured").checked,
       is_published: $("#product-active").checked,
-
       updated_at: now,
       updated_by: currentUser.id
     };
 
-    let result;
+    const result = wasEditing
+      ? await supabase.from("products").update(payload).eq("id", id)
+      : await supabase.from("products").insert({ ...payload, id, created_at: now });
 
-    if (wasEditing) {
-      result = await supabase
-        .from("products")
-        .update(payload)
-        .eq("id", id);
-    } else {
-      result = await supabase
-        .from("products")
-        .insert({
-          ...payload,
-          id,
-          created_at: now
-        });
-    }
+    if (result.error) throw result.error;
 
-    if (result.error) {
-      throw result.error;
+    // Keep the generated ID in the form before writing the detail table:
+    // if detail save fails, a retry updates this product instead of duplicating it.
+    $("#product-id").value = id;
+    $("#catalog-key").value = catalogKey;
+
+    if (isPerfume) {
+      const perfumePayload = {
+        product_id: id,
+        family: $("#product-perfume-family").value,
+        concentration: $("#product-perfume-concentration").value.trim() || null,
+        volume_ml: perfumeVolume,
+        audience: $("#product-perfume-audience").value || null,
+        scent_family: $("#product-perfume-scent-family").value.trim() || null,
+        top_notes: splitPerfumeNotes($("#product-perfume-top-notes").value),
+        heart_notes: splitPerfumeNotes($("#product-perfume-heart-notes").value),
+        base_notes: splitPerfumeNotes($("#product-perfume-base-notes").value),
+        is_original: $("#product-perfume-original").checked,
+        updated_at: now
+      };
+      const detailResult = await supabase.from("perfume_details").upsert(perfumePayload, { onConflict: "product_id" });
+      if (detailResult.error) {
+        message("#product-form-status", "El producto base se guardó, pero no se guardaron los detalles de perfumería: " + detailResult.error.message + ". La ficha quedó abierta; corregí el problema y pulsá Guardar cambios.", "error");
+        setStatus("Faltan guardar los detalles de la fragancia: " + name, "error");
+        await loadProducts();
+        return;
+      }
     }
 
     if (imageUploadErrors.length) {
-      // Conservar el ID evita crear duplicados al reintentar las fotografías.
-      $("#product-id").value = id;
-      $("#catalog-key").value = catalogKey;
-      $("#form-title").textContent = "Producto guardado · fotografías pendientes";
+      $("#form-title").textContent = isPerfume ? "Fragancia guardada · fotografías pendientes" : "Producto guardado · fotografías pendientes";
       message(
         "#product-form-status",
-        `Producto guardado, pero ${imageUploadErrors.length} fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”. Detalle: ${imageUploadErrors.slice(0, 2).join(" · ")}`,
+        "Producto guardado, pero " + imageUploadErrors.length + " fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”. Detalle: " + imageUploadErrors.slice(0, 2).join(" · "),
         "error"
       );
-      setStatus(`Guardado con fotografías pendientes: ${name}`, "error");
+      setStatus("Guardado con fotografías pendientes: " + name, "error");
       await loadProducts();
     } else {
-      message("#product-form-status", "Producto guardado correctamente.", "success");
-      setStatus(`Guardado: ${name}`, "success");
+      message("#product-form-status", isPerfume ? "Fragancia guardada correctamente." : "Producto guardado correctamente.", "success");
+      setStatus("Guardado: " + name, "success");
       await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(error => console.warn("No se pudo limpiar el borrador tras guardar.", error));
-      clearEditor();
       await loadProducts();
+      clearEditor();
     }
   } catch (error) {
-    message(
-      "#product-form-status",
-      error.message ||
-        "Ocurrió un error al guardar el producto.",
-      "error"
-    );
+    message("#product-form-status", error.message || "Ocurrió un error al guardar el producto.", "error");
   } finally {
     button.disabled = false;
     button.textContent = imageUploadErrors.length
@@ -2911,7 +2866,6 @@ form?.addEventListener("submit", async event => {
       : ($("#product-id").value ? "Guardar cambios" : "Guardar producto");
   }
 });
-
 /* =========================================================
    IMPORTAR JSON
    ========================================================= */
