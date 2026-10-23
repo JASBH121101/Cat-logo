@@ -13,6 +13,7 @@ const searchInput = document.querySelector("#search-input");
 const dialog = document.querySelector("#product-dialog");
 const dialogContent = document.querySelector("#dialog-content");
 const categoryFilters = document.querySelector("#category-filters");
+const perfumeFamilyFilters = document.querySelector("#perfume-family-filters");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
 const featuredCount = document.querySelector("#featured-count");
@@ -27,6 +28,7 @@ const priceFilterFeedback = document.querySelector("#budget-filter-feedback");
 let supabase = null;
 let products = [];
 let selectedCategory = "all";
+let selectedPerfumeFamily = "all";
 
 // Analytics: record product views and WhatsApp intent, including the selected variant.
 async function recordCatalogEvent(productId, eventType, variant = {}) {
@@ -627,7 +629,27 @@ function readPriceBound(input) {
 
 function hasActiveCatalogFilters() {
   return Boolean((searchInput?.value || "").trim() || selectedCategory !== "all" ||
+    (selectedCategory === "Perfumes" && selectedPerfumeFamily !== "all") ||
     readPriceBound(minPriceInput) !== null || readPriceBound(maxPriceInput) !== null);
+}
+
+function normalizeCatalogCategory(value) {
+  return String(value || "").trim().toLocaleLowerCase("es")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function isPerfumeCategory(value) {
+  const normalized = normalizeCatalogCategory(value);
+  return normalized.startsWith("perfume") || normalized.startsWith("fragancia");
+}
+
+function matchesPerfumeFamily(category, family) {
+  if (family === "all") return true;
+  const normalized = normalizeCatalogCategory(category);
+  if (family === "arabes") return normalized.includes("arabe");
+  if (family === "nicho") return normalized.includes("nicho");
+  if (family === "disenador") return normalized.includes("disenador");
+  return false;
 }
 
 function visibleProducts() {
@@ -638,7 +660,13 @@ function visibleProducts() {
   if (priceFilterFeedback) priceFilterFeedback.textContent = validRange ? "" : "El mínimo no puede superar al máximo."; 
   return products.filter(product => {
     if (!validRange) return false;
-    const categoryMatches = selectedCategory === "all" || String(product.category || "").toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
+    const productCategory = String(product.category || "");
+    const categoryMatches = selectedCategory === "all"
+      || (selectedCategory === "Perfumes"
+        ? isPerfumeCategory(productCategory)
+        : normalizeCatalogCategory(productCategory) === normalizeCatalogCategory(selectedCategory));
+    const perfumeFamilyMatches = selectedCategory !== "Perfumes"
+      || matchesPerfumeFamily(productCategory, selectedPerfumeFamily);
     const variants = getProductVariants(product);
     const searchableFields = [
       product.name, product.brand, product.model, product.category, product.description,
@@ -654,7 +682,7 @@ function visibleProducts() {
       const price = rawPrice === null || rawPrice === undefined || rawPrice === "" ? NaN : Number(rawPrice);
       priceMatches = Number.isFinite(price) && (minPrice === null || price >= minPrice) && (maxPrice === null || price <= maxPrice);
     }
-    return categoryMatches && queryMatches && priceMatches;
+    return categoryMatches && perfumeFamilyMatches && queryMatches && priceMatches;
   });
 }
 
@@ -682,6 +710,14 @@ function renderProducts() {
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
     button.classList.toggle("active", button.dataset.category === selectedCategory);
   });
+  if (perfumeFamilyFilters) {
+    perfumeFamilyFilters.classList.toggle("hidden", selectedCategory !== "Perfumes");
+    perfumeFamilyFilters.querySelectorAll("[data-perfume-family]").forEach(button => {
+      const active = button.dataset.perfumeFamily === selectedPerfumeFamily;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
 }
 function uniqueValues(variants, field) {
   const seen = new Set();
@@ -1118,6 +1154,15 @@ categoryFilters.addEventListener("click", event => {
   if (!button) return;
 
   selectedCategory = button.dataset.category;
+  selectedPerfumeFamily = "all";
+  renderProducts();
+});
+
+perfumeFamilyFilters?.addEventListener("click", event => {
+  const button = event.target.closest("[data-perfume-family]");
+  if (!button) return;
+
+  selectedPerfumeFamily = button.dataset.perfumeFamily || "all";
   renderProducts();
 });
 
