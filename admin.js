@@ -825,7 +825,11 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const title = isBase
     ? "Colores del producto"
     : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
-  const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color">+ Color</button></div>';
+  const colorControls = `<div class="variant-color-section">
+    <strong class="variant-color-section-title">Colores de esta configuración</strong>
+    <div class="variant-color-list" data-variant-color-list></div>
+    ${isBase ? "" : '<button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color">+ Color</button>'}
+  </div>`;
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
     <div class="variant-config-group-heading">
