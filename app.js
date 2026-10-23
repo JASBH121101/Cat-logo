@@ -430,7 +430,7 @@ function imageMarkup(product) {
 }
 
 // Sustituir imágenes de catálogo rotas por un estado visible, no por un hueco vacío.
-grid.addEventListener("error", event => {
+document.querySelectorAll("#product-grid, #featured-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
   const container = img.closest(".product-image");
@@ -438,7 +438,7 @@ grid.addEventListener("error", event => {
   if (container && !container.querySelector(".photo-placeholder")) {
     container.insertAdjacentHTML("beforeend", `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Imagen no disponible</span></div>`);
   }
-}, true);
+}, true));
 
 function productLink(product) {
   const page = new URL("./", window.location.href);
