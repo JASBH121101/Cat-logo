@@ -185,7 +185,10 @@ function getProductImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
 
-  return [...new Set([...list, product?.image_url].filter(value => typeof value === "string" && value.trim()))];
+  return [...new Set([...list, product?.image_url]
+    .filter(value => typeof value === "string")
+    .map(value => value.trim())
+    .filter(Boolean))];
 }
 
 function getProductVariants(product) {
@@ -203,6 +206,15 @@ function getProductVariants(product) {
       item.price_nio === "" || item.price_nio === undefined || item.price_nio === null
         ? null : Number(item.price_nio);
 
+    const legacyImage = String(item.image_url || item.imageUrl || "").trim();
+    const storedImages = Array.isArray(item.images)
+      ? [...new Set(item.images
+          .filter(url => typeof url === "string")
+          .map(url => url.trim())
+          .filter(Boolean))]
+      : [];
+    const images = storedImages.length ? storedImages : (legacyImage ? [legacyImage] : []);
+
     return {
       storage: String(item.storage || item.capacity || "").trim(),
       ram: String(item.ram || "").trim(),
@@ -211,8 +223,8 @@ function getProductVariants(product) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
       availability: item.availability === "order" ? "order" : item.availability === "out_of_stock" ? "out_of_stock" : "available",
-      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
-      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
+      images,
+      image_url: images[0] || legacyImage
     };
   }).filter(item => item && (item.storage || item.ram || item.color))
     .sort((left, right) => {
@@ -322,7 +334,7 @@ function imageMarkup(product) {
       <img src="${escapeHtml(url)}"
            alt="${escapeHtml(product.name)}"
            loading="lazy"
-           onerror="this.remove()">
+           data-product-image>
     `;
   }
 
@@ -333,6 +345,17 @@ function imageMarkup(product) {
     </div>
   `;
 }
+
+// Sustituir fotos rotas por un estado visible, en lugar de dejar un hueco vacío.
+grid.addEventListener("error", event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
+  const container = img.closest(".product-image");
+  img.remove();
+  if (container && !container.querySelector(".photo-placeholder")) {
+    container.insertAdjacentHTML("beforeend", `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Imagen no disponible</span></div>`);
+  }
+}, true);
 
 function productLink(product) {
   const page = new URL("./", window.location.href);
@@ -645,6 +668,10 @@ function renderVariantControls(product, variants, selected) {
     selected.ram,
     selected.color
   ].filter(Boolean).join(" · ");
+  const selectedConfigurationVariants = variants.filter(variant =>
+    String(variant.storage || "").trim() === String(selected.storage || "").trim() &&
+    String(variant.ram || "").trim() === String(selected.ram || "").trim()
+  );
 
   const usd = formatUSD(selected.price_usd);
   const nio = formatNIO(selected.price_nio);
@@ -655,7 +682,7 @@ function renderVariantControls(product, variants, selected) {
   area.innerHTML = `
     <div class="variant-selector">
       ${renderVariantButtonGroup(variants, selected, "storage", "Configuración")}
-      ${renderVariantButtonGroup(variants, selected, "color", "Color")}
+      ${renderVariantButtonGroup(selectedConfigurationVariants.length ? selectedConfigurationVariants : variants, selected, "color", "Color")}
     </div>
 
     <div class="variant-bottom-row">
@@ -708,6 +735,29 @@ function renderVariantControls(product, variants, selected) {
           : ""}
       `
       : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
+  }
+
+  // Si falla una fotografía específica de la variante, probar la galería general.
+  if (dialogImage) {
+    dialogImage.querySelectorAll("img").forEach(img => {
+      img.addEventListener("error", () => {
+        if (img.classList.contains("dialog-main-image")) {
+          const fallback = getProductImages(product).find(url => url !== img.src && !img.dataset.fallbackTried);
+          if (fallback) {
+            img.dataset.fallbackTried = "true";
+            img.src = fallback;
+            return;
+          }
+          const wrapper = img.closest(".dialog-gallery-main");
+          if (wrapper) {
+            wrapper.innerHTML = '<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Imagen no disponible</span></div>';
+          }
+        } else {
+          const thumb = img.closest(".dialog-gallery-thumb");
+          if (thumb) thumb.hidden = true;
+        }
+      });
+    });
   }
 }
 
