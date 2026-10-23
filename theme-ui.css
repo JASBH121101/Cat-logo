@@ -6840,11 +6840,22 @@ html[data-theme="dark"] body.admin-body .variant-swatch.is-selected {
 .variant-config-group:not(.variant-base-group) .variant-color-list {
   display:grid !important;
   grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr)) !important;
+  grid-auto-rows:4px !important;
+  grid-auto-flow:row dense !important;
   align-items:start !important; gap:12px !important; width:100% !important;
 }
+/* Open cards keep their own column; dense placement fills empty neighboring grid cells. */
 .base-color-manager .variant-base-group .variant-color-list > .inline-color-card:has(.inline-color-details[open]),
 .variant-config-group:not(.variant-base-group) .variant-color-list > .inline-color-card:has(.inline-color-details[open]) {
-  grid-column:1 / -1 !important; width:100% !important; max-width:none !important;
+  grid-column:auto !important; width:100% !important; max-width:none !important;
+}
+/* Each color card has room for readable controls; outer columns provide the masonry. */
+.inline-color-details .variant-color-fields { grid-template-columns:minmax(0,1fr) !important; }
+.inline-color-details .variant-color-library-tools { grid-template-columns:minmax(0,1fr) !important; }
+.inline-color-library-actions, .variant-color-library-actions { justify-content:flex-start !important; }
+.base-color-manager .variant-base-group .variant-color-list > .variants-empty-hint,
+.variant-config-group:not(.variant-base-group) .variant-color-list > .variants-empty-hint {
+  grid-column:1 / -1 !important; grid-row:auto / span 8 !important;
 }
 .inline-color-card { min-width:0 !important; padding:10px !important; border-radius:12px !important; }
 .inline-color-main {
