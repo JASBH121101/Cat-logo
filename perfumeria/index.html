@@ -11,12 +11,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css?v=20261023-jbtech-refresh1">
-  <link rel="stylesheet" href="../theme-ui.css?v=20261023-color-gallery-adminfix1">
-  <link rel="stylesheet" href="../perfumeria.css?v=20261023-jbparfums-refresh1">
+  <link rel="stylesheet" href="../styles.css?v=20261023-catalog-help2">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261023-color-selection-fix2">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261023-dual-filter-promo1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261023-brand-system1">
   <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261023-coming-soon2"></script>
+  <script type="module" src="../perfumeria.js?v=20261023-dual-filter1"></script>
   <script src="../ui.js?v=20261022-fix1" defer></script>
 </head>
 <body class="perfume-page">
@@ -37,28 +37,27 @@
         <p class="perfume-kicker"><span></span> PERFUMERÍA · SELECCIÓN DE FRAGANCIAS</p>
         <h1>Una fragancia.<br><em>Una firma personal.</em></h1>
         <p class="perfume-hero-description">Descubrí fragancias árabes, de nicho y de diseñador. Compará presentaciones y precios, y escribinos para consultar disponibilidad y opciones de pago.</p>
-        <div class="perfume-hero-actions">
-          <a class="perfume-primary-link" href="#coleccion">Explorar fragancias <span aria-hidden="true">↘</span></a>
-          <a class="perfume-outline-link" id="perfume-hero-whatsapp" href="#" target="_blank" rel="noopener">Consultar por WhatsApp <span aria-hidden="true">↗</span></a>
-        </div>
+        <div class="perfume-hero-actions"><a class="perfume-primary-link" href="#coleccion">Explorar fragancias <span aria-hidden="true">↘</span></a></div>
         <div class="perfume-hero-notes"><span>AROMAS CON IDENTIDAD</span><i></i><span>SELECCIÓN ESPECIAL</span></div>
       </div>
       <div class="perfume-hero-art" aria-hidden="true">
-        <div class="perfume-orbit orbit-one"></div>
-        <div class="perfume-orbit orbit-two"></div>
-        <div class="perfume-hero-plinth"></div>
-        <div class="perfume-hero-shadow"></div>
-        <div class="perfume-hero-bottle">
-          <div class="perfume-bottle-cap"></div>
-          <div class="perfume-bottle-neck"></div>
-          <div class="perfume-bottle-body">
-            <span class="perfume-bottle-label-top">JB</span>
-            <span class="perfume-bottle-symbol">✦</span>
-            <span class="perfume-bottle-label-bottom">PARFUMS</span>
-          </div>
-        </div>
-        <span class="perfume-hero-number">01 / OLFACTORY EDITION</span>
+        <div class="perfume-orbit orbit-one"></div><div class="perfume-orbit orbit-two"></div>
+        <div class="perfume-hero-plinth"></div><div class="perfume-hero-shadow"></div>
+        <img class="perfume-hero-photo" src="../img/perfume-hero-qaed.webp" alt="" loading="eager" decoding="async">
       </div>
+    </section>
+
+    <section class="perfume-audience-promo" aria-labelledby="perfume-audience-title">
+      <header class="perfume-audience-heading">
+        <p class="perfume-kicker">AROMAS CON IDENTIDAD · SELECCIÓN ESPECIAL</p>
+        <h2 id="perfume-audience-title">Una esencia <em>para cada estilo.</em></h2>
+      </header>
+      <div class="perfume-audience-grid">
+        <article class="perfume-audience-card" aria-label="Fragancias para ella"><div class="perfume-audience-photo"><img src="../img/perfume-for-her.webp" alt="" loading="lazy" decoding="async"></div><div class="perfume-audience-label"><h3>Para ella</h3><p>Elegancia · Carácter · Distinción</p></div></article>
+        <article class="perfume-audience-card" aria-label="Fragancias unisex"><div class="perfume-audience-photo"><img src="../img/perfume-unisex.webp" alt="" loading="lazy" decoding="async"></div><div class="perfume-audience-label"><h3>Unisex</h3><p>Aromas sin etiquetas</p></div></article>
+        <article class="perfume-audience-card" aria-label="Fragancias para él"><div class="perfume-audience-photo"><img src="../img/perfume-for-him.webp" alt="" loading="lazy" decoding="async"></div><div class="perfume-audience-label"><h3>Para él</h3><p>Presencia · Fuerza · Estilo</p></div></article>
+      </div>
+      <a class="perfume-primary-link perfume-audience-cta" href="#coleccion">Explorar toda la colección <span aria-hidden="true">↘</span></a>
     </section>
 
     <section class="perfume-family-band" id="familias" aria-label="Familias de perfumería">
@@ -81,18 +80,25 @@
         </label>
       </div>
 
-      <div class="filter-row perfume-family-filters" id="category-filters" aria-label="Filtrar por familia de fragancia">
-        <button class="filter-chip active" type="button" data-category="all">Todas las fragancias</button>
-        <button class="filter-chip" type="button" data-category="arabes">Árabes</button>
-        <button class="filter-chip" type="button" data-category="nicho">Nicho</button>
-        <button class="filter-chip" type="button" data-category="disenador">Diseñador</button>
+      <div class="filter-row perfume-family-filters" id="category-filters" data-mobile-filter-label="Tipo de fragancia" aria-label="Filtrar por tipo de fragancia">
+        <button class="filter-chip active" type="button" data-category="all" aria-pressed="true">Todos los tipos</button>
+        <button class="filter-chip" type="button" data-category="arabes" aria-pressed="false">Árabes</button>
+        <button class="filter-chip" type="button" data-category="nicho" aria-pressed="false">Nicho</button>
+        <button class="filter-chip" type="button" data-category="disenador" aria-pressed="false">Diseñador</button>
       </div>
+      <div class="filter-row perfume-family-filters perfume-audience-filters" id="audience-filters" data-mobile-filter-label="Público" aria-label="Filtrar por público">
+        <button class="filter-chip active" type="button" data-audience="all" aria-pressed="true">Todos los públicos</button>
+        <button class="filter-chip" type="button" data-audience="hombre" aria-pressed="false">Hombre</button>
+        <button class="filter-chip" type="button" data-audience="mujer" aria-pressed="false">Mujer</button>
+        <button class="filter-chip" type="button" data-audience="unisex" aria-pressed="false">Unisex</button>
+      </div>
+      <div class="perfume-filter-controls"><p id="perfume-filter-summary" aria-live="polite">Todos los tipos · Todos los públicos</p><button id="clear-all-filters" class="perfume-clear-all-button" type="button" disabled>Limpiar todos los filtros</button></div>
 
       <section class="budget-filter-bar perfume-budget-filter" aria-label="Filtrar por presupuesto">
         <div class="budget-filter-heading"><strong>Tu presupuesto</strong><small>Precio en dólares</small></div>
         <label class="budget-price-field" for="price-min-input"><span>Desde</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-min-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Mínimo" aria-label="Precio mínimo en dólares"></span></label>
         <label class="budget-price-field" for="price-max-input"><span>Hasta</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-max-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Máximo" aria-label="Precio máximo en dólares"></span></label>
-        <button id="clear-price-filter" class="budget-clear-button" type="button" disabled>Limpiar</button>
+        <button id="clear-price-filter" class="budget-clear-button" type="button" disabled>Limpiar precio</button>
         <span id="budget-filter-feedback" class="budget-filter-feedback" aria-live="polite"></span>
       </section>
 
