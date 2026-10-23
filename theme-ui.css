@@ -3994,7 +3994,7 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
 }
 .base-color-manager .variant-base-group > .variant-config-group-heading,
 .base-color-manager .variant-base-group > .variant-config-fields,
-.base-color-manager .variant-base-group > .variant-add-color { display: none !important; }
+.base-color-manager .variant-base-group .variant-color-section > .variant-add-color { display: none !important; }
 .base-color-manager .variant-base-group .variant-color-section {
   display: grid !important;
   grid-template-columns: minmax(0,1fr) !important;
@@ -7066,4 +7066,28 @@ body.admin-body .inline-color-details .variant-image-preview {
   body.admin-body .inline-color-details .variant-swatch-palette,
   body.admin-body .variant-swatch-palette { width: min(100%, 258px) !important; }
   body.admin-body .inline-color-main { grid-template-columns: 20px minmax(0, 1fr) 36px 29px !important; gap: 5px !important; }
+}
+
+
+/* Corrección estructural: auto-fill evita que una sola tarjeta se estire a todo el panel. */
+body.admin-body .base-color-manager .variant-base-group .variant-color-section .variant-color-list,
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list {
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr)) !important;
+  grid-auto-rows:4px !important;
+  grid-auto-flow:row dense !important;
+  align-items:start !important;
+  gap:12px !important;
+}
+body.admin-body .base-color-manager .variant-base-group .variant-color-section > .variant-add-color { display:none !important; }
+body.admin-body .base-color-manager .variant-base-group .variant-color-section .variant-color-list > .variants-empty-hint,
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list > .variants-empty-hint {
+  grid-column:1/-1 !important;
+  grid-row:auto / span 8 !important;
+}
+@media (max-width:760px) {
+  body.admin-body .base-color-manager .variant-base-group .variant-color-section .variant-color-list,
+  body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list {
+    grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr)) !important;
+    gap:10px !important;
+  }
 }
