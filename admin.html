@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Catálogo Manager | Administración</title>
+  <title>JB Manager | Panel de catálogos</title>
 
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261023-jbtech-neon2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261023-layout-symmetry1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261023-perfume-hide-colors1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261023-color-gallery-adminfix1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261023-clean-perfume-route1"></script>
+  <script type="module" src="admin.js?v=20261023-jb-manager-brand1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -26,9 +26,9 @@
             aria-label="Abrir menú de administración" title="Abrir menú">
       <span aria-hidden="true">☰</span>
     </button>
-    <a class="brand" href="./" aria-label="Administración de Cat-logo y Perfumería">
-      <span class="brand-mark">CT</span>
-      <span>Catálogo Manager</span>
+    <a class="brand" href="./" aria-label="JB Manager — administración de catálogos">
+      <img class="admin-brand-symbol" src="./favicon.svg?v=20261023-jbtech-neon2" alt="" aria-hidden="true">
+      <span>JB Manager</span>
     </a>
     <div class="admin-header-context" aria-hidden="true">
       <strong>Panel de control</strong>
@@ -47,7 +47,7 @@
         </div>
       </div>
 
-      <p class="eyebrow">ÁREA PRIVADA · CT ADMIN</p>
+      <p class="eyebrow">ÁREA PRIVADA · JB ADMIN</p>
       <h1>Administrá tu catálogo.</h1>
       <p class="section-subtitle">
         Iniciá sesión con el correo autorizado para agregar y actualizar productos.
@@ -98,8 +98,8 @@
         <div class="admin-catalog-context">
           <label for="active-catalog-selector">Catálogo activo</label>
           <select id="active-catalog-selector">
-            <option value="technology">Cat-logo · Tecnología</option>
-            <option value="perfumery">Perfumería</option>
+            <option value="technology">JB TECH · Tecnología</option>
+            <option value="perfumery">JB Parfums · Perfumería</option>
           </select>
           <small id="admin-context-hint">Las listas y los indicadores corresponden al catálogo seleccionado.</small>
         </div>
@@ -110,11 +110,11 @@
       <button class="admin-sidebar-backdrop" id="admin-sidebar-backdrop"
               type="button" aria-label="Cerrar menú de administración" hidden></button>
       <aside class="admin-sidebar" id="admin-sidebar" aria-label="Menú de administración">
-        <a class="admin-sidebar-brand" href="./" aria-label="Cat-logo, volver al catálogo público">
-          <span class="brand-mark">CT</span>
+        <a class="admin-sidebar-brand" href="./" aria-label="JB Manager, volver al catálogo tecnológico">
+          <img class="admin-brand-symbol" src="./favicon.svg?v=20261023-jbtech-neon2" alt="" aria-hidden="true">
           <span class="admin-sidebar-brand-copy">
-            <strong>Cat-logo</strong>
-            <small>Administración</small>
+            <strong>JB Manager</strong>
+            <small>Gestión de catálogos</small>
           </span>
         </a>
 
@@ -147,7 +147,7 @@
 
         <div class="admin-sidebar-footer">
           <span class="admin-sidebar-footer-mark" aria-hidden="true">✦</span>
-          <span><strong>Catálogo Manager</strong><small>Dos catálogos · Un panel</small></span>
+          <span><strong>JB Manager</strong><small>Dos catálogos · Un panel</small></span>
         </div>
       </aside>
 
@@ -170,7 +170,7 @@
         <div class="admin-welcome-image">
           <img src="img/admin-panel.png"
                alt="Ilustración de un panel de inventario tecnológico">
-          <span class="admin-image-badge">CT · INVENTARIO</span>
+          <span class="admin-image-badge">JB · CATÁLOGOS</span>
         </div>
       </section>
 
@@ -582,7 +582,7 @@
   </dialog>
 
   <footer class="site-footer">
-    <span>Catálogo Manager · Área administrativa privada</span>
+    <span>JB Manager · Área administrativa privada</span>
     <span>Precios y condiciones deben verificarse antes de publicar.</span>
   </footer>
 </body>
