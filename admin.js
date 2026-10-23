@@ -768,7 +768,20 @@ mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest(
 mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
 mainImagesPreview?.addEventListener("drop",e=>{const card=e.target.closest("[data-image-item-id]");if(!card||!draggingMainImageId)return;e.preventDefault();const from=mainImageItems.findIndex(i=>i.id===draggingMainImageId),to=mainImageItems.findIndex(i=>i.id===card.dataset.imageItemId);if(from>=0&&to>=0&&from!==to){const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}draggingMainImageId=null;});
 mainImagesPreview?.addEventListener("dragend",()=>{draggingMainImageId=null;mainImagesPreview.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
-function readVariantImageUrls(row){try{const v=JSON.parse(row.querySelector("[data-variant-images]")?.value||"[]");if(Array.isArray(v))return v.filter(u=>typeof u==="string"&&u.trim());}catch{}const u=row.querySelector("[data-variant-image-url]")?.value.trim();return u?[u]:[];}
+function readVariantImageUrls(row){
+  const legacyUrl = row?.querySelector("[data-variant-image-url]")?.value?.trim() || "";
+  try {
+    const parsed = JSON.parse(row?.querySelector("[data-variant-images]")?.value || "[]");
+    if (Array.isArray(parsed)) {
+      const urls = [...new Set(parsed
+        .filter(url => typeof url === "string")
+        .map(url => url.trim())
+        .filter(Boolean))];
+      return urls.length ? urls : (legacyUrl ? [legacyUrl] : []);
+    }
+  } catch {}
+  return legacyUrl ? [legacyUrl] : [];
+}
 function initVariantImageItems(row){if(!row||Array.isArray(row._variantImageItems))return;row._variantImageItems=readVariantImageUrls(row).map(url=>({id:imageId(),kind:"existing",url}));}
 function syncVariantImageFields(row){const items=row?._variantImageItems||[],urls=items.filter(i=>i.kind==="existing").map(i=>i.url),json=row?.querySelector("[data-variant-images]"),legacy=row?.querySelector("[data-variant-image-url]");if(json)json.value=JSON.stringify(urls);if(legacy)legacy.value=urls[0]||"";}
 function renderVariantImagePreview(row){
