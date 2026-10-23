@@ -3,18 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
-  <meta name="description" content="Catálogo de tecnología: celulares, laptops, tablets y gaming. Consultá precios, financiamiento y opciones de entrega en Nicaragua.">
-  <title>Catálogo de Tecnología | Equipos y accesorios</title>
+  <meta name="theme-color" content="#081629">
+  <meta name="description" content="JB TECH: celulares, laptops, tablets y accesorios. Explorá productos, consultá precios y escribinos por WhatsApp para resolver dudas sobre disponibilidad y opciones de pago.">
+  <title>JB TECH | Tecnología para tu mundo</title>
    
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261023-jbtech-neon2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261023-layout-symmetry1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261023-gallery-contain2">
+  <link rel="stylesheet" href="styles.css?v=20261023-jbtech-refresh1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261023-jbtech-refresh1">
 
+  <link rel="stylesheet" href="brand-refresh.css?v=20261023-brand-system1">
   <script src="config.js"></script>
   <script type="module" src="app.js?v=20261023-technology-only2"></script>
   <script src="ui.js?v=20261022-fix1" defer></script>
@@ -22,9 +23,9 @@
 
 <body>
   <header class="site-header">
-    <a class="brand" href="./" aria-label="Inicio Catálogo de Tecnología">
-      <span class="brand-mark">CT</span>
-      <span id="brand-name">Catálogo de Tecnología</span>
+    <a class="brand" href="./" aria-label="Inicio JB TECH">
+      <img class="brand-logo-image" src="./jb-tech-horizontal.svg?v=20261023-jbtech-logo1" alt="JB TECH — Tecnología para tu mundo">
+      <span id="brand-name" class="brand-name-sr">JB TECH</span>
     </a>
 
   </header>
@@ -40,17 +41,22 @@
         <h1>Encontrá tu próximo <span>equipo.</span></h1>
 
         <p class="hero-description">
-          Celulares, computadoras, tablets y gaming. Consultá precios,
-          opciones de financiamiento y entregas de manera directa.
+          Celulares, laptops, tablets y accesorios. Mirá las características,
+          compará precios y escribinos para confirmar disponibilidad, entrega y opciones de pago.
         </p>
 
-        <a class="button button-primary" href="#catalogo">
-          Explorar catálogo <span aria-hidden="true">↓</span>
-        </a>
+        <div class="hero-ctas">
+          <a class="button button-primary" href="#catalogo">
+            Explorar equipos <span aria-hidden="true">↓</span>
+          </a>
+          <a class="button button-secondary hero-whatsapp-button" id="hero-whatsapp" href="#" target="_blank" rel="noopener">
+            Consultar por WhatsApp <span aria-hidden="true">↗</span>
+          </a>
+        </div>
 
         <div class="hero-trust">
-          <span>✓ Financiamiento por crédito o tarjeta</span>
-          <span>✓ Atención directa por WhatsApp</span>
+          <span>✓ Consultas directas por WhatsApp</span>
+          <span>✓ Opciones de pago sujetas a confirmación</span>
         </div>
       </div>
 
@@ -97,8 +103,8 @@
     <section class="cross-catalog-promo technology-promo" aria-label="Conocé nuestro catálogo de perfumería">
       <div class="cross-catalog-promo-copy">
         <p class="eyebrow">UNA EXPERIENCIA DIFERENTE</p>
-        <h2>Descubrí nuestra selección de fragancias.</h2>
-        <p>Perfumes árabes, de nicho y de diseñador en un catálogo dedicado a la perfumería.</p>
+        <h2>Conocé JB Parfums.</h2>
+        <p>Descubrí fragancias árabes, de nicho y de diseñador en un catálogo dedicado a encontrar tu próximo aroma.</p>
         <a class="button button-secondary" href="./perfumeria/">Explorar perfumería <span aria-hidden="true">↗</span></a>
       </div>
       <div class="cross-catalog-promo-mark cross-catalog-promo-image">
@@ -233,16 +239,16 @@
   </main>
 
   <footer class="site-footer">
-    <a class="brand footer-brand" href="./">
-      <span class="brand-mark">CT</span>
-      <span>Catálogo de Tecnología</span>
+    <a class="brand footer-brand" href="./" aria-label="JB TECH — inicio">
+      <img class="brand-logo-image" src="./jb-tech-horizontal.svg?v=20261023-jbtech-logo1" alt="JB TECH — Tecnología para tu mundo">
+      <span class="brand-name-sr">JB TECH</span>
     </a>
 
     <p>
       Precios sujetos a confirmación. Financiamiento sujeto a requisitos y condiciones de aprobación.
     </p>
 
-    <span>© <span id="year"></span> Catálogo de Tecnología</span>
+    <span>© <span id="year"></span> JB TECH</span>
   </footer>
 
   <dialog id="product-dialog" class="product-dialog">
