@@ -2049,8 +2049,71 @@ function previewUniqueImages(values) {
     .filter(Boolean))];
 }
 
+function previewOpenPerfumeProduct(product) {
+  if (!productPreviewDialog || !productPreviewContent) return;
+  const detail = product.perfume_details || {};
+  const images = previewUniqueImages(getImages(product));
+  const title = escapeHtml(product.name || "Fragancia sin nombre");
+  const family = perfumeFamilyLabel(detail.family);
+  const concentration = String(detail.concentration || "").trim();
+  const volume = detail.volume_ml !== null && detail.volume_ml !== undefined && detail.volume_ml !== ""
+    ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml"
+    : "No especificado";
+  const notes = (label, values) => {
+    const entries = Array.isArray(values) ? values : [];
+    return '<section class="admin-preview-note-group"><h4>' + label + '</h4>' +
+      (entries.length
+        ? '<ul class="admin-preview-spec-list">' + entries.map(value => '<li>' + escapeHtml(value) + '</li>').join("") + '</ul>'
+        : '<p class="admin-preview-muted">Sin notas registradas.</p>') +
+      '</section>';
+  };
+  const gallery = images.length
+    ? '<div class="admin-preview-gallery-main"><img id="admin-preview-hero-image" src="' + escapeHtml(images[0]) + '" alt="' + title + '" loading="eager"></div>' +
+      (images.length > 1
+        ? '<div class="admin-preview-gallery-thumbs" aria-label="Fotografías de la fragancia">' +
+          images.map((url, index) => '<button class="admin-preview-thumb ' + (index === 0 ? "is-active" : "") + '" type="button" data-preview-image="' + escapeHtml(url) + '" data-preview-alt="' + title + ' · fotografía ' + (index + 1) + '" aria-label="Ver fotografía ' + (index + 1) + '"><img src="' + escapeHtml(url) + '" alt="" loading="lazy"></button>').join("") +
+        '</div>' : "")
+    : '<div class="admin-preview-photo-placeholder"><span aria-hidden="true">▧</span><span>Sin fotografía</span></div>';
+  const price = previewMoney(product.price_usd, "USD");
+  const priceNio = previewMoney(product.price_nio, "NIO");
+  const notesList = detail.scent_family ? '<p class="admin-preview-brand-model">Familia olfativa: ' + escapeHtml(detail.scent_family) + '</p>' : "";
+
+  productPreviewContent.innerHTML =
+    '<div class="admin-preview-layout">' +
+      '<section class="admin-preview-media">' + gallery + '<div class="admin-preview-image-count">' + images.length + ' fotografía(s)</div></section>' +
+      '<section class="admin-preview-overview">' +
+        '<div class="admin-preview-title-row"><div><p class="admin-preview-eyebrow">' + escapeHtml(product.category || "Perfumería") + '</p><h3>' + title + '</h3>' +
+          (product.brand ? '<p class="admin-preview-brand-model">' + escapeHtml(product.brand) + '</p>' : '') +
+        '</div><span class="admin-preview-publish-state ' + (product.is_published ? "published" : "draft") + '">' + (product.is_published ? "Publicado" : "No publicado") + '</span></div>' +
+        '<div class="admin-preview-price-summary"><span>Precio</span><strong>' + escapeHtml(price) + '</strong><small>' + escapeHtml(priceNio) + '</small></div>' +
+        '<dl class="admin-preview-facts">' +
+          '<div><dt>Familia</dt><dd>' + escapeHtml(family) + '</dd></div>' +
+          '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration || "No especificada") + '</dd></div>' +
+          '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' +
+          '<div><dt>Público</dt><dd>' + escapeHtml(detail.audience || "No especificado") + '</dd></div>' +
+          '<div><dt>Original</dt><dd>' + (detail.is_original === true ? "Confirmado" : detail.is_original === false ? "No confirmado" : "No especificado") + '</dd></div>' +
+          '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(previewAvailability(product.availability)) + '</dd></div>' +
+        '</dl>' +
+        notesList +
+        '<div class="admin-preview-description"><h4>Descripción</h4><p>' + escapeHtml(product.description || "Sin descripción registrada.") + '</p></div>' +
+      '</section>' +
+    '</div>' +
+    '<section class="admin-preview-section"><h3>Notas olfativas</h3><div class="admin-preview-notes">' +
+      notes("Salida", detail.top_notes) + notes("Corazón", detail.heart_notes) + notes("Fondo", detail.base_notes) +
+    '</div></section>';
+  if (typeof productPreviewDialog.showModal === "function") {
+    if (!productPreviewDialog.open) productPreviewDialog.showModal();
+  } else {
+    productPreviewDialog.setAttribute("open", "open");
+  }
+}
+
 function previewOpenProduct(product) {
   if (!productPreviewDialog || !productPreviewContent || !product) return;
+  if (normalizeCatalogType(product.catalog_type) === "perfumery") {
+    previewOpenPerfumeProduct(product);
+    return;
+  }
 
   const allVariants = normalizeVariants(product.variants);
   const variants = allVariants.length ? allVariants : legacyVariants(product);
@@ -2873,6 +2936,12 @@ form?.addEventListener("submit", async event => {
 $("#import-json-file")?.addEventListener("change", async event => {
   const file = event.target.files?.[0];
 
+  if (activeCatalogType !== "technology") {
+    message("#import-status", "La importación JSON está disponible solo para Tecnología. Registrá las fragancias desde su formulario especializado.", "error");
+    event.target.value = "";
+    return;
+  }
+
   if (!file || !supabase || !currentUser) {
     return;
   }
@@ -2926,6 +2995,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
       );
 
       return {
+        catalog_type: "technology",
         catalog_key: product.catalog_key ||
           `${slugify(product.name)}-${crypto.randomUUID().slice(0, 8)}`,
 
