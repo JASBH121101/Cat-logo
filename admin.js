@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 /* =========================================================
-   CT ADMINISTRACIÓN
+   JB MANAGER · ADMINISTRACIÓN
    Sesión temporal por pestaña + inventario + variantes
    ========================================================= */
 
@@ -163,10 +163,10 @@ function updateProductFormMode() {
     : "Gestioná equipos, configuraciones técnicas, colores, galerías y precios.";
   const contextHint = $("#admin-context-hint");
   if (contextHint) contextHint.textContent = isPerfume
-    ? "Mostrando solo Perfumería; su ficha olfativa se guarda por separado."
-    : "Mostrando solo Cat-logo · Tecnología.";
+    ? "Mostrando solo JB Parfums; su ficha olfativa se guarda por separado."
+    : "Mostrando solo JB TECH · Tecnología.";
   const dashboardTitle = $("#dashboard-catalog-title");
-  if (dashboardTitle) dashboardTitle.textContent = isPerfume ? "Resumen de Perfumería" : "Resumen de Cat-logo";
+  if (dashboardTitle) dashboardTitle.textContent = isPerfume ? "Resumen de JB Parfums" : "Resumen de JB TECH";
   const dynamicLabels = {
     "dashboard-total-label": isPerfume ? "Fragancias totales" : "Productos totales",
     "dashboard-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
