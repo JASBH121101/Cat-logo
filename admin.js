@@ -1780,9 +1780,19 @@ async function uploadImage(productId, file, subfolder = "") {
     return "";
   }
 
-  if (!file.type.startsWith("image/")) {
+  const extension = (file.name.split(".").pop() || "").toLowerCase();
+  const inferredMime = ({
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    avif: "image/avif"
+  })[extension] || "";
+
+  if (file.type ? !file.type.startsWith("image/") : !inferredMime) {
     throw new Error(
-      `El archivo ${file.name} no parece una imagen.`
+      `El archivo ${file.name} no parece una imagen compatible. Usá JPG, PNG, WebP, GIF o AVIF.`
     );
   }
 
@@ -1811,7 +1821,7 @@ async function uploadImage(productId, file, subfolder = "") {
       .storage
       .from(bucket)
       .upload(path, file, {
-        contentType: file.type || "application/octet-stream",
+        contentType: file.type || inferredMime || "application/octet-stream",
         upsert: false
       });
   } catch (error) {
@@ -2173,7 +2183,7 @@ form?.addEventListener("submit", async event => {
       $("#form-title").textContent = "Producto guardado · fotografías pendientes";
       message(
         "#product-form-status",
-        `Producto guardado, pero ${imageUploadErrors.length} fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”.`,
+        `Producto guardado, pero ${imageUploadErrors.length} fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”. Detalle: ${imageUploadErrors.slice(0, 2).join(" · ")}`,
         "error"
       );
       setStatus(`Guardado con fotografías pendientes: ${name}`, "error");
