@@ -1790,7 +1790,8 @@ async function uploadImage(productId, file, subfolder = "") {
     avif: "image/avif"
   })[extension] || "";
 
-  if (file.type ? !file.type.startsWith("image/") : !inferredMime) {
+  const uploadMime = file.type?.startsWith("image/") ? file.type : inferredMime;
+  if (!uploadMime) {
     throw new Error(
       `El archivo ${file.name} no parece una imagen compatible. Usá JPG, PNG, WebP, GIF o AVIF.`
     );
@@ -1821,7 +1822,7 @@ async function uploadImage(productId, file, subfolder = "") {
       .storage
       .from(bucket)
       .upload(path, file, {
-        contentType: file.type || inferredMime || "application/octet-stream",
+        contentType: uploadMime,
         upsert: false
       });
   } catch (error) {
