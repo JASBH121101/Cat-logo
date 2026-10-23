@@ -3238,3 +3238,29 @@ html[data-theme="dark"] .admin-section-nav,
 .admin-specs-field { grid-column:span 1; min-width:0; }
 .admin-form #product-specs { display:block; width:100%; min-height:66px; height:auto; resize:none; overflow-y:hidden; line-height:1.55; }
 @media(max-width:700px) { .admin-specs-field { grid-column:1 / -1; } }
+
+
+/* JB TECH · legibilidad de colores y CTA de ayuda accesible. */
+.product-card-colors,.product-card-color-list,.product-card-color-option { min-width:0; max-width:100%; }
+.product-card-color-list { display:flex; flex-wrap:wrap; align-items:flex-start; gap:5px 8px; }
+.product-card-color-option { display:inline-flex; flex:0 1 auto; align-items:center; gap:6px; }
+.product-card-color-name { display:inline-block; min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; word-break:normal; line-height:1.3; }
+.hero-ctas { display:flex; flex-wrap:wrap; align-items:stretch; gap:12px; }
+.hero-ctas > .button-primary { flex:0 1 380px; width:min(100%,380px); }
+.catalog-help-cta { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:20px; margin:34px 0 8px; padding:clamp(18px,3vw,30px); border:1px solid #d8e0f3; border-radius:18px; color:#1c2a46; background:linear-gradient(120deg,#fff 0%,#f2f6ff 58%,#eaf7ff 100%); box-shadow:0 10px 28px rgba(39,62,120,.07); }
+.catalog-help-mark { display:grid; place-items:center; width:58px; height:58px; border:1px solid rgba(49,94,232,.28); border-radius:16px; color:#e9faff; background:linear-gradient(135deg,#08bcd8,#315ee8 58%,#7b3ce1); box-shadow:0 4px 0 #263c91,0 9px 18px rgba(49,94,232,.18); font-family:Manrope,sans-serif; font-size:22px; font-weight:800; }
+.catalog-help-copy .eyebrow { margin-bottom:6px; }
+.catalog-help-copy h2 { margin:0; font-size:clamp(18px,2.3vw,25px); line-height:1.25; }
+.catalog-help-copy > p:last-child { margin:7px 0 0; color:#596783; font-size:13px; line-height:1.65; }
+.catalog-help-button { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:46px; padding:12px 17px; border:1px solid #15966d; border-radius:12px; color:#fff !important; background:linear-gradient(120deg,#168f69,#0b7657); box-shadow:0 4px 0 #07513d,0 8px 16px rgba(8,115,82,.18); font-size:12px; font-weight:800; text-decoration:none; white-space:nowrap; transition:transform .18s,filter .18s,box-shadow .18s; }
+.catalog-help-button:hover { transform:translateY(-2px); filter:brightness(1.06); }
+html[data-theme="dark"] .catalog-help-cta { border-color:#2f4268; color:#edf3ff; background:linear-gradient(120deg,#101c32,#14274a 60%,#102a38); box-shadow:0 12px 28px rgba(0,0,0,.2); }
+html[data-theme="dark"] .catalog-help-copy > p:last-child { color:#b8c6e1; }
+html[data-theme="dark"] .catalog-help-cta .eyebrow { color:#91b9ff; }
+@media(max-width:760px) {
+  .hero-ctas > .button-primary { flex:1 1 100%; width:100%; }
+  .catalog-help-cta { grid-template-columns:auto minmax(0,1fr); gap:13px; padding:17px; }
+  .catalog-help-mark { width:46px; height:46px; border-radius:13px; font-size:19px; }
+  .catalog-help-button { grid-column:1/-1; width:100%; white-space:normal; }
+}
+@media(max-width:390px) { .catalog-help-cta { grid-template-columns:minmax(0,1fr); text-align:center; } .catalog-help-mark { margin:0 auto; } }
