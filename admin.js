@@ -867,7 +867,7 @@ function renderVariantRows(variants = []) {
   if (!groups.size) container.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
 
   updateVariantRowHeadings();
-  form?.querySelectorAll("[data-variant-row]").forEach(row => renderVariantImagePreview(row));
+  form?.querySelectorAll("[data-variant-row]").forEach(row => { renderVariantImagePreview(row); syncColorLibraryRowControls(row); });
 }
 
 function addVariantRow(variant = {}, targetGroup = null, options = {}) {
@@ -994,37 +994,43 @@ const quickColorStatus = $("#quick-color-status");
 const quickColorSwatches = $("#quick-color-swatches");
 const quickColorSearch = $("#quick-color-search");
 
+let quickColorFilter = "all";
+
 function renderQuickColorPalette(query = "") {
   if (!quickColorSwatches) return;
-  const q = query.trim().toLowerCase();
-  const filtered = COLOR_PALETTE.filter(color =>
-    color.name.toLocaleLowerCase("es").includes(q) ||
-    color.hex.toLowerCase().includes(q)
-  );
-  const exactHex = /^#[0-9a-f]{6}$/i.test(query.trim())
-    ? query.trim().toUpperCase()
-    : "";
+  const q = normalizeColorSearch(query);
+  const data = readColorLibraryData();
+  const favorites = new Set(data.items.filter(item => item.favorite).map(colorIdentity));
+  const recent = new Set(data.recent.map(colorIdentity));
+  const filtered = COLOR_PALETTE.filter(color => {
+    const matchesQuery = !q ||
+      normalizeColorSearch(color.name).includes(q) ||
+      (color.aliases || []).some(alias => normalizeColorSearch(alias).includes(q)) ||
+      color.hex.toLowerCase().includes(q);
+    const identity = colorIdentity(color);
+    const matchesFilter = quickColorFilter === "favorites" ? favorites.has(identity)
+      : quickColorFilter === "recent" ? recent.has(identity) : true;
+    return matchesQuery && matchesFilter;
+  });
+  const hexMatch = String(query).trim().match(/^#[0-9a-f]{6}$/i);
+  const exactHex = hexMatch ? hexMatch[0].toUpperCase() : "";
   const exactIsKnown = exactHex && COLOR_PALETTE.some(item => item.hex.toLowerCase() === exactHex.toLowerCase());
-  const customHexOption = exactHex && !exactIsKnown
-    ? `<button class="quick-color-swatch quick-color-custom-swatch" type="button"
-         data-quick-color="${exactHex}" data-quick-color-hex="${exactHex}"
-         title="Añadir color personalizado ${exactHex}" aria-label="Añadir color personalizado ${exactHex}">
-         <span class="quick-color-dot" style="--quick-color:${exactHex}"></span>
-         <span class="quick-color-name">Personalizado</span>
-         <span class="quick-color-code">${exactHex}</span>
-       </button>`
+  const customHexOption = exactHex && !exactIsKnown && quickColorFilter === "all"
+    ? '<button class="quick-color-swatch quick-color-custom-swatch" type="button" data-quick-color="' + exactHex + '" data-quick-color-hex="' + exactHex + '" title="Seleccionar color personalizado ' + exactHex + '" aria-label="Seleccionar color personalizado ' + exactHex + '">' +
+      '<span class="quick-color-dot" style="--quick-color:' + exactHex + '"></span><span class="quick-color-name">Personalizado</span><span class="quick-color-code">' + exactHex + '</span></button>'
     : "";
-  const paletteButtons = filtered.map(color => `
-    <button class="quick-color-swatch" type="button" data-quick-color="${escapeHtml(color.name)}"
-      data-quick-color-hex="${color.hex}" title="${escapeHtml(color.name)} · ${color.hex}"
-      aria-label="Añadir color ${escapeHtml(color.name)} ${color.hex}">
-      <span class="quick-color-dot" style="--quick-color:${color.hex}"></span>
-      <span class="quick-color-name">${escapeHtml(color.name)}</span>
-      <span class="quick-color-code">${color.hex}</span>
-    </button>`).join("");
+  const paletteButtons = filtered.map(color =>
+    '<button class="quick-color-swatch" type="button" data-quick-color="' + escapeHtml(color.name) + '" data-quick-color-hex="' + color.hex + '" title="' + escapeHtml(color.name) + ' · ' + color.hex + '" aria-label="Seleccionar color ' + escapeHtml(color.name) + ' ' + color.hex + '">' +
+      '<span class="quick-color-dot" style="--quick-color:' + color.hex + '"></span>' +
+      '<span class="quick-color-name">' + escapeHtml(color.name) + '</span>' +
+      '<span class="quick-color-code">' + color.hex + '</span>' +
+      (favorites.has(colorIdentity(color)) ? '<span class="quick-color-favorite-mark" aria-hidden="true">★</span>' : '') +
+    '</button>'
+  ).join("");
   quickColorSwatches.innerHTML = paletteButtons + customHexOption ||
-    '<p class="quick-color-no-results">No hay coincidencias. Probá con otro nombre o un HEX completo como #0833A2.</p>';
+    '<p class="quick-color-no-results">Sin resultados para este filtro. Probá Todos o buscá otro nombre, alias o HEX.</p>';
 }
+renderColorLibraryDatalist();
 renderQuickColorPalette();
 quickColorSearch?.addEventListener("input", () => renderQuickColorPalette(quickColorSearch.value));
 
@@ -1036,10 +1042,23 @@ quickColorButton?.addEventListener("click", event => {
 });
 
 quickColorPalette?.addEventListener("click", event => {
+  const filterButton = event.target.closest("[data-color-library-filter]");
+  if (filterButton) {
+    quickColorFilter = filterButton.dataset.colorLibraryFilter || "all";
+    quickColorPalette.querySelectorAll("[data-color-library-filter]").forEach(button => {
+      const active = button.dataset.colorLibraryFilter === quickColorFilter;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    renderQuickColorPalette(quickColorSearch?.value || "");
+    return;
+  }
   const choice = event.target.closest("[data-quick-color]");
   if (!choice) return;
   const color = choice.dataset.quickColor || "";
   const hex = (choice.dataset.quickColorHex || "#242424").toUpperCase();
+  recordRecentColor({ name: color || hex, hex });
+  renderColorLibraryDatalist();
   const container = $("#product-variants-list");
   const colorManager = $("#base-color-manager");
   if (!container || !colorManager) return;
@@ -1093,12 +1112,49 @@ $("#add-variant-button")?.addEventListener("click", event => {
 });
 
 form?.addEventListener("click", event => {
+  const saveLibraryButton = event.target.closest("[data-save-color-library]");
+  if (saveLibraryButton) {
+    const row = saveLibraryButton.closest("[data-variant-row]");
+    const color = { name: row?.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row?.querySelector("[data-variant-hex]")?.value, "") };
+    const result = saveColorToLibrary(color);
+    const status = row?.querySelector("[data-variant-status]");
+    if (status) {
+      status.textContent = result.message;
+      status.dataset.state = result.ok ? "success" : "error";
+    }
+    if (result.ok) {
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+    }
+    syncColorLibraryRowControls(row);
+    return;
+  }
+
+  const favoriteButton = event.target.closest("[data-toggle-color-favorite]");
+  if (favoriteButton) {
+    const row = favoriteButton.closest("[data-variant-row]");
+    const color = { name: row?.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row?.querySelector("[data-variant-hex]")?.value, "") };
+    const result = toggleColorFavorite(color);
+    const status = row?.querySelector("[data-variant-status]");
+    if (status) {
+      status.textContent = result.message;
+      status.dataset.state = result.ok ? "success" : "error";
+    }
+    if (result.ok) {
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+    }
+    syncColorLibraryRowControls(row);
+    return;
+  }
+
   const swatch = event.target.closest("[data-variant-swatch]");
   if (swatch) {
     const row = swatch.closest("[data-variant-row]");
     if (!row) return;
     const hex = swatch.dataset.variantSwatch || "#242424";
     const name = swatch.dataset.variantSwatchName || hex.toUpperCase();
+    recordRecentColor({ name, hex });
     row.querySelector("[data-variant-color]").value = name;
     row.querySelector("[data-variant-hex]").value = hex;
     const hexText = row.querySelector("[data-variant-hex-text]");
@@ -1154,6 +1210,41 @@ form?.addEventListener("click", event => {
 });
 
 form?.addEventListener("change", event => {
+  const librarySearch = event.target.closest("[data-variant-library-search]");
+  if (librarySearch) {
+    const row = librarySearch.closest("[data-variant-row]");
+    const match = findColorInPalette(librarySearch.value);
+    if (match && row) {
+      applyColorToRow(row, match);
+      librarySearch.value = match.name;
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+      const status = row.querySelector("[data-variant-status]");
+      if (status) {
+        status.textContent = "Color aplicado desde la biblioteca.";
+        status.dataset.state = "success";
+      }
+    } else if (row && librarySearch.value.trim()) {
+      const status = row.querySelector("[data-variant-status]");
+      if (status) {
+        status.textContent = "No encontré ese color. Guardá primero el nombre y el HEX de esta tarjeta.";
+        status.dataset.state = "error";
+      }
+    }
+    return;
+  }
+  if (event.target.matches("[data-variant-hex-text]")) {
+    const row = event.target.closest("[data-variant-row]");
+    const hex = validHex(event.target.value.trim(), "");
+    if (row && hex) {
+      const currentName = row.querySelector("[data-variant-color]")?.value.trim() || "";
+      recordRecentColor({ name: currentName || (findColorInPalette(hex)?.name || hex), hex });
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+      syncColorLibraryRowControls(row);
+    }
+    return;
+  }
   const imageInput = event.target.closest("[data-variant-image]");
   if (imageInput) {
     const row=imageInput.closest("[data-variant-row]"); if(!row)return;
@@ -1170,10 +1261,9 @@ form?.addEventListener("change", event => {
   if (!row || !select.value || select.value === "custom") return;
   const color = COLOR_PALETTE.find(item => item.hex === select.value);
   if (!color) return;
-  row.querySelector("[data-variant-color]").value = color.name;
-  row.querySelector("[data-variant-hex]").value = color.hex;
-  row.querySelector("[data-variant-hex-text]").value = color.hex;
-  updateVariantRowHeadings();
+  applyColorToRow(row, color);
+  renderColorLibraryDatalist();
+  renderQuickColorPalette(quickColorSearch?.value || "");
 });
 
 form?.addEventListener("input", event => {
@@ -1182,7 +1272,7 @@ form?.addEventListener("input", event => {
     const value = event.target.value.trim();
     if (/^#[0-9a-fA-F]{6}$/.test(value) && row) {
       row.querySelector("[data-variant-hex]").value = value;
-      const matching = COLOR_PALETTE.find(item => item.hex.toLowerCase() === value.toLowerCase());
+      const matching = findColorInPalette(value);
       row.querySelector("[data-variant-palette]").value = matching ? matching.hex : "custom";
       row.querySelector("[data-variant-color]").value = matching ? matching.name : value.toUpperCase();
       row.querySelectorAll("[data-variant-swatch]").forEach(button => {
