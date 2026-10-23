@@ -667,11 +667,12 @@ function legacyVariants(product) {
 }
 
 function colorPaletteOptions(variant) {
+  const query = normalizeColorSearch(variant.color);
+  const selectedHex = validHex(variant.color_hex).toLowerCase();
   const match = COLOR_PALETTE.find(item =>
-    item.name.toLocaleLowerCase("es") ===
-      String(variant.color || "").toLocaleLowerCase("es") &&
-    item.hex.toLowerCase() ===
-      validHex(variant.color_hex).toLowerCase()
+    (normalizeColorSearch(item.name) === query ||
+      (item.aliases || []).some(alias => normalizeColorSearch(alias) === query)) &&
+    item.hex.toLowerCase() === selectedHex
   );
 
   const selectedValue = !variant.color
@@ -710,6 +711,8 @@ function variantRowMarkup(variant = {}) {
     image_url: images[0] || String(variant.image_url || variant.imageUrl || "").trim(),
     availability: normalizeVariantAvailability(variant.availability)
   };
+  const librarySaved = isColorSaved({ name: v.color, hex: v.color_hex });
+  const libraryFavorite = isColorFavorite({ name: v.color, hex: v.color_hex });
 
   return `
     <article class="variant-admin-row inline-color-card" data-variant-row>
@@ -728,6 +731,15 @@ function variantRowMarkup(variant = {}) {
       <details class="inline-color-details">
         <summary>Disponibilidad y fotografías</summary>
         <div class="variant-fields-grid variant-color-fields">
+          <div class="variant-color-library-tools">
+            <label>Buscar en biblioteca
+              <input data-variant-library-search list="catalog-color-library-options" type="search" autocomplete="off" placeholder="Burgundy, Vino o #800020" aria-label="Buscar color guardado">
+            </label>
+            <div class="variant-color-library-actions">
+              <button class="admin-mini-button" type="button" data-save-color-library aria-pressed="${String(librarySaved)}">${librarySaved ? "✓ Biblioteca" : "＋ Biblioteca"}</button>
+              <button class="admin-mini-button" type="button" data-toggle-color-favorite aria-pressed="${String(libraryFavorite)}">${libraryFavorite ? "★ Favorito" : "☆ Favorito"}</button>
+            </div>
+          </div>
           <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
           <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${COLOR_PALETTE.map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
@@ -778,7 +790,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const title = isBase
     ? "Colores del producto"
     : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
-  const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></div>';
+  const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color">+ Color</button></div>';
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
     <div class="variant-config-group-heading">
@@ -920,7 +932,7 @@ function renderMainImagePreviews(){
  mainImageItems.forEach((item,index)=>{
   const card=document.createElement("figure");card.className="admin-image-preview-card sortable-image-card";card.draggable=true;card.dataset.imageItemId=item.id;
   const img=document.createElement("img");img.src=imagePreviewUrl(item);img.alt=`Fotografía ${index+1} del producto`;img.loading="lazy";
-  const badge=document.createElement("span");badge.className="admin-image-order-badge";badge.textContent=index===0?"Portada":String(index+1);
+  const badge=document.createElement("span");badge.className="admin-image-order-badge"+(index===0?" is-cover":"");badge.setAttribute("aria-label",index===0?"Fotografía de portada":"Fotografía "+(index+1));badge.title=index===0?"Fotografía de portada":"Fotografía "+(index+1);badge.innerHTML=index===0?'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19h14l1-9-5 3-3-7-3 7-5-3 1 9Z"></path><path d="M7 22h10"></path></svg>':'<span>'+String(index+1)+'</span>';
   const caption=document.createElement("figcaption");caption.textContent=item.kind==="new"?item.file.name:"Imagen guardada";
   const controls=document.createElement("div");controls.className="admin-image-controls";
   for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===mainImageItems.length-1]]){
@@ -959,7 +971,7 @@ function renderVariantImagePreview(row){
  if(!items.length){const empty=document.createElement("span");empty.className="variant-image-placeholder";empty.textContent="Añadí fotografías de este color";preview.append(empty);return;}
  items.forEach((item,index)=>{const card=document.createElement("figure");card.className="variant-gallery-item sortable-image-card";card.draggable=true;card.dataset.variantImageId=item.id;
   const img=document.createElement("img");img.src=imagePreviewUrl(item);img.alt=`Fotografía ${index+1} del color`;img.loading="lazy";
-  const badge=document.createElement("span");badge.className="admin-image-order-badge";badge.textContent=index===0?"Portada":String(index+1);
+  const badge=document.createElement("span");badge.className="admin-image-order-badge"+(index===0?" is-cover":"");badge.setAttribute("aria-label",index===0?"Fotografía de portada":"Fotografía "+(index+1));badge.title=index===0?"Fotografía de portada":"Fotografía "+(index+1);badge.innerHTML=index===0?'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19h14l1-9-5 3-3-7-3 7-5-3 1 9Z"></path><path d="M7 22h10"></path></svg>':'<span>'+String(index+1)+'</span>';
   const controls=document.createElement("div");controls.className="admin-image-controls";
   for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===items.length-1]]){const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.variantImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);}
   const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.variantImageRemove="true";remove.title="Quitar fotografía";controls.append(remove);card.append(badge,img,controls);preview.append(card);
