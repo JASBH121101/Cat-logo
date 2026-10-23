@@ -767,6 +767,37 @@ function variantGroupKey(variant) {
   return `${storage}|${ram}`;
 }
 
+/* Masonry layout: an open color gallery no longer stretches neighboring cards. */
+let variantColorLayoutFrame = 0;
+function scheduleVariantColorLayout() {
+  if (variantColorLayoutFrame) return;
+  variantColorLayoutFrame = window.requestAnimationFrame(() => {
+    variantColorLayoutFrame = 0;
+    document.querySelectorAll("[data-variant-color-list]").forEach(list => {
+      const rowGap = parseFloat(getComputedStyle(list).rowGap) || 12;
+      const autoRow = 4;
+      Array.from(list.querySelectorAll("[data-variant-row]")).forEach(card => {
+        const measuredHeight = Math.max(card.scrollHeight + 2, card.getBoundingClientRect().height);
+        const span = Math.max(1, Math.ceil((measuredHeight + rowGap) / (autoRow + rowGap)));
+        card.style.gridRowEnd = "span " + span;
+      });
+    });
+  });
+}
+form?.addEventListener("toggle", event => {
+  if (event.target.matches?.(".inline-color-details")) scheduleVariantColorLayout();
+}, true);
+window.addEventListener("resize", scheduleVariantColorLayout);
+if (form && "MutationObserver" in window) {
+  const variantColorLayoutObserver = new MutationObserver(records => {
+    if (records.some(record => record.target.closest?.("[data-variant-color-list]"))) {
+      scheduleVariantColorLayout();
+    }
+  });
+  variantColorLayoutObserver.observe(form, { childList: true, subtree: true });
+}
+
+
 function parseStorageValue(value) {
   const raw = String(value ?? "").trim();
   const match = raw.match(/^([0-9]+(?:[.,][0-9]+)?)\s*(TB|GB)?$/i);
@@ -1303,19 +1334,12 @@ form?.addEventListener("input", event => {
 
   if (event.target.matches("[data-variant-color]")) {
     const colorName = event.target.value.trim();
-
-    const matchingColor = COLOR_PALETTE.find(item =>
-      item.name.toLocaleLowerCase("es") ===
-      colorName.toLocaleLowerCase("es")
-    );
-
+    const matchingColor = findColorInPalette(colorName);
     if (matchingColor) {
-      row.querySelector("[data-variant-hex]").value =
-        matchingColor.hex;
+      row.querySelector("[data-variant-color]").value = matchingColor.name;
+      row.querySelector("[data-variant-hex]").value = matchingColor.hex;
       row.querySelector("[data-variant-hex-text]").value = matchingColor.hex;
-
-      row.querySelector("[data-variant-palette]").value =
-        matchingColor.hex;
+      row.querySelector("[data-variant-palette]").value = matchingColor.hex;
       row.querySelectorAll("[data-variant-swatch]").forEach(button => {
         const selected = button.dataset.variantSwatch?.toLowerCase() === matchingColor.hex.toLowerCase();
         button.classList.toggle("is-selected", selected);
@@ -1328,9 +1352,11 @@ form?.addEventListener("input", event => {
         button.setAttribute("aria-pressed", "false");
       });
     }
+    syncColorLibraryRowControls(row);
   }
 
   updateVariantRowHeadings();
+  form?.querySelectorAll("[data-variant-row]").forEach(syncColorLibraryRowControls);
   updateEditorDirtyState();
 });
 
