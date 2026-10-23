@@ -220,16 +220,26 @@ function renderProducts() {
   featuredSection.classList.toggle("hidden", featured.length === 0);
   featuredGrid.innerHTML = featured.map(renderCard).join("");
   featuredCount.textContent = featured.length ? featured.length + (featured.length === 1 ? " fragancia" : " fragancias") : "";
-  resultsHeading.classList.toggle("hidden", !filtering && regular.length === 0);
+  resultsHeading.classList.toggle("hidden", perfumes.length === 0 || (!filtering && regular.length === 0));
   resultsEyebrow.textContent = filtering ? "RESULTADOS" : "DESCUBRÍ";
   resultsTitle.textContent = filtering ? "Fragancias para vos" : "Toda la colección";
   grid.innerHTML = regular.map(renderCard).join("");
+  const isComingSoon = perfumes.length === 0;
   emptyNode.classList.toggle("hidden", matched.length > 0);
+  emptyNode.classList.toggle("is-coming-soon", isComingSoon);
+  const emptyTitle = emptyNode.querySelector("h3");
+  const emptyDescription = emptyNode.querySelector("p");
+  if (emptyTitle) emptyTitle.textContent = isComingSoon ? "Próximamente" : "No encontramos esa fragancia";
+  if (emptyDescription) {
+    emptyDescription.textContent = isComingSoon
+      ? "Estamos preparando nuestra selección de fragancias. Volvé pronto para descubrirla."
+      : "Probá con otra búsqueda, familia o rango de precio.";
+  }
   statusNode.textContent = perfumes.length
     ? (filtering
       ? matched.length + (matched.length === 1 ? " fragancia encontrada" : " fragancias encontradas")
       : perfumes.length + (perfumes.length === 1 ? " fragancia publicada" : " fragancias publicadas") + (featured.length ? " · " + featured.length + " destacadas" : ""))
-    : "Todavía no hay fragancias publicadas.";
+    : "Próximamente: estamos preparando la colección.";
   if (clearPriceButton) clearPriceButton.disabled = priceBound(minPriceInput) === null && priceBound(maxPriceInput) === null;
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
     const active = button.dataset.category === selectedFamily;
@@ -240,10 +250,9 @@ function renderProducts() {
 
 function notesSection(title, values) {
   const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  if (!items.length) return "";
   return '<section class="perfume-note-group"><h3>' + title + '</h3>' +
-    (items.length
-      ? '<ul>' + items.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>'
-      : '<p>Información por confirmar.</p>') +
+    '<ul>' + items.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>' +
     '</section>';
 }
 
@@ -255,6 +264,8 @@ function openPerfume(product) {
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "No especificado";
   const nio = formatNIO(product.price_nio);
+  const hasOlfactoryNotes = [detail.top_notes, detail.heart_notes, detail.base_notes]
+    .some(values => Array.isArray(values) && values.some(value => String(value || "").trim()));
   dialogContent.dataset.productId = String(product.id);
   recordEvent(product.id, "view");
 
@@ -276,11 +287,11 @@ function openPerfume(product) {
         (product.brand ? '<p class="perfume-dialog-brand">' + escapeHtml(product.brand) + '</p>' : '') +
         '<p class="perfume-dialog-description">' + escapeHtml(product.description || "Consultá por las notas y características de esta fragancia.") + '</p>' +
         '<dl class="perfume-dialog-facts">' +
-          '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration || "No especificada") + '</dd></div>' +
-          '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' +
-          '<div><dt>Público</dt><dd>' + escapeHtml(detail.audience || "No especificado") + '</dd></div>' +
+          (concentration ? '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration) + '</dd></div>' : '') +
+          (detail.volume_ml ? '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' : '') +
+          (detail.audience ? '<div><dt>Público</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(statusLabel(product.availability)) + '</dd></div>' +
-          '<div><dt>Originalidad</dt><dd>' + (detail.is_original === true ? "Original confirmado" : "Por confirmar") + '</dd></div>' +
+          (detail.is_original === true ? '<div><dt>Originalidad</dt><dd>Original confirmado</dd></div>' : '') +
           (detail.scent_family ? '<div><dt>Familia olfativa</dt><dd>' + escapeHtml(detail.scent_family) + '</dd></div>' : '') +
         '</dl>' +
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
@@ -290,11 +301,13 @@ function openPerfume(product) {
         '</div>' +
       '</section>' +
     '</div>' +
-    '<div class="perfume-dialog-notes">' +
-      notesSection("Notas de salida", detail.top_notes) +
-      notesSection("Notas de corazón", detail.heart_notes) +
-      notesSection("Notas de fondo", detail.base_notes) +
-    '</div>';
+    (hasOlfactoryNotes
+      ? '<div class="perfume-dialog-notes">' +
+        notesSection("Notas de salida", detail.top_notes) +
+        notesSection("Notas de corazón", detail.heart_notes) +
+        notesSection("Notas de fondo", detail.base_notes) +
+        '</div>'
+      : '');
   if (typeof dialog.showModal === "function") {
     if (!dialog.open) dialog.showModal();
   } else {
