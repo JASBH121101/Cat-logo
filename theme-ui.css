@@ -7579,3 +7579,54 @@ html[data-theme="light"] .admin-perfume-data-note {
   color:#637392;
   background:linear-gradient(120deg,#f8faff,#eef3ff);
 }
+
+
+/* Imagen promocional de perfumería en el catálogo tecnológico. */
+.cross-catalog-promo-image {
+  position:relative;
+  align-self:stretch;
+  min-height:150px;
+  padding:0;
+  overflow:hidden;
+  border-color:var(--cross-promo-border,#d1dcf0);
+  background:#101b30;
+}
+.cross-catalog-promo-image > img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  max-width:none;
+  object-fit:cover;
+  object-position:center 54%;
+  transition:transform .45s ease,filter .35s ease;
+}
+.cross-catalog-promo-image:hover > img {
+  transform:scale(1.035);
+  filter:saturate(1.08);
+}
+.cross-catalog-promo-image::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(0deg,rgba(5,10,23,.76),rgba(5,10,23,.04) 72%);
+  pointer-events:none;
+}
+.cross-catalog-promo-mark .cross-catalog-promo-image-label {
+  position:absolute;
+  z-index:1;
+  right:12px;
+  bottom:12px;
+  left:12px;
+  color:#fff;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.14em;
+  line-height:1.4;
+  text-align:left;
+  text-shadow:0 1px 5px rgba(0,0,0,.55);
+}
+@media (max-width:760px) {
+  .cross-catalog-promo-image { min-height:150px; }
+  .cross-catalog-promo-image .cross-catalog-promo-image-label { font-size:8px; bottom:10px; left:10px; }
+}
