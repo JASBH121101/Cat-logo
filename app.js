@@ -217,8 +217,11 @@ function getProductVariants(product) {
   }).filter(item => item && (item.storage || item.ram || item.color))
     .sort((left, right) => {
       const dimension = value => {
-        const match = String(value || "").match(/[0-9]+(?:[.,][0-9]+)?/);
-        return match ? Number(match[0].replace(",", ".")) : Number.POSITIVE_INFINITY;
+        const text = String(value || "").trim();
+        const match = text.match(/[0-9]+(?:[.,][0-9]+)?/);
+        if (!match) return Number.POSITIVE_INFINITY;
+        const amount = Number(match[0].replace(",", "."));
+        return /\bTB\b/i.test(text) ? amount * 1000 : amount;
       };
       const storageDiff = dimension(left.storage) - dimension(right.storage);
       if (storageDiff) return storageDiff;

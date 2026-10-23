@@ -4302,6 +4302,12 @@ html[data-theme="dark"] .product-dialog #dialog-image .dialog-gallery-main .dial
   line-height: 1.25 !important;
   font-weight: 800 !important;
 }
+.admin-body select.variant-storage-unit {
+  cursor: pointer !important;
+  max-width: 76px !important;
+  min-height: 32px !important;
+  font-family: inherit !important;
+}
 .admin-body .variant-storage-name { display: inline !important; }
 
 @media(max-width:600px) {

@@ -20,8 +20,7 @@ const configured = Boolean(
 */
 /*
   Una recarga confirmada cierra la sesión de administración.
-  Si hay cambios en el formulario, beforeunload permite al navegador
-  preguntar primero; si el usuario cancela, la página no se recarga.
+  El formulario se respalda automáticamente en IndexedDB mientras se edita.
 */
 const isPageReload = (() => {
   try {
@@ -586,12 +585,29 @@ function variantGroupKey(variant) {
   return `${storage}|${ram}`;
 }
 
+function parseStorageValue(value) {
+  const raw = String(value ?? "").trim();
+  const match = raw.match(/^([0-9]+(?:[.,][0-9]+)?)\s*(TB|GB)?$/i);
+  return {
+    amount: match ? match[1].replace(",", ".") : raw.replace(/\s*(?:TB|GB)\s*/i, ""),
+    unit: match?.[2]?.toUpperCase() === "TB" ? "TB" : "GB"
+  };
+}
+
+function formatStorageLabel(amount, unit = "GB") {
+  const value = String(amount ?? "").trim();
+  const normalizedUnit = String(unit || "GB").toUpperCase() === "TB" ? "TB" : "GB";
+  return value ? `${value} ${normalizedUnit}` : "";
+}
+
 function variantGroupMarkup(v = {}, isBase = false) {
-  const storage = String(v.storage || "").trim().replace(/\s*GB\s*/i, "");
+  const parsedStorage = parseStorageValue(v.storage || "");
+  const storage = parsedStorage.amount;
+  const storageUnit = parsedStorage.unit;
   const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
   const title = isBase
     ? "Colores del producto"
-    : [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+    : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
   const colorControls = '<div class="variant-color-section"><strong class="variant-color-section-title">Colores de esta configuración</strong><div class="variant-color-list" data-variant-color-list></div><button class="admin-mini-button variant-add-color" type="button" data-add-group-color>＋ Añadir color</button></div>';
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
@@ -600,7 +616,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
       ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
     </div>
     <div class="variant-config-fields">
-      <label class="variant-storage-label"><span class="variant-storage-label-row"><span class="variant-storage-unit">GB</span><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
+      <label class="variant-storage-label"><span class="variant-storage-label-row"><select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"><option value="GB" ${storageUnit === "GB" ? "selected" : ""}>GB</option><option value="TB" ${storageUnit === "TB" ? "selected" : ""}>TB</option></select><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
       ${isBase ? "" : '<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_usd ?? "") + '"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_nio ?? "") + '"></span></label>'}
     </div>
@@ -695,7 +711,8 @@ function updateVariantRowHeadings() {
   document.querySelectorAll("[data-variant-group]").forEach(group => {
     const storage = group.querySelector("[data-group-storage]")?.value.trim();
     const ram = group.querySelector("[data-group-ram]")?.value.trim();
-    const title = [storage ? storage + " GB" : "", ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+    const storageUnit = group.querySelector("[data-group-storage-unit]")?.value || "GB";
+    const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
     const heading = group.querySelector("[data-variant-group-title]");
     if (heading) heading.textContent = title;
     group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
@@ -745,7 +762,7 @@ function renderMainImagePreviews(){
 }
 function moveMainImage(id,offset){const from=mainImageItems.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=mainImageItems.length)return;const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}
 function removeMainImage(id){const from=mainImageItems.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([mainImageItems[from]]);mainImageItems.splice(from,1);renderMainImagePreviews();updateEditorDirtyState();}
-mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();});
+mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();scheduleLocalRecoverySave();});
 mainImagesPreview?.addEventListener("click",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;const m=e.target.closest("[data-main-image-move]");if(m)moveMainImage(card.dataset.imageItemId,Number(m.dataset.mainImageMove));else if(e.target.closest("[data-main-image-remove]"))removeMainImage(card.dataset.imageItemId);});
 mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;draggingMainImageId=card.dataset.imageItemId;card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingMainImageId);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
 mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
@@ -983,9 +1000,9 @@ form?.addEventListener("input", event => {
     }
     return;
   }
-  if (!event.target.matches("[data-variant-color], [data-variant-hex], [data-group-storage], [data-group-ram]")) return;
+  if (!event.target.matches("[data-variant-color], [data-variant-hex], [data-group-storage], [data-group-storage-unit], [data-group-ram]")) return;
   const row = event.target.closest("[data-variant-row]");
-  if (event.target.matches("[data-group-storage], [data-group-ram]")) {
+  if (event.target.matches("[data-group-storage], [data-group-storage-unit], [data-group-ram]")) {
     updateVariantRowHeadings();
     return;
   }
@@ -1078,6 +1095,7 @@ async function showDashboard(user) {
   window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
 
   await loadProducts();
+  await checkLocalRecoveryDraft();
 }
 
 async function handleSession() {
@@ -1119,6 +1137,9 @@ async function handleSession() {
 /* =========================================================
    INICIO Y CIERRE DE SESIÓN
    ========================================================= */
+
+$("#restore-local-draft")?.addEventListener("click", () => { void restoreLocalRecoveryDraft(); });
+$("#delete-local-draft")?.addEventListener("click", () => { void deleteLocalRecoveryDraft(); });
 
 $("#login-form")?.addEventListener("submit", async event => {
   event.preventDefault();
@@ -1190,6 +1211,7 @@ $("#login-form")?.addEventListener("submit", async event => {
 });
 
 $("#logout-button")?.addEventListener("click", async event => {
+  await saveLocalRecoveryDraft();
   const button = event.currentTarget;
 
   button.disabled = true;
@@ -1291,8 +1313,8 @@ async function loadProducts() {
 }
 
 function formatAnalyticsCapacity(value) {
-  const text = String(value ?? "").trim().replace(/\s*GB\s*/i, "");
-  return text ? `${text} GB` : "";
+  const parsed = parseStorageValue(value);
+  return parsed.amount ? formatStorageLabel(parsed.amount, parsed.unit) : "";
 }
 
 function renderAnalyticsRanking(node, rows, labelFor) {
@@ -1645,6 +1667,20 @@ function getEditorSnapshot(){
  return JSON.stringify({fields,variants,mainGallery,variantGalleries});
 }
 
+/* Borrador local de recuperación: campos y fotos pendientes en IndexedDB. */
+const RECOVERY_DB = 'cat-logo-recovery-v1', RECOVERY_STORE = 'drafts', RECOVERY_KEY = 'product-editor';
+let recoveryTimer = null, restoringRecovery = false;
+function recoveryOpenDB() { return new Promise((resolve,reject) => { if (!window.indexedDB) return reject(new Error('IndexedDB no está disponible.')); const req=indexedDB.open(RECOVERY_DB,1); req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(RECOVERY_STORE))req.result.createObjectStore(RECOVERY_STORE,{keyPath:'key'});}; req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error||new Error('No se pudo abrir el almacenamiento local.')); }); }
+async function recoveryAction(mode,action) { const db=await recoveryOpenDB(); try { return await new Promise((resolve,reject)=>{const tx=db.transaction(RECOVERY_STORE,mode),store=tx.objectStore(RECOVERY_STORE);let req;try{req=action(store);}catch(e){reject(e);return;}if(req){req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);}else{tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('No se pudo guardar el borrador.'));}}); } finally {db.close();} }
+function recoveryItem(i) { return {id:i.id,kind:i.kind,url:i.url||'',name:i.file?.name||'',type:i.file?.type||'',lastModified:i.file?.lastModified||0,blob:i.kind==='new'&&i.file?i.file:null,uploadError:i.uploadError||''}; }
+function recoveryVariantState() { return Array.from(form.querySelectorAll('[data-variant-group]')).map(g=>({base:g.dataset.baseGroup==='true',storage:g.querySelector('[data-group-storage]')?.value||'',unit:g.querySelector('[data-group-storage-unit]')?.value||'GB',ram:g.querySelector('[data-group-ram]')?.value||'',usd:g.querySelector('[data-group-price-usd]')?.value||'',nio:g.querySelector('[data-group-price-nio]')?.value||'',colors:Array.from(g.querySelectorAll('[data-variant-row]')).map(r=>({color:r.querySelector('[data-variant-color]')?.value||'',hex:r.querySelector('[data-variant-hex]')?.value||'',availability:r.querySelector('[data-variant-availability]')?.value||'available',images:(r._variantImageItems||[]).map(recoveryItem)}))})); }
+async function saveLocalRecoveryDraft() { if(restoringRecovery||!form||!dashboard||dashboard.classList.contains('hidden'))return; const hasData=Boolean(editorIsDirty||$('#product-id')?.value||$('#product-name')?.value.trim()||mainImageItems.length||Array.from(form.querySelectorAll('[data-variant-row]')).some(r=>r.querySelector('[data-variant-color]')?.value.trim())); if(!hasData)return; const fields=Array.from(form.elements).filter(f=>f&&f.id&&f.type!=='file'&&!['password','submit','button','reset'].includes(f.type)).map(f=>({id:f.id,value:(f.type==='checkbox'||f.type==='radio')?null:f.value,checked:(f.type==='checkbox'||f.type==='radio')?f.checked:null})); const draft={key:RECOVERY_KEY,savedAt:new Date().toISOString(),fields,variants:recoveryVariantState(),mainGallery:mainImageItems.map(recoveryItem)}; try{await recoveryAction('readwrite',s=>s.put(draft));const st=$('#local-recovery-status');if(st)st.textContent='Borrador local guardado automáticamente: '+new Date(draft.savedAt).toLocaleString();const rb=$('#restore-local-draft');if(rb)rb.hidden=false;const db=$('#delete-local-draft');if(db)db.hidden=false;}catch(e){console.warn('No se pudo guardar el borrador local.',e);const st=$('#local-recovery-status');if(st)st.textContent='No se pudo guardar el borrador local. Revisá el almacenamiento del navegador.';} }
+function scheduleLocalRecoverySave(){if(restoringRecovery)return;clearTimeout(recoveryTimer);recoveryTimer=setTimeout(()=>{void saveLocalRecoveryDraft();},250);}
+async function recoveryRestoreItem(i){if(i.kind!=='new'||!i.blob)return{id:i.id||imageId(),kind:'existing',url:i.url||''};const file=new File([i.blob],i.name||'imagen-pendiente',{type:i.type||i.blob.type||'application/octet-stream',lastModified:i.lastModified||Date.now()});return{id:i.id||imageId(),kind:'new',file,previewUrl:URL.createObjectURL(file),uploadError:i.uploadError||''};}
+async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').textContent=$('#product-id').value?'Guardar cambios':'Guardar producto';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
+async function deleteLocalRecoveryDraft(){if(!confirm('¿Eliminar el borrador local? Esto no elimina productos guardados en la base de datos.'))return;try{await recoveryAction('readwrite',s=>s.delete(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';$('#restore-local-draft').hidden=true;$('#delete-local-draft').hidden=true;}catch(e){const st=$('#local-recovery-status');if(st)st.textContent=e.message||'No se pudo eliminar el borrador.';}}
+async function checkLocalRecoveryDraft(){try{const d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent=d?'Borrador local disponible desde '+new Date(d.savedAt).toLocaleString()+'.':'No hay borrador local guardado.';if($('#restore-local-draft'))$('#restore-local-draft').hidden=!d;if($('#delete-local-draft'))$('#delete-local-draft').hidden=!d;}catch(e){console.warn('No se pudo comprobar el borrador local.',e);}}
+
 function markEditorClean() {
   editorBaseline = getEditorSnapshot();
   editorIsDirty = false;
@@ -1654,11 +1690,11 @@ function updateEditorDirtyState() {
   editorIsDirty = getEditorSnapshot() !== editorBaseline;
 }
 
-form?.addEventListener("input", updateEditorDirtyState);
-form?.addEventListener("change", updateEditorDirtyState);
+form?.addEventListener("input", () => { updateEditorDirtyState(); scheduleLocalRecoverySave(); });
+form?.addEventListener("change", () => { updateEditorDirtyState(); scheduleLocalRecoverySave(); });
 form?.addEventListener("click", event => {
   if (event.target.closest("#add-variant-button, [data-remove-variant]")) {
-    queueMicrotask(updateEditorDirtyState);
+    queueMicrotask(() => { updateEditorDirtyState(); scheduleLocalRecoverySave(); });
   }
 });
 
@@ -1762,9 +1798,20 @@ async function uploadImage(productId, file, subfolder = "") {
     return "";
   }
 
-  if (!file.type.startsWith("image/")) {
+  const extension = (file.name.split(".").pop() || "").toLowerCase();
+  const inferredMime = ({
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    avif: "image/avif"
+  })[extension] || "";
+
+  const uploadMime = file.type?.startsWith("image/") ? file.type : inferredMime;
+  if (!uploadMime) {
     throw new Error(
-      `El archivo ${file.name} no parece una imagen.`
+      `El archivo ${file.name} no parece una imagen compatible. Usá JPG, PNG, WebP, GIF o AVIF.`
     );
   }
 
@@ -1787,17 +1834,24 @@ async function uploadImage(productId, file, subfolder = "") {
 
   const bucket = CONFIG.storageBucket || "product-images";
 
-  const { error } = await supabase
-    .storage
-    .from(bucket)
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false
-    });
-
-  if (error) {
+  let uploadResult;
+  try {
+    uploadResult = await supabase
+      .storage
+      .from(bucket)
+      .upload(path, file, {
+        contentType: uploadMime,
+        upsert: false
+      });
+  } catch (error) {
     throw new Error(
-      `No se pudo subir ${file.name}: ${error.message}`
+      `No se pudo conectar con Supabase Storage al subir ${file.name}. Revisá la conexión, la URL del proyecto y las políticas de Storage. Detalle: ${error.message || "fallo de red"}`
+    );
+  }
+
+  if (uploadResult.error) {
+    throw new Error(
+      `No se pudo subir ${file.name}: ${uploadResult.error.message}`
     );
   }
 
@@ -1823,7 +1877,7 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId, existingVariants = []) {
+async function collectVariants(productId, existingVariants = [], uploadIssues = []) {
   const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
   const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
   const allGroups = [
@@ -1845,7 +1899,8 @@ async function collectVariants(productId, existingVariants = []) {
       throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex}.`);
     }
 
-    const storage = storageRaw ? `${storageRaw} GB` : "";
+    const storageUnit = read("[data-group-storage-unit]") || "GB";
+    const storage = storageRaw ? formatStorageLabel(storageRaw, storageUnit) : "";
     const ram = ramRaw ? `${ramRaw} GB` : "";
     const key = variantGroupKey({storage,ram});
     if (!isBase && seenConfigurations.has(key)) throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
@@ -1868,31 +1923,37 @@ async function collectVariants(productId, existingVariants = []) {
         status.textContent = `Subiendo fotografías de ${color}…`;
         status.dataset.state = "uploading";
       }
-      try {
-        for (const item of imageItems) {
-          if (item.kind === "new") {
+      for (const item of imageItems) {
+        if (item.kind === "new") {
+          try {
             const url = await uploadImage(productId, item.file, "variants");
             urls.push(url);
             item.kind = "existing";
             item.url = url;
+            delete item.uploadError;
             if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
             delete item.previewUrl;
             delete item.file;
-          } else if (item.url) urls.push(item.url);
+          } catch (error) {
+            uploadIssues.push(`${color}: ${error.message || "error desconocido"}`);
+            item.uploadError = error.message || "Error desconocido";
+          }
+        } else if (item.url) {
+          urls.push(item.url);
         }
-        row._variantImageItems = imageItems;
-        syncVariantImageFields(row);
-        renderVariantImagePreview(row);
-        if (status) {
+      }
+      row._variantImageItems = imageItems;
+      syncVariantImageFields(row);
+      renderVariantImagePreview(row);
+      const failedUploads = imageItems.filter(item => item.kind === "new");
+      if (status) {
+        if (failedUploads.length) {
+          status.textContent = `No se pudieron subir ${failedUploads.length} fotografía(s) de ${color}. Los datos se conservarán; podés reintentar.`;
+          status.dataset.state = "error";
+        } else {
           status.textContent = urls.length ? `${urls.length} fotografía(s) guardadas para ${color}.` : "";
           status.dataset.state = "success";
         }
-      } catch (error) {
-        if (status) {
-          status.textContent = `No se pudieron subir las fotografías de ${color}: ${error.message || "error desconocido"}`;
-          status.dataset.state = "error";
-        }
-        throw error;
       }
       colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
@@ -1981,6 +2042,7 @@ form?.addEventListener("submit", async event => {
 
   const button = $("#save-product-button");
   const wasEditing = Boolean($("#product-id").value);
+  const imageUploadErrors = [];
 
   button.disabled = true;
   button.textContent = "Guardando…";
@@ -2004,17 +2066,31 @@ form?.addEventListener("submit", async event => {
 
     const variants = await collectVariants(
       id,
-      existingProduct?.variants || []
+      existingProduct?.variants || [],
+      imageUploadErrors
     );
 
     const uploadedMainImages = [];
-    for (let imageIndex=0; imageIndex<mainImageItems.length; imageIndex++) {
-      const item=mainImageItems[imageIndex];
-      if(item.kind==="new"){
-        message("#product-form-status", `Subiendo fotografía ${imageIndex+1} de ${mainImageItems.length}…`);
-        const url=await uploadImage(id,item.file);uploadedMainImages.push(url);item.kind="existing";item.url=url;
-        if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;delete item.file;
-      }else uploadedMainImages.push(item.url);
+    for (let imageIndex = 0; imageIndex < mainImageItems.length; imageIndex++) {
+      const item = mainImageItems[imageIndex];
+      if (item.kind === "new") {
+        message("#product-form-status", `Subiendo fotografía ${imageIndex + 1} de ${mainImageItems.length}…`);
+        try {
+          const url = await uploadImage(id, item.file);
+          uploadedMainImages.push(url);
+          item.kind = "existing";
+          item.url = url;
+          delete item.uploadError;
+          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+          delete item.previewUrl;
+          delete item.file;
+        } catch (error) {
+          imageUploadErrors.push(`${item.file?.name || "Fotografía principal"}: ${error.message || "error desconocido"}`);
+          item.uploadError = error.message || "Error desconocido";
+        }
+      } else if (item.url) {
+        uploadedMainImages.push(item.url);
+      }
     }
     renderMainImagePreviews();
 
@@ -2119,17 +2195,25 @@ form?.addEventListener("submit", async event => {
       throw result.error;
     }
 
-    message(
-      "#product-form-status",
-      "Producto guardado correctamente.",
-      "success"
-    );
-
-    setStatus(`Guardado: ${name}`, "success");
-
-    clearEditor();
-
-    await loadProducts();
+    if (imageUploadErrors.length) {
+      // Conservar el ID evita crear duplicados al reintentar las fotografías.
+      $("#product-id").value = id;
+      $("#catalog-key").value = catalogKey;
+      $("#form-title").textContent = "Producto guardado · fotografías pendientes";
+      message(
+        "#product-form-status",
+        `Producto guardado, pero ${imageUploadErrors.length} fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”. Detalle: ${imageUploadErrors.slice(0, 2).join(" · ")}`,
+        "error"
+      );
+      setStatus(`Guardado con fotografías pendientes: ${name}`, "error");
+      await loadProducts();
+    } else {
+      message("#product-form-status", "Producto guardado correctamente.", "success");
+      setStatus(`Guardado: ${name}`, "success");
+      await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(error => console.warn("No se pudo limpiar el borrador tras guardar.", error));
+      clearEditor();
+      await loadProducts();
+    }
   } catch (error) {
     message(
       "#product-form-status",
@@ -2139,10 +2223,9 @@ form?.addEventListener("submit", async event => {
     );
   } finally {
     button.disabled = false;
-
-    button.textContent = $("#product-id").value
-      ? "Guardar cambios"
-      : "Guardar producto";
+    button.textContent = imageUploadErrors.length
+      ? "Reintentar fotografías"
+      : ($("#product-id").value ? "Guardar cambios" : "Guardar producto");
   }
 });
 
