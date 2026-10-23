@@ -35,6 +35,7 @@ a { color: inherit; }
   overflow: hidden;
   background: #080e19;
 }
+.collections-worlds { display:contents; }
 .world-panel {
   position: relative;
   z-index: 0;
