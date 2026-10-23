@@ -668,11 +668,6 @@ function renderVariantControls(product, variants, selected) {
     selected.ram,
     selected.color
   ].filter(Boolean).join(" · ");
-  const selectedConfigurationVariants = variants.filter(variant =>
-    String(variant.storage || "").trim() === String(selected.storage || "").trim() &&
-    String(variant.ram || "").trim() === String(selected.ram || "").trim()
-  );
-
   const usd = formatUSD(selected.price_usd);
   const nio = formatNIO(selected.price_nio);
   const status = colorStatusLabel(selected.availability);
@@ -682,7 +677,7 @@ function renderVariantControls(product, variants, selected) {
   area.innerHTML = `
     <div class="variant-selector">
       ${renderVariantButtonGroup(variants, selected, "storage", "Configuración")}
-      ${renderVariantButtonGroup(selectedConfigurationVariants.length ? selectedConfigurationVariants : variants, selected, "color", "Color")}
+      ${renderVariantButtonGroup(variants, selected, "color", "Color")}
     </div>
 
     <div class="variant-bottom-row">
