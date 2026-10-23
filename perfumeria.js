@@ -297,7 +297,7 @@ function openPerfume(product) {
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
         '<div class="perfume-dialog-actions">' +
           '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, "quiero comprar esta fragancia."))) + '" target="_blank" rel="noopener">Quiero comprarla <span aria-hidden="true">↗</span></a>' +
-          '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, "quisiera consultar más detalles de esta fragancia."))) + '" target="_blank" rel="noopener">Consultar detalles</a>' +
+          '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, "quisiera consultar las opciones de financiamiento o pago con tarjeta de crédito para esta fragancia."))) + '" target="_blank" rel="noopener">Consultar financiamiento o tarjeta</a>' +
         '</div>' +
       '</section>' +
     '</div>' +
@@ -409,10 +409,14 @@ dialogContent.addEventListener("error", event => {
   }
 }, true);
 
-const footerWhatsApp = $("#perfume-footer-whatsapp");
-if (footerWhatsApp) {
-  footerWhatsApp.href = whatsappLink("Hola, quisiera consultar por las fragancias, sus precios y disponibilidad.");
-}
+const generalWhatsAppMessage = "Hola, quisiera consultar en JB Parfums por fragancias, precios, disponibilidad y opciones de pago.";
+["#perfume-footer-whatsapp", "#perfume-hero-whatsapp"].forEach(selector => {
+  const link = $(selector);
+  if (!link) return;
+  link.href = whatsappLink(generalWhatsAppMessage);
+  link.target = "_blank";
+  link.rel = "noopener";
+});
 
 async function initializePerfumes() {
   if (!supabase) {
