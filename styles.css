@@ -3156,158 +3156,66 @@ html[data-theme="dark"] .admin-section-nav,
 }
 
 
-/* Acceso rápido a variantes de color junto a garantía, aprovechando la columna libre. */
-.admin-add-color-slot {
-  align-self: end;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 7px;
-  min-width: 0;
-  padding-bottom: 2px;
-}
-.admin-add-color-caption {
-  color: var(--muted, #9aaaca);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: .02em;
-}
-.admin-add-color-slot .button {
-  min-height: 42px;
-  padding: 9px 15px;
-  border-radius: 11px;
-}
-@media(max-width:600px) {
-  .admin-add-color-slot { gap: 5px; }
-  .admin-add-color-caption { font-size: 11px; }
-  .admin-add-color-slot .button { min-height: 40px; padding: 8px 11px; font-size: 12px; }
-}
-
-
-/* Selector de colores junto al formulario: no desplaza la página al elegir. */
-.admin-add-color-slot {
-  align-self: end;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 7px;
-  min-width: 0;
-  padding-bottom: 2px;
-}
-.admin-add-color-caption {
-  color: var(--muted, #9aaaca);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: .02em;
-}
-.admin-add-color-slot .button {
-  min-height: 42px;
-  padding: 9px 15px;
-  border-radius: 11px;
-}
-.quick-color-palette {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 7px;
-  max-width: 100%;
-  padding: 9px;
-  border: 1px solid var(--border, #334567);
-  border-radius: 12px;
-  background: var(--surface, #101a30);
-  box-shadow: 0 8px 22px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.04);
-}
-.quick-color-palette[hidden] { display: none !important; }
-.quick-color-swatch {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  min-width: 39px;
-  padding: 4px 5px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  color: var(--text, #e8eefc);
-  background: transparent;
-  cursor: pointer;
-  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
-}
-.quick-color-swatch:hover, .quick-color-swatch:focus-visible {
-  transform: translateY(-2px);
-  border-color: var(--accent, #536dfe);
-  background: rgba(82,105,255,.12);
-  box-shadow: 0 4px 12px rgba(73,92,255,.18);
-  outline: none;
-}
-.quick-color-swatch.is-selected { border-color: var(--accent, #536dfe); }
-.quick-color-dot {
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  background: var(--quick-color);
-  border: 2px solid rgba(255,255,255,.68);
-  box-shadow: 0 2px 5px rgba(0,0,0,.3), inset 0 0 0 1px rgba(0,0,0,.12);
-}
-.quick-color-name { font-size: 10px; line-height: 1.2; white-space: nowrap; }
-.quick-color-status { margin: 0; color: var(--muted, #9aaaca); font-size: 11px; line-height: 1.4; }
-@media(max-width:600px) {
-  .admin-add-color-slot { gap: 5px; }
-  .admin-add-color-caption { font-size: 11px; }
-  .admin-add-color-slot .button { min-height: 40px; padding: 8px 11px; font-size: 12px; }
-  .quick-color-palette { gap: 3px; padding: 6px; }
-  .quick-color-swatch { min-width: 33px; padding: 3px; }
-  .quick-color-dot { width: 20px; height: 20px; }
-  .quick-color-name { font-size: 9px; }
-}
-
-
-/* Colores del producto: junto a garantía, independientes de variantes técnicas. */
-.admin-add-color-slot { align-self:stretch; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:8px; min-width:0; padding:0 0 2px; }
-.admin-add-color-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+/* Selector de colores del panel: una sola definición base, con detalles refinados en theme-ui.css. */
+.admin-add-color-slot { display:flex; flex-direction:column; align-items:stretch; gap:8px; min-width:0; padding:0 0 2px; }
+.admin-add-color-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; width:100%; }
 .admin-add-color-caption { color:var(--muted,#9aaaca); font-size:12px; font-weight:800; letter-spacing:.025em; }
-.admin-add-color-heading .button { min-height:36px; padding:7px 11px; border-radius:10px; font-size:12px; }
-.base-color-manager { display:grid; gap:8px; min-width:0; }
-.base-color-manager .variant-base-group { margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+.admin-add-color-heading .button { width:auto; min-height:36px; padding:7px 11px; border-radius:10px; font-size:12px; flex:0 0 auto; }
+.admin-add-color-slot .quick-color-palette { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; width:100%; max-width:100%; min-width:0; padding:10px; border:1px solid var(--border,#334567); border-radius:12px; background:var(--surface,#101a30); }
+.admin-add-color-slot .quick-color-palette[hidden] { display:none !important; }
+.quick-color-search-label { display:flex; flex-direction:column; gap:5px; width:100%; min-width:0; font-size:12px; }
+.quick-color-search-label input { width:100%; min-width:0; min-height:36px; padding:7px 9px; font-size:13px; }
+.quick-color-swatches { display:grid; grid-template-columns:repeat(auto-fit,minmax(72px,1fr)); align-items:start; gap:5px; width:100%; max-height:230px; min-width:0; overflow:auto; padding:1px; }
+.admin-add-color-slot .quick-color-swatch { display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; min-width:0; min-height:45px; gap:4px; padding:5px 3px; border:1px solid transparent; border-radius:8px; color:var(--text,#e8eefc); background:transparent; cursor:pointer; }
+.admin-add-color-slot .quick-color-swatch:hover,
+.admin-add-color-slot .quick-color-swatch:focus-visible { border-color:var(--accent,#536dfe); background:rgba(82,105,255,.12); outline:2px solid rgba(127,156,255,.35); outline-offset:1px; }
+.admin-add-color-slot .quick-color-swatch.is-selected { border-color:var(--accent,#536dfe); background:rgba(84,112,220,.13); }
+.admin-add-color-slot .quick-color-dot { display:block; width:20px; height:20px; flex:0 0 20px; border:2px solid rgba(255,255,255,.68); border-radius:50%; background:var(--quick-color); }
+.admin-add-color-slot .quick-color-name { max-width:100%; overflow-wrap:anywhere; white-space:normal; text-align:center; font-size:10px; line-height:1.2; }
+.quick-color-code { font:9px ui-monospace,monospace; color:#8fa3c7; }
+.quick-color-no-results { grid-column:1/-1; margin:4px; color:#aab9d5; font-size:11px; }
+.quick-color-status { margin:0; color:var(--muted,#9aaaca); font-size:11px; line-height:1.4; }
+.base-color-manager { display:block; width:100%; min-width:0; }
+.base-color-manager .variant-base-group { display:block; width:100%; margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
 .base-color-manager .variant-base-group > .variant-config-group-heading,
-.base-color-manager .variant-base-group > .variant-config-fields,
-.base-color-manager .variant-base-group > .variant-add-color { display:none !important; }
-.base-color-manager .variant-base-group > .variant-color-list { display:grid; grid-template-columns:minmax(0,1fr); gap:7px; }
-.base-color-manager .variant-base-group > .variant-color-list > .variants-empty-hint { margin:0; padding:9px 10px; border:1px dashed rgba(120,148,207,.34); border-radius:10px; color:var(--muted,#9aaaca); font-size:11px; }
+.base-color-manager .variant-base-group > .variant-config-fields { display:none !important; }
+.base-color-manager .variant-base-group .variant-color-section > .variant-add-color { display:none !important; }
+.base-color-manager .variant-base-group .variant-color-section { display:grid; grid-template-columns:minmax(0,1fr); width:100%; min-width:0; margin-top:8px; padding-top:8px; }
+.base-color-manager .variant-base-group .variant-color-section-title { margin:0; }
+.base-color-manager .variant-base-group .variant-color-section .variant-color-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr)); align-items:start; gap:12px; width:100%; min-width:0; }
+.base-color-manager .variant-base-group .variant-color-section .variant-color-list > .variants-empty-hint { grid-column:1/-1; margin:0; padding:9px 10px; border:1px dashed rgba(120,148,207,.34); border-radius:10px; color:var(--muted,#9aaaca); font-size:11px; }
 .inline-color-card { min-width:0; margin:0; padding:8px 9px; border:1px solid rgba(105,132,192,.35); border-radius:12px; background:linear-gradient(145deg,rgba(23,39,70,.56),rgba(14,24,44,.64)); box-shadow:0 3px 0 rgba(4,9,22,.22),inset 0 1px 0 rgba(255,255,255,.035); }
 .inline-color-main { display:grid; grid-template-columns:24px minmax(0,1fr) 42px 30px; align-items:end; gap:7px; min-width:0; }
 .inline-color-dot { align-self:center; display:block; width:22px; height:22px; border:2px solid rgba(255,255,255,.78); border-radius:50%; background:var(--inline-color,#454952); box-shadow:0 2px 5px rgba(0,0,0,.32),0 0 0 2px rgba(106,132,210,.12); }
-.inline-color-name-field,.inline-color-tone-field { display:flex; flex-direction:column; gap:4px; min-width:0; margin:0; color:var(--muted,#aebdda); font-size:10px; font-weight:750; }
-.inline-color-name-field input { width:100%; min-width:0; min-height:34px; padding:6px 8px !important; font-size:12px; }
+.inline-color-name-field,.inline-color-tone-field { display:flex; flex-direction:column; gap:4px; min-width:0; margin:0; color:var(--muted,#aebdda); font-size:12px; font-weight:750; }
+.inline-color-name-field input { width:100%; min-width:0; min-height:34px; padding:6px 8px !important; font-size:13px; }
 .inline-color-tone-field input[type="color"] { display:block; width:42px; height:34px; padding:3px; border:1px solid rgba(116,143,207,.45); border-radius:9px; background:rgba(9,18,36,.9); cursor:pointer; }
 .inline-color-remove { min-width:30px; min-height:33px; padding:3px; align-self:end; border-radius:8px; }
 .inline-color-details { margin-top:7px; border-top:1px solid rgba(116,143,207,.16); padding-top:5px; }
-.inline-color-details > summary { color:#8fbaff; font-size:11px; font-weight:750; cursor:pointer; list-style-position:inside; }
+.inline-color-details > summary { color:#8fbaff; font-size:12px; font-weight:750; cursor:pointer; list-style-position:inside; }
 .inline-color-details[open] > summary { margin-bottom:9px; }
 .inline-color-details .variant-color-fields { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }
-.inline-color-details .variant-color-fields > label { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:11px; }
+.inline-color-details .variant-color-fields > label { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:12px; }
 .inline-color-details .variant-image-label { grid-column:1/-1; }
 .inline-color-details .variant-image-preview { min-height:42px; gap:6px; padding:5px; }
 .inline-color-details .variant-image-preview img { width:45px; height:45px; flex-basis:45px; }
 .inline-color-details .admin-file-picker { width:auto; align-self:flex-start; min-height:33px; padding:6px 9px; font-size:11px !important; }
-.inline-color-details .color-row-status { margin:5px 0 0; font-size:10px; }
-.admin-add-color-slot .quick-color-palette { gap:5px; padding:7px; }
-.admin-add-color-slot .quick-color-swatch { min-width:43px; padding:4px 5px; }
-.admin-add-color-slot .quick-color-dot { width:22px; height:22px; }
-.admin-add-color-slot .quick-color-name { font-size:9px; }
-.variant-config-group:not(.variant-base-group) .variant-color-list { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+.inline-color-details .color-row-status { margin:5px 0 0; font-size:11px; }
+.variant-config-group:not(.variant-base-group) .variant-color-list { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
 .variant-config-group:not(.variant-base-group) .inline-color-main { grid-template-columns:24px minmax(0,1fr) 42px 30px; }
 @media(max-width:650px) {
   .admin-add-color-slot { gap:7px; }
-  .base-color-manager .variant-base-group > .variant-color-list { grid-template-columns:minmax(0,1fr); }
+  .admin-add-color-heading { align-items:flex-start; }
+  .quick-color-palette { gap:5px; padding:7px; }
+  .quick-color-swatches { grid-template-columns:repeat(auto-fit,minmax(58px,1fr)); }
+  .admin-add-color-slot .quick-color-dot { width:20px; height:20px; }
+  .base-color-manager .variant-base-group .variant-color-section .variant-color-list { grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr)); }
   .inline-color-card { padding:7px; }
   .inline-color-main { grid-template-columns:22px minmax(0,1fr) 38px 28px; gap:5px; }
   .inline-color-dot { width:20px; height:20px; }
-  .inline-color-name-field input { min-height:32px; padding:5px 6px !important; font-size:11px; }
+  .inline-color-name-field input { min-height:32px; padding:5px 6px !important; font-size:12px; }
   .inline-color-tone-field input[type="color"] { width:38px; height:32px; }
 }
-
 
 /* Product analytics dashboard */
 .dashboard-analytics-widget { grid-column: 1 / -1; }
