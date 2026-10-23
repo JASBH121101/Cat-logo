@@ -12,10 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261023-layout-symmetry1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261023-multicatalog1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261023-perfume-layout2">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261023-multicatalog3"></script>
+  <script type="module" src="admin.js?v=20261023-perfume-form-clean1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -341,26 +341,16 @@
                       <option value="Unisex">Unisex</option>
                     </select>
                   </label>
-                  <label class="span-2">
-                    Familia olfativa
-                    <input id="product-perfume-scent-family" maxlength="120" placeholder="Ej. Amaderada, oriental, floral, cítrica">
-                  </label>
-                  <label>
-                    Notas de salida
-                    <textarea id="product-perfume-top-notes" rows="2" placeholder="Separá las notas con comas"></textarea>
-                  </label>
-                  <label>
-                    Notas de corazón
-                    <textarea id="product-perfume-heart-notes" rows="2" placeholder="Separá las notas con comas"></textarea>
-                  </label>
-                  <label class="span-2">
-                    Notas de fondo
-                    <textarea id="product-perfume-base-notes" rows="2" placeholder="Separá las notas con comas"></textarea>
-                  </label>
-                  <label class="check-label admin-perfume-original">
+                  <p class="admin-perfume-data-note span-2">
+                    Registrá solo datos confirmados por GoPartner o por una ficha oficial. No necesitás adivinar la familia olfativa detallada, las notas ni la originalidad para guardar una fragancia.
+                  </p>
+                  <div class="hidden" aria-hidden="true">
+                    <input id="product-perfume-scent-family" type="text">
+                    <textarea id="product-perfume-top-notes"></textarea>
+                    <textarea id="product-perfume-heart-notes"></textarea>
+                    <textarea id="product-perfume-base-notes"></textarea>
                     <input id="product-perfume-original" type="checkbox">
-                    Original confirmado
-                  </label>
+                  </div>
                 </div>
               </section>
 
