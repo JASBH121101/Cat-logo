@@ -7581,15 +7581,18 @@ html[data-theme="light"] .admin-perfume-data-note {
 }
 
 
-/* Imagen promocional de perfumería en el catálogo tecnológico. */
+/* Imagen editorial de perfumería en el catálogo tecnológico. */
 .cross-catalog-promo-image {
+  display:block;
   position:relative;
   align-self:stretch;
-  min-height:150px;
+  min-width:0;
+  min-height:176px;
+  aspect-ratio:2.35 / 1;
   padding:0;
   overflow:hidden;
   border-color:var(--cross-promo-border,#d1dcf0);
-  background:#101b30;
+  background:#10131b;
 }
 .cross-catalog-promo-image > img {
   position:absolute;
@@ -7598,7 +7601,7 @@ html[data-theme="light"] .admin-perfume-data-note {
   height:100%;
   max-width:none;
   object-fit:cover;
-  object-position:center 54%;
+  object-position:center 50%;
   transition:transform .45s ease,filter .35s ease;
 }
 .cross-catalog-promo-image:hover > img {
@@ -7609,7 +7612,7 @@ html[data-theme="light"] .admin-perfume-data-note {
   content:"";
   position:absolute;
   inset:0;
-  background:linear-gradient(0deg,rgba(5,10,23,.76),rgba(5,10,23,.04) 72%);
+  background:linear-gradient(0deg,rgba(5,10,23,.78),rgba(5,10,23,.02) 78%);
   pointer-events:none;
 }
 .cross-catalog-promo-mark .cross-catalog-promo-image-label {
@@ -7618,15 +7621,46 @@ html[data-theme="light"] .admin-perfume-data-note {
   right:12px;
   bottom:12px;
   left:12px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:5px;
   color:#fff;
-  font-size:9px;
+  font-size:10px;
   font-weight:900;
-  letter-spacing:.14em;
+  letter-spacing:.11em;
   line-height:1.4;
   text-align:left;
-  text-shadow:0 1px 5px rgba(0,0,0,.55);
+  text-shadow:0 1px 5px rgba(0,0,0,.7);
+}
+.cross-catalog-promo-image-label .promo-separator {
+  color:#ead29a;
+  font-size:19px;
+  font-weight:700;
+  letter-spacing:0;
+  line-height:1;
+  text-shadow:0 1px 5px rgba(0,0,0,.7);
 }
 @media (max-width:760px) {
-  .cross-catalog-promo-image { min-height:150px; }
-  .cross-catalog-promo-image .cross-catalog-promo-image-label { font-size:8px; bottom:10px; left:10px; }
+  .cross-catalog-promo-image {
+    min-height:154px;
+    aspect-ratio:2.2 / 1;
+  }
+  .cross-catalog-promo-image .cross-catalog-promo-image-label {
+    right:10px;
+    bottom:10px;
+    left:10px;
+    gap:4px;
+    font-size:9px;
+    letter-spacing:.08em;
+  }
+  .cross-catalog-promo-image-label .promo-separator { font-size:17px; }
+}
+@media (max-width:360px) {
+  .cross-catalog-promo-image .cross-catalog-promo-image-label {
+    gap:3px;
+    font-size:8px;
+    letter-spacing:.05em;
+  }
+  .cross-catalog-promo-image-label .promo-separator { font-size:15px; }
 }
