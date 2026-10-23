@@ -7810,3 +7810,9 @@ html[data-theme="light"] .admin-perfume-data-note {
   }
 }
 
+/* PERFUMERÍA: ocultar controles de color y variantes tecnológicas. */
+body.admin-body #technology-color-manager.hidden,
+body.admin-body #technology-variants-section.hidden {
+  display: none !important;
+}
+
