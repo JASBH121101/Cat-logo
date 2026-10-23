@@ -147,134 +147,68 @@
    * siguen siendo compatibles con el listener de app.js.
    */
   function initializeMobileCategories() {
-    const filterRow = document.querySelector("#category-filters");
-
-    if (!filterRow) return;
-
-    const categoryButtons = Array.from(
-      filterRow.querySelectorAll(".filter-chip[data-category]")
-    );
-
-    if (!categoryButtons.length) return;
-
-    const toggle = document.createElement("button");
-
-    toggle.type = "button";
-    toggle.className = "mobile-category-toggle";
-    toggle.setAttribute("aria-expanded", "false");
-
-    const label = document.createElement("span");
-    label.className = "category-toggle-label";
-
-    const arrow = document.createElement("span");
-    arrow.className = "category-toggle-arrow";
-    arrow.setAttribute("aria-hidden", "true");
-    arrow.textContent = "⌄";
-
-    toggle.append(label, arrow);
-
-    const menu = document.createElement("div");
-    menu.className = "mobile-category-menu";
-    menu.id = "mobile-category-menu";
-
-    toggle.setAttribute("aria-controls", menu.id);
-
-    filterRow.append(toggle, menu);
-
-    function updateLabel() {
-      const activeButton = categoryButtons.find(
-        button => button.classList.contains("active")
-      );
-
-      const activeName = activeButton
-        ? activeButton.textContent.trim()
-        : "Todos";
-
-      label.textContent = `☰ Categorías: ${activeName}`;
-    }
-
-    function closeMenu() {
-      menu.classList.remove("is-open");
+    document.querySelectorAll("#category-filters, #audience-filters").forEach(filterRow => {
+      const buttons = Array.from(filterRow.querySelectorAll(".filter-chip[data-category], .filter-chip[data-audience]"));
+      if (!buttons.length) return;
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "mobile-category-toggle";
       toggle.setAttribute("aria-expanded", "false");
-    }
-
-    function openMenu() {
-      menu.classList.add("is-open");
-      toggle.setAttribute("aria-expanded", "true");
-    }
-
-    function syncLayout() {
-      if (MOBILE_QUERY.matches) {
-        /*
-         * Mover los filtros al desplegable para que no ocupen
-         * varias filas a la vez en el celular.
-         */
-        categoryButtons.forEach(button => {
-          menu.appendChild(button);
-        });
-      } else {
-        /*
-         * En escritorio, devolver los botones al contenedor
-         * principal para que se muestren como chips normales.
-         */
-        categoryButtons.forEach(button => {
-          filterRow.insertBefore(button, toggle);
-        });
-
-        closeMenu();
+      const label = document.createElement("span");
+      label.className = "category-toggle-label";
+      const arrow = document.createElement("span");
+      arrow.className = "category-toggle-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.textContent = "⌄";
+      toggle.append(label, arrow);
+      const menu = document.createElement("div");
+      menu.className = "mobile-category-menu";
+      menu.id = "mobile-" + (filterRow.id || "filter") + "-menu";
+      toggle.setAttribute("aria-controls", menu.id);
+      filterRow.append(toggle, menu);
+      const groupTitle = filterRow.dataset.mobileFilterLabel || "Categorías";
+      function updateLabel() {
+        const active = buttons.filter(button => button.classList.contains("active"));
+        const all = active.find(button => button.dataset.category === "all" || button.dataset.audience === "all");
+        const names = all ? [all.textContent.trim()] : active.map(button => button.textContent.trim());
+        label.textContent = "☰ " + groupTitle + ": " + (names.length ? names.join(" + ") : "Todos");
       }
-
-      updateLabel();
-    }
-
-    toggle.addEventListener("click", () => {
-      if (menu.classList.contains("is-open")) {
-        closeMenu();
-      } else {
-        openMenu();
+      function closeMenu() {
+        menu.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
       }
-    });
-
-    /*
-     * La selección continúa llegando al listener delegado
-     * de app.js, que actualiza el filtrado de los productos.
-     */
-    menu.addEventListener("click", event => {
-      const selectedButton = event.target.closest(
-        ".filter-chip[data-category]"
-      );
-
-      if (!selectedButton) return;
-
-      closeMenu();
-
-      /*
-       * app.js procesa la selección durante este mismo evento.
-       * Actualizamos la etiqueta después de que cambie .active.
-       */
-      window.setTimeout(updateLabel, 0);
-    });
-
-    document.addEventListener("click", event => {
-      if (!filterRow.contains(event.target)) {
-        closeMenu();
+      function syncLayout() {
+        if (MOBILE_QUERY.matches) {
+          buttons.forEach(button => menu.appendChild(button));
+        } else {
+          buttons.forEach(button => filterRow.insertBefore(button, toggle));
+          closeMenu();
+        }
+        updateLabel();
       }
+      toggle.addEventListener("click", () => {
+        if (menu.classList.contains("is-open")) closeMenu();
+        else {
+          menu.classList.add("is-open");
+          toggle.setAttribute("aria-expanded", "true");
+        }
+      });
+      menu.addEventListener("click", event => {
+        if (event.target.closest(".filter-chip[data-category], .filter-chip[data-audience]")) {
+          // Keep the menu open so shoppers can choose multiple values.
+          window.setTimeout(updateLabel, 0);
+        }
+      });
+      document.addEventListener("click", event => {
+        if (!filterRow.contains(event.target)) closeMenu();
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") closeMenu();
+      });
+      if (typeof MOBILE_QUERY.addEventListener === "function") MOBILE_QUERY.addEventListener("change", syncLayout);
+      else MOBILE_QUERY.addListener(syncLayout);
+      syncLayout();
     });
-
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        closeMenu();
-      }
-    });
-
-    if (typeof MOBILE_QUERY.addEventListener === "function") {
-      MOBILE_QUERY.addEventListener("change", syncLayout);
-    } else {
-      // Compatibilidad con navegadores más antiguos.
-      MOBILE_QUERY.addListener(syncLayout);
-    }
-
-    syncLayout();
   }
 
   /*
