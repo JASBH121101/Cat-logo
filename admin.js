@@ -167,6 +167,21 @@ function updateProductFormMode() {
     : "Mostrando solo Cat-logo · Tecnología.";
   const dashboardTitle = $("#dashboard-catalog-title");
   if (dashboardTitle) dashboardTitle.textContent = isPerfume ? "Resumen de Perfumería" : "Resumen de Cat-logo";
+  const dynamicLabels = {
+    "dashboard-total-label": isPerfume ? "Fragancias totales" : "Productos totales",
+    "dashboard-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
+    "dashboard-drafts-label": isPerfume ? "Fragancias no publicadas" : "No publicados",
+    "dashboard-review-label": isPerfume ? "Fragancias sin fotografía" : "Por revisar",
+    "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto",
+    "admin-nav-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
+    "admin-nav-drafts-label": isPerfume ? "Fragancias no publicadas" : "Borradores y pendientes",
+    "published-section-title": isPerfume ? "Fragancias publicadas" : "Productos publicados",
+    "draft-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados"
+  };
+  for (const [id, label] of Object.entries(dynamicLabels)) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = label;
+  }
   const dashboardAddDescription = $("#dashboard-add-product-description");
   if (dashboardAddDescription) dashboardAddDescription.textContent = isPerfume ? "Registrar una fragancia nueva" : "Registrar un equipo nuevo";
   const dashboardQuickAdd = document.querySelector('[data-dashboard-action="add"] .quick-action-icon');
