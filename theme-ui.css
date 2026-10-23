@@ -7816,3 +7816,187 @@ body.admin-body #technology-variants-section.hidden {
   display: none !important;
 }
 
+
+
+/* =========================================================
+   FICHA DE PRODUCTO MÓVIL · COLORES Y MINIATURAS
+   Selector compacto: el estado se marca en el círculo, no en una tarjeta.
+   La galería reserva una fila propia para las miniaturas y evita desbordes.
+   ========================================================= */
+html[data-theme] .product-dialog .color-choice-list {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:8px 12px;
+}
+
+html[data-theme] .product-dialog .variant-choice.color-choice,
+html[data-theme] .product-dialog .variant-choice.color-choice:hover,
+html[data-theme] .product-dialog .variant-choice.color-choice.selected {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:flex-start;
+  width:max-content;
+  min-width:0;
+  min-height:0;
+  gap:6px;
+  padding:4px 2px 6px;
+  border:1px solid transparent;
+  border-radius:8px;
+  color:var(--text, #24365f);
+  background:transparent;
+  box-shadow:none;
+  transform:none;
+}
+
+html[data-theme] .product-dialog .variant-choice.color-choice:active {
+  transform:none;
+  box-shadow:none;
+}
+
+html[data-theme] .product-dialog .variant-choice.color-choice:focus-visible {
+  outline:2px solid rgba(83,109,226,.68);
+  outline-offset:3px;
+}
+
+html[data-theme] .product-dialog .variant-color-dot {
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  box-sizing:border-box;
+}
+
+html[data-theme] .product-dialog .variant-choice.color-choice.selected .variant-color-dot {
+  outline:2px solid #536de2;
+  outline-offset:2px;
+  border-color:#fff;
+  box-shadow:0 0 0 1px rgba(83,109,226,.12);
+}
+
+html[data-theme] .product-dialog .variant-color-name {
+  max-width:none;
+  white-space:normal;
+  overflow-wrap:normal;
+  word-break:normal;
+  hyphens:manual;
+  text-align:center;
+  line-height:1.25;
+}
+
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice,
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice:hover,
+html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
+  color:#d3def6;
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+}
+
+/* La foto principal y la fila de miniaturas comparten una altura limitada. */
+.product-dialog #dialog-image {
+  display:grid;
+  grid-template-rows:minmax(0,1fr) auto;
+  align-items:stretch;
+  gap:8px;
+  min-width:0;
+  overflow:hidden;
+}
+
+.product-dialog #dialog-image .dialog-gallery-main {
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:auto;
+  min-width:0;
+  min-height:0;
+  max-height:100%;
+  overflow:hidden;
+}
+
+.product-dialog #dialog-image .dialog-gallery-main .dialog-main-image {
+  display:block;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  max-height:100%;
+  margin:0;
+  padding:8px;
+  box-sizing:border-box;
+  object-fit:contain;
+  object-position:center;
+}
+
+.product-dialog #dialog-image .dialog-gallery-thumbs {
+  display:flex;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  min-height:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:3px 5px 7px;
+  box-sizing:border-box;
+  scrollbar-width:thin;
+  overscroll-behavior-x:contain;
+}
+
+.product-dialog #dialog-image .dialog-gallery-thumb {
+  display:grid;
+  place-items:center;
+  position:relative;
+  flex:0 0 48px;
+  width:48px;
+  min-width:48px;
+  height:48px;
+  min-height:48px;
+  padding:3px;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+
+.product-dialog #dialog-image .dialog-gallery-thumb img {
+  display:block;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  max-height:100%;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  object-fit:contain;
+  object-position:center;
+}
+
+@media (max-width:760px), (hover:none) and (pointer:coarse) {
+  .product-dialog #dialog-image {
+    grid-template-rows:minmax(0,1fr) auto;
+    gap:6px;
+  }
+
+  .product-dialog #dialog-image .dialog-gallery-main {
+    height:auto;
+    min-height:0;
+  }
+
+  .product-dialog #dialog-image .dialog-gallery-thumbs {
+    justify-content:flex-start;
+  }
+
+  .product-dialog #dialog-image .dialog-gallery-thumb {
+    flex-basis:46px;
+    width:46px;
+    min-width:46px;
+    height:50px;
+    min-height:50px;
+  }
+}
