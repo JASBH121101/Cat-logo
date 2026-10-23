@@ -776,9 +776,12 @@ function scheduleVariantColorLayout() {
     document.querySelectorAll("[data-variant-color-list]").forEach(list => {
       const rowGap = parseFloat(getComputedStyle(list).rowGap) || 12;
       const autoRow = 4;
-      Array.from(list.querySelectorAll("[data-variant-row]")).forEach(card => {
-        const measuredHeight = Math.max(card.scrollHeight + 2, card.getBoundingClientRect().height);
-        const span = Math.max(1, Math.ceil((measuredHeight + rowGap) / (autoRow + rowGap)));
+      const cards = Array.from(list.querySelectorAll("[data-variant-row]"));
+      /* Measure without the previous span so a collapsed card can shrink again. */
+      cards.forEach(card => { card.style.gridRowEnd = "auto"; });
+      const measured = cards.map(card => Math.max(1, card.scrollHeight + 2));
+      cards.forEach((card, index) => {
+        const span = Math.max(1, Math.ceil((measured[index] + rowGap) / (autoRow + rowGap)));
         card.style.gridRowEnd = "span " + span;
       });
     });
@@ -796,6 +799,7 @@ if (form && "MutationObserver" in window) {
   });
   variantColorLayoutObserver.observe(form, { childList: true, subtree: true });
 }
+if (document.fonts?.ready) document.fonts.ready.then(scheduleVariantColorLayout).catch(() => {});
 
 
 function parseStorageValue(value) {
