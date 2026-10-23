@@ -264,3 +264,139 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
   .perfume-page .product-image img { min-height:215px; padding:8px; }
   .perfume-page .product-card-content { justify-content:center; padding:12px; }
 }
+
+/* FIX RESPONSIVE · encabezado Maison sin superponer marca y navegación. */
+@media (max-width:640px) {
+  body.perfume-page .site-header.perfume-header {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto auto;
+    align-items:center;
+    justify-content:initial;
+    gap:10px 8px;
+    width:100%;
+    height:auto !important;
+    min-height:0 !important;
+    padding:12px 16px 10px !important;
+  }
+
+  body.perfume-page .site-header.perfume-header > .perfume-brand {
+    grid-column:1 !important;
+    grid-row:1 !important;
+    justify-self:start !important;
+    display:inline-flex;
+    width:auto;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    gap:8px;
+    font-size:clamp(10px,2.9vw,12px);
+    letter-spacing:.07em;
+    line-height:1.25;
+    white-space:nowrap;
+  }
+
+  body.perfume-page .site-header.perfume-header .perfume-brand-mark {
+    flex:0 0 30px;
+    width:30px;
+    height:30px;
+    font-size:16px;
+  }
+
+  body.perfume-page .site-header.perfume-header > .perfume-header-nav {
+    grid-column:1 / -1 !important;
+    grid-row:2 !important;
+    order:0;
+    display:flex;
+    flex:initial;
+    width:100%;
+    min-width:0;
+    justify-content:space-between;
+    gap:8px;
+    margin:0;
+    padding-top:10px;
+    border-top:1px solid var(--perfume-border);
+  }
+
+  body.perfume-page .site-header.perfume-header .perfume-header-nav a {
+    font-size:clamp(10px,2.9vw,11px);
+    line-height:1.35;
+    white-space:nowrap;
+  }
+
+  body.perfume-page .site-header.perfume-header > [data-theme-toggle] {
+    position:relative !important;
+    top:auto !important;
+    right:auto !important;
+    grid-column:2 !important;
+    grid-row:1 !important;
+    justify-self:end !important;
+    align-self:center;
+    transform:none !important;
+    min-height:38px;
+    padding:7px 10px;
+  }
+}
+
+@media (max-width:360px) {
+  body.perfume-page .site-header.perfume-header {
+    padding-right:12px !important;
+    padding-left:12px !important;
+  }
+
+  body.perfume-page .site-header.perfume-header > .perfume-brand {
+    gap:6px;
+    font-size:10px;
+    letter-spacing:.035em;
+  }
+
+  body.perfume-page .site-header.perfume-header .perfume-brand-mark {
+    flex-basis:27px;
+    width:27px;
+    height:27px;
+  }
+}
+
+/* Ficha de fragancia: mostrar el frasco completo, sin recortar la fotografía. */
+.perfume-page .perfume-dialog-main-image {
+  min-width:0;
+  min-height:0;
+  aspect-ratio:4 / 5;
+  height:auto;
+  max-height:min(68vh,520px);
+}
+.perfume-page .perfume-dialog-main-image img {
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  object-position:center;
+  padding:10px;
+  box-sizing:border-box;
+}
+.perfume-page .perfume-dialog-thumb img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+}
+@media (max-width:640px) {
+  .perfume-page .perfume-dialog-layout {
+    grid-template-columns:minmax(0,1fr);
+    padding:14px;
+    gap:16px;
+  }
+  .perfume-page .perfume-dialog-main-image {
+    width:100%;
+    height:clamp(290px,74vw,380px);
+    max-height:none;
+    aspect-ratio:auto;
+  }
+  .perfume-page .perfume-dialog-main-image img {
+    padding:8px;
+  }
+}
+
