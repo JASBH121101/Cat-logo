@@ -13,6 +13,16 @@ const searchInput = document.querySelector("#search-input");
 const dialog = document.querySelector("#product-dialog");
 const dialogContent = document.querySelector("#dialog-content");
 const categoryFilters = document.querySelector("#category-filters");
+const featuredSection = document.querySelector("#featured-section");
+const featuredGrid = document.querySelector("#featured-grid");
+const featuredCount = document.querySelector("#featured-count");
+const resultsHeading = document.querySelector("#catalog-results-heading");
+const resultsEyebrow = document.querySelector("#catalog-results-eyebrow");
+const resultsTitle = document.querySelector("#catalog-results-title");
+const minPriceInput = document.querySelector("#price-min-input");
+const maxPriceInput = document.querySelector("#price-max-input");
+const clearPriceFilterButton = document.querySelector("#clear-price-filter");
+const priceFilterFeedback = document.querySelector("#budget-filter-feedback");
 
 let supabase = null;
 let products = [];
@@ -437,7 +447,7 @@ function productLink(product) {
 }
 
 function buildProductWhatsAppMessage(product, variant = null, fallbackColor = null) {
-  const parts = [`Hola, me interesa este producto: ${product.name}.`];
+  const parts = [`Hola, estoy seguro de mi elección y quiero comprar este producto: ${product.name}.`];
 
   if (variant) {
     const configuration = [
@@ -472,34 +482,45 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
   return parts.join(" ");
 }
 
-function buildFinancingWhatsAppMessage(product, variant = null) {
-  const displayName = [product.brand, product.model].filter(Boolean).join(" ") ||
-    String(product.name || "este producto");
-  const parts = [`Hola, quisiera consultar las opciones de financiación para ${displayName}.`];
-
+function buildPaymentWhatsAppMessage(product, variant = null, paymentType = "financing") {
+  const normalizedType = paymentType === "credit_card" ? "credit_card" : "financing";
+  const displayName = [product.brand, product.model].filter(Boolean).join(" ").trim() || String(product.name || "este producto");
+  const intent = normalizedType === "credit_card"
+    ? "quisiera información sobre la compra con tarjeta de crédito."
+    : "quisiera información sobre las opciones de financiamiento.";
+  const parts = [`Hola, ${intent}`, `Producto: ${displayName}.`];
   if (variant) {
-    const configuration = [variant.ram, variant.storage, variant.color].filter(Boolean).join(" · ");
+    const configuration = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
     if (configuration) parts.push(`Versión de interés: ${configuration}.`);
-    if (variant.price_usd !== null && variant.price_usd !== undefined) {
-      parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
-    }
+    if (variant.price_usd !== null && variant.price_usd !== undefined) parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
-    parts.push(`Disponibilidad informada: ${colorStatusLabel(variant.availability)}.`);
+    parts.push(`Disponibilidad de esta variante: ${colorStatusLabel(variant.availability)}.`);
   } else {
     const usdPrice = startingPrice(product, "price_usd");
-    if (usdPrice !== null && usdPrice !== undefined) {
-      parts.push(`Precio de referencia: ${formatUSD(usdPrice)}.`);
-    }
+    if (usdPrice !== null && usdPrice !== undefined) parts.push(`Precio de referencia: ${formatUSD(usdPrice)}.`);
     const nio = formatNIO(startingPrice(product, "price_nio"));
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
   }
-
   parts.push(`Enlace del producto: ${productLink(product)}.`);
-  parts.push("Quisiera conocer los requisitos, plazos, cuotas y condiciones de aprobación disponibles.");
+  parts.push(normalizedType === "credit_card"
+    ? "Quisiera saber qué tarjetas aceptan, si hay posibilidad de pagar en cuotas, y cuáles son los requisitos, recargos o comisiones aplicables."
+    : "Quisiera conocer los requisitos, plazos, cuotas y condiciones de aprobación disponibles.");
   return parts.join(" ");
 }
 
+function buildFinancingWhatsAppMessage(product, variant = null) {
+  return buildPaymentWhatsAppMessage(product, variant, "financing");
+}
+
+function updateProductContactLinks(product, variant = null, fallbackColor = null) {
+  const buyLink = $("#dialog-buy-link");
+  const financingChoice = $("#dialog-financing-choice");
+  const creditCardChoice = $("#dialog-credit-card-choice");
+  if (buyLink) buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
+  if (financingChoice) financingChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "financing"));
+  if (creditCardChoice) creditCardChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "credit_card"));
+}
 function startingPrice(product, field = "price_usd") {
   const variants = getProductVariants(product);
 
@@ -596,52 +617,72 @@ function renderCard(product) {
   `;
 }
 
+function readPriceBound(input) {
+  if (!input) return null;
+  const raw = String(input.value || "").trim();
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function hasActiveCatalogFilters() {
+  return Boolean((searchInput?.value || "").trim() || selectedCategory !== "all" ||
+    readPriceBound(minPriceInput) !== null || readPriceBound(maxPriceInput) !== null);
+}
+
 function visibleProducts() {
   const query = (searchInput.value || "").trim().toLocaleLowerCase("es");
-
+  const minPrice = readPriceBound(minPriceInput);
+  const maxPrice = readPriceBound(maxPriceInput);
+  const validRange = minPrice === null || maxPrice === null || minPrice <= maxPrice;
+  if (priceFilterFeedback) priceFilterFeedback.textContent = validRange ? "" : "El mínimo no puede superar al máximo."; 
   return products.filter(product => {
-    const categoryMatches =
-      selectedCategory === "all" ||
-      String(product.category || "").toLocaleLowerCase("es") ===
-        selectedCategory.toLocaleLowerCase("es");
-
+    if (!validRange) return false;
+    const categoryMatches = selectedCategory === "all" || String(product.category || "").toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
     const variants = getProductVariants(product);
-
     const searchableFields = [
-      product.name,
-      product.brand,
-      product.model,
-      product.category,
-      product.description,
+      product.name, product.brand, product.model, product.category, product.description,
       ...getProductColors(product).map(color => color.name),
-      ...variants.flatMap(variant => [
-        variant.storage,
-        variant.ram,
-        variant.color
-      ]),
+      ...variants.flatMap(variant => [variant.storage, variant.ram, variant.color]),
       ...specsArray(product.specifications)
     ];
-
     const haystack = searchableFields.join(" ").toLocaleLowerCase("es");
-    return categoryMatches && (!query || haystack.includes(query));
+    const queryMatches = !query || haystack.includes(query);
+    let priceMatches = true;
+    if (minPrice !== null || maxPrice !== null) {
+      const rawPrice = startingPrice(product, "price_usd");
+      const price = rawPrice === null || rawPrice === undefined || rawPrice === "" ? NaN : Number(rawPrice);
+      priceMatches = Number.isFinite(price) && (minPrice === null || price >= minPrice) && (maxPrice === null || price <= maxPrice);
+    }
+    return categoryMatches && queryMatches && priceMatches;
   });
 }
 
 function renderProducts() {
   const list = visibleProducts();
-
-  grid.innerHTML = list.map(renderCard).join("");
+  const hasFilters = hasActiveCatalogFilters();
+  const featured = hasFilters ? [] : list.filter(product => Boolean(product.featured));
+  const regularProducts = hasFilters ? list : list.filter(product => !product.featured);
+  if (featuredSection && featuredGrid) {
+    featuredSection.classList.toggle("hidden", featured.length === 0);
+    featuredGrid.innerHTML = featured.map(renderCard).join("");
+  }
+  if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} destacado${featured.length === 1 ? "" : "s"}` : "";
+  if (resultsEyebrow) resultsEyebrow.textContent = hasFilters ? "TU BÚSQUEDA" : "CATÁLOGO COMPLETO";
+  if (resultsTitle) resultsTitle.textContent = hasFilters ? "Resultados" : "Explorá todo el catálogo";
+  if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
+  grid.innerHTML = regularProducts.map(renderCard).join("");
   emptyNode.classList.toggle("hidden", list.length > 0);
-
+  if (clearPriceFilterButton) clearPriceFilterButton.disabled = readPriceBound(minPriceInput) === null && readPriceBound(maxPriceInput) === null;
   statusNode.textContent = products.length
-    ? `${list.length} de ${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}`
+    ? hasFilters
+      ? `${list.length} resultado${list.length === 1 ? "" : "s"} de ${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}`
+      : `${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}${featured.length ? ` · ${featured.length} destacado${featured.length === 1 ? "" : "s"} en su sección` : ""}`
     : "Todavía no hay productos publicados.";
-
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
     button.classList.toggle("active", button.dataset.category === selectedCategory);
   });
 }
-
 function uniqueValues(variants, field) {
   const seen = new Set();
   const values = [];
@@ -806,11 +847,6 @@ function renderVariantControls(product, variants, selected) {
   const isOrder = selected.availability === "order";
   const isUnavailable = selected.availability === "out_of_stock";
 
-  const financingLink = $("#dialog-financing-link");
-  if (financingLink) {
-    financingLink.href = buildWhatsAppLink(buildFinancingWhatsAppMessage(product, selected));
-  }
-
   area.innerHTML = `
     <div class="variant-selector">
       ${renderVariantButtonGroup(variants, selected, "storage", "Configuración")}
@@ -831,12 +867,9 @@ function renderVariantControls(product, variants, selected) {
       </div>
     </div>
 
-    <a id="variant-whatsapp-link"
-       class="button button-primary variant-whatsapp-button"
-       href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product, selected)))}"
-       target="_blank"
-       rel="noopener">Consultar por WhatsApp ↗</a>
   `;
+
+  updateProductContactLinks(product, selected);
 
   const dialogImage = $("#dialog-image");
   if (dialogImage) {
@@ -908,6 +941,16 @@ function renderLegacyColorOptions(product) {
 
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const paymentToggle = target?.closest("#dialog-payment-options-toggle");
+  if (paymentToggle) {
+    const panel = $("#dialog-payment-choice-panel");
+    if (panel) {
+      panel.hidden = !panel.hidden;
+      paymentToggle.setAttribute("aria-expanded", String(!panel.hidden));
+      paymentToggle.classList.toggle("is-expanded", !panel.hidden);
+    }
+    return;
+  }
   const whatsappLink = target?.closest('a[href*="wa.me"], a[href*="api.whatsapp.com"]');
   if (whatsappLink) {
     const product = products.find(item => String(item.id) === String(dialogContent.dataset.analyticsProductId));
@@ -972,11 +1015,20 @@ function openProduct(product) {
             : `<div class="product-price-label">Precio de referencia</div>
                <div class="product-price">${escapeHtml(formatUSD(product.price_usd))}</div>
                ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
-               ${renderLegacyColorOptions(product)}
-               <a class="button button-primary"
-                  href="${escapeHtml(buildWhatsAppLink(buildProductWhatsAppMessage(product)))}"
-                  target="_blank" rel="noopener">Consultar por WhatsApp ↗</a>`
+               ${renderLegacyColorOptions(product)}`
         }
+
+        <div class="product-contact-actions">
+          <a id="dialog-buy-link" class="button button-primary dialog-buy-button" href="#" target="_blank" rel="noopener"><span aria-hidden="true">✓</span> Quiero comprar este producto</a>
+          <button id="dialog-payment-options-toggle" class="button button-secondary dialog-payment-toggle" type="button" aria-expanded="false" aria-controls="dialog-payment-choice-panel">Consultar opciones de pago <span aria-hidden="true">⌄</span></button>
+        </div>
+        <div id="dialog-payment-choice-panel" class="payment-choice-panel" hidden>
+          <div><strong>¿Qué querés consultar?</strong><p>Elegí el tema y WhatsApp abrirá el mensaje con los datos de este producto.</p></div>
+          <div class="payment-choice-actions">
+            <a id="dialog-financing-choice" class="button button-secondary payment-choice-button" href="#" target="_blank" rel="noopener">Financiamiento</a>
+            <a id="dialog-credit-card-choice" class="button button-secondary payment-choice-button" href="#" target="_blank" rel="noopener">Compra con tarjeta de crédito</a>
+          </div>
+        </div>
 
         ${warranty}
 
@@ -991,16 +1043,6 @@ function openProduct(product) {
           ${escapeHtml(product.financing_note || "Mediante crédito o tarjeta; consultar requisitos y condiciones.")}
         </p>
 
-        <a id="dialog-financing-link"
-           class="button button-secondary dialog-financing-button"
-           href="${escapeHtml(buildWhatsAppLink(buildFinancingWhatsAppMessage(product)))}"
-           target="_blank"
-           rel="noopener">Consultar financiación por WhatsApp ↗</a>
-
-        <p><b>Disponibilidad general:</b>
-          ${escapeHtml(productAvailabilityLabel(product.availability))}
-        </p>
-
         <p><b>Entrega:</b>
           Centro de Managua gratis. Fuera del centro, costo según kilometraje.
           Departamentos por CargoTrans, con costo según destino.
@@ -1008,6 +1050,8 @@ function openProduct(product) {
       </div>
     </div>
   `;
+
+  updateProductContactLinks(product);
 
   if (variants.length) {
     let selectedVariant =
@@ -1078,6 +1122,13 @@ categoryFilters.addEventListener("click", event => {
 });
 
 searchInput.addEventListener("input", renderProducts);
+minPriceInput?.addEventListener("input", renderProducts);
+maxPriceInput?.addEventListener("input", renderProducts);
+clearPriceFilterButton?.addEventListener("click", () => {
+  if (minPriceInput) minPriceInput.value = "";
+  if (maxPriceInput) maxPriceInput.value = "";
+  renderProducts();
+});
 
 document.querySelector("#dialog-close").addEventListener("click", () => {
   if (dialog.open && typeof dialog.close === "function") dialog.close();
