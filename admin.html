@@ -125,7 +125,7 @@
             <span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Productos publicados</span><span class="admin-nav-count" id="published-nav-count">0</span>
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="drafts">
-            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Productos no publicados</span><span class="admin-nav-count" id="draft-nav-count">0</span>
+            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Borradores y pendientes</span><span class="admin-nav-count" id="draft-nav-count">0</span>
           </button>
         </nav>
 
@@ -431,6 +431,14 @@
           <div class="card-heading"><div><h2>Productos no publicados</h2><p id="draft-count">Consultando borradores…</p></div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
           <div id="draft-product-list" class="admin-product-list"></div>
+        </section>        <section class="admin-card local-recovery-card" aria-labelledby="local-recovery-title">
+          <div class="card-heading"><div><h2 id="local-recovery-title">Borrador local de recuperación</h2><p>Guarda automáticamente los cambios del formulario y las fotografías pendientes.</p></div></div>
+          <p id="local-recovery-status" role="status">Comprobando borrador local…</p>
+          <div class="local-recovery-actions">
+            <button id="restore-local-draft" class="admin-button admin-button-primary" type="button" hidden>Restaurar borrador</button>
+            <button id="delete-local-draft" class="admin-button admin-button-secondary" type="button" hidden>Eliminar borrador local</button>
+          </div>
+          <p class="local-recovery-note">Disponible en este navegador y dispositivo. No publica el producto ni sustituye una copia de seguridad del servidor.</p>
         </section>
       </section>
 

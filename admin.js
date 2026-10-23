@@ -20,8 +20,7 @@ const configured = Boolean(
 */
 /*
   Una recarga confirmada cierra la sesión de administración.
-  Si hay cambios en el formulario, beforeunload permite al navegador
-  preguntar primero; si el usuario cancela, la página no se recarga.
+  El formulario se respalda automáticamente en IndexedDB mientras se edita.
 */
 const isPageReload = (() => {
   try {
@@ -763,7 +762,7 @@ function renderMainImagePreviews(){
 }
 function moveMainImage(id,offset){const from=mainImageItems.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=mainImageItems.length)return;const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}
 function removeMainImage(id){const from=mainImageItems.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([mainImageItems[from]]);mainImageItems.splice(from,1);renderMainImagePreviews();updateEditorDirtyState();}
-mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();});
+mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();scheduleLocalRecoverySave();});
 mainImagesPreview?.addEventListener("click",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;const m=e.target.closest("[data-main-image-move]");if(m)moveMainImage(card.dataset.imageItemId,Number(m.dataset.mainImageMove));else if(e.target.closest("[data-main-image-remove]"))removeMainImage(card.dataset.imageItemId);});
 mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;draggingMainImageId=card.dataset.imageItemId;card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingMainImageId);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
 mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
@@ -1096,6 +1095,7 @@ async function showDashboard(user) {
   window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
 
   await loadProducts();
+  await checkLocalRecoveryDraft();
 }
 
 async function handleSession() {
@@ -1137,6 +1137,9 @@ async function handleSession() {
 /* =========================================================
    INICIO Y CIERRE DE SESIÓN
    ========================================================= */
+
+$("#restore-local-draft")?.addEventListener("click", () => { void restoreLocalRecoveryDraft(); });
+$("#delete-local-draft")?.addEventListener("click", () => { void deleteLocalRecoveryDraft(); });
 
 $("#login-form")?.addEventListener("submit", async event => {
   event.preventDefault();
@@ -1208,6 +1211,7 @@ $("#login-form")?.addEventListener("submit", async event => {
 });
 
 $("#logout-button")?.addEventListener("click", async event => {
+  await saveLocalRecoveryDraft();
   const button = event.currentTarget;
 
   button.disabled = true;
@@ -1663,6 +1667,20 @@ function getEditorSnapshot(){
  return JSON.stringify({fields,variants,mainGallery,variantGalleries});
 }
 
+/* Borrador local de recuperación: campos y fotos pendientes en IndexedDB. */
+const RECOVERY_DB = 'cat-logo-recovery-v1', RECOVERY_STORE = 'drafts', RECOVERY_KEY = 'product-editor';
+let recoveryTimer = null, restoringRecovery = false;
+function recoveryOpenDB() { return new Promise((resolve,reject) => { if (!window.indexedDB) return reject(new Error('IndexedDB no está disponible.')); const req=indexedDB.open(RECOVERY_DB,1); req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(RECOVERY_STORE))req.result.createObjectStore(RECOVERY_STORE,{keyPath:'key'});}; req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error||new Error('No se pudo abrir el almacenamiento local.')); }); }
+async function recoveryAction(mode,action) { const db=await recoveryOpenDB(); try { return await new Promise((resolve,reject)=>{const tx=db.transaction(RECOVERY_STORE,mode),store=tx.objectStore(RECOVERY_STORE);let req;try{req=action(store);}catch(e){reject(e);return;}if(req){req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);}else{tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('No se pudo guardar el borrador.'));}}); } finally {db.close();} }
+function recoveryItem(i) { return {id:i.id,kind:i.kind,url:i.url||'',name:i.file?.name||'',type:i.file?.type||'',lastModified:i.file?.lastModified||0,blob:i.kind==='new'&&i.file?i.file:null,uploadError:i.uploadError||''}; }
+function recoveryVariantState() { return Array.from(form.querySelectorAll('[data-variant-group]')).map(g=>({base:g.dataset.baseGroup==='true',storage:g.querySelector('[data-group-storage]')?.value||'',unit:g.querySelector('[data-group-storage-unit]')?.value||'GB',ram:g.querySelector('[data-group-ram]')?.value||'',usd:g.querySelector('[data-group-price-usd]')?.value||'',nio:g.querySelector('[data-group-price-nio]')?.value||'',colors:Array.from(g.querySelectorAll('[data-variant-row]')).map(r=>({color:r.querySelector('[data-variant-color]')?.value||'',hex:r.querySelector('[data-variant-hex]')?.value||'',availability:r.querySelector('[data-variant-availability]')?.value||'available',images:(r._variantImageItems||[]).map(recoveryItem)}))})); }
+async function saveLocalRecoveryDraft() { if(restoringRecovery||!form||!dashboard||dashboard.classList.contains('hidden'))return; const hasData=Boolean($('#product-id')?.value||$('#product-name')?.value.trim()||mainImageItems.length||Array.from(form.querySelectorAll('[data-variant-row]')).some(r=>r.querySelector('[data-variant-color]')?.value.trim())); if(!hasData)return; const fields=Array.from(form.elements).filter(f=>f&&f.id&&f.type!=='file'&&!['password','submit','button','reset'].includes(f.type)).map(f=>({id:f.id,value:(f.type==='checkbox'||f.type==='radio')?null:f.value,checked:(f.type==='checkbox'||f.type==='radio')?f.checked:null})); const draft={key:RECOVERY_KEY,savedAt:new Date().toISOString(),fields,variants:recoveryVariantState(),mainGallery:mainImageItems.map(recoveryItem)}; try{await recoveryAction('readwrite',s=>s.put(draft));const st=$('#local-recovery-status');if(st)st.textContent='Borrador local guardado automáticamente: '+new Date(draft.savedAt).toLocaleString();const rb=$('#restore-local-draft');if(rb)rb.hidden=false;const db=$('#delete-local-draft');if(db)db.hidden=false;}catch(e){console.warn('No se pudo guardar el borrador local.',e);const st=$('#local-recovery-status');if(st)st.textContent='No se pudo guardar el borrador local. Revisá el almacenamiento del navegador.';} }
+function scheduleLocalRecoverySave(){if(restoringRecovery)return;clearTimeout(recoveryTimer);recoveryTimer=setTimeout(()=>{void saveLocalRecoveryDraft();},250);}
+async function recoveryRestoreItem(i){if(i.kind!=='new'||!i.blob)return{id:i.id||imageId(),kind:'existing',url:i.url||''};const file=new File([i.blob],i.name||'imagen-pendiente',{type:i.type||i.blob.type||'application/octet-stream',lastModified:i.lastModified||Date.now()});return{id:i.id||imageId(),kind:'new',file,previewUrl:URL.createObjectURL(file),uploadError:i.uploadError||''};}
+async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').textContent=$('#product-id').value?'Guardar cambios':'Guardar producto';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
+async function deleteLocalRecoveryDraft(){if(!confirm('¿Eliminar el borrador local? Esto no elimina productos guardados en la base de datos.'))return;try{await recoveryAction('readwrite',s=>s.delete(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';$('#restore-local-draft').hidden=true;$('#delete-local-draft').hidden=true;}catch(e){const st=$('#local-recovery-status');if(st)st.textContent=e.message||'No se pudo eliminar el borrador.';}}
+async function checkLocalRecoveryDraft(){try{const d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent=d?'Borrador local disponible desde '+new Date(d.savedAt).toLocaleString()+'.':'No hay borrador local guardado.';if($('#restore-local-draft'))$('#restore-local-draft').hidden=!d;if($('#delete-local-draft'))$('#delete-local-draft').hidden=!d;}catch(e){console.warn('No se pudo comprobar el borrador local.',e);}}
+
 function markEditorClean() {
   editorBaseline = getEditorSnapshot();
   editorIsDirty = false;
@@ -1672,11 +1690,11 @@ function updateEditorDirtyState() {
   editorIsDirty = getEditorSnapshot() !== editorBaseline;
 }
 
-form?.addEventListener("input", updateEditorDirtyState);
-form?.addEventListener("change", updateEditorDirtyState);
+form?.addEventListener("input", () => { updateEditorDirtyState(); scheduleLocalRecoverySave(); });
+form?.addEventListener("change", () => { updateEditorDirtyState(); scheduleLocalRecoverySave(); });
 form?.addEventListener("click", event => {
   if (event.target.closest("#add-variant-button, [data-remove-variant]")) {
-    queueMicrotask(updateEditorDirtyState);
+    queueMicrotask(() => { updateEditorDirtyState(); scheduleLocalRecoverySave(); });
   }
 });
 
@@ -2192,6 +2210,7 @@ form?.addEventListener("submit", async event => {
     } else {
       message("#product-form-status", "Producto guardado correctamente.", "success");
       setStatus(`Guardado: ${name}`, "success");
+      await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(error => console.warn("No se pudo limpiar el borrador tras guardar.", error));
       clearEditor();
       await loadProducts();
     }
