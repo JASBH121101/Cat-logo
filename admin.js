@@ -1828,42 +1828,49 @@ function renderAnalyticsPie(node, legendNode, totalNode, rows) {
 async function loadCatalogAnalytics() {
   const note = document.getElementById("dashboard-analytics-note");
   const topNode = document.getElementById("dashboard-top-products");
-  const colorNode = document.getElementById("dashboard-interest-colors");
+  const familyNode = document.getElementById("dashboard-interest-colors");
   const configNode = document.getElementById("dashboard-interest-configs");
   const pieNode = document.getElementById("dashboard-interest-pie");
   const legendNode = document.getElementById("dashboard-interest-legend");
   const pieTotalNode = document.getElementById("dashboard-interest-pie-total");
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
-
+  const isPerfumeCatalog = activeCatalogType === "perfumery";
+  const catalogProducts = getActiveCatalogProducts();
+  const productsById = new Map(catalogProducts.map(product => [String(product.id), product]));
+  setText("dashboard-interest-chart-title", isPerfumeCatalog ? "Qué fragancias consultan" : "Qué versiones consultan");
+  setText("dashboard-interest-family-eyebrow", isPerfumeCatalog ? "FAMILIA" : "COLOR");
+  setText("dashboard-interest-family-title", isPerfumeCatalog ? "Familias más consultadas" : "Colores más consultados");
+  setText("dashboard-interest-config-eyebrow", isPerfumeCatalog ? "PERFIL OLFATIVO" : "RAM / ROM");
+  setText("dashboard-interest-config-title", isPerfumeCatalog ? "Concentraciones y tamaños" : "Configuraciones más pedidas");
+  setText("dashboard-interest-products-title", isPerfumeCatalog ? "Fragancias con más interés" : "Teléfonos con más interés");
   if (!supabase || !currentUser) return;
 
-  const { data, error } = await supabase
-    .from("catalog_events")
+  const { data, error } = await supabase.from("catalog_events")
     .select("product_id,event_type,created_at,variant_color,variant_ram,variant_storage")
-    .order("created_at", { ascending: false })
-    .limit(10000);
-
+    .order("created_at", { ascending: false }).limit(10000);
   if (error) {
     setText("dashboard-views-total", "—");
     setText("dashboard-whatsapp-total", "—");
-    if (note) note.textContent = "No se pudieron cargar las estadísticas. Verificá que las columnas de variantes de catalog_events estén instaladas y que las políticas permitan la lectura administrativa.";
+    if (note) note.textContent = "No se pudieron cargar las estadísticas. Verificá las columnas de catalog_events y las políticas de lectura administrativa.";
     if (topNode) topNode.innerHTML = '<p class="dashboard-empty-state">No se pudieron cargar las estadísticas.</p>';
-    if (colorNode) colorNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
+    if (familyNode) familyNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
     if (configNode) configNode.innerHTML = '<p class="dashboard-empty-state">No disponibles hasta resolver la conexión.</p>';
     renderAnalyticsPie(pieNode, legendNode, pieTotalNode, []);
     console.info("Analítica de catálogo no disponible:", error.message);
     return;
   }
 
-  const events = data || [];
+  const catalogIds = new Set(catalogProducts.map(product => String(product.id)));
+  const events = (data || []).filter(event => catalogIds.has(String(event.product_id)));
   const views = events.filter(event => event.event_type === "view");
   const clicks = events.filter(event => event.event_type === "whatsapp_click");
   setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
   setText("dashboard-whatsapp-total", clicks.length.toLocaleString("es-NI"));
-
   if (note) note.textContent = events.length
-    ? "Eventos registrados desde la activación de la analítica. Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
-    : "La tabla está lista, pero aún no hay eventos. Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp.";
+    ? "Eventos registrados para este catálogo. Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
+    : catalogProducts.length
+      ? "Todavía no hay eventos para este catálogo. Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp."
+      : "Agregá productos a este catálogo para comenzar a medir visitas y consultas.";
 
   const byProduct = new Map();
   for (const event of events) {
@@ -1873,53 +1880,57 @@ async function loadCatalogAnalytics() {
     if (event.event_type === "whatsapp_click") stats.clicks++;
     byProduct.set(String(event.product_id), stats);
   }
-
-  const rankedProducts = products.filter(product => product.is_published).map(product => ({
-    product,
-    stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
+  const rankedProducts = catalogProducts.filter(product => product.is_published).map(product => ({
+    product, stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
   })).sort((a, b) => b.stats.views - a.stats.views || b.stats.clicks - a.stats.clicks).slice(0, 6);
-
   if (topNode) topNode.innerHTML = rankedProducts.length ? rankedProducts.map(({product, stats}, index) => {
     const name = escapeHtml(product.name || "Producto sin nombre");
-    return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">'+(index+1)+'</span><div class="dashboard-top-product-info"><strong>'+name+'</strong><small>Interés registrado</small></div><div class="dashboard-top-product-stats"><span>👁 <b>'+stats.views+'</b> visitas</span><span>↗ <b>'+stats.clicks+'</b> clics</span></div></div>';
+    const supportingLabel = isPerfumeCatalog ? perfumeFamilyLabel(product.perfume_details && product.perfume_details.family) : (product.category || "Tecnología");
+    return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">' + (index + 1) + '</span><div class="dashboard-top-product-info"><strong>' + name + '</strong><small>' + escapeHtml(supportingLabel) + '</small></div><div class="dashboard-top-product-stats"><span>👁 <b>' + stats.views + '</b> visitas</span><span>↗ <b>' + stats.clicks + '</b> clics</span></div></div>';
   }).join("") : '<p class="dashboard-empty-state">Publicá productos para ver aquí su rendimiento.</p>';
 
-  const variantClicks = clicks.map(event => ({
-    color: String(event.variant_color || "").trim(),
-    ram: String(event.variant_ram || "").trim(),
-    storage: String(event.variant_storage || "").trim()
-  }));
-
+  const rankedRows = counts => Array.from(counts, ([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es")).slice(0, 5);
   const comboCounts = new Map();
-  const colorCounts = new Map();
+  const familyCounts = new Map();
   const configCounts = new Map();
-
-  for (const variant of variantClicks) {
-    const color = variant.color || "";
-    const ram = variant.ram || "";
-    const storage = variant.storage || "";
-    const capacityParts = [ram ? `${formatAnalyticsCapacity(ram)} RAM` : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean);
-    const configurationLabel = capacityParts.length ? capacityParts.join(" / ") : "";
-    const comboLabel = [configurationLabel, color].filter(Boolean).join(" · ") || "Sin variante registrada";
-    comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
-    if (color) colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
-    if (ram || storage) {
-      const configLabel = [ram ? `${formatAnalyticsCapacity(ram)} RAM` : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean).join(" / ") || "Configuración estándar";
-      configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
+  if (isPerfumeCatalog) {
+    for (const event of clicks) {
+      const product = productsById.get(String(event.product_id));
+      if (!product) continue;
+      const detail = product.perfume_details || {};
+      const family = detail.family ? perfumeFamilyLabel(detail.family) : "";
+      const concentration = String(detail.concentration || "").trim();
+      const volume = detail.volume_ml !== null && detail.volume_ml !== undefined && detail.volume_ml !== ""
+        ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
+      const comboLabel = [product.name, family, concentration, volume].filter(Boolean).join(" · ") || "Fragancia sin detalles";
+      comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
+      if (family) familyCounts.set(family, (familyCounts.get(family) || 0) + 1);
+      const configLabel = [concentration, volume, detail.scent_family].filter(Boolean).join(" · ");
+      if (configLabel) configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
+    }
+  } else {
+    for (const event of clicks) {
+      const color = String(event.variant_color || "").trim();
+      const ram = String(event.variant_ram || "").trim();
+      const storage = String(event.variant_storage || "").trim();
+      const parts = [ram ? formatAnalyticsCapacity(ram) + " RAM" : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean);
+      const configurationLabel = parts.length ? parts.join(" / ") : "";
+      const comboLabel = [configurationLabel, color].filter(Boolean).join(" · ") || "Sin variante registrada";
+      comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
+      if (color) familyCounts.set(color, (familyCounts.get(color) || 0) + 1);
+      if (ram || storage) {
+        const configLabel = [ram ? formatAnalyticsCapacity(ram) + " RAM" : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean).join(" / ") || "Configuración estándar";
+        configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
+      }
     }
   }
-
-  const toRankedRows = counts => Array.from(counts, ([label, count]) => ({label, count}))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
-    .slice(0, 5);
-
-  const rankedCombos = Array.from(comboCounts, ([label, count]) => ({label, count}))
+  const rankedCombos = Array.from(comboCounts, ([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"));
   renderAnalyticsPie(pieNode, legendNode, pieTotalNode, rankedCombos);
-  renderAnalyticsRanking(colorNode, toRankedRows(colorCounts), row => row.label);
-  renderAnalyticsRanking(configNode, toRankedRows(configCounts), row => row.label);
+  renderAnalyticsRanking(familyNode, rankedRows(familyCounts), row => row.label);
+  renderAnalyticsRanking(configNode, rankedRows(configCounts), row => row.label);
 }
-
 /* Actualizar actividad reciente y los indicadores a partir de los datos actuales. */
 const dashboardActivityRefresh = document.getElementById("dashboard-activity-refresh");
 dashboardActivityRefresh?.addEventListener("click", async () => {
@@ -1958,14 +1969,15 @@ dashboardActivityRefresh?.addEventListener("click", async () => {
 });
 
 function renderDashboardOverview() {
-  const published = products.filter(product => Boolean(product.is_published));
-  const drafts = products.filter(product => !product.is_published);
-  const needsImage = products.filter(product => {
+  const catalogProducts = getActiveCatalogProducts();
+  const published = catalogProducts.filter(product => Boolean(product.is_published));
+  const drafts = catalogProducts.filter(product => !product.is_published);
+  const needsImage = catalogProducts.filter(product => {
     const images = Array.isArray(product.images) ? product.images : [];
     return !(product.image_url || product.image || images.length || (Array.isArray(product.gallery) && product.gallery.length));
   });
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
-  const total = products.length;
+  const total = catalogProducts.length;
   const percent = total ? Math.round((published.length / total) * 100) : 0;
   setText("dashboard-total", total);
   setText("dashboard-published", published.length);
@@ -1984,7 +1996,7 @@ function renderDashboardOverview() {
   if (progress) progress.style.width = `${percent}%`;
   const activity = document.getElementById("dashboard-activity-list");
   if (activity) {
-    const recent = [...products].sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0,4);
+    const recent = [...catalogProducts].sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0,4);
     activity.innerHTML = recent.length ? recent.map(product => {
       const title = escapeHtml(product.name || "Producto sin nombre");
       const status = product.is_published ? "Publicado en el catálogo" : "Guardado como borrador";
@@ -2195,9 +2207,10 @@ productPreviewDialog?.addEventListener("click", event => {
 });
 
 function renderAdminList() {
-  const searchable = product => [product.name, product.brand, product.model, product.category].join(" ").toLocaleLowerCase("es");
-  const published = products.filter(product => Boolean(product.is_published));
-  const drafts = products.filter(product => !product.is_published);
+  const catalogProducts = getActiveCatalogProducts();
+  const searchable = product => [product.name, product.brand, product.model, product.category, product.perfume_details && product.perfume_details.scent_family].join(" ").toLocaleLowerCase("es");
+  const published = catalogProducts.filter(product => Boolean(product.is_published));
+  const drafts = catalogProducts.filter(product => !product.is_published);
   const filter = (items, selector) => {
     const query = ($(selector)?.value || "").trim().toLocaleLowerCase("es");
     return items.filter(product => searchable(product).includes(query));
@@ -2206,10 +2219,14 @@ function renderAdminList() {
     const image = getImages(product)[0];
     const thumb = image ? `<img class="admin-product-thumb" src="${escapeHtml(image)}" alt="" loading="lazy">` : `<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
     const variants = normalizeVariants(product.variants);
-    const variantLabel = variants.length ? ` · ${variants.length} variante${variants.length === 1 ? "" : "s"}` : "";
+    const isPerfume = product.catalog_type === "perfumery";
+    const detail = product.perfume_details || {};
+    const variantLabel = isPerfume
+      ? [detail.family ? perfumeFamilyLabel(detail.family) : "", detail.concentration, detail.volume_ml ? detail.volume_ml + " ml" : ""].filter(Boolean).join(" · ")
+      : variants.length ? variants.length + " variante" + (variants.length === 1 ? "" : "s") : "";
     const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
-    const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel}</div><div class="admin-product-buttons"><button class="admin-mini-button admin-preview-open-button" type="button" data-preview-product="${escapeHtml(product.id)}">Ver</button><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
+    const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel ? " · " + escapeHtml(variantLabel) : ""}</div><div class="admin-product-buttons"><button class="admin-mini-button admin-preview-open-button" type="button" data-preview-product="${escapeHtml(product.id)}">Ver</button><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
   }).join("") || `<p class="form-status">${emptyText}</p>`;
   $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.");
   $("#draft-product-list").innerHTML = cards(filter(drafts, "#draft-search"), "No hay productos pendientes de publicar.");
