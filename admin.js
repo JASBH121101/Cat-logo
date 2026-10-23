@@ -2370,6 +2370,7 @@ function clearEditor() {
 
   $("#product-id").value = "";
   $("#catalog-key").value = "";
+  $("#product-description").value = "";
   $("#product-active").checked = false;
   $("#product-featured").checked = false;
 
@@ -2382,7 +2383,18 @@ function clearEditor() {
 
   renderVariantRows([]);
 
-  $("#form-title").textContent = "Agregar producto";
+  $("#product-perfume-family").value = "";
+  $("#product-perfume-concentration").value = "";
+  $("#product-perfume-volume").value = "";
+  $("#product-perfume-audience").value = "";
+  $("#product-perfume-scent-family").value = "";
+  $("#product-perfume-top-notes").value = "";
+  $("#product-perfume-heart-notes").value = "";
+  $("#product-perfume-base-notes").value = "";
+  $("#product-perfume-original").checked = false;
+
+  updateProductFormMode();
+  $("#form-title").textContent = activeCatalogType === "perfumery" ? "Registrar fragancia" : "Agregar producto";
   $("#save-product-button").textContent = "Guardar producto";
 
   message("#product-form-status", "");
@@ -2390,57 +2402,75 @@ function clearEditor() {
 }
 
 function fillEditor(product) {
+  activeCatalogType = normalizeCatalogType(product.catalog_type);
+  if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
+  updateProductFormMode();
+
   $("#product-id").value = product.id || "";
   $("#catalog-key").value = product.catalog_key || "";
-
   $("#product-name").value = product.name || "";
   $("#product-brand").value = product.brand || "";
   $("#product-model").value = product.model || "";
-
-  $("#product-category").value = product.category || "Otros";
-
-  $("#product-availability").value =
-    normalizeProductAvailability(product.availability);
-
+  $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : (product.category || "Otros");
+  $("#product-description").value = product.description || "";
+  $("#product-availability").value = normalizeProductAvailability(product.availability);
   $("#product-price-usd").value = product.price_usd ?? "";
   $("#product-price-nio").value = product.price_nio ?? "";
-  $("#product-warranty").value = product.warranty_months ?? "";
-
-  $("#product-specs").value =
-    specsText(product.specifications);
-
-  $("#product-financing").value =
-    product.financing_note ||
+  $("#product-warranty").value = activeCatalogType === "perfumery" ? "" : (product.warranty_months ?? "");
+  $("#product-specs").value = activeCatalogType === "perfumery" ? "" : specsText(product.specifications);
+  $("#product-financing").value = product.financing_note ||
     "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
+  $("#product-shipping").value = product.shipping_note || "";
 
-  $("#product-shipping").value =
-    product.shipping_note || "";
+  const detail = product.perfume_details || {};
+  $("#product-perfume-family").value = detail.family || "";
+  $("#product-perfume-concentration").value = detail.concentration || "";
+  $("#product-perfume-volume").value = detail.volume_ml ?? "";
+  $("#product-perfume-audience").value = detail.audience || "";
+  $("#product-perfume-scent-family").value = detail.scent_family || "";
+  $("#product-perfume-top-notes").value = Array.isArray(detail.top_notes) ? detail.top_notes.join(", ") : "";
+  $("#product-perfume-heart-notes").value = Array.isArray(detail.heart_notes) ? detail.heart_notes.join(", ") : "";
+  $("#product-perfume-base-notes").value = Array.isArray(detail.base_notes) ? detail.base_notes.join(", ") : "";
+  $("#product-perfume-original").checked = Boolean(detail.is_original);
 
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
-
-  renderVariantRows(legacyVariants(product));
+  renderVariantRows(activeCatalogType === "perfumery" ? [] : legacyVariants(product));
 
   $("#product-featured").checked = Boolean(product.featured);
   $("#product-active").checked = Boolean(product.is_published);
 
-  $("#form-title").textContent = "Editar producto";
+  $("#form-title").textContent = activeCatalogType === "perfumery" ? "Editar fragancia" : "Editar producto";
   $("#save-product-button").textContent = "Guardar cambios";
+  message("#product-form-status", "Editando: " + product.name);
 
-  message(
-    "#product-form-status",
-    `Editando: ${product.name}`
-  );
+  renderAdminList();
+  renderDashboardOverview();
+  void loadCatalogAnalytics();
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
   markEditorClean();
 }
-
 $("#new-product-button")?.addEventListener("click", clearEditor);
 $("#cancel-edit-button")?.addEventListener("click", clearEditor);
+
+activeCatalogSelector?.addEventListener("change", () => {
+  const requested = normalizeCatalogType(activeCatalogSelector.value);
+  if (requested === activeCatalogType) return;
+
+  if ($("#product-id").value || editorIsDirty) {
+    activeCatalogSelector.value = activeCatalogType;
+    message("#product-form-status", "Guardá o cancelá la edición actual antes de cambiar de catálogo.", "error");
+    return;
+  }
+
+  activeCatalogType = requested;
+  clearEditor();
+  updateProductFormMode();
+  renderAdminList();
+  renderDashboardOverview();
+  void loadCatalogAnalytics();
+});
 
 /* =========================================================
    ALMACENAMIENTO DE IMÁGENES
