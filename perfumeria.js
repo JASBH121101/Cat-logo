@@ -103,7 +103,7 @@ function hasActiveFilters() {
 }
 
 function productLink(product) {
-  const url = new URL("./perfumeria.html", window.location.href);
+  const url = new URL("./", window.location.href);
   url.hash = "fragancia=" + encodeURIComponent(product.id);
   return url.href;
 }
