@@ -7350,3 +7350,15 @@ html[data-theme="light"] .budget-filter-bar, html[data-theme="light"] .featured-
   .featured-grid .product-view-button { font-size:11px; }
   .featured-count { display:none; }
 }
+
+
+/* Fine alignment for the existing color swatches inside featured cards. */
+.featured-grid .product-card-colors { margin:0 0 3px; min-width:0; }
+.featured-grid .product-card-colors-label { display:block; margin-bottom:4px; }
+.featured-grid .product-card-color-list { display:flex; flex-wrap:wrap; align-items:flex-start; gap:5px 8px; }
+.featured-grid .product-card-color-option { min-width:0; }
+@media (max-width:760px) {
+  .featured-grid .product-card-colors-label { font-size:10px; }
+  .featured-grid .product-card-color-list { gap:4px 6px; }
+  .featured-grid .product-card-color-name { font-size:10px; }
+}
