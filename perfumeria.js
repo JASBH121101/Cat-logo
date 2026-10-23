@@ -229,7 +229,7 @@ function renderProducts() {
       ? matched.length + (matched.length === 1 ? " fragancia encontrada" : " fragancias encontradas")
       : perfumes.length + (perfumes.length === 1 ? " fragancia publicada" : " fragancias publicadas") + (featured.length ? " · " + featured.length + " destacadas" : ""))
     : "Todavía no hay fragancias publicadas.";
-  if (clearPriceButton) clearPriceButton.disabled = min === null && max === null;
+  if (clearPriceButton) clearPriceButton.disabled = priceBound(minPriceInput) === null && priceBound(maxPriceInput) === null;
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
     const active = button.dataset.category === selectedFamily;
     button.classList.toggle("active", active);
