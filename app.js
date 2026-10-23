@@ -80,14 +80,22 @@ function buildWhatsAppLink(message) {
 const generalMessage =
   "Hola, vi el catálogo de JB TECH y quisiera consultar por disponibilidad, precio, entrega y opciones de pago.";
 
-["header-whatsapp", "footer-whatsapp", "hero-whatsapp"].forEach(id => {
+["header-whatsapp", "footer-whatsapp"].forEach(id => {
   const element = document.getElementById(id);
   if (!element) return;
-
   element.href = buildWhatsAppLink(generalMessage);
   element.target = "_blank";
   element.rel = "noopener";
 });
+
+const catalogHelpWhatsApp = document.getElementById("catalog-help-whatsapp");
+if (catalogHelpWhatsApp) {
+  catalogHelpWhatsApp.href = buildWhatsAppLink(
+    "Hola, no encontré lo que buscaba en el catálogo de JB TECH. ¿Me pueden ayudar a encontrar una opción?"
+  );
+  catalogHelpWhatsApp.target = "_blank";
+  catalogHelpWhatsApp.rel = "noopener";
+}
 
 
 function escapeHtml(value = "") {
