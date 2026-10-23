@@ -28,6 +28,8 @@ body {
 a { color: inherit; }
 .collections-stage {
   position: relative;
+  width: min(100%, 1680px);
+  margin-inline: auto;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -499,44 +501,24 @@ a { color: inherit; }
 }
 
 
-/* Avoid artificial empty space below the footer when a phone requests desktop site.
-   In this mode the CSS viewport can be taller than the actual stacked content. */
+/* Desktop-mode phones: keep the stacked page content-driven instead of forcing
+   viewport height or allowing the panels to grow and create artificial gaps. */
 @media (pointer: coarse) and (orientation: portrait) {
   html,
   body {
-    min-height:0 !important;
-    height:auto !important;
+    min-height: 0;
+    height: auto;
   }
   .collections-stage {
-    min-height:0 !important;
-    height:auto !important;
-    flex:0 0 auto !important;
-  }
-  .collections-footer {
-    flex:0 0 auto;
-    margin:0;
-  }
-}
-
-
-/* Final layout correction: on desktop-mode phones, distribute viewport height
-   into the two panels so the footer ends at the bottom instead of leaving a void. */
-@media (pointer: coarse) and (orientation: portrait) {
-  html,
-  body {
-    min-height:100% !important;
-    height:auto !important;
-  }
-  .collections-stage {
-    min-height:100svh !important;
-    height:auto !important;
-    flex:0 0 auto !important;
+    min-height: 0;
+    height: auto;
+    overflow: clip;
   }
   .world-panel {
-    flex:1 0 auto !important;
+    flex: 0 0 auto !important;
   }
   .collections-footer {
-    flex:0 0 auto !important;
-    margin:0;
+    flex: 0 0 auto;
+    margin: 0;
   }
 }
