@@ -76,6 +76,110 @@ const form = $("#product-form");
 
 let currentUser = null;
 let products = [];
+let activeCatalogType = "technology";
+const activeCatalogSelector = $("#active-catalog-selector");
+
+function normalizeCatalogType(value) {
+  return value === "perfumery" ? "perfumery" : "technology";
+}
+
+function getActiveCatalogProducts() {
+  return products.filter(product => normalizeCatalogType(product.catalog_type) === activeCatalogType);
+}
+
+function perfumeFamilyLabel(value) {
+  return ({
+    arabes: "Árabes",
+    nicho: "Nicho",
+    disenador: "Diseñador"
+  })[String(value || "").trim().toLowerCase()] || "Familia sin especificar";
+}
+
+function splitPerfumeNotes(value) {
+  return String(value || "")
+    .split(/[,;\n]+/)
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function updateProductFormMode() {
+  const isPerfume = activeCatalogType === "perfumery";
+  const category = $("#product-category");
+  if (category) {
+    const previous = category.value;
+    const options = isPerfume
+      ? [{ value: "Perfumería", label: "Perfumería" }]
+      : [
+          { value: "", label: "Seleccionar categoría…", disabled: true },
+          { value: "Celulares", label: "Celulares" },
+          { value: "Laptops", label: "Laptops" },
+          { value: "Tablets", label: "Tablets" },
+          { value: "Gaming", label: "Gaming" },
+          { value: "Televisores", label: "Televisores" },
+          { value: "Audio", label: "Audio" },
+          { value: "Accesorios", label: "Accesorios" },
+          { value: "Otros", label: "Otros" }
+        ];
+    category.replaceChildren(...options.map(option => {
+      const node = document.createElement("option");
+      node.value = option.value;
+      node.textContent = option.label;
+      if (option.disabled) node.disabled = true;
+      return node;
+    }));
+    category.value = options.some(option => option.value === previous)
+      ? previous
+      : isPerfume ? "Perfumería" : "";
+  }
+
+  if ($("#product-perfume-family")) $("#product-perfume-family").required = isPerfume;
+  $("#product-perfume-fields")?.classList.toggle("hidden", !isPerfume);
+  $("#product-model-field")?.classList.toggle("hidden", isPerfume);
+  $("#product-warranty-field")?.classList.toggle("hidden", isPerfume);
+  $("#product-specs-field")?.classList.toggle("hidden", isPerfume);
+  $("#technology-color-manager")?.classList.toggle("hidden", isPerfume);
+  $("#technology-variants-section")?.classList.toggle("hidden", isPerfume);
+  $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
+  $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
+
+  const galleryTitle = $("#product-images-title");
+  if (galleryTitle) galleryTitle.textContent = isPerfume
+    ? "Fotografías generales de la fragancia"
+    : "Fotografías generales del producto";
+  const galleryDescription = $("#product-images-title")?.parentElement?.querySelector("p");
+  if (galleryDescription) galleryDescription.textContent = isPerfume
+    ? "La primera fotografía será la portada. Añadí imágenes de la botella, la caja y los detalles de la fragancia."
+    : "La primera fotografía será la portada predeterminada. Cada color o variante puede mantener su propia galería.";
+
+  const editing = Boolean($("#product-id")?.value);
+  const formTitle = $("#form-title");
+  const saveButton = $("#save-product-button");
+  if (formTitle && !editing) formTitle.textContent = isPerfume ? "Registrar fragancia" : "Agregar producto";
+  if (saveButton && !editing) saveButton.textContent = "Guardar producto";
+
+  const contextDescription = $("#admin-context-description");
+  if (contextDescription) contextDescription.textContent = isPerfume
+    ? "Gestioná fragancias, familias olfativas, presentaciones y precios."
+    : "Gestioná equipos, configuraciones técnicas, colores, galerías y precios.";
+  const contextHint = $("#admin-context-hint");
+  if (contextHint) contextHint.textContent = isPerfume
+    ? "Mostrando solo Perfumería; su ficha olfativa se guarda por separado."
+    : "Mostrando solo Cat-logo · Tecnología.";
+
+  const publicLink = document.querySelector(".dashboard-public-link");
+  if (publicLink) publicLink.href = isPerfume ? "./perfumeria.html" : "./index.html";
+  const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
+  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria.html" : "./index.html";
+}
+
+function setActiveCatalogType(value) {
+  activeCatalogType = normalizeCatalogType(value);
+  if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
+  updateProductFormMode();
+  renderAdminList();
+  renderDashboardOverview();
+  void loadCatalogAnalytics();
+}
 
 const COLOR_PALETTE = [
   { name: "Negro", hex: "#242424", aliases: ["Black"] },
