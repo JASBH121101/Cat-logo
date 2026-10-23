@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261023-multicatalog1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261023-multicatalog2"></script>
+  <script type="module" src="admin.js?v=20261023-multicatalog3"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -124,13 +124,13 @@
             <span class="admin-nav-icon" aria-hidden="true">⌂</span><span class="admin-nav-label">Inicio</span>
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="add">
-            <span class="admin-nav-icon" aria-hidden="true">＋</span><span class="admin-nav-label">Añadir producto</span>
+            <span class="admin-nav-icon" aria-hidden="true">＋</span><span class="admin-nav-label" id="admin-nav-add-label">Añadir producto</span>
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="published">
-            <span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Productos publicados</span><span class="admin-nav-count" id="published-nav-count">0</span>
+            <span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label" id="admin-nav-published-label">Productos publicados</span><span class="admin-nav-count" id="published-nav-count">0</span>
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="drafts">
-            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Borradores y pendientes</span><span class="admin-nav-count" id="draft-nav-count">0</span>
+            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label" id="admin-nav-drafts-label">Borradores y pendientes</span><span class="admin-nav-count" id="draft-nav-count">0</span>
           </button>
         </nav>
 
@@ -180,10 +180,10 @@
           <span class="dashboard-updated"><span class="dashboard-live-dot"></span> Datos de Supabase</span>
         </div>
         <div class="dashboard-metrics">
-          <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label">Productos totales</span><strong id="dashboard-total">—</strong><small>En tu catálogo</small></article>
-          <article class="dashboard-metric metric-published"><span class="metric-icon">✓</span><span class="metric-label">Productos publicados</span><strong id="dashboard-published">—</strong><small>Visibles para clientes</small></article>
-          <article class="dashboard-metric metric-drafts"><span class="metric-icon">◷</span><span class="metric-label">No publicados</span><strong id="dashboard-drafts">—</strong><small>Borradores por revisar</small></article>
-          <article class="dashboard-metric metric-review"><span class="metric-icon">▧</span><span class="metric-label">Por revisar</span><strong id="dashboard-review">—</strong><small>Sin fotografía principal</small></article>
+          <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label" id="dashboard-total-label">Productos totales</span><strong id="dashboard-total">—</strong><small>En tu catálogo</small></article>
+          <article class="dashboard-metric metric-published"><span class="metric-icon">✓</span><span class="metric-label" id="dashboard-published-label">Productos publicados</span><strong id="dashboard-published">—</strong><small>Visibles para clientes</small></article>
+          <article class="dashboard-metric metric-drafts"><span class="metric-icon">◷</span><span class="metric-label" id="dashboard-drafts-label">No publicados</span><strong id="dashboard-drafts">—</strong><small>Borradores por revisar</small></article>
+          <article class="dashboard-metric metric-review"><span class="metric-icon">▧</span><span class="metric-label" id="dashboard-review-label">Por revisar</span><strong id="dashboard-review">—</strong><small>Sin fotografía principal</small></article>
         </div>
         <div class="dashboard-content-grid">
           <article class="dashboard-widget dashboard-chart-widget">
@@ -493,7 +493,7 @@
 
       <section id="admin-section-published" class="admin-nav-panel hidden" data-admin-panel="published">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2>Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div></div>
+          <div class="card-heading"><div><h2 id="published-section-title">Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados" placeholder="Buscar producto publicado"></label>
           <div id="published-product-list" class="admin-product-list"></div>
         </section>
@@ -501,7 +501,7 @@
 
       <section id="admin-section-drafts" class="admin-nav-panel hidden" data-admin-panel="drafts">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2>Productos no publicados</h2><p id="draft-count">Consultando borradores…</p></div></div>
+          <div class="card-heading"><div><h2 id="draft-section-title">Productos no publicados</h2><p id="draft-count">Consultando borradores…</p></div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
           <div id="draft-product-list" class="admin-product-list"></div>
         </section>        <section class="admin-card local-recovery-card" aria-labelledby="local-recovery-title">
