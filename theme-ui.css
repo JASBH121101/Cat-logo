@@ -5488,3 +5488,25 @@ html[data-theme="dark"] body.admin-body .color-row-status[data-state="error"] {
 html[data-theme="dark"] body.admin-body .color-row-status[data-state="success"] {
   color: #82e3ba !important;
 }
+
+/* Visible selection rings for the color palette in either theme. */
+html[data-theme="light"] body.admin-body .variant-swatch:hover,
+html[data-theme="light"] body.admin-body .variant-swatch:focus-visible {
+  outline-color: #4157b7 !important;
+  outline-width: 2px !important;
+}
+html[data-theme="light"] body.admin-body .variant-swatch.is-selected {
+  outline: 2px solid #354ba8 !important;
+  outline-offset: 1px !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .82) !important;
+}
+html[data-theme="dark"] body.admin-body .variant-swatch:hover,
+html[data-theme="dark"] body.admin-body .variant-swatch:focus-visible {
+  outline-color: #a9c9ff !important;
+  outline-width: 2px !important;
+}
+html[data-theme="dark"] body.admin-body .variant-swatch.is-selected {
+  outline: 2px solid #b8ccff !important;
+  outline-offset: 1px !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35) !important;
+}
