@@ -1884,6 +1884,192 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
   });
 });
 
+
+/* =========================================================
+   VISTA DE CONSULTA DEL PRODUCTO (solo lectura)
+   ========================================================= */
+const productPreviewDialog = $("#admin-product-preview-dialog");
+const productPreviewContent = $("#admin-product-preview-content");
+
+function previewMoney(value, currency) {
+  if (value === null || value === undefined || value === "") return "Consultar";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "Consultar";
+  const formatted = amount.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return (currency === "NIO" ? "C$" : "US$") + formatted;
+}
+
+function previewAvailability(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("es");
+  if (["order", "on_order", "por pedido"].includes(normalized)) return "Por pedido";
+  if (["out_of_stock", "unavailable", "no disponible", "agotado", "agotado temporalmente"].includes(normalized)) return "Agotado temporalmente";
+  return "Disponible";
+}
+
+function previewUniqueImages(values) {
+  return [...new Set((values || [])
+    .filter(value => typeof value === "string")
+    .map(value => value.trim())
+    .filter(Boolean))];
+}
+
+function previewOpenProduct(product) {
+  if (!productPreviewDialog || !productPreviewContent || !product) return;
+
+  const allVariants = normalizeVariants(product.variants);
+  const variants = allVariants.length ? allVariants : legacyVariants(product);
+  const hasTechnicalConfigurations = variants.some(variant => variant.storage || variant.ram);
+  const mainImages = previewUniqueImages(getImages(product));
+  const variantImages = previewUniqueImages(variants.flatMap(variant => [
+    ...(Array.isArray(variant.images) ? variant.images : []),
+    variant.image_url
+  ]));
+  const galleryImages = mainImages.length ? mainImages : variantImages;
+  const heroUrl = galleryImages[0] || "";
+  const title = escapeHtml(product.name || "Producto sin nombre");
+  const brandModel = [product.brand, product.model].filter(Boolean).map(value => String(value).trim()).filter(Boolean).join(" · ");
+  const publishedLabel = product.is_published ? "Publicado" : "No publicado";
+  const availabilityLabel = previewAvailability(product.availability);
+  const warranty = product.warranty_months === null || product.warranty_months === undefined || product.warranty_months === ""
+    ? "No especificada"
+    : escapeHtml(product.warranty_months) + " meses";
+
+  const numericPrices = variants.map(variant => variant.price_usd).filter(value => typeof value === "number" && Number.isFinite(value));
+  const previewPrice = numericPrices.length
+    ? previewMoney(Math.min(...numericPrices), "USD")
+    : previewMoney(product.price_usd, "USD");
+  const previewPriceNio = product.price_nio !== null && product.price_nio !== undefined && product.price_nio !== ""
+    ? previewMoney(product.price_nio, "NIO")
+    : "";
+  const specsTextValue = specsText(product.specifications);
+  const specLines = String(specsTextValue || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const specsMarkup = specLines.length
+    ? '<ul class="admin-preview-spec-list">' + specLines.map(line => "<li>" + escapeHtml(line) + "</li>").join("") + "</ul>"
+    : '<p class="admin-preview-muted">Sin especificaciones registradas.</p>';
+
+  const galleryMarkup = heroUrl
+    ? '<div class="admin-preview-gallery-main"><img id="admin-preview-hero-image" src="' + escapeHtml(heroUrl) + '" alt="' + title + '" loading="eager"></div>' +
+      (galleryImages.length > 1
+        ? '<div class="admin-preview-gallery-thumbs" aria-label="Fotografías generales">' +
+          galleryImages.map((url, index) =>
+            '<button class="admin-preview-thumb ' + (index === 0 ? "is-active" : "") + '" type="button" data-preview-image="' + escapeHtml(url) + '" data-preview-alt="' + title + ' · fotografía ' + (index + 1) + '" aria-label="Ver fotografía ' + (index + 1) + '">' +
+              '<img src="' + escapeHtml(url) + '" alt="" loading="lazy">' +
+            '</button>'
+          ).join("") +
+        '</div>'
+        : "")
+    : '<div class="admin-preview-photo-placeholder"><span aria-hidden="true">▧</span><span>Sin fotografía</span></div>';
+
+  const groups = new Map();
+  variants.forEach(variant => {
+    const storage = String(variant.storage || "").trim();
+    const ram = String(variant.ram || "").trim();
+    const key = storage.toLocaleLowerCase("es") + "|" + ram.toLocaleLowerCase("es");
+    if (!groups.has(key)) {
+      const label = storage && ram ? storage + " / " + ram : storage || ram ||
+        (hasTechnicalConfigurations ? "Colores base (sin capacidad específica)" : "Configuración estándar");
+      groups.set(key, { label, storage, ram, items: [] });
+    }
+    groups.get(key).items.push(variant);
+  });
+
+  const variantsMarkup = groups.size
+    ? Array.from(groups.values()).map(group => {
+        const cards = group.items.map(variant => {
+          const images = previewUniqueImages([
+            ...(Array.isArray(variant.images) ? variant.images : []),
+            variant.image_url
+          ]);
+          const swatch = validHex(variant.color_hex);
+          const status = previewAvailability(variant.availability);
+          const statusClass = status === "Disponible" ? "available" : status === "Por pedido" ? "order" : "unavailable";
+          const priceUSD = previewMoney(variant.price_usd ?? product.price_usd, "USD");
+          const priceNIO = previewMoney(variant.price_nio ?? product.price_nio, "NIO");
+          const photoMarkup = images.length
+            ? '<div class="admin-preview-variant-photos">' + images.map((url, index) =>
+                '<button class="admin-preview-variant-thumb" type="button" data-preview-image="' + escapeHtml(url) + '" data-preview-alt="' + escapeHtml(product.name || "Producto") + ' · ' + escapeHtml(variant.color || "Variante") + ' · fotografía ' + (index + 1) + '" aria-label="Ver foto ' + (index + 1) + ' de ' + escapeHtml(variant.color || "variante") + '">' +
+                  '<img src="' + escapeHtml(url) + '" alt="" loading="lazy">' +
+                '</button>'
+              ).join("") + '</div>'
+            : '<p class="admin-preview-muted admin-preview-no-photos">Sin fotografías para esta variante.</p>';
+          return '<article class="admin-preview-variant-card">' +
+            '<div class="admin-preview-variant-heading">' +
+              '<span class="admin-preview-color-dot" style="--preview-swatch:' + swatch + '" aria-hidden="true"></span>' +
+              '<div class="admin-preview-variant-color"><strong>' + escapeHtml(variant.color || "Color sin nombre") + '</strong><small>' + escapeHtml(variant.color_hex || swatch) + '</small></div>' +
+              '<span class="admin-preview-status ' + statusClass + '">' + escapeHtml(status) + '</span>' +
+            '</div>' +
+            '<div class="admin-preview-variant-prices"><span><small>Precio USD</small><strong>' + escapeHtml(priceUSD) + '</strong></span><span><small>Precio córdobas</small><strong>' + escapeHtml(priceNIO) + '</strong></span></div>' +
+            photoMarkup +
+          '</article>';
+        }).join("");
+        return '<section class="admin-preview-config-group"><h4>' + escapeHtml(group.label) + '</h4><div class="admin-preview-variant-grid">' + cards + '</div></section>';
+      }).join("")
+    : '<p class="admin-preview-muted">Este producto no tiene variantes registradas.</p>';
+
+  const description = String(product.description || "").trim();
+  const financing = String(product.financing_note || "").trim();
+  const shipping = String(product.shipping_note || "").trim();
+
+  productPreviewContent.innerHTML =
+    '<div class="admin-preview-layout">' +
+      '<section class="admin-preview-media">' +
+        galleryMarkup +
+        '<div class="admin-preview-image-count">' + galleryImages.length + ' fotografía(s) generales</div>' +
+      '</section>' +
+      '<section class="admin-preview-overview">' +
+        '<div class="admin-preview-title-row"><div><p class="admin-preview-eyebrow">' + escapeHtml(product.category || "Sin categoría") + '</p><h3>' + title + '</h3>' +
+          (brandModel ? '<p class="admin-preview-brand-model">' + escapeHtml(brandModel) + '</p>' : '') +
+        '</div><span class="admin-preview-publish-state ' + (product.is_published ? "published" : "draft") + '">' + publishedLabel + '</span></div>' +
+        '<div class="admin-preview-price-summary"><span>Precio desde</span><strong>' + escapeHtml(previewPrice) + '</strong>' +
+          (previewPriceNio ? '<small>' + escapeHtml(previewPriceNio) + '</small>' : '') +
+        '</div>' +
+        '<dl class="admin-preview-facts">' +
+          '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(availabilityLabel) + '</dd></div>' +
+          '<div><dt>Garantía</dt><dd>' + warranty + '</dd></div>' +
+          '<div><dt>Variantes</dt><dd>' + variants.length + '</dd></div>' +
+          '<div><dt>Destacado</dt><dd>' + (product.featured ? "Sí" : "No") + '</dd></div>' +
+        '</dl>' +
+        '<div class="admin-preview-description"><h4>Descripción</h4><p>' + escapeHtml(description || "Sin descripción adicional.") + '</p></div>' +
+      '</section>' +
+    '</div>' +
+    '<section class="admin-preview-section"><h3>Especificaciones</h3>' + specsMarkup + '</section>' +
+    '<section class="admin-preview-section"><h3>Variantes, colores y fotografías</h3>' + variantsMarkup + '</section>' +
+    '<section class="admin-preview-notes">' +
+      '<div><h4>Financiamiento</h4><p>' + escapeHtml(financing || "Sin nota de financiamiento.") + '</p></div>' +
+      '<div><h4>Entrega</h4><p>' + escapeHtml(shipping || "Sin nota de entrega.") + '</p></div>' +
+    '</section>';
+
+  if (typeof productPreviewDialog.showModal === "function") {
+    if (!productPreviewDialog.open) productPreviewDialog.showModal();
+  } else {
+    productPreviewDialog.setAttribute("open", "open");
+  }
+}
+
+productPreviewDialog?.addEventListener("click", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest("[data-close-product-preview]")) {
+    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") productPreviewDialog.close();
+    else productPreviewDialog.removeAttribute("open");
+    return;
+  }
+  if (event.target === productPreviewDialog) {
+    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") productPreviewDialog.close();
+    else productPreviewDialog.removeAttribute("open");
+    return;
+  }
+  const thumbnail = target?.closest("[data-preview-image]");
+  if (!thumbnail) return;
+  const hero = productPreviewContent.querySelector("#admin-preview-hero-image");
+  if (hero) {
+    hero.src = thumbnail.dataset.previewImage;
+    hero.alt = thumbnail.dataset.previewAlt || "Fotografía del producto";
+  }
+  productPreviewDialog.querySelectorAll("[data-preview-image]").forEach(button => {
+    button.classList.toggle("is-active", button === thumbnail);
+  });
+});
+
 function renderAdminList() {
   const searchable = product => [product.name, product.brand, product.model, product.category].join(" ").toLocaleLowerCase("es");
   const published = products.filter(product => Boolean(product.is_published));
@@ -1899,7 +2085,7 @@ function renderAdminList() {
     const variantLabel = variants.length ? ` · ${variants.length} variante${variants.length === 1 ? "" : "s"}` : "";
     const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
     const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel}</div><div class="admin-product-buttons"><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
+    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel}</div><div class="admin-product-buttons"><button class="admin-mini-button admin-preview-open-button" type="button" data-preview-product="${escapeHtml(product.id)}">Ver</button><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
   }).join("") || `<p class="form-status">${emptyText}</p>`;
   $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.");
   $("#draft-product-list").innerHTML = cards(filter(drafts, "#draft-search"), "No hay productos pendientes de publicar.");
@@ -1913,8 +2099,15 @@ $("#published-search")?.addEventListener("input", renderAdminList);
 $("#draft-search")?.addEventListener("input", renderAdminList);
 
 document.querySelectorAll("#published-product-list, #draft-product-list").forEach(list => list.addEventListener("click", async event => {
+  const preview = event.target.closest("[data-preview-product]");
   const edit = event.target.closest("[data-edit]");
   const toggle = event.target.closest("[data-toggle]");
+
+  if (preview) {
+    const product = products.find(item => String(item.id) === preview.dataset.previewProduct);
+    if (product) previewOpenProduct(product);
+    return;
+  }
 
   if (edit) {
     const product = products.find(
