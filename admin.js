@@ -751,7 +751,20 @@ mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest(
 mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
 mainImagesPreview?.addEventListener("drop",e=>{const card=e.target.closest("[data-image-item-id]");if(!card||!draggingMainImageId)return;e.preventDefault();const from=mainImageItems.findIndex(i=>i.id===draggingMainImageId),to=mainImageItems.findIndex(i=>i.id===card.dataset.imageItemId);if(from>=0&&to>=0&&from!==to){const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}draggingMainImageId=null;});
 mainImagesPreview?.addEventListener("dragend",()=>{draggingMainImageId=null;mainImagesPreview.querySelectorAll(".is-dragging").forEach(n=>n.classList.remove("is-dragging"));});
-function readVariantImageUrls(row){try{const v=JSON.parse(row.querySelector("[data-variant-images]")?.value||"[]");if(Array.isArray(v))return v.filter(u=>typeof u==="string"&&u.trim());}catch{}const u=row.querySelector("[data-variant-image-url]")?.value.trim();return u?[u]:[];}
+function readVariantImageUrls(row){
+  const legacyUrl = row?.querySelector("[data-variant-image-url]")?.value?.trim() || "";
+  try {
+    const parsed = JSON.parse(row?.querySelector("[data-variant-images]")?.value || "[]");
+    if (Array.isArray(parsed)) {
+      const urls = [...new Set(parsed
+        .filter(url => typeof url === "string")
+        .map(url => url.trim())
+        .filter(Boolean))];
+      return urls.length ? urls : (legacyUrl ? [legacyUrl] : []);
+    }
+  } catch {}
+  return legacyUrl ? [legacyUrl] : [];
+}
 function initVariantImageItems(row){if(!row||Array.isArray(row._variantImageItems))return;row._variantImageItems=readVariantImageUrls(row).map(url=>({id:imageId(),kind:"existing",url}));}
 function syncVariantImageFields(row){const items=row?._variantImageItems||[],urls=items.filter(i=>i.kind==="existing").map(i=>i.url),json=row?.querySelector("[data-variant-images]"),legacy=row?.querySelector("[data-variant-image-url]");if(json)json.value=JSON.stringify(urls);if(legacy)legacy.value=urls[0]||"";}
 function renderVariantImagePreview(row){
@@ -1496,8 +1509,12 @@ function renderDashboardOverview() {
   const published = products.filter(product => Boolean(product.is_published));
   const drafts = products.filter(product => !product.is_published);
   const needsImage = products.filter(product => {
-    const images = Array.isArray(product.images) ? product.images : [];
-    return !(product.image_url || product.image || images.length || (Array.isArray(product.gallery) && product.gallery.length));
+    const hasMainImage = getImages(product).length > 0;
+    const hasVariantImage = normalizeVariants(product.variants).some(variant =>
+      (Array.isArray(variant.images) && variant.images.length > 0) ||
+      Boolean(variant.image_url)
+    );
+    return !hasMainImage && !hasVariantImage;
   });
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
   const total = products.length;
@@ -1823,7 +1840,7 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId, existingVariants = []) {
+async function collectVariants(productId, existingVariants = [], uploadIssues = []) {
   const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
   const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
   const allGroups = [
@@ -1845,7 +1862,8 @@ async function collectVariants(productId, existingVariants = []) {
       throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex}.`);
     }
 
-    const storage = storageRaw ? `${storageRaw} GB` : "";
+    const storageUnit = read("[data-group-storage-unit]") || "GB";
+    const storage = storageRaw ? formatStorageLabel(storageRaw, storageUnit) : "";
     const ram = ramRaw ? `${ramRaw} GB` : "";
     const key = variantGroupKey({storage,ram});
     if (!isBase && seenConfigurations.has(key)) throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
@@ -1868,31 +1886,38 @@ async function collectVariants(productId, existingVariants = []) {
         status.textContent = `Subiendo fotografías de ${color}…`;
         status.dataset.state = "uploading";
       }
-      try {
-        for (const item of imageItems) {
-          if (item.kind === "new") {
+      for (const item of imageItems) {
+        if (item.kind === "new") {
+          try {
             const url = await uploadImage(productId, item.file, "variants");
             urls.push(url);
             item.kind = "existing";
             item.url = url;
+            delete item.uploadError;
             if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
             delete item.previewUrl;
             delete item.file;
-          } else if (item.url) urls.push(item.url);
+          } catch (error) {
+            const detail = error.message || "error desconocido";
+            uploadIssues.push(`${color}: ${detail}`);
+            item.uploadError = detail;
+          }
+        } else if (item.url) {
+          urls.push(item.url);
         }
-        row._variantImageItems = imageItems;
-        syncVariantImageFields(row);
-        renderVariantImagePreview(row);
-        if (status) {
+      }
+      row._variantImageItems = imageItems;
+      syncVariantImageFields(row);
+      renderVariantImagePreview(row);
+      const failedUploads = imageItems.filter(item => item.kind === "new");
+      if (status) {
+        if (failedUploads.length) {
+          status.textContent = `No se pudieron subir ${failedUploads.length} fotografía(s) de ${color}. Los datos se conservarán; podés reintentar.`;
+          status.dataset.state = "error";
+        } else {
           status.textContent = urls.length ? `${urls.length} fotografía(s) guardadas para ${color}.` : "";
           status.dataset.state = "success";
         }
-      } catch (error) {
-        if (status) {
-          status.textContent = `No se pudieron subir las fotografías de ${color}: ${error.message || "error desconocido"}`;
-          status.dataset.state = "error";
-        }
-        throw error;
       }
       colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
@@ -1981,6 +2006,7 @@ form?.addEventListener("submit", async event => {
 
   const button = $("#save-product-button");
   const wasEditing = Boolean($("#product-id").value);
+  const imageUploadErrors = [];
 
   button.disabled = true;
   button.textContent = "Guardando…";
@@ -2004,17 +2030,32 @@ form?.addEventListener("submit", async event => {
 
     const variants = await collectVariants(
       id,
-      existingProduct?.variants || []
+      existingProduct?.variants || [],
+      imageUploadErrors
     );
 
     const uploadedMainImages = [];
-    for (let imageIndex=0; imageIndex<mainImageItems.length; imageIndex++) {
-      const item=mainImageItems[imageIndex];
-      if(item.kind==="new"){
-        message("#product-form-status", `Subiendo fotografía ${imageIndex+1} de ${mainImageItems.length}…`);
-        const url=await uploadImage(id,item.file);uploadedMainImages.push(url);item.kind="existing";item.url=url;
-        if(item.previewUrl)URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;delete item.file;
-      }else uploadedMainImages.push(item.url);
+    for (let imageIndex = 0; imageIndex < mainImageItems.length; imageIndex++) {
+      const item = mainImageItems[imageIndex];
+      if (item.kind === "new") {
+        message("#product-form-status", `Subiendo fotografía ${imageIndex + 1} de ${mainImageItems.length}…`);
+        try {
+          const url = await uploadImage(id, item.file);
+          uploadedMainImages.push(url);
+          item.kind = "existing";
+          item.url = url;
+          delete item.uploadError;
+          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+          delete item.previewUrl;
+          delete item.file;
+        } catch (error) {
+          const detail = error.message || "error desconocido";
+          imageUploadErrors.push(`${item.file?.name || "Fotografía principal"}: ${detail}`);
+          item.uploadError = detail;
+        }
+      } else if (item.url) {
+        uploadedMainImages.push(item.url);
+      }
     }
     renderMainImagePreviews();
 
@@ -2119,17 +2160,28 @@ form?.addEventListener("submit", async event => {
       throw result.error;
     }
 
-    message(
-      "#product-form-status",
-      "Producto guardado correctamente.",
-      "success"
-    );
-
-    setStatus(`Guardado: ${name}`, "success");
-
-    clearEditor();
-
-    await loadProducts();
+    if (imageUploadErrors.length) {
+      // Mantener el ID evita crear duplicados al reintentar fotografías.
+      $("#product-id").value = id;
+      $("#catalog-key").value = catalogKey;
+      $("#form-title").textContent = "Producto guardado · fotografías pendientes";
+      message(
+        "#product-form-status",
+        `Producto guardado, pero ${imageUploadErrors.length} fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”. Detalle: ${imageUploadErrors.slice(0, 2).join(" · ")}`,
+        "error"
+      );
+      setStatus(`Guardado con fotografías pendientes: ${name}`, "error");
+      await loadProducts();
+    } else {
+      message(
+        "#product-form-status",
+        "Producto guardado correctamente.",
+        "success"
+      );
+      setStatus(`Guardado: ${name}`, "success");
+      clearEditor();
+      await loadProducts();
+    }
   } catch (error) {
     message(
       "#product-form-status",
@@ -2140,9 +2192,9 @@ form?.addEventListener("submit", async event => {
   } finally {
     button.disabled = false;
 
-    button.textContent = $("#product-id").value
-      ? "Guardar cambios"
-      : "Guardar producto";
+    button.textContent = imageUploadErrors.length
+      ? "Reintentar fotografías"
+      : ($("#product-id").value ? "Guardar cambios" : "Guardar producto");
   }
 });
 
