@@ -165,6 +165,12 @@ function updateProductFormMode() {
   if (contextHint) contextHint.textContent = isPerfume
     ? "Mostrando solo Perfumería; su ficha olfativa se guarda por separado."
     : "Mostrando solo Cat-logo · Tecnología.";
+  const dashboardTitle = $("#dashboard-catalog-title");
+  if (dashboardTitle) dashboardTitle.textContent = isPerfume ? "Resumen de Perfumería" : "Resumen de Cat-logo";
+  const dashboardAddDescription = $("#dashboard-add-product-description");
+  if (dashboardAddDescription) dashboardAddDescription.textContent = isPerfume ? "Registrar una fragancia nueva" : "Registrar un equipo nuevo";
+  const dashboardQuickAdd = document.querySelector('[data-dashboard-action="add"] .quick-action-icon');
+  if (dashboardQuickAdd) dashboardQuickAdd.textContent = isPerfume ? "✦" : "＋";
 
   const publicLink = document.querySelector(".dashboard-public-link");
   if (publicLink) publicLink.href = isPerfume ? "./perfumeria.html" : "./index.html";
