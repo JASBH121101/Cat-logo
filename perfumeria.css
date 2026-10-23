@@ -1,5 +1,5 @@
 /* =========================================================
-   MAISON CAT-LOGO · PERFUMERY CATALOG
+   JB PARFUMS · PERFUMERY CATALOG
    Premium editorial style · shared light/dark themes
    ========================================================= */
 .perfume-page {
@@ -400,3 +400,13 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
   }
 }
 
+
+
+/* JB Parfums: acciones comerciales claras y ajuste móvil. */
+.perfume-hero-actions .perfume-primary-link,.perfume-hero-actions .perfume-outline-link { min-height:45px; }
+.perfume-dialog-actions .perfume-primary-link,.perfume-dialog-actions .perfume-outline-link { min-width:0; }
+.perfume-dialog-actions .perfume-outline-link { overflow-wrap:anywhere; }
+@media(max-width:640px) {
+  .perfume-hero-actions { width:100%;align-items:stretch; }
+  .perfume-hero-actions>a { width:100%;justify-content:center; }
+}
