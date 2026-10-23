@@ -2,258 +2,64 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#081629">
-  <meta name="description" content="JB TECH: celulares, laptops, tablets y accesorios. Explorá productos, consultá precios y escribinos por WhatsApp para resolver dudas sobre disponibilidad y opciones de pago.">
-  <title>JB TECH | Tecnología para tu mundo</title>
-   
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20261023-jbtech-neon2">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090f1c">
+  <meta name="description" content="JB Collections reúne dos mundos: descubrí fragancias en JB Parfums y celulares, accesorios y tecnología en JB TECH.">
+  <title>JB Collections | Dos mundos, una experiencia</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon-collections.svg?v=20261023-collections1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="styles.css?v=20261023-jbtech-refresh1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261023-color-gallery-adminfix1">
-
-  <link rel="stylesheet" href="brand-refresh.css?v=20261023-brand-system1">
-  <script src="config.js"></script>
-  <script type="module" src="app.js?v=20261023-technology-only2"></script>
-  <script src="ui.js?v=20261022-fix1" defer></script>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="stylesheet" href="./collections.css?v=20261023-collections1">
+  <script src="./collections.js?v=20261023-collections1" defer></script>
 </head>
-
 <body>
-  <header class="site-header">
-    <a class="brand" href="./" aria-label="Inicio JB TECH">
-      <img class="brand-logo-image" src="./jb-tech-horizontal.svg?v=20261023-jbtech-logo1" alt="JB TECH — Tecnología para tu mundo">
-      <span id="brand-name" class="brand-name-sr">JB TECH</span>
-    </a>
-
-  </header>
-
-  <main>
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">
-          <span class="eyebrow-dot"></span>
-          TECNOLOGÍA · NICARAGUA
-        </p>
-
-        <h1>Encontrá tu próximo <span>equipo.</span></h1>
-
-        <p class="hero-description">
-          Celulares, laptops, tablets y accesorios. Mirá las características,
-          compará precios y escribinos para confirmar disponibilidad, entrega y opciones de pago.
-        </p>
-
-        <div class="hero-ctas">
-          <a class="button button-primary" href="#catalogo">
-            Explorar equipos <span aria-hidden="true">↓</span>
-          </a>
-          <a class="button button-secondary hero-whatsapp-button" id="hero-whatsapp" href="#" target="_blank" rel="noopener">
-            Consultar por WhatsApp <span aria-hidden="true">↗</span>
-          </a>
-        </div>
-
-        <div class="hero-trust">
-          <span>✓ Consultas directas por WhatsApp</span>
-          <span>✓ Opciones de pago sujetas a confirmación</span>
-        </div>
-      </div>
-
-      <div class="hero-art hero-visual">
-        <div class="hero-image-frame">
-          <img
-            class="hero-showcase-image"
-            src="img/hero-catalogo.png"
-            alt="Selección de teléfonos, laptops, tablets y accesorios de tecnología"
-            fetchpriority="high"
-          >
-          <div class="hero-image-glow" aria-hidden="true"></div>
-        </div>
-
-      </div>
-    </section>
-
-    <section class="benefit-row" aria-label="Ventajas">
-      <div>
-        <span class="benefit-icon">◉</span>
-        <span>
-          <b>Catálogo actualizado</b>
-          <small>Consultá disponibilidad</small>
-        </span>
-      </div>
-
-      <div>
-        <span class="benefit-icon">▤</span>
-        <span>
-          <b>Crédito o tarjeta</b>
-          <small>Condiciones por confirmar</small>
-        </span>
-      </div>
-
-      <div>
-        <span class="benefit-icon">⌁</span>
-        <span>
-          <b>Entregas coordinadas</b>
-          <small>Managua y departamentos</small>
-        </span>
-      </div>
-    </section>
-
-    <section class="cross-catalog-promo technology-promo" aria-label="Conocé nuestro catálogo de perfumería">
-      <div class="cross-catalog-promo-copy">
-        <p class="eyebrow">UNA EXPERIENCIA DIFERENTE</p>
-        <h2>Conocé JB Parfums.</h2>
-        <p>Descubrí fragancias árabes, de nicho y de diseñador en un catálogo dedicado a encontrar tu próximo aroma.</p>
-        <a class="button button-secondary" href="./perfumeria/">Explorar perfumería <span aria-hidden="true">↗</span></a>
-      </div>
-      <div class="cross-catalog-promo-mark cross-catalog-promo-image">
-        <img src="https://images.unsplash.com/photo-1672848700906-2b8ca62639e4?auto=format&amp;fit=crop&amp;fm=jpg&amp;q=85&amp;w=1400" alt="Tres frascos de fragancia en una composición editorial" loading="lazy" decoding="async" title="Fotografía de Beautinow Niche Perfume en Unsplash">
-        <span class="cross-catalog-promo-image-label" aria-label="Árabe, nicho y diseñador">
-          <span>ÁRABE</span><span class="promo-separator" aria-hidden="true">·</span><span>NICHO</span><span class="promo-separator" aria-hidden="true">·</span><span>DISEÑADOR</span>
-        </span>
-      </div>
-    </section>
-
-    <section class="catalog-section" id="catalogo">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">NUESTRO CATÁLOGO</p>
-          <h2>Encontrá tu próximo favorito<span class="heading-accent">.</span></h2>
-          <p class="section-subtitle">
-            Encontrá el producto que buscás o filtrá por categoría.
-          </p>
-        </div>
-
-        <label class="search-box">
-          <span aria-hidden="true">⌕</span>
-          <input
-            id="search-input"
-            type="search"
-            placeholder="Buscar producto o modelo…"
-            aria-label="Buscar productos"
-          >
-          <kbd>Buscar</kbd>
-        </label>
-      </div>
-
-      <div class="filter-row" id="category-filters" aria-label="Filtrar por categoría">
-        <button class="filter-chip active" data-category="all">Todos</button>
-        <button class="filter-chip" data-category="Celulares">Celulares</button>
-        <button class="filter-chip" data-category="Laptops">Laptops</button>
-        <button class="filter-chip" data-category="Tablets">Tablets</button>
-        <button class="filter-chip" data-category="Gaming">Gaming</button>
-        <button class="filter-chip" data-category="Televisores">Televisores</button>
-        <button class="filter-chip" data-category="Audio">Audio</button>
-        <button class="filter-chip" data-category="Accesorios">Accesorios</button>
-        <button class="filter-chip" data-category="Otros">Otros</button>
-      </div>
-
-      <section class="budget-filter-bar" id="budget-filter-bar" aria-label="Filtrar por presupuesto">
-        <div class="budget-filter-heading"><strong>Presupuesto</strong><small>Rango de precio en dólares</small></div>
-        <label class="budget-price-field" for="price-min-input"><span>Desde</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-min-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Mínimo" aria-label="Precio mínimo en dólares"></span></label>
-        <label class="budget-price-field" for="price-max-input"><span>Hasta</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-max-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Máximo" aria-label="Precio máximo en dólares"></span></label>
-        <button id="clear-price-filter" class="budget-clear-button" type="button" disabled>Limpiar</button>
-        <span id="budget-filter-feedback" class="budget-filter-feedback" aria-live="polite"></span>
-      </section>
-
-      <section id="featured-section" class="featured-section hidden" aria-labelledby="featured-section-title">
-        <div class="featured-section-heading">
-          <div><p class="eyebrow">SELECCIÓN ESPECIAL</p><h2 id="featured-section-title">Destacados<span class="heading-accent">.</span></h2><p class="section-subtitle">Productos que vale la pena descubrir.</p></div>
-          <span id="featured-count" class="featured-count"></span>
-        </div>
-        <div id="featured-grid" class="featured-grid"></div>
-      </section>
-
-      <div id="catalog-results-heading" class="catalog-results-heading">
-        <div><p id="catalog-results-eyebrow" class="eyebrow">CATÁLOGO COMPLETO</p><h2 id="catalog-results-title">Explorá todo el catálogo</h2></div>
-      </div>
-      <div id="catalog-status" class="catalog-status" role="status">Cargando catálogo…</div>
-      <div id="product-grid" class="product-grid"></div>
-
-      <div id="empty-results" class="empty-state hidden">
-        <span>⌕</span>
-        <h3>No encontramos productos</h3>
-        <p>Probá con otro nombre o seleccioná otra categoría.</p>
-      </div>
-    </section>
-
-
-
-    <section class="shipping-section" id="entregas">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">RECIBÍ TU PEDIDO</p>
-          <h2>Entregas y envíos</h2>
-          <p class="section-subtitle">
-            Consultá el costo correspondiente a tu ubicación antes de confirmar la compra.
-          </p>
-        </div>
-      </div>
-
-      <div class="shipping-grid">
-        <article class="shipping-card">
-          <span class="shipping-number">01</span>
-          <div class="shipping-icon">⌖</div>
-          <h3>Centro de Managua</h3>
-          <p>Entrega gratis en el centro de Managua.</p>
-          <span class="shipping-label label-free">Entrega gratis</span>
-        </article>
-
-        <article class="shipping-card">
-          <span class="shipping-number">02</span>
-          <div class="shipping-icon">↗</div>
-          <h3>Fuera del centro</h3>
-          <p>El costo se calcula según la distancia y el kilometraje.</p>
-          <span class="shipping-label">Costo por distancia</span>
-        </article>
-
-        <article class="shipping-card">
-          <span class="shipping-number">03</span>
-          <div class="shipping-icon">▣</div>
-          <h3>Departamentos</h3>
-          <p>Envíos por CargoTrans. El costo depende del destino.</p>
-          <span class="shipping-label">Consultar costo</span>
-        </article>
-      </div>
-    </section>
-
-    <section class="contact-section" id="contacto">
-      <div>
-        <p class="eyebrow">¿TENÉS ALGUNA DUDA?</p>
-        <h2>Hablemos de tu próximo equipo.</h2>
-        <p>
-          Consultá disponibilidad, precio final, financiamiento y entrega de tu producto.
-        </p>
-      </div>
-
-      <a
-        class="button button-primary"
-        id="footer-whatsapp"
-        target="_blank"
-        rel="noopener"
-      >
-        Escribir por WhatsApp <span aria-hidden="true">↗</span>
+  <main class="collections-stage" aria-label="Elegí tu mundo en JB Collections">
+    <header class="collections-masthead">
+      <a class="collections-lockup" href="./" aria-label="JB Collections, portada">
+        <span class="collections-monogram" aria-hidden="true">JB</span>
+        <span class="collections-name">COLLECTIONS</span>
       </a>
-    </section>
+      <div class="collections-divider" aria-hidden="true"><span>✦</span></div>
+      <h1 class="collections-tagline">Dos mundos, una experiencia.</h1>
+      <p class="collections-subtitle">Elegancia <span aria-hidden="true">◆</span> Innovación <span aria-hidden="true">◆</span> Para tu estilo de vida</p>
+    </header>
+
+    <div class="collections-worlds">
+      <section class="world-panel world-panel--parfums" aria-labelledby="parfums-title">
+        <div class="world-content">
+          <div class="world-brand">
+            <img class="world-emblem" src="./favicon-parfums.svg?v=20261023-jbparfums-icon1" alt="" aria-hidden="true">
+            <h2 class="world-title" id="parfums-title">JB Parfums</h2>
+            <div class="world-title-rule" aria-hidden="true"><span>✦</span></div>
+          </div>
+          <p class="world-eyebrow">Fragancias que dejan huella</p>
+          <p class="world-copy">Descubrí fragancias árabes, de nicho y de diseñador. Aromas que acompañan tu estilo y dejan una impresión inolvidable.</p>
+          <a class="world-cta world-cta--parfums" href="./perfumeria/" aria-label="Explorar el catálogo de perfumería JB Parfums">
+            <span>Explorar perfumería</span><span class="arrow" aria-hidden="true">›</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="world-panel world-panel--tech" aria-labelledby="tech-title">
+        <div class="world-content world-content--tech">
+          <div class="world-brand world-brand--tech">
+            <img class="world-tech-logo" src="./jb-tech-logo.svg?v=20261023-jbtech-logo1" alt="JB TECH — Tecnología para tu mundo">
+          </div>
+          <p class="world-eyebrow">Tecnología y estilo</p>
+          <p class="world-copy">Celulares, laptops, accesorios y más. Encontrá tu próximo equipo, compará características y consultá por WhatsApp.</p>
+          <a class="world-cta world-cta--tech" href="./tecnologia/" aria-label="Explorar el catálogo de tecnología JB TECH">
+            <span>Explorar tecnología</span><span class="arrow" aria-hidden="true">›</span>
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <div class="collections-footer" aria-hidden="true">
+      <span class="collections-footer-mark">✦</span>
+      <span>La misma pasión, dos mundos</span>
+      <span class="collections-footer-mark">✦</span>
+    </div>
   </main>
-
-  <footer class="site-footer">
-    <a class="brand footer-brand" href="./" aria-label="JB TECH — inicio">
-      <img class="brand-logo-image" src="./jb-tech-horizontal.svg?v=20261023-jbtech-logo1" alt="JB TECH — Tecnología para tu mundo">
-      <span class="brand-name-sr">JB TECH</span>
-    </a>
-
-    <p>
-      Precios sujetos a confirmación. Financiamiento sujeto a requisitos y condiciones de aprobación.
-    </p>
-
-    <span>© <span id="year"></span> JB TECH</span>
-  </footer>
-
-  <dialog id="product-dialog" class="product-dialog">
-    <button class="dialog-close" id="dialog-close" aria-label="Cerrar">×</button>
-    <div id="dialog-content"></div>
-  </dialog>
 </body>
 </html>
