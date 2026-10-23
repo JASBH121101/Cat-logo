@@ -8000,3 +8000,134 @@ html[data-theme="dark"] .product-dialog .variant-choice.color-choice.selected {
     min-height:50px;
   }
 }
+
+
+/* =========================================================
+   FIX MÓVIL · SELECTOR DE COLOR SIN TARJETAS + GALERÍA ACOTADA
+   La selección se comunica en el círculo de color, no en una caja.
+   ========================================================= */
+.product-dialog #variant-options-area .variant-option-group:has(.color-choice-list) {
+  width:100% !important; min-width:0 !important; margin:8px 0 0 !important;
+  padding:0 !important; border:0 !important; border-radius:0 !important;
+  background:transparent !important; box-shadow:none !important;
+}
+.product-dialog #variant-options-area .variant-option-group:has(.color-choice-list) > h3 {
+  margin:0 0 10px !important; padding:0 !important;
+}
+.product-dialog #variant-options-area .color-choice-list {
+  display:flex !important; flex-wrap:wrap !important; align-items:flex-start !important;
+  justify-content:flex-start !important; gap:8px 14px !important; width:100% !important; min-width:0 !important;
+}
+.product-dialog #variant-options-area .variant-choice.color-choice,
+.product-dialog #variant-options-area .variant-choice.color-choice:hover,
+.product-dialog #variant-options-area .variant-choice.color-choice.selected {
+  display:flex !important; flex:0 1 auto !important; flex-direction:column !important;
+  align-items:center !important; justify-content:flex-start !important; gap:9px !important;
+  width:fit-content !important; min-width:0 !important; max-width:min(42vw,150px) !important;
+  min-height:0 !important; margin:0 !important; padding:4px 5px !important;
+  border:1px solid transparent !important; border-radius:8px !important;
+  background:transparent !important; box-shadow:none !important;
+  color:var(--text,#24365f) !important; transform:none !important;
+}
+.product-dialog #variant-options-area .variant-choice.color-choice:hover { opacity:.9; }
+.product-dialog #variant-options-area .variant-choice.color-choice:active { transform:none !important; box-shadow:none !important; }
+.product-dialog #variant-options-area .variant-choice.color-choice:focus-visible {
+  outline:2px solid rgba(83,109,226,.72) !important; outline-offset:2px !important;
+}
+.product-dialog #variant-options-area .variant-color-dot {
+  display:block !important; flex:0 0 38px !important; width:38px !important; height:38px !important;
+  min-width:38px !important; min-height:38px !important; box-sizing:border-box !important; border-radius:50% !important;
+}
+.product-dialog #variant-options-area .variant-choice.color-choice.selected .variant-color-dot {
+  outline:3px solid #536de2 !important; outline-offset:3px !important; border:2px solid #fff !important;
+  box-shadow:0 0 0 1px rgba(83,109,226,.16) !important;
+}
+.product-dialog #variant-options-area .variant-color-name {
+  display:block !important; width:max-content !important; max-width:138px !important; min-width:0 !important;
+  white-space:normal !important; overflow-wrap:anywhere !important; word-break:normal !important; hyphens:none !important;
+  text-align:center !important; font-size:13px !important; line-height:1.3 !important;
+}
+html[data-theme="dark"] .product-dialog #variant-options-area .variant-choice.color-choice,
+html[data-theme="dark"] .product-dialog #variant-options-area .variant-choice.color-choice:hover,
+html[data-theme="dark"] .product-dialog #variant-options-area .variant-choice.color-choice.selected {
+  color:#e0e9ff !important; border-color:transparent !important; background:transparent !important; box-shadow:none !important;
+}
+
+/* Caja de galería con altura definida: evita que miniaturas altas rebasen el modal. */
+.product-dialog #dialog-image {
+  display:grid !important; grid-template-rows:minmax(0,1fr) 58px !important;
+  align-items:stretch !important; gap:7px !important; width:100% !important;
+  height:min(64vh,560px) !important; max-height:min(64vh,560px) !important;
+  min-width:0 !important; min-height:0 !important; overflow:hidden !important; box-sizing:border-box !important;
+}
+.product-dialog #dialog-image .dialog-gallery-main {
+  display:grid !important; place-items:center !important; width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important; max-height:100% !important;
+  overflow:hidden !important; box-sizing:border-box !important;
+}
+.product-dialog #dialog-image .dialog-gallery-main .dialog-main-image {
+  display:block !important; width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important; max-width:100% !important; max-height:100% !important;
+  margin:0 !important; padding:6px !important; box-sizing:border-box !important;
+  object-fit:contain !important; object-position:center !important;
+}
+.product-dialog #dialog-image .dialog-gallery-thumbs {
+  display:flex !important; flex:0 0 58px !important; flex-wrap:nowrap !important; align-items:center !important;
+  justify-content:center !important; gap:7px !important; width:100% !important; max-width:100% !important;
+  min-width:0 !important; height:58px !important; min-height:58px !important; max-height:58px !important;
+  margin:0 !important; padding:3px 5px 5px !important; overflow-x:auto !important; overflow-y:hidden !important;
+  box-sizing:border-box !important; scrollbar-width:thin; overscroll-behavior-x:contain;
+}
+.product-dialog #dialog-image .dialog-gallery-thumb {
+  display:grid !important; flex:0 0 50px !important; width:50px !important; min-width:50px !important;
+  max-width:50px !important; height:50px !important; min-height:50px !important; max-height:50px !important;
+  padding:3px !important; margin:0 !important; overflow:hidden !important; box-sizing:border-box !important;
+}
+.product-dialog #dialog-image .dialog-gallery-thumb img {
+  display:block !important; width:100% !important; height:100% !important; min-width:0 !important; min-height:0 !important;
+  max-width:100% !important; max-height:100% !important; padding:0 !important; margin:0 !important;
+  object-fit:contain !important; object-position:center !important; box-sizing:border-box !important;
+}
+@media (max-width:760px), (hover:none) and (pointer:coarse) {
+  .product-dialog #variant-options-area .color-choice-list { gap:7px 10px !important; }
+  .product-dialog #variant-options-area .variant-choice.color-choice,
+  .product-dialog #variant-options-area .variant-choice.color-choice:hover,
+  .product-dialog #variant-options-area .variant-choice.color-choice.selected {
+    max-width:min(40vw,132px) !important; padding:3px 4px !important;
+  }
+  .product-dialog #variant-options-area .variant-color-dot {
+    flex-basis:36px !important; width:36px !important; height:36px !important; min-width:36px !important; min-height:36px !important;
+  }
+  .product-dialog #variant-options-area .variant-color-name { max-width:126px !important; font-size:12px !important; }
+  .product-dialog #dialog-image {
+    grid-template-rows:minmax(0,1fr) 52px !important; height:min(52vh,430px) !important;
+    max-height:min(52vh,430px) !important; min-height:220px !important; gap:5px !important;
+  }
+  .product-dialog #dialog-image .dialog-gallery-thumbs {
+    flex-basis:52px !important; height:52px !important; min-height:52px !important; max-height:52px !important;
+    justify-content:flex-start !important; padding:2px 3px 4px !important;
+  }
+  .product-dialog #dialog-image .dialog-gallery-thumb {
+    flex-basis:46px !important; width:46px !important; min-width:46px !important; max-width:46px !important;
+    height:46px !important; min-height:46px !important; max-height:46px !important;
+  }
+}
+@media (max-width:380px) {
+  .product-dialog #variant-options-area .variant-color-name { max-width:108px !important; font-size:11.5px !important; }
+  .product-dialog #dialog-image { height:min(49vh,390px) !important; max-height:min(49vh,390px) !important; }
+}
+
+/* Marca en el área administrativa: identidad común de los dos catálogos. */
+.admin-brand-symbol {
+  display:block; flex:0 0 36px; width:36px; height:36px; object-fit:contain; border-radius:10px;
+  filter:drop-shadow(0 2px 6px rgba(0,116,255,.15));
+}
+.admin-sidebar-brand .admin-brand-symbol { flex-basis:39px; width:39px; height:39px; }
+.admin-header .brand { gap:10px; }
+.admin-header .brand > span:last-child { white-space:nowrap; }
+.admin-sidebar-brand-copy strong { letter-spacing:-.02em; }
+@media(max-width:600px) {
+  .admin-brand-symbol { flex-basis:31px; width:31px; height:31px; }
+  .admin-sidebar-brand .admin-brand-symbol { flex-basis:34px; width:34px; height:34px; }
+  .admin-header .brand { font-size:14px; gap:7px; }
+}
