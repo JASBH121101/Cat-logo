@@ -12,10 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261023-layout-symmetry1">
-  <link rel="stylesheet" href="theme-ui.css?v=20261023-layout-symmetry1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261023-product-preview1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261023-layout-symmetry1"></script>
+  <script type="module" src="admin.js?v=20261023-product-preview1"></script>
   <script src="ui.js?v=20261022-0233" defer></script>
 </head>
 
@@ -511,6 +511,19 @@
       </div>
     </section>
   </main>
+
+  <dialog id="admin-product-preview-dialog" class="admin-product-preview-dialog" aria-labelledby="admin-product-preview-dialog-title">
+    <div class="admin-product-preview-shell">
+      <header class="admin-product-preview-header">
+        <div>
+          <p class="admin-preview-eyebrow">VISTA DE CONSULTA · SOLO LECTURA</p>
+          <h2 id="admin-product-preview-dialog-title">Ver producto</h2>
+        </div>
+        <button class="admin-product-preview-close" type="button" data-close-product-preview aria-label="Cerrar vista del producto" title="Cerrar">×</button>
+      </header>
+      <div id="admin-product-preview-content" class="admin-product-preview-content"></div>
+    </div>
+  </dialog>
 
   <footer class="site-footer">
     <span>Catálogo de Tecnología · Área administrativa privada</span>
