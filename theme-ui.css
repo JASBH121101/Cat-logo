@@ -7412,3 +7412,145 @@ html[data-theme="light"] {
     font-size:12px;
   }
 }
+
+
+/* DUAL CATALOG ADMIN · CATALOG CONTEXT + FRAGRANCE FORM */
+.admin-catalog-context {
+  display:grid;
+  grid-template-columns:minmax(190px,260px);
+  gap:6px;
+  min-width:min(290px,100%);
+  max-width:360px;
+  padding:12px 14px;
+  border:1px solid var(--admin-context-border,#35486b);
+  border-radius:14px;
+  background:var(--admin-context-surface,#111d32);
+}
+.admin-catalog-context label {
+  color:var(--admin-context-label,#a9bcdf);
+  font-size:11px;
+  font-weight:850;
+}
+.admin-catalog-context select {
+  width:100%;
+  min-height:42px;
+  padding:9px 12px;
+  border:1px solid var(--admin-context-border,#35486b);
+  border-radius:10px;
+  color:var(--admin-context-text,#eff4ff);
+  background:var(--admin-context-input,#0b1528);
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+}
+.admin-catalog-context small {
+  color:var(--admin-context-muted,#93a7cb);
+  font-size:10px;
+  line-height:1.45;
+}
+html[data-theme="dark"] {
+  --admin-context-border:#35486b;
+  --admin-context-surface:#111d32;
+  --admin-context-label:#a9bcdf;
+  --admin-context-text:#eff4ff;
+  --admin-context-input:#0b1528;
+  --admin-context-muted:#93a7cb;
+  --admin-perfume-border:#68553a;
+  --admin-perfume-surface:linear-gradient(135deg,rgba(63,45,28,.35),rgba(23,30,47,.92));
+  --admin-perfume-heading:#efd09c;
+  --admin-perfume-muted:#b7c3d9;
+}
+html[data-theme="light"] {
+  --admin-context-border:#cfd9eb;
+  --admin-context-surface:#f6f8fd;
+  --admin-context-label:#50627f;
+  --admin-context-text:#24334e;
+  --admin-context-input:#fff;
+  --admin-context-muted:#70809b;
+  --admin-perfume-border:#e1cfad;
+  --admin-perfume-surface:linear-gradient(135deg,#fffaf0,#f7f9fd);
+  --admin-perfume-heading:#87622b;
+  --admin-perfume-muted:#65738a;
+}
+.admin-perfume-fields {
+  min-width:0;
+  margin:8px 0 10px;
+  padding:18px;
+  border:1px solid var(--admin-perfume-border,#68553a);
+  border-radius:15px;
+  background:var(--admin-perfume-surface,#111d32);
+}
+.admin-perfume-fields.hidden { display:none !important; }
+.admin-perfume-fields-heading { margin-bottom:15px; }
+.admin-perfume-fields-heading .eyebrow { margin:0 0 5px; color:var(--admin-perfume-heading,#efd09c); font-size:10px; font-weight:900; letter-spacing:.13em; }
+.admin-perfume-fields-heading h3 { margin:0 0 6px; color:var(--admin-perfume-heading,#efd09c); font-size:19px; }
+.admin-perfume-fields-heading p { margin:0; color:var(--admin-perfume-muted,#b7c3d9); font-size:12px; line-height:1.55; }
+.admin-perfume-fields-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+.admin-perfume-fields-grid > label { min-width:0; }
+.admin-perfume-fields-grid textarea { min-height:76px; }
+.admin-perfume-original { margin-top:2px; }
+.admin-perfume-fields .required-mark { color:#dfa95d; }
+body.admin-body .admin-catalog-context select:focus-visible,
+body.admin-body .admin-perfume-fields input:focus-visible,
+body.admin-body .admin-perfume-fields select:focus-visible,
+body.admin-body .admin-perfume-fields textarea:focus-visible {
+  outline:2px solid #c4a16a;
+  outline-offset:2px;
+}
+.admin-preview-note-group { min-width:0; }
+.admin-preview-note-group .admin-preview-spec-list { margin-top:7px; }
+@media (max-width:980px) {
+  .admin-catalog-context { min-width:0; max-width:none; grid-template-columns:minmax(0,1fr); }
+}
+@media (max-width:760px) {
+  .admin-catalog-context { width:100%; }
+  .admin-perfume-fields { padding:13px; }
+  .admin-perfume-fields-grid { grid-template-columns:minmax(0,1fr); gap:11px; }
+  .admin-perfume-fields-grid .span-2 { grid-column:auto; }
+}
+
+/* CROSS-PROMOTION BETWEEN THE TWO PUBLIC CATALOGS */
+.cross-catalog-promo {
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(180px,.8fr);
+  align-items:center;
+  gap:24px;
+  margin:28px 0;
+  padding:clamp(20px,3vw,34px);
+  overflow:hidden;
+  border:1px solid var(--cross-promo-border,#d1dcf0);
+  border-radius:20px;
+  background:var(--cross-promo-surface,linear-gradient(115deg,#f8faff,#edf2ff 68%,#f7f0ff));
+  box-shadow:var(--cross-promo-shadow,0 12px 30px rgba(44,63,112,.08));
+}
+.cross-catalog-promo-copy { position:relative; z-index:1; min-width:0; }
+.cross-catalog-promo-copy .eyebrow { margin:0 0 8px; color:var(--cross-promo-accent,#536bc1); font-size:10px; font-weight:900; letter-spacing:.15em; }
+.cross-catalog-promo-copy h2 { margin:0; color:var(--cross-promo-title,#1c2c4a); font-size:clamp(22px,3vw,32px); line-height:1.16; letter-spacing:-.035em; }
+.cross-catalog-promo-copy p:not(.eyebrow) { max-width:580px; margin:10px 0 16px; color:var(--cross-promo-muted,#637392); font-size:13px; line-height:1.6; }
+.cross-catalog-promo-copy .button { display:inline-flex; align-items:center; gap:8px; }
+.cross-catalog-promo-mark { display:grid; place-items:center; gap:7px; min-height:150px; border:1px solid var(--cross-promo-border,#d1dcf0); border-radius:15px; background:var(--cross-promo-mark,#fff); }
+.cross-catalog-promo-mark > span { color:var(--cross-promo-accent,#536bc1); font-size:64px; line-height:1; }
+.cross-catalog-promo-mark small { color:var(--cross-promo-muted,#637392); font-size:9px; font-weight:900; letter-spacing:.14em; text-align:center; }
+html[data-theme="dark"] {
+  --cross-promo-border:#34476c;
+  --cross-promo-surface:radial-gradient(ellipse at 100% 0%,rgba(198,156,87,.13),transparent 40%),linear-gradient(120deg,#101b30,#151f36 65%,#201c31);
+  --cross-promo-shadow:0 12px 30px rgba(0,0,0,.18);
+  --cross-promo-accent:#d2b477;
+  --cross-promo-title:#f2f5ff;
+  --cross-promo-muted:#b0bed8;
+  --cross-promo-mark:#111b30;
+}
+html[data-theme="light"] {
+  --cross-promo-border:#d7e0f0;
+  --cross-promo-surface:radial-gradient(ellipse at 100% 0%,rgba(198,156,87,.11),transparent 40%),linear-gradient(120deg,#f8faff,#eef3ff 65%,#fbf4e8);
+  --cross-promo-shadow:0 12px 30px rgba(44,63,112,.08);
+  --cross-promo-accent:#80602e;
+  --cross-promo-title:#1c2c4a;
+  --cross-promo-muted:#637392;
+  --cross-promo-mark:#fffdf9;
+}
+@media (max-width:760px) {
+  .cross-catalog-promo { grid-template-columns:minmax(0,1fr); gap:15px; margin:22px 0; padding:18px; }
+  .cross-catalog-promo-mark { min-height:95px; grid-template-columns:auto auto; gap:12px; }
+  .cross-catalog-promo-mark > span { font-size:42px; }
+}
