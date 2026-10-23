@@ -78,22 +78,33 @@ let currentUser = null;
 let products = [];
 
 const COLOR_PALETTE = [
-  { name: "Negro", hex: "#242424" },
-  { name: "Blanco", hex: "#F4F4F4" },
-  { name: "Plata", hex: "#C5C9D0" },
-  { name: "Gris", hex: "#777E8B" },
-  { name: "Grafito", hex: "#454952" },
-  { name: "Azul", hex: "#315A91" },
-  { name: "Azul claro", hex: "#78A9E8" },
-  { name: "Verde", hex: "#39785A" },
-  { name: "Verde menta", hex: "#8ECDB8" },
-  { name: "Dorado", hex: "#C8A45D" },
-  { name: "Champán", hex: "#D8C3A0" },
-  { name: "Morado", hex: "#7952A8" },
-  { name: "Rosa", hex: "#D986A7" },
-  { name: "Rojo", hex: "#C13A4B" },
-  { name: "Naranja", hex: "#DE783E" },
-  { name: "Amarillo", hex: "#E8C94B" }
+  { name: "Negro", hex: "#242424", aliases: ["Black"] },
+  { name: "Blanco", hex: "#F4F4F4", aliases: ["White"] },
+  { name: "Plata", hex: "#C5C9D0", aliases: ["Plateado"] },
+  { name: "Gris", hex: "#777E8B", aliases: ["Gray", "Grey"] },
+  { name: "Grafito", hex: "#454952", aliases: ["Graphite"] },
+  { name: "Azul", hex: "#315A91", aliases: ["Blue"] },
+  { name: "Azul claro", hex: "#78A9E8", aliases: ["Light blue"] },
+  { name: "Verde", hex: "#39785A", aliases: ["Green"] },
+  { name: "Verde menta", hex: "#8ECDB8", aliases: ["Mint green"] },
+  { name: "Dorado", hex: "#C8A45D", aliases: ["Gold"] },
+  { name: "Champán", hex: "#D8C3A0", aliases: ["Champagne"] },
+  { name: "Morado", hex: "#7952A8", aliases: ["Purple"] },
+  { name: "Rosa", hex: "#D986A7", aliases: ["Pink"] },
+  { name: "Rojo", hex: "#C13A4B", aliases: ["Red"] },
+  { name: "Naranja", hex: "#DE783E", aliases: ["Orange"] },
+  { name: "Amarillo", hex: "#E8C94B", aliases: ["Yellow"] },
+  { name: "Burgundy", hex: "#800020", aliases: ["Burdeos", "Vino", "Granate"] },
+  { name: "Glacier", hex: "#E8F2FF", aliases: ["Glaciar", "Hielo"] },
+  { name: "Silver", hex: "#C7CCD4", aliases: ["Plateado claro"] },
+  { name: "Titanio natural", hex: "#B8B6AE", aliases: ["Natural Titanium"] },
+  { name: "Titanio desierto", hex: "#B7A38A", aliases: ["Desert Titanium"] },
+  { name: "Titanio negro", hex: "#34363A", aliases: ["Black Titanium"] },
+  { name: "Titanio blanco", hex: "#ECEBE6", aliases: ["White Titanium"] },
+  { name: "Azul sierra", hex: "#9FB7CC", aliases: ["Sierra Blue"] },
+  { name: "Verde alpino", hex: "#556A59", aliases: ["Alpine Green"] },
+  { name: "Morado profundo", hex: "#5B4B72", aliases: ["Deep Purple"] },
+  { name: "Naranja cósmico", hex: "#D36A3B", aliases: ["Cosmic Orange"] }
 ];
 
 /* =========================================================
@@ -160,6 +171,165 @@ function validHex(value, fallback = "#315A91") {
     ? value
     : fallback;
 }
+/* Biblioteca de colores local: compartida entre productos en este navegador. */
+const COLOR_LIBRARY_STORAGE_KEY = "cat-logo-color-library-v1";
+function normalizeColorSearch(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("es");
+}
+function colorIdentity(color) {
+  return normalizeColorSearch(color?.name) + "|" + validHex(color?.hex, "").toUpperCase();
+}
+function readColorLibraryData() {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(COLOR_LIBRARY_STORAGE_KEY) || "{}");
+    const clean = item => {
+      if (!item || typeof item !== "object") return null;
+      const name = String(item.name || "").trim();
+      const hex = validHex(item.hex, "");
+      if (!name || !hex) return null;
+      return { name, hex: hex.toUpperCase(), aliases: Array.isArray(item.aliases) ? [...new Set(item.aliases.map(alias => String(alias || "").trim()).filter(Boolean))] : [], favorite: item.favorite === true, updatedAt: Number(item.updatedAt) || 0 };
+    };
+    return { items: Array.isArray(raw.items) ? raw.items.map(clean).filter(Boolean) : [], recent: Array.isArray(raw.recent) ? raw.recent.map(clean).filter(Boolean).slice(0, 10) : [] };
+  } catch (error) {
+    console.warn("No se pudo leer la biblioteca local de colores.", error);
+    return { items: [], recent: [] };
+  }
+}
+function writeColorLibraryData(data) {
+  try {
+    window.localStorage.setItem(COLOR_LIBRARY_STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch (error) {
+    console.warn("No se pudo guardar la biblioteca local de colores.", error);
+    return false;
+  }
+}
+function ensureColorInPalette(color) {
+  const name = String(color?.name || "").trim(), hex = validHex(color?.hex, "");
+  if (!name || !hex) return null;
+  const aliases = Array.isArray(color.aliases) ? color.aliases : [];
+  const identity = colorIdentity({ name, hex });
+  const existing = COLOR_PALETTE.find(item => colorIdentity(item) === identity);
+  if (existing) {
+    existing.aliases = [...new Set([...(existing.aliases || []), ...aliases.map(String).map(v => v.trim()).filter(Boolean)])];
+    return existing;
+  }
+  const entry = { name, hex: hex.toUpperCase(), aliases: [...new Set(aliases.map(String).map(v => v.trim()).filter(Boolean))] };
+  COLOR_PALETTE.push(entry);
+  return entry;
+}
+function hydrateColorLibraryPalette() {
+  const data = readColorLibraryData();
+  data.items.forEach(ensureColorInPalette);
+  data.recent.forEach(ensureColorInPalette);
+}
+function findColorInPalette(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const hexMatch = raw.match(/#[0-9a-f]{6}/i);
+  if (hexMatch) {
+    const byHex = COLOR_PALETTE.find(item => item.hex.toLowerCase() === hexMatch[0].toLowerCase());
+    if (byHex) return byHex;
+  }
+  const query = normalizeColorSearch(raw);
+  return COLOR_PALETTE.find(item => normalizeColorSearch(item.name) === query || (item.aliases || []).some(alias => normalizeColorSearch(alias) === query)) || null;
+}
+function isColorSaved(color) {
+  const identity = colorIdentity({ name: color?.name, hex: color?.hex });
+  return readColorLibraryData().items.some(item => colorIdentity(item) === identity);
+}
+function isColorFavorite(color) {
+  const identity = colorIdentity({ name: color?.name, hex: color?.hex });
+  return readColorLibraryData().items.some(item => colorIdentity(item) === identity && item.favorite);
+}
+function saveColorToLibrary(color) {
+  const name = String(color?.name || "").trim(), hex = validHex(color?.hex, "");
+  if (!name || !hex) return { ok: false, message: "Ingresá un nombre y un código HEX válido antes de guardar." };
+  const data = readColorLibraryData(), identity = colorIdentity({ name, hex });
+  const existing = data.items.find(item => colorIdentity(item) === identity);
+  const sameName = data.items.find(item => normalizeColorSearch(item.name) === normalizeColorSearch(name) && item.hex !== hex.toUpperCase());
+  if (sameName) return { ok: false, message: "Ya existe ese nombre con otro HEX. Usá un nombre más específico para distinguir los tonos." };
+  if (!existing) data.items.unshift({ name, hex: hex.toUpperCase(), aliases: [], favorite: false, updatedAt: Date.now() });
+  else existing.updatedAt = Date.now();
+  if (!writeColorLibraryData(data)) return { ok: false, message: "El navegador no permitió guardar la biblioteca local." };
+  ensureColorInPalette({ name, hex });
+  return { ok: true, message: name + " quedó guardado en la biblioteca de este navegador." };
+}
+function toggleColorFavorite(color) {
+  const name = String(color?.name || "").trim(), hex = validHex(color?.hex, "");
+  if (!name || !hex) return { ok: false, message: "Ingresá un nombre y un código HEX válido." };
+  const data = readColorLibraryData(), identity = colorIdentity({ name, hex });
+  let item = data.items.find(entry => colorIdentity(entry) === identity);
+  if (!item) {
+    item = { name, hex: hex.toUpperCase(), aliases: [], favorite: true, updatedAt: Date.now() };
+    data.items.unshift(item);
+  } else {
+    item.favorite = !item.favorite;
+    item.updatedAt = Date.now();
+  }
+  if (!writeColorLibraryData(data)) return { ok: false, message: "No se pudo actualizar el favorito en este navegador." };
+  ensureColorInPalette(item);
+  return { ok: true, favorite: item.favorite, message: item.name + (item.favorite ? " agregado a favoritos." : " quitado de favoritos.") };
+}
+function recordRecentColor(color) {
+  const name = String(color?.name || "").trim(), hex = validHex(color?.hex, "");
+  if (!name || !hex) return;
+  const entry = { name, hex: hex.toUpperCase(), aliases: Array.isArray(color.aliases) ? color.aliases : [], favorite: false, updatedAt: Date.now() };
+  const data = readColorLibraryData(), identity = colorIdentity(entry);
+  data.recent = [entry, ...data.recent.filter(item => colorIdentity(item) !== identity)].slice(0, 10);
+  if (writeColorLibraryData(data)) ensureColorInPalette(entry);
+}
+function renderColorLibraryDatalist() {
+  const datalist = $("#catalog-color-library-options");
+  if (!datalist) return;
+  const options = [], seen = new Set();
+  COLOR_PALETTE.forEach(color => [color.name, ...(color.aliases || [])].forEach(value => {
+    const name = String(value || "").trim(), key = normalizeColorSearch(name) + "|" + color.hex.toUpperCase();
+    if (!name || seen.has(key)) return;
+    seen.add(key);
+    options.push('<option value="' + escapeHtml(name) + '" label="' + escapeHtml(color.name + " · " + color.hex) + '"></option>');
+  }));
+  datalist.innerHTML = options.join("");
+}
+function syncColorLibraryRowControls(row) {
+  if (!row) return;
+  const color = { name: row.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row.querySelector("[data-variant-hex]")?.value, "") };
+  const save = row.querySelector("[data-save-color-library]");
+  if (save) {
+    const saved = isColorSaved(color);
+    save.textContent = saved ? "✓ Biblioteca" : "＋ Biblioteca";
+    save.setAttribute("aria-pressed", String(saved));
+    save.title = saved ? "Color guardado en la biblioteca local" : "Guardar este color";
+  }
+  const favorite = row.querySelector("[data-toggle-color-favorite]");
+  if (favorite) {
+    const marked = isColorFavorite(color);
+    favorite.textContent = marked ? "★ Favorito" : "☆ Favorito";
+    favorite.setAttribute("aria-pressed", String(marked));
+    favorite.title = marked ? "Quitar de favoritos" : "Marcar como favorito";
+    favorite.classList.toggle("is-favorite", marked);
+  }
+}
+function applyColorToRow(row, color, options = {}) {
+  if (!row || !color) return;
+  const nameInput = row.querySelector("[data-variant-color]"), hexInput = row.querySelector("[data-variant-hex]"), hexText = row.querySelector("[data-variant-hex-text]"), palette = row.querySelector("[data-variant-palette]");
+  const hex = validHex(color.hex, "#315A91").toUpperCase();
+  if (nameInput) nameInput.value = String(color.name || hex).trim();
+  if (hexInput) hexInput.value = hex;
+  if (hexText) hexText.value = hex;
+  if (palette) palette.value = COLOR_PALETTE.some(item => item.hex.toLowerCase() === hex.toLowerCase()) ? hex : "custom";
+  row.querySelectorAll("[data-variant-swatch]").forEach(button => {
+    const selected = button.dataset.variantSwatch?.toLowerCase() === hex.toLowerCase();
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  if (options.remember !== false) recordRecentColor({ name: String(color.name || hex).trim(), hex });
+  updateVariantRowHeadings();
+  syncColorLibraryRowControls(row);
+  updateEditorDirtyState();
+}
+hydrateColorLibraryPalette();
+
 
 function toOptionalNumber(value, label) {
   if (value === "" || value === null || value === undefined) {
