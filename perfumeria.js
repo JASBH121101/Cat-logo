@@ -203,6 +203,7 @@ function visibleProducts() {
     ].join(" ").toLocaleLowerCase("es");
     if (query && !searchable.includes(query)) return false;
     if (min !== null || max !== null) {
+      if (product.price_usd === null || product.price_usd === undefined || product.price_usd === "") return false;
       const price = Number(product.price_usd);
       if (!Number.isFinite(price) || (min !== null && price < min) || (max !== null && price > max)) return false;
     }
@@ -368,6 +369,36 @@ function closeDialog() {
 $("#perfume-dialog-close").addEventListener("click", closeDialog);
 dialog.addEventListener("click", event => { if (event.target === dialog) closeDialog(); });
 window.addEventListener("hashchange", loadDeepLink);
+
+[grid, featuredGrid].forEach(container => container?.addEventListener("error", event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+  const placeholder = document.createElement("div");
+  placeholder.className = "perfume-photo-placeholder";
+  placeholder.innerHTML = '<span aria-hidden="true">✦</span><small>Fotografía no disponible</small>';
+  const cardImage = image.closest(".product-image");
+  if (cardImage) {
+    image.remove();
+    if (!cardImage.querySelector(".perfume-photo-placeholder")) cardImage.appendChild(placeholder);
+  } else if (image.id === "perfume-dialog-main-image") {
+    image.remove();
+    const gallery = $("#perfume-dialog-main-image")?.parentElement;
+    if (gallery && !gallery.querySelector(".perfume-photo-placeholder")) gallery.appendChild(placeholder);
+  }
+}, true));
+
+dialogContent.addEventListener("error", event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement) || !image.matches("#perfume-dialog-main-image")) return;
+  const gallery = image.parentElement;
+  image.remove();
+  if (gallery && !gallery.querySelector(".perfume-photo-placeholder")) {
+    const placeholder = document.createElement("div");
+    placeholder.className = "perfume-photo-placeholder perfume-dialog-photo-placeholder";
+    placeholder.innerHTML = '<span aria-hidden="true">✦</span><small>Fotografía no disponible</small>';
+    gallery.appendChild(placeholder);
+  }
+}, true);
 
 const footerWhatsApp = $("#perfume-footer-whatsapp");
 if (footerWhatsApp) {
