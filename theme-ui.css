@@ -7736,3 +7736,34 @@ html[data-theme="light"] .admin-perfume-data-note {
   }
 }
 
+/* Ficha de producto: la imagen principal usa el espacio disponible
+   con object-fit:contain para conservar la fotografía completa. */
+.product-dialog #dialog-image .dialog-gallery-main {
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+}
+.product-dialog #dialog-image .dialog-gallery-main .dialog-main-image {
+  display:block;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  max-height:100%;
+  margin:0;
+  padding:10px;
+  box-sizing:border-box;
+  object-fit:contain;
+  object-position:center;
+}
+@media (max-width:760px), (hover:none) and (pointer:coarse) {
+  .product-dialog #dialog-image .dialog-gallery-main .dialog-main-image {
+    padding:12px;
+  }
+}
+
