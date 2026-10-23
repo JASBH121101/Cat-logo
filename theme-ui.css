@@ -7568,3 +7568,14 @@ html[data-theme="light"] {
   font-size:12px;
   line-height:1.6;
 }
+
+html[data-theme="dark"] .admin-perfume-data-note {
+  border-color:#34476c;
+  color:#b0bed8;
+  background:linear-gradient(120deg,#101b30,#151f36);
+}
+html[data-theme="light"] .admin-perfume-data-note {
+  border-color:#d7e0f0;
+  color:#637392;
+  background:linear-gradient(120deg,#f8faff,#eef3ff);
+}
