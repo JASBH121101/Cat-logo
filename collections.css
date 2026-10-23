@@ -517,3 +517,26 @@ a { color: inherit; }
     margin:0;
   }
 }
+
+
+/* Final layout correction: on desktop-mode phones, distribute viewport height
+   into the two panels so the footer ends at the bottom instead of leaving a void. */
+@media (pointer: coarse) and (orientation: portrait) {
+  html,
+  body {
+    min-height:100% !important;
+    height:auto !important;
+  }
+  .collections-stage {
+    min-height:100svh !important;
+    height:auto !important;
+    flex:0 0 auto !important;
+  }
+  .world-panel {
+    flex:1 0 auto !important;
+  }
+  .collections-footer {
+    flex:0 0 auto !important;
+    margin:0;
+  }
+}
