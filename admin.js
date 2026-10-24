@@ -2560,74 +2560,195 @@ activeCatalogSelector?.addEventListener("change", () => {
    ALMACENAMIENTO DE IMÁGENES
    ========================================================= */
 
-async function uploadImage(productId, file, subfolder = "") {
-  if (!file) {
-    return "";
-  }
-
-  const extension = (file.name.split(".").pop() || "").toLowerCase();
-  const inferredMime = ({
+function inferImageMime(file) {
+  const extension = (file?.name?.split(".").pop() || "").toLowerCase();
+  const inferred = ({
     jpg: "image/jpeg",
     jpeg: "image/jpeg",
     png: "image/png",
     webp: "image/webp",
     gif: "image/gif",
-    avif: "image/avif"
+    avif: "image/avif",
+    heic: "image/heic",
+    heif: "image/heif"
   })[extension] || "";
+  return file?.type?.startsWith("image/") ? file.type : inferred;
+}
 
-  const uploadMime = file.type?.startsWith("image/") ? file.type : inferredMime;
-  if (!uploadMime) {
+function loadImageForOptimization(file) {
+  return new Promise(resolve => {
+    let objectUrl = "";
+    const finish = source => resolve(source);
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => finish({
+        source: image,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        release: () => URL.revokeObjectURL(objectUrl)
+      });
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        finish(null);
+      };
+      image.src = objectUrl;
+    } catch {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      finish(null);
+    }
+  });
+}
+
+/*
+ * Optimiza fotos grandes antes de enviarlas. Esto reduce el consumo de datos
+ * del teléfono y hace más resistentes las subidas móviles sin degradar fotos
+ * que ya son pequeñas. WebP conserva transparencia y admite calidad ajustable.
+ */
+async function prepareImageForUpload(file, originalMime) {
+  const optimizableTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+  if (!optimizableTypes.has(originalMime) || file.size <= 850 * 1024) return file;
+
+  let bitmap = null;
+  let loaded = null;
+  let source = null;
+  let width = 0;
+  let height = 0;
+  let release = () => {};
+
+  try {
+    if (typeof createImageBitmap === "function") {
+      try {
+        bitmap = await createImageBitmap(file);
+        source = bitmap;
+        width = bitmap.width;
+        height = bitmap.height;
+        release = () => bitmap?.close?.();
+      } catch {
+        bitmap = null;
+      }
+    }
+
+    if (!source) {
+      loaded = await loadImageForOptimization(file);
+      if (!loaded) return file;
+      source = loaded.source;
+      width = loaded.width;
+      height = loaded.height;
+      release = loaded.release;
+    }
+
+    if (!width || !height) return file;
+    const maxEdge = 1920;
+    const scale = Math.min(1, maxEdge / Math.max(width, height));
+    if (scale === 1 && file.size <= 1.4 * 1024 * 1024) return file;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) return file;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", 0.84));
+    if (!blob || blob.type !== "image/webp") return file;
+    const reducedDimensions = canvas.width < width || canvas.height < height;
+    if (!reducedDimensions && blob.size >= file.size * 0.97) return file;
+    if (blob.size >= file.size && !reducedDimensions) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "fotografia";
+    return new File([blob], baseName + ".webp", {
+      type: "image/webp",
+      lastModified: file.lastModified || Date.now()
+    });
+  } catch (error) {
+    console.warn("No se pudo optimizar la imagen; se intentará subir el archivo original.", file.name, error);
+    return file;
+  } finally {
+    try { release(); } catch { /* no interrumpir la subida */ }
+  }
+}
+
+function isTransientImageUploadError(error) {
+  const detail = String(error?.message || error || "").toLowerCase();
+  return /failed to fetch|networkerror|network request failed|load failed|connection (reset|closed|lost)|fetch aborted|timed? ?out|econnreset|temporarily unavailable/.test(detail);
+}
+
+function waitBeforeRetry(milliseconds) {
+  return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+}
+
+async function uploadImage(productId, file, subfolder = "") {
+  if (!file) return "";
+
+  const originalMime = inferImageMime(file);
+  if (!originalMime) {
     throw new Error(
       `El archivo ${file.name} no parece una imagen compatible. Usá JPG, PNG, WebP, GIF o AVIF.`
     );
   }
 
-  if (file.size > 8 * 1024 * 1024) {
+  if (navigator.onLine === false) {
+    throw new Error("El dispositivo aparece sin conexión. Reconectate y volvé a pulsar “Reintentar fotografías”.");
+  }
+
+  const uploadFile = await prepareImageForUpload(file, originalMime);
+  if (uploadFile.size > 8 * 1024 * 1024) {
     throw new Error(
-      `${file.name} supera el límite recomendado de 8 MB.`
+      `${file.name} supera el límite de 8 MB incluso después de intentar optimizarla. Reducí su resolución o elegí una versión más ligera.`
     );
   }
 
-  const safeName = slugify(
-    file.name.replace(/\.[^.]+$/, "")
-  );
-
-  const ext = (file.name.split(".").pop() || "jpg")
+  const uploadMime = inferImageMime(uploadFile) || originalMime;
+  const safeName = slugify(uploadFile.name.replace(/\.[^.]+$/, ""));
+  const ext = (uploadFile.name.split(".").pop() || "jpg")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "") || "jpg";
-
-  const path =
-    `${productId}/${subfolder ? `${subfolder}/` : ""}${crypto.randomUUID()}-${safeName}.${ext}`;
-
+  const path = `${productId}/${subfolder ? `${subfolder}/` : ""}${crypto.randomUUID()}-${safeName}.${ext}`;
   const bucket = CONFIG.storageBucket || "product-images";
 
-  let uploadResult;
-  try {
-    uploadResult = await supabase
-      .storage
-      .from(bucket)
-      .upload(path, file, {
-        contentType: uploadMime,
-        upsert: false
-      });
-  } catch (error) {
-    throw new Error(
-      `No se pudo conectar con Supabase Storage al subir ${file.name}. Revisá la conexión, la URL del proyecto y las políticas de Storage. Detalle: ${error.message || "fallo de red"}`
-    );
+  let lastError = null;
+  const maxAttempts = 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const uploadResult = await supabase
+        .storage
+        .from(bucket)
+        .upload(path, uploadFile, {
+          contentType: uploadMime,
+          upsert: false
+        });
+
+      if (!uploadResult.error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+        return data.publicUrl;
+      }
+
+      lastError = uploadResult.error;
+      // Si el servidor guardó el primer intento pero se perdió la respuesta,
+      // un reintento puede indicar duplicado: el nombre UUID solo pertenece a esta subida.
+      if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(lastError.message || ""))) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+        return data.publicUrl;
+      }
+      if (!isTransientImageUploadError(lastError) || attempt === maxAttempts - 1) break;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientImageUploadError(error) || attempt === maxAttempts - 1) break;
+    }
+
+    await waitBeforeRetry(500 * (attempt + 1));
   }
 
-  if (uploadResult.error) {
-    throw new Error(
-      `No se pudo subir ${file.name}: ${uploadResult.error.message}`
-    );
-  }
-
-  const { data } = supabase
-    .storage
-    .from(bucket)
-    .getPublicUrl(path);
-
-  return data.publicUrl;
+  const detail = String(lastError?.message || "fallo de red sin detalle del servidor");
+  const connectionAdvice = navigator.onLine === false
+    ? "El teléfono aparece sin conexión."
+    : "Comprobá que la conexión del teléfono siga activa; la subida se reintentó automáticamente.";
+  throw new Error(
+    `No se pudo subir ${file.name} después de ${maxAttempts} intentos. ${connectionAdvice} Si se repite, probá con menos fotos por vez. Detalle: ${detail}`
+  );
 }
 
 async function uploadMainImages(productId, files) {
