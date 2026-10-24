@@ -1,0 +1,79 @@
+/* Admin workflow controls — loaded after the shared theme sheet. */
+html body.admin-body form#product-form .form-actions.workflow-form-actions {
+  display:flex!important; align-items:center!important; justify-content:flex-start!important;
+  flex-wrap:wrap!important; gap:12px!important; margin-top:26px!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action {
+  appearance:none!important; -webkit-appearance:none!important; box-sizing:border-box!important;
+  display:inline-flex!important; visibility:visible!important; opacity:1!important;
+  align-items:center!important; justify-content:center!important;
+  flex:0 0 46px!important; width:46px!important; min-width:46px!important; max-width:46px!important;
+  height:46px!important; min-height:46px!important; max-height:46px!important;
+  margin:0!important; padding:0!important; border:1px solid transparent!important; border-radius:13px!important;
+  line-height:1!important; font-size:0!important; text-indent:0!important; overflow:visible!important;
+  cursor:pointer!important; box-shadow:0 3px 0 rgba(15,23,42,.2)!important;
+  transition:transform .16s ease,box-shadow .16s ease!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action svg {
+  display:block!important; visibility:visible!important; opacity:1!important; flex:0 0 22px!important;
+  width:22px!important; min-width:22px!important; height:22px!important; min-height:22px!important;
+  overflow:visible!important; fill:none!important; stroke:currentColor!important; stroke-width:1.8!important;
+  stroke-linecap:round!important; stroke-linejoin:round!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > .workflow-action-save {
+  color:#fff!important; background:#2563eb!important; border-color:#1d4ed8!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > .workflow-action-publish {
+  color:#fff!important; background:#15803d!important; border-color:#166534!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > .workflow-action-draft {
+  color:#fff!important; background:#7c3aed!important; border-color:#6d28d9!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > .workflow-action-exclusive {
+  color:#854d0e!important; background:#fef3c7!important; border-color:#eab308!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > .workflow-action-exclusive.is-active {
+  color:#78350f!important; background:#facc15!important; border-color:#ca8a04!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > .workflow-action-cancel {
+  color:#b91c1c!important; background:#fff1f2!important; border-color:#fda4af!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action:hover {
+  transform:translateY(-2px)!important; box-shadow:0 5px 12px rgba(15,23,42,.2)!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action:focus-visible {
+  outline:3px solid rgba(59,130,246,.5)!important; outline-offset:3px!important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action:disabled {
+  opacity:.55!important; cursor:not-allowed!important; transform:none!important;
+}
+html body.admin-body .admin-product-buttons > button.admin-icon-button {
+  appearance:none!important; -webkit-appearance:none!important; box-sizing:border-box!important;
+  display:inline-flex!important; align-items:center!important; justify-content:center!important;
+  width:40px!important; min-width:40px!important; height:40px!important; min-height:40px!important;
+  margin:0!important; padding:0!important; border:1px solid #d8dfed!important; border-radius:11px!important;
+  background:#f8faff!important; color:#334155!important; cursor:pointer!important;
+}
+html body.admin-body .admin-product-buttons > button.admin-icon-button svg {
+  display:block!important; width:20px!important; height:20px!important; fill:none!important;
+  stroke:currentColor!important; stroke-width:1.8!important; stroke-linecap:round!important; stroke-linejoin:round!important;
+}
+html body.admin-body .admin-product-buttons > button.admin-icon-button.is-exclusive {
+  background:#fef3c7!important; border-color:#eab308!important; color:#854d0e!important;
+}
+html body.admin-body .admin-product-buttons > button.admin-icon-button.danger {
+  background:#fff1f2!important; border-color:#fecdd3!important; color:#b91c1c!important;
+}
+html body.admin-body .admin-product-buttons > button.admin-icon-button:focus-visible {
+  outline:3px solid rgba(59,130,246,.45)!important; outline-offset:2px!important;
+}
+@media(max-width:600px) {
+  html body.admin-body form#product-form .form-actions.workflow-form-actions { gap:10px!important; }
+  html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action {
+    flex-basis:44px!important; width:44px!important; min-width:44px!important; max-width:44px!important;
+    height:44px!important; min-height:44px!important;
+  }
+  html body.admin-body .admin-product-buttons > button.admin-icon-button {
+    width:42px!important; min-width:42px!important; height:42px!important; min-height:42px!important;
+  }
+}
