@@ -195,7 +195,8 @@
       });
       menu.addEventListener("click", event => {
         if (event.target.closest(".filter-chip[data-category], .filter-chip[data-audience]")) {
-          // Keep the menu open so shoppers can choose multiple values.
+          // Close after every choice. Shoppers can reopen the menu to add more filters.
+          closeMenu();
           window.setTimeout(updateLabel, 0);
         }
       });
