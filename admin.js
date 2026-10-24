@@ -3358,6 +3358,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
 
     // An untouched blank primary group is optional; configured groups need at least one color.
     if (isBase && !hasConfiguration && !rows.length) continue;
+    const colors = [];
     if (hasConfiguration && !rows.length) {
       if (!allowIncomplete) throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
       colors.push({
@@ -3372,8 +3373,6 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
     }
     if (hasConfiguration) seenConfigurations.add(key);
-
-    const colors = [];
 
     for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
       const row = rows[colorIndex];
