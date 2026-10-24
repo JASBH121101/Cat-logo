@@ -108,11 +108,51 @@ async function processRetryQueue(base, key) {
   const rows = await restRequest(base, key, 'storage_cleanup_queue', {
     filters: { select: '*', order: 'created_at.asc', limit: '100' }
   });
-  if (!Array.isArray(rows) || !rows.length) return { completed: 0, failed: 0 };
+  if (!Array.isArray(rows) || !rows.length) return { completed: 0, failed: 0, waiting: 0 };
+
   let completed = 0;
   let failed = 0;
-  const byBucket = new Map();
+  let waiting = 0;
+  const eligible = [];
+
+  // A queued storage object must not be removed while its product row still
+  // exists. This makes database deletion failures recoverable and safe.
   for (const row of rows) {
+    if (row.source_product_id) {
+      try {
+        const product = await restRequest(base, key, 'products', {
+          filters: {
+            select: 'id',
+            id: 'eq.' + String(row.source_product_id),
+            limit: '1'
+          }
+        });
+        if (Array.isArray(product) && product.length) {
+          waiting++;
+          continue;
+        }
+      } catch (error) {
+        failed++;
+        try {
+          await restRequest(base, key, 'storage_cleanup_queue', {
+            method: 'PATCH',
+            filters: { id: 'eq.' + row.id },
+            prefer: 'return=minimal',
+            body: {
+              attempts: Number(row.attempts || 0) + 1,
+              last_attempt_at: new Date().toISOString(),
+              last_error: ('Unable to verify source product; deferring deletion. ' + String(error.message || error)).slice(0, 1000)
+            }
+          });
+        } catch { /* The queue item remains and will be checked again later. */ }
+        continue;
+      }
+    }
+    eligible.push(row);
+  }
+
+  const byBucket = new Map();
+  for (const row of eligible) {
     const bucket = String(row.bucket || 'product-images');
     if (!byBucket.has(bucket)) byBucket.set(bucket, []);
     byBucket.get(bucket).push(row);
@@ -147,7 +187,7 @@ async function processRetryQueue(base, key) {
       }
     }
   }
-  return { completed, failed };
+  return { completed, failed, waiting };
 }
 
 module.exports = async function handler(req, res) {
