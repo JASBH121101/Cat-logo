@@ -9606,3 +9606,20 @@ html[data-theme="light"] body.admin-body .admin-preview-color-dot {
   .dashboard-metrics { gap: 8px; }
   .dashboard-metric { padding: 12px; }
 }
+
+.product-badge.exclusive-badge {
+  color: #78350f;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #d97706;
+  box-shadow: 0 2px 8px rgba(180,83,9,.16);
+}
+.perfume-featured-badge.perfume-exclusive-badge {
+  color: #78350f;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #d97706;
+}
+.admin-product-state-badge.state-exclusive {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
