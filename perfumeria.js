@@ -22,6 +22,7 @@ const maxPriceInput = $("#price-max-input");
 const clearPriceButton = $("#clear-price-filter");
 const priceFeedback = $("#budget-filter-feedback");
 const perfumeDetailPage = $("#perfume-detail-page");
+const perfumeHeaderBack = $("#perfume-detail-header-back");
 const dialogContent = $("#perfume-dialog-content");
 const catalogDocumentTitle = document.title;
 const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
@@ -296,7 +297,11 @@ function openPerfume(product) {
   recordEvent(product.id, "view");
 
   const gallery = initialImage
-    ? '<div class="perfume-dialog-main-image"><img id="perfume-dialog-main-image" src="' + escapeHtml(initialImage) + '" alt="' + escapeHtml(product.name) + '" loading="eager"></div>' +
+    ? '<div class="perfume-dialog-main-image" data-inline-gallery><img id="perfume-dialog-main-image" src="' + escapeHtml(initialImage) + '" alt="' + escapeHtml(product.name) + '" loading="eager">' +
+      (images.length > 1
+        ? '<button type="button" class="perfume-gallery-nav perfume-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button><button type="button" class="perfume-gallery-nav perfume-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>'
+        : "") +
+      '</div>' +
       (images.length > 1
         ? '<div class="perfume-dialog-thumbnails">' + images.map((url,index) =>
             '<button type="button" class="perfume-dialog-thumb ' + (index===0 ? "active" : "") + '" data-gallery-image="' + escapeHtml(url) + '" aria-label="Ver fotografía ' + (index+1) + '"><img src="' + escapeHtml(url) + '" alt="" loading="lazy"></button>'
@@ -335,6 +340,7 @@ function openPerfume(product) {
         '</div>'
       : '');
   perfumeDetailPage?.classList.remove("hidden");
+  if (perfumeHeaderBack) perfumeHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-perfume-detail-view");
   document.body.classList.add("perfume-detail-active");
   document.title = `${product.name || "Fragancia"} | JB Parfums`;
@@ -356,6 +362,7 @@ function readPerfumeRoute() {
 
 function showPerfumeCatalog() {
   perfumeDetailPage?.classList.add("hidden");
+  if (perfumeHeaderBack) perfumeHeaderBack.hidden = true;
   document.querySelector("main")?.classList.remove("is-perfume-detail-view");
   document.body.classList.remove("perfume-detail-active");
   document.title = catalogDocumentTitle;
@@ -433,8 +440,48 @@ document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid =
   });
 });
 
+function movePerfumeGallery(step) {
+  const thumbnails = Array.from(dialogContent.querySelectorAll(".perfume-dialog-thumbnails [data-gallery-image]"));
+  if (thumbnails.length < 2) return;
+  let currentIndex = thumbnails.findIndex(button => button.classList.contains("active"));
+  if (currentIndex < 0) currentIndex = 0;
+  thumbnails[(currentIndex + step + thumbnails.length) % thumbnails.length].click();
+}
+
+let perfumeGalleryTouchStart = null;
+dialogContent.addEventListener("touchstart", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest(".perfume-dialog-main-image[data-inline-gallery]")) {
+    perfumeGalleryTouchStart = null;
+    return;
+  }
+  const touch = event.changedTouches && event.changedTouches[0];
+  perfumeGalleryTouchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+}, { passive: true });
+
+dialogContent.addEventListener("touchend", event => {
+  if (!perfumeGalleryTouchStart) return;
+  const start = perfumeGalleryTouchStart;
+  perfumeGalleryTouchStart = null;
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest(".perfume-dialog-main-image[data-inline-gallery]")) return;
+  const touch = event.changedTouches && event.changedTouches[0];
+  if (!touch) return;
+  const deltaX = touch.clientX - start.x;
+  const deltaY = touch.clientY - start.y;
+  if (Math.abs(deltaX) < 42 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+  movePerfumeGallery(deltaX < 0 ? 1 : -1);
+}, { passive: true });
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const galleryStep = target?.closest("[data-gallery-step]");
+  if (galleryStep) {
+    event.preventDefault();
+    event.stopPropagation();
+    movePerfumeGallery(Number(galleryStep.dataset.galleryStep) || 0);
+    return;
+  }
   const link = target?.closest('a[href*="wa.me"]');
   if (link) recordEvent(dialogContent.dataset.productId, "whatsapp_click");
 
@@ -445,7 +492,7 @@ dialogContent.addEventListener("click", event => {
   dialogContent.querySelectorAll("[data-gallery-image]").forEach(item => item.classList.toggle("active", item === thumb));
 });
 
-$("#perfume-detail-back")?.addEventListener("click", () => {
+perfumeHeaderBack?.addEventListener("click", () => {
   if (window.history.state?.productDetailRoute) {
     window.history.back();
     return;
