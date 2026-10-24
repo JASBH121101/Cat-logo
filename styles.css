@@ -3514,3 +3514,65 @@ html[data-theme="light"] .primary-config-slot .variant-base-group {
     margin-top:0;
   }
 }
+
+
+/* Acciones compactas de productos: botones solo con iconos, sin perder accesibilidad. */
+.admin-product-buttons {
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-mini-button.admin-icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 9px;
+}
+
+.admin-icon-button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-mini-button.admin-icon-button.danger {
+  border-color: #6b3d55;
+  color: #ffb7c1;
+  background: #382133;
+  box-shadow: 0 2px 0 #241526;
+}
+
+.admin-mini-button.admin-icon-button.danger:hover {
+  border-color: #a45a78;
+  color: #fff0f3;
+  background: #51283d;
+}
+
+.admin-mini-button.admin-icon-button:focus-visible {
+  outline: 2px solid #91a8ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .admin-product-buttons {
+    gap: 7px;
+  }
+
+  .admin-mini-button.admin-icon-button {
+    flex-basis: 38px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
+}
