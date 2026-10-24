@@ -172,6 +172,9 @@ function updateProductFormMode() {
 
   if ($("#product-perfume-family")) $("#product-perfume-family").required = isPerfume;
   if ($("#product-type")) $("#product-type").value = isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard";
+  const isSet = isPerfume && $("#product-type")?.value === "set";
+  $("#product-perfume-concentration-field")?.classList.toggle("hidden", isSet);
+  $("#product-perfume-volume-field")?.classList.toggle("hidden", isSet);
   $("#product-perfume-fields")?.classList.toggle("hidden", !isPerfume);
   $("#product-model-field")?.classList.toggle("hidden", isPerfume);
   $("#product-warranty-field")?.classList.toggle("hidden", isPerfume);
@@ -2554,6 +2557,7 @@ function renderAdminList() {
     const variantLabel=perfume?[d.family?perfumeFamilyLabel(d.family):"",d.concentration,d.volume_ml?d.volume_ml+" ml":""].filter(Boolean).join(" · "):variants.length?variants.length+" variante"+(variants.length===1?"":"s"):"";
     const price=minimumPrice(variants,"price_usd")??p.price_usd, priceLabel=price===null||price===undefined||price===""?"Consultar":"US"+Number(price).toLocaleString("en-US",{maximumFractionDigits:2});
     const isExclusive = Boolean(p.is_exclusive || p.featured);
+    const productTypeLabel = p.catalog_type === "perfumery" ? (p.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia") : "";
     const status=getWorkflowStatus(p), statusLabel=status==="published"?"Publicado":status==="draft"?"Borrador":status==="deleting"?"Limpieza pendiente":status==="trash"?"En papelera":"No publicado";
     let actions="";
     if(isTrash){
@@ -2562,7 +2566,7 @@ function renderAdminList() {
       actions='<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="'+escapeHtml(p.id)+'" aria-label="Ver producto" title="Ver producto">'+svg.view+'</button><button class="admin-mini-button admin-icon-button" type="button" data-edit="'+escapeHtml(p.id)+'" aria-label="Editar producto" title="Editar producto">'+svg.edit+'</button><button class="admin-mini-button admin-icon-button'+(isExclusive?' is-exclusive':'')+'" type="button" data-exclusive-product="'+escapeHtml(p.id)+'" aria-label="'+(isExclusive?'Quitar de destacados/exclusivos':'Destacar en el catálogo')+'" title="'+(isExclusive?'Quitar de destacados/exclusivos':'Destacar en el catálogo')+'">'+svg.star+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="'+escapeHtml(p.id)+'" aria-label="Mover a papelera" title="Mover a papelera">'+svg.trash+'</button>';
     }
     const expiry=p.deleted_at?" · vence "+new Date(new Date(p.deleted_at).getTime()+15*86400000).toLocaleDateString("es-NI"):"";
-    return '<article class="admin-product-row">'+thumb+'<div><p class="admin-product-name">'+escapeHtml(p.name||"Borrador sin nombre")+'</p><div class="admin-product-meta">'+escapeHtml(p.category||"Sin categoría")+' · '+escapeHtml(priceLabel)+' · '+statusLabel+(isExclusive?" · Destacado / exclusivo":"")+(variantLabel?" · "+escapeHtml(variantLabel):"")+escapeHtml(expiry)+'</div><div class="admin-product-buttons">'+actions+'</div></div></article>';
+    return '<article class="admin-product-row">'+thumb+'<div><p class="admin-product-name">'+escapeHtml(p.name||"Borrador sin nombre")+'</p><div class="admin-product-meta">'+escapeHtml(p.category||"Sin categoría")+' · '+escapeHtml(priceLabel)+(productTypeLabel?" · "+escapeHtml(productTypeLabel):"")+' · '+statusLabel+(isExclusive?" · Destacado / exclusivo":"")+(variantLabel?" · "+escapeHtml(variantLabel):"")+escapeHtml(expiry)+'</div><div class="admin-product-buttons">'+actions+'</div></div></article>';
   }).join("")||'<p class="form-status">'+empty+'</p>';
   $("#published-product-list").innerHTML=cards(filter(published,"#published-search"),"Todavía no hay productos publicados.");
   $("#unpublished-product-list").innerHTML=cards(filter(unpublished,"#unpublished-search"),"No hay productos completos pendientes de publicar.");
@@ -2906,6 +2910,8 @@ exclusiveToggleButton?.addEventListener("click", () => {
 $("#product-type")?.addEventListener("change", () => {
   const isPerfume = activeCatalogType === "perfumery";
   const isSet = $("#product-type").value === "set";
+  $("#product-perfume-concentration-field")?.classList.toggle("hidden", isSet);
+  $("#product-perfume-volume-field")?.classList.toggle("hidden", isSet);
   const editing = Boolean($("#product-id")?.value);
   const formTitle = $("#form-title");
   if (formTitle && isPerfume) formTitle.textContent = isSet ? (editing ? "Editar set de perfumes" : "Registrar set de perfumes") : (editing ? "Editar fragancia" : "Registrar fragancia");
