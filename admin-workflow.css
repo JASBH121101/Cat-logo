@@ -99,3 +99,5 @@ html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow
 html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action-cancel{background:#35202a!important;color:#ffc7d0!important;border-color:#7d4657!important}
 
 html[data-theme='dark'] body.admin-body .admin-product-buttons > button.admin-icon-button{background:#1b2948!important;color:#dbe6ff!important;border-color:#415178!important}
+
+html[data-theme='dark'] body.admin-body .admin-product-buttons > button.admin-icon-button.is-exclusive{background:#42351c!important;color:#ffe7a2!important;border-color:#9e7b26!important}
