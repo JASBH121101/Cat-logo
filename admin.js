@@ -2652,15 +2652,23 @@ async function prepareImageForUpload(file, originalMime) {
     context.imageSmoothingQuality = "high";
     context.drawImage(source, 0, 0, canvas.width, canvas.height);
 
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", 0.84));
-    if (!blob || blob.type !== "image/webp") return file;
+    const outputType = originalMime === "image/png"
+      ? "image/png"
+      : originalMime === "image/webp"
+        ? "image/webp"
+        : originalMime === "image/jpeg"
+          ? "image/jpeg"
+          : "image/webp";
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, outputType, 0.84));
+    if (!blob || blob.type !== outputType) return file;
     const reducedDimensions = canvas.width < width || canvas.height < height;
     if (!reducedDimensions && blob.size >= file.size * 0.97) return file;
     if (blob.size >= file.size && !reducedDimensions) return file;
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "fotografia";
-    return new File([blob], baseName + ".webp", {
-      type: "image/webp",
+    const outputExtension = outputType === "image/png" ? "png" : outputType === "image/webp" ? "webp" : "jpg";
+    return new File([blob], baseName + "." + outputExtension, {
+      type: outputType,
       lastModified: file.lastModified || Date.now()
     });
   } catch (error) {
