@@ -417,10 +417,11 @@ function loadDeepLink() {
 }
 
 function bindMultiSelect(container, attribute, selectedSet) {
+  const dataAttribute = "data-" + attribute.replace(/[A-Z]/g, char => "-" + char.toLowerCase());
   container?.addEventListener("click", event => {
-    const button = event.target.closest(`.filter-chip[data-${attribute}]`);
-    if (!button) return;
-    const value = button.dataset[attribute] || "all";
+    const button = event.target.closest(".filter-chip");
+    if (!button || !container.contains(button) || !button.hasAttribute(dataAttribute)) return;
+    const value = button.getAttribute(dataAttribute) || "all";
     if (value === "all") selectedSet.clear();
     else if (selectedSet.has(value)) selectedSet.delete(value);
     else selectedSet.add(value);
