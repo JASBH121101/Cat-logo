@@ -2562,18 +2562,29 @@ activeCatalogSelector?.addEventListener("change", () => {
   const requested = normalizeCatalogType(activeCatalogSelector.value);
   if (requested === activeCatalogType) return;
 
-  if ($("#product-id").value || editorIsDirty) {
-    activeCatalogSelector.value = activeCatalogType;
-    message("#product-form-status", "Guardá o cancelá la edición actual antes de cambiar de catálogo.", "error");
-    return;
+  const hasOpenProduct = Boolean($("#product-id")?.value);
+  if (hasOpenProduct || editorIsDirty) {
+    const requestedLabel = requested === "perfumery" ? "JB Parfums · Perfumería" : "JB TECH · Tecnología";
+    const warning = hasOpenProduct
+      ? "Hay un producto abierto en edición. Si cambiás de catálogo ahora, se descartarán los cambios que no hayas guardado. ¿Querés continuar a " + requestedLabel + "?"
+      : "Hay cambios sin guardar en el formulario. Si cambiás de catálogo, se descartarán. ¿Querés continuar a " + requestedLabel + "?";
+
+    if (!window.confirm(warning)) {
+      activeCatalogSelector.value = activeCatalogType;
+      return;
+    }
   }
 
+  // Reset the current editor only after the user has explicitly accepted discarding it.
   activeCatalogType = requested;
   clearEditor();
   updateProductFormMode();
   renderAdminList();
   renderDashboardOverview();
   void loadCatalogAnalytics();
+  message("#product-form-status", requested === "perfumery"
+    ? "Formulario de JB Parfums · Perfumería listo."
+    : "Formulario de JB TECH · Tecnología listo.", "success");
 });
 
 /* =========================================================
