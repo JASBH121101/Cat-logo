@@ -547,3 +547,30 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
   .perfume-family-band strong { font-size:18.9px; }
   .perfume-family-band small { font-size:10.5px; }
 }
+
+
+/* JB PARFUMS · tipografía general +5% y collage un poco más amplio en móvil. */
+.perfume-hero h1 { font-size:clamp(45px,6.45vw,86px); }
+.perfume-kicker { font-size:10.5px; }
+.perfume-hero-description { font-size:15.75px; }
+.perfume-primary-link { font-size:12.6px; }
+.perfume-hero-notes { font-size:9.45px; }
+.perfume-family-number { font-size:24.15px; }
+.perfume-family-band strong { font-size:19.95px; }
+.perfume-family-band small { font-size:10.5px; }
+.perfume-section-heading h2,.perfume-featured-heading h2 { font-size:clamp(31.5px,4.2vw,50.4px); }
+.perfume-section-subtitle { font-size:13.65px; }
+.perfume-search-box input { font-size:12.6px; }
+.perfume-page .filter-chip { font-size:11.55px; }
+.perfume-page .perfume-hero-art { max-width:650px; }
+@media(max-width:640px) {
+  .perfume-hero h1 { font-size:clamp(35.7px,8.6vw,47.25px); }
+  .perfume-hero-description { font-size:15.5px; }
+  .perfume-page .perfume-hero-art { width:min(100%,545px); }
+  .perfume-family-band strong { font-size:18.9px; }
+  .perfume-family-band small { font-size:10.5px; }
+}
+
+/* Mantener la composición centrada y evitar que la falta de miniaturas en pantalla la encoja. */
+.perfume-page .perfume-hero-art { width:100%; }
+@media(max-width:640px) { .perfume-page .perfume-hero-art { width:min(100%,545px); } }

@@ -957,7 +957,7 @@ function renderLegacyColorOptions(product) {
   `;
 }
 
-function openProductImageLightbox(src, alt) {
+function openProductImageLightbox(src, alt, galleryItems = []) {
   if (!src) return;
 
   let lightbox = document.querySelector("#product-image-lightbox");
@@ -965,10 +965,44 @@ function openProductImageLightbox(src, alt) {
     lightbox = document.createElement("dialog");
     lightbox.id = "product-image-lightbox";
     lightbox.className = "product-image-lightbox";
-    lightbox.setAttribute("aria-label", "Fotografía del producto a pantalla completa");
-    lightbox.innerHTML = '<button type="button" class="product-image-lightbox-close" aria-label="Cerrar fotografía ampliada">×</button><img class="product-image-lightbox-photo" alt="">';
+    lightbox.setAttribute("aria-label", "Fotografías del producto a pantalla completa");
+    lightbox.innerHTML = `
+      <button type="button" class="product-image-lightbox-close" aria-label="Cerrar fotografías ampliadas">×</button>
+      <button type="button" class="product-image-lightbox-nav product-image-lightbox-prev" aria-label="Ver fotografía anterior" hidden>‹</button>
+      <img class="product-image-lightbox-photo" alt="">
+      <button type="button" class="product-image-lightbox-nav product-image-lightbox-next" aria-label="Ver fotografía siguiente" hidden>›</button>
+      <span class="product-image-lightbox-counter" aria-live="polite"></span>
+    `;
     document.body.appendChild(lightbox);
 
+    const photo = lightbox.querySelector(".product-image-lightbox-photo");
+    const previous = lightbox.querySelector(".product-image-lightbox-prev");
+    const next = lightbox.querySelector(".product-image-lightbox-next");
+    const counter = lightbox.querySelector(".product-image-lightbox-counter");
+
+    function renderPhoto() {
+      const photos = lightbox._galleryItems || [];
+      if (!photos.length) return;
+      const index = Math.max(0, Math.min(lightbox._galleryIndex || 0, photos.length - 1));
+      lightbox._galleryIndex = index;
+      photo.src = photos[index].src;
+      photo.alt = photos[index].alt || "Fotografía del producto";
+      const multiple = photos.length > 1;
+      previous.hidden = !multiple;
+      next.hidden = !multiple;
+      counter.hidden = !multiple;
+      counter.textContent = multiple ? (index + 1) + " / " + photos.length : "";
+    }
+
+    function movePhoto(amount) {
+      const photos = lightbox._galleryItems || [];
+      if (photos.length < 2) return;
+      lightbox._galleryIndex = (lightbox._galleryIndex + amount + photos.length) % photos.length;
+      renderPhoto();
+    }
+
+    previous.addEventListener("click", () => movePhoto(-1));
+    next.addEventListener("click", () => movePhoto(1));
     lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", () => {
       if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
       else lightbox.removeAttribute("open");
@@ -978,11 +1012,58 @@ function openProductImageLightbox(src, alt) {
       if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
       else lightbox.removeAttribute("open");
     });
+    lightbox.addEventListener("keydown", event => {
+      if (event.key === "ArrowLeft" && !previous.hidden) {
+        event.preventDefault();
+        movePhoto(-1);
+      } else if (event.key === "ArrowRight" && !next.hidden) {
+        event.preventDefault();
+        movePhoto(1);
+      }
+    });
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    lightbox.addEventListener("touchstart", event => {
+      const touch = event.changedTouches && event.changedTouches[0];
+      if (!touch) return;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, {passive:true});
+    lightbox.addEventListener("touchend", event => {
+      const touch = event.changedTouches && event.changedTouches[0];
+      if (!touch || !lightbox.open) return;
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+      // Rightward swipe = previous photo; leftward swipe = next photo.
+      movePhoto(deltaX > 0 ? -1 : 1);
+    }, {passive:true});
+
+    lightbox._renderPhoto = renderPhoto;
   }
 
-  const photo = lightbox.querySelector(".product-image-lightbox-photo");
-  photo.src = src;
-  photo.alt = alt || "Fotografía ampliada del producto";
+  const comparable = value => {
+    try { return new URL(value, window.location.href).href; }
+    catch { return String(value || ""); }
+  };
+  const unique = [];
+  const seen = new Set();
+  [...galleryItems, {src, alt}].forEach((item, index) => {
+    if (!item || !item.src) return;
+    const key = comparable(item.src);
+    if (seen.has(key)) return;
+    seen.add(key);
+    unique.push({src:item.src, alt:item.alt || alt || ("Fotografía " + (index + 1))});
+  });
+  let startIndex = unique.findIndex(item => comparable(item.src) === comparable(src));
+  if (startIndex < 0) {
+    unique.unshift({src, alt:alt || "Fotografía del producto"});
+    startIndex = 0;
+  }
+  lightbox._galleryItems = unique;
+  lightbox._galleryIndex = startIndex;
+  lightbox._renderPhoto();
 
   if (typeof lightbox.showModal === "function") {
     if (!lightbox.open) lightbox.showModal();
@@ -1017,7 +1098,14 @@ dialogContent.addEventListener("click", event => {
   const zoomButton = target?.closest(".dialog-image-zoom");
   if (zoomButton) {
     const image = zoomButton.querySelector(".dialog-main-image");
-    if (image) openProductImageLightbox(image.currentSrc || image.src, image.alt);
+    if (image) {
+      const photoButtons = Array.from(dialogContent.querySelectorAll("[data-gallery-image]"));
+      const photos = photoButtons.map((button, index) => ({
+        src:button.dataset.galleryImage || "",
+        alt:(image.alt || "Fotografía del producto") + " · foto " + (index + 1)
+      })).filter(item => item.src);
+      openProductImageLightbox(image.getAttribute("src") || image.currentSrc || image.src, image.alt, photos);
+    }
     return;
   }
 

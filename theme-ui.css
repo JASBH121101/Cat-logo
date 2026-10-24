@@ -8948,3 +8948,179 @@ html[data-theme="dark"] .technology-promo-caption {
   cursor:pointer;
 }
 .product-image-lightbox-close:focus-visible { outline:3px solid #e8c47b; outline-offset:3px; }
+
+
+/* JB TECH · última pasada móvil: quitar badge redundante y alinear las tarjetas por estructura. */
+.technology-catalog .featured-grid .featured-badge { display:none !important; }
+@media (max-width:760px) {
+  .technology-catalog .featured-section { padding:11px !important; }
+  .technology-catalog .featured-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-auto-rows:1fr !important;
+    align-items:stretch !important;
+    gap:8px !important;
+  }
+  .technology-catalog .featured-grid .product-card {
+    display:flex !important;
+    flex-direction:column !important;
+    height:100% !important;
+    min-height:0 !important;
+    align-self:stretch !important;
+  }
+  .technology-catalog .featured-grid .product-image {
+    height:clamp(92px,24vw,112px) !important;
+    min-height:0 !important;
+    flex:0 0 auto !important;
+  }
+  .technology-catalog .featured-grid .product-card-content {
+    display:flex !important;
+    flex:1 1 auto !important;
+    flex-direction:column !important;
+    justify-content:flex-start !important;
+    min-height:0 !important;
+    padding:8px 7px 9px !important;
+    gap:4px !important;
+  }
+  .technology-catalog .featured-grid .product-category {
+    margin:0 !important;
+    font-size:9px !important;
+    line-height:1.25 !important;
+  }
+  .technology-catalog .featured-grid .product-card h3 {
+    min-height:2.5em !important;
+    margin:0 !important;
+    font-size:clamp(12.6px,3.52vw,15.2px) !important;
+    line-height:1.25 !important;
+    overflow-wrap:anywhere;
+  }
+  .technology-catalog .featured-grid .product-card-capacity {
+    display:flex;
+    align-items:center;
+    min-height:22px;
+    margin:0 !important;
+    padding:4px 6px;
+    font-size:9.45px !important;
+    line-height:1.2;
+  }
+  .technology-catalog .featured-grid .product-card-colors {
+    min-height:18px !important;
+    margin:0 !important;
+  }
+  .technology-catalog .featured-grid .product-card-colors-label,
+  .technology-catalog .featured-grid .product-card-color-name { display:none !important; }
+  .technology-catalog .featured-grid .product-card-color-list {
+    display:flex;
+    min-height:16px;
+    align-items:center;
+    gap:4px;
+  }
+  .technology-catalog .featured-grid .product-card-color-swatch { width:10px; height:10px; }
+  .technology-catalog .featured-grid .product-price-label {
+    min-height:11px;
+    margin:0 !important;
+    font-size:9px !important;
+    line-height:1.2;
+  }
+  .technology-catalog .featured-grid .product-price {
+    min-height:1.2em;
+    margin:0 !important;
+    font-size:clamp(15.75px,4.1vw,19px) !important;
+    line-height:1.2 !important;
+  }
+  .technology-catalog .featured-grid .product-price-secondary {
+    min-height:1.2em;
+    font-size:9.5px !important;
+    line-height:1.2;
+  }
+  .technology-catalog .featured-grid .product-actions {
+    display:flex !important;
+    width:100% !important;
+    margin-top:auto !important;
+    padding-top:5px !important;
+  }
+  .technology-catalog .featured-grid .product-view-button {
+    display:flex !important;
+    width:100% !important;
+    min-height:35px !important;
+    align-items:center;
+    justify-content:center;
+    padding:7px 5px !important;
+    font-size:11px !important;
+    line-height:1.2;
+    white-space:normal;
+  }
+}
+@media(max-width:380px) {
+  .technology-catalog .featured-grid .product-image { height:86px !important; }
+  .technology-catalog .featured-grid .product-card h3 { font-size:12.6px !important; }
+  .technology-catalog .featured-grid .product-price { font-size:15.75px !important; }
+  .technology-catalog .featured-grid .product-view-button { min-height:33px !important; font-size:10.5px !important; }
+}
+
+/* Ficha en teléfono: ampliar la galería sin sacrificar los controles de variante. */
+@media(max-width:760px) and (hover:none) and (pointer:coarse) {
+  .technology-catalog .product-dialog #dialog-image,
+  .technology-catalog .product-dialog .dialog-image {
+    height:clamp(300px,40dvh,380px) !important;
+    min-height:0 !important;
+    max-height:380px !important;
+  }
+  .technology-catalog .product-dialog #dialog-image .dialog-gallery-main {
+    height:calc(100% - 44px) !important;
+  }
+  .technology-catalog .product-dialog #dialog-image:not(:has(.dialog-gallery-thumbs)) .dialog-gallery-main {
+    height:100% !important;
+  }
+}
+
+/* Pantalla completa con navegación visible y gestos táctiles. */
+.product-image-lightbox-photo {
+  max-width:calc(100vw - 18px);
+  max-height:calc(100dvh - 72px);
+  touch-action:pan-y pinch-zoom;
+}
+.product-image-lightbox-nav {
+  position:fixed;
+  z-index:2;
+  top:50%;
+  display:grid;
+  place-items:center;
+  width:48px;
+  height:64px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.26);
+  border-radius:13px;
+  color:#fff;
+  background:rgba(28,35,51,.72);
+  font-family:Arial,sans-serif;
+  font-size:48px;
+  line-height:1;
+  cursor:pointer;
+  transform:translateY(-50%);
+  -webkit-tap-highlight-color:transparent;
+}
+.product-image-lightbox-prev { left:max(10px,env(safe-area-inset-left,0px)); }
+.product-image-lightbox-next { right:max(10px,env(safe-area-inset-right,0px)); }
+.product-image-lightbox-nav[hidden],
+.product-image-lightbox-counter[hidden] { display:none !important; }
+.product-image-lightbox-nav:focus-visible {
+  outline:3px solid #e8c47b;
+  outline-offset:3px;
+}
+.product-image-lightbox-counter {
+  position:fixed;
+  z-index:2;
+  left:50%;
+  bottom:max(14px,env(safe-area-inset-bottom,0px));
+  padding:7px 12px;
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;
+  color:#fff;
+  background:rgba(28,35,51,.82);
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+  transform:translateX(-50%);
+}
+@media(max-width:480px) {
+  .product-image-lightbox-nav { width:42px; height:56px; font-size:42px; }
+}
