@@ -3292,3 +3292,117 @@ html[data-theme="dark"] .catalog-help-cta .eyebrow { color:#91b9ff; }
   .dialog-detail { padding:22px 20px 28px; }
   .dialog-product-description { margin-top:18px; }
 }
+
+
+/* CAT-LOGO ADMIN · RAM/almacenamiento y colores dentro de la configuración principal. */
+.primary-config-slot {
+  width:100%;
+  min-width:0;
+  margin:14px 0 16px;
+}
+.primary-config-slot:empty { display:none !important; }
+.primary-config-slot .variant-base-group {
+  display:block;
+  width:100%;
+  margin:0;
+  padding:12px;
+  border:1px solid var(--accent,#5268f5);
+  border-radius:15px;
+  background:var(--surface,rgba(89,112,194,.055));
+  box-shadow:0 5px 16px rgba(28,43,80,.06);
+}
+.primary-config-slot .variant-config-group-heading {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+  padding:2px 2px 10px;
+  border-bottom:1px solid rgba(119,143,220,.22);
+}
+.primary-config-slot .variant-config-group-heading > div {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.primary-config-slot .variant-config-group-heading strong {
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.3;
+}
+.primary-config-slot .variant-config-group-heading small {
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.45;
+}
+.primary-config-slot .variant-config-fields {
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin:12px 0 14px;
+}
+.primary-config-slot .variant-config-fields label {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-width:0;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:700;
+}
+.primary-config-slot .variant-config-fields input,
+.primary-config-slot .variant-config-fields select { width:100%; min-width:0; }
+.primary-config-slot .variant-color-section {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:10px;
+  width:100%;
+  min-width:0;
+  margin-top:8px;
+  padding-top:12px;
+  border-top:1px solid rgba(119,143,220,.2);
+}
+.primary-config-slot .variant-color-section-title {
+  margin:0;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:800;
+}
+.primary-config-slot .variant-color-list {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));
+  align-items:start;
+  gap:12px;
+  width:100%;
+  min-width:0;
+}
+.primary-config-slot .variant-color-list > .variants-empty-hint {
+  grid-column:1/-1;
+  margin:0;
+  padding:10px 12px;
+  border:1px dashed rgba(120,148,207,.4);
+  border-radius:10px;
+  color:var(--muted,#9aaaca);
+  font-size:12px;
+  line-height:1.5;
+}
+.primary-config-slot .variant-add-color {
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  justify-self:start;
+  min-height:40px;
+  padding:9px 14px;
+  border-radius:10px;
+  font-size:13px;
+}
+@media(max-width:540px) {
+  .primary-config-slot { margin:10px 0 13px; }
+  .primary-config-slot .variant-base-group { padding:10px; border-radius:13px; }
+  .primary-config-slot .variant-config-fields { grid-template-columns:minmax(0,1fr); gap:10px; }
+  .primary-config-slot .variant-config-group-heading strong { font-size:14px; }
+  .primary-config-slot .variant-config-group-heading small { font-size:11px; }
+  .primary-config-slot .variant-color-list { grid-template-columns:minmax(0,1fr); gap:9px; }
+  .primary-config-slot .variant-add-color { width:100%; }
+}

@@ -137,7 +137,7 @@ function updateProductFormMode() {
   $("#product-model-field")?.classList.toggle("hidden", isPerfume);
   $("#product-warranty-field")?.classList.toggle("hidden", isPerfume);
   $("#product-specs-field")?.classList.toggle("hidden", isPerfume);
-  $("#technology-color-manager")?.classList.toggle("hidden", isPerfume);
+  $("#base-color-manager")?.classList.toggle("hidden", isPerfume);
   $("#technology-variants-section")?.classList.toggle("hidden", isPerfume);
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
@@ -948,17 +948,17 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const storageUnit = parsedStorage.unit;
   const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
   const title = isBase
-    ? "Colores del producto"
+    ? "Configuración principal"
     : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
   const colorControls = `<div class="variant-color-section">
     <strong class="variant-color-section-title">Colores de esta configuración</strong>
     <div class="variant-color-list" data-variant-color-list></div>
-    ${isBase ? "" : '<button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color">+ Color</button>'}
+    <button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color a esta configuración">+ Color</button>
   </div>`;
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
     <div class="variant-config-group-heading">
-      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Los colores se configuran en este formulario" : "Configuración técnica"}</small></div>
+      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Esta configuración usa el precio base del formulario." : "Definí el precio y los colores de esta configuración."}</small></div>
       ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
     </div>
     <div class="variant-config-fields">
@@ -1011,12 +1011,18 @@ function renderVariantRows(variants = []) {
 
   container.innerHTML = "";
   colorManager.innerHTML = "";
-  colorManager.insertAdjacentHTML("beforeend", variantGroupMarkup({}, true));
-  const baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
-  const baseList = baseGroup?.querySelector("[data-variant-color-list]");
-  const baseColors = makeColors(groups.get("|") || []);
-  baseColors.forEach(color => baseList?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
-  if (baseList && !baseColors.length) baseList.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para la configuración principal.</p>';
+
+  // Show a primary configuration for new products or legacy products whose variants have no RAM/storage.
+  // If saved variants all have technical configurations, don't add a misleading blank configuration.
+  const shouldRenderPrimaryGroup = groups.size === 0 || groups.has("|");
+  if (shouldRenderPrimaryGroup) {
+    colorManager.insertAdjacentHTML("beforeend", variantGroupMarkup({}, true));
+    const baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
+    const baseList = baseGroup?.querySelector("[data-variant-color-list]");
+    const baseColors = makeColors(groups.get("|") || []);
+    baseColors.forEach(color => baseList?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
+    if (baseList && !baseColors.length) baseList.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para esta configuración.</p>';
+  }
 
   groups.delete("|");
   groups.forEach(items => {
@@ -1028,7 +1034,7 @@ function renderVariantRows(variants = []) {
     colors.forEach(color => list?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
     if (list && !colors.length) list.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para esta configuración.</p>';
   });
-  if (!groups.size) container.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
+  if (!groups.size) container.innerHTML = '<p class="variants-empty-hint">La configuración principal está arriba. Añadí otra configuración solo si cambia la RAM o el almacenamiento.</p>';
 
   updateVariantRowHeadings();
   form?.querySelectorAll("[data-variant-row]").forEach(row => { renderVariantImagePreview(row); syncColorLibraryRowControls(row); });
@@ -1058,7 +1064,7 @@ function updateVariantRowHeadings() {
     const storage = group.querySelector("[data-group-storage]")?.value.trim();
     const ram = group.querySelector("[data-group-ram]")?.value.trim();
     const storageUnit = group.querySelector("[data-group-storage-unit]")?.value || "GB";
-    const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
+    const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || (group.dataset.baseGroup === "true" ? "Configuración principal" : "Nueva configuración");
     const heading = group.querySelector("[data-variant-group-title]");
     if (heading) heading.textContent = title;
     group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
@@ -1349,7 +1355,11 @@ form?.addEventListener("click", event => {
   if (removeGroup) {
     removeGroup.closest("[data-variant-group]")?.remove();
     if (!variantsContainer.querySelector("[data-variant-group]")) {
-      variantsContainer.innerHTML = '<p class="variants-empty-hint">No hay configuraciones adicionales. Añadí una solo si cambia la capacidad o la RAM.</p>';
+      if (!baseColorManager?.querySelector('[data-variant-group][data-base-group="true"]')) {
+        renderVariantRows([]);
+      } else {
+        variantsContainer.innerHTML = '<p class="variants-empty-hint">La configuración principal está arriba. Añadí otra configuración solo si cambia la RAM o el almacenamiento.</p>';
+      }
     }
     updateEditorDirtyState();
     return;
@@ -1368,7 +1378,7 @@ form?.addEventListener("click", event => {
       group.remove();
     }
   }
-  if (!form.querySelector('[data-variant-group][data-base-group="true"]')) renderVariantRows([]);
+  if (!form.querySelector("[data-variant-group]")) renderVariantRows([]);
   updateVariantRowHeadings();
   updateEditorDirtyState();
 });
@@ -2788,21 +2798,29 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const group = allGroups[groupIndex];
     const isBase = group.dataset.baseGroup === "true";
     const read = selector => group.querySelector(selector)?.value.trim() || "";
-    const storageRaw = isBase ? "" : read("[data-group-storage]");
-    const ramRaw = isBase ? "" : read("[data-group-ram]");
-
-    if (!isBase && !storageRaw && !ramRaw) {
-      throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex}.`);
-    }
-
+    const storageRaw = read("[data-group-storage]");
+    const ramRaw = read("[data-group-ram]");
     const storageUnit = read("[data-group-storage-unit]") || "GB";
     const storage = storageRaw ? formatStorageLabel(storageRaw, storageUnit) : "";
     const ram = ramRaw ? `${ramRaw} GB` : "";
+    const hasConfiguration = Boolean(storageRaw || ramRaw);
     const key = variantGroupKey({storage,ram});
-    if (!isBase && seenConfigurations.has(key)) throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
-    if (!isBase) seenConfigurations.add(key);
+
+    if (!isBase && !hasConfiguration) {
+      throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex + 1}.`);
+    }
 
     const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
+    // An untouched blank primary group is optional; configured groups need at least one color.
+    if (isBase && !hasConfiguration && !rows.length) continue;
+    if (hasConfiguration && !rows.length) {
+      throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
+    }
+    if (hasConfiguration && seenConfigurations.has(key)) {
+      throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
+    }
+    if (hasConfiguration) seenConfigurations.add(key);
+
     const colors = [];
 
     for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {

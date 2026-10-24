@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261023-final-review2">
+  <link rel="stylesheet" href="styles.css?v=20261024-configuration-first-flow1">
   <link rel="stylesheet" href="theme-ui.css?v=20261023-color-selection-fix2">
 
   <script src="config.js?v=20261022-0233"></script>
@@ -400,40 +400,21 @@
                 <div id="product-images-preview" class="admin-image-preview-grid" aria-live="polite"></div>
               </section>
 
-              <div id="technology-color-manager" class="admin-add-color-slot">
-                <div class="admin-add-color-heading">
-                  <span class="admin-add-color-caption">Colores del producto</span>
-                  <button id="add-base-color-button" class="button button-outline" type="button" aria-label="Añadir color del producto" aria-expanded="false" aria-controls="quick-color-palette">+ Color</button>
-                </div>
-                <div id="quick-color-palette" class="quick-color-palette" role="group" aria-label="Elegir color de producto" hidden>
-                  <label class="quick-color-search-label">Buscar por nombre o código HEX
-                    <input id="quick-color-search" type="search" placeholder="Ej. Azul, #315A91 o #0833A2" autocomplete="off" aria-label="Buscar color por nombre o código HEX">
-                  </label>
-                  <div class="color-library-toolbar" role="group" aria-label="Filtros de la biblioteca de colores">
-                    <button type="button" class="is-active" data-color-library-filter="all" aria-pressed="true">Todos</button>
-                    <button type="button" data-color-library-filter="favorites" aria-pressed="false">★ Favoritos</button>
-                    <button type="button" data-color-library-filter="recent" aria-pressed="false">↻ Recientes</button>
-                    <span class="color-library-storage-note">Se guarda en este navegador</span>
-                  </div>
-                  <div id="quick-color-swatches" class="quick-color-swatches"></div>
-                </div>
-                <div id="base-color-manager" class="base-color-manager" aria-label="Colores configurados"></div>
-                <p id="quick-color-status" class="quick-color-status" aria-live="polite"></p>
-              </div>
-
 <section id="technology-variants-section" class="span-2 variants-editor-section"
                        aria-labelledby="variants-editor-title">
                 <div class="variants-editor-heading">
                   <div class="variants-editor-copy">
                     <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
                     <p>
-                      Usá esta sección únicamente cuando cambie la capacidad de almacenamiento o la memoria RAM. Los colores se administran en el formulario principal.
+                      Configurá primero la RAM y el almacenamiento cuando corresponda, y añadí los colores dentro de esa misma configuración. Las configuraciones adicionales pueden tener sus propios colores y precios.
                     </p>
                   </div>
                   <div class="variants-editor-actions" aria-label="Acciones para variantes">
                     <button id="add-variant-button" class="button button-outline" type="button">+ RAM / almacenamiento</button>
                   </div>
                 </div>
+
+                <div id="base-color-manager" class="primary-config-slot" aria-label="Configuración principal"></div>
 
                 <div id="product-variants-list" class="product-variants-list">
                   <p class="variants-empty-hint">
