@@ -2618,28 +2618,28 @@ async function permanentlyDeleteProduct(product) {
   if (!supabase || !currentUser) throw new Error("La sesión administrativa no está disponible.");
   const bucket = String(CONFIG.storageBucket || "product-images");
   const imagePaths = collectProductStoragePaths(product);
-  const archivedEvents = await archiveProductAnalytics(product);
 
+  // Register potential cleanup before removing the database row. The cron skips
+  // queued files while their source product still exists, so a failed DB delete
+  // cannot erase images for a product that remains in the trash.
   if (imagePaths.length) {
-    const { error: storageError } = await supabase.storage.from(bucket).remove(imagePaths);
-    if (storageError) {
-      const queuedAt = new Date().toISOString();
-      const queueRows = imagePaths.map(object_path => ({
-        bucket,
-        object_path,
-        source_product_id: String(product.id),
-        attempts: 1,
-        last_attempt_at: queuedAt,
-        last_error: String(storageError.message || "Storage deletion failed").slice(0, 1000)
-      }));
-      const { error: queueError } = await supabase
-        .from("storage_cleanup_queue")
-        .upsert(queueRows, { onConflict: "bucket,object_path" });
-      if (queueError) {
-        throw new Error("No se pudieron borrar las fotografías ni registrar el reintento. El producto permanece en la papelera para evitar dejar archivos huérfanos. " + queueError.message);
-      }
+    const queueRows = imagePaths.map(object_path => ({
+      bucket,
+      object_path,
+      source_product_id: String(product.id),
+      attempts: 0,
+      last_attempt_at: null,
+      last_error: "Esperando confirmación de eliminación definitiva del producto."
+    }));
+    const { error: queueError } = await supabase
+      .from("storage_cleanup_queue")
+      .upsert(queueRows, { onConflict: "bucket,object_path" });
+    if (queueError) {
+      throw new Error("No se pudo preparar la limpieza segura de fotografías. El producto permanece en la papelera. " + queueError.message);
     }
   }
+
+  const archivedEvents = await archiveProductAnalytics(product);
 
   const { error: detailError } = await supabase
     .from("perfume_details")
@@ -2655,12 +2655,44 @@ async function permanentlyDeleteProduct(product) {
     .eq("id", product.id)
     .select("id");
   if (error) {
-    throw new Error("La base de datos impidió la eliminación definitiva. Revisá las relaciones del producto: " + error.message);
+    throw new Error("La base de datos impidió la eliminación definitiva. El producto permanece en la papelera; revisá sus relaciones: " + error.message);
   }
   if (!Array.isArray(data) || !data.some(row => String(row.id) === String(product.id))) {
     throw new Error("Supabase no confirmó la eliminación definitiva.");
   }
-  return { imageCount: imagePaths.length, archivedEvents };
+
+  let storageErrorMessage = "";
+  if (imagePaths.length) {
+    const { error: storageError } = await supabase.storage.from(bucket).remove(imagePaths);
+    if (storageError) {
+      storageErrorMessage = String(storageError.message || "Error de Storage sin detalle.");
+      const { error: queueUpdateError } = await supabase
+        .from("storage_cleanup_queue")
+        .update({
+          attempts: 1,
+          last_attempt_at: new Date().toISOString(),
+          last_error: storageErrorMessage.slice(0, 1000)
+        })
+        .eq("source_product_id", String(product.id))
+        .eq("bucket", bucket);
+      if (queueUpdateError) {
+        // The pre-created queue entry is still safe: the cron will now see that
+        // the product row is gone and retry this object on a future run.
+        console.warn("No se pudo actualizar la cola de fotografías; el reintento sigue registrado.", queueUpdateError.message);
+      }
+    } else {
+      const { error: queueDeleteError } = await supabase
+        .from("storage_cleanup_queue")
+        .delete()
+        .eq("source_product_id", String(product.id))
+        .eq("bucket", bucket);
+      if (queueDeleteError) {
+        console.warn("Las fotografías se eliminaron, pero quedaron filas de cola que la siguiente ejecución intentará limpiar.", queueDeleteError.message);
+      }
+    }
+  }
+
+  return { imageCount: imagePaths.length, archivedEvents, storageErrorMessage };
 }
 
 function renderAdminList() {
