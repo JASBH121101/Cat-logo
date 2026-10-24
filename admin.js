@@ -88,9 +88,9 @@ function normalizeCatalogType(value) {
 const PRODUCT_WORKFLOW_STATES = new Set(["draft", "unpublished", "published", "trash"]);
 
 function getProductWorkflowStatus(product) {
+  if (product?.deleted_at) return "trash";
   const status = String(product?.workflow_status || "").trim().toLowerCase();
   if (PRODUCT_WORKFLOW_STATES.has(status)) return status;
-  if (product?.deleted_at) return "trash";
   return product?.is_published ? "published" : "unpublished";
 }
 
@@ -3205,11 +3205,12 @@ function fillEditor(product) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   markEditorClean();
 }
-$("#new-product-button")?.addEventListener("click", () => {
+$("#new-product-button")?.addEventListener("click", async () => {
   if (editorIsDirty && !window.confirm("Hay cambios sin guardar. ¿Querés descartarlos y comenzar un producto nuevo?")) return;
+  await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(() => {});
   clearEditor();
 });
-$("#cancel-edit-button")?.addEventListener("click", () => {
+$("#cancel-edit-button")?.addEventListener("click", async () => {
   const editingExisting = Boolean($("#product-id")?.value);
   if (editorIsDirty) {
     const prompt = editingExisting
@@ -3220,6 +3221,7 @@ $("#cancel-edit-button")?.addEventListener("click", () => {
     clearEditor();
     return;
   }
+  await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(() => {});
   clearEditor();
   message("#product-form-status", "Formulario limpio. Ningún producto guardado fue eliminado.", "success");
 });
@@ -3510,7 +3512,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
         image_url: ""
       });
     }
-    if (hasConfiguration && seenConfigurations.has(key)) {
+    if (hasConfiguration && seenConfigurations.has(key) && !allowIncomplete) {
       throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
     }
     if (hasConfiguration) seenConfigurations.add(key);
