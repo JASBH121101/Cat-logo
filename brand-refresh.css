@@ -773,3 +773,74 @@ html[data-theme="dark"] body.technology-catalog .brand-logo-dark { display:block
     padding:4px !important;
   }
 }
+
+/* JB PARFUMS: encabezado centrado en la ficha, con la flecha en su propio carril. */
+body.perfume-detail-active .site-header.perfume-header {
+  position:relative;
+}
+body.perfume-detail-active .site-header.perfume-header > .perfume-brand {
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:2;
+  width:min(272px,calc(100% - 132px));
+  margin:0;
+  transform:translate(-50%,-50%);
+  display:flex;
+  justify-content:center;
+}
+body.perfume-detail-active .site-header.perfume-header > .perfume-brand .perfume-brand-logo {
+  width:100%;
+  max-width:100%;
+  max-height:54px;
+  object-fit:contain;
+}
+body.perfume-detail-active .site-header.perfume-header > .product-detail-header-back {
+  left:16px;
+  z-index:4;
+}
+@media(max-width:600px) {
+  body.perfume-detail-active .site-header.perfume-header > .perfume-brand {
+    width:calc(100% - 126px);
+  }
+  body.perfume-detail-active .site-header.perfume-header > .product-detail-header-back {
+    left:12px;
+  }
+}
+
+/* JB Parfums: sobriedad editorial, evitando el degradado morado genérico. */
+body.perfume-page .perfume-product-card .perfume-view-button,
+body.perfume-page .perfume-view-button {
+  color:#33291b !important;
+  background:linear-gradient(145deg,#f8f3e8 0%,#e9dcc0 100%) !important;
+  border:1px solid #b99b63 !important;
+  box-shadow:0 3px 0 #8d7040,0 7px 16px rgba(76,57,27,.10) !important;
+  border-radius:5px !important;
+  font-weight:700;
+  letter-spacing:.015em;
+}
+body.perfume-page .perfume-product-card .perfume-view-button:hover,
+body.perfume-page .perfume-view-button:hover {
+  color:#20190f !important;
+  background:linear-gradient(145deg,#fffaf0 0%,#e5d1a7 100%) !important;
+  border-color:#9f8049 !important;
+  filter:none !important;
+}
+html[data-theme="dark"] body.perfume-page .perfume-product-card .perfume-view-button,
+html[data-theme="dark"] body.perfume-page .perfume-view-button {
+  color:#f5e8c9 !important;
+  background:linear-gradient(145deg,#302719 0%,#4b3a20 100%) !important;
+  border-color:#b99b63 !important;
+  box-shadow:0 3px 0 #17130d,0 7px 16px rgba(0,0,0,.22) !important;
+}
+
+/* La etiqueta de disponibilidad queda hacia el lado con más aire visual. */
+body.perfume-page .perfume-product-image .perfume-state-badge {
+  left:10px !important;
+  right:auto !important;
+}
+@media(max-width:600px) {
+  body.perfume-page .perfume-product-image .perfume-state-badge {
+    left:8px !important;
+  }
+}
