@@ -2675,7 +2675,8 @@ async function permanentlyDeleteProduct(product) {
           last_error: storageErrorMessage.slice(0, 1000)
         })
         .eq("source_product_id", String(product.id))
-        .eq("bucket", bucket);
+        .eq("bucket", bucket)
+        .in("object_path", imagePaths);
       if (queueUpdateError) {
         // The pre-created queue entry is still safe: the cron will now see that
         // the product row is gone and retry this object on a future run.
@@ -2686,7 +2687,8 @@ async function permanentlyDeleteProduct(product) {
         .from("storage_cleanup_queue")
         .delete()
         .eq("source_product_id", String(product.id))
-        .eq("bucket", bucket);
+        .eq("bucket", bucket)
+        .in("object_path", imagePaths);
       if (queueDeleteError) {
         console.warn("Las fotografías se eliminaron, pero quedaron filas de cola que la siguiente ejecución intentará limpiar.", queueDeleteError.message);
       }
