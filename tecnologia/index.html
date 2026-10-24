@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="../styles.css?v=20261024-dialog-compact2">
-  <link rel="stylesheet" href="../theme-ui.css?v=20261024-premium-contactless1">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow2">
 
   <link rel="stylesheet" href="../brand-refresh.css?v=20261023-brand-system1">
   <script src="../config.js"></script>
@@ -153,9 +153,9 @@
       </section>
 
       <section id="featured-section" class="featured-section hidden" aria-labelledby="featured-section-title">
-        <span class="featured-exclusive-badge"><span aria-hidden="true">✦</span> JB SIGNATURE <i aria-hidden="true">/</i> GAMA ALTA</span>
+        <span class="featured-exclusive-badge"><span aria-hidden="true">✦</span> GAMA ALTA</span>
         <div class="featured-section-heading">
-          <div><p class="eyebrow">EDICIÓN PREMIUM · TECNOLOGÍA DE ÉLITE</p><h2 id="featured-section-title">Selección <span class="heading-accent">Insignia.</span></h2><p class="section-subtitle">Equipos de gama alta, seleccionados para quienes buscan lo excepcional.</p></div>
+          <div><p class="eyebrow">TECNOLOGÍA DE GAMA ALTA</p><h2 id="featured-section-title">Selección <span class="heading-accent">Insignia.</span></h2><p class="section-subtitle">Equipos de gama alta, seleccionados para quienes buscan lo excepcional.</p></div>
           <span id="featured-count" class="featured-count"></span>
         </div>
         <div id="featured-grid" class="featured-grid"></div>
@@ -249,28 +249,33 @@
     (() => {
       const section = document.getElementById("featured-section");
       if (!section || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const angles = ["45deg", "135deg", "225deg", "315deg"];
       let timer;
+      let paused = false;
+      const angles = ["45deg", "135deg", "225deg", "315deg"];
       const scheduleShine = () => {
-        const delay = 6500 + Math.random() * 10500;
+        window.clearTimeout(timer);
+        if (paused || document.hidden || !section.isConnected) return;
         timer = window.setTimeout(() => {
+          if (paused || document.hidden) return scheduleShine();
           section.style.setProperty("--signature-shine-angle", angles[Math.floor(Math.random() * angles.length)]);
           section.classList.remove("signature-shine-active");
           void section.offsetWidth;
           section.classList.add("signature-shine-active");
           window.setTimeout(() => section.classList.remove("signature-shine-active"), 1400);
           scheduleShine();
-        }, delay);
+        }, 6500 + Math.random() * 10500);
       };
-      scheduleShine();
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
+      const visibilityChanged = () => {
+        paused = document.hidden;
+        if (paused) {
           window.clearTimeout(timer);
           section.classList.remove("signature-shine-active");
         } else {
           scheduleShine();
         }
-      });
+      };
+      document.addEventListener("visibilitychange", visibilityChanged);
+      scheduleShine();
     })();
   </script>
 </body>

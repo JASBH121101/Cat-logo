@@ -9281,3 +9281,56 @@ body.technology-catalog .featured-section.signature-shine-active:after {
   body.technology-catalog .featured-section:before { animation:none !important; }
   body.technology-catalog .featured-section.signature-shine-active:after { animation:none !important; opacity:0 !important; }
 }
+
+
+/* Ajuste de marca: etiqueta simple GAMA ALTA y animación visible en el perímetro. */
+body.technology-catalog .featured-section:before {
+  inset:0;
+  z-index:5;
+  height:auto;
+  border-radius:inherit;
+  padding:2px;
+  background:conic-gradient(
+    from 0deg,
+    rgba(201,169,104,.28) 0deg,
+    #f5dda0 38deg,
+    #8b8cff 88deg,
+    rgba(139,140,255,.22) 142deg,
+    rgba(201,169,104,.3) 205deg,
+    #fff0c7 248deg,
+    #8b8cff 300deg,
+    rgba(201,169,104,.28) 360deg
+  );
+  animation:signature-border-orbit 5.5s linear infinite;
+}
+body.technology-catalog .featured-section:after {
+  z-index:4;
+  top:-90%;
+  left:-70%;
+  width:68%;
+  height:280%;
+  opacity:0;
+  background:linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255,255,255,0) 34%,
+    rgba(255,255,255,.08) 43%,
+    rgba(255,255,255,.9) 49%,
+    rgba(255,236,180,.24) 53%,
+    rgba(255,255,255,0) 65%,
+    transparent 100%
+  );
+}
+body.technology-catalog .featured-section.signature-shine-active:after {
+  animation:signature-diagonal-shine 1.25s cubic-bezier(.2,.65,.25,1) both;
+}
+body.technology-catalog .featured-exclusive-badge {
+  position:relative;
+  z-index:6;
+}
+body.technology-catalog .featured-section-heading,
+body.technology-catalog .featured-grid,
+body.technology-catalog #featured-count {
+  position:relative;
+  z-index:1;
+}
