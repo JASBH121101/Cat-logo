@@ -844,3 +844,13 @@ body.perfume-page .perfume-product-image .perfume-state-badge {
     left:8px !important;
   }
 }
+
+/* Resaltar el color solicitado al entrar desde un enlace compartido. */
+.product-detail-page .dialog-color-card.is-selected {
+  border-color:#657be8 !important;
+  box-shadow:0 0 0 2px rgba(101,123,232,.18),0 7px 18px rgba(28,48,103,.08) !important;
+}
+html[data-theme="dark"] .product-detail-page .dialog-color-card.is-selected {
+  border-color:#8ea0ff !important;
+  box-shadow:0 0 0 2px rgba(142,160,255,.20) !important;
+}
