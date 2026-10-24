@@ -3406,3 +3406,99 @@ html[data-theme="dark"] .catalog-help-cta .eyebrow { color:#91b9ff; }
   .primary-config-slot .variant-color-list { grid-template-columns:minmax(0,1fr); gap:9px; }
   .primary-config-slot .variant-add-color { width:100%; }
 }
+
+
+/* CAT-LOGO · selector independiente para la vista consolidada del dashboard. */
+.dashboard-overview-heading {
+  align-items:flex-end;
+  gap:18px;
+}
+.dashboard-overview-controls {
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  gap:14px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.dashboard-scope-control {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:220px;
+}
+.dashboard-scope-control label {
+  color:var(--muted);
+  font-size:12px;
+  font-weight:750;
+  letter-spacing:.025em;
+}
+.dashboard-scope-control select {
+  width:100%;
+  min-height:42px;
+  padding:9px 34px 9px 12px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  color:var(--ink);
+  background:var(--surface);
+  font:inherit;
+  font-size:13px;
+  font-weight:700;
+}
+.dashboard-overview-controls .dashboard-updated {
+  align-self:center;
+  white-space:nowrap;
+}
+@media(max-width:760px) {
+  .dashboard-overview-heading {
+    align-items:stretch;
+    flex-direction:column;
+    gap:12px;
+  }
+  .dashboard-overview-controls {
+    align-items:stretch;
+    flex-direction:column;
+    gap:9px;
+  }
+  .dashboard-scope-control { width:100%; min-width:0; }
+  .dashboard-overview-controls .dashboard-updated { align-self:flex-start; white-space:normal; }
+}
+
+/* CAT-LOGO ADMIN · corregir la tarjeta de configuración principal en el tema oscuro. */
+html[data-theme="dark"] .primary-config-slot .variant-base-group {
+  color:#edf3ff !important;
+  border-color:#475b86 !important;
+  background:linear-gradient(145deg,#182641 0%,#131e34 72%,#1b2440 100%) !important;
+  box-shadow:0 7px 20px rgba(0,0,0,.24),inset 0 0 0 1px rgba(170,190,244,.05) !important;
+}
+html[data-theme="dark"] .primary-config-slot .variant-config-group-heading strong,
+html[data-theme="dark"] .primary-config-slot .variant-config-fields label,
+html[data-theme="dark"] .primary-config-slot .variant-color-section-title {
+  color:#edf3ff !important;
+}
+html[data-theme="dark"] .primary-config-slot .variant-config-group-heading small {
+  color:#b7c6e3 !important;
+}
+html[data-theme="dark"] .primary-config-slot .variant-config-group-heading,
+html[data-theme="dark"] .primary-config-slot .variant-color-section {
+  border-color:rgba(145,166,219,.25) !important;
+}
+html[data-theme="dark"] .primary-config-slot .variant-color-list > .variants-empty-hint {
+  color:#c2cee8 !important;
+  border-color:#465980 !important;
+  background:rgba(9,17,32,.3) !important;
+}
+html[data-theme="dark"] .primary-config-slot .variant-config-fields input,
+html[data-theme="dark"] .primary-config-slot .variant-config-fields select {
+  color:#edf3ff !important;
+  border-color:#405274 !important;
+  background:#0e172b !important;
+}
+html[data-theme="dark"] .primary-config-slot .variant-config-fields input::placeholder {
+  color:#8292b1 !important;
+}
+html[data-theme="light"] .primary-config-slot .variant-base-group {
+  color:#1d2b49;
+  border-color:#8295d0;
+  background:linear-gradient(145deg,#ffffff 0%,#f7f9ff 72%,#f1f4ff 100%);
+}

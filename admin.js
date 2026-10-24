@@ -77,7 +77,9 @@ const form = $("#product-form");
 let currentUser = null;
 let products = [];
 let activeCatalogType = "technology";
+let dashboardCatalogScope = "all";
 const activeCatalogSelector = $("#active-catalog-selector");
+const dashboardScopeSelector = $("#dashboard-scope-selector");
 
 function normalizeCatalogType(value) {
   return value === "perfumery" ? "perfumery" : "technology";
@@ -86,6 +88,42 @@ function normalizeCatalogType(value) {
 function getActiveCatalogProducts() {
   return products.filter(product => normalizeCatalogType(product.catalog_type) === activeCatalogType);
 }
+
+function getDashboardProducts() {
+  if (dashboardCatalogScope === "all") return products;
+  return products.filter(product => normalizeCatalogType(product.catalog_type) === dashboardCatalogScope);
+}
+
+function updateDashboardScopeLabels() {
+  const isAll = dashboardCatalogScope === "all";
+  const isPerfume = dashboardCatalogScope === "perfumery";
+  const title = document.getElementById("dashboard-catalog-title");
+  const source = document.getElementById("dashboard-scope-source");
+  if (title) title.textContent = isAll
+    ? "Resumen general · Ambos catálogos"
+    : isPerfume ? "Resumen de JB Parfums" : "Resumen de JB TECH";
+  if (source) source.textContent = isAll ? "Datos de ambos catálogos" : isPerfume ? "Datos de perfumería" : "Datos de tecnología";
+
+  const labels = {
+    "dashboard-total-label": isAll ? "Artículos totales" : isPerfume ? "Fragancias totales" : "Productos totales",
+    "dashboard-published-label": isAll ? "Publicados" : isPerfume ? "Fragancias publicadas" : "Productos publicados",
+    "dashboard-drafts-label": isAll ? "No publicados" : isPerfume ? "Fragancias no publicadas" : "No publicados",
+    "dashboard-review-label": isAll ? "Sin foto principal" : isPerfume ? "Fragancias sin fotografía" : "Por revisar"
+  };
+  for (const [id, label] of Object.entries(labels)) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = label;
+  }
+}
+
+dashboardScopeSelector?.addEventListener("change", () => {
+  const value = dashboardScopeSelector.value;
+  dashboardCatalogScope = value === "technology" || value === "perfumery" ? value : "all";
+  updateDashboardScopeLabels();
+  renderDashboardOverview();
+  void loadCatalogAnalytics();
+});
+updateDashboardScopeLabels();
 
 function perfumeFamilyLabel(value) {
   return ({
@@ -165,15 +203,10 @@ function updateProductFormMode() {
     : "Gestioná equipos, configuraciones técnicas, colores, galerías y precios.";
   const contextHint = $("#admin-context-hint");
   if (contextHint) contextHint.textContent = isPerfume
-    ? "Mostrando solo JB Parfums; su ficha olfativa se guarda por separado."
-    : "Mostrando solo JB TECH · Tecnología.";
-  const dashboardTitle = $("#dashboard-catalog-title");
-  if (dashboardTitle) dashboardTitle.textContent = isPerfume ? "Resumen de JB Parfums" : "Resumen de JB TECH";
+    ? "Listas y formularios de JB Parfums. La vista del dashboard se elige por separado."
+    : "Listas y formularios de JB TECH. La vista del dashboard se elige por separado.";
+  updateDashboardScopeLabels();
   const dynamicLabels = {
-    "dashboard-total-label": isPerfume ? "Fragancias totales" : "Productos totales",
-    "dashboard-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "dashboard-drafts-label": isPerfume ? "Fragancias no publicadas" : "No publicados",
-    "dashboard-review-label": isPerfume ? "Fragancias sin fotografía" : "Por revisar",
     "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto",
     "admin-nav-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
     "admin-nav-drafts-label": isPerfume ? "Fragancias no publicadas" : "Borradores y pendientes",
@@ -1868,15 +1901,27 @@ async function loadCatalogAnalytics() {
   const legendNode = document.getElementById("dashboard-interest-legend");
   const pieTotalNode = document.getElementById("dashboard-interest-pie-total");
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
-  const isPerfumeCatalog = activeCatalogType === "perfumery";
-  const catalogProducts = getActiveCatalogProducts();
+
+  const isAllCatalogs = dashboardCatalogScope === "all";
+  const isPerfumeCatalog = dashboardCatalogScope === "perfumery";
+  const catalogProducts = getDashboardProducts();
   const productsById = new Map(catalogProducts.map(product => [String(product.id), product]));
-  setText("dashboard-interest-chart-title", isPerfumeCatalog ? "Qué fragancias consultan" : "Qué versiones consultan");
-  setText("dashboard-interest-family-eyebrow", isPerfumeCatalog ? "FAMILIA" : "COLOR");
-  setText("dashboard-interest-family-title", isPerfumeCatalog ? "Familias más consultadas" : "Colores más consultados");
-  setText("dashboard-interest-config-eyebrow", isPerfumeCatalog ? "PERFIL OLFATIVO" : "RAM / ROM");
-  setText("dashboard-interest-config-title", isPerfumeCatalog ? "Concentraciones y tamaños" : "Configuraciones más pedidas");
-  setText("dashboard-interest-products-title", isPerfumeCatalog ? "Fragancias con más interés" : "Teléfonos con más interés");
+
+  setText("dashboard-interest-chart-title", isAllCatalogs
+    ? "Qué productos consultan"
+    : isPerfumeCatalog ? "Qué fragancias consultan" : "Qué versiones consultan");
+  setText("dashboard-interest-family-eyebrow", isAllCatalogs ? "FAMILIA / CATEGORÍA" : isPerfumeCatalog ? "FAMILIA" : "COLOR");
+  setText("dashboard-interest-family-title", isAllCatalogs
+    ? "Intereses más consultados"
+    : isPerfumeCatalog ? "Familias más consultadas" : "Colores más consultados");
+  setText("dashboard-interest-config-eyebrow", isAllCatalogs ? "PRESENTACIÓN / VARIANTE" : isPerfumeCatalog ? "PERFIL OLFATIVO" : "RAM / ROM");
+  setText("dashboard-interest-config-title", isAllCatalogs
+    ? "Presentaciones y configuraciones"
+    : isPerfumeCatalog ? "Concentraciones y tamaños" : "Configuraciones más pedidas");
+  setText("dashboard-interest-products-title", isAllCatalogs
+    ? "Productos con más interés · ambos catálogos"
+    : isPerfumeCatalog ? "Fragancias con más interés" : "Teléfonos con más interés");
+
   if (!supabase || !currentUser) return;
 
   const { data, error } = await supabase.from("catalog_events")
@@ -1900,11 +1945,15 @@ async function loadCatalogAnalytics() {
   const clicks = events.filter(event => event.event_type === "whatsapp_click");
   setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
   setText("dashboard-whatsapp-total", clicks.length.toLocaleString("es-NI"));
-  if (note) note.textContent = events.length
-    ? "Eventos registrados para este catálogo. Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
-    : catalogProducts.length
-      ? "Todavía no hay eventos para este catálogo. Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp."
-      : "Agregá productos a este catálogo para comenzar a medir visitas y consultas.";
+
+  if (note) {
+    const scopeLabel = isAllCatalogs ? "ambos catálogos" : isPerfumeCatalog ? "JB Parfums" : "JB TECH";
+    note.textContent = events.length
+      ? "Eventos registrados para " + scopeLabel + ". Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
+      : catalogProducts.length
+        ? "Todavía no hay eventos para " + scopeLabel + ". Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp."
+        : "Agregá productos a " + scopeLabel + " para comenzar a medir visitas y consultas.";
+  }
 
   const byProduct = new Map();
   for (const event of events) {
@@ -1914,12 +1963,20 @@ async function loadCatalogAnalytics() {
     if (event.event_type === "whatsapp_click") stats.clicks++;
     byProduct.set(String(event.product_id), stats);
   }
+
   const rankedProducts = catalogProducts.filter(product => product.is_published).map(product => ({
     product, stats: byProduct.get(String(product.id)) || { views: 0, clicks: 0 }
   })).sort((a, b) => b.stats.views - a.stats.views || b.stats.clicks - a.stats.clicks).slice(0, 6);
+
   if (topNode) topNode.innerHTML = rankedProducts.length ? rankedProducts.map(({product, stats}, index) => {
     const name = escapeHtml(product.name || "Producto sin nombre");
-    const supportingLabel = isPerfumeCatalog ? perfumeFamilyLabel(product.perfume_details && product.perfume_details.family) : (product.category || "Tecnología");
+    const type = normalizeCatalogType(product.catalog_type);
+    const familyOrCategory = type === "perfumery"
+      ? perfumeFamilyLabel(product.perfume_details && product.perfume_details.family)
+      : (product.category || "Tecnología");
+    const supportingLabel = isAllCatalogs
+      ? (type === "perfumery" ? "JB Parfums · " : "JB TECH · ") + familyOrCategory
+      : familyOrCategory;
     return '<div class="dashboard-top-product"><span class="dashboard-top-product-rank">' + (index + 1) + '</span><div class="dashboard-top-product-info"><strong>' + name + '</strong><small>' + escapeHtml(supportingLabel) + '</small></div><div class="dashboard-top-product-stats"><span>👁 <b>' + stats.views + '</b> visitas</span><span>↗ <b>' + stats.clicks + '</b> clics</span></div></div>';
   }).join("") : '<p class="dashboard-empty-state">Publicá productos para ver aquí su rendimiento.</p>';
 
@@ -1928,37 +1985,55 @@ async function loadCatalogAnalytics() {
   const comboCounts = new Map();
   const familyCounts = new Map();
   const configCounts = new Map();
-  if (isPerfumeCatalog) {
-    for (const event of clicks) {
-      const product = productsById.get(String(event.product_id));
-      if (!product) continue;
+
+  // Classify each click from its product record so combined analytics don't mix perfume families with phone colors.
+  for (const event of clicks) {
+    const product = productsById.get(String(event.product_id));
+    if (!product) continue;
+    const type = normalizeCatalogType(product.catalog_type);
+    const isPerfumeProduct = type === "perfumery";
+
+    if (isPerfumeProduct) {
       const detail = product.perfume_details || {};
       const family = detail.family ? perfumeFamilyLabel(detail.family) : "";
       const concentration = String(detail.concentration || "").trim();
       const volume = detail.volume_ml !== null && detail.volume_ml !== undefined && detail.volume_ml !== ""
         ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
-      const comboLabel = [product.name, family, concentration, volume].filter(Boolean).join(" · ") || "Fragancia sin detalles";
+      const prefix = isAllCatalogs ? "JB Parfums · " : "";
+      const comboLabel = [prefix + (product.name || "Fragancia"), family, concentration, volume].filter(Boolean).join(" · ");
       comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
-      if (family) familyCounts.set(family, (familyCounts.get(family) || 0) + 1);
+      if (family) {
+        const familyLabel = prefix + family;
+        familyCounts.set(familyLabel, (familyCounts.get(familyLabel) || 0) + 1);
+      }
       const configLabel = [concentration, volume, detail.scent_family].filter(Boolean).join(" · ");
-      if (configLabel) configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
-    }
-  } else {
-    for (const event of clicks) {
+      if (configLabel) {
+        const displayLabel = prefix + configLabel;
+        configCounts.set(displayLabel, (configCounts.get(displayLabel) || 0) + 1);
+      }
+    } else {
       const color = String(event.variant_color || "").trim();
       const ram = String(event.variant_ram || "").trim();
       const storage = String(event.variant_storage || "").trim();
       const parts = [ram ? formatAnalyticsCapacity(ram) + " RAM" : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean);
       const configurationLabel = parts.length ? parts.join(" / ") : "";
-      const comboLabel = [configurationLabel, color].filter(Boolean).join(" · ") || "Sin variante registrada";
+      const prefix = isAllCatalogs ? "JB TECH · " : "";
+      const comboLabel = isAllCatalogs
+        ? [prefix + (product.name || "Equipo"), configurationLabel, color].filter(Boolean).join(" · ") || "JB TECH · Sin variante registrada"
+        : [configurationLabel, color].filter(Boolean).join(" · ") || "Sin variante registrada";
       comboCounts.set(comboLabel, (comboCounts.get(comboLabel) || 0) + 1);
-      if (color) familyCounts.set(color, (familyCounts.get(color) || 0) + 1);
+      if (color) {
+        const colorLabel = prefix + color;
+        familyCounts.set(colorLabel, (familyCounts.get(colorLabel) || 0) + 1);
+      }
       if (ram || storage) {
         const configLabel = [ram ? formatAnalyticsCapacity(ram) + " RAM" : "", storage ? formatAnalyticsCapacity(storage) : ""].filter(Boolean).join(" / ") || "Configuración estándar";
-        configCounts.set(configLabel, (configCounts.get(configLabel) || 0) + 1);
+        const displayLabel = prefix + configLabel;
+        configCounts.set(displayLabel, (configCounts.get(displayLabel) || 0) + 1);
       }
     }
   }
+
   const rankedCombos = Array.from(comboCounts, ([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"));
   renderAnalyticsPie(pieNode, legendNode, pieTotalNode, rankedCombos);
@@ -2003,7 +2078,7 @@ dashboardActivityRefresh?.addEventListener("click", async () => {
 });
 
 function renderDashboardOverview() {
-  const catalogProducts = getActiveCatalogProducts();
+  const catalogProducts = getDashboardProducts();
   const published = catalogProducts.filter(product => Boolean(product.is_published));
   const drafts = catalogProducts.filter(product => !product.is_published);
   const needsImage = catalogProducts.filter(product => {
@@ -2033,10 +2108,13 @@ function renderDashboardOverview() {
     const recent = [...catalogProducts].sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0,4);
     activity.innerHTML = recent.length ? recent.map(product => {
       const title = escapeHtml(product.name || "Producto sin nombre");
-      const status = product.is_published ? "Publicado en el catálogo" : "Guardado como borrador";
+      const status = product.is_published ? "Publicado" : "Guardado como borrador";
+      const catalogLabel = dashboardCatalogScope === "all"
+        ? (normalizeCatalogType(product.catalog_type) === "perfumery" ? "JB Parfums · " : "JB TECH · ")
+        : "";
       const dateValue = product.updated_at || product.created_at;
       const date = dateValue ? new Date(dateValue).toLocaleDateString("es-NI", { day:"2-digit", month:"short" }) : "Fecha no disponible";
-      return `<div class="dashboard-activity-item"><span class="dashboard-activity-mark ${product.is_published ? "activity-mark-published" : "activity-mark-draft"}">${product.is_published ? "✓" : "◷"}</span><div><strong>${title}</strong><small>${status}</small></div><time>${escapeHtml(date)}</time></div>`;
+      return `<div class="dashboard-activity-item"><span class="dashboard-activity-mark ${product.is_published ? "activity-mark-published" : "activity-mark-draft"}">${product.is_published ? "✓" : "◷"}</span><div><strong>${title}</strong><small>${catalogLabel}${status}</small></div><time>${escapeHtml(date)}</time></div>`;
     }).join("") : '<p class="dashboard-empty-state">Todavía no hay actividad. Añadí un producto para comenzar.</p>';
   }
 }

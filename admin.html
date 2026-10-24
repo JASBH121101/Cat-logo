@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261024-variant-prices-only1">
+  <link rel="stylesheet" href="styles.css?v=20261024-consolidated-dashboard1">
   <link rel="stylesheet" href="theme-ui.css?v=20261023-color-selection-fix2">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261024-catalog-switch-confirm1"></script>
+  <script type="module" src="admin.js?v=20261024-consolidated-dashboard1"></script>
   <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
 </head>
 
@@ -96,12 +96,12 @@
           <p id="admin-context-description" class="section-subtitle">Gestioná tecnología y fragancias desde espacios de trabajo separados.</p>
         </div>
         <div class="admin-catalog-context">
-          <label for="active-catalog-selector">Catálogo activo</label>
+          <label for="active-catalog-selector">Catálogo para gestionar</label>
           <select id="active-catalog-selector">
             <option value="technology">JB TECH · Tecnología</option>
             <option value="perfumery">JB Parfums · Perfumería</option>
           </select>
-          <small id="admin-context-hint">Las listas y los indicadores corresponden al catálogo seleccionado.</small>
+          <small id="admin-context-hint">La gestión de productos usa este catálogo; el dashboard puede resumir uno o ambos.</small>
         </div>
       </div>
 
@@ -175,9 +175,19 @@
       </section>
 
       <section class="dashboard-overview" aria-label="Indicadores del catálogo">
-        <div class="dashboard-section-heading">
-          <div><p class="dashboard-eyebrow">VISTA GENERAL</p><h3 id="dashboard-catalog-title">Resumen del catálogo</h3></div>
-          <span class="dashboard-updated"><span class="dashboard-live-dot"></span> Datos de Supabase</span>
+        <div class="dashboard-section-heading dashboard-overview-heading">
+          <div><p class="dashboard-eyebrow">VISTA GENERAL</p><h3 id="dashboard-catalog-title">Resumen general · Ambos catálogos</h3></div>
+          <div class="dashboard-overview-controls">
+            <div class="dashboard-scope-control">
+              <label for="dashboard-scope-selector">Vista del dashboard</label>
+              <select id="dashboard-scope-selector" aria-label="Seleccionar el alcance del dashboard">
+                <option value="all" selected>General · Ambos catálogos</option>
+                <option value="technology">JB TECH · Tecnología</option>
+                <option value="perfumery">JB Parfums · Perfumería</option>
+              </select>
+            </div>
+            <span class="dashboard-updated"><span class="dashboard-live-dot"></span><span id="dashboard-scope-source">Datos de ambos catálogos</span></span>
+          </div>
         </div>
         <div class="dashboard-metrics">
           <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label" id="dashboard-total-label">Productos totales</span><strong id="dashboard-total">—</strong><small>En tu catálogo</small></article>
