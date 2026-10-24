@@ -407,3 +407,215 @@ body.perfume-detail-active .perfume-header-nav {
   .perfume-detail-page .perfume-dialog-detail { padding:0 0 10px; }
   .perfume-detail-page .perfume-dialog-notes { padding:0 12px 14px; }
 }
+
+/* HEADER: flecha compacta junto al selector de tema en las fichas individuales. */
+.site-header:not(.admin-header) > .product-detail-header-back {
+  position:absolute;
+  left:max(16px,3vw);
+  top:50%;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  padding:0;
+  border:1px solid #cfd9ed;
+  border-radius:50%;
+  color:#31436a;
+  background:rgba(255,255,255,.82);
+  box-shadow:0 2px 0 rgba(38,57,96,.12);
+  font:inherit;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+  transform:translateY(-50%);
+}
+.site-header:not(.admin-header) > .product-detail-header-back[hidden] { display:none !important; }
+.site-header:not(.admin-header) > .product-detail-header-back:hover {
+  border-color:#7186d9;
+  color:#263fa1;
+}
+html[data-theme="dark"] .site-header:not(.admin-header) > .product-detail-header-back {
+  border-color:#3c4f78;
+  color:#e5edff;
+  background:#172442;
+  box-shadow:0 2px 0 #080f20;
+}
+html[data-theme="dark"] body.perfume-page .site-header > .product-detail-header-back {
+  border-color:var(--perfume-border);
+  color:var(--perfume-ink);
+  background:var(--perfume-card);
+  box-shadow:none;
+}
+@media(max-width:760px) {
+  .site-header:not(.admin-header) > .product-detail-header-back {
+    left:10px;
+    width:36px;
+    height:36px;
+    font-size:21px;
+  }
+}
+
+/* Flechas para cambiar fotos en la ficha, además del deslizamiento táctil. */
+.product-detail-page .dialog-gallery-main,
+.perfume-detail-page .perfume-dialog-main-image { position:relative; }
+.product-detail-page .dialog-gallery-main { touch-action:pan-y; }
+.product-detail-page .dialog-gallery-nav,
+.perfume-detail-page .perfume-gallery-nav {
+  position:absolute;
+  top:50%;
+  z-index:5;
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  margin:0;
+  padding:0 0 3px;
+  border:1px solid rgba(255,255,255,.76);
+  border-radius:50%;
+  color:#26365c;
+  background:rgba(255,255,255,.91);
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+  font-family:Arial,sans-serif;
+  font-size:29px;
+  line-height:1;
+  cursor:pointer;
+  transform:translateY(-50%);
+  transition:background .16s,border-color .16s,opacity .16s;
+}
+.product-detail-page .dialog-gallery-prev,
+.perfume-detail-page .perfume-gallery-prev { left:10px; }
+.product-detail-page .dialog-gallery-next,
+.perfume-detail-page .perfume-gallery-next { right:10px; }
+.product-detail-page .dialog-gallery-nav:hover,
+.perfume-detail-page .perfume-gallery-nav:hover {
+  border-color:#7a8be5;
+  background:#fff;
+}
+.perfume-detail-page .perfume-dialog-main-image { touch-action:pan-y; }
+.perfume-detail-page .perfume-gallery-nav {
+  border-color:rgba(185,148,84,.7);
+  color:#34281a;
+  background:rgba(255,253,248,.92);
+}
+@media(max-width:760px) {
+  .product-detail-page .dialog-gallery-nav,
+  .perfume-detail-page .perfume-gallery-nav { width:32px; height:32px; font-size:26px; }
+  .product-detail-page .dialog-gallery-prev,
+  .perfume-detail-page .perfume-gallery-prev { left:6px; }
+  .product-detail-page .dialog-gallery-next,
+  .perfume-detail-page .perfume-gallery-next { right:6px; }
+}
+
+/* CONTRASTE DEL MODO OSCURO: la ficha ya no está dentro de .product-dialog. */
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-layout {
+  border-color:#34466b !important;
+  background:#101a30 !important;
+  box-shadow:0 12px 34px rgba(0,0,0,.26) !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail {
+  color:#e8efff !important;
+  background:#101a30 !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail h2,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail h3,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail b,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail .product-category,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail .product-price {
+  color:#edf3ff !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-detail p,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-specs,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .product-price-label,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-selected-summary > span:first-child {
+  color:#aebfdd !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-selected-summary strong {
+  color:#e9efff !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #dialog-image {
+  border-color:#34466b !important;
+  background:linear-gradient(135deg,#172442,#152039) !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #dialog-image .dialog-main-image,
+html[data-theme="dark"] body.product-detail-active .product-detail-page #dialog-image .dialog-gallery-thumbs img {
+  mix-blend-mode:normal !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-option-group:not(.variant-option-color-group) {
+  border-color:#34466b !important;
+  color:#e7eeff !important;
+  background:linear-gradient(135deg,#121f39,#162541) !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-option-group h3 {
+  color:#e2eaff !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-choice[data-variant-dimension="configuration"] {
+  border-color:#3a4f7b !important;
+  color:#e2eaff !important;
+  background:#172644 !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-choice[data-variant-dimension="configuration"].selected {
+  border-color:#8498ff !important;
+  color:#ffffff !important;
+  background:#293e77 !important;
+  box-shadow:inset 0 -2px 0 #94a5ff !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-option-color-group,
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-choice.color-choice,
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-choice.color-choice:hover,
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-choice.color-choice.selected {
+  color:#e6edff !important;
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-choice.color-choice:hover {
+  background:rgba(145,164,255,.10) !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page #variant-options-area .variant-color-dot {
+  border-color:#7b8aab !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-price-box {
+  border-color:#35496f !important;
+  color:#e8efff !important;
+  background:linear-gradient(125deg,#162644,#202341) !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-price-box span,
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-price-box small {
+  color:#aebfe0 !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-price-box strong {
+  color:#b8caff !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-status-badge.available {
+  color:#a7f0d0 !important;
+  background:#143d35 !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-status-badge.order {
+  color:#ffdda0 !important;
+  background:#49351d !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .variant-status-badge.unavailable {
+  color:#ffc1c1 !important;
+  background:#4a232c !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-color-card {
+  border-color:#34466b !important;
+  color:#e8efff !important;
+  background:#131f37 !important;
+}
+html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-color-info a {
+  color:#b7c7ff !important;
+}
+
+/* Perfumería respeta su paleta propia en la vista completa y ambas variantes de tema. */
+.perfume-detail-page .perfume-dialog-layout {
+  color:var(--perfume-ink);
+  background:var(--perfume-paper);
+}
+.perfume-detail-page .perfume-dialog-main-image {
+  position:relative;
+  overflow:hidden;
+  background:var(--perfume-card);
+}
+.perfume-detail-page .perfume-dialog-thumb { background:var(--perfume-card); }
