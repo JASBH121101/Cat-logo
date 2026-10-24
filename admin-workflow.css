@@ -77,3 +77,14 @@ html body.admin-body .admin-product-buttons > button.admin-icon-button:focus-vis
     width:42px!important; min-width:42px!important; height:42px!important; min-height:42px!important;
   }
 }
+
+/* Dark theme: workflow action palette */
+html[data-theme='dark'] .workflow-action-save{color:#eef4ff!important;background:#2456bf!important;border-color:#456fce!important}
+html[data-theme='dark'] .workflow-action-publish{color:#e9fff1!important;background:#166b46!important;border-color:#2c9b70!important}
+html[data-theme='dark'] .workflow-action-draft{color:#f5edff!important;background:#5a35a7!important;border-color:#8c6bea!important}
+html[data-theme='dark'] .workflow-action-exclusive{color:#ffe9a6!important;background:#40351e!important;border-color:#9e7b26!important}
+html[data-theme='dark'] .workflow-action-exclusive.is-active{color:#2a1a00!important;background:#e4b43f!important;border-color:#f5d374!important}
+html[data-theme='dark'] .workflow-action-cancel{color:#ffc7d0!important;background:#35202a!important;border-color:#7d4657!important}
+html[data-theme='dark'] .admin-product-buttons .admin-icon-button{background:#1b2948!important;color:#dbe6ff!important;border-color:#415178!important}
+html[data-theme='dark'] .admin-product-buttons .admin-icon-button.is-exclusive{background:#42351c!important;border-color:#9e7b26!important;color:#ffe7a2!important}
+html[data-theme='dark'] .admin-product-buttons .admin-icon-button.danger{background:#382133!important;border-color:#6b3d55!important;color:#ffb7c1!important}
