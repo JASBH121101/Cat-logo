@@ -262,3 +262,148 @@ body.perfume-detail-active .perfume-header-nav {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* AJUSTES DE VISTA DE PRODUCTO TRAS PRUEBA REAL EN MÓVIL
+   Mantener las opciones compactas y separar la galería de miniaturas. */
+.product-detail-page #variant-options-area .variant-selector { display:grid; gap:12px; }
+.product-detail-page #variant-options-area .variant-option-group {
+  min-width:0; padding:12px 14px; border-radius:13px; box-shadow:none;
+}
+.product-detail-page #variant-options-area .variant-option-group h3 { margin-bottom:10px; font-size:18px; }
+.product-detail-page #variant-options-area .variant-choice-list {
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+}
+.product-detail-page #variant-options-area .variant-choice[data-variant-dimension="configuration"] {
+  display:inline-flex; flex:0 1 auto; align-items:center; justify-content:center;
+  width:auto; min-width:0; min-height:40px; margin:0; padding:9px 13px;
+  border:1px solid #d7e0f1; border-radius:9px; color:#283c63; background:#f7f9ff;
+  box-shadow:none; font-size:14px; line-height:1.3; transform:none;
+}
+.product-detail-page #variant-options-area .variant-choice[data-variant-dimension="configuration"].selected {
+  border-color:#536de2; color:#263e8c; background:#edf1ff; box-shadow:inset 0 -2px 0 #536de2;
+}
+.product-detail-page #variant-options-area .variant-option-color-group {
+  padding:3px 0 0; border:0; border-radius:0; background:transparent; box-shadow:none;
+}
+.product-detail-page #variant-options-area .variant-choice.color-choice,
+.product-detail-page #variant-options-area .variant-choice.color-choice:hover,
+.product-detail-page #variant-options-area .variant-choice.color-choice.selected {
+  display:inline-flex !important; flex:0 0 auto !important; flex-direction:row !important;
+  align-items:center !important; justify-content:flex-start !important; gap:8px !important;
+  width:auto !important; min-width:0 !important; max-width:100% !important; min-height:0 !important;
+  margin:0 !important; padding:5px 7px !important; border:1px solid transparent !important;
+  border-radius:8px !important; color:var(--text,#24365f) !important;
+  background:transparent !important; box-shadow:none !important; font-size:14px !important;
+  line-height:1.25 !important; transform:none !important;
+}
+.product-detail-page #variant-options-area .variant-choice.color-choice:hover { background:rgba(83,109,226,.07) !important; }
+.product-detail-page #variant-options-area .variant-choice.color-choice:focus-visible {
+  outline:2px solid rgba(83,109,226,.7) !important; outline-offset:2px !important;
+}
+.product-detail-page #variant-options-area .variant-color-dot {
+  display:block !important; flex:0 0 24px !important; width:24px !important; height:24px !important;
+  min-width:24px !important; min-height:24px !important; padding:0 !important; margin:0 !important;
+  box-sizing:border-box !important; border:1px solid rgba(20,30,50,.22) !important; border-radius:50% !important;
+}
+.product-detail-page #variant-options-area .variant-choice.color-choice.selected .variant-color-dot {
+  outline:2px solid #536de2 !important; outline-offset:2px !important; box-shadow:none !important;
+}
+.product-detail-page #variant-options-area .variant-color-name {
+  display:inline !important; width:auto !important; max-width:none !important; padding:0 !important;
+  color:inherit !important; font-size:14px !important; font-weight:650 !important; line-height:1.3 !important;
+  text-align:left !important; white-space:nowrap !important; overflow-wrap:normal !important; word-break:normal !important;
+}
+/* La columna de fotos tiene una altura controlada; las miniaturas tienen su
+   propia fila y nunca se dibujan encima de la imagen principal. */
+.product-detail-page .dialog-layout { align-items:start; }
+.product-detail-page #dialog-image {
+  display:grid !important; grid-template-rows:minmax(0,1fr) 54px !important;
+  align-content:stretch !important; align-items:stretch !important; justify-items:stretch !important;
+  gap:7px !important; width:100% !important; height:min(66vh,590px) !important;
+  min-height:0 !important; max-height:min(66vh,590px) !important; padding:12px !important;
+  box-sizing:border-box !important; overflow:hidden !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main {
+  display:grid !important; place-items:center !important; width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important; max-height:100% !important; flex:initial !important;
+  overflow:hidden !important;
+}
+.product-detail-page #dialog-image .dialog-image-zoom {
+  display:grid !important; place-items:center !important; width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important; margin:0 !important; padding:0 !important;
+  border:0 !important; border-radius:0 !important; background:transparent !important;
+  box-shadow:none !important; overflow:hidden !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main .dialog-main-image {
+  display:block !important; width:100% !important; height:100% !important; min-width:0 !important;
+  min-height:0 !important; max-width:100% !important; max-height:100% !important; margin:0 !important;
+  padding:8px !important; box-sizing:border-box !important; object-fit:contain !important; object-position:center !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-thumbs {
+  display:flex !important; flex:0 0 54px !important; flex-wrap:nowrap !important; align-items:center !important;
+  justify-content:center !important; gap:7px !important; width:100% !important; min-width:0 !important;
+  min-height:0 !important; max-height:54px !important; margin:0 !important; padding:2px 3px !important;
+  box-sizing:border-box !important; overflow-x:auto !important; overflow-y:hidden !important; overscroll-behavior-x:contain;
+}
+.product-detail-page #dialog-image .dialog-gallery-thumb {
+  position:relative !important; display:grid !important; place-items:center !important; flex:0 0 44px !important;
+  width:44px !important; min-width:44px !important; height:44px !important; min-height:44px !important;
+  max-height:44px !important; margin:0 !important; padding:3px !important; box-sizing:border-box !important; overflow:hidden !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-thumbs img {
+  display:block !important; width:100% !important; height:100% !important; min-width:0 !important;
+  min-height:0 !important; max-width:100% !important; max-height:100% !important; margin:0 !important;
+  padding:0 !important; box-sizing:border-box !important; object-fit:contain !important; object-position:center !important;
+}
+.perfume-detail-page .perfume-dialog-layout { align-items:start; }
+.perfume-detail-page .perfume-dialog-gallery { width:100%; min-width:0; }
+.perfume-detail-page .perfume-dialog-main-image {
+  width:100%; height:clamp(320px,42vw,470px); min-height:0; max-height:min(66vh,520px);
+  aspect-ratio:auto; box-sizing:border-box;
+}
+.perfume-detail-page .perfume-dialog-main-image img {
+  display:block; width:100%; height:100%; min-width:0; min-height:0; max-width:100%;
+  max-height:100%; padding:9px; box-sizing:border-box; object-fit:contain; object-position:center;
+}
+.perfume-detail-page .perfume-dialog-thumbnails {
+  display:flex; flex-wrap:nowrap; align-items:center; gap:7px; max-width:100%;
+  margin-top:8px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain;
+}
+.perfume-detail-page .perfume-dialog-thumb {
+  flex:0 0 48px; width:48px; min-width:48px; height:48px; min-height:48px; padding:3px; box-sizing:border-box;
+}
+.perfume-detail-page .perfume-dialog-thumb img {
+  display:block; width:100%; height:100%; min-width:0; min-height:0; padding:0; object-fit:contain;
+}
+@media (max-width:760px) {
+  .product-detail-page #variant-options-area .variant-option-group { padding:10px 11px; }
+  .product-detail-page #variant-options-area .variant-option-group h3 { margin-bottom:8px; font-size:17px; }
+  .product-detail-page #variant-options-area .variant-option-color-group { padding:1px 0 0; }
+  .product-detail-page #variant-options-area .variant-choice[data-variant-dimension="configuration"] {
+    min-height:38px; padding:8px 11px; font-size:13px;
+  }
+  .product-detail-page #variant-options-area .variant-choice.color-choice,
+  .product-detail-page #variant-options-area .variant-choice.color-choice:hover,
+  .product-detail-page #variant-options-area .variant-choice.color-choice.selected { gap:8px !important; padding:4px 5px !important; }
+  .product-detail-page #variant-options-area .variant-color-dot {
+    flex-basis:22px !important; width:22px !important; height:22px !important; min-width:22px !important; min-height:22px !important;
+  }
+  .product-detail-page #variant-options-area .variant-color-name { font-size:13px !important; }
+  .product-detail-page #dialog-image {
+    grid-template-rows:minmax(0,1fr) 50px !important; gap:5px !important;
+    height:clamp(300px,82vw,410px) !important; max-height:410px !important; padding:9px !important;
+  }
+  .product-detail-page #dialog-image .dialog-gallery-thumbs {
+    flex-basis:50px !important; max-height:50px !important; justify-content:flex-start !important;
+  }
+  .product-detail-page #dialog-image .dialog-gallery-thumb {
+    flex-basis:42px !important; width:42px !important; min-width:42px !important;
+    height:42px !important; min-height:42px !important; max-height:42px !important;
+  }
+  .perfume-detail-page .perfume-dialog-layout { gap:12px; padding:12px; }
+  .perfume-detail-page .perfume-dialog-main-image { height:clamp(230px,70vw,330px); max-height:none; }
+  .perfume-detail-page .perfume-dialog-main-image img { padding:7px; }
+  .perfume-detail-page .perfume-dialog-thumbnails { justify-content:flex-start; }
+  .perfume-detail-page .perfume-dialog-detail { padding:0 0 10px; }
+  .perfume-detail-page .perfume-dialog-notes { padding:0 12px 14px; }
+}
