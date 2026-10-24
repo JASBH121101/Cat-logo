@@ -5,7 +5,8 @@ ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS workflow_status text,
   ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
   ADD COLUMN IF NOT EXISTS trash_previous_status text,
-  ADD COLUMN IF NOT EXISTS draft_payload jsonb;
+  ADD COLUMN IF NOT EXISTS draft_payload jsonb,
+  ADD COLUMN IF NOT EXISTS is_exclusive boolean NOT NULL DEFAULT false;
 
 -- Los registros existentes se conservan: los publicados siguen publicados y los
 -- registros privados existentes pasan a "unpublished" hasta que el administrador
