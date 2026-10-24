@@ -10,8 +10,10 @@ const grid = document.querySelector("#product-grid");
 const statusNode = document.querySelector("#catalog-status");
 const emptyNode = document.querySelector("#empty-results");
 const searchInput = document.querySelector("#search-input");
-const dialog = document.querySelector("#product-dialog");
+const productDetailPage = document.querySelector("#product-detail-page");
 const dialogContent = document.querySelector("#dialog-content");
+const catalogDocumentTitle = document.title;
+const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
 const categoryFilters = document.querySelector("#category-filters");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
@@ -449,8 +451,8 @@ document.querySelectorAll("#product-grid, #featured-grid").forEach(catalogGrid =
 }, true));
 
 function productLink(product) {
-  const page = new URL("./", window.location.href);
-  page.hash = `producto=${encodeURIComponent(product.id)}`;
+  const page = new URL(window.location.pathname, window.location.origin);
+  page.searchParams.set("producto", String(product.id));
   return page.href;
 }
 
@@ -1236,27 +1238,29 @@ function openProduct(product) {
     });
   }
 
-  if (typeof dialog.showModal === "function") {
-    if (!dialog.open) dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "open");
-  }
+  productDetailPage?.classList.remove("hidden");
+  document.querySelector("main")?.classList.add("is-product-detail-view");
+  document.body.classList.add("product-detail-active");
+  document.title = `${product.name || "Producto"} | JB TECH`;
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.href = productLink(product);
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   const link = target?.closest("a[data-details]");
   if (!link) return;
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 
   const productId = link.getAttribute("data-details");
   const product = products.find(item => String(item.id) === productId);
   if (!product) return;
 
   event.preventDefault();
-  const productUrl = productLink(product);
-  if (window.location.hash !== `#producto=${encodeURIComponent(product.id)}`) {
-    window.history.pushState(window.history.state, document.title, productUrl);
-  }
+  const scrollY = window.scrollY;
+  window.history.replaceState({ ...(window.history.state || {}), catalogScrollY: scrollY }, document.title, window.location.href);
+  window.history.pushState({ productDetailRoute: true, catalogScrollY: scrollY, productId: String(product.id) }, document.title, productLink(product));
   openProduct(product);
 }));
 
@@ -1283,21 +1287,59 @@ clearPriceFilterButton?.addEventListener("click", () => {
   }
 });
 
-document.querySelector("#dialog-close").addEventListener("click", () => {
-  if (dialog.open && typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
-  if (window.location.hash.startsWith("#producto=")) {
-    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
-  }
-});
+function readProductRoute() {
+  const url = new URL(window.location.href);
+  const queryId = url.searchParams.get("producto");
+  if (queryId) return { id: queryId, legacy: false };
+  const match = url.hash.match(/^#producto=(.+)$/);
+  if (!match) return { id: "", legacy: false };
+  let id = match[1];
+  try { id = decodeURIComponent(id); } catch { /* Conservar el ID heredado. */ }
+  return { id, legacy: true };
+}
 
-dialog.addEventListener("click", event => {
-  if (event.target !== dialog) return;
-  if (dialog.open && typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
-  if (window.location.hash.startsWith("#producto=")) {
-    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
+function showCatalogView() {
+  productDetailPage?.classList.add("hidden");
+  document.querySelector("main")?.classList.remove("is-product-detail-view");
+  document.body.classList.remove("product-detail-active");
+  document.title = catalogDocumentTitle;
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical && catalogCanonical) canonical.href = catalogCanonical;
+  if (dialogContent) dialogContent.innerHTML = "";
+}
+
+function handleProductRoute() {
+  const route = readProductRoute();
+  if (!route.id) {
+    const wasDetail = document.body.classList.contains("product-detail-active");
+    const scrollY = Number(window.history.state?.catalogScrollY) || 0;
+    showCatalogView();
+    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    return;
   }
+  const product = products.find(item => String(item.id) === route.id);
+  if (!product) {
+    showCatalogView();
+    statusNode.textContent = "El producto solicitado no está publicado o el enlace ya no es válido.";
+    return;
+  }
+  if (route.legacy) {
+    window.history.replaceState(window.history.state, document.title, productLink(product));
+  }
+  openProduct(product);
+}
+
+document.querySelector("#product-detail-back")?.addEventListener("click", () => {
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.delete("producto");
+  url.hash = "";
+  window.history.replaceState(window.history.state, document.title, url.href);
+  showCatalogView();
+  window.scrollTo({ top: 0, behavior: "auto" });
 });
 
 async function initializeCatalog() {
@@ -1339,30 +1381,16 @@ async function initializeCatalog() {
     return;
   }
 
-  const openProductFromHash = () => {
-    const match = window.location.hash.match(/^#producto=(.+)$/);
-    if (!match) return;
-    let id = match[1];
-    try { id = decodeURIComponent(id); } catch { /* Usa el ID recibido. */ }
-    const product = products.find(item => String(item.id) === id);
-    if (!product) {
-      statusNode.textContent =
-        "El producto solicitado no está publicado o el enlace ya no es válido.";
-      return;
-    }
-
-    try {
-      openProduct(product);
-    } catch (error) {
-      statusNode.textContent =
-        "Encontramos el producto, pero falló la ficha de detalles. " +
-        (error?.message || "Revisá la consola del navegador.");
-      console.error("Error al abrir la ficha del producto:", error);
-    }
-  };
-
-  openProductFromHash();
-  window.addEventListener("hashchange", openProductFromHash);
+  try {
+    handleProductRoute();
+  } catch (error) {
+    statusNode.textContent =
+      "Encontramos el producto, pero falló la ficha de detalles. " +
+      (error?.message || "Revisá la consola del navegador.");
+    console.error("Error al abrir la ficha del producto:", error);
+  }
+  window.addEventListener("popstate", handleProductRoute);
+  window.addEventListener("hashchange", handleProductRoute);
 }
 
 initializeCatalog();
