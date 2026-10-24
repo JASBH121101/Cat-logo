@@ -9388,3 +9388,51 @@ html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-se
     opacity:0 !important;
   }
 }
+
+
+/* Auditoría responsive · tablets en vertical (761–900 px). */
+@media (min-width:761px) and (max-width:900px) {
+  body.technology-catalog .catalog-section .section-heading {
+    align-items:stretch;
+    flex-direction:column;
+    gap:16px;
+  }
+  body.technology-catalog .catalog-section .section-heading > div {
+    min-width:0;
+    width:100%;
+  }
+  body.technology-catalog .catalog-section .search-box,
+  html[data-theme="light"] body.technology-catalog .catalog-section .search-box,
+  html[data-theme="dark"] body.technology-catalog .catalog-section .search-box {
+    width:min(100%,520px);
+    max-width:100%;
+    min-width:0;
+    flex:0 1 auto;
+    box-sizing:border-box;
+  }
+  body.technology-catalog #product-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+  }
+
+  /* En tablet angosta el encabezado del dashboard ocupa dos filas, sin apretar el selector. */
+  .dashboard-overview-heading {
+    align-items:stretch;
+    flex-direction:column;
+    gap:12px;
+  }
+  .dashboard-overview-controls {
+    align-items:stretch;
+    flex-direction:column;
+    gap:9px;
+  }
+  .dashboard-scope-control {
+    width:100%;
+    min-width:0;
+    max-width:420px;
+  }
+  .dashboard-overview-controls .dashboard-updated {
+    align-self:flex-start;
+    white-space:normal;
+  }
+}
