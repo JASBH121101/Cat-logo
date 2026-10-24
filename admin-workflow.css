@@ -88,3 +88,5 @@ html[data-theme='dark'] .workflow-action-cancel{color:#ffc7d0!important;backgrou
 html[data-theme='dark'] .admin-product-buttons .admin-icon-button{background:#1b2948!important;color:#dbe6ff!important;border-color:#415178!important}
 html[data-theme='dark'] .admin-product-buttons .admin-icon-button.is-exclusive{background:#42351c!important;border-color:#9e7b26!important;color:#ffe7a2!important}
 html[data-theme='dark'] .admin-product-buttons .admin-icon-button.danger{background:#382133!important;border-color:#6b3d55!important;color:#ffb7c1!important}
+
+html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action-save{background:#2456bf!important;color:#eef4ff!important;border-color:#456fce!important}
