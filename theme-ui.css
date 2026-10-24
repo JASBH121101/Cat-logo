@@ -9436,3 +9436,43 @@ html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-se
     white-space:normal;
   }
 }
+
+
+/* =========================================================
+   JB MANAGER · CONTRASTE DEL TEMA CLARO EN VISTA DE PRODUCTO
+   ========================================================= */
+html[data-theme="light"] body.admin-body .admin-preview-eyebrow {
+  color: #4358a7;
+}
+
+html[data-theme="light"] body.admin-body .admin-preview-image-count {
+  color: #526480;
+}
+
+html[data-theme="light"] body.admin-body .admin-preview-photo-placeholder {
+  color: #4b5e7b;
+}
+
+html[data-theme="light"] body.admin-body .admin-preview-publish-state.published,
+html[data-theme="light"] body.admin-body .admin-preview-status.available {
+  border-color: #96d2bd;
+  color: #176b53;
+  background: #e2f6ed;
+}
+
+html[data-theme="light"] body.admin-body .admin-preview-publish-state.draft,
+html[data-theme="light"] body.admin-body .admin-preview-status.order {
+  border-color: #e5c58d;
+  color: #77500b;
+  background: #fff3d9;
+}
+
+html[data-theme="light"] body.admin-body .admin-preview-status.unavailable {
+  border-color: #efb6c0;
+  color: #9e2c43;
+  background: #fff0f2;
+}
+
+html[data-theme="light"] body.admin-body .admin-preview-color-dot {
+  border-color: #c3ccdb;
+}
