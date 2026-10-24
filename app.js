@@ -457,6 +457,19 @@ function productLink(product) {
   return page.href;
 }
 
+function productShareLink(product, variant = null, fallbackColor = null) {
+  const share = new URL("/api/share", window.location.origin);
+  share.searchParams.set("catalog", "technology");
+  share.searchParams.set("id", String(product.id));
+  const storage = String(variant?.storage || "").trim();
+  const ram = String(variant?.ram || "").trim();
+  const color = String(variant?.color || fallbackColor?.name || fallbackColor?.color || "").trim();
+  if (storage) share.searchParams.set("storage", storage);
+  if (ram) share.searchParams.set("ram", ram);
+  if (color) share.searchParams.set("color", color);
+  return share.href;
+}
+
 function buildProductWhatsAppMessage(product, variant = null, fallbackColor = null) {
   const parts = [`Hola, estoy seguro de mi elección y quiero comprar este producto: ${product.name}.`];
 
@@ -487,7 +500,7 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
     }
   }
 
-  parts.push(`Enlace del artículo: ${productLink(product)}.`);
+  parts.push(`Enlace del artículo: ${productShareLink(product, variant, fallbackColor)}.`);
   parts.push("Quisiera confirmar la disponibilidad final, la forma de pago y el costo de entrega para realizar la compra.");
 
   return parts.join(" ");
@@ -513,7 +526,7 @@ function buildPaymentWhatsAppMessage(product, variant = null, paymentType = "fin
     const nio = formatNIO(startingPrice(product, "price_nio"));
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
   }
-  parts.push(`Enlace del producto: ${productLink(product)}.`);
+  parts.push(`Enlace del producto: ${productShareLink(product, variant)}.`);
   parts.push(normalizedType === "credit_card"
     ? "Quisiera saber qué tarjetas aceptan, si hay posibilidad de pagar en cuotas, y cuáles son los requisitos, recargos o comisiones aplicables."
     : "Quisiera conocer los requisitos, plazos, cuotas y condiciones de aprobación disponibles.");
@@ -926,7 +939,7 @@ function renderVariantControls(product, variants, selected) {
   }
 }
 
-function renderLegacyColorOptions(product) {
+function renderLegacyColorOptions(product, selectedColorName = "") {
   const colors = getProductColors(product);
   if (!colors.length) return "";
 
@@ -936,7 +949,7 @@ function renderLegacyColorOptions(product) {
 
       <div class="dialog-color-grid">
         ${colors.map(color => `
-          <article class="dialog-color-card">
+          <article class="dialog-color-card ${String(color.name).trim().toLocaleLowerCase("es") === String(selectedColorName).trim().toLocaleLowerCase("es") ? "is-selected" : ""}">
             <div class="dialog-color-image">
               ${
                 color.image_url
@@ -1166,7 +1179,7 @@ dialogContent.addEventListener("click", event => {
   });
 });
 
-function openProduct(product) {
+function openProduct(product, requestedVariant = null) {
   dialogContent.dataset.analyticsProductId = String(product.id);
   dialogContent.dataset.analyticsVariantColor = "";
   dialogContent.dataset.analyticsVariantRam = "";
@@ -1174,7 +1187,11 @@ function openProduct(product) {
   recordCatalogEvent(product.id, "view");
   const variants = getProductVariants(product);
   const specs = specsArray(product.specifications);
-  const initialImage = getProductImages(product)[0] || "";
+  const requestedColorName = String(requestedVariant?.color || "").trim();
+  const requestedColor = !variants.length && requestedColorName
+    ? getProductColors(product).find(color => String(color.name || "").trim().toLocaleLowerCase("es") === requestedColorName.toLocaleLowerCase("es"))
+    : null;
+  const initialImage = requestedColor?.image_url || getProductImages(product)[0] || "";
 
   const warranty =
     product.warranty_months !== null &&
@@ -1205,7 +1222,7 @@ function openProduct(product) {
             : `<div class="product-price-label">Precio de referencia</div>
                <div class="product-price">${escapeHtml(formatUSD(product.price_usd))}</div>
                ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
-               ${renderLegacyColorOptions(product)}`
+               ${renderLegacyColorOptions(product, requestedColorName)}`
         }
 
         <p class="dialog-product-description">${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
@@ -1246,7 +1263,20 @@ function openProduct(product) {
   updateProductContactLinks(product);
 
   if (variants.length) {
+    const requestedVariantPresent = Boolean(
+      String(requestedVariant?.storage || "").trim() ||
+      String(requestedVariant?.ram || "").trim() ||
+      String(requestedVariant?.color || "").trim()
+    );
+    const routeVariant = requestedVariantPresent
+      ? variants.find(variant =>
+          (!String(requestedVariant?.storage || "").trim() || String(variant.storage || "").trim().toLocaleLowerCase("es") === String(requestedVariant.storage).trim().toLocaleLowerCase("es")) &&
+          (!String(requestedVariant?.ram || "").trim() || String(variant.ram || "").trim().toLocaleLowerCase("es") === String(requestedVariant.ram).trim().toLocaleLowerCase("es")) &&
+          (!String(requestedVariant?.color || "").trim() || String(variant.color || "").trim().toLocaleLowerCase("es") === String(requestedVariant.color).trim().toLocaleLowerCase("es"))
+        )
+      : null;
     let selectedVariant =
+      routeVariant ||
       variants.find(variant => variant.availability === "available") ||
       variants[0];
 
@@ -1333,13 +1363,18 @@ clearPriceFilterButton?.addEventListener("click", () => {
 
 function readProductRoute() {
   const url = new URL(window.location.href);
+  const variant = {
+    storage: url.searchParams.get("storage") || "",
+    ram: url.searchParams.get("ram") || "",
+    color: url.searchParams.get("color") || ""
+  };
   const queryId = url.searchParams.get("producto");
-  if (queryId) return { id: queryId, legacy: false };
+  if (queryId) return { id: queryId, legacy: false, ...variant };
   const match = url.hash.match(/^#producto=(.+)$/);
-  if (!match) return { id: "", legacy: false };
+  if (!match) return { id: "", legacy: false, ...variant };
   let id = match[1];
   try { id = decodeURIComponent(id); } catch { /* Conservar el ID heredado. */ }
-  return { id, legacy: true };
+  return { id, legacy: true, ...variant };
 }
 
 function showCatalogView() {
@@ -1371,7 +1406,7 @@ function handleProductRoute() {
   if (route.legacy) {
     window.history.replaceState(window.history.state, document.title, productLink(product));
   }
-  openProduct(product);
+  openProduct(product, route);
 }
 
 productHeaderBack?.addEventListener("click", () => {
