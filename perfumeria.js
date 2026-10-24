@@ -199,7 +199,9 @@ function renderCard(product) {
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
   const image = imageMarkup(product);
-  const badge = product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
+  const badge = product.is_exclusive
+    ? '<span class="perfume-featured-badge perfume-exclusive-badge">★ EXCLUSIVO</span>'
+    : product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
   const state = statusLabel(product.availability);
   const stateBadge = state === "Disponible" ? "" : '<span class="perfume-state-badge">' + escapeHtml(state) + '</span>';
   const nio = formatNIO(product.price_nio);
