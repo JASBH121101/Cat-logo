@@ -85,6 +85,43 @@ function normalizeCatalogType(value) {
   return value === "perfumery" ? "perfumery" : "technology";
 }
 
+const PRODUCT_WORKFLOW_STATES = new Set(["draft", "unpublished", "published", "trash"]);
+
+function getProductWorkflowStatus(product) {
+  const status = String(product?.workflow_status || "").trim().toLowerCase();
+  if (PRODUCT_WORKFLOW_STATES.has(status)) return status;
+  if (product?.deleted_at) return "trash";
+  return product?.is_published ? "published" : "unpublished";
+}
+
+function workflowStatusLabel(status) {
+  return ({
+    draft: "Borrador",
+    unpublished: "No publicado",
+    published: "Publicado",
+    trash: "En papelera"
+  })[status] || "No publicado";
+}
+
+function setWorkflowButtonState(button, label, disabled = false) {
+  if (!button) return;
+  button.setAttribute("aria-label", label);
+  button.setAttribute("title", label);
+  button.disabled = disabled;
+}
+
+function setWorkflowActionsBusy(busy, activeButton = null) {
+  document.querySelectorAll("#product-form [data-save-action], #cancel-edit-button").forEach(button => {
+    button.disabled = Boolean(busy);
+    if (button === activeButton && busy) {
+      button.setAttribute("aria-busy", "true");
+      button.title = "Guardando producto…";
+    } else {
+      button.removeAttribute("aria-busy");
+    }
+  });
+}
+
 function getActiveCatalogProducts() {
   return products.filter(product => normalizeCatalogType(product.catalog_type) === activeCatalogType);
 }
@@ -107,7 +144,9 @@ function updateDashboardScopeLabels() {
   const labels = {
     "dashboard-total-label": isAll ? "Artículos totales" : isPerfume ? "Fragancias totales" : "Productos totales",
     "dashboard-published-label": isAll ? "Publicados" : isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "dashboard-drafts-label": isAll ? "No publicados" : isPerfume ? "Fragancias no publicadas" : "No publicados",
+    "dashboard-drafts-label": isAll ? "Borradores" : isPerfume ? "Borradores de fragancias" : "Borradores",
+    "dashboard-unpublished-label": isAll ? "No publicados" : isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "dashboard-trash-label": isAll ? "Papelera" : isPerfume ? "Fragancias en papelera" : "Productos en papelera",
     "dashboard-review-label": isAll ? "Sin foto principal" : isPerfume ? "Fragancias sin fotografía" : "Por revisar"
   };
   for (const [id, label] of Object.entries(labels)) {
@@ -193,9 +232,13 @@ function updateProductFormMode() {
 
   const editing = Boolean($("#product-id")?.value);
   const formTitle = $("#form-title");
-  const saveButton = $("#save-product-button");
   if (formTitle && !editing) formTitle.textContent = isPerfume ? "Registrar fragancia" : "Agregar producto";
-  if (saveButton && !editing) saveButton.textContent = "Guardar producto";
+  if (!editing) {
+    setWorkflowButtonState($("#save-draft-button"), "Guardar borrador");
+    setWorkflowButtonState($("#save-product-button"), "Guardar producto completo sin publicar");
+    setWorkflowButtonState($("#publish-product-button"), "Guardar y publicar");
+    setWorkflowButtonState($("#publish-exclusive-button"), "Guardar y publicar como exclusivo");
+  }
 
   const contextDescription = $("#admin-context-description");
   if (contextDescription) contextDescription.textContent = isPerfume
@@ -209,9 +252,13 @@ function updateProductFormMode() {
   const dynamicLabels = {
     "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto",
     "admin-nav-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "admin-nav-drafts-label": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "admin-nav-unpublished-label": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "admin-nav-drafts-label": isPerfume ? "Borradores de fragancias" : "Borradores",
+    "admin-nav-trash-label": isPerfume ? "Fragancias en papelera" : "Papelera",
     "published-section-title": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "draft-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados"
+    "unpublished-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "draft-section-title": isPerfume ? "Borradores de fragancias" : "Borradores",
+    "trash-section-title": isPerfume ? "Fragancias en papelera" : "Papelera"
   };
   for (const [id, label] of Object.entries(dynamicLabels)) {
     const node = document.getElementById(id);
@@ -1791,6 +1838,8 @@ async function loadProducts() {
   products = (data || []).map(product => ({
     ...product,
     catalog_type: normalizeCatalogType(product.catalog_type),
+    workflow_status: getProductWorkflowStatus(product),
+    is_published: getProductWorkflowStatus(product) === "published",
     perfume_details: null
   }));
 
