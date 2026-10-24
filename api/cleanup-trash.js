@@ -252,7 +252,8 @@ module.exports = async function handler(req, res) {
         }));
         await restRequest(base, key, 'catalog_events_archive', {
           method: 'POST',
-          prefer: 'return=minimal',
+          filters: { on_conflict: 'id' },
+          prefer: 'resolution=ignore-duplicates,return=minimal',
           body: archiveRows
         });
         summary.archivedEvents += events.length;
