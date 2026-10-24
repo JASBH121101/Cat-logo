@@ -2084,7 +2084,7 @@ function productNeedsMainImage(product) {
 }
 
 function renderDashboardOverview() {
-  const catalogProducts = getDashboardProducts();
+  const catalogProducts = getDashboardProducts().filter(product => !["trash", "deleting"].includes(getWorkflowStatus(product)));
   const published = catalogProducts.filter(product => getWorkflowStatus(product) === "published");
   const drafts = catalogProducts.filter(product => getWorkflowStatus(product) === "draft" || getWorkflowStatus(product) === "unpublished");
   const needsImage = catalogProducts.filter(productNeedsMainImage);
@@ -2480,25 +2480,48 @@ function collectProductStoragePaths(product) {
 
 async function deleteProductFromDatabase(product) {
   if (!supabase || !currentUser) throw new Error("La sesión administrativa no está disponible.");
-  const imagePaths = collectProductStoragePaths(product);
-  const { data, error } = await supabase.from("products").delete().eq("id", product.id).select("id");
-  if (error) throw error;
-  if (!Array.isArray(data) || !data.some(row => String(row.id) === String(product.id))) {
-    throw new Error("La base de datos no confirmó la eliminación. Revisá los permisos o si el producto ya no existe.");
+  const currentStatus = getWorkflowStatus(product);
+  if (!["trash", "deleting"].includes(currentStatus)) {
+    throw new Error("Por seguridad, la eliminación definitiva solo está disponible desde la papelera.");
   }
-  // Storage se limpia solo después de confirmar que el registro se borró.
+  const { data: markedRows, error: markError } = await supabase
+    .from("products")
+    .update({
+      workflow_status: "deleting",
+      is_published: false,
+      deleted_at: product.deleted_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      updated_by: currentUser.id
+    })
+    .eq("id", product.id)
+    .in("workflow_status", ["trash", "deleting"])
+    .select("id");
+  if (markError) throw markError;
+  if (!Array.isArray(markedRows) || !markedRows.some(row => String(row.id) === String(product.id))) {
+    throw new Error("El producto cambió de estado. Actualizá el panel antes de volver a intentarlo.");
+  }
+
+  const imagePaths = collectProductStoragePaths(product);
   const storageErrors = [];
   const bucket = String(CONFIG.storageBucket || "product-images");
   for (let offset = 0; offset < imagePaths.length; offset += 100) {
-    const chunk = imagePaths.slice(offset, offset + 100);
     try {
-      const { error: storageError } = await supabase.storage.from(bucket).remove(chunk);
+      const { error: storageError } = await supabase.storage.from(bucket).remove(imagePaths.slice(offset, offset + 100));
       if (storageError) storageErrors.push(storageError.message || "Error de Storage sin detalle.");
     } catch (storageError) {
       storageErrors.push(storageError && storageError.message ? storageError.message : "Error de Storage sin detalle.");
     }
   }
-  return { imageCount: imagePaths.length, storageErrors };
+  if (storageErrors.length) {
+    throw new Error("El producto permanece protegido en la papelera; la limpieza de Storage falló y puede reintentarse: " + storageErrors.slice(0, 2).join(" · "));
+  }
+  const { data: deletedRows, error: deleteError } = await supabase
+    .from("products").delete().eq("id", product.id).eq("workflow_status", "deleting").select("id");
+  if (deleteError) throw deleteError;
+  if (!Array.isArray(deletedRows) || !deletedRows.some(row => String(row.id) === String(product.id))) {
+    throw new Error("Las fotografías se limpiaron, pero la base no confirmó el borrado. Reintentá desde la papelera.");
+  }
+  return { imageCount: imagePaths.length, storageErrors: [] };
 }
 
 function getWorkflowStatus(product) {
@@ -2509,7 +2532,8 @@ function renderAdminList() {
   const items=getActiveCatalogProducts();
   const searchable=p=>[p.name,p.brand,p.model,p.category,p.perfume_details&&p.perfume_details.scent_family].join(" ").toLocaleLowerCase("es");
   const byStatus=s=>items.filter(p=>getWorkflowStatus(p)===s);
-  const published=byStatus("published"), unpublished=byStatus("unpublished"), drafts=byStatus("draft"), trash=byStatus("trash");
+  const published=byStatus("published"), unpublished=byStatus("unpublished"), drafts=byStatus("draft");
+  const trash=items.filter(p=>["trash","deleting"].includes(getWorkflowStatus(p)));
   const filter=(rows,selector)=>{const q=($(selector)?.value||"").trim().toLocaleLowerCase("es");return rows.filter(p=>searchable(p).includes(q));};
   const svg={
     view:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
@@ -2524,10 +2548,10 @@ function renderAdminList() {
     const variants=normalizeVariants(p.variants), perfume=p.catalog_type==="perfumery", d=p.perfume_details||{};
     const variantLabel=perfume?[d.family?perfumeFamilyLabel(d.family):"",d.concentration,d.volume_ml?d.volume_ml+" ml":""].filter(Boolean).join(" · "):variants.length?variants.length+" variante"+(variants.length===1?"":"s"):"";
     const price=minimumPrice(variants,"price_usd")??p.price_usd, priceLabel=price===null||price===undefined||price===""?"Consultar":"US"+Number(price).toLocaleString("en-US",{maximumFractionDigits:2});
-    const status=getWorkflowStatus(p), statusLabel=status==="published"?"Publicado":status==="draft"?"Borrador":status==="trash"?"En papelera":"No publicado";
+    const status=getWorkflowStatus(p), statusLabel=status==="published"?"Publicado":status==="draft"?"Borrador":status==="deleting"?"Limpieza pendiente":status==="trash"?"En papelera":"No publicado";
     let actions="";
     if(isTrash){
-      actions='<button class="admin-mini-button admin-icon-button" type="button" data-restore-product="'+escapeHtml(p.id)+'" aria-label="Restaurar producto" title="Restaurar producto">'+svg.restore+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="'+escapeHtml(p.id)+'" aria-label="Eliminar definitivamente" title="Eliminar definitivamente">'+svg.delete+'</button>';
+      actions=(status==="deleting"?'':'<button class="admin-mini-button admin-icon-button" type="button" data-restore-product="'+escapeHtml(p.id)+'" aria-label="Restaurar producto" title="Restaurar producto">'+svg.restore+'</button>')+'<button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="'+escapeHtml(p.id)+'" aria-label="'+(status==="deleting"?"Reintentar limpieza":"Eliminar definitivamente")+'" title="'+(status==="deleting"?"Reintentar limpieza de Storage":"Eliminar definitivamente")+'">'+svg.delete+'</button>';
     }else{
       actions='<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="'+escapeHtml(p.id)+'" aria-label="Ver producto" title="Ver producto">'+svg.view+'</button><button class="admin-mini-button admin-icon-button" type="button" data-edit="'+escapeHtml(p.id)+'" aria-label="Editar producto" title="Editar producto">'+svg.edit+'</button><button class="admin-mini-button admin-icon-button'+(p.is_exclusive?' is-exclusive':'')+'" type="button" data-exclusive-product="'+escapeHtml(p.id)+'" aria-label="'+(p.is_exclusive?'Quitar de exclusivos':'Marcar como exclusivo')+'" title="'+(p.is_exclusive?'Quitar de exclusivos':'Marcar como exclusivo')+'">'+svg.star+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="'+escapeHtml(p.id)+'" aria-label="Mover a papelera" title="Mover a papelera">'+svg.trash+'</button>';
     }
