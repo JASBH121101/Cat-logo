@@ -3502,3 +3502,15 @@ html[data-theme="light"] .primary-config-slot .variant-base-group {
   border-color:#8295d0;
   background:linear-gradient(145deg,#ffffff 0%,#f7f9ff 72%,#f1f4ff 100%);
 }
+
+
+/* CAT-LOGO · reducir el espacio entre la bienvenida y el resumen en pantallas pequeñas. */
+@media (max-width:760px) {
+  .admin-welcome {
+    margin-bottom:12px;
+    padding-bottom:18px;
+  }
+  .admin-welcome + .dashboard-overview {
+    margin-top:0;
+  }
+}
