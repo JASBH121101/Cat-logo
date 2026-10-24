@@ -9,6 +9,7 @@ const emptyNode = $("#empty-results");
 const searchInput = $("#perfume-search-input");
 const categoryFilters = $("#category-filters");
 const audienceFilters = $("#audience-filters");
+const productTypeFilters = $("#product-type-filters");
 const clearAllFiltersButton = $("#clear-all-filters");
 const filterSummary = $("#perfume-filter-summary");
 const featuredSection = $("#featured-section");
@@ -31,6 +32,7 @@ let supabase = null;
 let perfumes = [];
 const selectedFamilies = new Set();
 const selectedAudiences = new Set();
+const selectedProductTypes = new Set();
 
 const hasConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
 if (hasConfig) supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
@@ -78,6 +80,10 @@ function canonicalAudience(value) {
 function audienceMatches(product) {
   return !selectedAudiences.size || selectedAudiences.has(canonicalAudience(product.perfume_details?.audience));
 }
+function productTypeMatches(product) {
+  const type = product?.product_type === "set" ? "set" : "perfume";
+  return !selectedProductTypes.size || selectedProductTypes.has(type);
+}
 function updateFilterButtons(container, attribute, selectedSet) {
   if (!container) return;
   container.querySelectorAll(".filter-chip").forEach(button => {
@@ -123,6 +129,7 @@ function hasActiveFilters() {
     (searchInput?.value || "").trim() ||
     selectedFamilies.size > 0 ||
     selectedAudiences.size > 0 ||
+    selectedProductTypes.size > 0 ||
     priceBound(minPriceInput) !== null ||
     priceBound(maxPriceInput) !== null
   );
@@ -157,7 +164,7 @@ function buildWhatsAppMessage(product, intent) {
   const priceNio = formatNIO(product.price_nio);
   const notes = [
     "Hola, " + intent,
-    "Fragancia: " + String(product.name || "sin nombre") + ".",
+    (product.product_type === "set" ? "Set de perfumes: " : "Perfume / fragancia: ") + String(product.name || "sin nombre") + ".",
     product.brand ? "Marca: " + product.brand + "." : "",
     "Familia: " + family + ".",
     concentration ? "Concentración: " + concentration + "." : "",
@@ -198,6 +205,7 @@ function renderCard(product) {
   const family = familyLabel(detail.family);
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
+  const productTypeLabel = product.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia";
   const image = imageMarkup(product);
   const badge = product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
   const state = statusLabel(product.availability);
@@ -207,7 +215,7 @@ function renderCard(product) {
   return '<article class="product-card perfume-product-card' + (product.featured ? ' featured-product-card' : '') + '">' +
     '<div class="product-image perfume-product-image">' + badge + stateBadge + image + '</div>' +
     '<div class="product-card-content perfume-product-card-content">' +
-      '<p class="perfume-card-family">' + escapeHtml(family) + '</p>' +
+      '<p class="perfume-card-family">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
       '<h3>' + escapeHtml(product.name || "Fragancia sin nombre") + '</h3>' +
       (product.brand ? '<p class="perfume-card-brand">' + escapeHtml(product.brand) + '</p>' : '') +
       '<div class="perfume-product-meta">' + [concentration, volume, detail.audience].filter(Boolean).map(escapeHtml).join('<span aria-hidden="true">·</span>') + '</div>' +
@@ -215,7 +223,7 @@ function renderCard(product) {
       '<div class="perfume-price-label">' + 'Precio' + '</div>' +
       '<div class="perfume-product-price">' + escapeHtml(formatUSD(product.price_usd)) + '</div>' +
       (nio ? '<p class="perfume-product-price-secondary">' + escapeHtml(nio) + '</p>' : '') +
-      '<div class="product-actions"><a class="button perfume-view-button" href="' + escapeHtml(productLink(product)) + '" data-details="' + escapeHtml(product.id) + '">Ver fragancia <span aria-hidden="true">↗</span></a></div>' +
+      '<div class="product-actions"><a class="button perfume-view-button" href="' + escapeHtml(productLink(product)) + '" data-details="' + escapeHtml(product.id) + '">' + (product.product_type === "set" ? "Ver set" : "Ver fragancia") + ' <span aria-hidden="true">↗</span></a></div>' +
     '</div>' +
   '</article>';
 }
@@ -229,10 +237,10 @@ function visibleProducts() {
   if (!validRange) return [];
 
   return perfumes.filter(product => {
-    if (!familyMatches(product) || !audienceMatches(product)) return false;
+    if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
     const detail = product.perfume_details || {};
     const searchable = [
-      product.name, product.brand, product.model, product.description,
+      product.name, product.brand, product.model, product.description, product.product_type,
       detail.family, detail.concentration, detail.volume_ml, detail.audience, detail.scent_family,
       ...(Array.isArray(detail.top_notes) ? detail.top_notes : []),
       ...(Array.isArray(detail.heart_notes) ? detail.heart_notes : []),
@@ -266,23 +274,25 @@ function renderProducts() {
   emptyNode.classList.toggle("is-coming-soon", isComingSoon);
   const emptyTitle = emptyNode.querySelector("h3");
   const emptyDescription = emptyNode.querySelector("p");
-  if (emptyTitle) emptyTitle.textContent = isComingSoon ? "Próximamente" : "No encontramos esa fragancia";
+  if (emptyTitle) emptyTitle.textContent = isComingSoon ? "Próximamente" : "No encontramos ese producto";
   if (emptyDescription) {
     emptyDescription.textContent = isComingSoon
       ? "Estamos preparando nuestra selección de fragancias. Volvé pronto para descubrirla."
-      : "Probá con otro nombre, tipo de fragancia, género o rango de precio.";
+      : "Probá con otro nombre, formato, familia, género o rango de precio.";
   }
   statusNode.textContent = perfumes.length
     ? (filtering
-      ? matched.length + (matched.length === 1 ? " fragancia encontrada" : " fragancias encontradas")
-      : perfumes.length + (perfumes.length === 1 ? " fragancia publicada" : " fragancias publicadas") + (featured.length ? " · " + featured.length + " destacadas" : ""))
+      ? matched.length + (matched.length === 1 ? " producto encontrado" : " productos encontrados")
+      : perfumes.length + (perfumes.length === 1 ? " producto publicado" : " productos publicados") + (featured.length ? " · " + featured.length + " destacadas" : ""))
     : "Próximamente: estamos preparando la colección.";
   if (clearPriceButton) clearPriceButton.disabled = priceBound(minPriceInput) === null && priceBound(maxPriceInput) === null;
   updateFilterButtons(categoryFilters, "category", selectedFamilies);
   updateFilterButtons(audienceFilters, "audience", selectedAudiences);
-  const typeLabels = [...selectedFamilies].map(value => ({arabes:"Árabes",nicho:"Nicho",disenador:"Diseñador"})[value] || value);
+  updateFilterButtons(productTypeFilters, "productType", selectedProductTypes);
+  const familyLabels = [...selectedFamilies].map(value => ({arabes:"Árabes",nicho:"Nicho",disenador:"Diseñador"})[value] || value);
   const audienceLabels = [...selectedAudiences].map(value => ({hombre:"Hombre",mujer:"Mujer",unisex:"Unisex"})[value] || value);
-  if (filterSummary) filterSummary.textContent = [typeLabels.length ? typeLabels.join(" + ") : "Todos los tipos", audienceLabels.length ? audienceLabels.join(" + ") : "Todos los géneros"].join(" · ");
+  const productTypeLabels = [...selectedProductTypes].map(value => ({perfume:"Perfumes y fragancias",set:"Sets de perfumes"})[value] || value);
+  if (filterSummary) filterSummary.textContent = [productTypeLabels.length ? productTypeLabels.join(" + ") : "Todos los formatos", familyLabels.length ? familyLabels.join(" + ") : "Todas las familias", audienceLabels.length ? audienceLabels.join(" + ") : "Todos los géneros"].join(" · ");
   if (clearAllFiltersButton) clearAllFiltersButton.disabled = !hasActiveFilters();
 }
 
@@ -299,6 +309,7 @@ function openPerfume(product) {
   const images = getImages(product);
   const initialImage = images[0] || "";
   const family = familyLabel(detail.family);
+  const productTypeLabel = product.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia";
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "No especificado";
   const nio = formatNIO(product.price_nio);
@@ -324,13 +335,14 @@ function openPerfume(product) {
     '<div class="perfume-dialog-layout">' +
       '<section class="perfume-dialog-gallery">' + gallery + '</section>' +
       '<section class="perfume-dialog-detail">' +
-        '<p class="perfume-kicker">' + escapeHtml(family) + '</p>' +
+        '<p class="perfume-kicker">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
         '<h2>' + escapeHtml(product.name || "Fragancia") + '</h2>' +
         (product.brand ? '<p class="perfume-dialog-brand">' + escapeHtml(product.brand) + '</p>' : '') +
         '<p class="perfume-dialog-description">' + escapeHtml(product.description || "Consultá por las notas y características de esta fragancia.") + '</p>' +
         '<dl class="perfume-dialog-facts">' +
           (concentration ? '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration) + '</dd></div>' : '') +
           (detail.volume_ml ? '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' : '') +
+          '<div><dt>Tipo de producto</dt><dd>' + escapeHtml(productTypeLabel) + '</dd></div>' +
           (detail.audience ? '<div><dt>Género</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(statusLabel(product.availability)) + '</dd></div>' +
           (detail.is_original === true ? '<div><dt>Originalidad</dt><dd>Original confirmado</dd></div>' : '') +
@@ -338,8 +350,8 @@ function openPerfume(product) {
         '</dl>' +
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
         '<div class="perfume-dialog-actions">' +
-          '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, "quiero comprar esta fragancia."))) + '" target="_blank" rel="noopener">Quiero comprarla <span aria-hidden="true">↗</span></a>' +
-          '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, "quisiera consultar las opciones de financiamiento o pago con tarjeta de crédito para esta fragancia."))) + '" target="_blank" rel="noopener">Consultar financiamiento o tarjeta</a>' +
+          '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quiero comprar este set de perfumes." : "quiero comprar esta fragancia."))) + '" target="_blank" rel="noopener">' + (product.product_type === "set" ? "Quiero comprar este set" : "Quiero comprarla") + ' <span aria-hidden="true">↗</span></a>' +
+          '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar opciones de pago para este set de perfumes." : "quisiera consultar las opciones de financiamiento o pago con tarjeta de crédito para esta fragancia."))) + '" target="_blank" rel="noopener">Consultar pago o financiamiento</a>' +
         '</div>' +
       '</section>' +
     '</div>' +
@@ -417,6 +429,7 @@ function bindMultiSelect(container, attribute, selectedSet) {
 }
 bindMultiSelect(categoryFilters, "category", selectedFamilies);
 bindMultiSelect(audienceFilters, "audience", selectedAudiences);
+bindMultiSelect(productTypeFilters, "productType", selectedProductTypes);
 searchInput.addEventListener("input", renderProducts);
 minPriceInput.addEventListener("input", renderProducts);
 maxPriceInput.addEventListener("input", renderProducts);
@@ -428,6 +441,7 @@ clearPriceButton.addEventListener("click", () => {
 clearAllFiltersButton?.addEventListener("click", () => {
   selectedFamilies.clear();
   selectedAudiences.clear();
+  selectedProductTypes.clear();
   searchInput.value = "";
   minPriceInput.value = "";
   maxPriceInput.value = "";
