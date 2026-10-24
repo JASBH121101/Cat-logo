@@ -95,3 +95,5 @@ html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow
 html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action-draft{background:#5a35a7!important;color:#f5edff!important;border-color:#8c6bea!important}
 html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action-exclusive{background:#40351e!important;color:#ffe9a6!important;border-color:#9e7b26!important}
 html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action-exclusive.is-active{background:#e4b43f!important;color:#2a1a00!important;border-color:#f5d374!important}
+
+html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action-cancel{background:#35202a!important;color:#ffc7d0!important;border-color:#7d4657!important}
