@@ -2895,7 +2895,10 @@ function scheduleLocalRecoverySave(delay = 120) {
   }, Math.max(0, delay));
 }
 async function recoveryRestoreItem(i){if(i.kind!=='new'||!i.blob)return{id:i.id||imageId(),kind:'existing',url:i.url||''};const file=new File([i.blob],i.name||'imagen-pendiente',{type:i.type||i.blob.type||'application/octet-stream',lastModified:i.lastModified||Date.now()});return{id:i.id||imageId(),kind:'new',file,previewUrl:URL.createObjectURL(file),uploadError:i.uploadError||''};}
-async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').textContent=$('#product-id').value?'Guardar cambios':'Guardar producto';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
+async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';setWorkflowButtonState($('#save-draft-button'), 'Guardar borrador');
+setWorkflowButtonState($('#save-product-button'), $('#product-id').value?'Guardar cambios sin publicar':'Guardar producto completo sin publicar');
+setWorkflowButtonState($('#publish-product-button'), $('#product-id').value?'Guardar cambios y publicar':'Guardar y publicar');
+setWorkflowButtonState($('#publish-exclusive-button'), $('#product-id').value?'Guardar cambios y publicar como exclusivo':'Guardar y publicar como exclusivo');message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
 async function deleteLocalRecoveryDraft(){if(!confirm('¿Eliminar el borrador local? Esto no elimina productos guardados en la base de datos.'))return;try{await recoveryAction('readwrite',s=>s.delete(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';$('#restore-local-draft').hidden=true;$('#delete-local-draft').hidden=true;}catch(e){const st=$('#local-recovery-status');if(st)st.textContent=e.message||'No se pudo eliminar el borrador.';}}
 async function checkLocalRecoveryDraft(){try{const d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent=d?'Borrador local disponible desde '+new Date(d.savedAt).toLocaleString()+'.':'No hay borrador local guardado.';if($('#restore-local-draft'))$('#restore-local-draft').hidden=!d;if($('#delete-local-draft'))$('#delete-local-draft').hidden=!d;}catch(e){console.warn('No se pudo comprobar el borrador local.',e);}}
 
@@ -3008,7 +3011,10 @@ function clearEditor() {
 
   updateProductFormMode();
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Registrar fragancia" : "Agregar producto";
-  $("#save-product-button").textContent = "Guardar producto";
+  setWorkflowButtonState($("#save-draft-button"), "Guardar borrador");
+  setWorkflowButtonState($("#save-product-button"), "Guardar producto completo sin publicar");
+  setWorkflowButtonState($("#publish-product-button"), "Guardar y publicar");
+  setWorkflowButtonState($("#publish-exclusive-button"), "Guardar y publicar como exclusivo");
 
   message("#product-form-status", "");
   markEditorClean();
@@ -3061,7 +3067,10 @@ function fillEditor(product) {
   $("#product-active").checked = Boolean(product.is_published);
 
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Editar fragancia" : "Editar producto";
-  $("#save-product-button").textContent = "Guardar cambios";
+  setWorkflowButtonState($("#save-draft-button"), "Guardar como borrador");
+  setWorkflowButtonState($("#save-product-button"), "Guardar cambios sin publicar");
+  setWorkflowButtonState($("#publish-product-button"), "Guardar cambios y publicar");
+  setWorkflowButtonState($("#publish-exclusive-button"), "Guardar cambios y publicar como exclusivo");
   message("#product-form-status", "Editando: " + product.name);
 
   renderAdminList();
@@ -3320,7 +3329,7 @@ async function uploadMainImages(productId, files) {
    RECOPILAR Y VALIDAR VARIANTES
    ========================================================= */
 
-async function collectVariants(productId, existingVariants = [], uploadIssues = []) {
+async function collectVariants(productId, existingVariants = [], uploadIssues = [], allowIncomplete = false) {
   const allGroups = [
     ...Array.from(baseColorManager?.querySelectorAll('[data-variant-group][data-base-group="true"]') || []),
     ...Array.from(variantsContainer?.querySelectorAll('[data-variant-group][data-base-group="false"]') || [])
@@ -3341,15 +3350,23 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const hasConfiguration = Boolean(storageRaw || ramRaw);
     const key = variantGroupKey({storage,ram});
 
-    if (!isBase && !hasConfiguration) {
+    const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
+    if (!isBase && !hasConfiguration && !rows.length) {
+      if (allowIncomplete) continue;
       throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex + 1}.`);
     }
 
-    const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
     // An untouched blank primary group is optional; configured groups need at least one color.
     if (isBase && !hasConfiguration && !rows.length) continue;
     if (hasConfiguration && !rows.length) {
-      throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
+      if (!allowIncomplete) throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
+      colors.push({
+        color: "",
+        color_hex: "#315A91",
+        availability: "available",
+        images: [],
+        image_url: ""
+      });
     }
     if (hasConfiguration && seenConfigurations.has(key)) {
       throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
@@ -3361,7 +3378,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
       const row = rows[colorIndex];
       const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
-      if (!color) throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
+      if (!color && !allowIncomplete) throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
       const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
       initVariantImageItems(row);
@@ -3409,15 +3426,21 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
 
     const seenColors = new Set();
     colors.forEach(item => {
+      if (!item.color) return;
       const key = item.color.toLocaleLowerCase("es");
-      if (seenColors.has(key)) throw new Error(`El color "${item.color}" está repetido dentro de una misma configuración.`);
+      if (seenColors.has(key) && !allowIncomplete) throw new Error(`El color "${item.color}" está repetido dentro de una misma configuración.`);
       seenColors.add(key);
     });
 
+    const optionalDraftNumber = value => {
+      if (value === "") return null;
+      const number = Number(value);
+      return Number.isFinite(number) && number >= 0 ? number : null;
+    };
     configs.push({
       storage, ram,
-      price_usd: toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex + 1}`),
-      price_nio: toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex + 1}`),
+      price_usd: allowIncomplete ? optionalDraftNumber(read("[data-group-price-usd]")) : toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex + 1}`),
+      price_nio: allowIncomplete ? optionalDraftNumber(read("[data-group-price-nio]")) : toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex + 1}`),
       colors, isBase
     });
   }
