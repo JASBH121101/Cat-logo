@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="../styles.css?v=20261024-dialog-compact2">
-  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow6">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow7">
 
   <link rel="stylesheet" href="../brand-refresh.css?v=20261023-brand-system1">
   <script src="../config.js"></script>
@@ -252,18 +252,28 @@
       const section = document.getElementById("featured-section");
       if (!section || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      let timer;
+      let timer = 0;
+      let finishTimer = 0;
       let paused = document.hidden;
+      let inView = false;
+      let active = false;
       const angles = ["45deg", "135deg", "225deg", "315deg"];
       const getDuration = () => window.matchMedia("(max-width:760px)").matches ? 10000 : 9000;
 
-      const scheduleShine = (delay = 1600 + Math.random() * 1200) => {
+      const stopSweep = () => {
         window.clearTimeout(timer);
-        if (paused || document.hidden || !section.isConnected) return;
+        window.clearTimeout(finishTimer);
+        section.classList.remove("signature-shine-active");
+        active = false;
+      };
+
+      const scheduleShine = (delay = 1000 + Math.random() * 1400) => {
+        window.clearTimeout(timer);
+        if (paused || document.hidden || !inView || section.classList.contains("hidden") || !section.isConnected || active) return;
 
         timer = window.setTimeout(() => {
-          if (paused || document.hidden) {
-            scheduleShine();
+          if (paused || document.hidden || !inView || section.classList.contains("hidden")) {
+            scheduleShine(500);
             return;
           }
 
@@ -273,26 +283,41 @@
           section.classList.remove("signature-shine-active");
           void section.offsetWidth;
           section.classList.add("signature-shine-active");
+          active = true;
 
-          // Do not remove the active class until the full sweep has crossed the section.
-          window.setTimeout(() => section.classList.remove("signature-shine-active"), duration + 250);
-          // Start the next random sweep only after this one has finished, with a short idle gap.
-          scheduleShine(duration + 1800 + Math.random() * 1800);
+          // End the state only after the complete sweep animation has elapsed.
+          finishTimer = window.setTimeout(() => {
+            section.classList.remove("signature-shine-active");
+            active = false;
+            scheduleShine(1800 + Math.random() * 1800);
+          }, duration + 250);
         }, delay);
       };
 
       const visibilityChanged = () => {
         paused = document.hidden;
         if (paused) {
-          window.clearTimeout(timer);
-          section.classList.remove("signature-shine-active");
+          stopSweep();
         } else {
-          scheduleShine();
+          scheduleShine(500 + Math.random() * 600);
         }
       };
 
       document.addEventListener("visibilitychange", visibilityChanged);
-      scheduleShine();
+
+      // Start only when the featured section is visible; otherwise the sweep could finish off-screen.
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(entries => {
+          const entry = entries[entries.length - 1];
+          inView = Boolean(entry && entry.isIntersecting && entry.intersectionRatio > 0);
+          if (!inView) stopSweep();
+          else scheduleShine(500 + Math.random() * 600);
+        }, {threshold:[0, 0.08]});
+        observer.observe(section);
+      } else {
+        inView = true;
+        scheduleShine();
+      }
     })();
   </script>
 </body>

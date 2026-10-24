@@ -9218,7 +9218,7 @@ body.technology-catalog .featured-exclusive-badge {
 }
 
 
-/* JB SIGNATURE · borde orbital y barrido diagonal, legible en ambos temas. */
+/* JB SIGNATURE · borde orbital y destello diagonal visible, sin lavar el contenido. */
 @property --signature-border-angle {
   syntax:"<angle>";
   inherits:false;
@@ -9227,8 +9227,8 @@ body.technology-catalog .featured-exclusive-badge {
 body.technology-catalog .featured-section {
   isolation:isolate;
   overflow:hidden;
-  --signature-ring-gold:#e5c47d;
-  --signature-ring-violet:#898cff;
+  --signature-ring-gold:#c4a15d;
+  --signature-ring-violet:#7777ed;
   --signature-shine-duration:9000ms;
   --signature-shine-angle:45deg;
 }
@@ -9252,7 +9252,7 @@ html[data-theme="dark"] body.technology-catalog .featured-section {
   color:#eff3ff;
 }
 
-/* El conic-gradient queda en la franja del borde, no sobre el texto. */
+/* Recorrido del degradado estrictamente limitado al marco exterior. */
 body.technology-catalog .featured-section:before {
   content:"";
   position:absolute;
@@ -9285,54 +9285,55 @@ body.technology-catalog .featured-section:before {
   to { --signature-border-angle:360deg; }
 }
 
-/* La luz viaja en diagonal por el panel, pero queda DETRÁS del contenido. */
+/* La pasada cruza el panel completo como una línea estrecha, no como un velo blanco. */
 body.technology-catalog .featured-section:after {
   content:"";
   position:absolute;
-  z-index:2;
-  top:-90%;
-  left:-42%;
-  width:68%;
-  height:280%;
-  border-radius:50%;
+  top:-80%;
+  left:-80%;
+  width:260%;
+  height:260%;
+  z-index:8;
   opacity:0;
   pointer-events:none;
   background:linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255,255,255,0) 34%,
-    rgba(255,255,255,.05) 43%,
-    rgba(255,255,255,.62) 49%,
-    rgba(255,236,180,.18) 53%,
-    rgba(255,255,255,0) 65%,
-    transparent 100%
+    90deg,
+    transparent 48.2%,
+    rgba(255,255,255,.02) 49.0%,
+    rgba(255,255,255,.20) 49.65%,
+    rgba(255,247,222,.46) 50%,
+    rgba(255,255,255,.20) 50.35%,
+    rgba(255,255,255,.02) 51.0%,
+    transparent 51.8%
   );
-  filter:blur(3px);
-  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-180%,0,0);
+  filter:blur(.7px);
+  transform-origin:center center;
+  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0);
   will-change:transform,opacity;
   mix-blend-mode:screen;
 }
 html[data-theme="dark"] body.technology-catalog .featured-section:after {
   background:linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(98,125,224,0) 34%,
-    rgba(128,151,255,.12) 43%,
-    rgba(165,177,255,.72) 49%,
-    rgba(237,203,130,.28) 53%,
-    rgba(98,125,224,0) 65%,
-    transparent 100%
+    90deg,
+    transparent 48.2%,
+    rgba(118,150,255,.05) 49.0%,
+    rgba(153,175,255,.24) 49.65%,
+    rgba(191,202,255,.50) 50%,
+    rgba(240,207,139,.32) 50.35%,
+    rgba(118,150,255,.05) 51.0%,
+    transparent 51.8%
   );
+  mix-blend-mode:screen;
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
   animation:signature-diagonal-shine var(--signature-shine-duration,9000ms) linear both;
 }
 @keyframes signature-diagonal-shine {
-  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-180%,0,0); }
-  8% { opacity:.12; }
-  16% { opacity:.42; }
-  82% { opacity:.3; }
-  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(360%,0,0); }
+  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0); }
+  10% { opacity:.35; }
+  22% { opacity:.82; }
+  78% { opacity:.72; }
+  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(100%,0,0); }
 }
 @media(max-width:760px) {
   body.technology-catalog .featured-section { --signature-shine-duration:10000ms; }
@@ -9341,7 +9342,7 @@ body.technology-catalog .featured-section.signature-shine-active:after {
   }
 }
 
-/* El texto y las tarjetas se pintan después del barrido: nunca quedan velados por la luz. */
+/* Contenido en primer plano y contraste explícito para tema claro y oscuro. */
 body.technology-catalog .featured-section > .featured-exclusive-badge,
 body.technology-catalog .featured-section > .featured-section-heading,
 body.technology-catalog .featured-section > .featured-grid,
@@ -9352,24 +9353,12 @@ body.technology-catalog .featured-section > #featured-count {
 body.technology-catalog .featured-exclusive-badge {
   border-color:rgba(185,147,72,.7);
 }
-html[data-theme="light"] body.technology-catalog .featured-section-heading h2 {
-  color:#192846 !important;
-}
-html[data-theme="light"] body.technology-catalog .featured-section-heading .eyebrow {
-  color:#536db4 !important;
-}
-html[data-theme="light"] body.technology-catalog .featured-section-heading .section-subtitle {
-  color:#5f6f8d !important;
-}
-html[data-theme="dark"] body.technology-catalog .featured-section-heading h2 {
-  color:#f1f4ff !important;
-}
-html[data-theme="dark"] body.technology-catalog .featured-section-heading .eyebrow {
-  color:#b8c5ff !important;
-}
-html[data-theme="dark"] body.technology-catalog .featured-section-heading .section-subtitle {
-  color:#c3cde5 !important;
-}
+html[data-theme="light"] body.technology-catalog .featured-section-heading h2 { color:#192846 !important; }
+html[data-theme="light"] body.technology-catalog .featured-section-heading .eyebrow { color:#536db4 !important; }
+html[data-theme="light"] body.technology-catalog .featured-section-heading .section-subtitle { color:#5f6f8d !important; }
+html[data-theme="dark"] body.technology-catalog .featured-section-heading h2 { color:#f1f4ff !important; }
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .eyebrow { color:#b8c5ff !important; }
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .section-subtitle { color:#c3cde5 !important; }
 html[data-theme="dark"] body.technology-catalog .featured-grid .product-card {
   color:#edf2ff !important;
   border-color:rgba(144,158,207,.58) !important;
@@ -9381,26 +9370,17 @@ html[data-theme="dark"] body.technology-catalog .featured-grid .product-image {
   border-bottom-color:#344361 !important;
 }
 html[data-theme="dark"] body.technology-catalog .featured-grid .product-card-content,
-html[data-theme="dark"] body.technology-catalog .featured-grid .product-card h3 {
-  color:#eff3ff !important;
-}
-html[data-theme="dark"] body.technology-catalog .featured-grid .product-category {
-  color:#afc1ff !important;
-}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card h3 { color:#eff3ff !important; }
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-category { color:#afc1ff !important; }
 html[data-theme="dark"] body.technology-catalog .featured-grid .product-card-capacity {
   color:#d9e4ff !important;
   border-color:#405174 !important;
   background:#202e4c !important;
 }
-html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-label {
-  color:#b9c5df !important;
-}
-html[data-theme="dark"] body.technology-catalog .featured-grid .product-price {
-  color:#c1ceff !important;
-}
-html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-secondary {
-  color:#bdc9e1 !important;
-}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-label { color:#b9c5df !important; }
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price { color:#c1ceff !important; }
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-secondary { color:#bdc9e1 !important; }
+
 @media(prefers-reduced-motion:reduce) {
   body.technology-catalog .featured-section:before { animation:none !important; }
   body.technology-catalog .featured-section.signature-shine-active:after {
