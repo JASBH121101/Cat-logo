@@ -8322,3 +8322,303 @@ html[data-theme] .product-dialog #variant-options-area .variant-color-name {
 .perfume-page button:focus:not(:focus-visible) {
   outline:none;
 }
+
+
+/* JB TECH · Selección insignia premium, compacta y adaptable. */
+.technology-catalog .featured-section {
+  border-color:var(--featured-border,#d4dfef);
+  box-shadow:var(--featured-shadow,0 8px 24px rgba(40,62,113,.08)),inset 0 0 0 1px rgba(255,255,255,.22);
+}
+.technology-catalog .featured-section::after {
+  content:"";
+  position:absolute;
+  inset:7px;
+  z-index:0;
+  border:1px solid rgba(190,153,87,.24);
+  border-radius:16px;
+  pointer-events:none;
+}
+.technology-catalog .featured-section > * {
+  position:relative;
+  z-index:1;
+}
+.technology-catalog .featured-exclusive-badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  max-width:100%;
+  margin:0 0 15px;
+  padding:8px 13px;
+  border:1px solid #cdb47f;
+  border-radius:999px;
+  color:#4b3c21;
+  background:linear-gradient(110deg,rgba(255,250,235,.94),rgba(239,225,191,.82));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 4px 12px rgba(40,46,73,.07);
+  font-family:"Space Grotesk","Manrope",sans-serif;
+  font-size:10px;
+  font-weight:900;
+  line-height:1.25;
+  letter-spacing:.105em;
+  text-transform:uppercase;
+}
+.technology-catalog .featured-exclusive-badge > span {
+  color:#b58b3e;
+  font-size:15px;
+  line-height:1;
+}
+.technology-catalog .featured-exclusive-badge i {
+  color:#a78d5b;
+  font-style:normal;
+  opacity:.85;
+}
+.technology-catalog .featured-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;
+  gap:clamp(10px,1.5vw,18px);
+}
+.technology-catalog .featured-grid .product-card {
+  min-width:0;
+  min-height:286px;
+  border:1px solid rgba(190,153,87,.6);
+  border-radius:16px;
+  box-shadow:var(--featured-card-shadow,0 4px 0 rgba(43,65,116,.07),0 10px 24px rgba(42,63,115,.08));
+}
+.technology-catalog .featured-grid .product-image {
+  background:radial-gradient(ellipse at 50% 44%,rgba(213,193,145,.17),transparent 72%),linear-gradient(145deg,#f8f6f0,#eae9e5);
+}
+.technology-catalog .featured-grid .product-image img {
+  object-fit:contain;
+  padding:16px;
+  box-sizing:border-box;
+}
+.technology-catalog .featured-grid .product-card-content {
+  padding:clamp(13px,1.5vw,20px);
+  gap:7px;
+}
+.technology-catalog .featured-grid .product-card h3 {
+  font-size:clamp(17px,1.5vw,22px);
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.technology-catalog .featured-grid .product-price {
+  color:var(--catalog-filter-title,#1d2d4c);
+  font-size:clamp(21px,2vw,29px);
+}
+html[data-theme="dark"] .technology-catalog .featured-exclusive-badge {
+  border-color:#816b42;
+  color:#f1dfb5;
+  background:linear-gradient(110deg,rgba(37,32,25,.96),rgba(25,30,46,.96));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 5px 14px rgba(0,0,0,.23);
+}
+html[data-theme="dark"] .technology-catalog .featured-exclusive-badge > span { color:#e3bd71; }
+html[data-theme="dark"] .technology-catalog .featured-exclusive-badge i { color:#bca36e; }
+html[data-theme="dark"] .technology-catalog .featured-grid .product-image {
+  background:radial-gradient(ellipse at 50% 44%,rgba(190,153,87,.15),transparent 72%),linear-gradient(145deg,#172238,#101829);
+}
+@media (min-width:761px) and (max-width:1060px) {
+  .technology-catalog .featured-grid .product-card {
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .technology-catalog .featured-grid .product-image {
+    width:100%;
+    height:156px;
+    min-height:0;
+    aspect-ratio:auto;
+    border-right:0;
+    border-bottom:1px solid var(--featured-card-border,#d4dfef);
+  }
+  .technology-catalog .featured-grid .product-image img {
+    min-height:0;
+    width:100%;
+    height:100%;
+    padding:12px;
+  }
+  .technology-catalog .featured-grid .product-card-content { padding:14px; }
+  .technology-catalog .featured-grid .product-card h3 { font-size:17px; }
+  .technology-catalog .featured-grid .product-card-colors-label,
+  .technology-catalog .featured-grid .product-card-color-name { display:none; }
+}
+@media (max-width:760px) {
+  .technology-catalog .featured-section { padding:15px; }
+  .technology-catalog .featured-exclusive-badge {
+    margin-bottom:12px;
+    padding:7px 10px;
+    font-size:9px;
+    letter-spacing:.075em;
+  }
+  .technology-catalog .featured-section-heading {
+    align-items:flex-start;
+    flex-direction:column;
+    gap:7px;
+    margin-bottom:14px;
+  }
+  .technology-catalog .featured-section-heading h2 { font-size:clamp(23px,6vw,29px); }
+  .technology-catalog .featured-section-heading .section-subtitle { max-width:42ch; font-size:12px; line-height:1.55; }
+  .technology-catalog .featured-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .technology-catalog .featured-grid .product-card {
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    border-radius:13px;
+  }
+  .technology-catalog .featured-grid .product-image {
+    width:100%;
+    height:clamp(104px,31vw,132px);
+    min-height:0;
+    aspect-ratio:auto;
+    border-right:0;
+    border-bottom:1px solid var(--featured-card-border,#d4dfef);
+  }
+  .technology-catalog .featured-grid .product-image img {
+    display:block;
+    width:100%;
+    height:100%;
+    min-height:0;
+    padding:8px;
+    object-fit:contain;
+  }
+  .technology-catalog .featured-grid .product-card-content {
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    justify-content:flex-start;
+    gap:5px;
+    width:100%;
+    min-width:0;
+    padding:10px 9px 11px;
+  }
+  .technology-catalog .featured-grid .product-category { font-size:9px; letter-spacing:.045em; }
+  .technology-catalog .featured-grid .product-card h3 {
+    min-height:0;
+    margin:0;
+    font-size:clamp(13px,3.8vw,16px);
+    line-height:1.27;
+  }
+  .technology-catalog .featured-grid .product-card-capacity { margin:0; font-size:10px; line-height:1.3; }
+  .technology-catalog .featured-grid .product-card-colors { margin:0; }
+  .technology-catalog .featured-grid .product-card-colors-label,
+  .technology-catalog .featured-grid .product-card-color-name { display:none; }
+  .technology-catalog .featured-grid .product-card-color-list { display:flex; flex-wrap:wrap; gap:4px; min-height:13px; }
+  .technology-catalog .featured-grid .product-card-color-option { display:inline-flex; align-items:center; min-width:0; }
+  .technology-catalog .featured-grid .product-card-color-swatch {
+    display:inline-block;
+    width:10px;
+    height:10px;
+    border:1px solid rgba(110,120,140,.32);
+    border-radius:50%;
+  }
+  .technology-catalog .featured-grid .product-price-label { margin-top:2px; font-size:9px; }
+  .technology-catalog .featured-grid .product-price {
+    font-size:clamp(16px,4.7vw,20px);
+    line-height:1.18;
+    overflow-wrap:anywhere;
+  }
+  .technology-catalog .featured-grid .product-price-secondary { font-size:10px; }
+  .technology-catalog .featured-grid .product-actions { margin-top:4px; width:100%; }
+  .technology-catalog .featured-grid .product-view-button {
+    display:flex;
+    width:100%;
+    min-width:0;
+    min-height:36px;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    padding:8px 5px;
+    font-size:11px;
+    letter-spacing:0;
+    white-space:normal;
+    line-height:1.2;
+  }
+  .technology-catalog .featured-count { display:none; }
+}
+@media (max-width:380px) {
+  .technology-catalog .featured-section { padding:11px; }
+  .technology-catalog .featured-grid { gap:7px; }
+  .technology-catalog .featured-grid .product-image { height:100px; }
+  .technology-catalog .featured-grid .product-card-content { padding:8px 7px 9px; }
+  .technology-catalog .featured-grid .product-card h3 { font-size:13px; }
+  .technology-catalog .featured-grid .product-price { font-size:15px; }
+  .technology-catalog .featured-grid .product-view-button { min-height:34px; font-size:10.5px; }
+}
+
+/* JB TECH · La información de la franja también vive en HTML para leerse en móvil. */
+.technology-promo-caption {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  width:min(1200px,calc(100% - 48px));
+  margin:-12px auto 28px;
+  color:var(--catalog-filter-muted,#687b9b);
+  font-family:"Space Grotesk","Manrope",sans-serif;
+  text-align:center;
+}
+.technology-promo-audiences {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  width:100%;
+  overflow:hidden;
+  border:1px solid var(--catalog-filter-border,#d4deef);
+  border-radius:12px;
+  background:var(--catalog-filter-surface,#f8faff);
+  box-shadow:0 5px 14px rgba(30,48,90,.06);
+}
+.technology-promo-audiences span {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  padding:10px 8px;
+  color:var(--catalog-filter-title,#263653);
+  font-size:clamp(12px,1.15vw,14px);
+  font-weight:850;
+  line-height:1.2;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.technology-promo-audiences span + span { border-left:1px solid var(--catalog-filter-border,#d4deef); }
+.technology-promo-caption > p {
+  margin:0;
+  color:var(--catalog-filter-muted,#687b9b);
+  font-size:clamp(12px,1vw,13px);
+  font-weight:800;
+  line-height:1.4;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+html[data-theme="dark"] .technology-promo-audiences {
+  border-color:#344361;
+  background:linear-gradient(110deg,#111c32,#17233d);
+  box-shadow:0 6px 18px rgba(0,0,0,.18);
+}
+html[data-theme="dark"] .technology-promo-audiences span { color:#e5ecff; }
+html[data-theme="dark"] .technology-promo-audiences span + span { border-color:#344361; }
+html[data-theme="dark"] .technology-promo-caption > p { color:#bcc8e4; }
+@media (max-width:760px) {
+  .technology-promo-caption {
+    width:calc(100% - 28px);
+    gap:7px;
+    margin:-8px auto 22px;
+  }
+  .technology-promo-audiences span {
+    padding:9px 4px;
+    font-size:clamp(10.5px,3.1vw,12.5px);
+    letter-spacing:.025em;
+  }
+  .technology-promo-caption > p {
+    font-size:clamp(11px,3vw,12px);
+    letter-spacing:.075em;
+  }
+  .technology-promo-banner-cta {
+    left:33%;
+    width:34%;
+    font-size:clamp(8.5px,2.35vw,9.5px);
+  }
+}
+html[data-theme="dark"] .technology-promo-caption {
+  color:#bcc8e4;
+}
