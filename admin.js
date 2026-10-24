@@ -2881,8 +2881,14 @@ function fillEditor(product) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   markEditorClean();
 }
-$("#new-product-button")?.addEventListener("click", clearEditor);
-$("#cancel-edit-button")?.addEventListener("click", () => { if (editorIsDirty && !window.confirm("¿Descartar los cambios sin guardar?")) return; clearEditor(); });
+async function discardEditorChanges() {
+  if (editorIsDirty && !window.confirm("¿Descartar los cambios sin guardar? No se guardará ningún producto.")) return;
+  clearTimeout(recoveryTimer);
+  await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(error => console.warn("No se pudo limpiar el borrador local al cancelar.", error));
+  clearEditor();
+}
+$("#new-product-button")?.addEventListener("click", () => void discardEditorChanges());
+$("#cancel-edit-button")?.addEventListener("click", () => void discardEditorChanges());
 const exclusiveToggleButton = $("#toggle-product-exclusive");
 exclusiveToggleButton?.addEventListener("click", () => {
   const field = $("#product-exclusive");
@@ -3341,7 +3347,16 @@ form?.addEventListener("submit", async event => {
 
   try {
     const name = $("#product-name").value.trim();
-    const draftVariantContent = Array.from(form.querySelectorAll("[data-variant-group]")).some(group => Boolean(group.querySelector("[data-group-storage]")?.value.trim() || group.querySelector("[data-group-ram]")?.value.trim() || group.querySelector("[data-group-price-usd]")?.value.trim() || group.querySelector("[data-group-price-nio]")?.value.trim() || Array.from(group.querySelectorAll("[data-variant-row]")).some(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim() || row.querySelector("[data-variant-hex]")?.value.trim() !== "#242424" || row.querySelector("[data-variant-availability]")?.value !== "available"))));
+    const draftVariantContent = Array.from(form.querySelectorAll("[data-variant-group]")).some(group => {
+      const groupValues = Boolean(group.querySelector("[data-group-storage]")?.value.trim() || group.querySelector("[data-group-ram]")?.value.trim() || group.querySelector("[data-group-price-usd]")?.value.trim() || group.querySelector("[data-group-price-nio]")?.value.trim());
+      const rowValues = Array.from(group.querySelectorAll("[data-variant-row]")).some(row => {
+        const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
+        const hex = row.querySelector("[data-variant-hex]")?.value.trim() || "";
+        const imageUrl = row.querySelector("[data-variant-image-url]")?.value.trim() || "";
+        return Boolean(color || (hex && hex !== "#242424") || imageUrl);
+      });
+      return groupValues || rowValues;
+    });
     const draftHasContent = Boolean(name || $("#product-brand").value.trim() || $("#product-description").value.trim() || $("#product-price-usd").value.trim() || $("#product-price-nio").value.trim() || $("#product-perfume-family").value || $("#product-perfume-scent-family").value.trim() || $("#product-perfume-top-notes").value.trim() || $("#product-perfume-heart-notes").value.trim() || $("#product-perfume-base-notes").value.trim() || $("#product-specs").value.trim() || mainImageItems.length || draftVariantContent);
     if (targetStatus === "draft" && !draftHasContent) throw new Error("Añadí al menos un dato o una fotografía antes de guardar el borrador; así evitamos crear borradores vacíos.");
     if(targetStatus!=="draft") { if(!name) throw new Error("Escribí el nombre del producto."); if(!isPerfume&&!$("#product-category").value) throw new Error("Seleccioná la categoría del producto."); if(!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad."); if(isPerfume&&!$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume."); }
