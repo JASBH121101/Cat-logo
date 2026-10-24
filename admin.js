@@ -2085,8 +2085,8 @@ function productNeedsMainImage(product) {
 
 function renderDashboardOverview() {
   const catalogProducts = getDashboardProducts();
-  const published = catalogProducts.filter(product => Boolean(product.is_published));
-  const drafts = catalogProducts.filter(product => !product.is_published);
+  const published = catalogProducts.filter(product => getWorkflowStatus(product) === "published");
+  const drafts = catalogProducts.filter(product => getWorkflowStatus(product) === "draft" || getWorkflowStatus(product) === "unpublished");
   const needsImage = catalogProducts.filter(productNeedsMainImage);
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
   const total = catalogProducts.length;
@@ -2501,164 +2501,91 @@ async function deleteProductFromDatabase(product) {
   return { imageCount: imagePaths.length, storageErrors };
 }
 
-function renderAdminList() {
-  const catalogProducts = getActiveCatalogProducts();
-  const searchable = product => [product.name, product.brand, product.model, product.category, product.perfume_details && product.perfume_details.scent_family].join(" ").toLocaleLowerCase("es");
-  const published = catalogProducts.filter(product => Boolean(product.is_published));
-  const drafts = catalogProducts.filter(product => !product.is_published);
-  const filter = (items, selector) => {
-    const query = ($(selector)?.value || "").trim().toLocaleLowerCase("es");
-    return items.filter(product => searchable(product).includes(query));
-  };
-  const cards = (items, emptyText) => items.map(product => {
-    const image = getImages(product)[0];
-    const thumb = image ? `<img class="admin-product-thumb" src="${escapeHtml(image)}" alt="" loading="lazy">` : `<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>`;
-    const variants = normalizeVariants(product.variants);
-    const isPerfume = product.catalog_type === "perfumery";
-    const detail = product.perfume_details || {};
-    const variantLabel = isPerfume
-      ? [detail.family ? perfumeFamilyLabel(detail.family) : "", detail.concentration, detail.volume_ml ? detail.volume_ml + " ml" : ""].filter(Boolean).join(" · ")
-      : variants.length ? variants.length + " variante" + (variants.length === 1 ? "" : "s") : "";
-    const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
-    const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel ? " · " + escapeHtml(variantLabel) : ""}</div><div class="admin-product-buttons">
-      <button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="${escapeHtml(product.id)}" aria-label="Ver producto" title="Ver producto"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-      <button class="admin-mini-button admin-icon-button" type="button" data-edit="${escapeHtml(product.id)}" aria-label="Editar producto" title="Editar producto"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"></path></svg></button>
-      <button class="admin-mini-button admin-icon-button" type="button" data-toggle="${escapeHtml(product.id)}" aria-label="${product.is_published ? "Despublicar producto" : "Publicar producto"}" title="${product.is_published ? "Despublicar producto" : "Publicar producto"}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${product.is_published ? '<path d="m3 3 18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A11.8 11.8 0 0 1 12 5c6.4 0 10 7 10 7a17.8 17.8 0 0 1-3.1 3.9"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.8 10.8 0 0 0 4.1-.8"></path>' : '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle>'}</svg></button>
-      <button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="${escapeHtml(product.id)}" aria-label="Eliminar producto" title="Eliminar permanentemente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 10v6M14 10v6"></path></svg></button>
-    </div></div></article>`;
-  }).join("") || `<p class="form-status">${emptyText}</p>`;
-  $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.");
-  $("#draft-product-list").innerHTML = cards(filter(drafts, "#draft-search"), "No hay productos pendientes de publicar.");
-  $("#published-count").textContent = `${published.length} producto${published.length === 1 ? "" : "s"} publicados`;
-  $("#draft-count").textContent = `${drafts.length} producto${drafts.length === 1 ? "" : "s"} sin publicar`;
-  $("#published-nav-count").textContent = published.length;
-  $("#draft-nav-count").textContent = drafts.length;
+function getWorkflowStatus(product) {
+  if (["draft", "unpublished", "published", "trash", "deleting"].includes(product?.workflow_status)) return product.workflow_status;
+  return product?.is_published ? "published" : "unpublished";
 }
-
-$("#published-search")?.addEventListener("input", renderAdminList);
-$("#draft-search")?.addEventListener("input", renderAdminList);
-
-document.querySelectorAll("#published-product-list, #draft-product-list").forEach(list => list.addEventListener("click", async event => {
-  const preview = event.target.closest("[data-preview-product]");
-  const edit = event.target.closest("[data-edit]");
-  const toggle = event.target.closest("[data-toggle]");
-  const deleteButton = event.target.closest("[data-delete-product]");
-
-  if (deleteButton) {
-    const product = products.find(item => String(item.id) === String(deleteButton.dataset.deleteProduct));
-    if (!product || !currentUser || !supabase) {
-      setStatus("No se pudo identificar el producto o la sesión administrativa venció.", "error");
-      return;
+function renderAdminList() {
+  const items=getActiveCatalogProducts();
+  const searchable=p=>[p.name,p.brand,p.model,p.category,p.perfume_details&&p.perfume_details.scent_family].join(" ").toLocaleLowerCase("es");
+  const byStatus=s=>items.filter(p=>getWorkflowStatus(p)===s);
+  const published=byStatus("published"), unpublished=byStatus("unpublished"), drafts=byStatus("draft"), trash=byStatus("trash");
+  const filter=(rows,selector)=>{const q=($(selector)?.value||"").trim().toLocaleLowerCase("es");return rows.filter(p=>searchable(p).includes(q));};
+  const svg={
+    view:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"></path></svg>',
+    trash:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 10v6M14 10v6"></path></svg>',
+    restore:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 0 3-6.7L3 7"></path><path d="M3 3v4h4M12 7v5l3 2"></path></svg>',
+    delete:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"></path></svg>',
+    star:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>'
+  };
+  const cards=(rows,empty,isTrash)=>rows.map(p=>{
+    const image=getImages(p)[0], thumb=image?'<img class="admin-product-thumb" src="'+escapeHtml(image)+'" alt="" loading="lazy">':'<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>';
+    const variants=normalizeVariants(p.variants), perfume=p.catalog_type==="perfumery", d=p.perfume_details||{};
+    const variantLabel=perfume?[d.family?perfumeFamilyLabel(d.family):"",d.concentration,d.volume_ml?d.volume_ml+" ml":""].filter(Boolean).join(" · "):variants.length?variants.length+" variante"+(variants.length===1?"":"s"):"";
+    const price=minimumPrice(variants,"price_usd")??p.price_usd, priceLabel=price===null||price===undefined||price===""?"Consultar":"US"+Number(price).toLocaleString("en-US",{maximumFractionDigits:2});
+    const status=getWorkflowStatus(p), statusLabel=status==="published"?"Publicado":status==="draft"?"Borrador":status==="trash"?"En papelera":"No publicado";
+    let actions="";
+    if(isTrash){
+      actions='<button class="admin-mini-button admin-icon-button" type="button" data-restore-product="'+escapeHtml(p.id)+'" aria-label="Restaurar producto" title="Restaurar producto">'+svg.restore+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="'+escapeHtml(p.id)+'" aria-label="Eliminar definitivamente" title="Eliminar definitivamente">'+svg.delete+'</button>';
+    }else{
+      actions='<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="'+escapeHtml(p.id)+'" aria-label="Ver producto" title="Ver producto">'+svg.view+'</button><button class="admin-mini-button admin-icon-button" type="button" data-edit="'+escapeHtml(p.id)+'" aria-label="Editar producto" title="Editar producto">'+svg.edit+'</button><button class="admin-mini-button admin-icon-button'+(p.is_exclusive?' is-exclusive':'')+'" type="button" data-exclusive-product="'+escapeHtml(p.id)+'" aria-label="'+(p.is_exclusive?'Quitar de exclusivos':'Marcar como exclusivo')+'" title="'+(p.is_exclusive?'Quitar de exclusivos':'Marcar como exclusivo')+'">'+svg.star+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="'+escapeHtml(p.id)+'" aria-label="Mover a papelera" title="Mover a papelera">'+svg.trash+'</button>';
     }
-    const isEditingThisProduct = String($("#product-id")?.value || "") === String(product.id);
-    const confirmationLines = [
-      "¿Eliminar definitivamente el producto: " + String(product.name || "sin nombre") + "?",
-      "",
-      "Esta acción no se puede deshacer. Después de confirmar el borrado del registro, también intentaremos borrar sus fotografías de Storage."
-    ];
-    if (isEditingThisProduct && editorIsDirty) {
-      confirmationLines.push("", "También se perderán los cambios sin guardar del formulario.");
-    }
-    if (!window.confirm(confirmationLines.join(String.fromCharCode(10)))) return;
-
-    deleteButton.disabled = true;
-    const previousLabel = deleteButton.textContent;
-    deleteButton.textContent = "Eliminando…";
-    try {
-      const result = await deleteProductFromDatabase(product);
-      if (isEditingThisProduct) {
-        await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY))
-          .catch(error => console.warn("No se pudo limpiar el borrador local del producto eliminado.", error));
-        clearEditor();
+    const expiry=p.deleted_at?" · vence "+new Date(new Date(p.deleted_at).getTime()+15*86400000).toLocaleDateString("es-NI"):"";
+    return '<article class="admin-product-row">'+thumb+'<div><p class="admin-product-name">'+escapeHtml(p.name||"Borrador sin nombre")+'</p><div class="admin-product-meta">'+escapeHtml(p.category||"Sin categoría")+' · '+escapeHtml(priceLabel)+' · '+statusLabel+(p.is_exclusive?" · Exclusivo":"")+(variantLabel?" · "+escapeHtml(variantLabel):"")+escapeHtml(expiry)+'</div><div class="admin-product-buttons">'+actions+'</div></div></article>';
+  }).join("")||'<p class="form-status">'+empty+'</p>';
+  $("#published-product-list").innerHTML=cards(filter(published,"#published-search"),"Todavía no hay productos publicados.");
+  $("#unpublished-product-list").innerHTML=cards(filter(unpublished,"#unpublished-search"),"No hay productos completos pendientes de publicar.");
+  $("#draft-product-list").innerHTML=cards(filter(drafts,"#draft-search"),"No hay borradores guardados.");
+  $("#trash-product-list").innerHTML=cards(filter(trash,"#trash-search"),"La papelera está vacía.",true);
+  $("#published-count").textContent=published.length+" producto"+(published.length===1?"":"s")+" publicados";
+  $("#unpublished-count").textContent=unpublished.length+" producto"+(unpublished.length===1?"":"s")+" sin publicar";
+  $("#draft-count").textContent=drafts.length+" borrador"+(drafts.length===1?"":"es");
+  $("#trash-count").textContent=trash.length+" producto"+(trash.length===1?"":"s")+" en papelera · se eliminan tras 15 días";
+  $("#published-nav-count").textContent=published.length; $("#unpublished-nav-count").textContent=unpublished.length;
+  $("#draft-nav-count").textContent=drafts.length; $("#trash-nav-count").textContent=trash.length;
+}
+["#published-search","#unpublished-search","#draft-search","#trash-search"].forEach(s=>$(s)?.addEventListener("input",renderAdminList));
+document.querySelectorAll("#published-product-list,#unpublished-product-list,#draft-product-list,#trash-product-list").forEach(list=>list.addEventListener("click",async event=>{
+  const preview=event.target.closest("[data-preview-product]"), edit=event.target.closest("[data-edit]");
+  const trashButton=event.target.closest("[data-trash-product]"), restoreButton=event.target.closest("[data-restore-product]");
+  const deleteButton=event.target.closest("[data-delete-product]"), exclusiveButton=event.target.closest("[data-exclusive-product]");
+  if(trashButton||restoreButton||deleteButton||exclusiveButton){
+    const target=trashButton||restoreButton||deleteButton||exclusiveButton;
+    const id=target.dataset.trashProduct||target.dataset.restoreProduct||target.dataset.deleteProduct||target.dataset.exclusiveProduct;
+    const product=products.find(p=>String(p.id)===String(id));
+    if(!product||!currentUser||!supabase){setStatus("No se pudo identificar el producto o la sesión administrativa venció.","error");return;}
+    target.disabled=true;
+    try{
+      if(trashButton){
+        if(!window.confirm("¿Mover “"+(product.name||"Borrador sin nombre")+"” a la papelera? Podrás restaurarlo durante 15 días."))return;
+        const previous=getWorkflowStatus(product);
+        if(previous==="trash")return;
+        const {error}=await supabase.from("products").update({workflow_status:"trash",deleted_from_status:previous,deleted_at:new Date().toISOString(),is_published:false,updated_at:new Date().toISOString(),updated_by:currentUser.id}).eq("id",product.id);
+        if(error)throw error;
+        setStatus("Producto movido a la papelera. Podés restaurarlo durante 15 días.","success");
+      }else if(restoreButton){
+        const restored=["draft","unpublished","published"].includes(product.deleted_from_status)?product.deleted_from_status:"unpublished";
+        const {error}=await supabase.from("products").update({workflow_status:restored,deleted_from_status:null,deleted_at:null,is_published:restored==="published",updated_at:new Date().toISOString(),updated_by:currentUser.id}).eq("id",product.id);
+        if(error)throw error;
+        setStatus("Producto restaurado como "+(restored==="published"?"publicado":restored==="draft"?"borrador":"no publicado")+".","success");
+      }else if(exclusiveButton){
+        const next=!product.is_exclusive;
+        const {error}=await supabase.from("products").update({is_exclusive:next,updated_at:new Date().toISOString(),updated_by:currentUser.id}).eq("id",product.id);
+        if(error)throw error;
+        setStatus(next?"Producto marcado como exclusivo.":"Producto quitado de exclusivos.","success");
+      }else{
+        if(!window.confirm("¿Eliminar definitivamente “"+(product.name||"Borrador sin nombre")+"”? No se puede deshacer. Se intentarán eliminar también sus fotografías de Storage."))return;
+        const result=await deleteProductFromDatabase(product);
+        setStatus(result.storageErrors.length?"Producto eliminado, pero hubo errores de Storage: "+result.storageErrors.slice(0,2).join(" · "):"Producto eliminado definitivamente. Fotografías eliminadas: "+result.imageCount+".",result.storageErrors.length?"error":"success");
       }
-      const refreshed = await loadProducts();
-      if (result.storageErrors.length) {
-        setStatus(
-          "El producto se eliminó de la base de datos, pero no se pudieron borrar todas sus fotografías de Storage: " +
-          result.storageErrors.slice(0, 2).join(" · "),
-          "error"
-        );
-      } else if (!refreshed) {
-        setStatus("El producto se eliminó de la base de datos, pero no se pudo actualizar la lista. Recargá el panel.", "error");
-      } else {
-        setStatus(
-          "Producto eliminado de la base de datos. Fotografías de Storage eliminadas: " + result.imageCount + ".",
-          "success"
-        );
-      }
-    } catch (error) {
-      const detail = String(error && error.message ? error.message : error || "Error sin detalle.");
-      const relatedRowsBlockDeletion = /foreign key|violates.*constraint|referenced from table|still referenced/i.test(detail);
-      setStatus(
-        relatedRowsBlockDeletion
-          ? "La base de datos impidió eliminar este producto porque existen registros relacionados. No se borraron sus fotografías. Revisá las relaciones y reglas de eliminación en Supabase."
-          : "No se pudo eliminar el producto: " + detail,
-        "error"
-      );
-      deleteButton.disabled = false;
-      deleteButton.textContent = previousLabel;
-    }
+      await loadProducts();
+    }catch(error){setStatus("No se pudo completar la acción: "+(error?.message||error),"error");}
+    finally{target.disabled=false;}
     return;
   }
-
-  if (preview) {
-    const product = products.find(item => String(item.id) === preview.dataset.previewProduct);
-    if (product) previewOpenProduct(product);
-    return;
-  }
-
-  if (edit) {
-    const product = products.find(
-      item => String(item.id) === edit.dataset.edit
-    );
-
-    if (product) {
-      fillEditor(product);
-      showAdminSection("add");
-    }
-  }
-
-  if (!toggle) {
-    return;
-  }
-
-  const product = products.find(
-    item => String(item.id) === toggle.dataset.toggle
-  );
-
-  if (!product || !currentUser) {
-    return;
-  }
-
-  try {
-    const { error } = await supabase
-      .from("products")
-      .update({
-        is_published: !product.is_published,
-        updated_at: new Date().toISOString(),
-        updated_by: currentUser.id
-      })
-      .eq("id", product.id);
-
-    if (error) {
-      throw error;
-    }
-
-    setStatus(
-      product.is_published
-        ? "Producto despublicado."
-        : "Producto publicado.",
-      "success"
-    );
-
-    await loadProducts();
-  } catch (error) {
-    setStatus(
-      `No se pudo cambiar la publicación: ${error.message}`,
-      "error"
-    );
-  }
+  if(preview){const product=products.find(p=>String(p.id)===preview.dataset.previewProduct);if(product)previewOpenProduct(product);return;}
+  if(edit){const product=products.find(p=>String(p.id)===edit.dataset.edit);if(product){fillEditor(product);showAdminSection("add");}}
 }));
 
 
@@ -2824,6 +2751,9 @@ function clearEditor() {
   $("#catalog-key").value = "";
   $("#product-description").value = "";
   $("#product-active").checked = false;
+  $("#product-exclusive").checked = false;
+  $("#toggle-product-exclusive")?.setAttribute("aria-pressed","false");
+  $("#toggle-product-exclusive")?.classList.remove("is-active");
   $("#product-featured").checked = false;
 
   $("#product-financing").value =
@@ -2898,6 +2828,9 @@ function fillEditor(product) {
 
   $("#product-featured").checked = Boolean(product.featured);
   $("#product-active").checked = Boolean(product.is_published);
+  $("#product-exclusive").checked = Boolean(product.is_exclusive);
+  $("#toggle-product-exclusive")?.setAttribute("aria-pressed",String(Boolean(product.is_exclusive)));
+  $("#toggle-product-exclusive")?.classList.toggle("is-active",Boolean(product.is_exclusive));
 
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Editar fragancia" : "Editar producto";
   $("#save-product-button").textContent = "Guardar cambios";
@@ -2911,7 +2844,9 @@ function fillEditor(product) {
   markEditorClean();
 }
 $("#new-product-button")?.addEventListener("click", clearEditor);
-$("#cancel-edit-button")?.addEventListener("click", clearEditor);
+$("#cancel-edit-button")?.addEventListener("click", () => { if (editorIsDirty && !window.confirm("¿Descartar los cambios sin guardar?")) return; clearEditor(); });
+const exclusiveToggleButton = $("#toggle-product-exclusive");
+exclusiveToggleButton?.addEventListener("click", () => { const field=$("#product-exclusive"); if(!field)return; field.checked=!field.checked; exclusiveToggleButton.setAttribute("aria-pressed",String(field.checked)); exclusiveToggleButton.classList.toggle("is-active",field.checked); field.dispatchEvent(new Event("change",{bubbles:true})); });
 
 activeCatalogSelector?.addEventListener("change", () => {
   const requested = normalizeCatalogType(activeCatalogSelector.value);
@@ -3315,15 +3250,18 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
    GUARDAR PRODUCTOS
    ========================================================= */
 
+form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
+  const saveAction=event.submitter?.dataset?.saveAction||"unpublished";
+  const targetStatus=saveAction==="draft"?"draft":saveAction==="published"?"published":"unpublished";
 
   if (!currentUser || !supabase) {
     message("#product-form-status", "Tu sesión administrativa no está activa. Volvé a iniciar sesión.", "error");
     return;
   }
 
-  const button = $("#save-product-button");
+  const button = event.submitter || $("#save-product-button");
   const wasEditing = Boolean($("#product-id").value);
   const imageUploadErrors = [];
   const isPerfume = activeCatalogType === "perfumery";
@@ -3332,8 +3270,7 @@ form?.addEventListener("submit", async event => {
 
   try {
     const name = $("#product-name").value.trim();
-    if (!name) throw new Error("Escribí el nombre del producto.");
-    if (isPerfume && !$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume.");
+    if(targetStatus!=="draft") { if(!name) throw new Error("Escribí el nombre del producto."); if(!isPerfume&&!$("#product-category").value) throw new Error("Seleccioná la categoría del producto."); if(!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad."); if(isPerfume&&!$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume."); }
 
     const rawVolume = $("#product-perfume-volume").value.trim();
     const perfumeVolume = isPerfume && rawVolume ? toOptionalNumber(rawVolume, "Contenido en ml") : null;
@@ -3345,7 +3282,7 @@ form?.addEventListener("submit", async event => {
       throw new Error("El catálogo del producto no coincide con el catálogo activo. Cancelá y volvé a abrir el producto desde su catálogo.");
     }
 
-    const catalogKey = $("#catalog-key").value.trim() || (slugify(name) + "-" + id.slice(0, 8));
+    const catalogKey = $("#catalog-key").value.trim() || ((slugify(name) || "borrador") + "-" + id.slice(0, 8));
     const variants = isPerfume
       ? []
       : await collectVariants(id, existingProduct?.variants || [], imageUploadErrors);
@@ -3391,7 +3328,7 @@ form?.addEventListener("submit", async event => {
       catalog_key: catalogKey,
       catalog_type: activeCatalogType,
       sort_order: wasEditing ? Number(existingProduct?.sort_order ?? getActiveCatalogProducts().length) : getActiveCatalogProducts().length,
-      name,
+      name: name || null,
       brand: $("#product-brand").value.trim() || null,
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
       category: isPerfume ? "Perfumería" : $("#product-category").value,
@@ -3411,7 +3348,11 @@ form?.addEventListener("submit", async event => {
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
       featured: $("#product-featured").checked,
-      is_published: $("#product-active").checked,
+      is_exclusive: $("#product-exclusive").checked,
+      workflow_status: targetStatus,
+      deleted_at: null,
+      deleted_from_status: null,
+      is_published: targetStatus === "published",
       updated_at: now,
       updated_by: currentUser.id
     };
@@ -3427,7 +3368,7 @@ form?.addEventListener("submit", async event => {
     $("#product-id").value = id;
     $("#catalog-key").value = catalogKey;
 
-    if (isPerfume) {
+    if (isPerfume && $("#product-perfume-family").value) {
       const perfumePayload = {
         product_id: id,
         family: $("#product-perfume-family").value,
@@ -3460,8 +3401,9 @@ form?.addEventListener("submit", async event => {
       setStatus("Guardado con fotografías pendientes: " + name, "error");
       await loadProducts();
     } else {
-      message("#product-form-status", isPerfume ? "Fragancia guardada correctamente." : "Producto guardado correctamente.", "success");
-      setStatus("Guardado: " + name, "success");
+      const statusLabel=targetStatus==="published"?"publicado en el catálogo":targetStatus==="draft"?"guardado como borrador":"guardado sin publicar";
+      message("#product-form-status",(isPerfume?"Fragancia ":"Producto ")+statusLabel+".","success");
+      setStatus((isPerfume?"Fragancia ":"Producto ")+(name||"sin nombre")+" "+statusLabel+".","success");
       await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY)).catch(error => console.warn("No se pudo limpiar el borrador tras guardar.", error));
       await loadProducts();
       clearEditor();
@@ -3470,9 +3412,8 @@ form?.addEventListener("submit", async event => {
     message("#product-form-status", error.message || "Ocurrió un error al guardar el producto.", "error");
   } finally {
     button.disabled = false;
-    button.textContent = imageUploadErrors.length
-      ? "Reintentar fotografías"
-      : ($("#product-id").value ? "Guardar cambios" : "Guardar producto");
+    $("#save-product-button").disabled=false; $("#publish-product-button").disabled=false; $("#save-draft-button").disabled=false;
+    $("#save-product-button").textContent=$("#product-id").value?"Guardar cambios":"Guardar producto";
   }
 });
 /* =========================================================
@@ -3595,6 +3536,8 @@ $("#import-json-file")?.addEventListener("change", async event => {
         variants,
 
         featured: false,
+        is_exclusive: false,
+        workflow_status: "draft",
         is_published: false
       };
     });
