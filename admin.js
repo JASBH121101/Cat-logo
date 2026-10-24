@@ -2911,6 +2911,10 @@ $("#product-type")?.addEventListener("change", () => {
   const isSet = $("#product-type").value === "set";
   $("#product-perfume-concentration-field")?.classList.toggle("hidden", isSet);
   $("#product-perfume-volume-field")?.classList.toggle("hidden", isSet);
+  if (isSet) {
+    $("#product-perfume-concentration").value = "";
+    $("#product-perfume-volume").value = "";
+  }
   const editing = Boolean($("#product-id")?.value);
   const formTitle = $("#form-title");
   if (formTitle && isPerfume) formTitle.textContent = isSet ? (editing ? "Editar set de perfumes" : "Registrar set de perfumes") : (editing ? "Editar fragancia" : "Registrar fragancia");
