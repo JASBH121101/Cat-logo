@@ -813,7 +813,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
     }).join("");
 
     return `
-      <section class="variant-option-group">
+      <section class="variant-option-group variant-option-color-group">
         <h3>${title}</h3>
         <div class="variant-choice-list color-choice-list">${buttons}</div>
       </section>
