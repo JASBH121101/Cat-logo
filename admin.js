@@ -2133,40 +2133,47 @@ function productNeedsMainImage(product) {
 }
 
 function renderDashboardOverview() {
-  const catalogProducts = getDashboardProducts();
-  const published = catalogProducts.filter(product => Boolean(product.is_published));
-  const drafts = catalogProducts.filter(product => !product.is_published);
+  const scopedProducts = getDashboardProducts();
+  const catalogProducts = scopedProducts.filter(product => getProductWorkflowStatus(product) !== "trash");
+  const published = catalogProducts.filter(product => getProductWorkflowStatus(product) === "published");
+  const unpublished = catalogProducts.filter(product => getProductWorkflowStatus(product) === "unpublished");
+  const drafts = catalogProducts.filter(product => getProductWorkflowStatus(product) === "draft");
+  const trash = scopedProducts.filter(product => getProductWorkflowStatus(product) === "trash");
   const needsImage = catalogProducts.filter(productNeedsMainImage);
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
   const total = catalogProducts.length;
+  const pendingPublication = unpublished.length + drafts.length;
   const percent = total ? Math.round((published.length / total) * 100) : 0;
+
   setText("dashboard-total", total);
   setText("dashboard-published", published.length);
+  setText("dashboard-unpublished", unpublished.length);
   setText("dashboard-drafts", drafts.length);
+  setText("dashboard-trash", trash.length);
   setText("dashboard-review", needsImage.length);
   setText("dashboard-chart-total", total);
   setText("dashboard-legend-published", published.length);
-  setText("dashboard-legend-drafts", drafts.length);
+  setText("dashboard-legend-drafts", pendingPublication);
   setText("dashboard-task-drafts", drafts.length);
+  setText("dashboard-task-unpublished", unpublished.length);
   setText("dashboard-task-images", needsImage.length);
 
-  const draftsTaskDescription = document.querySelector('[data-dashboard-action="drafts"] small');
-  if (draftsTaskDescription) {
-    if (!drafts.length) {
-      draftsTaskDescription.textContent = dashboardCatalogScope === "all"
-        ? "No hay productos pendientes en ninguno de los catálogos"
-        : "No hay productos pendientes en esta vista";
-    } else {
-      const draftCatalogs = new Set(drafts.map(product => normalizeCatalogType(product.catalog_type)));
-      const locationLabel = draftCatalogs.size > 1
-        ? "ambos catálogos"
-        : draftCatalogs.has("perfumery") ? "JB Parfums" : "JB TECH";
-      const countLabel = drafts.length === 1 ? "producto sin publicar" : "productos sin publicar";
-      draftsTaskDescription.textContent = dashboardCatalogScope === "all"
-        ? `${drafts.length} ${countLabel} en ${locationLabel} · tocá para revisar`
-        : `${drafts.length} ${countLabel} en este catálogo · tocá para revisar`;
+  const updateTaskDescription = (action, items, emptyText, singular, plural) => {
+    const node = document.querySelector('[data-dashboard-action="' + action + '"] small');
+    if (!node) return;
+    if (!items.length) {
+      node.textContent = emptyText;
+      return;
     }
-  }
+    const catalogs = new Set(items.map(product => normalizeCatalogType(product.catalog_type)));
+    const locationLabel = catalogs.size > 1 ? "ambos catálogos" : catalogs.has("perfumery") ? "JB Parfums" : "JB TECH";
+    const countLabel = items.length === 1 ? singular : plural;
+    node.textContent = dashboardCatalogScope === "all"
+      ? items.length + " " + countLabel + " en " + locationLabel + " · tocá para revisar"
+      : items.length + " " + countLabel + " en este catálogo · tocá para revisar";
+  };
+  updateTaskDescription("drafts", drafts, "No hay borradores en esta vista", "borrador", "borradores");
+  updateTaskDescription("unpublished", unpublished, "No hay productos completos esperando publicación", "producto listo para publicar", "productos listos para publicar");
 
   const imagesTaskDescription = document.querySelector('[data-dashboard-action="review"] small');
   if (imagesTaskDescription) {
@@ -2174,33 +2181,34 @@ function renderDashboardOverview() {
       imagesTaskDescription.textContent = "No hay productos sin fotografía principal en esta vista";
     } else {
       const imageCatalogs = new Set(needsImage.map(product => normalizeCatalogType(product.catalog_type)));
-      const locationLabel = imageCatalogs.size > 1
-        ? "ambos catálogos"
-        : imageCatalogs.has("perfumery") ? "JB Parfums" : "JB TECH";
+      const locationLabel = imageCatalogs.size > 1 ? "ambos catálogos" : imageCatalogs.has("perfumery") ? "JB Parfums" : "JB TECH";
       const countLabel = needsImage.length === 1 ? "producto sin foto principal" : "productos sin foto principal";
       imagesTaskDescription.textContent = dashboardCatalogScope === "all"
-        ? `${needsImage.length} ${countLabel} en ${locationLabel} · tocá para completar`
-        : `${needsImage.length} ${countLabel} · tocá para completar`;
+        ? needsImage.length + " " + countLabel + " en " + locationLabel + " · tocá para completar"
+        : needsImage.length + " " + countLabel + " · tocá para completar";
     }
   }
-  setText("dashboard-publication-summary", total ? `${percent}% del catálogo está publicado.` : "Agregá tu primer producto para comenzar.");
-  setText("dashboard-task-status", total ? "Inventario cargado correctamente" : "Todavía no hay productos en el inventario");
+
+  setText("dashboard-publication-summary", total ? percent + "% del catálogo activo está publicado." : "Agregá tu primer producto para comenzar.");
+  setText("dashboard-task-status", total ? "Inventario cargado correctamente" : "Todavía no hay productos fuera de la papelera");
   const ring = document.getElementById("dashboard-chart-ring");
-  if (ring) ring.style.setProperty("--published-ratio", `${percent}%`);
+  if (ring) ring.style.setProperty("--published-ratio", percent + "%");
   const progress = document.getElementById("dashboard-progress-published");
-  if (progress) progress.style.width = `${percent}%`;
+  if (progress) progress.style.width = percent + "%";
   const activity = document.getElementById("dashboard-activity-list");
   if (activity) {
-    const recent = [...catalogProducts].sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0,4);
+    const recent = [...catalogProducts].sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).slice(0, 4);
     activity.innerHTML = recent.length ? recent.map(product => {
       const title = escapeHtml(product.name || "Producto sin nombre");
-      const status = product.is_published ? "Publicado" : "Guardado como borrador";
+      const status = workflowStatusLabel(getProductWorkflowStatus(product));
       const catalogLabel = dashboardCatalogScope === "all"
         ? (normalizeCatalogType(product.catalog_type) === "perfumery" ? "JB Parfums · " : "JB TECH · ")
         : "";
       const dateValue = product.updated_at || product.created_at;
-      const date = dateValue ? new Date(dateValue).toLocaleDateString("es-NI", { day:"2-digit", month:"short" }) : "Fecha no disponible";
-      return `<div class="dashboard-activity-item"><span class="dashboard-activity-mark ${product.is_published ? "activity-mark-published" : "activity-mark-draft"}">${product.is_published ? "✓" : "◷"}</span><div><strong>${title}</strong><small>${catalogLabel}${status}</small></div><time>${escapeHtml(date)}</time></div>`;
+      const date = dateValue ? new Date(dateValue).toLocaleDateString("es-NI", { day: "2-digit", month: "short" }) : "Fecha no disponible";
+      const state = getProductWorkflowStatus(product);
+      const mark = state === "published" ? "✓" : state === "draft" ? "✎" : "▣";
+      return '<div class="dashboard-activity-item"><span class="dashboard-activity-mark ' + (state === "published" ? "activity-mark-published" : "activity-mark-draft") + '">' + mark + '</span><div><strong>' + title + '</strong><small>' + escapeHtml(catalogLabel + status) + '</small></div><time>' + escapeHtml(date) + '</time></div>';
     }).join("") : '<p class="dashboard-empty-state">Todavía no hay actividad. Añadí un producto para comenzar.</p>';
   }
 }
@@ -2208,40 +2216,45 @@ function renderDashboardOverview() {
 document.querySelectorAll("[data-dashboard-action]").forEach(button => {
   button.addEventListener("click", () => {
     const action = button.dataset.dashboardAction;
+    const routeByAction = {
+      published: { state: "published", section: "published", search: "published-search" },
+      unpublished: { state: "unpublished", section: "unpublished", search: "unpublished-search" },
+      drafts: { state: "draft", section: "drafts", search: "draft-search" },
+      trash: { state: "trash", section: "trash", search: "trash-search" }
+    };
 
-    if (action === "drafts") {
-      const scopedDrafts = getDashboardProducts().filter(product => !product.is_published);
-      const target = scopedDrafts.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
-        || scopedDrafts[0];
-
-      // Dashboard can summarize both catalogs; the task must open the catalog
-      // that actually contains drafts rather than an empty list in the current catalog.
-      if (target) {
-        const targetCatalog = normalizeCatalogType(target.catalog_type);
-        if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
+    if (routeByAction[action]) {
+      const route = routeByAction[action];
+      const candidates = getDashboardProducts().filter(product => getProductWorkflowStatus(product) === route.state);
+      const target = candidates.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType) || candidates[0];
+      if (target && normalizeCatalogType(target.catalog_type) !== activeCatalogType) {
+        setActiveCatalogType(normalizeCatalogType(target.catalog_type));
       }
-      showAdminSection("drafts");
+      showAdminSection(route.section);
+      const search = document.getElementById(route.search);
+      if (search && target) {
+        search.value = String(target.name || "");
+        search.dispatchEvent(new Event("input"));
+      }
       return;
     }
 
     if (action === "review") {
-      const scopedNeedsImage = getDashboardProducts().filter(productNeedsMainImage);
-      const target = scopedNeedsImage.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
-        || scopedNeedsImage[0];
-
-      if (target) {
-        const targetCatalog = normalizeCatalogType(target.catalog_type);
-        if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
-
-        const targetSection = target.is_published ? "published" : "drafts";
-        showAdminSection(targetSection);
-        const search = document.getElementById(targetSection === "published" ? "published-search" : "draft-search");
-        if (search) {
-          search.value = String(target.name || "");
-          search.dispatchEvent(new Event("input"));
-        }
-      } else {
-        showAdminSection("published");
+      const candidates = getDashboardProducts().filter(product =>
+        getProductWorkflowStatus(product) !== "trash" && productNeedsMainImage(product)
+      );
+      const target = candidates.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType) || candidates[0];
+      if (target && normalizeCatalogType(target.catalog_type) !== activeCatalogType) {
+        setActiveCatalogType(normalizeCatalogType(target.catalog_type));
+      }
+      const status = target ? getProductWorkflowStatus(target) : "published";
+      const section = status === "draft" ? "drafts" : status === "unpublished" ? "unpublished" : "published";
+      const searchId = section === "drafts" ? "draft-search" : section === "unpublished" ? "unpublished-search" : "published-search";
+      showAdminSection(section);
+      const search = document.getElementById(searchId);
+      if (search && target) {
+        search.value = String(target.name || "");
+        search.dispatchEvent(new Event("input"));
       }
       return;
     }
