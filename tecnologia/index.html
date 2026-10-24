@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="../styles.css?v=20261024-dialog-compact2">
-  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow3">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow4">
 
   <link rel="stylesheet" href="../brand-refresh.css?v=20261023-brand-system1">
   <script src="../config.js"></script>
@@ -249,22 +249,37 @@
     (() => {
       const section = document.getElementById("featured-section");
       if (!section || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
       let timer;
-      let paused = false;
+      let paused = document.hidden;
       const angles = ["45deg", "135deg", "225deg", "315deg"];
-      const scheduleShine = () => {
+      const getDuration = () => window.matchMedia("(max-width:760px)").matches ? 6800 : 6200;
+
+      const scheduleShine = (delay = 1800 + Math.random() * 1200) => {
         window.clearTimeout(timer);
         if (paused || document.hidden || !section.isConnected) return;
+
         timer = window.setTimeout(() => {
-          if (paused || document.hidden) return scheduleShine();
+          if (paused || document.hidden) {
+            scheduleShine();
+            return;
+          }
+
+          const duration = getDuration();
+          section.style.setProperty("--signature-shine-duration", duration + "ms");
           section.style.setProperty("--signature-shine-angle", angles[Math.floor(Math.random() * angles.length)]);
           section.classList.remove("signature-shine-active");
           void section.offsetWidth;
           section.classList.add("signature-shine-active");
-          window.setTimeout(() => section.classList.remove("signature-shine-active"), 2200);
-          scheduleShine();
-        }, 4500 + Math.random() * 500);
+
+          // Keep the active class until the full desktop/mobile sweep has finished.
+          window.setTimeout(() => section.classList.remove("signature-shine-active"), duration + 180);
+
+          // Pause briefly AFTER the current sweep. This prevents overlapping sweeps from restarting mid-way.
+          scheduleShine(duration + 1800 + Math.random() * 1800);
+        }, delay);
       };
+
       const visibilityChanged = () => {
         paused = document.hidden;
         if (paused) {
@@ -274,6 +289,7 @@
           scheduleShine();
         }
       };
+
       document.addEventListener("visibilitychange", visibilityChanged);
       scheduleShine();
     })();

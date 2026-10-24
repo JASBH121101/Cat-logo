@@ -9283,7 +9283,12 @@ body.technology-catalog .featured-section.signature-shine-active:after {
 }
 
 
-/* Ajuste de marca: etiqueta simple GAMA ALTA y animación visible en el perímetro. */
+/* JB SIGNATURE · recorrido completo y lento, calibrado para escritorio y móvil. */
+@property --signature-border-angle {
+  syntax:"<angle>";
+  inherits:false;
+  initial-value:0deg;
+}
 body.technology-catalog .featured-section:before {
   inset:0;
   z-index:5;
@@ -9291,22 +9296,27 @@ body.technology-catalog .featured-section:before {
   border-radius:inherit;
   padding:2px;
   background:conic-gradient(
-    from 0deg,
-    rgba(201,169,104,.28) 0deg,
+    from var(--signature-border-angle,0deg),
+    rgba(201,169,104,.22) 0deg,
     #f5dda0 38deg,
     #8b8cff 88deg,
     rgba(139,140,255,.22) 142deg,
     rgba(201,169,104,.3) 205deg,
     #fff0c7 248deg,
     #8b8cff 300deg,
-    rgba(201,169,104,.28) 360deg
+    rgba(201,169,104,.22) 360deg
   );
-  animation:signature-border-orbit 5.5s linear infinite;
+  animation:signature-border-orbit 12s linear infinite;
+  pointer-events:none;
+}
+@keyframes signature-border-orbit {
+  from { --signature-border-angle:0deg; }
+  to { --signature-border-angle:360deg; }
 }
 body.technology-catalog .featured-section:after {
   z-index:4;
   top:-90%;
-  left:-70%;
+  left:-42%;
   width:68%;
   height:280%;
   opacity:0;
@@ -9315,22 +9325,30 @@ body.technology-catalog .featured-section:after {
     transparent 0%,
     rgba(255,255,255,0) 34%,
     rgba(255,255,255,.08) 43%,
-    rgba(255,255,255,.9) 49%,
-    rgba(255,236,180,.24) 53%,
+    rgba(255,255,255,.92) 49%,
+    rgba(255,236,180,.28) 53%,
     rgba(255,255,255,0) 65%,
     transparent 100%
   );
+  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0);
+  will-change:transform,opacity;
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
-  animation:signature-diagonal-shine 1.25s cubic-bezier(.2,.65,.25,1) both;
+  animation:signature-diagonal-shine var(--signature-shine-duration,6200ms) linear both;
 }
-body.technology-catalog .featured-exclusive-badge {
-  position:relative;
-  z-index:6;
+@keyframes signature-diagonal-shine {
+  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0); }
+  8% { opacity:.2; }
+  16% { opacity:.92; }
+  82% { opacity:.8; }
+  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(120%,0,0); }
 }
-body.technology-catalog .featured-section-heading,
-body.technology-catalog .featured-grid,
-body.technology-catalog #featured-count {
-  position:relative;
-  z-index:1;
+@media(max-width:760px) {
+  body.technology-catalog .featured-section.signature-shine-active:after {
+    animation-duration:var(--signature-shine-duration,6800ms);
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  body.technology-catalog .featured-section:before { animation:none !important; }
+  body.technology-catalog .featured-section.signature-shine-active:after { animation:none !important; opacity:0 !important; }
 }
