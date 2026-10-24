@@ -10,8 +10,11 @@ const grid = document.querySelector("#product-grid");
 const statusNode = document.querySelector("#catalog-status");
 const emptyNode = document.querySelector("#empty-results");
 const searchInput = document.querySelector("#search-input");
-const dialog = document.querySelector("#product-dialog");
+const productDetailPage = document.querySelector("#product-detail-page");
+const productHeaderBack = document.querySelector("#product-detail-header-back");
 const dialogContent = document.querySelector("#dialog-content");
+const catalogDocumentTitle = document.title;
+const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
 const categoryFilters = document.querySelector("#category-filters");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
@@ -449,9 +452,26 @@ document.querySelectorAll("#product-grid, #featured-grid").forEach(catalogGrid =
 }, true));
 
 function productLink(product) {
-  const page = new URL("./", window.location.href);
-  page.hash = `producto=${encodeURIComponent(product.id)}`;
+  const page = new URL(window.location.pathname, window.location.origin);
+  page.searchParams.set("producto", String(product.id));
   return page.href;
+}
+
+function productShareLink(product, variant = null, fallbackColor = null) {
+  const currentHost = window.location.hostname.toLocaleLowerCase();
+  const shareOrigin = currentHost.endsWith(".github.io")
+    ? "https://cat-logo-preview.vercel.app"
+    : window.location.origin;
+  const share = new URL("/api/share", shareOrigin);
+  share.searchParams.set("catalog", "technology");
+  share.searchParams.set("id", String(product.id));
+  const storage = String(variant?.storage || "").trim();
+  const ram = String(variant?.ram || "").trim();
+  const color = String(variant?.color || fallbackColor?.name || fallbackColor?.color || "").trim();
+  if (storage) share.searchParams.set("storage", storage);
+  if (ram) share.searchParams.set("ram", ram);
+  if (color) share.searchParams.set("color", color);
+  return share.href;
 }
 
 function buildProductWhatsAppMessage(product, variant = null, fallbackColor = null) {
@@ -484,7 +504,7 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
     }
   }
 
-  parts.push(`Enlace del artículo: ${productLink(product)}.`);
+  parts.push(`Enlace del artículo: ${productShareLink(product, variant, fallbackColor)}.`);
   parts.push("Quisiera confirmar la disponibilidad final, la forma de pago y el costo de entrega para realizar la compra.");
 
   return parts.join(" ");
@@ -510,7 +530,7 @@ function buildPaymentWhatsAppMessage(product, variant = null, paymentType = "fin
     const nio = formatNIO(startingPrice(product, "price_nio"));
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
   }
-  parts.push(`Enlace del producto: ${productLink(product)}.`);
+  parts.push(`Enlace del producto: ${productShareLink(product, variant)}.`);
   parts.push(normalizedType === "credit_card"
     ? "Quisiera saber qué tarjetas aceptan, si hay posibilidad de pagar en cuotas, y cuáles son los requisitos, recargos o comisiones aplicables."
     : "Quisiera conocer los requisitos, plazos, cuotas y condiciones de aprobación disponibles.");
@@ -811,7 +831,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
     }).join("");
 
     return `
-      <section class="variant-option-group">
+      <section class="variant-option-group variant-option-color-group">
         <h3>${title}</h3>
         <div class="variant-choice-list color-choice-list">${buttons}</div>
       </section>
@@ -896,13 +916,15 @@ function renderVariantControls(product, variants, selected) {
         : getProductImages(product);
     dialogImage.innerHTML = chosenImages.length
       ? `
-        <div class="dialog-gallery-main">
+        <div class="dialog-gallery-main" data-inline-gallery>
+          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
           <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
             <img id="dialog-main-image" class="dialog-main-image"
                src="${escapeHtml(chosenImages[0])}"
                alt="${escapeHtml(`${product.name} ${configuration}`)}"
                loading="eager" decoding="async">
           </button>
+          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>' : ""}
         </div>
         ${chosenImages.length > 1
           ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
@@ -921,7 +943,7 @@ function renderVariantControls(product, variants, selected) {
   }
 }
 
-function renderLegacyColorOptions(product) {
+function renderLegacyColorOptions(product, selectedColorName = "") {
   const colors = getProductColors(product);
   if (!colors.length) return "";
 
@@ -931,7 +953,7 @@ function renderLegacyColorOptions(product) {
 
       <div class="dialog-color-grid">
         ${colors.map(color => `
-          <article class="dialog-color-card">
+          <article class="dialog-color-card ${String(color.name).trim().toLocaleLowerCase("es") === String(selectedColorName).trim().toLocaleLowerCase("es") ? "is-selected" : ""}">
             <div class="dialog-color-image">
               ${
                 color.image_url
@@ -1072,8 +1094,48 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
   }
 }
 
+function moveTechnologyGallery(step) {
+  const thumbnails = Array.from(dialogContent.querySelectorAll("#dialog-image [data-gallery-image]"));
+  if (thumbnails.length < 2) return;
+  let currentIndex = thumbnails.findIndex(button => button.classList.contains("active"));
+  if (currentIndex < 0) currentIndex = 0;
+  thumbnails[(currentIndex + step + thumbnails.length) % thumbnails.length].click();
+}
+
+let technologyGalleryTouchStart = null;
+dialogContent.addEventListener("touchstart", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest("#dialog-image .dialog-gallery-main")) {
+    technologyGalleryTouchStart = null;
+    return;
+  }
+  const touch = event.changedTouches && event.changedTouches[0];
+  technologyGalleryTouchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+}, { passive: true });
+
+dialogContent.addEventListener("touchend", event => {
+  if (!technologyGalleryTouchStart) return;
+  const start = technologyGalleryTouchStart;
+  technologyGalleryTouchStart = null;
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest("#dialog-image .dialog-gallery-main")) return;
+  const touch = event.changedTouches && event.changedTouches[0];
+  if (!touch) return;
+  const deltaX = touch.clientX - start.x;
+  const deltaY = touch.clientY - start.y;
+  if (Math.abs(deltaX) < 42 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+  moveTechnologyGallery(deltaX < 0 ? 1 : -1);
+}, { passive: true });
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const galleryStep = target?.closest("[data-gallery-step]");
+  if (galleryStep) {
+    event.preventDefault();
+    event.stopPropagation();
+    moveTechnologyGallery(Number(galleryStep.dataset.galleryStep) || 0);
+    return;
+  }
   const paymentToggle = target?.closest("#dialog-payment-options-toggle");
   if (paymentToggle) {
     const panel = $("#dialog-payment-choice-panel");
@@ -1121,7 +1183,7 @@ dialogContent.addEventListener("click", event => {
   });
 });
 
-function openProduct(product) {
+function openProduct(product, requestedVariant = null) {
   dialogContent.dataset.analyticsProductId = String(product.id);
   dialogContent.dataset.analyticsVariantColor = "";
   dialogContent.dataset.analyticsVariantRam = "";
@@ -1129,7 +1191,11 @@ function openProduct(product) {
   recordCatalogEvent(product.id, "view");
   const variants = getProductVariants(product);
   const specs = specsArray(product.specifications);
-  const initialImage = getProductImages(product)[0] || "";
+  const requestedColorName = String(requestedVariant?.color || "").trim();
+  const requestedColor = !variants.length && requestedColorName
+    ? getProductColors(product).find(color => String(color.name || "").trim().toLocaleLowerCase("es") === requestedColorName.toLocaleLowerCase("es"))
+    : null;
+  const initialImage = requestedColor?.image_url || getProductImages(product)[0] || "";
 
   const warranty =
     product.warranty_months !== null &&
@@ -1160,7 +1226,7 @@ function openProduct(product) {
             : `<div class="product-price-label">Precio de referencia</div>
                <div class="product-price">${escapeHtml(formatUSD(product.price_usd))}</div>
                ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
-               ${renderLegacyColorOptions(product)}`
+               ${renderLegacyColorOptions(product, requestedColorName)}`
         }
 
         <p class="dialog-product-description">${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
@@ -1201,7 +1267,20 @@ function openProduct(product) {
   updateProductContactLinks(product);
 
   if (variants.length) {
+    const requestedVariantPresent = Boolean(
+      String(requestedVariant?.storage || "").trim() ||
+      String(requestedVariant?.ram || "").trim() ||
+      String(requestedVariant?.color || "").trim()
+    );
+    const routeVariant = requestedVariantPresent
+      ? variants.find(variant =>
+          (!String(requestedVariant?.storage || "").trim() || String(variant.storage || "").trim().toLocaleLowerCase("es") === String(requestedVariant.storage).trim().toLocaleLowerCase("es")) &&
+          (!String(requestedVariant?.ram || "").trim() || String(variant.ram || "").trim().toLocaleLowerCase("es") === String(requestedVariant.ram).trim().toLocaleLowerCase("es")) &&
+          (!String(requestedVariant?.color || "").trim() || String(variant.color || "").trim().toLocaleLowerCase("es") === String(requestedVariant.color).trim().toLocaleLowerCase("es"))
+        )
+      : null;
     let selectedVariant =
+      routeVariant ||
       variants.find(variant => variant.availability === "available") ||
       variants[0];
 
@@ -1236,27 +1315,30 @@ function openProduct(product) {
     });
   }
 
-  if (typeof dialog.showModal === "function") {
-    if (!dialog.open) dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "open");
-  }
+  productDetailPage?.classList.remove("hidden");
+  if (productHeaderBack) productHeaderBack.hidden = false;
+  document.querySelector("main")?.classList.add("is-product-detail-view");
+  document.body.classList.add("product-detail-active");
+  document.title = `${product.name || "Producto"} | JB TECH`;
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.href = productLink(product);
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   const link = target?.closest("a[data-details]");
   if (!link) return;
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 
   const productId = link.getAttribute("data-details");
   const product = products.find(item => String(item.id) === productId);
   if (!product) return;
 
   event.preventDefault();
-  const productUrl = productLink(product);
-  if (window.location.hash !== `#producto=${encodeURIComponent(product.id)}`) {
-    window.history.pushState(window.history.state, document.title, productUrl);
-  }
+  const scrollY = window.scrollY;
+  window.history.replaceState({ ...(window.history.state || {}), catalogScrollY: scrollY }, document.title, window.location.href);
+  window.history.pushState({ productDetailRoute: true, catalogScrollY: scrollY, productId: String(product.id) }, document.title, productLink(product));
   openProduct(product);
 }));
 
@@ -1283,21 +1365,65 @@ clearPriceFilterButton?.addEventListener("click", () => {
   }
 });
 
-document.querySelector("#dialog-close").addEventListener("click", () => {
-  if (dialog.open && typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
-  if (window.location.hash.startsWith("#producto=")) {
-    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
-  }
-});
+function readProductRoute() {
+  const url = new URL(window.location.href);
+  const variant = {
+    storage: url.searchParams.get("storage") || "",
+    ram: url.searchParams.get("ram") || "",
+    color: url.searchParams.get("color") || ""
+  };
+  const queryId = url.searchParams.get("producto");
+  if (queryId) return { id: queryId, legacy: false, ...variant };
+  const match = url.hash.match(/^#producto=(.+)$/);
+  if (!match) return { id: "", legacy: false, ...variant };
+  let id = match[1];
+  try { id = decodeURIComponent(id); } catch { /* Conservar el ID heredado. */ }
+  return { id, legacy: true, ...variant };
+}
 
-dialog.addEventListener("click", event => {
-  if (event.target !== dialog) return;
-  if (dialog.open && typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
-  if (window.location.hash.startsWith("#producto=")) {
-    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
+function showCatalogView() {
+  productDetailPage?.classList.add("hidden");
+  if (productHeaderBack) productHeaderBack.hidden = true;
+  document.querySelector("main")?.classList.remove("is-product-detail-view");
+  document.body.classList.remove("product-detail-active");
+  document.title = catalogDocumentTitle;
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical && catalogCanonical) canonical.href = catalogCanonical;
+  if (dialogContent) dialogContent.innerHTML = "";
+}
+
+function handleProductRoute() {
+  const route = readProductRoute();
+  if (!route.id) {
+    const wasDetail = document.body.classList.contains("product-detail-active");
+    const scrollY = Number(window.history.state?.catalogScrollY) || 0;
+    showCatalogView();
+    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    return;
   }
+  const product = products.find(item => String(item.id) === route.id);
+  if (!product) {
+    showCatalogView();
+    statusNode.textContent = "El producto solicitado no está publicado o el enlace ya no es válido.";
+    return;
+  }
+  if (route.legacy) {
+    window.history.replaceState(window.history.state, document.title, productLink(product));
+  }
+  openProduct(product, route);
+}
+
+productHeaderBack?.addEventListener("click", () => {
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.delete("producto");
+  url.hash = "";
+  window.history.replaceState(window.history.state, document.title, url.href);
+  showCatalogView();
+  window.scrollTo({ top: 0, behavior: "auto" });
 });
 
 async function initializeCatalog() {
@@ -1339,30 +1465,16 @@ async function initializeCatalog() {
     return;
   }
 
-  const openProductFromHash = () => {
-    const match = window.location.hash.match(/^#producto=(.+)$/);
-    if (!match) return;
-    let id = match[1];
-    try { id = decodeURIComponent(id); } catch { /* Usa el ID recibido. */ }
-    const product = products.find(item => String(item.id) === id);
-    if (!product) {
-      statusNode.textContent =
-        "El producto solicitado no está publicado o el enlace ya no es válido.";
-      return;
-    }
-
-    try {
-      openProduct(product);
-    } catch (error) {
-      statusNode.textContent =
-        "Encontramos el producto, pero falló la ficha de detalles. " +
-        (error?.message || "Revisá la consola del navegador.");
-      console.error("Error al abrir la ficha del producto:", error);
-    }
-  };
-
-  openProductFromHash();
-  window.addEventListener("hashchange", openProductFromHash);
+  try {
+    handleProductRoute();
+  } catch (error) {
+    statusNode.textContent =
+      "Encontramos el producto, pero falló la ficha de detalles. " +
+      (error?.message || "Revisá la consola del navegador.");
+    console.error("Error al abrir la ficha del producto:", error);
+  }
+  window.addEventListener("popstate", handleProductRoute);
+  window.addEventListener("hashchange", handleProductRoute);
 }
 
 initializeCatalog();

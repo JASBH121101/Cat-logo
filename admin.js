@@ -2381,6 +2381,57 @@ productPreviewDialog?.addEventListener("click", event => {
   });
 });
 
+function collectProductStoragePaths(product) {
+  const bucket = String(CONFIG.storageBucket || "product-images").trim();
+  let storageOrigin = "";
+  try { storageOrigin = new URL(CONFIG.supabaseUrl).origin; } catch { return []; }
+  const publicPrefix = "/storage/v1/object/public/" + bucket + "/";
+  const paths = new Set();
+  const visit = value => {
+    if (typeof value === "string") {
+      if (!value.startsWith("https://") && !value.startsWith("http://")) return;
+      try {
+        const imageUrl = new URL(value);
+        if (imageUrl.origin !== storageOrigin || !imageUrl.pathname.startsWith(publicPrefix)) return;
+        const encodedPath = imageUrl.pathname.slice(publicPrefix.length);
+        const path = encodedPath.split("/").map(part => {
+          try { return decodeURIComponent(part); } catch { return part; }
+        }).join("/");
+        if (!path || path.split("/").some(part => part === "." || part === "..")) return;
+        paths.add(path);
+      } catch { /* Ignorar URL malformada. */ }
+      return;
+    }
+    if (Array.isArray(value)) { value.forEach(visit); return; }
+    if (value && typeof value === "object") Object.values(value).forEach(visit);
+  };
+  visit(product);
+  return [...paths];
+}
+
+async function deleteProductFromDatabase(product) {
+  if (!supabase || !currentUser) throw new Error("La sesión administrativa no está disponible.");
+  const imagePaths = collectProductStoragePaths(product);
+  const { data, error } = await supabase.from("products").delete().eq("id", product.id).select("id");
+  if (error) throw error;
+  if (!Array.isArray(data) || !data.some(row => String(row.id) === String(product.id))) {
+    throw new Error("La base de datos no confirmó la eliminación. Revisá los permisos o si el producto ya no existe.");
+  }
+  // Storage se limpia solo después de confirmar que el registro se borró.
+  const storageErrors = [];
+  const bucket = String(CONFIG.storageBucket || "product-images");
+  for (let offset = 0; offset < imagePaths.length; offset += 100) {
+    const chunk = imagePaths.slice(offset, offset + 100);
+    try {
+      const { error: storageError } = await supabase.storage.from(bucket).remove(chunk);
+      if (storageError) storageErrors.push(storageError.message || "Error de Storage sin detalle.");
+    } catch (storageError) {
+      storageErrors.push(storageError && storageError.message ? storageError.message : "Error de Storage sin detalle.");
+    }
+  }
+  return { imageCount: imagePaths.length, storageErrors };
+}
+
 function renderAdminList() {
   const catalogProducts = getActiveCatalogProducts();
   const searchable = product => [product.name, product.brand, product.model, product.category, product.perfume_details && product.perfume_details.scent_family].join(" ").toLocaleLowerCase("es");
@@ -2401,7 +2452,12 @@ function renderAdminList() {
       : variants.length ? variants.length + " variante" + (variants.length === 1 ? "" : "s") : "";
     const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
     const formattedPrice = price === null || price === undefined || price === "" ? "Consultar" : `US${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel ? " · " + escapeHtml(variantLabel) : ""}</div><div class="admin-product-buttons"><button class="admin-mini-button admin-preview-open-button" type="button" data-preview-product="${escapeHtml(product.id)}">Ver</button><button class="admin-mini-button" type="button" data-edit="${escapeHtml(product.id)}">Editar</button><button class="admin-mini-button" type="button" data-toggle="${escapeHtml(product.id)}">${product.is_published ? "Despublicar" : "Publicar"}</button></div></div></article>`;
+    return `<article class="admin-product-row">${thumb}<div><p class="admin-product-name">${escapeHtml(product.name)}</p><div class="admin-product-meta">${escapeHtml(product.category || "Sin categoría")} · ${escapeHtml(formattedPrice)}${variantLabel ? " · " + escapeHtml(variantLabel) : ""}</div><div class="admin-product-buttons">
+      <button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="${escapeHtml(product.id)}" aria-label="Ver producto" title="Ver producto"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+      <button class="admin-mini-button admin-icon-button" type="button" data-edit="${escapeHtml(product.id)}" aria-label="Editar producto" title="Editar producto"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"></path></svg></button>
+      <button class="admin-mini-button admin-icon-button" type="button" data-toggle="${escapeHtml(product.id)}" aria-label="${product.is_published ? "Despublicar producto" : "Publicar producto"}" title="${product.is_published ? "Despublicar producto" : "Publicar producto"}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${product.is_published ? '<path d="m3 3 18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A11.8 11.8 0 0 1 12 5c6.4 0 10 7 10 7a17.8 17.8 0 0 1-3.1 3.9"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.8 10.8 0 0 0 4.1-.8"></path>' : '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle>'}</svg></button>
+      <button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="${escapeHtml(product.id)}" aria-label="Eliminar producto" title="Eliminar permanentemente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 10v6M14 10v6"></path></svg></button>
+    </div></div></article>`;
   }).join("") || `<p class="form-status">${emptyText}</p>`;
   $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.");
   $("#draft-product-list").innerHTML = cards(filter(drafts, "#draft-search"), "No hay productos pendientes de publicar.");
@@ -2418,6 +2474,64 @@ document.querySelectorAll("#published-product-list, #draft-product-list").forEac
   const preview = event.target.closest("[data-preview-product]");
   const edit = event.target.closest("[data-edit]");
   const toggle = event.target.closest("[data-toggle]");
+  const deleteButton = event.target.closest("[data-delete-product]");
+
+  if (deleteButton) {
+    const product = products.find(item => String(item.id) === String(deleteButton.dataset.deleteProduct));
+    if (!product || !currentUser || !supabase) {
+      setStatus("No se pudo identificar el producto o la sesión administrativa venció.", "error");
+      return;
+    }
+    const isEditingThisProduct = String($("#product-id")?.value || "") === String(product.id);
+    const confirmationLines = [
+      "¿Eliminar definitivamente el producto: " + String(product.name || "sin nombre") + "?",
+      "",
+      "Esta acción no se puede deshacer. Después de confirmar el borrado del registro, también intentaremos borrar sus fotografías de Storage."
+    ];
+    if (isEditingThisProduct && editorIsDirty) {
+      confirmationLines.push("", "También se perderán los cambios sin guardar del formulario.");
+    }
+    if (!window.confirm(confirmationLines.join(String.fromCharCode(10)))) return;
+
+    deleteButton.disabled = true;
+    const previousLabel = deleteButton.textContent;
+    deleteButton.textContent = "Eliminando…";
+    try {
+      const result = await deleteProductFromDatabase(product);
+      if (isEditingThisProduct) {
+        await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY))
+          .catch(error => console.warn("No se pudo limpiar el borrador local del producto eliminado.", error));
+        clearEditor();
+      }
+      const refreshed = await loadProducts();
+      if (result.storageErrors.length) {
+        setStatus(
+          "El producto se eliminó de la base de datos, pero no se pudieron borrar todas sus fotografías de Storage: " +
+          result.storageErrors.slice(0, 2).join(" · "),
+          "error"
+        );
+      } else if (!refreshed) {
+        setStatus("El producto se eliminó de la base de datos, pero no se pudo actualizar la lista. Recargá el panel.", "error");
+      } else {
+        setStatus(
+          "Producto eliminado de la base de datos. Fotografías de Storage eliminadas: " + result.imageCount + ".",
+          "success"
+        );
+      }
+    } catch (error) {
+      const detail = String(error && error.message ? error.message : error || "Error sin detalle.");
+      const relatedRowsBlockDeletion = /foreign key|violates.*constraint|referenced from table|still referenced/i.test(detail);
+      setStatus(
+        relatedRowsBlockDeletion
+          ? "La base de datos impidió eliminar este producto porque existen registros relacionados. No se borraron sus fotografías. Revisá las relaciones y reglas de eliminación en Supabase."
+          : "No se pudo eliminar el producto: " + detail,
+        "error"
+      );
+      deleteButton.disabled = false;
+      deleteButton.textContent = previousLabel;
+    }
+    return;
+  }
 
   if (preview) {
     const product = products.find(item => String(item.id) === preview.dataset.previewProduct);
