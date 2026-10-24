@@ -129,8 +129,14 @@
           <button type="button" class="admin-nav-button" data-admin-section="published">
             <span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label" id="admin-nav-published-label">Productos publicados</span><span class="admin-nav-count" id="published-nav-count">0</span>
           </button>
+          <button type="button" class="admin-nav-button" data-admin-section="unpublished">
+            <span class="admin-nav-icon" aria-hidden="true">▣</span><span class="admin-nav-label" id="admin-nav-unpublished-label">Productos no publicados</span><span class="admin-nav-count" id="unpublished-nav-count">0</span>
+          </button>
           <button type="button" class="admin-nav-button" data-admin-section="drafts">
-            <span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label" id="admin-nav-drafts-label">Borradores y pendientes</span><span class="admin-nav-count" id="draft-nav-count">0</span>
+            <span class="admin-nav-icon" aria-hidden="true">▤</span><span class="admin-nav-label" id="admin-nav-drafts-label">Borradores</span><span class="admin-nav-count" id="draft-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="trash">
+            <span class="admin-nav-icon" aria-hidden="true">▱</span><span class="admin-nav-label" id="admin-nav-trash-label">Papelera</span><span class="admin-nav-count" id="trash-nav-count">0</span>
           </button>
         </nav>
 
@@ -276,7 +282,7 @@
                     type="button">+ Nuevo</button>
           </div>
 
-          <form id="product-form" class="admin-form">
+          <form id="product-form" class="admin-form" novalidate>
             <input id="product-id" type="hidden">
             <input id="catalog-key" type="hidden">
 
@@ -449,19 +455,34 @@
                 Destacar en el catálogo
               </label>
 
-              <label class="check-label">
-                <input id="product-active" type="checkbox">
-                Publicar en el catálogo
-              </label>
+              <input id="product-active" type="checkbox" hidden aria-hidden="true">
+              <input id="product-exclusive" type="checkbox" hidden aria-hidden="true">
             </div>
 
-            <div class="form-actions">
-              <button type="submit"
-                      id="save-product-button"
-                      class="button button-primary">Guardar producto</button>
-              <button type="button"
-                      id="cancel-edit-button"
-                      class="button button-outline">Cancelar</button>
+            <div class="form-actions workflow-form-actions" aria-label="Acciones de guardado">
+              <button type="submit" id="save-product-button" data-save-action="unpublished"
+                      class="workflow-action workflow-action-save" aria-label="Guardar producto sin publicar"
+                      title="Guardar producto sin publicar">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"></path><path d="M4 7.5 12 12l8-4.5M12 12v9"></path><path d="m8.5 14.5 2 2 4-4"></path></svg>
+              </button>
+              <button type="submit" id="publish-product-button" data-save-action="published"
+                      class="workflow-action workflow-action-publish" aria-label="Guardar y publicar en catálogo"
+                      title="Guardar y publicar en el catálogo">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg>
+              </button>
+              <button type="submit" id="save-draft-button" data-save-action="draft"
+                      class="workflow-action workflow-action-draft" aria-label="Guardar borrador incompleto"
+                      title="Guardar borrador incompleto">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z"></path><path d="M15 3v5h4M9 13h6M9 17h3"></path><path d="m14.5 16.5 4.5-4.5 2 2-4.5 4.5-3 1z"></path></svg>
+              </button>
+              <button type="button" id="toggle-product-exclusive" class="workflow-action workflow-action-exclusive"
+                      aria-label="Marcar como exclusivo" aria-pressed="false" title="Marcar como exclusivo">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>
+              </button>
+              <button type="button" id="cancel-edit-button" class="workflow-action workflow-action-cancel"
+                      aria-label="Cancelar" title="Cancelar">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+              </button>
             </div>
 
             <p class="form-status" id="product-form-status" role="status"></p>
@@ -480,12 +501,21 @@
         </section>
       </section>
 
+      <section id="admin-section-unpublished" class="admin-nav-panel hidden" data-admin-panel="unpublished">
+        <section class="admin-card product-list-card">
+          <div class="card-heading"><div><h2 id="unpublished-section-title">Productos no publicados</h2><p id="unpublished-count">Consultando productos…</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="unpublished-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
+          <div id="unpublished-product-list" class="admin-product-list"></div>
+        </section>
+      </section>
+
       <section id="admin-section-drafts" class="admin-nav-panel hidden" data-admin-panel="drafts">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="draft-section-title">Productos no publicados</h2><p id="draft-count">Consultando borradores…</p></div></div>
-          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
+          <div class="card-heading"><div><h2 id="draft-section-title">Borradores</h2><p id="draft-count">Consultando borradores…</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar borradores" placeholder="Buscar borrador"></label>
           <div id="draft-product-list" class="admin-product-list"></div>
-        </section>        <section class="admin-card local-recovery-card" aria-labelledby="local-recovery-title">
+        </section>
+        <section class="admin-card local-recovery-card" aria-labelledby="local-recovery-title">
           <div class="card-heading"><div><h2 id="local-recovery-title">Borrador local de recuperación</h2><p>Guarda automáticamente los cambios del formulario y las fotografías pendientes.</p></div></div>
           <p id="local-recovery-status" role="status">Comprobando borrador local…</p>
           <div class="local-recovery-actions">
@@ -493,6 +523,14 @@
             <button id="delete-local-draft" class="button button-outline" type="button" hidden>Eliminar borrador local</button>
           </div>
           <p class="local-recovery-note">Disponible en este navegador y dispositivo. No publica el producto ni sustituye una copia de seguridad del servidor.</p>
+        </section>
+      </section>
+
+      <section id="admin-section-trash" class="admin-nav-panel hidden" data-admin-panel="trash">
+        <section class="admin-card product-list-card">
+          <div class="card-heading"><div><h2 id="trash-section-title">Papelera</h2><p id="trash-count">Los productos se conservan durante 15 días antes de eliminarse definitivamente.</p></div></div>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="trash-search" type="search" aria-label="Buscar productos en la papelera" placeholder="Buscar en papelera"></label>
+          <div id="trash-product-list" class="admin-product-list"></div>
         </section>
       </section>
 
