@@ -3657,11 +3657,16 @@ form?.addEventListener("submit", async event => {
     ? event.submitter
     : $("#save-product-button");
   const saveAction = activeButton?.dataset.saveAction || "unpublished";
-  const isDraft = saveAction === "draft";
+  const existingId = $("#product-id").value;
+  const editingProduct = products.find(product => String(product.id) === String(existingId));
+  const previousStatus = editingProduct ? getProductWorkflowStatus(editingProduct) : "unpublished";
+  // "Exclusivo" sets only the exclusive flag; it does not publish or unpublish.
   const workflowStatus = saveAction === "draft" ? "draft"
-    : saveAction === "publish" || saveAction === "exclusive" ? "published"
+    : saveAction === "publish" ? "published"
+    : saveAction === "exclusive" ? previousStatus
     : "unpublished";
-  const wasEditing = Boolean($("#product-id").value);
+  const isDraft = workflowStatus === "draft";
+  const wasEditing = Boolean(existingId);
   const imageUploadErrors = [];
   const isPerfume = activeCatalogType === "perfumery";
 
@@ -3748,12 +3753,12 @@ form?.addEventListener("submit", async event => {
     const allImages = [...new Set(uploadedMainImages)];
     const now = new Date().toISOString();
 
-    const featured = saveAction === "exclusive" ? true
-      : saveAction === "publish" ? false
-      : Boolean(existingProduct?.featured || $("#product-featured").checked);
-    const isExclusive = saveAction === "exclusive" ? true
-      : saveAction === "publish" ? false
+    const isExclusive = saveAction === "exclusive"
+      ? true
       : Boolean(existingProduct?.is_exclusive);
+    const featured = isExclusive
+      ? true
+      : Boolean(existingProduct?.featured || (saveAction === "exclusive" ? true : $("#product-featured").checked));
     const draftPayload = isDraft ? makePersistentDraftPayload() : null;
     const payload = {
       catalog_key: catalogKey,
@@ -3841,11 +3846,17 @@ form?.addEventListener("submit", async event => {
     const section = workflowStatus === "published" ? "published"
       : workflowStatus === "unpublished" ? "unpublished" : "drafts";
     showAdminSection(section);
-    const label = workflowStatus === "published"
-      ? (featured ? "Producto publicado como exclusivo." : "Producto publicado.")
-      : workflowStatus === "unpublished"
-        ? "Producto completo guardado sin publicar."
-        : "Borrador guardado en Supabase; podés continuar editándolo después.";
+    const label = saveAction === "exclusive"
+      ? (workflowStatus === "published"
+        ? "Producto añadido a exclusivos; sigue publicado."
+        : workflowStatus === "draft"
+          ? "El borrador quedó marcado como exclusivo y sigue sin publicarse."
+          : "Producto añadido a exclusivos; sigue sin publicarse.")
+      : workflowStatus === "published"
+        ? (featured ? "Producto publicado en la sección destacada." : "Producto publicado.")
+        : workflowStatus === "unpublished"
+          ? "Producto completo guardado sin publicar."
+          : "Borrador guardado en Supabase; podés continuar editándolo después.";
     message("#product-form-status", label, "success");
     setStatus(label, "success");
   } catch (error) {
