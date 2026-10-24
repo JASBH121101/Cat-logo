@@ -209,7 +209,7 @@ function updateProductFormMode() {
   const dynamicLabels = {
     "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto",
     "admin-nav-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "admin-nav-drafts-label": isPerfume ? "Fragancias no publicadas" : "Borradores y pendientes",
+    "admin-nav-drafts-label": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
     "published-section-title": isPerfume ? "Fragancias publicadas" : "Productos publicados",
     "draft-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados"
   };
@@ -2077,14 +2077,17 @@ dashboardActivityRefresh?.addEventListener("click", async () => {
   }
 });
 
+function productNeedsMainImage(product) {
+  const images = Array.isArray(product?.images) ? product.images : [];
+  const gallery = Array.isArray(product?.gallery) ? product.gallery : [];
+  return !(product?.image_url || product?.image || images.length || gallery.length);
+}
+
 function renderDashboardOverview() {
   const catalogProducts = getDashboardProducts();
   const published = catalogProducts.filter(product => Boolean(product.is_published));
   const drafts = catalogProducts.filter(product => !product.is_published);
-  const needsImage = catalogProducts.filter(product => {
-    const images = Array.isArray(product.images) ? product.images : [];
-    return !(product.image_url || product.image || images.length || (Array.isArray(product.gallery) && product.gallery.length));
-  });
+  const needsImage = catalogProducts.filter(productNeedsMainImage);
   const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
   const total = catalogProducts.length;
   const percent = total ? Math.round((published.length / total) * 100) : 0;
@@ -2097,6 +2100,40 @@ function renderDashboardOverview() {
   setText("dashboard-legend-drafts", drafts.length);
   setText("dashboard-task-drafts", drafts.length);
   setText("dashboard-task-images", needsImage.length);
+
+  const draftsTaskDescription = document.querySelector('[data-dashboard-action="drafts"] small');
+  if (draftsTaskDescription) {
+    if (!drafts.length) {
+      draftsTaskDescription.textContent = dashboardCatalogScope === "all"
+        ? "No hay productos pendientes en ninguno de los catálogos"
+        : "No hay productos pendientes en esta vista";
+    } else {
+      const draftCatalogs = new Set(drafts.map(product => normalizeCatalogType(product.catalog_type)));
+      const locationLabel = draftCatalogs.size > 1
+        ? "ambos catálogos"
+        : draftCatalogs.has("perfumery") ? "JB Parfums" : "JB TECH";
+      const countLabel = drafts.length === 1 ? "producto sin publicar" : "productos sin publicar";
+      draftsTaskDescription.textContent = dashboardCatalogScope === "all"
+        ? `${drafts.length} ${countLabel} en ${locationLabel} · tocá para revisar`
+        : `${drafts.length} ${countLabel} en este catálogo · tocá para revisar`;
+    }
+  }
+
+  const imagesTaskDescription = document.querySelector('[data-dashboard-action="review"] small');
+  if (imagesTaskDescription) {
+    if (!needsImage.length) {
+      imagesTaskDescription.textContent = "No hay productos sin fotografía principal en esta vista";
+    } else {
+      const imageCatalogs = new Set(needsImage.map(product => normalizeCatalogType(product.catalog_type)));
+      const locationLabel = imageCatalogs.size > 1
+        ? "ambos catálogos"
+        : imageCatalogs.has("perfumery") ? "JB Parfums" : "JB TECH";
+      const countLabel = needsImage.length === 1 ? "producto sin foto principal" : "productos sin foto principal";
+      imagesTaskDescription.textContent = dashboardCatalogScope === "all"
+        ? `${needsImage.length} ${countLabel} en ${locationLabel} · tocá para completar`
+        : `${needsImage.length} ${countLabel} · tocá para completar`;
+    }
+  }
   setText("dashboard-publication-summary", total ? `${percent}% del catálogo está publicado.` : "Agregá tu primer producto para comenzar.");
   setText("dashboard-task-status", total ? "Inventario cargado correctamente" : "Todavía no hay productos en el inventario");
   const ring = document.getElementById("dashboard-chart-ring");
@@ -2122,12 +2159,44 @@ function renderDashboardOverview() {
 document.querySelectorAll("[data-dashboard-action]").forEach(button => {
   button.addEventListener("click", () => {
     const action = button.dataset.dashboardAction;
-    if (action === "review") {
-      showAdminSection("published");
-      const search = document.getElementById("published-search");
-      if (search) { search.value = ""; search.dispatchEvent(new Event("input")); }
+
+    if (action === "drafts") {
+      const scopedDrafts = getDashboardProducts().filter(product => !product.is_published);
+      const target = scopedDrafts.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
+        || scopedDrafts[0];
+
+      // Dashboard can summarize both catalogs; the task must open the catalog
+      // that actually contains drafts rather than an empty list in the current catalog.
+      if (target) {
+        const targetCatalog = normalizeCatalogType(target.catalog_type);
+        if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
+      }
+      showAdminSection("drafts");
       return;
     }
+
+    if (action === "review") {
+      const scopedNeedsImage = getDashboardProducts().filter(productNeedsMainImage);
+      const target = scopedNeedsImage.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
+        || scopedNeedsImage[0];
+
+      if (target) {
+        const targetCatalog = normalizeCatalogType(target.catalog_type);
+        if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
+
+        const targetSection = target.is_published ? "published" : "drafts";
+        showAdminSection(targetSection);
+        const search = document.getElementById(targetSection === "published" ? "published-search" : "draft-search");
+        if (search) {
+          search.value = String(target.name || "");
+          search.dispatchEvent(new Event("input"));
+        }
+      } else {
+        showAdminSection("published");
+      }
+      return;
+    }
+
     showAdminSection(action === "add" ? "add" : action);
   });
 });
