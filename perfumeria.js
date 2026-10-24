@@ -135,7 +135,11 @@ function productLink(product) {
 }
 
 function productShareLink(product) {
-  const share = new URL("/api/share", window.location.origin);
+  const currentHost = window.location.hostname.toLocaleLowerCase();
+  const shareOrigin = currentHost.endsWith(".github.io")
+    ? "https://cat-logo-preview.vercel.app"
+    : window.location.origin;
+  const share = new URL("/api/share", shareOrigin);
   share.searchParams.set("catalog", "perfumery");
   share.searchParams.set("id", String(product.id));
   return share.href;
