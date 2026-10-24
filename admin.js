@@ -3147,7 +3147,8 @@ function fillEditor(product) {
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
   renderVariantRows(activeCatalogType === "perfumery" ? [] : legacyVariants(product));
-  if (activeCatalogType !== "perfumery") {
+  const restoredDraftPayload = getProductWorkflowStatus(product) === "draft" && restorePersistentDraftPayload(product);
+  if (!restoredDraftPayload && activeCatalogType !== "perfumery") {
     const primaryGroup = baseColorManager?.querySelector('[data-variant-group][data-base-group="true"]');
     const primaryUSD = primaryGroup?.querySelector("[data-group-price-usd]");
     const primaryNIO = primaryGroup?.querySelector("[data-group-price-nio]");
@@ -3172,8 +3173,24 @@ function fillEditor(product) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   markEditorClean();
 }
-$("#new-product-button")?.addEventListener("click", clearEditor);
-$("#cancel-edit-button")?.addEventListener("click", clearEditor);
+$("#new-product-button")?.addEventListener("click", () => {
+  if (editorIsDirty && !window.confirm("Hay cambios sin guardar. ¿Querés descartarlos y comenzar un producto nuevo?")) return;
+  clearEditor();
+});
+$("#cancel-edit-button")?.addEventListener("click", () => {
+  const editingExisting = Boolean($("#product-id")?.value);
+  if (editorIsDirty) {
+    const prompt = editingExisting
+      ? "Hay cambios sin guardar. La X los descarta y cierra esta edición, pero NO elimina el producto guardado. ¿Continuar?"
+      : "¿Descartar todos los datos y las fotografías pendientes de este formulario?";
+    if (!window.confirm(prompt)) return;
+  } else if (!editingExisting && !$("#product-name")?.value.trim()) {
+    clearEditor();
+    return;
+  }
+  clearEditor();
+  message("#product-form-status", "Formulario limpio. Ningún producto guardado fue eliminado.", "success");
+});
 
 activeCatalogSelector?.addEventListener("change", () => {
   const requested = normalizeCatalogType(activeCatalogSelector.value);
@@ -3919,7 +3936,9 @@ $("#import-json-file")?.addEventListener("change", async event => {
         variants,
 
         featured: false,
-        is_published: false
+        is_published: false,
+        workflow_status: "unpublished",
+        draft_payload: null
       };
     });
 
@@ -3933,7 +3952,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
 
     message(
       node,
-      `${payload.length} productos importados como borradores. Revisá variantes, precios y fotografías antes de publicar.`,
+      `${payload.length} productos importados como no publicados. Revisá variantes, precios y fotografías antes de publicarlos.`,
       "success"
     );
 
