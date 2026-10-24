@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../perfumeria.css?v=20261024-audience-triptych1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261023-brand-system1">
   <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261023-dual-filter1"></script>
-  <script src="../ui.js?v=20261023-dual-filter-menus1" defer></script>
+  <script type="module" src="../perfumeria.js?v=20261024-filter-summary3"></script>
+  <script src="../ui.js?v=20261024-auto-close3" defer></script>
 </head>
 <body class="perfume-page">
   <header class="site-header perfume-header">
@@ -99,13 +99,13 @@
         <button class="filter-chip" type="button" data-category="nicho" aria-pressed="false">Nicho</button>
         <button class="filter-chip" type="button" data-category="disenador" aria-pressed="false">Diseñador</button>
       </div>
-      <div class="filter-row perfume-family-filters perfume-audience-filters" id="audience-filters" data-mobile-filter-label="Público" aria-label="Filtrar por público">
-        <button class="filter-chip active" type="button" data-audience="all" aria-pressed="true">Todos los públicos</button>
+      <div class="filter-row perfume-family-filters perfume-audience-filters" id="audience-filters" data-mobile-filter-label="Género" aria-label="Filtrar por género">
+        <button class="filter-chip active" type="button" data-audience="all" aria-pressed="true">Todos los géneros</button>
         <button class="filter-chip" type="button" data-audience="hombre" aria-pressed="false">Hombre</button>
         <button class="filter-chip" type="button" data-audience="mujer" aria-pressed="false">Mujer</button>
         <button class="filter-chip" type="button" data-audience="unisex" aria-pressed="false">Unisex</button>
       </div>
-      <div class="perfume-filter-controls"><p id="perfume-filter-summary" aria-live="polite">Todos los tipos · Todos los públicos</p><button id="clear-all-filters" class="perfume-clear-all-button" type="button" disabled>Limpiar todos los filtros</button></div>
+      <div class="perfume-filter-controls"><p id="perfume-filter-summary" aria-live="polite">Todos los tipos · Todos los géneros</p><button id="clear-all-filters" class="perfume-clear-all-button" type="button" disabled>Limpiar todos los filtros</button></div>
 
       <section class="budget-filter-bar perfume-budget-filter" aria-label="Filtrar por presupuesto">
         <div class="budget-filter-heading"><strong>Tu presupuesto</strong><small>Precio en dólares</small></div>
