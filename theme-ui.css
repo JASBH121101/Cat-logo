@@ -9266,7 +9266,7 @@ body.technology-catalog .featured-section:after {
   mix-blend-mode:screen;
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
-  animation:signature-diagonal-shine 1.25s cubic-bezier(.2,.65,.25,1) both;
+  animation:signature-diagonal-shine 2.1s cubic-bezier(.2,.65,.25,1) both;
 }
 @keyframes signature-border-orbit {
   to { filter:hue-rotate(26deg); }
