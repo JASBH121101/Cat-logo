@@ -9218,150 +9218,193 @@ body.technology-catalog .featured-exclusive-badge {
 }
 
 
-/* JB SIGNATURE · borde luminoso en órbita y destellos diagonales aleatorios. */
-body.technology-catalog .featured-section {
-  isolation:isolate;
-  --signature-glow-gold:rgba(230,195,119,.96);
-  --signature-glow-blue:rgba(113,116,255,.9);
-  --signature-shine-angle:45deg;
-}
-body.technology-catalog .featured-section:before {
-  content:"";
-  position:absolute;
-  inset:-1px;
-  z-index:3;
-  height:auto;
-  border-radius:inherit;
-  padding:1.6px;
-  background:conic-gradient(
-    from 0deg,
-    rgba(201,169,104,.18) 0deg,
-    rgba(201,169,104,.32) 42deg,
-    #f8e6b6 72deg,
-    #8b8cff 118deg,
-    rgba(116,105,235,.22) 164deg,
-    rgba(201,169,104,.18) 210deg,
-    #fff0c7 246deg,
-    #8b8cff 292deg,
-    rgba(201,169,104,.18) 360deg
-  );
-  box-sizing:border-box;
-  pointer-events:none;
-  animation:signature-border-orbit 8s linear infinite;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;
-  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  mask-composite:exclude;
-}
-body.technology-catalog .featured-section:after {
-  content:"";
-  position:absolute;
-  z-index:2;
-  top:-65%;
-  left:-48%;
-  width:43%;
-  height:230%;
-  border-radius:50%;
-  pointer-events:none;
-  opacity:0;
-  background:linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255,255,255,0) 26%,
-    rgba(255,255,255,.05) 39%,
-    rgba(255,255,255,.76) 49%,
-    rgba(255,239,190,.2) 55%,
-    rgba(255,255,255,0) 72%,
-    transparent 100%
-  );
-  filter:blur(3px);
-  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-120%,0,0);
-  mix-blend-mode:screen;
-}
-body.technology-catalog .featured-section.signature-shine-active:after {
-  animation:signature-diagonal-shine 2.1s cubic-bezier(.2,.65,.25,1) both;
-}
-@keyframes signature-border-orbit {
-  to { filter:hue-rotate(26deg); }
-}
-@keyframes signature-diagonal-shine {
-  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-120%,0,0); }
-  12% { opacity:.92; }
-  74% { opacity:.8; }
-  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(470%,0,0); }
-}
-@media(prefers-reduced-motion:reduce) {
-  body.technology-catalog .featured-section:before { animation:none !important; }
-  body.technology-catalog .featured-section.signature-shine-active:after { animation:none !important; opacity:0 !important; }
-}
-
-
-/* JB SIGNATURE · recorrido completo y lento, calibrado para escritorio y móvil. */
+/* JB SIGNATURE · borde orbital y barrido diagonal, legible en ambos temas. */
 @property --signature-border-angle {
   syntax:"<angle>";
   inherits:false;
   initial-value:0deg;
 }
+body.technology-catalog .featured-section {
+  isolation:isolate;
+  overflow:hidden;
+  --signature-ring-gold:#e5c47d;
+  --signature-ring-violet:#898cff;
+  --signature-shine-duration:9000ms;
+  --signature-shine-angle:45deg;
+}
+html[data-theme="light"] body.technology-catalog .featured-section {
+  --signature-ring-gold:#c4a15d;
+  --signature-ring-violet:#7777ed;
+  background:
+    radial-gradient(ellipse at 8% 0%,rgba(255,255,255,.96),transparent 48%),
+    linear-gradient(135deg,#f5f7ff 0%,#edf0fc 57%,#fbf5e9 100%) !important;
+  border-color:rgba(164,139,83,.48) !important;
+  color:#1b2946;
+}
+html[data-theme="dark"] body.technology-catalog .featured-section {
+  --signature-ring-gold:#f1d58e;
+  --signature-ring-violet:#999bff;
+  background:
+    radial-gradient(ellipse at 8% 0%,rgba(63,76,124,.34),transparent 50%),
+    linear-gradient(135deg,#141e34 0%,#11192b 58%,#211c35 100%) !important;
+  border-color:rgba(158,174,222,.48) !important;
+  box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 0 0 4px rgba(155,170,220,.06) !important;
+  color:#eff3ff;
+}
+
+/* El conic-gradient queda en la franja del borde, no sobre el texto. */
 body.technology-catalog .featured-section:before {
+  content:"";
+  position:absolute;
   inset:0;
   z-index:5;
   height:auto;
-  border-radius:inherit;
   padding:2px;
+  border-radius:inherit;
+  box-sizing:border-box;
   background:conic-gradient(
     from var(--signature-border-angle,0deg),
-    rgba(201,169,104,.22) 0deg,
-    #f5dda0 38deg,
-    #8b8cff 88deg,
-    rgba(139,140,255,.22) 142deg,
-    rgba(201,169,104,.3) 205deg,
-    #fff0c7 248deg,
-    #8b8cff 300deg,
-    rgba(201,169,104,.22) 360deg
+    transparent 0deg,
+    var(--signature-ring-gold) 42deg,
+    var(--signature-ring-violet) 92deg,
+    rgba(135,139,255,.12) 142deg,
+    transparent 186deg,
+    var(--signature-ring-gold) 246deg,
+    var(--signature-ring-violet) 302deg,
+    transparent 360deg
   );
-  animation:signature-border-orbit 12s linear infinite;
   pointer-events:none;
+  animation:signature-border-orbit 12s linear infinite;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
 }
 @keyframes signature-border-orbit {
   from { --signature-border-angle:0deg; }
   to { --signature-border-angle:360deg; }
 }
+
+/* La luz viaja en diagonal por el panel, pero queda DETRÁS del contenido. */
 body.technology-catalog .featured-section:after {
-  z-index:4;
+  content:"";
+  position:absolute;
+  z-index:2;
   top:-90%;
   left:-42%;
   width:68%;
   height:280%;
+  border-radius:50%;
   opacity:0;
+  pointer-events:none;
   background:linear-gradient(
     105deg,
     transparent 0%,
     rgba(255,255,255,0) 34%,
-    rgba(255,255,255,.08) 43%,
-    rgba(255,255,255,.92) 49%,
-    rgba(255,236,180,.28) 53%,
+    rgba(255,255,255,.05) 43%,
+    rgba(255,255,255,.62) 49%,
+    rgba(255,236,180,.18) 53%,
     rgba(255,255,255,0) 65%,
     transparent 100%
   );
+  filter:blur(3px);
   transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-180%,0,0);
   will-change:transform,opacity;
+  mix-blend-mode:screen;
+}
+html[data-theme="dark"] body.technology-catalog .featured-section:after {
+  background:linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(98,125,224,0) 34%,
+    rgba(128,151,255,.12) 43%,
+    rgba(165,177,255,.72) 49%,
+    rgba(237,203,130,.28) 53%,
+    rgba(98,125,224,0) 65%,
+    transparent 100%
+  );
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
   animation:signature-diagonal-shine var(--signature-shine-duration,9000ms) linear both;
 }
 @keyframes signature-diagonal-shine {
   0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-180%,0,0); }
-  8% { opacity:.18; }
-  16% { opacity:.92; }
-  82% { opacity:.8; }
+  8% { opacity:.12; }
+  16% { opacity:.42; }
+  82% { opacity:.3; }
   100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(360%,0,0); }
 }
 @media(max-width:760px) {
+  body.technology-catalog .featured-section { --signature-shine-duration:10000ms; }
   body.technology-catalog .featured-section.signature-shine-active:after {
     animation-duration:var(--signature-shine-duration,10000ms);
   }
 }
+
+/* El texto y las tarjetas se pintan después del barrido: nunca quedan velados por la luz. */
+body.technology-catalog .featured-section > .featured-exclusive-badge,
+body.technology-catalog .featured-section > .featured-section-heading,
+body.technology-catalog .featured-section > .featured-grid,
+body.technology-catalog .featured-section > #featured-count {
+  position:relative;
+  z-index:6 !important;
+}
+body.technology-catalog .featured-exclusive-badge {
+  border-color:rgba(185,147,72,.7);
+}
+html[data-theme="light"] body.technology-catalog .featured-section-heading h2 {
+  color:#192846 !important;
+}
+html[data-theme="light"] body.technology-catalog .featured-section-heading .eyebrow {
+  color:#536db4 !important;
+}
+html[data-theme="light"] body.technology-catalog .featured-section-heading .section-subtitle {
+  color:#5f6f8d !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-section-heading h2 {
+  color:#f1f4ff !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .eyebrow {
+  color:#b8c5ff !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .section-subtitle {
+  color:#c3cde5 !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card {
+  color:#edf2ff !important;
+  border-color:rgba(144,158,207,.58) !important;
+  background:linear-gradient(155deg,#1b2742 0%,#151f36 65%,#211e38 100%) !important;
+  box-shadow:0 5px 16px rgba(0,0,0,.24),inset 0 0 0 1px rgba(188,199,238,.06) !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-image {
+  background:radial-gradient(ellipse at 50% 40%,rgba(137,143,199,.16),transparent 72%),linear-gradient(145deg,#202c46,#131d31) !important;
+  border-bottom-color:#344361 !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card-content,
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card h3 {
+  color:#eff3ff !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-category {
+  color:#afc1ff !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card-capacity {
+  color:#d9e4ff !important;
+  border-color:#405174 !important;
+  background:#202e4c !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-label {
+  color:#b9c5df !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price {
+  color:#c1ceff !important;
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-secondary {
+  color:#bdc9e1 !important;
+}
 @media(prefers-reduced-motion:reduce) {
   body.technology-catalog .featured-section:before { animation:none !important; }
-  body.technology-catalog .featured-section.signature-shine-active:after { animation:none !important; opacity:0 !important; }
+  body.technology-catalog .featured-section.signature-shine-active:after {
+    animation:none !important;
+    opacity:0 !important;
+  }
 }
