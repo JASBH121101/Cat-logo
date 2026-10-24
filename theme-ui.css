@@ -9073,6 +9073,19 @@ html[data-theme="dark"] .technology-promo-caption {
   }
 }
 
+
+/* Ficha móvil: aprovechar mejor el alto disponible y conservar margen al final del contenido. */
+@media(max-width:760px) and (hover:none) and (pointer:coarse) {
+  .technology-catalog .product-dialog {
+    max-height:calc(100dvh - 8px) !important;
+    padding-bottom:max(18px,env(safe-area-inset-bottom,0px)) !important;
+    overscroll-behavior-y:contain;
+  }
+  .technology-catalog .product-dialog .dialog-detail {
+    padding-bottom:24px !important;
+  }
+}
+
 /* Pantalla completa con navegación visible y gestos táctiles. */
 .product-image-lightbox-photo {
   max-width:calc(100vw - 18px);
@@ -9330,22 +9343,22 @@ body.technology-catalog .featured-section:after {
     rgba(255,255,255,0) 65%,
     transparent 100%
   );
-  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0);
+  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-180%,0,0);
   will-change:transform,opacity;
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
-  animation:signature-diagonal-shine var(--signature-shine-duration,6200ms) linear both;
+  animation:signature-diagonal-shine var(--signature-shine-duration,9000ms) linear both;
 }
 @keyframes signature-diagonal-shine {
-  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0); }
-  8% { opacity:.2; }
+  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-180%,0,0); }
+  8% { opacity:.18; }
   16% { opacity:.92; }
   82% { opacity:.8; }
-  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(120%,0,0); }
+  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(360%,0,0); }
 }
 @media(max-width:760px) {
   body.technology-catalog .featured-section.signature-shine-active:after {
-    animation-duration:var(--signature-shine-duration,6800ms);
+    animation-duration:var(--signature-shine-duration,10000ms);
   }
 }
 @media(prefers-reduced-motion:reduce) {

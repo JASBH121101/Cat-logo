@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="../styles.css?v=20261024-dialog-compact2">
-  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow4">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261024-gama-alta-glow5">
 
   <link rel="stylesheet" href="../brand-refresh.css?v=20261023-brand-system1">
   <script src="../config.js"></script>
@@ -247,15 +247,17 @@
 
   <script>
     (() => {
+        <script>
+    (() => {
       const section = document.getElementById("featured-section");
       if (!section || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
       let timer;
       let paused = document.hidden;
       const angles = ["45deg", "135deg", "225deg", "315deg"];
-      const getDuration = () => window.matchMedia("(max-width:760px)").matches ? 6800 : 6200;
+      const getDuration = () => window.matchMedia("(max-width:760px)").matches ? 10000 : 9000;
 
-      const scheduleShine = (delay = 1800 + Math.random() * 1200) => {
+      const scheduleShine = (delay = 1600 + Math.random() * 1200) => {
         window.clearTimeout(timer);
         if (paused || document.hidden || !section.isConnected) return;
 
@@ -272,10 +274,9 @@
           void section.offsetWidth;
           section.classList.add("signature-shine-active");
 
-          // Keep the active class until the full desktop/mobile sweep has finished.
-          window.setTimeout(() => section.classList.remove("signature-shine-active"), duration + 180);
-
-          // Pause briefly AFTER the current sweep. This prevents overlapping sweeps from restarting mid-way.
+          // Do not remove the active class until the full sweep has crossed the section.
+          window.setTimeout(() => section.classList.remove("signature-shine-active"), duration + 250);
+          // Start the next random sweep only after this one has finished, with a short idle gap.
           scheduleShine(duration + 1800 + Math.random() * 1800);
         }, delay);
       };
