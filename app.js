@@ -583,9 +583,11 @@ function startingPrice(product, field = "price_usd") {
 function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
-  const badge = product.featured
-    ? '<span class="product-badge featured-badge">✦ DESTACADO</span>'
-    : "";
+  const badge = product.is_exclusive
+    ? '<span class="product-badge exclusive-badge">★ EXCLUSIVO</span>'
+    : product.featured
+      ? '<span class="product-badge featured-badge">✦ DESTACADO</span>'
+      : "";
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
     productStatus === "out_of_stock"
