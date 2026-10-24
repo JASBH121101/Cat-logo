@@ -256,7 +256,7 @@ function renderProducts() {
   if (emptyDescription) {
     emptyDescription.textContent = isComingSoon
       ? "Estamos preparando nuestra selección de fragancias. Volvé pronto para descubrirla."
-      : "Probá con otro nombre, tipo de fragancia, público o rango de precio.";
+      : "Probá con otro nombre, tipo de fragancia, género o rango de precio.";
   }
   statusNode.textContent = perfumes.length
     ? (filtering
@@ -268,7 +268,7 @@ function renderProducts() {
   updateFilterButtons(audienceFilters, "audience", selectedAudiences);
   const typeLabels = [...selectedFamilies].map(value => ({arabes:"Árabes",nicho:"Nicho",disenador:"Diseñador"})[value] || value);
   const audienceLabels = [...selectedAudiences].map(value => ({hombre:"Hombre",mujer:"Mujer",unisex:"Unisex"})[value] || value);
-  if (filterSummary) filterSummary.textContent = [typeLabels.length ? typeLabels.join(" + ") : "Todos los tipos", audienceLabels.length ? audienceLabels.join(" + ") : "Todos los públicos"].join(" · ");
+  if (filterSummary) filterSummary.textContent = [typeLabels.length ? typeLabels.join(" + ") : "Todos los tipos", audienceLabels.length ? audienceLabels.join(" + ") : "Todos los géneros"].join(" · ");
   if (clearAllFiltersButton) clearAllFiltersButton.disabled = !hasActiveFilters();
 }
 
@@ -313,7 +313,7 @@ function openPerfume(product) {
         '<dl class="perfume-dialog-facts">' +
           (concentration ? '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration) + '</dd></div>' : '') +
           (detail.volume_ml ? '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' : '') +
-          (detail.audience ? '<div><dt>Público</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
+          (detail.audience ? '<div><dt>Género</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(statusLabel(product.availability)) + '</dd></div>' +
           (detail.is_original === true ? '<div><dt>Originalidad</dt><dd>Original confirmado</dd></div>' : '') +
           (detail.scent_family ? '<div><dt>Familia olfativa</dt><dd>' + escapeHtml(detail.scent_family) + '</dd></div>' : '') +
