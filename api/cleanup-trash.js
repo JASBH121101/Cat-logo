@@ -89,6 +89,7 @@ async function removeStorageObjects(base, key, bucket, paths) {
 
 async function enqueueCleanup(base, key, bucket, productId, paths, error) {
   if (!paths.length) return;
+  const failed = Boolean(error);
   await restRequest(base, key, 'storage_cleanup_queue', {
     method: 'POST',
     filters: { on_conflict: 'bucket,object_path' },
@@ -97,10 +98,31 @@ async function enqueueCleanup(base, key, bucket, productId, paths, error) {
       bucket,
       object_path,
       source_product_id: String(productId),
-      attempts: 1,
-      last_attempt_at: new Date().toISOString(),
-      last_error: String(error || 'Storage deletion failed').slice(0, 1000)
+      attempts: failed ? 1 : 0,
+      last_attempt_at: failed ? new Date().toISOString() : null,
+      last_error: String(error || 'Waiting for the product row to be permanently removed').slice(0, 1000)
     }))
+  });
+}
+
+async function clearCleanupQueueForPaths(base, key, bucket, productId, paths) {
+  if (!paths.length) return;
+  const rows = await restRequest(base, key, 'storage_cleanup_queue', {
+    filters: {
+      select: 'id,object_path',
+      bucket: 'eq.' + bucket,
+      source_product_id: 'eq.' + String(productId)
+    }
+  });
+  const pathSet = new Set(paths);
+  const ids = (Array.isArray(rows) ? rows : [])
+    .filter(row => pathSet.has(row.object_path) && row.id)
+    .map(row => row.id);
+  if (!ids.length) return;
+  await restRequest(base, key, 'storage_cleanup_queue', {
+    method: 'DELETE',
+    filters: { id: 'in.(' + ids.join(',') + ')' },
+    prefer: 'return=minimal'
   });
 }
 
@@ -232,7 +254,12 @@ module.exports = async function handler(req, res) {
 
   for (const product of Array.isArray(expired) ? expired : []) {
     const productId = String(product.id);
+    const paths = collectStoragePaths(product, base, bucket);
     try {
+      // Record the files before destructive database operations. The retry
+      // worker checks that the product row is gone before removing queued files.
+      if (paths.length) await enqueueCleanup(base, key, bucket, productId, paths, null);
+
       let events = [];
       try {
         events = await restRequest(base, key, 'catalog_events', {
@@ -277,10 +304,10 @@ module.exports = async function handler(req, res) {
       });
       summary.removedProducts += 1;
 
-      const paths = collectStoragePaths(product, base, bucket);
       if (paths.length) {
         try {
           await removeStorageObjects(base, key, bucket, paths);
+          await clearCleanupQueueForPaths(base, key, bucket, productId, paths);
         } catch (error) {
           await enqueueCleanup(base, key, bucket, productId, paths, error.message || error);
           summary.queuedImages += paths.length;
