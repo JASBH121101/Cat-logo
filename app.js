@@ -882,6 +882,11 @@ function renderVariantControls(product, variants, selected) {
 
   updateProductContactLinks(product, selected);
 
+  const productDescription = dialogContent.querySelector(".dialog-product-description");
+  if (productDescription && area.parentElement) {
+    area.insertAdjacentElement("afterend", productDescription);
+  }
+
   const dialogImage = $("#dialog-image");
   if (dialogImage) {
     const chosenImages = selected.images?.length
@@ -1018,8 +1023,6 @@ function openProduct(product) {
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
         <h2>${escapeHtml(product.name)}</h2>
 
-        <p>${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
-
         ${
           variants.length
             ? `<div id="variant-options-area"></div>`
@@ -1028,6 +1031,8 @@ function openProduct(product) {
                ${nio ? `<p>${escapeHtml(nio)}</p>` : ""}
                ${renderLegacyColorOptions(product)}`
         }
+
+        <p class="dialog-product-description">${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
 
         <div class="product-contact-actions">
           <a id="dialog-buy-link" class="button button-primary dialog-buy-button" href="#" target="_blank" rel="noopener"><span aria-hidden="true">✓</span> Quiero comprar este producto</a>
