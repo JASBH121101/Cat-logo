@@ -3576,3 +3576,20 @@ html[data-theme="light"] .primary-config-slot .variant-base-group {
     min-height: 38px;
   }
 }
+
+
+/* Flujo de estados del formulario y acciones compactas */
+.workflow-form-actions{display:flex;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap}
+.workflow-action{width:46px;height:46px;min-width:46px;display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:13px;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.workflow-action svg,.admin-icon-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.workflow-action:hover,.admin-icon-button:hover{transform:translateY(-2px);box-shadow:0 5px 13px rgba(15,23,42,.14)}
+.workflow-action:focus-visible,.admin-icon-button:focus-visible{outline:3px solid rgba(59,130,246,.45);outline-offset:2px}
+.workflow-action-save{color:#fff;background:#2563eb;border-color:#1d4ed8}
+.workflow-action-publish{color:#fff;background:#15803d;border-color:#166534}
+.workflow-action-draft{color:#fff;background:#7c3aed;border-color:#6d28d9}
+.workflow-action-exclusive{color:#9a6700;background:#fff7cc;border-color:#eab308}
+.workflow-action-exclusive.is-active,.admin-icon-button.is-exclusive{color:#854d0e;background:#facc15;border-color:#eab308}
+.workflow-action-cancel{color:#b91c1c;background:#fff1f2;border-color:#fecdd3}
+.admin-icon-button{width:40px;height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px}
+.admin-icon-button.danger{color:#b91c1c}
+@media(max-width:600px){.workflow-form-actions{gap:10px}.workflow-action{width:44px;height:44px;min-width:44px}.admin-icon-button{width:42px;height:42px;min-width:42px}}
