@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261024-configuration-first-flow1">
+  <link rel="stylesheet" href="styles.css?v=20261024-variant-prices-only1">
   <link rel="stylesheet" href="theme-ui.css?v=20261023-color-selection-fix2">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261024-configuration-first-flow1"></script>
+  <script type="module" src="admin.js?v=20261024-variant-prices-only1"></script>
   <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
 </head>
 
@@ -364,12 +364,12 @@
                 </select>
               </label>
 
-              <label>
+              <label id="product-price-usd-field" class="hidden">
                 Precio base en dólares
                 <span class="admin-input-unit"><span>$</span><input id="product-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></span>
               </label>
 
-              <label>
+              <label id="product-price-nio-field" class="hidden">
                 Precio base en córdobas
                 <span class="admin-input-unit"><span>C$</span><input id="product-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></span>
               </label>

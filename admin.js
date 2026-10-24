@@ -137,6 +137,8 @@ function updateProductFormMode() {
   $("#product-model-field")?.classList.toggle("hidden", isPerfume);
   $("#product-warranty-field")?.classList.toggle("hidden", isPerfume);
   $("#product-specs-field")?.classList.toggle("hidden", isPerfume);
+  $("#product-price-usd-field")?.classList.toggle("hidden", !isPerfume);
+  $("#product-price-nio-field")?.classList.toggle("hidden", !isPerfume);
   $("#base-color-manager")?.classList.toggle("hidden", isPerfume);
   $("#technology-variants-section")?.classList.toggle("hidden", isPerfume);
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
@@ -958,13 +960,14 @@ function variantGroupMarkup(v = {}, isBase = false) {
 
   return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
     <div class="variant-config-group-heading">
-      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Esta configuración usa el precio base del formulario." : "Definí el precio y los colores de esta configuración."}</small></div>
+      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Definí RAM, almacenamiento, precio y colores de la configuración principal." : "Definí el precio y los colores de esta configuración."}</small></div>
       ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
     </div>
     <div class="variant-config-fields">
       <label class="variant-storage-label"><span class="variant-storage-label-row"><select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"><option value="GB" ${storageUnit === "GB" ? "selected" : ""}>GB</option><option value="TB" ${storageUnit === "TB" ? "selected" : ""}>TB</option></select><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
-      ${isBase ? "" : '<label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_usd ?? "") + '"></span></label><label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(v.price_nio ?? "") + '"></span></label>'}
+      <label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_usd ?? "")}"></span></label>
+      <label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_nio ?? "")}"></span></label>
     </div>
     ${colorControls}
   </section>`;
@@ -1016,7 +1019,7 @@ function renderVariantRows(variants = []) {
   // If saved variants all have technical configurations, don't add a misleading blank configuration.
   const shouldRenderPrimaryGroup = groups.size === 0 || groups.has("|");
   if (shouldRenderPrimaryGroup) {
-    colorManager.insertAdjacentHTML("beforeend", variantGroupMarkup({}, true));
+    colorManager.insertAdjacentHTML("beforeend", variantGroupMarkup((groups.get("|") || [])[0] || {}, true));
     const baseGroup = colorManager.querySelector('[data-variant-group][data-base-group="true"]');
     const baseList = baseGroup?.querySelector("[data-variant-color-list]");
     const baseColors = makeColors(groups.get("|") || []);
@@ -2530,6 +2533,13 @@ function fillEditor(product) {
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
   renderVariantRows(activeCatalogType === "perfumery" ? [] : legacyVariants(product));
+  if (activeCatalogType !== "perfumery") {
+    const primaryGroup = baseColorManager?.querySelector('[data-variant-group][data-base-group="true"]');
+    const primaryUSD = primaryGroup?.querySelector("[data-group-price-usd]");
+    const primaryNIO = primaryGroup?.querySelector("[data-group-price-nio]");
+    if (primaryUSD && !primaryUSD.value && product.price_usd != null) primaryUSD.value = String(product.price_usd);
+    if (primaryNIO && !primaryNIO.value && product.price_nio != null) primaryNIO.value = String(product.price_nio);
+  }
 
   $("#product-featured").checked = Boolean(product.featured);
   $("#product-active").checked = Boolean(product.is_published);
@@ -2784,8 +2794,6 @@ async function uploadMainImages(productId, files) {
    ========================================================= */
 
 async function collectVariants(productId, existingVariants = [], uploadIssues = []) {
-  const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
-  const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
   const allGroups = [
     ...Array.from(baseColorManager?.querySelectorAll('[data-variant-group][data-base-group="true"]') || []),
     ...Array.from(variantsContainer?.querySelectorAll('[data-variant-group][data-base-group="false"]') || [])
@@ -2881,8 +2889,8 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
 
     configs.push({
       storage, ram,
-      price_usd: isBase ? baseUSD : toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex}`),
-      price_nio: isBase ? baseNIO : toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex}`),
+      price_usd: toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex + 1}`),
+      price_nio: toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex + 1}`),
       colors, isBase
     });
   }
@@ -3001,11 +3009,15 @@ form?.addEventListener("submit", async event => {
     renderMainImagePreviews();
 
     const colors = isPerfume ? [] : deriveColorsFromVariants(variants, existingProduct?.colors || []);
-    const baseUSD = toOptionalNumber($("#product-price-usd").value, "Precio base en dólares");
-    const baseNIO = toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas");
+    const baseUSD = isPerfume ? toOptionalNumber($("#product-price-usd").value, "Precio base en dólares") : null;
+    const baseNIO = isPerfume ? toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas") : null;
     const warranty = isPerfume ? null : toOptionalNumber($("#product-warranty").value, "Garantía");
-    const priceUSD = variants.length ? (minimumPrice(variants, "price_usd") ?? baseUSD) : baseUSD;
-    const priceNIO = variants.length ? (minimumPrice(variants, "price_nio") ?? baseNIO) : baseNIO;
+    const priceUSD = isPerfume
+      ? baseUSD
+      : (minimumPrice(variants, "price_usd") ?? (existingProduct?.price_usd ?? null));
+    const priceNIO = isPerfume
+      ? baseNIO
+      : (minimumPrice(variants, "price_nio") ?? (existingProduct?.price_nio ?? null));
     const allImages = [...new Set(uploadedMainImages)];
     const now = new Date().toISOString();
 
