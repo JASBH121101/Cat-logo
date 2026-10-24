@@ -21,8 +21,10 @@ const minPriceInput = $("#price-min-input");
 const maxPriceInput = $("#price-max-input");
 const clearPriceButton = $("#clear-price-filter");
 const priceFeedback = $("#budget-filter-feedback");
-const dialog = $("#perfume-dialog");
+const perfumeDetailPage = $("#perfume-detail-page");
 const dialogContent = $("#perfume-dialog-content");
+const catalogDocumentTitle = document.title;
+const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
 
 let supabase = null;
 let perfumes = [];
@@ -126,8 +128,8 @@ function hasActiveFilters() {
 }
 
 function productLink(product) {
-  const url = new URL("./", window.location.href);
-  url.hash = "fragancia=" + encodeURIComponent(product.id);
+  const url = new URL(window.location.pathname, window.location.origin);
+  url.searchParams.set("fragancia", String(product.id));
   return url.href;
 }
 
@@ -332,24 +334,56 @@ function openPerfume(product) {
         notesSection("Notas de fondo", detail.base_notes) +
         '</div>'
       : '');
-  if (typeof dialog.showModal === "function") {
-    if (!dialog.open) dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "open");
-  }
+  perfumeDetailPage?.classList.remove("hidden");
+  document.querySelector("main")?.classList.add("is-perfume-detail-view");
+  document.body.classList.add("perfume-detail-active");
+  document.title = `${product.name || "Fragancia"} | JB Parfums`;
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.href = productLink(product);
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
+function readPerfumeRoute() {
+  const url = new URL(window.location.href);
+  const queryId = url.searchParams.get("fragancia");
+  if (queryId) return { id: queryId, legacy: false };
+  const match = url.hash.match(/^#fragancia=(.+)$/);
+  if (!match) return { id: "", legacy: false };
+  let id = match[1];
+  try { id = decodeURIComponent(id); } catch { /* Conservar el ID heredado. */ }
+  return { id, legacy: true };
+}
+
+function showPerfumeCatalog() {
+  perfumeDetailPage?.classList.add("hidden");
+  document.querySelector("main")?.classList.remove("is-perfume-detail-view");
+  document.body.classList.remove("perfume-detail-active");
+  document.title = catalogDocumentTitle;
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical && catalogCanonical) canonical.href = catalogCanonical;
+  if (dialogContent) dialogContent.innerHTML = "";
 }
 
 function loadDeepLink() {
-  const match = window.location.hash.match(/^#fragancia=(.+)$/);
-  if (!match) return;
-  let id = match[1];
-  try { id = decodeURIComponent(id); } catch { /* Mantener ID original */ }
-  const product = perfumes.find(item => String(item.id) === id);
-  if (product) {
-    openPerfume(product);
-  } else {
-    statusNode.textContent = "La fragancia solicitada no está publicada o el enlace ya no es válido.";
+  const route = readPerfumeRoute();
+  if (!route.id) {
+    const wasDetail = document.body.classList.contains("perfume-detail-active");
+    const scrollY = Number(window.history.state?.catalogScrollY) || 0;
+    showPerfumeCatalog();
+    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    return;
   }
+
+  const product = perfumes.find(item => String(item.id) === route.id);
+  if (!product) {
+    showPerfumeCatalog();
+    statusNode.textContent = "La fragancia solicitada no está publicada o el enlace ya no es válido.";
+    return;
+  }
+  if (route.legacy) {
+    window.history.replaceState(window.history.state, document.title, productLink(product));
+  }
+  openPerfume(product);
 }
 
 function bindMultiSelect(container, attribute, selectedSet) {
@@ -387,14 +421,14 @@ document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid =
     const target = event.target instanceof Element ? event.target : null;
     const link = target?.closest("a[data-details]");
     if (!link) return;
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     const id = link.getAttribute("data-details");
     const product = perfumes.find(item => String(item.id) === id);
     if (!product) return;
     event.preventDefault();
-    const url = productLink(product);
-    if (window.location.hash !== "#fragancia=" + encodeURIComponent(product.id)) {
-      window.history.pushState(window.history.state, document.title, url);
-    }
+    const scrollY = window.scrollY;
+    window.history.replaceState({ ...(window.history.state || {}), catalogScrollY: scrollY }, document.title, window.location.href);
+    window.history.pushState({ productDetailRoute: true, catalogScrollY: scrollY, productId: String(product.id) }, document.title, productLink(product));
     openPerfume(product);
   });
 });
@@ -411,15 +445,19 @@ dialogContent.addEventListener("click", event => {
   dialogContent.querySelectorAll("[data-gallery-image]").forEach(item => item.classList.toggle("active", item === thumb));
 });
 
-function closeDialog() {
-  if (dialog.open && typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
-  if (window.location.hash.startsWith("#fragancia=")) {
-    window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.search);
+$("#perfume-detail-back")?.addEventListener("click", () => {
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
   }
-}
-$("#perfume-dialog-close").addEventListener("click", closeDialog);
-dialog.addEventListener("click", event => { if (event.target === dialog) closeDialog(); });
+  const url = new URL(window.location.href);
+  url.searchParams.delete("fragancia");
+  url.hash = "";
+  window.history.replaceState(window.history.state, document.title, url.href);
+  showPerfumeCatalog();
+  window.scrollTo({ top: 0, behavior: "auto" });
+});
+window.addEventListener("popstate", loadDeepLink);
 window.addEventListener("hashchange", loadDeepLink);
 
 [grid, featuredGrid].forEach(container => container?.addEventListener("error", event => {
