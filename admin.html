@@ -196,9 +196,11 @@
           </div>
         </div>
         <div class="dashboard-metrics">
-          <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label" id="dashboard-total-label">Productos totales</span><strong id="dashboard-total">—</strong><small>En tu catálogo</small></article>
-          <article class="dashboard-metric metric-published"><span class="metric-icon">✓</span><span class="metric-label" id="dashboard-published-label">Productos publicados</span><strong id="dashboard-published">—</strong><small>Visibles para clientes</small></article>
-          <article class="dashboard-metric metric-drafts"><span class="metric-icon">◷</span><span class="metric-label" id="dashboard-drafts-label">No publicados</span><strong id="dashboard-drafts">—</strong><small>Borradores por revisar</small></article>
+          <article class="dashboard-metric metric-total"><span class="metric-icon">▦</span><span class="metric-label" id="dashboard-total-label">Productos activos</span><strong id="dashboard-total">—</strong><small>Fuera de la papelera</small></article>
+          <article class="dashboard-metric metric-published"><span class="metric-icon">✓</span><span class="metric-label" id="dashboard-published-label">Publicados</span><strong id="dashboard-published">—</strong><small>Visibles para clientes</small></article>
+          <article class="dashboard-metric metric-unpublished"><span class="metric-icon">▣</span><span class="metric-label" id="dashboard-unpublished-label">No publicados</span><strong id="dashboard-unpublished">—</strong><small>Completos y pendientes de publicar</small></article>
+          <article class="dashboard-metric metric-drafts"><span class="metric-icon">✎</span><span class="metric-label" id="dashboard-drafts-label">Borradores</span><strong id="dashboard-drafts">—</strong><small>Productos incompletos</small></article>
+          <article class="dashboard-metric metric-trash"><span class="metric-icon">♲</span><span class="metric-label" id="dashboard-trash-label">Papelera</span><strong id="dashboard-trash">—</strong><small>Retención de 15 días</small></article>
           <article class="dashboard-metric metric-review"><span class="metric-icon">▧</span><span class="metric-label" id="dashboard-review-label">Por revisar</span><strong id="dashboard-review">—</strong><small>Sin fotografía principal</small></article>
         </div>
         <div class="dashboard-content-grid">
@@ -213,7 +215,8 @@
           </article>
           <article class="dashboard-widget dashboard-tasks-widget">
             <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">SIGUIENTE PASO</p><h3>Tareas y alertas</h3></div><span class="dashboard-widget-icon">!</span></div>
-            <button class="dashboard-task-row" type="button" data-dashboard-action="drafts"><span class="dashboard-task-symbol task-symbol-amber">◷</span><span><strong>Revisar borradores</strong><small>Productos que aún no están publicados</small></span><b id="dashboard-task-drafts">0</b><span class="dashboard-task-arrow">›</span></button>
+            <button class="dashboard-task-row" type="button" data-dashboard-action="drafts"><span class="dashboard-task-symbol task-symbol-amber">✎</span><span><strong>Revisar borradores</strong><small>Productos incompletos guardados</small></span><b id="dashboard-task-drafts">0</b><span class="dashboard-task-arrow">›</span></button>
+            <button class="dashboard-task-row" type="button" data-dashboard-action="unpublished"><span class="dashboard-task-symbol task-symbol-blue">▣</span><span><strong>Publicar productos guardados</strong><small>Productos completos que esperan publicación</small></span><b id="dashboard-task-unpublished">0</b><span class="dashboard-task-arrow">›</span></button>
             <button class="dashboard-task-row" type="button" data-dashboard-action="review"><span class="dashboard-task-symbol task-symbol-blue">▧</span><span><strong>Completar fotografías</strong><small>Productos sin imagen principal</small></span><b id="dashboard-task-images">0</b><span class="dashboard-task-arrow">›</span></button>
             <div class="dashboard-task-footer"><span class="dashboard-live-dot"></span><span id="dashboard-task-status">Inventario sincronizado</span></div>
           </article>
@@ -226,7 +229,8 @@
             <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">ATAJOS</p><h3>Accesos rápidos</h3></div><span class="dashboard-widget-icon">↗</span></div>
             <button type="button" class="dashboard-quick-action" data-dashboard-action="add"><span class="quick-action-icon">＋</span><span><strong>Añadir producto</strong><small id="dashboard-add-product-description">Registrar un equipo nuevo</small></span><span>›</span></button>
             <button type="button" class="dashboard-quick-action" data-dashboard-action="published"><span class="quick-action-icon">✓</span><span><strong>Ver publicados</strong><small>Administrar el catálogo visible</small></span><span>›</span></button>
-            <button type="button" class="dashboard-quick-action" data-dashboard-action="drafts"><span class="quick-action-icon">◷</span><span><strong>Ver no publicados</strong><small>Continuar productos pendientes</small></span><span>›</span></button>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="unpublished"><span class="quick-action-icon">▣</span><span><strong>Ver productos no publicados</strong><small>Publicar los que ya están listos</small></span><span>›</span></button>
+            <button type="button" class="dashboard-quick-action" data-dashboard-action="drafts"><span class="quick-action-icon">✎</span><span><strong>Ver borradores</strong><small>Completar los productos pendientes</small></span><span>›</span></button>
             <a class="dashboard-public-link" href="./tecnologia/" target="_blank" rel="noopener"><span>↗</span> Abrir catálogo público</a>
           </article>
 
