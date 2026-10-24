@@ -171,6 +171,7 @@ function updateProductFormMode() {
   }
 
   if ($("#product-perfume-family")) $("#product-perfume-family").required = isPerfume;
+  if ($("#product-type")) $("#product-type").value = isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard";
   $("#product-perfume-fields")?.classList.toggle("hidden", !isPerfume);
   $("#product-model-field")?.classList.toggle("hidden", isPerfume);
   $("#product-warranty-field")?.classList.toggle("hidden", isPerfume);
@@ -182,20 +183,21 @@ function updateProductFormMode() {
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
 
+  const isSet = isPerfume && $("#product-type")?.value === "set";
   const galleryTitle = $("#product-images-title");
   if (galleryTitle) galleryTitle.textContent = isPerfume
-    ? "Fotografías generales de la fragancia"
+    ? (isSet ? "Fotografías generales del set" : "Fotografías generales de la fragancia")
     : "Fotografías generales del producto";
   const galleryDescription = $("#product-images-title")?.parentElement?.querySelector("p");
   if (galleryDescription) galleryDescription.textContent = isPerfume
-    ? "La primera fotografía será la portada. Añadí imágenes de la botella, la caja y los detalles de la fragancia."
+    ? (isSet ? "La primera fotografía será la portada del set. Añadí imágenes de todas las fragancias incluidas y de la caja." : "La primera fotografía será la portada. Añadí imágenes de la botella, la caja y los detalles de la fragancia.")
     : "La primera fotografía será la portada predeterminada. Cada color o variante puede mantener su propia galería.";
 
   const editing = Boolean($("#product-id")?.value);
   const formTitle = $("#form-title");
   const saveButton = $("#save-product-button");
-  if (formTitle && !editing) formTitle.textContent = isPerfume ? "Registrar fragancia" : "Agregar producto";
-  if (saveButton && !editing) saveButton.textContent = "Guardar producto";
+  if (formTitle && !editing) formTitle.textContent = isPerfume ? ($("#product-type")?.value === "set" ? "Registrar set de perfumes" : "Registrar fragancia") : "Agregar producto";
+  if (saveButton && !editing) { saveButton.setAttribute("aria-label", "Guardar producto sin publicar"); saveButton.title = "Guardar producto sin publicar"; }
 
   const contextDescription = $("#admin-context-description");
   if (contextDescription) contextDescription.textContent = isPerfume
@@ -209,9 +211,12 @@ function updateProductFormMode() {
   const dynamicLabels = {
     "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto",
     "admin-nav-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "admin-nav-drafts-label": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "admin-nav-unpublished-label": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "admin-nav-drafts-label": isPerfume ? "Borradores de perfumería" : "Borradores de tecnología",
     "published-section-title": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "draft-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados"
+    "unpublished-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
+    "draft-section-title": isPerfume ? "Borradores de perfumería" : "Borradores de tecnología",
+    "trash-section-title": isPerfume ? "Papelera de perfumería" : "Papelera de tecnología"
   };
   for (const [id, label] of Object.entries(dynamicLabels)) {
     const node = document.getElementById(id);
@@ -2548,15 +2553,16 @@ function renderAdminList() {
     const variants=normalizeVariants(p.variants), perfume=p.catalog_type==="perfumery", d=p.perfume_details||{};
     const variantLabel=perfume?[d.family?perfumeFamilyLabel(d.family):"",d.concentration,d.volume_ml?d.volume_ml+" ml":""].filter(Boolean).join(" · "):variants.length?variants.length+" variante"+(variants.length===1?"":"s"):"";
     const price=minimumPrice(variants,"price_usd")??p.price_usd, priceLabel=price===null||price===undefined||price===""?"Consultar":"US"+Number(price).toLocaleString("en-US",{maximumFractionDigits:2});
+    const isExclusive = Boolean(p.is_exclusive || p.featured);
     const status=getWorkflowStatus(p), statusLabel=status==="published"?"Publicado":status==="draft"?"Borrador":status==="deleting"?"Limpieza pendiente":status==="trash"?"En papelera":"No publicado";
     let actions="";
     if(isTrash){
       actions=(status==="deleting"?'':'<button class="admin-mini-button admin-icon-button" type="button" data-restore-product="'+escapeHtml(p.id)+'" aria-label="Restaurar producto" title="Restaurar producto">'+svg.restore+'</button>')+'<button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="'+escapeHtml(p.id)+'" aria-label="'+(status==="deleting"?"Reintentar limpieza":"Eliminar definitivamente")+'" title="'+(status==="deleting"?"Reintentar limpieza de Storage":"Eliminar definitivamente")+'">'+svg.delete+'</button>';
     }else{
-      actions='<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="'+escapeHtml(p.id)+'" aria-label="Ver producto" title="Ver producto">'+svg.view+'</button><button class="admin-mini-button admin-icon-button" type="button" data-edit="'+escapeHtml(p.id)+'" aria-label="Editar producto" title="Editar producto">'+svg.edit+'</button><button class="admin-mini-button admin-icon-button'+(p.is_exclusive?' is-exclusive':'')+'" type="button" data-exclusive-product="'+escapeHtml(p.id)+'" aria-label="'+(p.is_exclusive?'Quitar de exclusivos':'Marcar como exclusivo')+'" title="'+(p.is_exclusive?'Quitar de exclusivos':'Marcar como exclusivo')+'">'+svg.star+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="'+escapeHtml(p.id)+'" aria-label="Mover a papelera" title="Mover a papelera">'+svg.trash+'</button>';
+      actions='<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="'+escapeHtml(p.id)+'" aria-label="Ver producto" title="Ver producto">'+svg.view+'</button><button class="admin-mini-button admin-icon-button" type="button" data-edit="'+escapeHtml(p.id)+'" aria-label="Editar producto" title="Editar producto">'+svg.edit+'</button><button class="admin-mini-button admin-icon-button'+(isExclusive?' is-exclusive':'')+'" type="button" data-exclusive-product="'+escapeHtml(p.id)+'" aria-label="'+(isExclusive?'Quitar de destacados/exclusivos':'Destacar en el catálogo')+'" title="'+(isExclusive?'Quitar de destacados/exclusivos':'Destacar en el catálogo')+'">'+svg.star+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="'+escapeHtml(p.id)+'" aria-label="Mover a papelera" title="Mover a papelera">'+svg.trash+'</button>';
     }
     const expiry=p.deleted_at?" · vence "+new Date(new Date(p.deleted_at).getTime()+15*86400000).toLocaleDateString("es-NI"):"";
-    return '<article class="admin-product-row">'+thumb+'<div><p class="admin-product-name">'+escapeHtml(p.name||"Borrador sin nombre")+'</p><div class="admin-product-meta">'+escapeHtml(p.category||"Sin categoría")+' · '+escapeHtml(priceLabel)+' · '+statusLabel+(p.is_exclusive?" · Exclusivo":"")+(variantLabel?" · "+escapeHtml(variantLabel):"")+escapeHtml(expiry)+'</div><div class="admin-product-buttons">'+actions+'</div></div></article>';
+    return '<article class="admin-product-row">'+thumb+'<div><p class="admin-product-name">'+escapeHtml(p.name||"Borrador sin nombre")+'</p><div class="admin-product-meta">'+escapeHtml(p.category||"Sin categoría")+' · '+escapeHtml(priceLabel)+' · '+statusLabel+(isExclusive?" · Destacado / exclusivo":"")+(variantLabel?" · "+escapeHtml(variantLabel):"")+escapeHtml(expiry)+'</div><div class="admin-product-buttons">'+actions+'</div></div></article>';
   }).join("")||'<p class="form-status">'+empty+'</p>';
   $("#published-product-list").innerHTML=cards(filter(published,"#published-search"),"Todavía no hay productos publicados.");
   $("#unpublished-product-list").innerHTML=cards(filter(unpublished,"#unpublished-search"),"No hay productos completos pendientes de publicar.");
@@ -2594,8 +2600,8 @@ document.querySelectorAll("#published-product-list,#unpublished-product-list,#dr
         if(error)throw error;
         setStatus("Producto restaurado como "+(restored==="published"?"publicado":restored==="draft"?"borrador":"no publicado")+".","success");
       }else if(exclusiveButton){
-        const next=!product.is_exclusive;
-        const {error}=await supabase.from("products").update({is_exclusive:next,updated_at:new Date().toISOString(),updated_by:currentUser.id}).eq("id",product.id);
+        const next=!(product.is_exclusive || product.featured);
+        const {error}=await supabase.from("products").update({is_exclusive:next,featured:next,updated_at:new Date().toISOString(),updated_by:currentUser.id}).eq("id",product.id);
         if(error)throw error;
         setStatus(next?"Producto marcado como exclusivo.":"Producto quitado de exclusivos.","success");
       }else{
@@ -2685,7 +2691,7 @@ function scheduleLocalRecoverySave(delay = 120) {
   }, Math.max(0, delay));
 }
 async function recoveryRestoreItem(i){if(i.kind!=='new'||!i.blob)return{id:i.id||imageId(),kind:'existing',url:i.url||''};const file=new File([i.blob],i.name||'imagen-pendiente',{type:i.type||i.blob.type||'application/octet-stream',lastModified:i.lastModified||Date.now()});return{id:i.id||imageId(),kind:'new',file,previewUrl:URL.createObjectURL(file),uploadError:i.uploadError||''};}
-async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').textContent=$('#product-id').value?'Guardar cambios':'Guardar producto';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
+async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').setAttribute('aria-label',$('#product-id').value?'Guardar cambios':'Guardar producto sin publicar');$('#save-product-button').title=$('#product-id').value?'Guardar cambios sin publicar':'Guardar producto sin publicar';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
 async function deleteLocalRecoveryDraft(){if(!confirm('¿Eliminar el borrador local? Esto no elimina productos guardados en la base de datos.'))return;try{await recoveryAction('readwrite',s=>s.delete(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';$('#restore-local-draft').hidden=true;$('#delete-local-draft').hidden=true;}catch(e){const st=$('#local-recovery-status');if(st)st.textContent=e.message||'No se pudo eliminar el borrador.';}}
 async function checkLocalRecoveryDraft(){try{const d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent=d?'Borrador local disponible desde '+new Date(d.savedAt).toLocaleString()+'.':'No hay borrador local guardado.';if($('#restore-local-draft'))$('#restore-local-draft').hidden=!d;if($('#delete-local-draft'))$('#delete-local-draft').hidden=!d;}catch(e){console.warn('No se pudo comprobar el borrador local.',e);}}
 
@@ -2776,6 +2782,8 @@ function clearEditor() {
   $("#product-description").value = "";
   $("#product-active").checked = false;
   $("#product-exclusive").checked = false;
+  $("#product-featured").checked = false;
+  if ($("#product-type")) $("#product-type").value = activeCatalogType === "perfumery" ? "perfume" : "standard";
   $("#toggle-product-exclusive")?.setAttribute("aria-pressed","false");
   $("#toggle-product-exclusive")?.classList.remove("is-active");
   $("#product-featured").checked = false;
@@ -2790,6 +2798,7 @@ function clearEditor() {
   renderVariantRows([]);
 
   $("#product-perfume-family").value = "";
+  if ($("#product-type")) $("#product-type").value = activeCatalogType === "perfumery" ? "perfume" : "standard";
   $("#product-perfume-concentration").value = "";
   $("#product-perfume-volume").value = "";
   $("#product-perfume-audience").value = "";
@@ -2801,7 +2810,8 @@ function clearEditor() {
 
   updateProductFormMode();
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Registrar fragancia" : "Agregar producto";
-  $("#save-product-button").textContent = "Guardar producto";
+  $("#save-product-button").setAttribute("aria-label", "Guardar producto sin publicar");
+  $("#save-product-button").title = "Guardar producto sin publicar";
 
   message("#product-form-status", "");
   markEditorClean();
@@ -2810,6 +2820,7 @@ function clearEditor() {
 function fillEditor(product) {
   activeCatalogType = normalizeCatalogType(product.catalog_type);
   if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
+  if ($("#product-type")) $("#product-type").value = activeCatalogType === "perfumery" ? (product.product_type === "set" ? "set" : "perfume") : "standard";
   updateProductFormMode();
 
   $("#product-id").value = product.id || "";
@@ -2850,14 +2861,17 @@ function fillEditor(product) {
     if (primaryNIO && !primaryNIO.value && product.price_nio != null) primaryNIO.value = String(product.price_nio);
   }
 
-  $("#product-featured").checked = Boolean(product.featured);
+  const productIsFeatured = Boolean(product.featured || product.is_exclusive);
+  $("#product-featured").checked = productIsFeatured;
+  $("#product-exclusive").checked = productIsFeatured;
   $("#product-active").checked = Boolean(product.is_published);
-  $("#product-exclusive").checked = Boolean(product.is_exclusive);
-  $("#toggle-product-exclusive")?.setAttribute("aria-pressed",String(Boolean(product.is_exclusive)));
-  $("#toggle-product-exclusive")?.classList.toggle("is-active",Boolean(product.is_exclusive));
+  $("#toggle-product-exclusive")?.setAttribute("aria-pressed",String(productIsFeatured));
+  $("#toggle-product-exclusive")?.setAttribute("aria-label", productIsFeatured ? "Destacado / exclusivo activado" : "Destacar en el catálogo");
+  $("#toggle-product-exclusive")?.classList.toggle("is-active", productIsFeatured);
 
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Editar fragancia" : "Editar producto";
-  $("#save-product-button").textContent = "Guardar cambios";
+  $("#save-product-button").setAttribute("aria-label", "Guardar cambios sin publicar");
+  $("#save-product-button").title = "Guardar cambios sin publicar";
   message("#product-form-status", "Editando: " + product.name);
 
   renderAdminList();
@@ -2870,7 +2884,32 @@ function fillEditor(product) {
 $("#new-product-button")?.addEventListener("click", clearEditor);
 $("#cancel-edit-button")?.addEventListener("click", () => { if (editorIsDirty && !window.confirm("¿Descartar los cambios sin guardar?")) return; clearEditor(); });
 const exclusiveToggleButton = $("#toggle-product-exclusive");
-exclusiveToggleButton?.addEventListener("click", () => { const field=$("#product-exclusive"); if(!field)return; field.checked=!field.checked; exclusiveToggleButton.setAttribute("aria-pressed",String(field.checked)); exclusiveToggleButton.classList.toggle("is-active",field.checked); field.dispatchEvent(new Event("change",{bubbles:true})); });
+exclusiveToggleButton?.addEventListener("click", () => {
+  const field = $("#product-exclusive");
+  const featuredField = $("#product-featured");
+  if (!field || !featuredField) return;
+  const next = !(field.checked || featuredField.checked);
+  field.checked = next;
+  featuredField.checked = next;
+  exclusiveToggleButton.setAttribute("aria-pressed", String(next));
+  exclusiveToggleButton.setAttribute("aria-label", next ? "Destacado / exclusivo activado" : "Destacar en el catálogo");
+  exclusiveToggleButton.title = next ? "Destacado / exclusivo activado" : "Destacar en el catálogo";
+  exclusiveToggleButton.classList.toggle("is-active", next);
+  field.dispatchEvent(new Event("change", { bubbles: true }));
+});
+$("#product-type")?.addEventListener("change", () => {
+  const isPerfume = activeCatalogType === "perfumery";
+  const isSet = $("#product-type").value === "set";
+  const editing = Boolean($("#product-id")?.value);
+  const formTitle = $("#form-title");
+  if (formTitle && isPerfume) formTitle.textContent = isSet ? (editing ? "Editar set de perfumes" : "Registrar set de perfumes") : (editing ? "Editar fragancia" : "Registrar fragancia");
+  const galleryTitle = $("#product-images-title");
+  if (galleryTitle && isPerfume) galleryTitle.textContent = isSet ? "Fotografías generales del set" : "Fotografías generales de la fragancia";
+  const galleryDescription = $("#product-images-title")?.parentElement?.querySelector("p");
+  if (galleryDescription && isPerfume) galleryDescription.textContent = isSet ? "La primera fotografía será la portada del set. Añadí imágenes de todas las fragancias incluidas y de la caja." : "La primera fotografía será la portada. Añadí imágenes de la botella, la caja y los detalles de la fragancia.";
+  updateEditorDirtyState();
+  scheduleLocalRecoverySave();
+});
 
 activeCatalogSelector?.addEventListener("change", () => {
   const requested = normalizeCatalogType(activeCatalogSelector.value);
@@ -3274,10 +3313,17 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
    GUARDAR PRODUCTOS
    ========================================================= */
 
+let productSaveInProgress = false;
+form?.addEventListener("click", event => {
+  const saveActionButton = event.target.closest("button[data-save-action]");
+  if (saveActionButton) form.dataset.lastSaveAction = saveActionButton.dataset.saveAction || "unpublished";
+});
 form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
-  const saveAction=event.submitter?.dataset?.saveAction||"unpublished";
+  if (productSaveInProgress) return;
+  const saveAction=event.submitter?.dataset?.saveAction||form.dataset.lastSaveAction||"unpublished";
+  form.dataset.lastSaveAction = "";
   const targetStatus=saveAction==="draft"?"draft":saveAction==="published"?"published":"unpublished";
 
   if (!currentUser || !supabase) {
@@ -3285,15 +3331,19 @@ form?.addEventListener("submit", async event => {
     return;
   }
 
+  productSaveInProgress = true;
   const button = event.submitter || $("#save-product-button");
+  const submitButtons = Array.from(form.querySelectorAll('button[type="submit"]'));
+  submitButtons.forEach(item => { item.disabled = true; item.setAttribute("aria-busy", "true"); });
   const wasEditing = Boolean($("#product-id").value);
   const imageUploadErrors = [];
   const isPerfume = activeCatalogType === "perfumery";
-  button.disabled = true;
-  button.textContent = "Guardando…";
 
   try {
     const name = $("#product-name").value.trim();
+    const draftVariantContent = Array.from(form.querySelectorAll("[data-variant-group]")).some(group => Boolean(group.querySelector("[data-group-storage]")?.value.trim() || group.querySelector("[data-group-ram]")?.value.trim() || group.querySelector("[data-group-price-usd]")?.value.trim() || group.querySelector("[data-group-price-nio]")?.value.trim() || Array.from(group.querySelectorAll("[data-variant-row]")).some(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim() || row.querySelector("[data-variant-hex]")?.value.trim() !== "#242424" || row.querySelector("[data-variant-availability]")?.value !== "available"))));
+    const draftHasContent = Boolean(name || $("#product-brand").value.trim() || $("#product-description").value.trim() || $("#product-price-usd").value.trim() || $("#product-price-nio").value.trim() || $("#product-perfume-family").value || $("#product-perfume-scent-family").value.trim() || $("#product-perfume-top-notes").value.trim() || $("#product-perfume-heart-notes").value.trim() || $("#product-perfume-base-notes").value.trim() || $("#product-specs").value.trim() || mainImageItems.length || draftVariantContent);
+    if (targetStatus === "draft" && !draftHasContent) throw new Error("Añadí al menos un dato o una fotografía antes de guardar el borrador; así evitamos crear borradores vacíos.");
     if(targetStatus!=="draft") { if(!name) throw new Error("Escribí el nombre del producto."); if(!isPerfume&&!$("#product-category").value) throw new Error("Seleccioná la categoría del producto."); if(!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad."); if(isPerfume&&!$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume."); }
 
     const rawVolume = $("#product-perfume-volume").value.trim();
@@ -3371,8 +3421,9 @@ form?.addEventListener("submit", async event => {
         "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación."
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
-      featured: $("#product-featured").checked,
-      is_exclusive: $("#product-exclusive").checked,
+      featured: Boolean($("#product-featured").checked || $("#product-exclusive").checked),
+      is_exclusive: Boolean($("#product-featured").checked || $("#product-exclusive").checked),
+      product_type: isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard",
       workflow_status: targetStatus,
       deleted_at: null,
       deleted_from_status: null,
@@ -3435,9 +3486,10 @@ form?.addEventListener("submit", async event => {
   } catch (error) {
     message("#product-form-status", error.message || "Ocurrió un error al guardar el producto.", "error");
   } finally {
-    button.disabled = false;
-    $("#save-product-button").disabled=false; $("#publish-product-button").disabled=false; $("#save-draft-button").disabled=false;
-    $("#save-product-button").textContent=$("#product-id").value?"Guardar cambios":"Guardar producto";
+    productSaveInProgress = false;
+    submitButtons.forEach(item => { item.disabled = false; item.removeAttribute("aria-busy"); });
+    $("#save-product-button").setAttribute("aria-label", $("#product-id").value ? "Guardar cambios sin publicar" : "Guardar producto sin publicar");
+    $("#save-product-button").title = $("#product-id").value ? "Guardar cambios sin publicar" : "Guardar producto sin publicar";
   }
 });
 /* =========================================================
@@ -3561,6 +3613,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
 
         featured: false,
         is_exclusive: false,
+        product_type: "standard",
         workflow_status: "draft",
         is_published: false
       };
