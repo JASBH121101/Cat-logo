@@ -4,7 +4,8 @@
 ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS workflow_status text,
   ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
-  ADD COLUMN IF NOT EXISTS trash_previous_status text;
+  ADD COLUMN IF NOT EXISTS trash_previous_status text,
+  ADD COLUMN IF NOT EXISTS draft_payload jsonb;
 
 -- Los registros existentes se conservan: los publicados siguen publicados y los
 -- registros privados existentes pasan a "unpublished" hasta que el administrador
@@ -105,6 +106,12 @@ BEGIN
       ADD COLUMN IF NOT EXISTS archived_product_name text,
       ADD COLUMN IF NOT EXISTS archived_catalog_type text,
       ADD COLUMN IF NOT EXISTS archived_at timestamptz;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'catalog_events_archive' AND column_name = 'id'
+    ) THEN
+      EXECUTE 'CREATE UNIQUE INDEX IF NOT EXISTS catalog_events_archive_id_uidx ON public.catalog_events_archive (id)';
+    END IF;
     ALTER TABLE public.catalog_events_archive ENABLE ROW LEVEL SECURITY;
     DROP POLICY IF EXISTS catalog_events_archive_admin_all ON public.catalog_events_archive;
     CREATE POLICY catalog_events_archive_admin_all
@@ -112,6 +119,7 @@ BEGIN
       FOR ALL TO authenticated
       USING (EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid()))
       WITH CHECK (EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid()));
+    GRANT SELECT, INSERT, UPDATE, DELETE ON public.catalog_events_archive TO authenticated;
   END IF;
 END
 $$;
@@ -139,3 +147,5 @@ CREATE POLICY storage_cleanup_queue_admin_all
   FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid()));
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.storage_cleanup_queue TO authenticated;
