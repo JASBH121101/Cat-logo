@@ -2792,7 +2792,7 @@ function clearEditor() {
   $("#product-featured").checked = false;
 
   $("#product-financing").value =
-    "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
+    "";
 
   $("#product-images").value = "";
   clearMainImagePreviews();
@@ -2839,7 +2839,7 @@ function fillEditor(product) {
   $("#product-warranty").value = activeCatalogType === "perfumery" ? "" : (product.warranty_months ?? "");
   $("#product-specs").value = activeCatalogType === "perfumery" ? "" : specsText(product.specifications);
   $("#product-financing").value = product.financing_note ||
-    "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.";
+    "";
   $("#product-shipping").value = product.shipping_note || "";
 
   const detail = product.perfume_details || {};
@@ -3442,7 +3442,7 @@ form?.addEventListener("submit", async event => {
       variants,
       financing_note: isPerfume ? null : (
         $("#product-financing").value.trim() ||
-        "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación."
+        ""
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
       featured: Boolean($("#product-featured").checked || $("#product-exclusive").checked),
@@ -3625,7 +3625,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
         ),
 
         financing_note: product.financing_note ||
-          "Financiamiento mediante crédito o tarjeta. Consultá requisitos y condiciones de aprobación.",
+          "",
 
         shipping_note: product.shipping_note || null,
 
