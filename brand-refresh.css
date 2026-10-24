@@ -708,3 +708,68 @@ html[data-theme="dark"] body.technology-catalog .brand-logo-dark { display:block
   }
   .product-detail-page .variant-price-box { padding:8px !important; }
 }
+
+/* Corrección definitiva: las flechas ocupan carriles laterales propios,
+   no se superponen sobre la fotografía. */
+.product-detail-page #dialog-image .dialog-gallery-main {
+  display:grid !important;
+  grid-template-columns:36px minmax(0,1fr) 36px !important;
+  grid-template-rows:minmax(250px,1fr) !important;
+  align-items:center !important;
+  justify-items:stretch !important;
+  gap:8px !important;
+  width:100% !important;
+  height:auto !important;
+  min-height:280px !important;
+  max-height:none !important;
+  overflow:visible !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main .dialog-image-zoom {
+  grid-column:2 !important;
+  grid-row:1 !important;
+  min-width:0 !important;
+  width:100% !important;
+  height:100% !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main .dialog-main-image {
+  width:100% !important;
+  height:100% !important;
+  max-height:clamp(280px,55vw,590px) !important;
+  object-fit:contain !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main .dialog-gallery-nav {
+  position:static !important;
+  inset:auto !important;
+  grid-row:1 !important;
+  align-self:center !important;
+  justify-self:center !important;
+  transform:none !important;
+  margin:0 !important;
+  width:32px !important;
+  height:32px !important;
+  padding:0 0 2px !important;
+  font-size:25px !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main .dialog-gallery-prev {
+  grid-column:1 !important;
+}
+.product-detail-page #dialog-image .dialog-gallery-main .dialog-gallery-next {
+  grid-column:3 !important;
+}
+@media(max-width:760px) {
+  .product-detail-page #dialog-image .dialog-gallery-main {
+    grid-template-columns:28px minmax(0,1fr) 28px !important;
+    grid-template-rows:minmax(250px,1fr) !important;
+    gap:4px !important;
+    min-height:270px !important;
+  }
+  .product-detail-page #dialog-image .dialog-gallery-main .dialog-gallery-nav {
+    width:28px !important;
+    height:28px !important;
+    font-size:22px !important;
+  }
+  .product-detail-page #dialog-image .dialog-gallery-main .dialog-main-image {
+    max-height:clamp(260px,65vw,370px) !important;
+    padding:4px !important;
+  }
+}
