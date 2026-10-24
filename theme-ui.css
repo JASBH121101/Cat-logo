@@ -9203,3 +9203,81 @@ body.technology-catalog .featured-exclusive-badge {
   body.technology-catalog .featured-grid { gap:7px !important; }
   body.technology-catalog .featured-grid .product-card-content { padding:8px 6px 9px !important; }
 }
+
+
+/* JB SIGNATURE · borde luminoso en órbita y destellos diagonales aleatorios. */
+body.technology-catalog .featured-section {
+  isolation:isolate;
+  --signature-glow-gold:rgba(230,195,119,.96);
+  --signature-glow-blue:rgba(113,116,255,.9);
+  --signature-shine-angle:45deg;
+}
+body.technology-catalog .featured-section:before {
+  content:"";
+  position:absolute;
+  inset:-1px;
+  z-index:3;
+  height:auto;
+  border-radius:inherit;
+  padding:1.6px;
+  background:conic-gradient(
+    from 0deg,
+    rgba(201,169,104,.18) 0deg,
+    rgba(201,169,104,.32) 42deg,
+    #f8e6b6 72deg,
+    #8b8cff 118deg,
+    rgba(116,105,235,.22) 164deg,
+    rgba(201,169,104,.18) 210deg,
+    #fff0c7 246deg,
+    #8b8cff 292deg,
+    rgba(201,169,104,.18) 360deg
+  );
+  box-sizing:border-box;
+  pointer-events:none;
+  animation:signature-border-orbit 8s linear infinite;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+}
+body.technology-catalog .featured-section:after {
+  content:"";
+  position:absolute;
+  z-index:2;
+  top:-65%;
+  left:-48%;
+  width:43%;
+  height:230%;
+  border-radius:50%;
+  pointer-events:none;
+  opacity:0;
+  background:linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0) 26%,
+    rgba(255,255,255,.05) 39%,
+    rgba(255,255,255,.76) 49%,
+    rgba(255,239,190,.2) 55%,
+    rgba(255,255,255,0) 72%,
+    transparent 100%
+  );
+  filter:blur(3px);
+  transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-120%,0,0);
+  mix-blend-mode:screen;
+}
+body.technology-catalog .featured-section.signature-shine-active:after {
+  animation:signature-diagonal-shine 1.25s cubic-bezier(.2,.65,.25,1) both;
+}
+@keyframes signature-border-orbit {
+  to { filter:hue-rotate(26deg); }
+}
+@keyframes signature-diagonal-shine {
+  0% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-120%,0,0); }
+  12% { opacity:.92; }
+  74% { opacity:.8; }
+  100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(470%,0,0); }
+}
+@media(prefers-reduced-motion:reduce) {
+  body.technology-catalog .featured-section:before { animation:none !important; }
+  body.technology-catalog .featured-section.signature-shine-active:after { animation:none !important; opacity:0 !important; }
+}

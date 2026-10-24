@@ -244,5 +244,34 @@
     <button class="dialog-close" id="dialog-close" aria-label="Cerrar">×</button>
     <div id="dialog-content"></div>
   </dialog>
+
+  <script>
+    (() => {
+      const section = document.getElementById("featured-section");
+      if (!section || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const angles = ["45deg", "135deg", "225deg", "315deg"];
+      let timer;
+      const scheduleShine = () => {
+        const delay = 6500 + Math.random() * 10500;
+        timer = window.setTimeout(() => {
+          section.style.setProperty("--signature-shine-angle", angles[Math.floor(Math.random() * angles.length)]);
+          section.classList.remove("signature-shine-active");
+          void section.offsetWidth;
+          section.classList.add("signature-shine-active");
+          window.setTimeout(() => section.classList.remove("signature-shine-active"), 1400);
+          scheduleShine();
+        }, delay);
+      };
+      scheduleShine();
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          window.clearTimeout(timer);
+          section.classList.remove("signature-shine-active");
+        } else {
+          scheduleShine();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
