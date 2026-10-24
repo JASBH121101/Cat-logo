@@ -619,3 +619,8 @@ html[data-theme="dark"] body.product-detail-active .product-detail-page .dialog-
   background:var(--perfume-card);
 }
 .perfume-detail-page .perfume-dialog-thumb { background:var(--perfume-card); }
+
+/* Wordmark de JB TECH con contraste correcto sobre cabeceras oscuras. */
+body.technology-catalog .brand-logo-dark { display:none !important; }
+html[data-theme="dark"] body.technology-catalog .brand-logo-light { display:none !important; }
+html[data-theme="dark"] body.technology-catalog .brand-logo-dark { display:block !important; }
