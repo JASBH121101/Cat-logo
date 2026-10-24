@@ -134,6 +134,13 @@ function productLink(product) {
   return url.href;
 }
 
+function productShareLink(product) {
+  const share = new URL("/api/share", window.location.origin);
+  share.searchParams.set("catalog", "perfumery");
+  share.searchParams.set("id", String(product.id));
+  return share.href;
+}
+
 function whatsappLink(message) {
   return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
 }
@@ -154,7 +161,7 @@ function buildWhatsAppMessage(product, intent) {
     product.price_usd !== null && product.price_usd !== undefined ? "Precio: " + formatUSD(product.price_usd) + "." : "",
     priceNio ? "Precio en córdobas: " + priceNio + "." : "",
     "Disponibilidad: " + statusLabel(product.availability) + ".",
-    "Enlace: " + productLink(product) + "."
+    "Enlace: " + productShareLink(product) + "."
   ].filter(Boolean);
   return notes.join(" ");
 }
