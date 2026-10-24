@@ -186,7 +186,6 @@ function updateProductFormMode() {
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
 
-  const isSet = isPerfume && $("#product-type")?.value === "set";
   const galleryTitle = $("#product-images-title");
   if (galleryTitle) galleryTitle.textContent = isPerfume
     ? (isSet ? "Fotografías generales del set" : "Fotografías generales de la fragancia")
