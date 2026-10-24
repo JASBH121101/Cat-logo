@@ -2470,6 +2470,7 @@ function previewOpenProduct(product) {
           '<div><dt>Garantía</dt><dd>' + warranty + '</dd></div>' +
           '<div><dt>Variantes</dt><dd>' + variants.length + '</dd></div>' +
           '<div><dt>Destacado</dt><dd>' + (product.featured ? "Sí" : "No") + '</dd></div>' +
+          '<div><dt>Exclusivo</dt><dd>' + (product.is_exclusive ? "Sí" : "No") + '</dd></div>' +
         '</dl>' +
         '<div class="admin-preview-description"><h4>Descripción</h4><p>' + escapeHtml(description || "Sin descripción adicional.") + '</p></div>' +
       '</section>' +
@@ -2743,7 +2744,8 @@ function renderAdminList() {
       }
       actions += '<button class="admin-mini-button admin-icon-button danger" type="button" data-move-to-trash="' + escapeHtml(product.id) + '" aria-label="Mover a la papelera" title="Mover a la papelera (15 días para recuperar)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6M10 10v6M14 10v6"></path></svg></button>';
     }
-    return '<article class="admin-product-row">' + thumb + '<div><div class="admin-product-name-line"><p class="admin-product-name">' + escapeHtml(product.name || "Producto sin nombre") + '</p>' + stateBadge + '</div><div class="admin-product-meta">' + escapeHtml(product.category || "Sin categoría") + ' · ' + escapeHtml(formattedPrice) + (variantLabel ? ' · ' + escapeHtml(variantLabel) : '') + '</div><div class="admin-product-buttons">' + actions + '</div></div></article>';
+    const exclusiveBadge = product.is_exclusive ? '<span class="admin-product-state-badge state-exclusive">✦ Exclusivo</span>' : '';
+    return '<article class="admin-product-row">' + thumb + '<div><div class="admin-product-name-line"><p class="admin-product-name">' + escapeHtml(product.name || "Producto sin nombre") + '</p>' + stateBadge + exclusiveBadge + '</div><div class="admin-product-meta">' + escapeHtml(product.category || "Sin categoría") + ' · ' + escapeHtml(formattedPrice) + (variantLabel ? ' · ' + escapeHtml(variantLabel) : '') + '</div><div class="admin-product-buttons">' + actions + '</div></div></article>';
   }).join("") || '<p class="form-status">' + escapeHtml(emptyText) + '</p>';
 
   $("#published-product-list").innerHTML = cards(filter(published, "#published-search"), "Todavía no hay productos publicados.", "published");
@@ -3747,6 +3749,9 @@ form?.addEventListener("submit", async event => {
     const featured = saveAction === "exclusive" ? true
       : saveAction === "publish" ? false
       : Boolean(existingProduct?.featured || $("#product-featured").checked);
+    const isExclusive = saveAction === "exclusive" ? true
+      : saveAction === "publish" ? false
+      : Boolean(existingProduct?.is_exclusive);
     const draftPayload = isDraft ? makePersistentDraftPayload() : null;
     const payload = {
       catalog_key: catalogKey,
@@ -3772,6 +3777,7 @@ form?.addEventListener("submit", async event => {
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
       featured,
+      is_exclusive: isExclusive,
       is_published: workflowStatus === "published",
       workflow_status: workflowStatus,
       deleted_at: null,
@@ -3970,6 +3976,7 @@ $("#import-json-file")?.addEventListener("change", async event => {
         variants,
 
         featured: false,
+        is_exclusive: false,
         is_published: false,
         workflow_status: "unpublished",
         draft_payload: null
