@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">JB Parfums · collage editorial de once fragancias</title>
+  <desc id="desc">Collage en una sola imagen con Supremacy Pour Femme, Wind Flowers, La Bomba, Afnan 9PM, Afnan 9AM Dive, Qaed Al Fursan, Oajan, Absolu Aventus, Dior Sauvage, Odyssey Mandarin Sky y Born in Roma Intense Uomo.</desc>
+  <defs>
+    <linearGradient id="backdrop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#25262a"/>
+      <stop offset=".55" stop-color="#11151b"/>
+      <stop offset="1" stop-color="#29251e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8f6e36"/>
+      <stop offset=".5" stop-color="#e5c783"/>
+      <stop offset="1" stop-color="#9c7a42"/>
+    </linearGradient>
+    <clipPath id="clip0"><rect x="24" y="126" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip0)">
+    <rect x="24" y="126" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/supremacy-pour-femme.webp" x="24" y="126" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip0)"/>
+    <rect x="25" y="127" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip1"><rect x="315" y="126" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip1)">
+    <rect x="315" y="126" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/creed-wind-flowers.webp" x="315" y="126" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip1)"/>
+    <rect x="316" y="127" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip2"><rect x="606" y="126" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip2)">
+    <rect x="606" y="126" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/la-bomba.webp" x="606" y="126" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip2)"/>
+    <rect x="607" y="127" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip3"><rect x="897" y="126" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip3)">
+    <rect x="897" y="126" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/afnan-9pm.webp" x="897" y="126" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip3)"/>
+    <rect x="898" y="127" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip4"><rect x="24" y="484" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip4)">
+    <rect x="24" y="484" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/afnan-9am.webp" x="24" y="484" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip4)"/>
+    <rect x="25" y="485" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip5"><rect x="315" y="484" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip5)">
+    <rect x="315" y="484" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/qaed-al-fursan.webp" x="315" y="484" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip5)"/>
+    <rect x="316" y="485" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip6"><rect x="606" y="484" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip6)">
+    <rect x="606" y="484" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/pdm-oajan.webp" x="606" y="484" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip6)"/>
+    <rect x="607" y="485" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip7"><rect x="897" y="484" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip7)">
+    <rect x="897" y="484" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/creed-absolu-aventus.webp" x="897" y="484" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip7)"/>
+    <rect x="898" y="485" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip8"><rect x="24" y="842" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip8)">
+    <rect x="24" y="842" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/dior-sauvage.webp" x="24" y="842" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip8)"/>
+    <rect x="25" y="843" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip9"><rect x="315" y="842" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip9)">
+    <rect x="315" y="842" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/mandarin-sky.webp" x="315" y="842" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip9)"/>
+    <rect x="316" y="843" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+<clipPath id="clip10"><rect x="606" y="842" width="279" height="340" rx="13"/></clipPath>
+  <g clip-path="url(#clip10)">
+    <rect x="606" y="842" width="279" height="340" fill="#f6f0e5"/>
+    <image href="perfume-showcase/valentino-born-in-roma-intense.webp" x="606" y="842" width="279" height="340" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip10)"/>
+    <rect x="607" y="843" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".5" stroke-width="1.5"/>
+  </g>
+    <clipPath id="clipBrand"><rect x="897" y="842" width="279" height="340" rx="13"/></clipPath>
+  </defs>
+  <rect width="1200" height="1200" rx="24" fill="url(#backdrop)"/>
+  <rect x="10" y="10" width="1180" height="1180" rx="19" fill="none" stroke="url(#gold)" stroke-width="2"/>
+  <text x="600" y="54" text-anchor="middle" fill="#f4e5c1" font-family="Georgia,serif" font-size="30" letter-spacing="7">JB PARFUMS</text>
+  <path d="M150 75 H375 M825 75 H1050" stroke="url(#gold)" stroke-width="1"/>
+  <text x="600" y="94" text-anchor="middle" fill="#d3bc8e" font-family="Arial,sans-serif" font-size="14" letter-spacing="3.2">ÁRABE · NICHO · DISEÑADOR</text>
+  <g clip-path="url(#clipBrand)">
+    <rect x="897" y="842" width="279" height="340" fill="#201e1a"/>
+    <rect x="909" y="854" width="255" height="316" rx="8" fill="none" stroke="url(#gold)" stroke-width="1.5"/>
+    <text x="1036.5" y="947" text-anchor="middle" fill="#e7c783" font-family="Georgia,serif" font-size="65" letter-spacing="2">JB</text>
+    <text x="1036.5" y="986" text-anchor="middle" fill="#f4e5c1" font-family="Georgia,serif" font-size="20" letter-spacing="4">PARFUMS</text>
+    <path d="M941 1009 H1132" stroke="url(#gold)" stroke-width="1"/>
+    <text x="1036.5" y="1047" text-anchor="middle" fill="#d4c7a8" font-family="Arial,sans-serif" font-size="14" letter-spacing="1.6">FRAGANCIAS</text>
+    <text x="1036.5" y="1071" text-anchor="middle" fill="#d4c7a8" font-family="Arial,sans-serif" font-size="14" letter-spacing="1.6">CON IDENTIDAD</text>
+    <text x="1036.5" y="1114" text-anchor="middle" fill="#c9a86b" font-family="Arial,sans-serif" font-size="12" letter-spacing="1.4">UNA FIRMA PERSONAL</text>
+  </g>
+  <rect x="898" y="843" width="277" height="338" rx="12" fill="none" stroke="#c5a567" stroke-opacity=".7" stroke-width="1.5"/>
+</svg>

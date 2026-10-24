@@ -684,7 +684,7 @@ function renderProducts() {
   if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
   grid.innerHTML = regularProducts.map(renderCard).join("");
   emptyNode.classList.toggle("hidden", list.length > 0);
-  if (clearPriceFilterButton) clearPriceFilterButton.disabled = readPriceBound(minPriceInput) === null && readPriceBound(maxPriceInput) === null;
+  if (clearPriceFilterButton) clearPriceFilterButton.disabled = !hasActiveCatalogFilters();
   statusNode.textContent = products.length
     ? hasFilters
       ? `${list.length} resultado${list.length === 1 ? "" : "s"} de ${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}`
@@ -897,10 +897,12 @@ function renderVariantControls(product, variants, selected) {
     dialogImage.innerHTML = chosenImages.length
       ? `
         <div class="dialog-gallery-main">
-          <img id="dialog-main-image" class="dialog-main-image"
+          <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
+            <img id="dialog-main-image" class="dialog-main-image"
                src="${escapeHtml(chosenImages[0])}"
                alt="${escapeHtml(`${product.name} ${configuration}`)}"
                loading="eager" decoding="async">
+          </button>
         </div>
         ${chosenImages.length > 1
           ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
@@ -955,6 +957,40 @@ function renderLegacyColorOptions(product) {
   `;
 }
 
+function openProductImageLightbox(src, alt) {
+  if (!src) return;
+
+  let lightbox = document.querySelector("#product-image-lightbox");
+  if (!lightbox) {
+    lightbox = document.createElement("dialog");
+    lightbox.id = "product-image-lightbox";
+    lightbox.className = "product-image-lightbox";
+    lightbox.setAttribute("aria-label", "Fotografía del producto a pantalla completa");
+    lightbox.innerHTML = '<button type="button" class="product-image-lightbox-close" aria-label="Cerrar fotografía ampliada">×</button><img class="product-image-lightbox-photo" alt="">';
+    document.body.appendChild(lightbox);
+
+    lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", () => {
+      if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
+      else lightbox.removeAttribute("open");
+    });
+    lightbox.addEventListener("click", event => {
+      if (event.target !== lightbox) return;
+      if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
+      else lightbox.removeAttribute("open");
+    });
+  }
+
+  const photo = lightbox.querySelector(".product-image-lightbox-photo");
+  photo.src = src;
+  photo.alt = alt || "Fotografía ampliada del producto";
+
+  if (typeof lightbox.showModal === "function") {
+    if (!lightbox.open) lightbox.showModal();
+  } else {
+    lightbox.setAttribute("open", "open");
+  }
+}
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   const paymentToggle = target?.closest("#dialog-payment-options-toggle");
@@ -978,6 +1014,13 @@ dialogContent.addEventListener("click", event => {
       });
     }
   }
+  const zoomButton = target?.closest(".dialog-image-zoom");
+  if (zoomButton) {
+    const image = zoomButton.querySelector(".dialog-main-image");
+    if (image) openProductImageLightbox(image.currentSrc || image.src, image.alt);
+    return;
+  }
+
   const thumbnail = target?.closest("[data-gallery-image]");
   if (!thumbnail) return;
   const mainImage = dialogContent.querySelector("#dialog-main-image");
@@ -1014,7 +1057,7 @@ function openProduct(product) {
       <div class="dialog-image" id="dialog-image">
         ${
           initialImage
-            ? `<img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'">`
+            ? `<div class="dialog-gallery-main"><button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto"><img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'"></button></div>`
             : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`
         }
       </div>
@@ -1141,9 +1184,15 @@ searchInput.addEventListener("input", renderProducts);
 minPriceInput?.addEventListener("input", renderProducts);
 maxPriceInput?.addEventListener("input", renderProducts);
 clearPriceFilterButton?.addEventListener("click", () => {
+  if (searchInput) searchInput.value = "";
   if (minPriceInput) minPriceInput.value = "";
   if (maxPriceInput) maxPriceInput.value = "";
-  renderProducts();
+  const allCategoryButton = categoryFilters?.querySelector('[data-category="all"]');
+  if (allCategoryButton) allCategoryButton.click();
+  else {
+    selectedCategory = "all";
+    renderProducts();
+  }
 });
 
 document.querySelector("#dialog-close").addEventListener("click", () => {
