@@ -32,6 +32,13 @@
   </header>
 
   <main>
+    <section id="product-detail-page" class="product-detail-page hidden" aria-live="polite">
+      <div class="product-detail-topbar">
+        <button type="button" id="product-detail-back" class="product-detail-back">← Volver al catálogo</button>
+        <span>JB TECH / DETALLE DEL PRODUCTO</span>
+      </div>
+      <div id="dialog-content"></div>
+    </section>
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">
@@ -240,10 +247,6 @@
     <span>© <span id="year"></span> JB TECH</span>
   </footer>
 
-  <dialog id="product-dialog" class="product-dialog">
-    <button class="dialog-close" id="dialog-close" aria-label="Cerrar">×</button>
-    <div id="dialog-content"></div>
-  </dialog>
 
   <script>
     (() => {
