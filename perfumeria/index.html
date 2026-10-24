@@ -32,6 +32,13 @@
   </header>
 
   <main>
+    <section id="perfume-detail-page" class="perfume-detail-page hidden" aria-live="polite">
+      <div class="product-detail-topbar">
+        <button type="button" id="perfume-detail-back" class="product-detail-back">← Volver al catálogo</button>
+        <span>JB PARFUMS / DETALLE DE LA FRAGANCIA</span>
+      </div>
+      <div id="perfume-dialog-content"></div>
+    </section>
     <section class="perfume-hero">
       <div class="perfume-hero-copy">
         <p class="perfume-kicker"><span></span> PERFUMERÍA · SELECCIÓN DE FRAGANCIAS</p>
@@ -134,9 +141,5 @@
     <span>© <span id="perfume-year"></span> JB Parfums</span>
   </footer>
 
-  <dialog id="perfume-dialog" class="perfume-dialog">
-    <button class="perfume-dialog-close" id="perfume-dialog-close" type="button" aria-label="Cerrar">×</button>
-    <div id="perfume-dialog-content"></div>
-  </dialog>
 </body>
 </html>
