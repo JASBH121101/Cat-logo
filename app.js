@@ -11,6 +11,7 @@ const statusNode = document.querySelector("#catalog-status");
 const emptyNode = document.querySelector("#empty-results");
 const searchInput = document.querySelector("#search-input");
 const productDetailPage = document.querySelector("#product-detail-page");
+const productHeaderBack = document.querySelector("#product-detail-header-back");
 const dialogContent = document.querySelector("#dialog-content");
 const catalogDocumentTitle = document.title;
 const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
@@ -898,13 +899,15 @@ function renderVariantControls(product, variants, selected) {
         : getProductImages(product);
     dialogImage.innerHTML = chosenImages.length
       ? `
-        <div class="dialog-gallery-main">
+        <div class="dialog-gallery-main" data-inline-gallery>
+          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
           <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
             <img id="dialog-main-image" class="dialog-main-image"
                src="${escapeHtml(chosenImages[0])}"
                alt="${escapeHtml(`${product.name} ${configuration}`)}"
                loading="eager" decoding="async">
           </button>
+          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>' : ""}
         </div>
         ${chosenImages.length > 1
           ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
@@ -1074,8 +1077,48 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
   }
 }
 
+function moveTechnologyGallery(step) {
+  const thumbnails = Array.from(dialogContent.querySelectorAll("#dialog-image [data-gallery-image]"));
+  if (thumbnails.length < 2) return;
+  let currentIndex = thumbnails.findIndex(button => button.classList.contains("active"));
+  if (currentIndex < 0) currentIndex = 0;
+  thumbnails[(currentIndex + step + thumbnails.length) % thumbnails.length].click();
+}
+
+let technologyGalleryTouchStart = null;
+dialogContent.addEventListener("touchstart", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest("#dialog-image .dialog-gallery-main")) {
+    technologyGalleryTouchStart = null;
+    return;
+  }
+  const touch = event.changedTouches && event.changedTouches[0];
+  technologyGalleryTouchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+}, { passive: true });
+
+dialogContent.addEventListener("touchend", event => {
+  if (!technologyGalleryTouchStart) return;
+  const start = technologyGalleryTouchStart;
+  technologyGalleryTouchStart = null;
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest("#dialog-image .dialog-gallery-main")) return;
+  const touch = event.changedTouches && event.changedTouches[0];
+  if (!touch) return;
+  const deltaX = touch.clientX - start.x;
+  const deltaY = touch.clientY - start.y;
+  if (Math.abs(deltaX) < 42 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+  moveTechnologyGallery(deltaX < 0 ? 1 : -1);
+}, { passive: true });
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const galleryStep = target?.closest("[data-gallery-step]");
+  if (galleryStep) {
+    event.preventDefault();
+    event.stopPropagation();
+    moveTechnologyGallery(Number(galleryStep.dataset.galleryStep) || 0);
+    return;
+  }
   const paymentToggle = target?.closest("#dialog-payment-options-toggle");
   if (paymentToggle) {
     const panel = $("#dialog-payment-choice-panel");
@@ -1239,6 +1282,7 @@ function openProduct(product) {
   }
 
   productDetailPage?.classList.remove("hidden");
+  if (productHeaderBack) productHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-product-detail-view");
   document.body.classList.add("product-detail-active");
   document.title = `${product.name || "Producto"} | JB TECH`;
@@ -1300,6 +1344,7 @@ function readProductRoute() {
 
 function showCatalogView() {
   productDetailPage?.classList.add("hidden");
+  if (productHeaderBack) productHeaderBack.hidden = true;
   document.querySelector("main")?.classList.remove("is-product-detail-view");
   document.body.classList.remove("product-detail-active");
   document.title = catalogDocumentTitle;
@@ -1329,7 +1374,7 @@ function handleProductRoute() {
   openProduct(product);
 }
 
-document.querySelector("#product-detail-back")?.addEventListener("click", () => {
+productHeaderBack?.addEventListener("click", () => {
   if (window.history.state?.productDetailRoute) {
     window.history.back();
     return;
