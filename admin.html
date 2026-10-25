@@ -238,6 +238,10 @@
               <div><span>Clics en WhatsApp</span><strong id="dashboard-whatsapp-total">—</strong></div>
             </div>
             <p class="dashboard-widget-note" id="dashboard-analytics-note">Las estadísticas aparecerán cuando se registren visitas y consultas.</p>
+            <div class="dashboard-analytics-actions">
+              <button id="reset-catalog-analytics" class="dashboard-analytics-reset" type="button">Reiniciar estadísticas</button>
+              <span>Solo borra métricas de visitas y consultas; no modifica productos.</span>
+            </div>
 
             <section class="dashboard-interest-chart-section" aria-labelledby="dashboard-interest-chart-title">
               <div class="dashboard-interest-section-heading">
@@ -480,6 +484,7 @@
               </button>
             </div>
 
+            <div id="product-photo-validation-issues" class="product-photo-validation-issues" aria-live="polite" hidden></div>
             <p class="form-status" id="product-form-status" role="status"></p>
           <button id="retry-main-image-uploads" class="button button-outline retry-main-image-uploads" type="button" hidden>
             Reintentar fotografías pendientes

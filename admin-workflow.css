@@ -184,3 +184,15 @@ html[data-theme="dark"] body.admin-body .admin-photo-progress-track {
 html[data-theme="dark"] body.admin-body .admin-photo-progress-label { color: #c4d6f4; }
 html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state="failed"] .admin-photo-progress-label { color: #ff9da8; }
 html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state="done"] .admin-photo-progress-label { color: #8be4bd; }
+
+.dashboard-analytics-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin-top:8px; }
+.dashboard-analytics-actions > span { color:var(--admin-muted, #697386); font-size:.75rem; line-height:1.4; }
+.dashboard-analytics-reset { border:1px solid var(--admin-border, #d7dce5); border-radius:9px; padding:8px 11px; font:inherit; font-size:.8rem; font-weight:750; color:var(--admin-text, #334155); background:var(--admin-surface, #fff); cursor:pointer; }
+.dashboard-analytics-reset:hover:not(:disabled) { border-color:#a52a20; color:#a52a20; }
+.dashboard-analytics-reset:disabled { cursor:wait; opacity:.65; }
+.product-photo-validation-issues { margin:10px 0 14px; padding:13px; border:1px solid #e8b55b; border-radius:12px; background:#fff8e8; color:#6a4710; }
+.product-photo-validation-issues > strong { display:block; margin-bottom:5px; }
+.product-photo-validation-issues p { margin:0 0 8px; line-height:1.45; }
+.product-photo-validation-issues button { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; width:100%; padding:10px 0; border:0; border-top:1px solid rgba(141,99,28,.2); color:inherit; background:transparent; text-align:left; cursor:pointer; }
+.product-photo-validation-issues button span { flex:0 0 auto; font-size:.82rem; font-weight:800; text-decoration:underline; }
+.photo-validation-error { outline:3px solid #e49b24 !important; outline-offset:4px !important; box-shadow:0 0 0 7px rgba(228,155,36,.16) !important; border-radius:12px; }

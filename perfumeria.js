@@ -247,8 +247,18 @@ function buildWhatsAppMessage(product, intent) {
   return notes.join(" ");
 }
 
+
+function isCatalogAdminActivityActive() {
+  try {
+    const timestamp = Number(window.localStorage.getItem("cat-logo-admin-activity-v1") || 0);
+    return timestamp > 0 && Date.now() - timestamp < 180000;
+  } catch {
+    return false;
+  }
+}
+
 async function recordEvent(productId, eventType) {
-  if (!supabase || !productId || !["view","whatsapp_click"].includes(eventType)) return;
+  if (isCatalogAdminActivityActive() || !supabase || !productId || !["view","whatsapp_click"].includes(eventType)) return;
   try {
     const { error } = await supabase.from("catalog_events").insert({
       product_id: productId,

@@ -38,9 +38,19 @@ let products = [];
 let selectedCategory = "all";
 let selectedBrand = "";
 
+
+function isCatalogAdminActivityActive() {
+  try {
+    const timestamp = Number(window.localStorage.getItem("cat-logo-admin-activity-v1") || 0);
+    return timestamp > 0 && Date.now() - timestamp < 180000;
+  } catch {
+    return false;
+  }
+}
+
 // Analytics: record product views and WhatsApp intent, including the selected variant.
 async function recordCatalogEvent(productId, eventType, variant = {}) {
-  if (!supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
+  if (isCatalogAdminActivityActive() || !supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
 
   const cleanValue = value => {
     const normalized = String(value ?? "").trim();

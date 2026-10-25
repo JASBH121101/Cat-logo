@@ -76,6 +76,16 @@ const form = $("#product-form");
 
 let currentUser = null;
 let products = [];
+const CATALOG_ADMIN_ACTIVITY_KEY = "cat-logo-admin-activity-v1";
+function refreshCatalogAdminActivityMarker() {
+  if (!currentUser) return;
+  try { window.localStorage.setItem(CATALOG_ADMIN_ACTIVITY_KEY, String(Date.now())); } catch {}
+}
+function clearCatalogAdminActivityMarker() {
+  try { window.localStorage.removeItem(CATALOG_ADMIN_ACTIVITY_KEY); } catch {}
+}
+window.setInterval(refreshCatalogAdminActivityMarker, 30000);
+window.addEventListener("focus", refreshCatalogAdminActivityMarker);
 let editorRecordExists = false;
 let activeCatalogType = "technology";
 let dashboardCatalogScope = "all";
@@ -636,6 +646,7 @@ function clearLoginPassword() {
 function showLoginScreen(statusText = "", type = "") {
   currentUser = null;
   products = [];
+  clearCatalogAdminActivityMarker();
 
   document.body.classList.remove("admin-dashboard-active");
   setMobileSidebarOpen(false);
@@ -1859,6 +1870,7 @@ async function showDashboard(user) {
   await confirmAdmin(user);
 
   currentUser = user;
+  refreshCatalogAdminActivityMarker();
 
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
@@ -1894,6 +1906,7 @@ async function handleSession() {
   }
 
   if (!data.session) {
+    clearCatalogAdminActivityMarker();
     loginPanel.classList.remove("hidden");
     dashboard.classList.add("hidden");
     return;
