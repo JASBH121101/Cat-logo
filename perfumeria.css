@@ -726,3 +726,68 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
   .perfume-page .product-image img{min-height:0;padding:6px}
   .perfume-page .product-card-content{padding:9px}
 }
+
+/* Perfume availability and featured badges live above the image, never over the bottle. */
+.perfume-page .perfume-product-badges{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:40px;
+  padding:7px 10px;
+  border-bottom:1px solid var(--perfume-border);
+  background:var(--perfume-card);
+}
+.perfume-page .perfume-product-badges .perfume-featured-badge,
+.perfume-page .perfume-product-badges .perfume-state-badge{
+  position:static!important;
+  inset:auto!important;
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box!important;
+  flex:0 1 auto;
+  width:auto!important;
+  min-width:0;
+  max-width:calc(50% - 4px)!important;
+  margin:0;
+  padding:5px 7px;
+  overflow:hidden;
+  white-space:nowrap!important;
+  text-overflow:ellipsis;
+  font-size:8px;
+  line-height:1.2;
+  letter-spacing:.07em;
+}
+.perfume-page .perfume-product-badges .perfume-featured-badge{
+  color:#21180b;
+  background:var(--perfume-gold-light);
+  border:1px solid var(--perfume-gold);
+}
+.perfume-page .perfume-product-badges .perfume-state-badge{
+  margin-left:auto;
+  color:var(--perfume-muted);
+  background:var(--perfume-input);
+  border:1px solid var(--perfume-border);
+  letter-spacing:.025em;
+}
+.perfume-page .perfume-product-image{
+  margin:0;
+}
+@media(max-width:600px){
+  .perfume-page .perfume-product-badges{
+    min-height:37px;
+    padding:6px 8px;
+    gap:6px;
+  }
+  .perfume-page .perfume-product-badges .perfume-featured-badge,
+  .perfume-page .perfume-product-badges .perfume-state-badge{
+    max-width:calc(50% - 3px)!important;
+    padding:5px 6px;
+    font-size:7px;
+    letter-spacing:.035em;
+  }
+}
