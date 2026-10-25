@@ -1101,27 +1101,45 @@ body.technology-catalog .product-card > .product-card-content {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  justify-content: flex-start !important;
   align-items: stretch;
+  gap: 6px;
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
 }
 body.technology-catalog .product-card-color-slot {
   flex: 0 0 auto;
-  min-height: 88px;
+  min-height: 48px;
+}
+body.technology-catalog .product-card-color-slot.is-empty {
+  min-height: 0;
+}
+body.technology-catalog .product-card-color-slot > .product-card-colors {
+  margin-bottom: 0 !important;
 }
 body.technology-catalog .product-card .product-actions {
   margin-top: auto !important;
-  padding-top: 12px;
+  padding-top: 10px;
 }
 @media (max-width: 760px) {
-  body.technology-catalog .product-card-color-slot {
-    min-height: 92px;
+  body.technology-catalog .product-card > .product-card-content {
+    gap: 5px;
   }
-
-  /* En las tarjetas destacadas se ocultan los nombres de color en móvil,
-     por lo que basta reservar espacio para una o dos filas de muestras. */
+  body.technology-catalog .product-card-color-slot {
+    min-height: 44px;
+  }
+  /* Nombres algo más anchos para evitar que se partan en varias líneas
+     dentro de las tarjetas estrechas del catálogo completo. */
+  body.technology-catalog #product-grid .product-card-color-option {
+    max-width: 64px;
+  }
+  body.technology-catalog #product-grid .product-card-color-name {
+    max-width: 64px;
+    line-height: 1.12;
+  }
+  /* En destacados se ocultan las etiquetas; solo hacen falta los círculos. */
   body.technology-catalog .featured-grid .product-card-color-slot {
-    min-height: 28px;
+    min-height: 24px;
   }
 }
