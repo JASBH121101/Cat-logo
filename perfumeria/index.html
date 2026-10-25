@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css?v=20261024-final-responsive-audit1">
+  <link rel="stylesheet" href="../styles.css?v=20261025-brand-sort1">
   <link rel="stylesheet" href="../theme-ui.css?v=20261024-final-responsive-audit1">
   <link rel="stylesheet" href="../perfumeria.css?v=20261025-brand-sort1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261024-share-preview-delete9">
@@ -73,7 +73,7 @@
       </div>
 
       <div class="catalog-extra-filters perfume-extra-filters" aria-label="Buscar marca y ordenar fragancias">
-        <label class="catalog-control-field"><span>Buscar marca</span><input id="perfume-brand-search-input" type="search" placeholder="Escribí una marca…" autocomplete="off" aria-label="Filtrar por marca de perfume"></label>
+        <label class="catalog-control-field"><span>Buscar marca</span><input id="perfume-brand-search-input" list="perfume-brand-suggestions" type="search" placeholder="Escribí una marca…" autocomplete="off" aria-label="Filtrar por marca de perfume"></label><datalist id="perfume-brand-suggestions"></datalist>
         <label class="catalog-control-field"><span>Ordenar por</span><select id="perfume-sort-select" aria-label="Ordenar fragancias"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
       </div>
 
