@@ -263,6 +263,81 @@ async function recordEvent(productId, eventType) {
   }
 }
 
+// Detect a plain white/light background from the image corners when the image host permits CORS.
+const perfumePhotoFitChecks = new Map();
+
+function detectLightPhotoBackground(url) {
+  return new Promise(resolve => {
+    const probe = new Image();
+    probe.crossOrigin = "anonymous";
+    probe.decoding = "async";
+    probe.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 32;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) return resolve(false);
+        context.drawImage(probe, 0, 0, 32, 32);
+        const pixels = context.getImageData(0, 0, 32, 32).data;
+        const corners = [
+          [2, 2], [5, 2], [2, 5],
+          [29, 2], [26, 2], [29, 5],
+          [2, 29], [5, 29], [2, 26],
+          [29, 29], [26, 29], [29, 26]
+        ];
+        let lightPixels = 0;
+        for (const [x, y] of corners) {
+          const offset = (y * 32 + x) * 4;
+          const red = pixels[offset];
+          const green = pixels[offset + 1];
+          const blue = pixels[offset + 2];
+          const alpha = pixels[offset + 3];
+          const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
+          if (alpha < 35 || (red >= 238 && green >= 238 && blue >= 238 && spread <= 28)) {
+            lightPixels += 1;
+          }
+        }
+        resolve(lightPixels >= 9);
+      } catch {
+        // Cross-origin pixel access may be restricted; leave the image in contain mode.
+        resolve(false);
+      }
+    };
+    probe.onerror = () => resolve(false);
+    probe.src = url;
+  });
+}
+
+function applyAutomaticPerfumePhotoFit(image) {
+  if (!(image instanceof HTMLImageElement) || image.dataset.perfumeImageFit) return;
+  const url = image.currentSrc || image.src;
+  if (!url) return;
+  image.dataset.perfumeImageFit = "checking";
+  let check = perfumePhotoFitChecks.get(url);
+  if (!check) {
+    check = detectLightPhotoBackground(url);
+    perfumePhotoFitChecks.set(url, check);
+  }
+  check.then(hasLightBackground => {
+    image.dataset.perfumeImageFit = hasLightBackground ? "cover" : "contain";
+    const frame = image.closest(".perfume-product-image");
+    if (frame && image.isConnected) {
+      frame.classList.toggle("has-white-background", hasLightBackground);
+    }
+  }).catch(() => {
+    image.dataset.perfumeImageFit = "contain";
+  });
+}
+
+// Lazy-loaded photos are classified when they finish loading.
+document.addEventListener("load", event => {
+  const image = event.target;
+  if (image instanceof HTMLImageElement && image.matches("img[data-perfume-image]")) {
+    applyAutomaticPerfumePhotoFit(image);
+  }
+}, true);
+
 function imageMarkup(product) {
   const url = getImages(product)[0] || "";
   return url
@@ -370,6 +445,11 @@ function renderProducts() {
   resultsEyebrow.textContent = filtering ? "RESULTADOS" : "DESCUBRÍ";
   resultsTitle.textContent = filtering ? "Fragancias para vos" : "Toda la colección";
   grid.innerHTML = regular.map(renderCard).join("");
+  [featuredGrid, grid].forEach(container => {
+    container?.querySelectorAll("img[data-perfume-image]").forEach(image => {
+      if (image.complete && image.naturalWidth > 0) applyAutomaticPerfumePhotoFit(image);
+    });
+  });
   const isComingSoon = perfumes.length === 0;
   emptyNode.classList.toggle("hidden", matched.length > 0);
   emptyNode.classList.toggle("is-coming-soon", isComingSoon);

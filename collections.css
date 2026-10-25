@@ -522,3 +522,79 @@ a { color: inherit; }
     margin: 0;
   }
 }
+
+
+/* JB COLLECTIONS · mobile portrait: show both destinations with compact stacked panels. */
+@media (max-width: 760px), (pointer: coarse) and (orientation: portrait) {
+  .collections-stage {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: auto;
+    overflow: clip;
+  }
+  .collections-masthead {
+    flex: 0 0 auto;
+    padding: 12px 14px 10px;
+  }
+  .collections-lockup { gap: 9px; }
+  .collections-monogram { font-size: clamp(37px, 10vw, 43px); }
+  .collections-name { font-size: 10px; letter-spacing: .28em; }
+  .collections-divider { width: min(320px, 72vw); margin: 5px 0 4px; }
+  .collections-tagline {
+    font-size: clamp(17px, 4.8vw, 22px);
+    line-height: 1.18;
+    letter-spacing: .015em;
+  }
+  .collections-subtitle {
+    max-width: 330px;
+    margin-top: 4px;
+    font-size: 7px;
+    line-height: 1.4;
+    letter-spacing: .1em;
+  }
+  .world-panel {
+    flex: 0 0 auto !important;
+    width: 100%;
+    min-height: clamp(225px, 30svh, 285px) !important;
+    height: auto;
+    padding: 13px 16px 17px;
+    justify-content: center;
+  }
+  .world-panel--parfums { border-right: 0; border-bottom: 1px solid rgba(255,220,160,.55); }
+  .world-content { width: min(100%, 430px); margin: auto; }
+  .world-brand { min-height: 0; gap: 5px; }
+  .world-emblem { width: clamp(46px, 12vw, 56px); }
+  .world-tech-logo { width: clamp(76px, 20vw, 100px); max-height: 100px; }
+  .world-title { font-size: clamp(27px, 7vw, 34px); line-height: 1.06; }
+  .world-title-rule { width: min(220px, 65%); margin-top: 3px; }
+  .world-eyebrow { margin-top: 6px; font-size: 8px; line-height: 1.35; letter-spacing: .16em; }
+  .world-copy {
+    max-width: 45ch;
+    margin-top: 7px;
+    font-size: 11px;
+    line-height: 1.42;
+  }
+  .world-cta {
+    width: min(100%, 340px);
+    min-height: 43px;
+    margin-top: 11px;
+    padding: 10px 14px;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: .12em;
+  }
+  .world-cta .arrow { font-size: 16px; }
+  .collections-footer {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 7px 12px;
+    gap: 7px;
+    font-size: 7px;
+    letter-spacing: .17em;
+  }
+}

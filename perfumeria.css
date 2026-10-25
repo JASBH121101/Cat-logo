@@ -1344,3 +1344,11 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
     padding: 0;
   }
 }
+
+
+/* JB PARFUMS · auto framing: fill the card for white-background photos only. */
+.perfume-page .product-image.has-white-background img {
+  object-fit: cover;
+  object-position: center;
+  padding: 0;
+}
