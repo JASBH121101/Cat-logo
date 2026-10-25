@@ -277,6 +277,7 @@ function renderCard(product) {
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
   const productTypeLabel = product.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia";
   const image = imageMarkup(product);
+  const tightPhotoFrame = /9\s*pm\s*elixir|sauvage\s+elixir/i.test(String(product.name || ""));
   const badge = product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
   const state = statusLabel(product.availability);
   const stateBadge = state === "Disponible" ? "" : '<span class="perfume-state-badge">' + escapeHtml(state) + '</span>';
@@ -288,7 +289,7 @@ function renderCard(product) {
 
   return '<article class="product-card perfume-product-card' + (product.featured ? ' featured-product-card' : '') + '">' +
     badges +
-    '<div class="product-image perfume-product-image">' + image + '</div>' +
+    '<div class="product-image perfume-product-image' + (tightPhotoFrame ? ' is-tight-photo-frame' : '') + '">' + image + '</div>' +
     '<div class="product-card-content perfume-product-card-content">' +
       '<p class="perfume-card-family">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
       '<h3>' + escapeHtml(product.name || "Fragancia sin nombre") + '</h3>' +
