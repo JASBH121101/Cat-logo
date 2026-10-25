@@ -7,7 +7,8 @@ const grid = $("#product-grid");
 const statusNode = $("#catalog-status");
 const emptyNode = $("#empty-results");
 const searchInput = $("#perfume-search-input");
-const brandSearchInput = $("#perfume-brand-search-input");
+const familySelect = $("#perfume-family-select");
+const audienceSelect = $("#perfume-audience-select");
 const perfumeSortSelect = $("#perfume-sort-select");
 const categoryFilters = $("#category-filters");
 const audienceFilters = $("#audience-filters");
@@ -122,12 +123,14 @@ function statusLabel(value) {
 function refreshBrandSuggestions() {
   const list = document.getElementById("perfume-brand-suggestions");
   if (!list) return;
-  const brands = [...new Set(perfumes
-    .map(product => String(product.brand || "").trim())
-    .filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
-  list.replaceChildren(...brands.map(brand => {
+  const suggestions = [...new Set(perfumes.flatMap(product => [
+    String(product.brand || "").trim(),
+    String(product.name || "").trim(),
+    String(product.model || "").trim()
+  ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  list.replaceChildren(...suggestions.map(value => {
     const option = document.createElement("option");
-    option.value = brand;
+    option.value = value;
     return option;
   }));
 }
@@ -142,7 +145,7 @@ function priceBound(input) {
 function hasActiveFilters() {
   return Boolean(
     (searchInput?.value || "").trim() ||
-    (brandSearchInput?.value || "").trim() ||
+    (searchInput?.value || "").trim() ||
     (perfumeSortSelect?.value || "recent") !== "recent" ||
     selectedFamilies.size > 0 ||
     selectedAudiences.size > 0 ||
@@ -247,7 +250,7 @@ function renderCard(product) {
 
 function visibleProducts() {
   const query = normalizeText(searchInput?.value);
-  const brandQuery = normalizeText(brandSearchInput?.value);
+  const brandQuery = normalizeText(searchInput?.value);
   const min = priceBound(minPriceInput);
   const max = priceBound(maxPriceInput);
   const validRange = min === null || max === null || min <= max;
@@ -256,7 +259,7 @@ function visibleProducts() {
 
   return perfumes.filter(product => {
     if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
-    if (brandQuery && !normalizeText(product.brand).startsWith(brandQuery)) return false;
+    if (brandQuery && ![product.brand, product.name, product.model].some(value => normalizeText(value).includes(brandQuery))) return false;
     const detail = product.perfume_details || {};
     const searchable = [
       product.name, product.brand, product.model, product.description, product.product_type,
@@ -455,16 +458,26 @@ function bindMultiSelect(container, attribute, selectedSet) {
     if (!button || !container.contains(button) || !button.hasAttribute(dataAttribute)) return;
     const value = button.getAttribute(dataAttribute) || "all";
     if (value === "all") selectedSet.clear();
-    else if (selectedSet.has(value)) selectedSet.delete(value);
+    else if (attribute === "productType") {
+      selectedSet.clear();
+      selectedSet.add(value);
+    } else if (selectedSet.has(value)) selectedSet.delete(value);
     else selectedSet.add(value);
     renderProducts();
   });
 }
-bindMultiSelect(categoryFilters, "category", selectedFamilies);
-bindMultiSelect(audienceFilters, "audience", selectedAudiences);
 bindMultiSelect(productTypeFilters, "productType", selectedProductTypes);
 searchInput.addEventListener("input", renderProducts);
-brandSearchInput?.addEventListener("input", renderProducts);
+familySelect?.addEventListener("change", () => {
+  selectedFamilies.clear();
+  if (familySelect.value !== "all") selectedFamilies.add(familySelect.value);
+  renderProducts();
+});
+audienceSelect?.addEventListener("change", () => {
+  selectedAudiences.clear();
+  if (audienceSelect.value !== "all") selectedAudiences.add(audienceSelect.value);
+  renderProducts();
+});
 perfumeSortSelect?.addEventListener("change", renderProducts);
 minPriceInput.addEventListener("input", renderProducts);
 maxPriceInput.addEventListener("input", renderProducts);
@@ -478,7 +491,8 @@ clearAllFiltersButton?.addEventListener("click", () => {
   selectedAudiences.clear();
   selectedProductTypes.clear();
   searchInput.value = "";
-  if (brandSearchInput) brandSearchInput.value = "";
+  if (familySelect) familySelect.value = "all";
+  if (audienceSelect) audienceSelect.value = "all";
   if (perfumeSortSelect) perfumeSortSelect.value = "recent";
   minPriceInput.value = "";
   maxPriceInput.value = "";
