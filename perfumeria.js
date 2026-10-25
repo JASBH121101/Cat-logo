@@ -10,8 +10,11 @@ const searchInput = $("#perfume-search-input");
 const familySelect = $("#perfume-family-select");
 const audienceSelect = $("#perfume-audience-select");
 const perfumeSortSelect = $("#perfume-sort-select");
-const categoryFilters = $("#category-filters");
-const audienceFilters = $("#audience-filters");
+const brandFilterToggle = $("#perfume-brand-filter-toggle");
+const brandFilterValue = $("#perfume-brand-filter-value");
+const brandFilterMenu = $("#perfume-brand-filter-menu");
+const brandFilterSearch = $("#perfume-brand-filter-search");
+const brandFilterOptions = $("#perfume-brand-filter-options");
 const productTypeFilters = $("#product-type-filters");
 const clearAllFiltersButton = $("#clear-all-filters");
 const filterSummary = $("#perfume-filter-summary");
@@ -36,6 +39,7 @@ let perfumes = [];
 const selectedFamilies = new Set();
 const selectedAudiences = new Set();
 const selectedProductTypes = new Set();
+let selectedBrand = "";
 
 const hasConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
 if (hasConfig) supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
@@ -120,31 +124,47 @@ function statusLabel(value) {
   return "Disponible";
 }
 
-function refreshBrandSuggestions() {
-  const list = document.getElementById("perfume-brand-suggestions");
-  if (!list) return;
-  const suggestions = [...new Set(perfumes.flatMap(product => [
-    String(product.brand || "").trim(),
-    String(product.name || "").trim(),
-    String(product.model || "").trim()
-  ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
-  const query = normalizeText(searchInput?.value);
-  const matches = (query ? suggestions.filter(value => normalizeText(value).includes(query)) : suggestions).slice(0, query ? 8 : 20);
-  list.replaceChildren(...matches.map(value => {
+function updateBrandFilterLabel() {
+  if (brandFilterValue) brandFilterValue.textContent = selectedBrand || "Todas las marcas";
+}
+
+function renderBrandFilterOptions() {
+  if (!brandFilterOptions) return;
+  const brands = [...new Set(perfumes.map(product => String(product.brand || "").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const query = normalizeText(brandFilterSearch?.value);
+  const matches = query ? brands.filter(brand => normalizeText(brand).startsWith(query)) : brands;
+  const options = [];
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = "brand-filter-option";
+  all.dataset.brand = "";
+  all.setAttribute("role", "option");
+  all.setAttribute("aria-selected", String(!selectedBrand));
+  all.textContent = "Todas las marcas";
+  options.push(all);
+  matches.forEach(brand => {
     const option = document.createElement("button");
     option.type = "button";
-    option.className = "live-search-option";
+    option.className = "brand-filter-option";
+    option.dataset.brand = brand;
     option.setAttribute("role", "option");
-    option.textContent = value;
-    option.addEventListener("mousedown", event => event.preventDefault());
-    option.addEventListener("click", () => {
-      searchInput.value = value;
-      list.hidden = true;
-      renderProducts();
-    });
-    return option;
-  }));
-  list.hidden = matches.length === 0;
+    option.setAttribute("aria-selected", String(selectedBrand === brand));
+    option.textContent = brand;
+    options.push(option);
+  });
+  brandFilterOptions.replaceChildren(...options);
+  if (!matches.length && query) {
+    const empty = document.createElement("p");
+    empty.className = "brand-filter-empty";
+    empty.textContent = "No se encontraron marcas.";
+    brandFilterOptions.append(empty);
+  }
+}
+
+function closeBrandFilterMenu() {
+  if (brandFilterMenu) brandFilterMenu.hidden = true;
+  if (brandFilterToggle) brandFilterToggle.setAttribute("aria-expanded", "false");
 }
 
 function priceBound(input) {
@@ -157,6 +177,7 @@ function priceBound(input) {
 function hasActiveFilters() {
   return Boolean(
     (searchInput?.value || "").trim() ||
+    selectedBrand ||
     (perfumeSortSelect?.value || "recent") !== "recent" ||
     selectedFamilies.size > 0 ||
     selectedAudiences.size > 0 ||
@@ -269,6 +290,7 @@ function visibleProducts() {
 
   return perfumes.filter(product => {
     if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
+    if (selectedBrand && String(product.brand || "").trim().toLocaleLowerCase("es") !== selectedBrand.toLocaleLowerCase("es")) return false;
     const detail = product.perfume_details || {};
     const searchable = [
       product.name, product.brand, product.model, product.description, product.product_type,
@@ -476,10 +498,36 @@ function bindMultiSelect(container, attribute, selectedSet) {
   });
 }
 bindMultiSelect(productTypeFilters, "productType", selectedProductTypes);
-searchInput.addEventListener("input", () => { refreshBrandSuggestions(); renderProducts(); });
-searchInput.addEventListener("focus", refreshBrandSuggestions);
-searchInput.addEventListener("keydown", event => { if (event.key === "Escape") { const menu = document.getElementById("perfume-brand-suggestions"); if (menu) menu.hidden = true; } });
-document.addEventListener("click", event => { if (!event.target.closest(".perfume-search-control")) { const menu = document.getElementById("perfume-brand-suggestions"); if (menu) menu.hidden = true; } });
+searchInput.addEventListener("input", renderProducts);
+brandFilterToggle?.addEventListener("click", () => {
+  const opening = Boolean(brandFilterMenu?.hidden);
+  if (brandFilterMenu) brandFilterMenu.hidden = !opening;
+  brandFilterToggle.setAttribute("aria-expanded", String(opening));
+  if (opening) {
+    if (brandFilterSearch) brandFilterSearch.value = "";
+    renderBrandFilterOptions();
+    brandFilterSearch?.focus();
+  }
+});
+brandFilterSearch?.addEventListener("input", renderBrandFilterOptions);
+brandFilterSearch?.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeBrandFilterMenu();
+    brandFilterToggle?.focus();
+  }
+});
+brandFilterOptions?.addEventListener("click", event => {
+  const option = event.target.closest("[data-brand]");
+  if (!option || !brandFilterOptions.contains(option)) return;
+  selectedBrand = option.dataset.brand || "";
+  if (brandFilterSearch) brandFilterSearch.value = "";
+  updateBrandFilterLabel();
+  closeBrandFilterMenu();
+  renderProducts();
+});
+document.addEventListener("click", event => {
+  if (!event.target.closest(".brand-filter-wrap")) closeBrandFilterMenu();
+});
 familySelect?.addEventListener("change", () => {
   selectedFamilies.clear();
   if (familySelect.value !== "all") selectedFamilies.add(familySelect.value);
@@ -505,6 +553,10 @@ clearAllFiltersButton?.addEventListener("click", () => {
   searchInput.value = "";
   if (familySelect) familySelect.value = "all";
   if (audienceSelect) audienceSelect.value = "all";
+  selectedBrand = "";
+  if (brandFilterSearch) brandFilterSearch.value = "";
+  updateBrandFilterLabel();
+  closeBrandFilterMenu();
   if (perfumeSortSelect) perfumeSortSelect.value = "recent";
   minPriceInput.value = "";
   maxPriceInput.value = "";
@@ -650,7 +702,7 @@ async function initializePerfumes() {
     const products = data || [];
     if (!products.length) {
       perfumes = [];
-      refreshBrandSuggestions();
+      updateBrandFilterLabel();
       renderProducts();
       return;
     }
@@ -663,7 +715,7 @@ async function initializePerfumes() {
 
     const byProduct = new Map((detailRows || []).map(detail => [String(detail.product_id), detail]));
     perfumes = products.map(product => ({ ...product, perfume_details: byProduct.get(String(product.id)) || null }));
-    refreshBrandSuggestions();
+    updateBrandFilterLabel();
     renderProducts();
     loadDeepLink();
   } catch (error) {
