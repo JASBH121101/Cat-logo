@@ -574,3 +574,6 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
 /* Mantener la composición centrada y evitar que la falta de miniaturas en pantalla la encoja. */
 .perfume-page .perfume-hero-art { width:100%; }
 @media(max-width:640px) { .perfume-page .perfume-hero-art { width:min(100%,545px); } }
+
+/* Filtros de marca y ordenamiento para perfumería */
+.catalog-control-field{color:var(--perfume-muted);font-size:12px;letter-spacing:.01em}.catalog-control-field input,.catalog-control-field select{border-color:var(--perfume-border);border-radius:3px;background:var(--perfume-input);color:var(--perfume-ink)}.catalog-control-field input:focus,.catalog-control-field select:focus{border-color:var(--perfume-gold);outline:2px solid color-mix(in srgb,var(--perfume-gold) 20%,transparent)}.perfume-extra-filters{margin:0 0 20px}@media(max-width:640px){.perfume-extra-filters{grid-template-columns:1fr;gap:10px}}
