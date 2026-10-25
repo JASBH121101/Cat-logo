@@ -105,7 +105,7 @@ function formatUSD(value) {
   if (value === null || value === undefined || value === "") return "Consultar";
   const price = Number(value);
   if (!Number.isFinite(price)) return "Consultar";
-  return "US$" + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(price);
+  return "US$ " + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(price);
 }
 
 function formatNIO(value) {
