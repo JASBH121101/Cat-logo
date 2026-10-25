@@ -1236,7 +1236,7 @@ function updateMainImageRetryButton(){
   const retryable=pending.filter(entry=>!["queued","uploading"].includes(entry.item.uploadState)).length;
   const busy=retryMainImageUploadsInProgress||activePhotoUploads>0||photoUploadQueue.length>0;
   const canPersist=editorRecordExists&&(mainImageSyncPending||variantImageSyncPending);
-  const show=Boolean(productId&&editorRecordExists&&(retryable>0||canPersist));
+  const show=Boolean(productId&&(retryable>0||canPersist));
   retryMainImagesButton.hidden=!show;
   retryMainImagesButton.disabled=busy||!currentUser||!supabase||!productId;
   retryMainImagesButton.setAttribute("aria-busy",String(busy));
@@ -3533,20 +3533,15 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
       if (typeof onProgress === "function") onProgress(100);
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       return data.publicUrl;
-      if (isTransientImageUploadError(lastError)) {
-        const recoveredUrl = await recoverUploadedImageUrl(bucket, path);
-        if (recoveredUrl) return recoveredUrl;
-      }
-      if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(lastError.message || ""))) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return data.publicUrl;
-      }
-      if (!isTransientImageUploadError(lastError) || attempt === maxAttempts - 1) break;
     } catch (error) {
       lastError = error;
       if (isTransientImageUploadError(error)) {
         const recoveredUrl = await recoverUploadedImageUrl(bucket, path);
         if (recoveredUrl) return recoveredUrl;
+      }
+      if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(error?.message || ""))) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+        return data.publicUrl;
       }
       if (!isTransientImageUploadError(error) || attempt === maxAttempts - 1) break;
     }
