@@ -3154,7 +3154,7 @@ exclusiveToggleButton?.addEventListener("click", async () => {
   field.dispatchEvent(new Event("change", { bubbles: true }));
 
   /* A new, unsaved product has no row to update yet; include the flag on the next save. */
-  if (!productId) {
+  if (!productId || !editorRecordExists) {
     message("#product-form-status",
       next
         ? "Exclusividad seleccionada. Se guardará cuando guardés, publiques o guardés como borrador."
