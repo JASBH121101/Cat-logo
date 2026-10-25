@@ -703,6 +703,26 @@ function readPriceBound(input) {
   return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
+function normalizeCatalogSearch(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/\bplay\s*station\s*(\d+)\b/g, "ps$1")
+    .replace(/\bps\s*(\d+)\b/g, "ps$1")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function searchTokensMatch(haystack, query) {
+  const tokens = normalizeCatalogSearch(query).split(/\s+/).filter(Boolean);
+  return tokens.length > 0 && tokens.every(token => haystack.includes(token));
+}
+
+function productIdentityText(product) {
+  return normalizeCatalogSearch([product.name, product.brand, product.model].filter(Boolean).join(" "));
+}
+
 function hasActiveCatalogFilters() {
   return Boolean((searchInput?.value || "").trim() || selectedBrand ||
     selectedCategory !== "all" || readPriceBound(minPriceInput) !== null ||
@@ -711,11 +731,24 @@ function hasActiveCatalogFilters() {
 
 
 function visibleProducts() {
-  const query = (searchInput?.value || "").trim().toLocaleLowerCase("es");
+  const rawQuery = (searchInput?.value || "").trim();
+  const query = normalizeCatalogSearch(rawQuery);
   const minPrice = readPriceBound(minPriceInput);
   const maxPrice = readPriceBound(maxPriceInput);
   const validRange = minPrice === null || maxPrice === null || minPrice <= maxPrice;
-  if (priceFilterFeedback) priceFilterFeedback.textContent = validRange ? "" : "El mínimo no puede superar al máximo."; 
+  if (priceFilterFeedback) priceFilterFeedback.textContent = validRange ? "" : "El mínimo no puede superar al máximo.";
+
+  /*
+   * Prioritize name/brand/model matches. This prevents terms found only in
+   * a spec (for example "Ultra HD" for a console) matching unrelated products
+   * when the customer searches for "Ultra". Search specs only if no primary
+   * product-identity match exists anywhere in the current catalogue.
+   */
+  const identityMatches = rawQuery
+    ? new Set(products.filter(product => searchTokensMatch(productIdentityText(product), query)))
+    : null;
+  const useIdentityMatches = Boolean(identityMatches?.size);
+
   return products.filter(product => {
     if (!validRange) return false;
     const productCategory = String(product.category || "");
@@ -728,8 +761,10 @@ function visibleProducts() {
       ...variants.flatMap(variant => [variant.storage, variant.ram, variant.color]),
       ...specsArray(product.specifications)
     ];
-    const haystack = searchableFields.join(" ").toLocaleLowerCase("es");
-    const queryMatches = !query || haystack.includes(query);
+    const haystack = normalizeCatalogSearch(searchableFields.filter(Boolean).join(" "));
+    const queryMatches = !query || (useIdentityMatches
+      ? identityMatches.has(product)
+      : searchTokensMatch(haystack, query));
     const brandMatches = !selectedBrand || String(product.brand || "").trim().toLocaleLowerCase("es") === selectedBrand.toLocaleLowerCase("es");
     let priceMatches = true;
     if (minPrice !== null || maxPrice !== null) {
@@ -1415,7 +1450,33 @@ categoryFilters.addEventListener("click", event => {
   renderProducts();
 });
 
+function applyCatalogSearch() {
+  renderProducts();
+  closeBrandFilterMenu();
+  searchInput?.blur();
+
+  const target = resultsHeading || grid;
+  if (!target) return;
+  const scrollToTarget = () => {
+    const stickyHeader = document.querySelector(".site-header");
+    const headerOffset = (stickyHeader?.getBoundingClientRect().height || 0) + 12;
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - headerOffset);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    window.scrollTo({ top, behavior: reducedMotion ? "auto" : "smooth" });
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => requestAnimationFrame(scrollToTarget));
+  } else {
+    scrollToTarget();
+  }
+}
+
 searchInput?.addEventListener("input", renderProducts);
+searchInput?.addEventListener("keydown", event => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  applyCatalogSearch();
+});
 brandFilterToggle?.addEventListener("click", () => {
   const opening = Boolean(brandFilterMenu?.hidden);
   if (brandFilterMenu) brandFilterMenu.hidden = !opening;
