@@ -696,7 +696,7 @@ function visibleProducts() {
     ];
     const haystack = searchableFields.join(" ").toLocaleLowerCase("es");
     const queryMatches = !query || haystack.includes(query);
-    const brandMatches = !brandQuery || String(product.brand || "").toLocaleLowerCase("es").includes(brandQuery);
+    const brandMatches = !brandQuery || String(product.brand || "").toLocaleLowerCase("es").startsWith(brandQuery);
     let priceMatches = true;
     if (minPrice !== null || maxPrice !== null) {
       const rawPrice = startingPrice(product, "price_usd");
