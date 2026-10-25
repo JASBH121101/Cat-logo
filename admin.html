@@ -14,9 +14,10 @@
   <link rel="stylesheet" href="styles.css?v=20261024-workflow-perfume-type4">
   <link rel="stylesheet" href="theme-ui.css?v=20261024-light-preview-contrast1">
   <link rel="stylesheet" href="admin-workflow.css?v=20261025-publication-safety2">
+  <link rel="stylesheet" href="admin-bulk-import.css?v=20261025-bulk-import1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261025-publication-safety2"></script>
+  <script type="module" src="admin.js?v=20261025-bulk-import1"></script>
   <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
 </head>
 
@@ -285,6 +286,127 @@
                     class="text-button"
                     type="button">+ Nuevo</button>
           </div>
+
+          <section id="product-entry-mode-switch" class="product-entry-mode-switch" aria-label="Método para subir productos">
+            <div class="product-entry-mode-heading">
+              <p class="eyebrow">SUBIR PRODUCTO</p>
+              <p>Elegí cómo querés preparar la ficha.</p>
+            </div>
+            <div class="product-entry-mode-options" role="group" aria-label="Método de carga">
+              <button type="button" class="product-entry-mode-button" data-product-entry-mode="quick" aria-pressed="false">
+                <span aria-hidden="true">✦</span>
+                <span><strong>Importación rápida</strong><small>Variantes y muchas fotos juntas</small></span>
+              </button>
+              <button type="button" class="product-entry-mode-button is-active" data-product-entry-mode="written" aria-pressed="true">
+                <span aria-hidden="true">✎</span>
+                <span><strong>Rápido, escrito</strong><small>Formulario actual</small></span>
+              </button>
+            </div>
+          </section>
+
+          <section id="quick-import-panel" class="quick-import-panel hidden" aria-labelledby="quick-import-title">
+            <div class="quick-import-intro">
+              <p class="eyebrow">IMPORTADOR PARA CELULARES</p>
+              <h3 id="quick-import-title">Prepará todo en una sola pasada</h3>
+              <p>Copiá las características de GoPartner, pegá las configuraciones y seleccioná muchas fotos desde la galería. No se publica nada desde este asistente.</p>
+            </div>
+
+            <div class="quick-import-section">
+              <div class="quick-import-section-heading">
+                <span class="quick-import-step">1</span>
+                <div><h4>Datos del producto</h4><p>Se copiarán al formulario habitual para que puedas revisarlos.</p></div>
+              </div>
+              <div class="quick-import-fields">
+                <label class="quick-import-full">Nombre del producto <span class="required-mark" aria-hidden="true">*</span>
+                  <input id="quick-import-name" type="text" maxlength="160" placeholder="Ej. Infinix Hot 60 Pro" autocomplete="off">
+                </label>
+                <label>Marca
+                  <input id="quick-import-brand" type="text" maxlength="80" placeholder="Infinix" autocomplete="off">
+                </label>
+                <label>Modelo
+                  <input id="quick-import-model" type="text" maxlength="100" placeholder="Hot 60 Pro" autocomplete="off">
+                </label>
+                <label>Categoría
+                  <select id="quick-import-category">
+                    <option value="Celulares">Celulares</option>
+                    <option value="Laptops">Laptops</option>
+                    <option value="Tablets">Tablets</option>
+                    <option value="Gaming">Gaming</option>
+                    <option value="Televisores">Televisores</option>
+                    <option value="Audio">Audio</option>
+                    <option value="Accesorios">Accesorios</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </label>
+                <label>Disponibilidad general
+                  <select id="quick-import-availability">
+                    <option value="on_order" selected>Por pedido / por confirmar</option>
+                    <option value="available">Disponible</option>
+                    <option value="out_of_stock">Agotado temporalmente</option>
+                  </select>
+                </label>
+                <label class="quick-import-full">Características de GoPartner
+                  <textarea id="quick-import-characteristics" rows="4" maxlength="5000" placeholder="Pegá aquí las características tal como aparecen en GoPartner."></textarea>
+                </label>
+              </div>
+            </div>
+
+            <div class="quick-import-section">
+              <div class="quick-import-section-heading">
+                <span class="quick-import-step">2</span>
+                <div><h4>Configuraciones y colores</h4><p>Una línea por configuración de RAM y almacenamiento.</p></div>
+              </div>
+              <div class="quick-import-format">
+                <strong>Formato de cada línea</strong>
+                <code>RAM GB | Almacenamiento | Precio USD | Precio C$ | Color:estado, Color:estado</code>
+                <p>Ejemplo:</p>
+                <code>8 | 256 | 215 | 7955 | Jungle Breath:disponible, Sleek Black:pedido, Titanium Grey:confirmar</code>
+                <p>Si el precio no se conoce, usá <code>-</code>. Estados admitidos: <code>disponible</code>, <code>pedido</code> y <code>agotado</code>. Si omitís el estado, queda como por pedido para no asumir stock.</p>
+              </div>
+              <label class="quick-import-full">Configuraciones del producto
+                <textarea id="quick-import-variants" rows="5" maxlength="12000" spellcheck="false" placeholder="8 | 256 | 215 | 7955 | Jungle Breath:disponible, Sleek Black:pedido&#10;12 | 256 | - | - | Jungle Breath:confirmar, Sleek Black:pedido"></textarea>
+              </label>
+              <div class="quick-import-inline-actions">
+                <button type="button" id="quick-import-parse-variants" class="button button-outline">Preparar variantes</button>
+                <p id="quick-import-variant-summary" class="quick-import-muted" aria-live="polite">Todavía no se han preparado las variantes.</p>
+              </div>
+            </div>
+
+            <div class="quick-import-section">
+              <div class="quick-import-section-heading">
+                <span class="quick-import-step">3</span>
+                <div><h4>Fotografías por lote</h4><p>Podés seleccionar decenas de imágenes desde la galería del celular.</p></div>
+              </div>
+              <div class="quick-import-photo-picker">
+                <label class="quick-import-select-photos" for="quick-import-photos">
+                  <span class="quick-import-select-icon" aria-hidden="true">＋</span>
+                  <strong>Seleccionar fotografías</strong>
+                  <small>JPG, PNG, WebP o AVIF · hasta 60 por lote</small>
+                </label>
+                <input id="quick-import-photos" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple>
+                <p id="quick-import-photo-summary" class="quick-import-muted" aria-live="polite">Ninguna fotografía seleccionada.</p>
+              </div>
+              <div class="quick-import-bulk-assign">
+                <label for="quick-import-bulk-target">Asignar las fotos seleccionadas a</label>
+                <select id="quick-import-bulk-target">
+                  <option value="">Prepará primero las variantes</option>
+                </select>
+                <button type="button" id="quick-import-assign-selected" class="button button-outline" disabled>Asignar seleccionadas</button>
+              </div>
+              <p class="quick-import-help">Si el nombre del archivo incluye el nombre completo de un color, intentaremos sugerir la variante correspondiente. Revisá cada sugerencia: no damos por correcto el color solamente por el nombre del archivo.</p>
+              <div id="quick-import-photo-grid" class="quick-import-photo-grid" aria-live="polite"></div>
+            </div>
+
+            <div class="quick-import-review-note">
+              <span aria-hidden="true">ⓘ</span>
+              <p>La importación solo prepara el formulario. El guardado, la validación de fotos y la publicación siguen usando el flujo seguro actual. Las variantes sin fotos deberán completarse antes de publicar.</p>
+            </div>
+            <p id="quick-import-status" class="quick-import-status" role="status" aria-live="polite"></p>
+            <div class="quick-import-footer">
+              <button type="button" id="quick-import-apply" class="button button-primary">Preparar producto en el editor</button>
+              <button type="button" id="quick-import-cancel" class="button button-outline">Volver a Rápido, escrito</button>
+            </div>
+          </section>
 
           <form id="product-form" class="admin-form" novalidate>
             <input id="product-id" type="hidden">

@@ -4097,6 +4097,479 @@ function uploadPhotoFailureTargets() {
 }
 
 /* =========================================================
+   IMPORTACIÓN RÁPIDA DE CELULARES
+   Solo prepara el formulario existente. Usa su subida, guardado,
+   recuperación local y validación de publicación; no tiene un
+   camino alternativo para escribir productos en la base de datos.
+   ========================================================= */
+const quickImportPanel = $("#quick-import-panel");
+const quickImportModeButtons = Array.from(document.querySelectorAll("[data-product-entry-mode]"));
+const quickImportPhotosInput = $("#quick-import-photos");
+const quickImportPhotosGrid = $("#quick-import-photo-grid");
+const quickImportPhotoSummary = $("#quick-import-photo-summary");
+const quickImportBulkTarget = $("#quick-import-bulk-target");
+const quickImportAssignButton = $("#quick-import-assign-selected");
+const quickImportVariantText = $("#quick-import-variants");
+let quickImportMode = "written";
+let quickImportPhotos = [];
+let quickImportVariantPlan = [];
+let quickImportParsedText = "";
+const QUICK_IMPORT_MAX_PHOTOS = 60;
+const QUICK_IMPORT_MAX_FILE_BYTES = 30 * 1024 * 1024;
+const QUICK_IMPORT_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+
+function setQuickImportStatus(text, state = "") {
+  const node = $("#quick-import-status");
+  if (!node) return;
+  node.textContent = text || "";
+  node.dataset.state = state;
+}
+
+function normalizeQuickImportText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function syncQuickImportCategoryOptions() {
+  const source = $("#product-category");
+  const target = $("#quick-import-category");
+  if (!source || !target) return;
+  const previous = target.value;
+  target.replaceChildren(...Array.from(source.options).map(option => option.cloneNode(true)));
+  if (Array.from(target.options).some(option => option.value === previous)) {
+    target.value = previous;
+  } else if (Array.from(target.options).some(option => option.value === source.value && source.value)) {
+    target.value = source.value;
+  } else if (Array.from(target.options).some(option => option.value === "Celulares")) {
+    target.value = "Celulares";
+  }
+}
+
+function setProductEntryMode(mode) {
+  const requested = mode === "quick" ? "quick" : "written";
+  if (requested === "quick" && activeCatalogType !== "technology") {
+    setQuickImportStatus("La importación rápida está preparada para el catálogo JB TECH. Para perfumería, usá el formulario actual.", "error");
+    requested = "written";
+  }
+  if (requested === "quick" && editorRecordExists && $("#product-id")?.value.trim()) {
+    setQuickImportStatus("Hay un producto guardado abierto para editar. Cerrá o terminá esa edición antes de iniciar una importación nueva.", "error");
+    return;
+  }
+  if (requested === "quick" && quickImportMode !== "quick" && hasUnsavedEditorChanges()) {
+    const discard = window.confirm("El formulario actual tiene cambios sin guardar. ¿Querés descartarlos y abrir la importación rápida?");
+    if (!discard) return;
+    clearEditor();
+  }
+  quickImportMode = requested;
+  form?.classList.toggle("hidden", requested === "quick");
+  quickImportPanel?.classList.toggle("hidden", requested !== "quick");
+  quickImportModeButtons.forEach(button => {
+    const selected = button.dataset.productEntryMode === requested;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  if (requested === "quick") {
+    syncQuickImportCategoryOptions();
+    $("#quick-import-name")?.focus({ preventScroll: true });
+  }
+}
+
+function quickImportMoney(value, label, lineNumber) {
+  const raw = String(value || "").trim();
+  if (!raw || /^[-—–n\/a]+$/i.test(raw)) return null;
+  const cleaned = raw
+    .replace(/US\$|USD|C\$|NIO|\$/gi, "")
+    .replace(/\s+/g, "")
+    .replace(/,/g, "");
+  const number = Number(cleaned);
+  if (!Number.isFinite(number) || number < 0) {
+    throw new Error("El " + label + " de la línea " + lineNumber + " no es válido. Usá un número o «-».");
+  }
+  return number;
+}
+
+function quickImportAvailability(value) {
+  const status = normalizeQuickImportText(value);
+  if (/agotado|sin stock|no disponible|out of stock/.test(status)) return "out_of_stock";
+  if (/disponible|en stock|available/.test(status)) return "available";
+  return "order";
+}
+
+function parseQuickImportVariants() {
+  const raw = String(quickImportVariantText?.value || "");
+  const lines = raw.split(/\r?\n/).map((line, index) => ({ text: line.trim(), number: index + 1 }))
+    .filter(entry => entry.text && !entry.text.startsWith("#"));
+  if (!lines.length) throw new Error("Pegá al menos una configuración en el formato indicado.");
+  const plan = [];
+  const seenConfigurations = new Set();
+  const totalColors = new Set();
+
+  lines.forEach(entry => {
+    const parts = entry.text.split("|").map(part => part.trim());
+    if (parts.length !== 5) {
+      throw new Error("La línea " + entry.number + " debe tener 5 campos separados por |: RAM, almacenamiento, precio USD, precio C$ y colores.");
+    }
+    const ramMatch = parts[0].match(/^([0-9]+(?:[.,][0-9]+)?)\s*(?:GB)?$/i);
+    if (!ramMatch || Number(ramMatch[1].replace(",", ".")) <= 0) {
+      throw new Error("La RAM de la línea " + entry.number + " debe ser un número de GB, por ejemplo 8.");
+    }
+    const storage = parseStorageValue(parts[1]);
+    if (!storage.amount || !Number.isFinite(Number(storage.amount)) || Number(storage.amount) <= 0) {
+      throw new Error("El almacenamiento de la línea " + entry.number + " debe ser un número con GB o TB, por ejemplo 256 o 1 TB.");
+    }
+    const priceUsd = quickImportMoney(parts[2], "precio USD", entry.number);
+    const priceNio = quickImportMoney(parts[3], "precio C$", entry.number);
+    const configKey = normalizeQuickImportText(storage.amount + " " + storage.unit + " " + ramMatch[1]);
+    if (seenConfigurations.has(configKey)) {
+      throw new Error("La configuración de RAM y almacenamiento está repetida en la línea " + entry.number + ".");
+    }
+    seenConfigurations.add(configKey);
+    const tokens = parts[4].split(",").map(token => token.trim()).filter(Boolean);
+    if (!tokens.length) throw new Error("Agregá al menos un color a la línea " + entry.number + ".");
+    const seenColors = new Set();
+    const colors = tokens.map(token => {
+      const colon = token.lastIndexOf(":");
+      const name = (colon >= 0 ? token.slice(0, colon) : token).trim();
+      const statusText = colon >= 0 ? token.slice(colon + 1).trim() : "";
+      if (!name) throw new Error("Hay un color sin nombre en la línea " + entry.number + ".");
+      const key = normalizeQuickImportText(name);
+      if (seenColors.has(key)) throw new Error("El color «" + name + "» está repetido en la misma configuración.");
+      seenColors.add(key);
+      totalColors.add(configKey + "|" + key);
+      return {
+        name: name,
+        availability: quickImportAvailability(statusText),
+        statusLabel: quickImportAvailability(statusText) === "available" ? "Disponible"
+          : quickImportAvailability(statusText) === "out_of_stock" ? "Agotado"
+          : "Por pedido / confirmar"
+      };
+    });
+    plan.push({
+      ram: String(Number(ramMatch[1].replace(",", "."))),
+      storage: String(storage.amount) + " " + storage.unit,
+      price_usd: priceUsd,
+      price_nio: priceNio,
+      colors: colors
+    });
+  });
+
+  quickImportVariantPlan = plan;
+  quickImportParsedText = raw;
+  quickImportPhotos.forEach(item => {
+    const inferred = inferQuickImportPhotoTarget(item.file);
+    item.target = inferred || (item.target === "general" ? "general" : "");
+  });
+  const colorCount = plan.reduce((sum, group) => sum + group.colors.length, 0);
+  const summary = plan.length + " configuración(es) · " + colorCount + " combinación(es) de color.";
+  const summaryNode = $("#quick-import-variant-summary");
+  if (summaryNode) summaryNode.textContent = summary + " Los colores sin estado explícito quedan «Por pedido / confirmar».";
+  renderQuickImportPhotoUI();
+  setQuickImportStatus("Variantes preparadas. Revisá los colores y la disponibilidad antes de continuar.", "success");
+  return { plan: plan, colorCount: colorCount };
+}
+
+function flattenQuickImportVariants(plan = quickImportVariantPlan) {
+  return plan.flatMap(group => group.colors.map(color => ({
+    storage: group.storage,
+    ram: group.ram + " GB",
+    price_usd: group.price_usd,
+    price_nio: group.price_nio,
+    color: color.name,
+    color_hex: "#242424",
+    availability: color.availability,
+    images: [],
+    image_url: ""
+  })));
+}
+
+function quickImportTargets() {
+  const flat = flattenQuickImportVariants();
+  return flat.map((variant, index) => ({
+    value: "variant:" + index,
+    label: variant.ram + " · " + variant.storage + " · " + variant.color + " — " + (
+      variant.availability === "available" ? "Disponible" :
+      variant.availability === "out_of_stock" ? "Agotado" : "Por pedido / confirmar"
+    )
+  }));
+}
+
+function inferQuickImportPhotoTarget(file) {
+  if (!file || !quickImportVariantPlan.length) return "";
+  const filename = normalizeQuickImportText(String(file.name || "").replace(/\.[^.]+$/, ""));
+  if (!filename) return "";
+  const candidates = [];
+  let index = 0;
+  quickImportVariantPlan.forEach(group => {
+    group.colors.forEach(color => {
+      const words = normalizeQuickImportText(color.name).split(/\s+/).filter(word => word.length > 2);
+      if (words.length && words.every(word => filename.includes(word))) candidates.push(index);
+      index += 1;
+    });
+  });
+  return candidates.length === 1 ? "variant:" + candidates[0] : "";
+}
+
+function appendQuickImportTargets(select, selectedValue = "") {
+  select.replaceChildren();
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "Sin asignar — elegí un destino";
+  select.append(empty);
+  const general = document.createElement("option");
+  general.value = "general";
+  general.textContent = "Fotos generales del producto";
+  select.append(general);
+  quickImportTargets().forEach(target => {
+    const option = document.createElement("option");
+    option.value = target.value;
+    option.textContent = target.label;
+    select.append(option);
+  });
+  select.value = Array.from(select.options).some(option => option.value === selectedValue) ? selectedValue : "";
+}
+
+function renderQuickImportPhotoUI() {
+  if (!quickImportPhotosGrid || !quickImportPhotoSummary || !quickImportBulkTarget) return;
+  quickImportPhotosGrid.replaceChildren();
+  quickImportPhotoSummary.textContent = quickImportPhotos.length
+    ? quickImportPhotos.length + " fotografía(s) seleccionada(s). Asigná cada imagen al color correcto."
+    : "Ninguna fotografía seleccionada.";
+  appendQuickImportTargets(quickImportBulkTarget, quickImportBulkTarget.value);
+  quickImportBulkTarget.disabled = !quickImportVariantPlan.length;
+  quickImportAssignButton.disabled = !quickImportVariantPlan.length || !quickImportPhotos.length;
+
+  quickImportPhotos.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "quick-import-photo-card";
+    card.dataset.quickPhotoId = item.id;
+    const top = document.createElement("div");
+    top.className = "quick-import-photo-top";
+    const checkboxLabel = document.createElement("label");
+    checkboxLabel.className = "quick-import-photo-check";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.quickPhotoSelect = "";
+    checkbox.setAttribute("aria-label", "Seleccionar " + item.file.name);
+    checkboxLabel.append(checkbox, document.createTextNode("Seleccionar"));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "quick-import-photo-remove";
+    remove.dataset.quickPhotoRemove = "";
+    remove.setAttribute("aria-label", "Quitar " + item.file.name);
+    remove.textContent = "×";
+    top.append(checkboxLabel, remove);
+    const img = document.createElement("img");
+    img.src = item.previewUrl;
+    img.alt = "Vista previa de " + item.file.name;
+    img.loading = "lazy";
+    const caption = document.createElement("p");
+    caption.className = "quick-import-photo-name";
+    caption.textContent = item.file.name;
+    caption.title = item.file.name;
+    const targetLabel = document.createElement("label");
+    targetLabel.className = "quick-import-photo-target";
+    targetLabel.append(document.createTextNode("Asignar a"));
+    const target = document.createElement("select");
+    target.dataset.quickPhotoTarget = "";
+    target.setAttribute("aria-label", "Asignar " + item.file.name + " a un color o a fotos generales");
+    appendQuickImportTargets(target, item.target);
+    targetLabel.append(target);
+    card.append(top, img, caption, targetLabel);
+    quickImportPhotosGrid.append(card);
+  });
+}
+
+function clearQuickImportPhotos() {
+  quickImportPhotos.forEach(item => {
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  });
+  quickImportPhotos = [];
+  if (quickImportPhotosInput) quickImportPhotosInput.value = "";
+  renderQuickImportPhotoUI();
+}
+
+quickImportPhotosInput?.addEventListener("change", () => {
+  const selected = Array.from(quickImportPhotosInput.files || []);
+  quickImportPhotosInput.value = "";
+  if (!selected.length) return;
+  const remaining = QUICK_IMPORT_MAX_PHOTOS - quickImportPhotos.length;
+  if (remaining <= 0) {
+    setQuickImportStatus("Ya seleccionaste el máximo de " + QUICK_IMPORT_MAX_PHOTOS + " fotografías para esta importación.", "error");
+    return;
+  }
+  const accepted = [];
+  const rejected = [];
+  selected.slice(0, remaining).forEach(file => {
+    if (!QUICK_IMPORT_IMAGE_TYPES.includes(String(file.type || "").toLowerCase())) {
+      rejected.push(file.name + " (formato no compatible)");
+    } else if (file.size > QUICK_IMPORT_MAX_FILE_BYTES) {
+      rejected.push(file.name + " (supera 30 MB)");
+    } else {
+      const item = { id: imageId(), file: file, previewUrl: URL.createObjectURL(file), target: "" };
+      item.target = inferQuickImportPhotoTarget(file);
+      accepted.push(item);
+    }
+  });
+  if (selected.length > remaining) rejected.push((selected.length - remaining) + " archivo(s) extra: se alcanzó el máximo de " + QUICK_IMPORT_MAX_PHOTOS + ".");
+  quickImportPhotos.push(...accepted);
+  renderQuickImportPhotoUI();
+  if (rejected.length) setQuickImportStatus("Algunos archivos no se agregaron: " + rejected.slice(0, 4).join(" · "), "error");
+  else setQuickImportStatus(accepted.length + " fotografía(s) añadida(s). No se subirán hasta aplicar la importación al editor.", "success");
+});
+
+quickImportVariantText?.addEventListener("input", () => {
+  if (quickImportParsedText === quickImportVariantText.value) return;
+  quickImportParsedText = "";
+  quickImportVariantPlan = [];
+  quickImportPhotos.forEach(item => { if (String(item.target || "").startsWith("variant:")) item.target = ""; });
+  const summary = $("#quick-import-variant-summary");
+  if (summary) summary.textContent = "Cambiaste las configuraciones. Pulsá «Preparar variantes» para actualizar los destinos de las fotografías.";
+  renderQuickImportPhotoUI();
+});
+
+$("#quick-import-parse-variants")?.addEventListener("click", () => {
+  try {
+    parseQuickImportVariants();
+  } catch (error) {
+    setQuickImportStatus(error?.message || "No se pudieron preparar las variantes.", "error");
+  }
+});
+
+quickImportBulkTarget?.addEventListener("change", () => {
+  if (quickImportAssignButton) quickImportAssignButton.disabled = !quickImportBulkTarget.value || !quickImportPhotos.length;
+});
+
+quickImportPhotosGrid?.addEventListener("change", event => {
+  const select = event.target.closest("[data-quick-photo-target]");
+  if (!select) return;
+  const card = select.closest("[data-quick-photo-id]");
+  const item = quickImportPhotos.find(photo => photo.id === card?.dataset.quickPhotoId);
+  if (item) item.target = select.value;
+});
+
+quickImportAssignButton?.addEventListener("click", () => {
+  const target = quickImportBulkTarget?.value || "";
+  const selectedIds = new Set(Array.from(quickImportPhotosGrid?.querySelectorAll("[data-quick-photo-select]:checked") || [])
+    .map(checkbox => checkbox.closest("[data-quick-photo-id]")?.dataset.quickPhotoId).filter(Boolean));
+  if (!target || !selectedIds.size) {
+    setQuickImportStatus("Elegí un destino y seleccioná al menos una fotografía.", "error");
+    return;
+  }
+  quickImportPhotos.forEach(item => { if (selectedIds.has(item.id)) item.target = target; });
+  renderQuickImportPhotoUI();
+  setQuickImportStatus(selectedIds.size + " fotografía(s) asignada(s). Revisá las miniaturas antes de continuar.", "success");
+});
+
+quickImportPhotosGrid?.addEventListener("click", event => {
+  const remove = event.target.closest("[data-quick-photo-remove]");
+  if (!remove) return;
+  const card = remove.closest("[data-quick-photo-id]");
+  const index = quickImportPhotos.findIndex(item => item.id === card?.dataset.quickPhotoId);
+  if (index < 0) return;
+  URL.revokeObjectURL(quickImportPhotos[index].previewUrl);
+  quickImportPhotos.splice(index, 1);
+  renderQuickImportPhotoUI();
+});
+
+quickImportModeButtons.forEach(button => {
+  button.addEventListener("click", () => setProductEntryMode(button.dataset.productEntryMode));
+});
+$("#quick-import-cancel")?.addEventListener("click", () => setProductEntryMode("written"));
+
+$("#quick-import-apply")?.addEventListener("click", () => {
+  try {
+    if (activeCatalogType !== "technology") throw new Error("Seleccioná el catálogo JB TECH antes de importar celulares.");
+    if (editorRecordExists && $("#product-id")?.value.trim()) throw new Error("Hay una ficha existente abierta. Cerrá esa edición antes de crear una nueva.");
+    if (!String($("#quick-import-name")?.value || "").trim()) throw new Error("Escribí el nombre del producto.");
+    if (quickImportParsedText !== String(quickImportVariantText?.value || "") || !quickImportVariantPlan.length) {
+      throw new Error("Primero pulsá «Preparar variantes» y corregí cualquier error de formato.");
+    }
+    const unassigned = quickImportPhotos.filter(item => !item.target);
+    if (unassigned.length) {
+      throw new Error("Hay " + unassigned.length + " fotografía(s) sin asignar. Asignalas a un color o a fotos generales, o quitá las que no querés importar.");
+    }
+    const category = $("#quick-import-category")?.value || "Celulares";
+    const availability = $("#quick-import-availability")?.value || "on_order";
+    const variants = flattenQuickImportVariants();
+    const importedPhotos = quickImportPhotos.slice();
+
+    clearEditor();
+    $("#product-name").value = String($("#quick-import-name").value || "").trim();
+    $("#product-brand").value = String($("#quick-import-brand").value || "").trim();
+    $("#product-model").value = String($("#quick-import-model").value || "").trim();
+    $("#product-category").value = category;
+    $("#product-availability").value = availability;
+    $("#product-specs").value = String($("#quick-import-characteristics").value || "").trim();
+    resizeSpecsTextarea();
+    renderVariantRows(variants);
+
+    const variantRows = Array.from(form.querySelectorAll("[data-variant-row]"));
+    if (variantRows.length !== variants.length) {
+      throw new Error("No se pudieron reconstruir todas las variantes en el editor. No guardamos ningún producto; revisá el formato e intentá de nuevo.");
+    }
+
+    disposeImageItems(mainImageItems);
+    mainImageItems = [];
+    mainImageSyncPending = false;
+    variantImageSyncPending = false;
+    const photosToUpload = [];
+    importedPhotos.forEach(photo => {
+      const fileItem = {
+        id: imageId(),
+        kind: "new",
+        file: photo.file,
+        name: photo.file.name,
+        uploadState: "",
+        previewUrl: photo.previewUrl
+      };
+      if (photo.target === "general") {
+        mainImageItems.push(fileItem);
+        photosToUpload.push({ source: "main", item: fileItem });
+      } else {
+        const targetIndex = Number(String(photo.target).replace(/^variant:/, ""));
+        const row = variantRows[targetIndex];
+        if (!Number.isInteger(targetIndex) || targetIndex < 0 || !row) {
+          throw new Error("Una fotografía apunta a una variante que ya no existe. Volvé a preparar las variantes y asigná la imagen nuevamente.");
+        }
+        initVariantImageItems(row);
+        row._variantImageItems.push(fileItem);
+        photosToUpload.push({ source: "variant", row: row, item: fileItem });
+      }
+    });
+    quickImportPhotos = [];
+    if (quickImportPhotosInput) quickImportPhotosInput.value = "";
+    renderQuickImportPhotoUI();
+    renderMainImagePreviews();
+    variantRows.forEach(row => {
+      syncVariantImageFields(row);
+      renderVariantImagePreview(row);
+      updateVariantImageStatus(row);
+    });
+    setProductEntryMode("written");
+    photosToUpload.forEach(entry => { void queueBackgroundPhotoUpload(entry); });
+
+    updateEditorDirtyState();
+    scheduleLocalRecoverySave();
+    const withoutPhotos = variantRows.filter(row => !(row._variantImageItems || []).length).length;
+    let messageText = "Importación preparada: " + variants.length + " combinación(es) y " + importedPhotos.length + " fotografía(s). Revisá la ficha y usá los botones habituales para guardar.";
+    if (withoutPhotos) messageText += " Hay " + withoutPhotos + " combinación(es) sin foto; el flujo seguro impedirá publicarlas hasta corregirlo.";
+    message("#product-form-status", messageText, withoutPhotos ? "error" : "success");
+    setQuickImportStatus("Importación transferida al formulario habitual. Podés volver a esta opción para preparar otro producto.", "success");
+    $("#product-name")?.focus({ preventScroll: true });
+  } catch (error) {
+    setQuickImportStatus(error?.message || "No se pudo preparar la importación.", "error");
+  }
+});
+
+$("#active-catalog-selector")?.addEventListener("change", event => {
+  if (event.target.value === "perfumery" && quickImportMode === "quick") setProductEntryMode("written");
+});
+
+/* =========================================================
    GUARDAR PRODUCTOS
    ========================================================= */
 
