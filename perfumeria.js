@@ -7,6 +7,8 @@ const grid = $("#product-grid");
 const statusNode = $("#catalog-status");
 const emptyNode = $("#empty-results");
 const searchInput = $("#perfume-search-input");
+const brandSearchInput = $("#perfume-brand-search-input");
+const perfumeSortSelect = $("#perfume-sort-select");
 const categoryFilters = $("#category-filters");
 const audienceFilters = $("#audience-filters");
 const productTypeFilters = $("#product-type-filters");
@@ -127,6 +129,8 @@ function priceBound(input) {
 function hasActiveFilters() {
   return Boolean(
     (searchInput?.value || "").trim() ||
+    (brandSearchInput?.value || "").trim() ||
+    (perfumeSortSelect?.value || "recent") !== "recent" ||
     selectedFamilies.size > 0 ||
     selectedAudiences.size > 0 ||
     selectedProductTypes.size > 0 ||
@@ -230,6 +234,7 @@ function renderCard(product) {
 
 function visibleProducts() {
   const query = normalizeText(searchInput?.value);
+  const brandQuery = normalizeText(brandSearchInput?.value);
   const min = priceBound(minPriceInput);
   const max = priceBound(maxPriceInput);
   const validRange = min === null || max === null || min <= max;
@@ -238,6 +243,7 @@ function visibleProducts() {
 
   return perfumes.filter(product => {
     if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
+    if (brandQuery && !normalizeText(product.brand).includes(brandQuery)) return false;
     const detail = product.perfume_details || {};
     const searchable = [
       product.name, product.brand, product.model, product.description, product.product_type,
@@ -253,6 +259,17 @@ function visibleProducts() {
       if (!Number.isFinite(price) || (min !== null && price < min) || (max !== null && price > max)) return false;
     }
     return true;
+  }).sort((a, b) => {
+    const sort = perfumeSortSelect?.value || "recent";
+    if (sort === "price-asc" || sort === "price-desc") {
+      const priceA = Number(a.price_usd);
+      const priceB = Number(b.price_usd);
+      const validA = Number.isFinite(priceA) ? priceA : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+      const validB = Number.isFinite(priceB) ? priceB : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+      return sort === "price-asc" ? validA - validB : validB - validA;
+    }
+    if (sort === "name-asc") return String(a.name || "").localeCompare(String(b.name || ""), "es", { sensitivity: "base" });
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
 }
 
@@ -432,6 +449,8 @@ bindMultiSelect(categoryFilters, "category", selectedFamilies);
 bindMultiSelect(audienceFilters, "audience", selectedAudiences);
 bindMultiSelect(productTypeFilters, "productType", selectedProductTypes);
 searchInput.addEventListener("input", renderProducts);
+brandSearchInput?.addEventListener("input", renderProducts);
+perfumeSortSelect?.addEventListener("change", renderProducts);
 minPriceInput.addEventListener("input", renderProducts);
 maxPriceInput.addEventListener("input", renderProducts);
 clearPriceButton.addEventListener("click", () => {
@@ -444,6 +463,8 @@ clearAllFiltersButton?.addEventListener("click", () => {
   selectedAudiences.clear();
   selectedProductTypes.clear();
   searchInput.value = "";
+  if (brandSearchInput) brandSearchInput.value = "";
+  if (perfumeSortSelect) perfumeSortSelect.value = "recent";
   minPriceInput.value = "";
   maxPriceInput.value = "";
   renderProducts();
