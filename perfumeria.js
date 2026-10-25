@@ -798,9 +798,9 @@ initializePerfumes();
   if (!carousel || !stage || !imageA || !imageB || !previousButton || !nextButton || !countNode || !titleNode || !dotsNode) return;
 
   const slides = [
-    { src: "../img/perfume-carousel/supremacy-pour-femme.svg?v=20261025-carousel1", title: "Afnan Supremacy Pour Femme", alt: "Fragancia Afnan Supremacy Pour Femme en presentación de frasco y caja" },
+    { src: "../img/perfume-carousel/supremacy-pour-femme.svg?v=20261025-carousel1", title: "Afnan Supremacy Pour Femme", alt: "Fragancia Afnan Supremacy Pour Femme en presentación de frasco y caja", maxWidth: 280 },
     { src: "../img/perfume-carousel/creed-wind-flowers.svg?v=20261025-carousel1", title: "Creed Wind Flowers", alt: "Fragancia Creed Wind Flowers en frasco rosa con su caja" },
-    { src: "../img/perfume-carousel/carolina-herrera-la-bomba.svg?v=20261025-carousel1", title: "Carolina Herrera La Bomba", alt: "Fragancia Carolina Herrera La Bomba con frasco en forma de mariposa y caja rosa" },
+    { src: "../img/perfume-carousel/carolina-herrera-la-bomba.svg?v=20261025-carousel1", title: "Carolina Herrera La Bomba", alt: "Fragancia Carolina Herrera La Bomba con frasco en forma de mariposa y caja rosa", maxWidth: 270 },
     { src: "../img/perfume-carousel/afnan-9pm.svg?v=20261025-carousel1", title: "Afnan 9 PM", alt: "Perfume Afnan 9 PM junto a su caja negra" },
     { src: "../img/perfume-carousel/afnan-9am-dive.svg?v=20261025-carousel1", title: "Afnan 9 AM Dive", alt: "Perfume Afnan 9 AM Dive en tonos turquesa" },
     { src: "../img/perfume-carousel/lattafa-qaed-al-fursan.svg?v=20261025-carousel1", title: "Lattafa Qaed Al Fursan", alt: "Perfume Lattafa Qaed Al Fursan con caja negra y detalles dorados" },
@@ -808,7 +808,7 @@ initializePerfumes();
     { src: "../img/perfume-carousel/creed-absolu-aventus.svg?v=20261025-carousel1", title: "Creed Absolu Aventus", alt: "Frasco oscuro Creed Absolu Aventus" },
     { src: "../img/perfume-carousel/dior-sauvage.svg?v=20261025-carousel1", title: "Dior Sauvage", alt: "Perfume Dior Sauvage acompañado por su caja" },
     { src: "../img/perfume-carousel/afnan-odyssey-mandarin-sky.svg?v=20261025-carousel1", title: "Afnan Odyssey Mandarin Sky", alt: "Perfume Afnan Odyssey Mandarin Sky con frasco azul y caja naranja" },
-    { src: "../img/perfume-carousel/valentino-born-in-roma-intense.svg?v=20261025-carousel1", title: "Valentino Born in Roma Intense Uomo", alt: "Perfume Valentino Born in Roma Intense Uomo en un ambiente oscuro" }
+    { src: "../img/perfume-carousel/valentino-born-in-roma-intense.svg?v=20261025-carousel1", title: "Valentino Born in Roma Intense Uomo", alt: "Perfume Valentino Born in Roma Intense Uomo en un ambiente oscuro", maxWidth: 240 }
   ];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const layers = [imageA, imageB];
@@ -901,6 +901,7 @@ initializePerfumes();
       incoming.onerror = null;
       incoming.src = target.src;
       incoming.alt = target.alt;
+      incoming.style.maxWidth = target.maxWidth ? target.maxWidth + "px" : "";
       incoming.removeAttribute("aria-hidden");
       try { if (incoming.decode) await incoming.decode(); } catch (_) {}
       incoming.classList.add("is-active");
@@ -972,6 +973,7 @@ initializePerfumes();
     }
   });
 
+  imageA.style.maxWidth = slides[0].maxWidth ? slides[0].maxWidth + "px" : "";
   renderCaption();
   scheduleNextPreload();
   scheduleAutoplay();
