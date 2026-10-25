@@ -4150,7 +4150,7 @@ function syncQuickImportCategoryOptions() {
 }
 
 function setProductEntryMode(mode) {
-  const requested = mode === "quick" ? "quick" : "written";
+  let requested = mode === "quick" ? "quick" : "written";
   if (requested === "quick" && activeCatalogType !== "technology") {
     setQuickImportStatus("La importación rápida está preparada para el catálogo JB TECH. Para perfumería, usá el formulario actual.", "error");
     requested = "written";
@@ -4259,9 +4259,14 @@ function parseQuickImportVariants() {
 
   quickImportVariantPlan = plan;
   quickImportParsedText = raw;
+  const targetCount = plan.reduce((sum, group) => sum + group.colors.length, 0);
   quickImportPhotos.forEach(item => {
-    const inferred = inferQuickImportPhotoTarget(item.file);
-    item.target = inferred || (item.target === "general" ? "general" : "");
+    const currentTarget = String(item.target || "");
+    const currentTargetIndex = currentTarget.startsWith("variant:") ? Number(currentTarget.slice(8)) : -1;
+    const existingTargetStillValid = currentTarget === "general" ||
+      (Number.isInteger(currentTargetIndex) && currentTargetIndex >= 0 && currentTargetIndex < targetCount);
+    if (existingTargetStillValid) return;
+    item.target = inferQuickImportPhotoTarget(item.file);
   });
   const colorCount = plan.reduce((sum, group) => sum + group.colors.length, 0);
   const summary = plan.length + " configuración(es) · " + colorCount + " combinación(es) de color.";
