@@ -101,3 +101,20 @@ html[data-theme='dark'] body.admin-body form#product-form .form-actions.workflow
 html[data-theme='dark'] body.admin-body .admin-product-buttons > button.admin-icon-button{background:#1b2948!important;color:#dbe6ff!important;border-color:#415178!important}
 
 html[data-theme='dark'] body.admin-body .admin-product-buttons > button.admin-icon-button.is-exclusive{background:#42351c!important;color:#ffe7a2!important;border-color:#9e7b26!important}
+
+/* Reintento independiente de fotografías pendientes en la galería principal. */
+html body.admin-body form#product-form .retry-main-image-uploads {
+  width:100%;
+  margin-top:12px;
+  justify-content:center;
+  gap:8px;
+  white-space:normal;
+}
+html body.admin-body form#product-form .retry-main-image-uploads[hidden] { display:none!important; }
+html body.admin-body form#product-form .retry-main-image-uploads:disabled { opacity:.58; cursor:not-allowed; transform:none; }
+html[data-theme='dark'] body.admin-body form#product-form .retry-main-image-uploads {
+  border-color:#456fce;
+  color:#e5f4ff;
+  background:linear-gradient(115deg,#183453,#24204a);
+  box-shadow:0 3px 0 #111b39,0 0 14px rgba(0,217,255,.08);
+}
