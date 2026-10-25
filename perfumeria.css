@@ -793,9 +793,9 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
 }
 
 
-/* JB PARFUMS: encuadre más limpio de las fotos del catálogo.
-   El ajuste reduce el margen interno y recorta solo una franja de los bordes
-   para que botellas y cajas ocupen mejor la tarjeta sin editar los originales. */
+/* JB PARFUMS: encuadre coherente para fotos de formatos variados.
+   Conserva la proporción de cada original; solo acerca las dos fotos señaladas
+   que tienen más margen blanco alrededor del producto. */
 .perfume-page .product-image img {
   display: block;
   width: 100%;
@@ -806,19 +806,28 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
   max-height: 100%;
   padding: 0;
   box-sizing: border-box;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
-  transform: scale(1.045);
+  transform: scale(1.02);
   transform-origin: center;
   transition: transform .3s ease;
 }
 .perfume-page .product-card:hover .product-image img {
-  transform: scale(1.075);
+  transform: scale(1.04);
+}
+.perfume-page .perfume-product-image.is-tight-photo-frame img {
+  transform: scale(1.105);
+}
+.perfume-page .perfume-product-card:hover .perfume-product-image.is-tight-photo-frame img {
+  transform: scale(1.13);
 }
 @media (max-width: 640px) {
   .perfume-page .product-image img {
     padding: 0;
-    transform: scale(1.035);
+    transform: scale(1.015);
+  }
+  .perfume-page .perfume-product-image.is-tight-photo-frame img {
+    transform: scale(1.095);
   }
 }
 @media (max-width: 390px) {
