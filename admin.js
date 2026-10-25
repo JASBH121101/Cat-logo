@@ -4161,6 +4161,22 @@ let quickImportParsedText = "";
 const QUICK_IMPORT_MAX_PHOTOS = 60;
 const QUICK_IMPORT_MAX_FILE_BYTES = 30 * 1024 * 1024;
 const QUICK_IMPORT_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+let quickImportColorHexByVariant = new Map();
+let quickImportWizardVersions = [];
+let quickImportVersionSequence = 0;
+let quickImportColorSequence = 0;
+let quickImportCurrentStep = 1;
+const quickImportVersionsList = $("#quick-import-versions-list");
+const QUICK_IMPORT_DEFAULT_PALETTE = [
+  { name: "Negro", hex: "#242424" }, { name: "Blanco", hex: "#F4F4F1" },
+  { name: "Gris", hex: "#808080" }, { name: "Plata", hex: "#C7C9CC" },
+  { name: "Azul", hex: "#3569D4" }, { name: "Verde", hex: "#5C806A" },
+  { name: "Morado", hex: "#7952D9" }, { name: "Dorado", hex: "#C8A65B" },
+  { name: "Rosa", hex: "#E8A6B7" }, { name: "Rojo", hex: "#C73E45" },
+  { name: "Titanio", hex: "#8D969D" }, { name: "Naranja", hex: "#D97936" },
+  { name: "Celeste", hex: "#79BDE8" }, { name: "Amarillo", hex: "#E4C84B" },
+  { name: "Café", hex: "#76513C" }, { name: "Turquesa", hex: "#37A89A" }
+];
 
 function setQuickImportStatus(text, state = "") {
   const node = $("#quick-import-status");
@@ -4323,17 +4339,20 @@ function parseQuickImportVariants() {
 }
 
 function flattenQuickImportVariants(plan = quickImportVariantPlan) {
-  return plan.flatMap(group => group.colors.map(color => ({
-    storage: group.storage,
-    ram: group.ram + " GB",
-    price_usd: group.price_usd,
-    price_nio: group.price_nio,
-    color: color.name,
-    color_hex: "#242424",
-    availability: color.availability,
-    images: [],
-    image_url: ""
-  })));
+  return plan.flatMap(group => group.colors.map(color => {
+    const colorKey = normalizeQuickImportText(group.storage + " " + group.ram) + "|" + normalizeQuickImportText(color.name);
+    return {
+      storage: group.storage,
+      ram: group.ram + " GB",
+      price_usd: group.price_usd,
+      price_nio: group.price_nio,
+      color: color.name,
+      color_hex: quickImportColorHexByVariant.get(colorKey) || "#242424",
+      availability: color.availability,
+      images: [],
+      image_url: ""
+    };
+  }));
 }
 
 function quickImportTargets() {
@@ -4441,6 +4460,278 @@ function clearQuickImportPhotos() {
   if (quickImportPhotosInput) quickImportPhotosInput.value = "";
   renderQuickImportPhotoUI();
 }
+
+
+/* =========================================================
+   ASISTENTE POR SECCIONES Y PALETA VISUAL
+   Genera el formato interno del importador existente para
+   conservar el mismo flujo de preparación, fotos y guardado.
+   ========================================================= */
+function quickImportPaletteItems() {
+  let stored = { items: [], recent: [] };
+  try { if (typeof readColorLibraryData === "function") stored = readColorLibraryData(); } catch {}
+  const seen = new Set();
+  return [...(stored.recent || []), ...(stored.items || []), ...QUICK_IMPORT_DEFAULT_PALETTE]
+    .map(item => ({ name: String(item.name || "").trim(), hex: validHex(item.hex, "") }))
+    .filter(item => item.name && item.hex && !seen.has(item.name.toLocaleLowerCase("es") + "|" + item.hex) && seen.add(item.name.toLocaleLowerCase("es") + "|" + item.hex));
+}
+
+function quickImportNewColor() {
+  return { id: "qi-color-" + (++quickImportColorSequence), name: "", hex: "#242424", availability: "order" };
+}
+
+function quickImportNewVersion() {
+  return {
+    id: "qi-version-" + (++quickImportVersionSequence),
+    ram: "",
+    storage: "",
+    storageUnit: "GB",
+    price_usd: "",
+    price_nio: "",
+    colors: [quickImportNewColor()]
+  };
+}
+
+function quickImportFindWizardColor(colorId) {
+  for (const version of quickImportWizardVersions) {
+    const color = version.colors.find(item => item.id === colorId);
+    if (color) return color;
+  }
+  return null;
+}
+
+function quickImportSyncWizardFromDOM() {
+  if (!quickImportVersionsList) return;
+  quickImportWizardVersions.forEach(version => {
+    const card = Array.from(quickImportVersionsList.querySelectorAll("[data-qi-version-card]"))
+      .find(item => item.dataset.qiVersionCard === version.id);
+    if (!card) return;
+    version.ram = card.querySelector("[data-qi-ram]")?.value.trim() || "";
+    version.storage = card.querySelector("[data-qi-storage]")?.value.trim() || "";
+    version.storageUnit = card.querySelector("[data-qi-storage-unit]")?.value || "GB";
+    version.price_usd = card.querySelector("[data-qi-price-usd]")?.value.trim() || "";
+    version.price_nio = card.querySelector("[data-qi-price-nio]")?.value.trim() || "";
+    version.colors = Array.from(card.querySelectorAll("[data-qi-color-row]")).map(row => ({
+      id: row.dataset.qiColorRow,
+      name: row.querySelector("[data-qi-color-name]")?.value.trim() || "",
+      hex: validHex(row.querySelector("[data-qi-color-hex]")?.value),
+      availability: row.querySelector("[data-qi-color-availability]")?.value || "order"
+    }));
+  });
+}
+
+function quickImportRenderWizardVersions() {
+  if (!quickImportVersionsList) return;
+  const palette = quickImportPaletteItems();
+  quickImportVersionsList.innerHTML = quickImportWizardVersions.map((version, versionIndex) => {
+    const colorsMarkup = version.colors.map((color, colorIndex) => {
+      const swatches = palette.map(item => {
+        const active = item.hex.toUpperCase() === validHex(color.hex).toUpperCase();
+        const light = ["#FFFFFF", "#F4F4F1", "#FFFF00", "#E4C84B"].includes(item.hex.toUpperCase());
+        return '<button type="button" class="quick-import-palette-swatch' + (active ? ' is-selected' : '') +
+          (light ? ' is-light' : '') + '" style="--swatch:' + item.hex + ';" data-qi-palette-hex="' + item.hex +
+          '" data-qi-palette-name="' + escapeHtml(item.name) + '" aria-label="' + escapeHtml(item.name) +
+          '" title="' + escapeHtml(item.name) + '" aria-pressed="' + String(active) + '"></button>';
+      }).join("");
+      return '<div class="quick-import-color-entry" data-qi-color-row="' + color.id + '">' +
+        '<div class="quick-import-color-entry-head"><strong>Color ' + (colorIndex + 1) + '</strong>' +
+        '<button type="button" data-qi-remove-color="' + color.id + '" aria-label="Quitar color ' + (colorIndex + 1) + '">Quitar ×</button></div>' +
+        '<p class="quick-import-muted">Elegí el tono que se mostrará en el círculo del catálogo.</p>' +
+        '<div class="quick-import-palette" role="group" aria-label="Paleta de colores">' + swatches + '</div>' +
+        '<div class="quick-import-color-controls">' +
+        '<label class="quick-import-color-name">Nombre exacto del color' +
+        '<input type="text" data-qi-color-name maxlength="80" autocomplete="off" placeholder="Ej. Titanium Gray" value="' + escapeHtml(color.name) + '"></label>' +
+        '<label>Personalizar tono<input type="color" data-qi-color-hex value="' + validHex(color.hex) + '" aria-label="Personalizar tono de ' + escapeHtml(color.name || ("color " + (colorIndex + 1))) + '"></label>' +
+        '</div>' +
+        '<label class="quick-import-color-availability">Disponibilidad de este color' +
+        '<select data-qi-color-availability><option value="available"' + (color.availability === "available" ? " selected" : "") + '>Disponible</option>' +
+        '<option value="order"' + (color.availability === "order" ? " selected" : "") + '>Por pedido / confirmar</option>' +
+        '<option value="out_of_stock"' + (color.availability === "out_of_stock" ? " selected" : "") + '>Agotado</option></select></label>' +
+        '</div>';
+    }).join("");
+    return '<article class="quick-import-version-card" data-qi-version-card="' + version.id + '">' +
+      '<div class="quick-import-version-head"><strong>Versión ' + (versionIndex + 1) + '</strong>' +
+      (quickImportWizardVersions.length > 1 ? '<button type="button" data-qi-remove-version="' + version.id + '">Quitar versión</button>' : '') + '</div>' +
+      '<div class="quick-import-version-fields">' +
+      '<label>RAM (GB)<input type="number" min="1" step="1" inputmode="numeric" data-qi-ram value="' + escapeHtml(version.ram) + '" placeholder="8"></label>' +
+      '<label class="quick-import-storage-field">Almacenamiento<div class="quick-import-storage-combo">' +
+      '<input type="number" min="1" step="1" inputmode="numeric" data-qi-storage value="' + escapeHtml(version.storage) + '" placeholder="256">' +
+      '<select data-qi-storage-unit aria-label="Unidad de almacenamiento"><option value="GB"' + (version.storageUnit === "GB" ? " selected" : "") + '>GB</option><option value="TB"' + (version.storageUnit === "TB" ? " selected" : "") + '>TB</option></select></div></label>' +
+      '<label>Precio en dólares<input type="number" min="0" step="0.01" inputmode="decimal" data-qi-price-usd value="' + escapeHtml(version.price_usd) + '" placeholder="Ej. 215"></label>' +
+      '<label>Precio en córdobas<input type="number" min="0" step="0.01" inputmode="decimal" data-qi-price-nio value="' + escapeHtml(version.price_nio) + '" placeholder="Ej. 7955"></label>' +
+      '</div><div class="quick-import-colors-heading"><strong>Colores de esta versión</strong></div>' +
+      '<div class="quick-import-color-list">' + colorsMarkup + '</div>' +
+      '<button type="button" class="button button-outline quick-import-add-color" data-qi-add-color="' + version.id + '">＋ Agregar color</button>' +
+      '</article>';
+  }).join("");
+}
+
+function quickImportShowStep(step) {
+  quickImportCurrentStep = Math.max(1, Math.min(3, Number(step) || 1));
+  [1, 2, 3].forEach(number => {
+    $("#quick-import-step-" + number)?.classList.toggle("hidden", number !== quickImportCurrentStep);
+    const button = document.querySelector('[data-quick-import-step="' + number + '"]');
+    button?.classList.toggle("is-active", number === quickImportCurrentStep);
+    if (button) {
+      if (number === quickImportCurrentStep) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    }
+  });
+  if (quickImportCurrentStep === 3) renderQuickImportPhotoUI();
+  $("#quick-import-step-" + quickImportCurrentStep)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function quickImportPrepareWizardVariants() {
+  try {
+    quickImportSyncWizardFromDOM();
+    if (!quickImportWizardVersions.length) throw new Error("Agregá al menos una versión.");
+    const seenConfigs = new Set();
+    const hexMap = new Map();
+    const lines = [];
+    quickImportWizardVersions.forEach((version, index) => {
+      const lineNumber = index + 1;
+      const ramText = String(version.ram || "").trim();
+      const ramMatch = ramText.match(/^([0-9]+(?:[.,][0-9]+)?)\s*(?:GB)?$/i);
+      if (!ramMatch || Number(ramMatch[1].replace(",", ".")) <= 0) {
+        throw new Error("En la versión " + lineNumber + ", indicá una RAM válida, por ejemplo 8 GB.");
+      }
+      const storageRaw = String(version.storage || "").trim() + " " + (version.storageUnit || "GB");
+      const storage = parseStorageValue(storageRaw);
+      if (!storage.amount || !Number.isFinite(Number(storage.amount)) || Number(storage.amount) <= 0) {
+        throw new Error("En la versión " + lineNumber + ", indicá un almacenamiento válido.");
+      }
+      const configKey = normalizeQuickImportText(storage.amount + " " + storage.unit + " " + ramMatch[1]);
+      if (seenConfigs.has(configKey)) throw new Error("La versión " + lineNumber + " repite una combinación de RAM y almacenamiento.");
+      seenConfigs.add(configKey);
+      const priceUsd = String(version.price_usd || "").trim();
+      const priceNio = String(version.price_nio || "").trim();
+      quickImportMoney(priceUsd, "precio USD", lineNumber);
+      quickImportMoney(priceNio, "precio C$", lineNumber);
+      if (!version.colors.length) throw new Error("Agregá al menos un color a la versión " + lineNumber + ".");
+      const seenColors = new Set();
+      const colorTokens = version.colors.map(color => {
+        const colorName = String(color.name || "").trim();
+        if (!colorName) throw new Error("En la versión " + lineNumber + ", completá el nombre de cada color.");
+        if (/[,:|]/.test(colorName)) throw new Error("El nombre «" + colorName + "» contiene una coma, dos puntos o |. Quitá ese signo para poder procesarlo correctamente.");
+        const nameKey = normalizeQuickImportText(colorName);
+        if (seenColors.has(nameKey)) throw new Error("El color «" + colorName + "» está repetido en la versión " + lineNumber + ".");
+        seenColors.add(nameKey);
+        const hex = validHex(color.hex);
+        hexMap.set(configKey + "|" + nameKey, hex);
+        const state = color.availability === "available" ? "disponible" : color.availability === "out_of_stock" ? "agotado" : "pedido";
+        return colorName + ":" + state;
+      });
+      lines.push(String(Number(ramMatch[1].replace(",", "."))) + " | " + storage.amount + " " + storage.unit + " | " +
+        (priceUsd || "-") + " | " + (priceNio || "-") + " | " + colorTokens.join(", "));
+    });
+    const raw = lines.join("\n");
+    const planChanged = raw !== quickImportParsedText;
+    if (planChanged) quickImportPhotos.forEach(item => {
+      if (String(item.target || "").startsWith("variant:")) item.target = "";
+    });
+    quickImportColorHexByVariant = hexMap;
+    if (quickImportVariantText) quickImportVariantText.value = raw;
+    $("#quick-import-parse-variants")?.click();
+    if (quickImportParsedText !== raw || !quickImportVariantPlan.length) {
+      throw new Error("No se pudieron preparar las versiones. Revisá los datos e intentá de nuevo.");
+    }
+    return true;
+  } catch (error) {
+    setQuickImportStatus(error?.message || "No se pudieron preparar las versiones.", "error");
+    return false;
+  }
+}
+
+function quickImportGoToStep(step) {
+  const target = Number(step) || 1;
+  if (target >= 2 && !String($("#quick-import-name")?.value || "").trim()) {
+    quickImportShowStep(1);
+    setQuickImportStatus("Primero escribí el nombre del producto.", "error");
+    $("#quick-import-name")?.focus({ preventScroll: true });
+    return;
+  }
+  if (target >= 3) {
+    quickImportShowStep(2);
+    if (!quickImportPrepareWizardVariants()) return;
+  }
+  quickImportShowStep(target);
+  setQuickImportStatus("", "");
+}
+
+quickImportVersionsList?.addEventListener("input", event => {
+  if (!event.target.closest("[data-qi-version-card]")) return;
+  quickImportSyncWizardFromDOM();
+  if (event.target.matches("[data-qi-color-name]")) renderQuickImportPhotoUI();
+});
+quickImportVersionsList?.addEventListener("change", event => {
+  if (!event.target.closest("[data-qi-version-card]")) return;
+  quickImportSyncWizardFromDOM();
+  if (event.target.matches("[data-qi-color-name], [data-qi-color-hex], [data-qi-color-availability]")) renderQuickImportPhotoUI();
+});
+quickImportVersionsList?.addEventListener("click", event => {
+  const paletteButton = event.target.closest("[data-qi-palette-hex]");
+  const addColorButton = event.target.closest("[data-qi-add-color]");
+  const removeColorButton = event.target.closest("[data-qi-remove-color]");
+  const removeVersionButton = event.target.closest("[data-qi-remove-version]");
+  if (paletteButton) {
+    quickImportSyncWizardFromDOM();
+    const color = quickImportFindWizardColor(paletteButton.closest("[data-qi-color-row]")?.dataset.qiColorRow || "");
+    if (!color) return;
+    color.hex = validHex(paletteButton.dataset.qiPaletteHex);
+    if (!color.name) color.name = paletteButton.dataset.qiPaletteName || "";
+    quickImportRenderWizardVersions();
+    renderQuickImportPhotoUI();
+    return;
+  }
+  if (addColorButton) {
+    quickImportSyncWizardFromDOM();
+    const version = quickImportWizardVersions.find(item => item.id === addColorButton.dataset.qiAddColor);
+    if (!version) return;
+    version.colors.push(quickImportNewColor());
+    quickImportRenderWizardVersions();
+    renderQuickImportPhotoUI();
+    return;
+  }
+  if (removeColorButton) {
+    quickImportSyncWizardFromDOM();
+    const version = quickImportWizardVersions.find(item => item.colors.some(color => color.id === removeColorButton.dataset.qiRemoveColor));
+    if (!version) return;
+    version.colors = version.colors.filter(color => color.id !== removeColorButton.dataset.qiRemoveColor);
+    quickImportRenderWizardVersions();
+    renderQuickImportPhotoUI();
+    return;
+  }
+  if (removeVersionButton) {
+    quickImportSyncWizardFromDOM();
+    if (quickImportWizardVersions.length <= 1) {
+      setQuickImportStatus("Dejá al menos una versión del producto.", "error");
+      return;
+    }
+    quickImportWizardVersions = quickImportWizardVersions.filter(item => item.id !== removeVersionButton.dataset.qiRemoveVersion);
+    quickImportRenderWizardVersions();
+    renderQuickImportPhotoUI();
+  }
+});
+$("#quick-import-add-version")?.addEventListener("click", () => {
+  quickImportSyncWizardFromDOM();
+  quickImportWizardVersions.push(quickImportNewVersion());
+  quickImportRenderWizardVersions();
+  quickImportShowStep(2);
+});
+document.querySelectorAll("[data-quick-import-step]").forEach(button => {
+  button.addEventListener("click", () => quickImportGoToStep(button.dataset.quickImportStep));
+});
+$("#quick-import-next-1")?.addEventListener("click", () => quickImportGoToStep(2));
+$("#quick-import-back-2")?.addEventListener("click", () => quickImportShowStep(1));
+$("#quick-import-next-2")?.addEventListener("click", () => quickImportGoToStep(3));
+$("#quick-import-back-3")?.addEventListener("click", () => quickImportShowStep(2));
+$("#quick-import-apply")?.addEventListener("click", event => {
+  if (!quickImportPrepareWizardVariants()) event.stopImmediatePropagation();
+});
+$("#quick-import-cancel")?.addEventListener("click", () => quickImportShowStep(1));
+quickImportWizardVersions = [quickImportNewVersion()];
+quickImportRenderWizardVersions();
+quickImportShowStep(1);
 
 quickImportPhotosInput?.addEventListener("change", () => {
   const selected = Array.from(quickImportPhotosInput.files || []);
