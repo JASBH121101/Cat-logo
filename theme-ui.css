@@ -9476,3 +9476,28 @@ html[data-theme="light"] body.admin-body .admin-preview-status.unavailable {
 html[data-theme="light"] body.admin-body .admin-preview-color-dot {
   border-color: #c3ccdb;
 }
+
+
+/* JB TECH · Fotos de gama alta al mismo tamaño visual que el catálogo normal.
+   La tarjeta conserva la imagen completa; solo ampliamos la caja de imagen en móvil. */
+@media (max-width:760px) {
+  body.technology-catalog .featured-grid .product-image {
+    height: clamp(145px, 38vw, 170px) !important;
+    min-height: 145px !important;
+    flex: 0 0 auto !important;
+  }
+  body.technology-catalog .featured-grid .product-image img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    object-fit: contain !important;
+  }
+}
+@media (max-width:380px) {
+  body.technology-catalog .featured-grid .product-image {
+    height: 145px !important;
+    min-height: 145px !important;
+  }
+}
