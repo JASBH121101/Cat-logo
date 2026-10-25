@@ -3723,6 +3723,15 @@ form?.addEventListener("submit", async event => {
     }
     renderMainImagePreviews();
 
+    if (imageUploadErrors.length) {
+      const details = imageUploadErrors.slice(0, 3).join(" · ");
+      throw new Error(
+        "No se guardó la ficha porque todavía hay fotografías que no se pudieron subir. " +
+        "Los archivos siguen en el formulario; revisá la conexión y pulsá Guardar para reintentar. " +
+        "Detalle: " + details
+      );
+    }
+
     const colors = isPerfume ? [] : deriveColorsFromVariants(variants, existingProduct?.colors || []);
     const baseUSD = isPerfume ? toOptionalNumber($("#product-price-usd").value, "Precio base en dólares") : null;
     const baseNIO = isPerfume ? toOptionalNumber($("#product-price-nio").value, "Precio base en córdobas") : null;
