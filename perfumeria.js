@@ -795,7 +795,9 @@ initializePerfumes();
   const countNode = document.querySelector("#perfume-carousel-count");
   const titleNode = document.querySelector("#perfume-carousel-title");
   const dotsNode = document.querySelector("#perfume-carousel-dots");
-  if (!carousel || !stage || !imageA || !imageB || !previousButton || !nextButton || !countNode || !titleNode || !dotsNode) return;
+  const progressNode = document.querySelector("#perfume-carousel-progress");
+  const progressFill = document.querySelector("#perfume-carousel-progress-fill");
+  if (!carousel || !stage || !imageA || !imageB || !previousButton || !nextButton || !countNode || !titleNode || !dotsNode || !progressNode || !progressFill) return;
 
   const slides = [
     { src: "../img/perfume-carousel/supremacy-pour-femme.svg?v=20261025-carousel1", title: "Afnan Supremacy Pour Femme", alt: "Fragancia Afnan Supremacy Pour Femme en presentación de frasco y caja", maxWidth: 280 },
@@ -854,8 +856,11 @@ initializePerfumes();
   }
 
   function renderCaption() {
-    countNode.textContent = String(currentIndex + 1).padStart(2, "0") + " / " + String(slides.length).padStart(2, "0");
+    countNode.innerHTML = String(currentIndex + 1).padStart(2, "0") + ' <i aria-hidden="true">/</i> ' + String(slides.length).padStart(2, "0");
     titleNode.textContent = slides[currentIndex].title;
+    progressNode.setAttribute("aria-valuemax", String(slides.length));
+    progressNode.setAttribute("aria-valuenow", String(currentIndex + 1));
+    progressFill.style.width = ((currentIndex + 1) / slides.length * 100).toFixed(2) + "%";
     renderDots();
   }
 
