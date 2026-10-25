@@ -4033,7 +4033,16 @@ form?.addEventListener("submit", async event => {
   if (productSaveInProgress) return;
   const saveAction=event.submitter?.dataset?.saveAction||form.dataset.lastSaveAction||"unpublished";
   form.dataset.lastSaveAction = "";
-  const targetStatus=saveAction==="draft"?"draft":saveAction==="published"?"published":"unpublished";
+  let targetStatus=saveAction==="draft"?"draft":saveAction==="published"?"published":"unpublished";
+  const forceDraftFromPhotoIssue = form.dataset.forceDraftOnPhotoIssue === "true";
+  form.dataset.forceDraftOnPhotoIssue = "";
+  const preflightPhotoIssues = forceDraftFromPhotoIssue ? (currentPublishReview?.blockingIssues || []) : [];
+  if (forceDraftFromPhotoIssue) targetStatus = "draft";
+  if (targetStatus === "published" && form.dataset.publishConfirmed !== "true") {
+    await openPublishReview();
+    return;
+  }
+  form.dataset.publishConfirmed = "";
 
   if (!currentUser || !supabase) {
     message("#product-form-status", "Tu sesión administrativa no está activa. Volvé a iniciar sesión.", "error");
@@ -4089,13 +4098,9 @@ form?.addEventListener("submit", async event => {
     }
     renderMainImagePreviews();
 
-    if (imageUploadErrors.length) {
-      const details = imageUploadErrors.slice(0, 3).join(" · ");
-      throw new Error(
-        "No se guardó la ficha porque todavía hay fotografías que no se pudieron subir. " +
-        "Los archivos siguen en el formulario; revisá la conexión y pulsá Guardar para reintentar. " +
-        "Detalle: " + details
-      );
+    if (imageUploadErrors.length || preflightPhotoIssues.length) {
+      // A product with a failed photo must be saved as a draft, never published.
+      targetStatus = "draft";
     }
 
     const colors = isPerfume ? [] : deriveColorsFromVariants(variants, existingProduct?.colors || []);
@@ -4183,15 +4188,32 @@ form?.addEventListener("submit", async event => {
       }
     }
 
-    if (imageUploadErrors.length) {
-      $("#form-title").textContent = isPerfume ? "Fragancia guardada · fotografías pendientes" : "Producto guardado · fotografías pendientes";
+    if (imageUploadErrors.length || preflightPhotoIssues.length) {
+      $("#form-title").textContent = isPerfume ? "Fragancia guardada como borrador · fotos para corregir" : "Producto guardado como borrador · fotos para corregir";
+      const issuesFromUploads = uploadPhotoFailureTargets();
+      const fallbackIssues = imageUploadErrors.map(label => ({
+        source: "main", row: null, itemId: "", label: label, reason: label, isMissing: false
+      }));
+      const allIssues = [];
+      const seenIssueKeys = new Set();
+      [...preflightPhotoIssues, ...issuesFromUploads, ...fallbackIssues].forEach(issue => {
+        if (!issue) return;
+        const key = (issue.source || "") + "|" + (issue.itemId || issue.label || "");
+        if (seenIssueKeys.has(key)) return;
+        seenIssueKeys.add(key);
+        allIssues.push(issue);
+      });
+      await saveLocalRecoveryDraft().catch(error => console.warn("No se pudo guardar una recuperación local tras un fallo de foto.", error));
+      await loadProducts();
+      renderFormPhotoIssues(allIssues);
       message(
         "#product-form-status",
-        "Producto guardado, pero " + imageUploadErrors.length + " fotografía(s) no se pudieron confirmar. Los datos se conservaron. Revisá la conexión y usá el botón de reintento que aparece debajo de este mensaje; el panel comprobará si alguna foto ya llegó a Storage antes de volver a subirla. Detalle: " + imageUploadErrors.slice(0, 2).join(" · "),
+        "La ficha se guardó como Borrador porque una o más fotografías no se pudieron cargar, decodificar o subir. Los demás datos se conservaron. Corregí las fotos señaladas y volvé a revisar antes de publicar.",
         "error"
       );
-      setStatus("Guardado con fotografías pendientes: " + name, "error");
-      await loadProducts();
+      setStatus("Ficha guardada como borrador para corregir fotografías: " + name, "error");
+      if (allIssues.length) navigateToPhotoIssue(allIssues[0]);
+      return;
     } else {
       const statusLabel=targetStatus==="published"?"publicado en el catálogo":targetStatus==="draft"?"guardado como borrador":"guardado sin publicar";
       message("#product-form-status",(isPerfume?"Fragancia ":"Producto ")+statusLabel+".","success");
