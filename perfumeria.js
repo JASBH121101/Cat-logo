@@ -264,8 +264,13 @@ function renderCard(product) {
   const stateBadge = state === "Disponible" ? "" : '<span class="perfume-state-badge">' + escapeHtml(state) + '</span>';
   const nio = formatNIO(product.price_nio);
 
+  const badges = badge || stateBadge
+    ? '<div class="perfume-product-badges">' + badge + stateBadge + '</div>'
+    : "";
+
   return '<article class="product-card perfume-product-card' + (product.featured ? ' featured-product-card' : '') + '">' +
-    '<div class="product-image perfume-product-image">' + badge + stateBadge + image + '</div>' +
+    badges +
+    '<div class="product-image perfume-product-image">' + image + '</div>' +
     '<div class="product-card-content perfume-product-card-content">' +
       '<p class="perfume-card-family">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
       '<h3>' + escapeHtml(product.name || "Fragancia sin nombre") + '</h3>' +
