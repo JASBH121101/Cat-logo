@@ -10,7 +10,11 @@ const grid = document.querySelector("#product-grid");
 const statusNode = document.querySelector("#catalog-status");
 const emptyNode = document.querySelector("#empty-results");
 const searchInput = document.querySelector("#search-input");
-const brandSearchInput = document.querySelector("#brand-search-input");
+const brandFilterToggle = document.querySelector("#brand-filter-toggle");
+const brandFilterValue = document.querySelector("#brand-filter-value");
+const brandFilterMenu = document.querySelector("#brand-filter-menu");
+const brandFilterSearch = document.querySelector("#brand-filter-search");
+const brandFilterOptions = document.querySelector("#brand-filter-options");
 const catalogSortSelect = document.querySelector("#catalog-sort-select");
 const productDetailPage = document.querySelector("#product-detail-page");
 const productHeaderBack = document.querySelector("#product-detail-header-back");
@@ -32,6 +36,7 @@ const priceFilterFeedback = document.querySelector("#budget-filter-feedback");
 let supabase = null;
 let products = [];
 let selectedCategory = "all";
+let selectedBrand = "";
 
 // Analytics: record product views and WhatsApp intent, including the selected variant.
 async function recordCatalogEvent(productId, eventType, variant = {}) {
@@ -647,31 +652,47 @@ function renderCard(product) {
   `;
 }
 
-function refreshBrandSuggestions() {
-  const list = document.getElementById("brand-suggestions");
-  if (!list) return;
-  const suggestions = [...new Set(products.flatMap(product => [
-    String(product.brand || "").trim(),
-    String(product.name || "").trim(),
-    String(product.model || "").trim()
-  ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
-  const query = String(brandSearchInput?.value || "").trim().toLocaleLowerCase("es");
-  const matches = (query ? suggestions.filter(value => value.toLocaleLowerCase("es").includes(query)) : suggestions).slice(0, query ? 8 : 20);
-  list.replaceChildren(...matches.map(value => {
+function updateBrandFilterLabel() {
+  if (brandFilterValue) brandFilterValue.textContent = selectedBrand || "Todas las marcas";
+}
+
+function renderBrandFilterOptions() {
+  if (!brandFilterOptions) return;
+  const brands = [...new Set(products.map(product => String(product.brand || "").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const query = String(brandFilterSearch?.value || "").trim().toLocaleLowerCase("es");
+  const matches = query ? brands.filter(brand => brand.toLocaleLowerCase("es").startsWith(query)) : brands;
+  const options = [];
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = "brand-filter-option";
+  all.dataset.brand = "";
+  all.setAttribute("role", "option");
+  all.setAttribute("aria-selected", String(!selectedBrand));
+  all.textContent = "Todas las marcas";
+  options.push(all);
+  matches.forEach(brand => {
     const option = document.createElement("button");
     option.type = "button";
-    option.className = "live-search-option";
+    option.className = "brand-filter-option";
+    option.dataset.brand = brand;
     option.setAttribute("role", "option");
-    option.textContent = value;
-    option.addEventListener("mousedown", event => event.preventDefault());
-    option.addEventListener("click", () => {
-      brandSearchInput.value = value;
-      list.hidden = true;
-      renderProducts();
-    });
-    return option;
-  }));
-  list.hidden = matches.length === 0;
+    option.setAttribute("aria-selected", String(selectedBrand === brand));
+    option.textContent = brand;
+    options.push(option);
+  });
+  brandFilterOptions.replaceChildren(...options);
+  if (!matches.length && query) {
+    const empty = document.createElement("p");
+    empty.className = "brand-filter-empty";
+    empty.textContent = "No se encontraron marcas.";
+    brandFilterOptions.append(empty);
+  }
+}
+
+function closeBrandFilterMenu() {
+  if (brandFilterMenu) brandFilterMenu.hidden = true;
+  if (brandFilterToggle) brandFilterToggle.setAttribute("aria-expanded", "false");
 }
 
 function readPriceBound(input) {
@@ -683,15 +704,14 @@ function readPriceBound(input) {
 }
 
 function hasActiveCatalogFilters() {
-  return Boolean((searchInput?.value || "").trim() || (brandSearchInput?.value || "").trim() ||
+  return Boolean((searchInput?.value || "").trim() || selectedBrand ||
     selectedCategory !== "all" || readPriceBound(minPriceInput) !== null ||
     readPriceBound(maxPriceInput) !== null || (catalogSortSelect?.value || "recent") !== "recent");
 }
 
 
 function visibleProducts() {
-  const query = (searchInput.value || "").trim().toLocaleLowerCase("es");
-  const brandQuery = (brandSearchInput?.value || "").trim().toLocaleLowerCase("es");
+  const query = (searchInput?.value || "").trim().toLocaleLowerCase("es");
   const minPrice = readPriceBound(minPriceInput);
   const maxPrice = readPriceBound(maxPriceInput);
   const validRange = minPrice === null || maxPrice === null || minPrice <= maxPrice;
@@ -710,7 +730,7 @@ function visibleProducts() {
     ];
     const haystack = searchableFields.join(" ").toLocaleLowerCase("es");
     const queryMatches = !query || haystack.includes(query);
-    const brandMatches = !brandQuery || String(product.brand || "").toLocaleLowerCase("es").startsWith(brandQuery);
+    const brandMatches = !selectedBrand || String(product.brand || "").trim().toLocaleLowerCase("es") === selectedBrand.toLocaleLowerCase("es");
     let priceMatches = true;
     if (minPrice !== null || maxPrice !== null) {
       const rawPrice = startingPrice(product, "price_usd");
@@ -1395,17 +1415,45 @@ categoryFilters.addEventListener("click", event => {
   renderProducts();
 });
 
-searchInput.addEventListener("input", renderProducts);
-brandSearchInput?.addEventListener("input", () => { refreshBrandSuggestions(); renderProducts(); });
-brandSearchInput?.addEventListener("focus", refreshBrandSuggestions);
-brandSearchInput?.addEventListener("keydown", event => { if (event.key === "Escape") { const menu = document.getElementById("brand-suggestions"); if (menu) menu.hidden = true; } });
-document.addEventListener("click", event => { if (!event.target.closest("#brand-search-input") && !event.target.closest("#brand-suggestions")) { const menu = document.getElementById("brand-suggestions"); if (menu) menu.hidden = true; } });
+searchInput?.addEventListener("input", renderProducts);
+brandFilterToggle?.addEventListener("click", () => {
+  const opening = Boolean(brandFilterMenu?.hidden);
+  if (brandFilterMenu) brandFilterMenu.hidden = !opening;
+  brandFilterToggle.setAttribute("aria-expanded", String(opening));
+  if (opening) {
+    if (brandFilterSearch) brandFilterSearch.value = "";
+    renderBrandFilterOptions();
+    brandFilterSearch?.focus();
+  }
+});
+brandFilterSearch?.addEventListener("input", renderBrandFilterOptions);
+brandFilterSearch?.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeBrandFilterMenu();
+    brandFilterToggle?.focus();
+  }
+});
+brandFilterOptions?.addEventListener("click", event => {
+  const option = event.target.closest("[data-brand]");
+  if (!option || !brandFilterOptions.contains(option)) return;
+  selectedBrand = option.dataset.brand || "";
+  if (brandFilterSearch) brandFilterSearch.value = "";
+  updateBrandFilterLabel();
+  closeBrandFilterMenu();
+  renderProducts();
+});
+document.addEventListener("click", event => {
+  if (!event.target.closest(".brand-filter-wrap")) closeBrandFilterMenu();
+});
 catalogSortSelect?.addEventListener("change", renderProducts);
 minPriceInput?.addEventListener("input", renderProducts);
 maxPriceInput?.addEventListener("input", renderProducts);
 clearPriceFilterButton?.addEventListener("click", () => {
   if (searchInput) searchInput.value = "";
-  if (brandSearchInput) brandSearchInput.value = "";
+  selectedBrand = "";
+  if (brandFilterSearch) brandFilterSearch.value = "";
+  updateBrandFilterLabel();
+  closeBrandFilterMenu();
   if (catalogSortSelect) catalogSortSelect.value = "recent";
   if (minPriceInput) minPriceInput.value = "";
   if (maxPriceInput) maxPriceInput.value = "";
@@ -1510,7 +1558,7 @@ async function initializeCatalog() {
   }
 
   products = data;
-  refreshBrandSuggestions();
+  updateBrandFilterLabel();
   try {
     renderProducts();
   } catch (error) {
