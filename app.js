@@ -716,7 +716,7 @@ function visibleProducts() {
       return sort === "price-asc" ? validA - validB : validB - validA;
     }
     if (sort === "name-asc") return String(a.name || "").localeCompare(String(b.name || ""), "es", { sensitivity: "base" });
-    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    return new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime();
   });
 }
 
@@ -1479,7 +1479,7 @@ async function initializeCatalog() {
       .eq("workflow_status", "published")
       .is("deleted_at", null)
       .order("featured", { ascending: false })
-      .order("created_at", { ascending: false });
+      .order("published_at", { ascending: false });
 
     if (response.error) throw response.error;
     data = response.data || [];
