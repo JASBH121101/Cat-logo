@@ -3814,12 +3814,27 @@ function addCurrencyPairWarning(warnings, usd, nio, label) {
   const ratio = cs / us;
   if (ratio < 15 || ratio > 60) warnings.push(label + ": los importes " + reviewCurrency(us, "US$") + " y " + reviewCurrency(cs, "C$") + " parecen no guardar una relación habitual. Revisá ambos valores antes de publicar.");
 }
+
+function addPriceSpreadWarning(warnings, samples, currency) {
+  const valid = samples.filter(item => Number.isFinite(item.value) && item.value > 0);
+  if (valid.length < 2) return;
+  const sorted = [...valid].sort((a, b) => a.value - b.value);
+  const low = sorted[0], high = sorted[sorted.length - 1];
+  if (high.value / low.value >= 3.5) {
+    warnings.push("Los precios de las configuraciones en " + currency + " van desde " +
+      reviewCurrency(low.value, currency) + " (" + low.label + ") hasta " +
+      reviewCurrency(high.value, currency) + " (" + high.label +
+      "). La diferencia es amplia: revisá que no se haya agregado o perdido un dígito. Puede ser válida por capacidad o versión; podés confirmarla.");
+  }
+}
+
 async function buildPublishReview() {
   const name = $("#product-name")?.value.trim() || "";
   const brand = $("#product-brand")?.value.trim() || "";
   const isPerfume = activeCatalogType === "perfumery";
   const family = isPerfume ? perfumeFamilyLabel($("#product-perfume-family")?.value) : ($("#product-category")?.value || "Sin categoría");
   const warnings = [], missingPhotos = [], candidates = [], variantSummary = [];
+  const priceSamples = { usd: [], nio: [] };
   mainImageItems.forEach((item, index) => {
     const source = item.kind === "new" ? (item.previewUrl || "") : (item.url || "");
     const label = "Fotografía general " + (index + 1) + (item.name ? " · " + item.name : "");
@@ -3843,6 +3858,8 @@ async function buildPublishReview() {
       const configLabel = formatReviewConfig(group);
       const usd = group.querySelector("[data-group-price-usd]")?.value.trim() || "";
       const nio = group.querySelector("[data-group-price-nio]")?.value.trim() || "";
+      if (usd !== "" && Number(usd) > 0 && Number.isFinite(Number(usd))) priceSamples.usd.push({ value: Number(usd), label: configLabel });
+      if (nio !== "" && Number(nio) > 0 && Number.isFinite(Number(nio))) priceSamples.nio.push({ value: Number(nio), label: configLabel });
       const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
       addPriceWarning(warnings, usd, "US$", configLabel + " · precio");
       addPriceWarning(warnings, nio, "C$", configLabel + " · precio");
@@ -3867,6 +3884,8 @@ async function buildPublishReview() {
       variantSummary.push(configLabel + ": " + (colors.length ? colors.join(", ") : "sin colores") + " · " + reviewCurrency(usd, "US$") + " · " + reviewCurrency(nio, "C$"));
     });
     if (!variantSummary.length) variantSummary.push("No hay configuraciones por color añadidas.");
+    addPriceSpreadWarning(warnings, priceSamples.usd, "US$");
+    addPriceSpreadWarning(warnings, priceSamples.nio, "C$");
   }
   if (!mainImageItems.length) warnings.push("No hay fotografía general del producto; confirmá que querés continuar sin una portada.");
   const checked = await Promise.all(candidates.map(async candidate => ({ candidate: candidate, valid: await imageLoadsAndDecodes(candidate.src) })));
@@ -3970,16 +3989,16 @@ publishReviewDialog?.addEventListener("click", event => {
   const invalid = event.target.closest("[data-publish-review-issue]");
   if (invalid && currentPublishReview) {
     const issue = currentPublishReview.blockingIssues[Number(invalid.dataset.publishReviewIssue)];
-    currentFormPhotoIssues = [issue];
-    renderFormPhotoIssues([issue]);
+    currentFormPhotoIssues = [...currentPublishReview.blockingIssues, ...currentPublishReview.missingPhotos];
+    renderFormPhotoIssues(currentFormPhotoIssues);
     navigateToPhotoIssue(issue);
     return;
   }
   const missing = event.target.closest("[data-publish-missing-issue]");
   if (missing && currentPublishReview) {
     const issue = currentPublishReview.missingPhotos[Number(missing.dataset.publishMissingIssue)];
-    currentFormPhotoIssues = [issue];
-    renderFormPhotoIssues([issue]);
+    currentFormPhotoIssues = [...currentPublishReview.blockingIssues, ...currentPublishReview.missingPhotos];
+    renderFormPhotoIssues(currentFormPhotoIssues);
     message("#product-form-status", "El color señalado no tiene fotografía. Agregá una imagen o volvé a la revisión para confirmar que publicarás sin ella.", "error");
     navigateToPhotoIssue(issue);
   }
@@ -4238,7 +4257,7 @@ form?.addEventListener("submit", async event => {
       }));
       const allIssues = [];
       const seenIssueKeys = new Set();
-      [...preflightPhotoIssues, ...postUploadPhotoIssues, ...issuesFromUploads].forEach(issue => {
+      [...preflightPhotoIssues, ...postUploadPhotoIssues, ...(currentPublishReview?.missingPhotos || []), ...issuesFromUploads].forEach(issue => {
         if (!issue) return;
         const key = (issue.source || "") + "|" + (issue.itemId || issue.label || "");
         if (seenIssueKeys.has(key)) return;
