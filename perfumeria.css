@@ -695,3 +695,34 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
   .perfume-page .perfume-product-type-filters .filter-chip:hover{transform:none}
 }
 
+/* JB PARFUMS · tarjetas compactas y tipografía de precio legible */
+.perfume-page .product-card-content{gap:6px;padding:13px}
+.perfume-page .product-image{aspect-ratio:4/3.8}
+.perfume-page .product-image img{padding:10px}
+.perfume-page .product-card h3{font-size:clamp(18px,1.7vw,21px);line-height:1.18}
+.perfume-card-family{font-size:9px;line-height:1.35;letter-spacing:.11em}
+.perfume-card-brand{font-size:11px}
+.perfume-product-meta{gap:4px 7px;line-height:1.4}
+.perfume-price-label{padding-top:6px}
+.perfume-product-price{font-size:clamp(23px,2.1vw,27px);letter-spacing:.005em;white-space:nowrap}
+.perfume-page .product-actions{margin-top:7px}
+.perfume-page .perfume-view-button{min-height:40px;padding:9px 11px}
+@media(max-width:640px){
+  .perfume-page .product-image{aspect-ratio:4/3.8}
+  .perfume-page .product-image img{padding:8px}
+  .perfume-page .product-card-content{padding:9px;gap:5px}
+  .perfume-page .product-card h3{font-size:clamp(15px,4.2vw,17px);line-height:1.16}
+  .perfume-card-family{font-size:8px;letter-spacing:.08em}
+  .perfume-card-brand{font-size:10px}
+  .perfume-product-meta{font-size:9px;gap:3px 5px}
+  .perfume-price-label{padding-top:4px;font-size:8px}
+  .perfume-product-price{font-size:clamp(20px,5.4vw,23px)}
+  .perfume-product-price-secondary{font-size:10px}
+  .perfume-page .product-actions{margin-top:5px}
+  .perfume-page .perfume-view-button{min-height:36px;padding:8px;font-size:10px}
+}
+@media(max-width:390px){
+  .perfume-page .product-card{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+  .perfume-page .product-image img{min-height:0;padding:6px}
+  .perfume-page .product-card-content{padding:9px}
+}
