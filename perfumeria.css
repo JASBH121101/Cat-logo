@@ -134,8 +134,8 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
 .perfume-page .product-grid,.perfume-page .featured-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr)); align-items:stretch; gap:16px; }
 .perfume-page .product-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--perfume-border); border-radius:3px; color:var(--perfume-ink); background:var(--perfume-card); box-shadow:none; transition:transform .18s,border-color .18s,box-shadow .18s; }
 .perfume-page .product-card:hover { transform:translateY(-3px); border-color:var(--perfume-gold); box-shadow:var(--perfume-shadow); }
-.perfume-page .product-image { position:relative; display:grid; place-items:center; aspect-ratio:4/4.5; min-width:0; overflow:hidden; border-bottom:1px solid var(--perfume-border); background:radial-gradient(ellipse at 50% 30%,rgba(190,151,85,.13),transparent 60%),var(--perfume-card); }
-.perfume-page .product-image img { display:block; width:100%; height:100%; object-fit:contain; padding:14px; }
+.perfume-page .product-image { position:relative; display:grid; place-items:center; aspect-ratio:1 / 1; min-width:0; overflow:hidden; border-bottom:1px solid var(--perfume-border); background:radial-gradient(ellipse at 50% 30%,rgba(190,151,85,.13),transparent 60%),var(--perfume-card); }
+.perfume-page .product-image img { display:block; width:100%; height:100%; object-fit:contain; object-position:center; padding:0; box-sizing:border-box; }
 .perfume-photo-placeholder { display:grid; place-items:center; align-content:center; gap:10px; width:100%; height:100%; min-height:210px; color:var(--perfume-gold); background:radial-gradient(ellipse at 50% 40%,rgba(185,148,84,.13),transparent 57%); }
 .perfume-photo-placeholder > span { font-size:42px; }
 .perfume-photo-placeholder small { color:var(--perfume-muted); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
@@ -237,7 +237,7 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
   .perfume-featured-section { padding:14px; }
   .perfume-featured-heading { align-items:flex-start; flex-direction:column; }
   .perfume-page .product-grid,.perfume-page .featured-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-  .perfume-page .product-image { aspect-ratio:4/4.7; }
+  .perfume-page .product-image { aspect-ratio:1 / 1; }
   .perfume-page .product-card-content { padding:10px; gap:6px; }
   .perfume-page .product-card h3 { font-size:17px; }
   .perfume-product-meta { font-size:9px; }
