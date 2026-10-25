@@ -190,10 +190,6 @@ function updateProductFormMode() {
   if (galleryTitle) galleryTitle.textContent = isPerfume
     ? (isSet ? "Fotografías generales del set" : "Fotografías generales de la fragancia")
     : "Fotografías generales del producto";
-  const galleryDescription = $("#product-images-title")?.parentElement?.querySelector("p");
-  if (galleryDescription) galleryDescription.textContent = isPerfume
-    ? (isSet ? "La primera fotografía será la portada del set. Añadí imágenes de todas las fragancias incluidas y de la caja." : "La primera fotografía será la portada. Añadí imágenes de la botella, la caja y los detalles de la fragancia.")
-    : "La primera fotografía será la portada predeterminada. Cada color o variante puede mantener su propia galería.";
 
   const editing = Boolean($("#product-id")?.value);
   const formTitle = $("#form-title");
@@ -1077,7 +1073,7 @@ function renderVariantRows(variants = []) {
     colors.forEach(color => list?.insertAdjacentHTML("beforeend", variantRowMarkup(color)));
     if (list && !colors.length) list.innerHTML = '<p class="variants-empty-hint">Añadí los colores disponibles para esta configuración.</p>';
   });
-  if (!groups.size) container.innerHTML = '<p class="variants-empty-hint">La configuración principal está arriba. Añadí otra configuración solo si cambia la RAM o el almacenamiento.</p>';
+  if (!groups.size) container.replaceChildren();
 
   updateVariantRowHeadings();
   form?.querySelectorAll("[data-variant-row]").forEach(row => { renderVariantImagePreview(row); syncColorLibraryRowControls(row); });
@@ -1401,7 +1397,7 @@ form?.addEventListener("click", event => {
       if (!baseColorManager?.querySelector('[data-variant-group][data-base-group="true"]')) {
         renderVariantRows([]);
       } else {
-        variantsContainer.innerHTML = '<p class="variants-empty-hint">La configuración principal está arriba. Añadí otra configuración solo si cambia la RAM o el almacenamiento.</p>';
+        variantsContainer.replaceChildren();
       }
     }
     updateEditorDirtyState();
@@ -2920,8 +2916,6 @@ $("#product-type")?.addEventListener("change", () => {
   if (formTitle && isPerfume) formTitle.textContent = isSet ? (editing ? "Editar set de perfumes" : "Registrar set de perfumes") : (editing ? "Editar fragancia" : "Registrar fragancia");
   const galleryTitle = $("#product-images-title");
   if (galleryTitle && isPerfume) galleryTitle.textContent = isSet ? "Fotografías generales del set" : "Fotografías generales de la fragancia";
-  const galleryDescription = $("#product-images-title")?.parentElement?.querySelector("p");
-  if (galleryDescription && isPerfume) galleryDescription.textContent = isSet ? "La primera fotografía será la portada del set. Añadí imágenes de todas las fragancias incluidas y de la caja." : "La primera fotografía será la portada. Añadí imágenes de la botella, la caja y los detalles de la fragancia.";
   updateEditorDirtyState();
   scheduleLocalRecoverySave();
 });
