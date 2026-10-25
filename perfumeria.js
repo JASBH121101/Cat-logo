@@ -800,17 +800,17 @@ initializePerfumes();
   if (!carousel || !stage || !imageA || !imageB || !previousButton || !nextButton || !countNode || !titleNode || !dotsNode || !progressNode || !progressFill) return;
 
   const slides = [
-    { src: "../img/perfume-carousel/supremacy-pour-femme.svg?v=20261025-carousel1", title: "Afnan Supremacy Pour Femme", alt: "Fragancia Afnan Supremacy Pour Femme en presentación de frasco y caja", maxWidth: 280 },
-    { src: "../img/perfume-carousel/creed-wind-flowers.svg?v=20261025-carousel1", title: "Creed Wind Flowers", alt: "Fragancia Creed Wind Flowers en frasco rosa con su caja" },
-    { src: "../img/perfume-carousel/carolina-herrera-la-bomba.svg?v=20261025-carousel1", title: "Carolina Herrera La Bomba", alt: "Fragancia Carolina Herrera La Bomba con frasco en forma de mariposa y caja rosa", maxWidth: 270 },
-    { src: "../img/perfume-carousel/afnan-9pm.svg?v=20261025-carousel1", title: "Afnan 9 PM", alt: "Perfume Afnan 9 PM junto a su caja negra" },
-    { src: "../img/perfume-carousel/afnan-9am-dive.svg?v=20261025-carousel1", title: "Afnan 9 AM Dive", alt: "Perfume Afnan 9 AM Dive en tonos turquesa" },
-    { src: "../img/perfume-carousel/lattafa-qaed-al-fursan.svg?v=20261025-carousel1", title: "Lattafa Qaed Al Fursan", alt: "Perfume Lattafa Qaed Al Fursan con caja negra y detalles dorados" },
-    { src: "../img/perfume-carousel/parfums-de-marly-oajan.svg?v=20261025-carousel1", title: "Parfums de Marly Oajan", alt: "Perfume Parfums de Marly Oajan en frasco oscuro y caja negra" },
-    { src: "../img/perfume-carousel/creed-absolu-aventus.svg?v=20261025-carousel1", title: "Creed Absolu Aventus", alt: "Frasco oscuro Creed Absolu Aventus" },
-    { src: "../img/perfume-carousel/dior-sauvage.svg?v=20261025-carousel1", title: "Dior Sauvage", alt: "Perfume Dior Sauvage acompañado por su caja" },
-    { src: "../img/perfume-carousel/afnan-odyssey-mandarin-sky.svg?v=20261025-carousel1", title: "Afnan Odyssey Mandarin Sky", alt: "Perfume Afnan Odyssey Mandarin Sky con frasco azul y caja naranja" },
-    { src: "../img/perfume-carousel/valentino-born-in-roma-intense.svg?v=20261025-carousel1", title: "Valentino Born in Roma Intense Uomo", alt: "Perfume Valentino Born in Roma Intense Uomo en un ambiente oscuro", maxWidth: 240 }
+    { src: "../img/perfume-showcase/supremacy-pour-femme.webp?v=20261025-carousel-photos2", title: "Afnan Supremacy Pour Femme", alt: "Fragancia Afnan Supremacy Pour Femme en presentación de frasco y caja", maxWidth: 280 },
+    { src: "../img/perfume-showcase/creed-wind-flowers.webp?v=20261025-carousel-photos2", title: "Creed Wind Flowers", alt: "Fragancia Creed Wind Flowers en frasco rosa con su caja" },
+    { src: "../img/perfume-showcase/la-bomba.webp?v=20261025-carousel-photos2", title: "Carolina Herrera La Bomba", alt: "Fragancia Carolina Herrera La Bomba con frasco en forma de mariposa y caja rosa", maxWidth: 270 },
+    { src: "../img/perfume-showcase/afnan-9pm.webp?v=20261025-carousel-photos2", title: "Afnan 9 PM", alt: "Perfume Afnan 9 PM junto a su caja negra" },
+    { src: "../img/perfume-showcase/afnan-9am.webp?v=20261025-carousel-photos2", title: "Afnan 9 AM Dive", alt: "Perfume Afnan 9 AM Dive en tonos turquesa" },
+    { src: "../img/perfume-showcase/qaed-al-fursan.webp?v=20261025-carousel-photos2", title: "Lattafa Qaed Al Fursan", alt: "Perfume Lattafa Qaed Al Fursan con caja negra y detalles dorados" },
+    { src: "../img/perfume-showcase/pdm-oajan.webp?v=20261025-carousel-photos2", title: "Parfums de Marly Oajan", alt: "Perfume Parfums de Marly Oajan en frasco oscuro y caja negra" },
+    { src: "../img/perfume-showcase/creed-absolu-aventus.webp?v=20261025-carousel-photos2", title: "Creed Absolu Aventus", alt: "Frasco oscuro Creed Absolu Aventus" },
+    { src: "../img/perfume-showcase/dior-sauvage.webp?v=20261025-carousel-photos2", title: "Dior Sauvage", alt: "Perfume Dior Sauvage acompañado por su caja" },
+    { src: "../img/perfume-showcase/mandarin-sky.webp?v=20261025-carousel-photos2", title: "Afnan Odyssey Mandarin Sky", alt: "Perfume Afnan Odyssey Mandarin Sky con frasco azul y caja naranja" },
+    { src: "../img/perfume-showcase/valentino-born-in-roma-intense.webp?v=20261025-carousel-photos2", title: "Valentino Born in Roma Intense Uomo", alt: "Perfume Valentino Born in Roma Intense Uomo en un ambiente oscuro", maxWidth: 240 }
   ];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const layers = [imageA, imageB];
