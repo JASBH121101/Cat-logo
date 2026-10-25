@@ -116,3 +116,20 @@ html[data-theme="dark"] .quick-import-status[data-state="error"] { background: #
   .quick-import-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .quick-import-section { padding: 12px; }
 }
+
+/* Safe mode banner for Vercel preview deployments. */
+.quick-import-preview-only-notice {
+  padding: 11px 13px;
+  border: 1px solid #e4b04c;
+  border-radius: 12px;
+  background: #fff6df;
+  color: #754400;
+  font-size: .82rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+html[data-theme="dark"] .quick-import-preview-only-notice {
+  background: #362b18;
+  border-color: #9c742b;
+  color: #ffe1a0;
+}

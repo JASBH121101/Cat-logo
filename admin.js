@@ -52,6 +52,35 @@ const supabase = configured
     })
   : null;
 
+/* Vercel deployments are test previews: block product writes and Storage mutations. */
+const IS_READ_ONLY_VERCEL_PREVIEW = /\.vercel\.app$/i.test(window.location.hostname);
+if (supabase && IS_READ_ONLY_VERCEL_PREVIEW) {
+  const originalFrom = supabase.from.bind(supabase);
+  supabase.from = table => {
+    const query = originalFrom(table);
+    for (const method of ["insert", "update", "upsert", "delete"]) {
+      if (typeof query[method] === "function") {
+        query[method] = () => {
+          throw new Error("Vista previa segura: no se permiten cambios en la base de datos desde Vercel.");
+        };
+      }
+    }
+    return query;
+  };
+  const originalStorageFrom = supabase.storage.from.bind(supabase.storage);
+  supabase.storage.from = bucket => {
+    const storageApi = originalStorageFrom(bucket);
+    for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl", "createSignedUrls"]) {
+      if (typeof storageApi[method] === "function") {
+        storageApi[method] = async () => {
+          throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde Vercel.");
+        };
+      }
+    }
+    return storageApi;
+  };
+}
+
 const $ = selector => document.querySelector(selector);
 
 /* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
@@ -1277,6 +1306,14 @@ function photoEntryIsCurrent(entry,token){
 function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   const item=entry?.item;
   if(!item||item.kind!=="new"||!item.file)return Promise.resolve({ok:item?.kind==="existing"});
+  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+    item.uploadState = "";
+    item.uploadStage = "preview-only";
+    item.uploadProgress = 0;
+    item.uploadError = "";
+    refreshPhotoUploadUI(entry);
+    return Promise.resolve({ok:false,previewOnly:true});
+  }
   if(item.uploadPromise)return item.uploadPromise;
   if(item.uploadState==="failed"&&!retryFailed)return Promise.resolve({ok:false,skipped:true});
   const productId=getOrCreatePhotoProductId();
@@ -1383,6 +1420,10 @@ mainImagesInput?.addEventListener("change",()=>{
   added.forEach(item=>void queueBackgroundPhotoUpload({source:"main",item}));
 });
 retryMainImagesButton?.addEventListener("click",async()=>{
+  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+    message("#product-form-status", "Vista previa segura: la subida a Storage está deshabilitada en Vercel.", "error");
+    return;
+  }
   if(retryMainImageUploadsInProgress||activePhotoUploads>0||photoUploadQueue.length)return;
   const productId=$("#product-id")?.value?.trim()||"";
   if(!productId||!currentUser||!supabase){
@@ -3467,6 +3508,9 @@ async function recoverUploadedImageUrl(bucket, path) {
 }
 
 async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
+  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+    throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían a Supabase.");
+  }
   const {data,error:sessionError}=await supabase.auth.getSession();
   if(sessionError)throw sessionError;
   const accessToken=data?.session?.access_token;
@@ -4151,6 +4195,7 @@ function syncQuickImportCategoryOptions() {
 
 function setProductEntryMode(mode) {
   let requested = mode === "quick" ? "quick" : "written";
+  $("#quick-import-preview-only-notice")?.classList.toggle("hidden", !IS_READ_ONLY_VERCEL_PREVIEW);
   if (requested === "quick" && activeCatalogType !== "technology") {
     setQuickImportStatus("La importación rápida está preparada para el catálogo JB TECH. Para perfumería, usá el formulario actual.", "error");
     requested = "written";
@@ -4586,6 +4631,10 @@ form?.addEventListener("click", event => {
 form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
+  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+    message("#product-form-status", "Vista previa segura de Vercel: los cambios no se guardan. Usá esta vista para probar el importador sin modificar producción.", "error");
+    return;
+  }
   if (productSaveInProgress) return;
   const saveAction=event.submitter?.dataset?.saveAction||form.dataset.lastSaveAction||"unpublished";
   form.dataset.lastSaveAction = "";
