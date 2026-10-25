@@ -577,3 +577,11 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
 
 /* Filtros de marca y ordenamiento para perfumería */
 .catalog-control-field{color:var(--perfume-muted);font-size:12px;letter-spacing:.01em}.catalog-control-field input,.catalog-control-field select{border-color:var(--perfume-border);border-radius:3px;background:var(--perfume-input);color:var(--perfume-ink)}.catalog-control-field input:focus,.catalog-control-field select:focus{border-color:var(--perfume-gold);outline:2px solid color-mix(in srgb,var(--perfume-gold) 20%,transparent)}.perfume-extra-filters{margin:0 0 20px}@media(max-width:640px){.perfume-extra-filters{grid-template-columns:1fr;gap:10px}}
+
+/* Compact single-select catalog filters */
+.perfume-extra-filters{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:0 0 14px}
+.perfume-extra-filters .catalog-control-field{min-width:0}
+.perfume-extra-filters .catalog-control-field input,.perfume-extra-filters .catalog-control-field select{min-width:0;width:100%;min-height:44px;padding:9px 10px;font-size:13px}
+.perfume-product-type-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 16px;align-items:stretch}
+.perfume-page .perfume-product-type-filters .filter-chip{width:100%;min-width:0;min-height:42px;padding:8px 6px;white-space:normal;text-align:center;font-size:clamp(10px,2.6vw,12px)}
+@media(max-width:760px){.perfume-extra-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.perfume-extra-filters .perfume-search-control{grid-column:1/-1}.perfume-product-type-filters{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.perfume-page .perfume-product-type-filters .filter-chip{font-size:10px;padding:8px 4px}}
