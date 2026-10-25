@@ -119,6 +119,19 @@ function statusLabel(value) {
   return "Disponible";
 }
 
+function refreshBrandSuggestions() {
+  const list = document.getElementById("perfume-brand-suggestions");
+  if (!list) return;
+  const brands = [...new Set(perfumes
+    .map(product => String(product.brand || "").trim())
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  list.replaceChildren(...brands.map(brand => {
+    const option = document.createElement("option");
+    option.value = brand;
+    return option;
+  }));
+}
+
 function priceBound(input) {
   const raw = String(input?.value || "").trim();
   if (!raw) return null;
@@ -602,6 +615,8 @@ async function initializePerfumes() {
       .select("*")
       .eq("catalog_type", "perfumery")
       .eq("is_published", true)
+      .eq("workflow_status", "published")
+      .is("deleted_at", null)
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -609,6 +624,7 @@ async function initializePerfumes() {
     const products = data || [];
     if (!products.length) {
       perfumes = [];
+      refreshBrandSuggestions();
       renderProducts();
       return;
     }
@@ -621,6 +637,7 @@ async function initializePerfumes() {
 
     const byProduct = new Map((detailRows || []).map(detail => [String(detail.product_id), detail]));
     perfumes = products.map(product => ({ ...product, perfume_details: byProduct.get(String(product.id)) || null }));
+    refreshBrandSuggestions();
     renderProducts();
     loadDeepLink();
   } catch (error) {
