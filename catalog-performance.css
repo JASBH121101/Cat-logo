@@ -3,17 +3,16 @@
    Mantiene identidad y destellos; reduce efectos caros en móvil.
    ========================================================= */
 
-/* JB TECH: conservar el marco luminoso, con un recorrido más pausado.
-   El brillo diagonal sigue existiendo, pero sin blur ni mezcla de capas. */
+/* JB TECH: conservar el brillo diagonal, con una pasada fluida y de bajo costo. */
 body.technology-catalog .featured-section:before {
-  animation-duration: 20s;
+  animation-duration: 3.6s;
 }
 body.technology-catalog .featured-section:after {
   filter: none;
   mix-blend-mode: normal;
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
-  animation-duration: 12s;
+  animation-duration: var(--signature-shine-duration, 5200ms);
   will-change: transform, opacity;
 }
 body.technology-catalog .featured-section:not(.signature-shine-active):after {
@@ -89,10 +88,10 @@ body.perfume-page .perfume-product-card:hover .perfume-product-image img {
    persistente ni sombras amplias que compitan con el scroll. */
 @media (hover: none), (max-width: 760px) {
   body.technology-catalog .featured-section:before {
-    animation-duration: 26s;
+    animation-duration: 3.6s;
   }
   body.technology-catalog .featured-section.signature-shine-active:after {
-    animation-duration: 14s;
+    animation-duration: var(--signature-shine-duration, 5800ms);
   }
   body.technology-catalog .product-card:hover,
   body.technology-catalog .featured-product-card:hover {
