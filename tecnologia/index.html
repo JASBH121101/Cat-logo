@@ -18,7 +18,7 @@
 
   <link rel="stylesheet" href="../brand-refresh.css?v=20261024-share-preview-delete9">
   <script src="../config.js"></script>
-  <script type="module" src="../app.js?v=20261025-publication-sort2"></script>
+  <script type="module" src="../app.js?v=20261025-brand-dropdown2"></script>
   <script src="../ui.js?v=20261024-auto-close3" defer></script>
 </head>
 
@@ -125,16 +125,7 @@
           </p>
         </div>
 
-        <label class="search-box">
-          <span aria-hidden="true">⌕</span>
-          <input
-            id="search-input"
-            type="search"
-            placeholder="Buscar producto o modelo…"
-            aria-label="Buscar productos"
-          >
-          <kbd>Buscar</kbd>
-        </label>
+
       </div>
 
       <div class="filter-row" id="category-filters" aria-label="Filtrar por categoría">
@@ -150,7 +141,7 @@
       </div>
 
       <div class="catalog-extra-filters" aria-label="Buscar por marca y ordenar productos">
-        <label class="catalog-control-field"><span>Buscar marca o modelo</span><div class="live-search-wrap"><input id="brand-search-input" type="search" placeholder="Escribí una marca o modelo…" autocomplete="off" aria-label="Filtrar por marca o modelo" aria-autocomplete="list" aria-controls="brand-suggestions"><div id="brand-suggestions" class="live-search-menu" role="listbox" hidden></div></div></label>
+        <label class="catalog-control-field"><span>Buscar marca</span><div class="live-search-wrap"><input id="brand-search-input" type="search" placeholder="Escribí una marca…" autocomplete="off" aria-label="Filtrar por marca" aria-autocomplete="list" aria-controls="brand-suggestions"><div id="brand-suggestions" class="live-search-menu" role="listbox" hidden></div></div></label>
         <label class="catalog-control-field"><span>Ordenar por</span><select id="catalog-sort-select" aria-label="Ordenar productos"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
       </div>
 
