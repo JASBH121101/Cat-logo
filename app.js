@@ -647,6 +647,19 @@ function renderCard(product) {
   `;
 }
 
+function refreshBrandSuggestions() {
+  const list = document.getElementById("brand-suggestions");
+  if (!list) return;
+  const brands = [...new Set(products
+    .map(product => String(product.brand || "").trim())
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  list.replaceChildren(...brands.map(brand => {
+    const option = document.createElement("option");
+    option.value = brand;
+    return option;
+  }));
+}
+
 function readPriceBound(input) {
   if (!input) return null;
   const raw = String(input.value || "").trim();
@@ -1463,6 +1476,8 @@ async function initializeCatalog() {
       .select("*")
       .eq("catalog_type", "technology")
       .eq("is_published", true)
+      .eq("workflow_status", "published")
+      .is("deleted_at", null)
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -1478,6 +1493,7 @@ async function initializeCatalog() {
   }
 
   products = data;
+  refreshBrandSuggestions();
   try {
     renderProducts();
   } catch (error) {
