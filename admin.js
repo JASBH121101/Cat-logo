@@ -1141,6 +1141,45 @@ const imageId = () => crypto.randomUUID();
 const imagePreviewUrl = item => item.kind === "new" ? item.previewUrl : item.url;
 
 function disposeImageItems(items){items.forEach(item=>{if(item.kind==="new"&&item.previewUrl)URL.revokeObjectURL(item.previewUrl);});}
+function syncPhotoProgressMarkup(wrapper,item){
+  if(!wrapper||!item)return;
+  const track=wrapper.querySelector("[data-photo-progress-track]");
+  const fill=wrapper.querySelector("[data-photo-progress-fill]");
+  const label=wrapper.querySelector("[data-photo-progress-label]");
+  const progress=Math.max(0,Math.min(100,Math.round(Number(item.uploadProgress)||0)));
+  const state=item.uploadState||"";
+  const stateLabel=state==="queued"?"En cola":state==="uploading"&&item.uploadStage==="processing"?"Optimizando":state==="uploading"?progress+"%":state==="failed"?"Error · reintentá":state==="done"?"100% completada":"";
+  wrapper.hidden=!state;
+  wrapper.dataset.state=state;
+  if(track){
+    track.setAttribute("aria-valuenow",String(progress));
+    track.setAttribute("aria-valuetext",stateLabel||"Pendiente");
+    track.setAttribute("aria-label","Progreso de subida de "+(item.name||item.file?.name||"fotografía"));
+  }
+  if(fill)fill.style.width=progress+"%";
+  if(label)label.textContent=stateLabel;
+}
+function createPhotoUploadProgress(item){
+  const wrapper=document.createElement("div");
+  wrapper.className="admin-photo-upload-progress";
+  wrapper.dataset.photoProgress="";
+  const track=document.createElement("div");
+  track.className="admin-photo-progress-track";
+  track.dataset.photoProgressTrack="";
+  track.setAttribute("role","progressbar");
+  track.setAttribute("aria-valuemin","0");
+  track.setAttribute("aria-valuemax","100");
+  const fill=document.createElement("span");
+  fill.className="admin-photo-progress-fill";
+  fill.dataset.photoProgressFill="";
+  track.append(fill);
+  const label=document.createElement("span");
+  label.className="admin-photo-progress-label";
+  label.dataset.photoProgressLabel="";
+  wrapper.append(track,label);
+  syncPhotoProgressMarkup(wrapper,item);
+  return wrapper;
+}
 function getOrCreatePhotoProductId(){
   const idField=$("#product-id");
   if(!idField)throw new Error("No se encontró el identificador del producto.");
@@ -1197,7 +1236,7 @@ function updateMainImageRetryButton(){
   const retryable=pending.filter(entry=>!["queued","uploading"].includes(entry.item.uploadState)).length;
   const busy=retryMainImageUploadsInProgress||activePhotoUploads>0||photoUploadQueue.length>0;
   const canPersist=editorRecordExists&&(mainImageSyncPending||variantImageSyncPending);
-  const show=Boolean(productId&&editorRecordExists&&(retryable>0||canPersist));
+  const show=Boolean(productId&&(retryable>0||canPersist));
   retryMainImagesButton.hidden=!show;
   retryMainImagesButton.disabled=busy||!currentUser||!supabase||!productId;
   retryMainImagesButton.setAttribute("aria-busy",String(busy));
@@ -1210,6 +1249,15 @@ function refreshPhotoUploadUI(entry){
   else if(entry?.source==="main")renderMainImagePreviews();
   updateBackgroundPhotoStatus();updateMainImageRetryButton();
 }
+function updatePhotoProgressVisual(entry){
+  if(!entry?.item)return;
+  const selector=entry.source==="main"?"[data-image-item-id]":"[data-variant-image-id]";
+  const list=entry.source==="main"?mainImagesPreview:entry.row?.querySelector("[data-variant-image-preview]");
+  const card=Array.from(list?.querySelectorAll(selector)||[]).find(node=>
+    node.dataset[entry.source==="main"?"imageItemId":"variantImageId"]===String(entry.item.id)
+  );
+  if(card)syncPhotoProgressMarkup(card.querySelector("[data-photo-progress]"),entry.item);
+}
 function photoEntryIsCurrent(entry,token){
   if(token!==photoUploadEditorToken)return false;
   if(entry.source==="main")return mainImageItems.includes(entry.item);
@@ -1221,7 +1269,7 @@ function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   if(item.uploadPromise)return item.uploadPromise;
   if(item.uploadState==="failed"&&!retryFailed)return Promise.resolve({ok:false,skipped:true});
   const productId=getOrCreatePhotoProductId();
-  item.name=item.name||item.file.name;item.uploadState="queued";item.uploadError="";
+  item.name=item.name||item.file.name;item.uploadState="queued";item.uploadStage="queued";item.uploadProgress=0;item.uploadError="";
   const token=photoUploadEditorToken;
   let resolveTask;
   const promise=new Promise(resolve=>{resolveTask=resolve;});
@@ -1238,20 +1286,21 @@ function pumpPhotoUploadQueue(){
   while(activePhotoUploads<IMAGE_UPLOAD_CONCURRENCY&&photoUploadQueue.length){
     const job=photoUploadQueue.shift(),entry=job.entry,productId=job.productId,token=job.token,item=entry.item;
     if(!photoEntryIsCurrent(entry,token)||item.kind!=="new"||!item.file||item.cancelRequested){settleSkippedPhotoJob(job);continue;}
-    activePhotoUploads++;item.uploadState="uploading";refreshPhotoUploadUI(entry);
+    activePhotoUploads++;item.uploadState="uploading";item.uploadProgress=0;refreshPhotoUploadUI(entry);
     void (async function(){
       let result={ok:false};
       try{
         const fileName=item.name||item.file.name;
-        const url=await uploadImage(productId,item.file,entry.source==="variant"?"variants":"");
+        item.uploadStage="processing";updatePhotoProgressVisual(entry);
+        const url=await uploadImage(productId,item.file,entry.source==="variant"?"variants":"",percent=>{item.uploadStage="uploading";item.uploadProgress=percent;updatePhotoProgressVisual(entry);});
         if(photoEntryIsCurrent(entry,token)&&!item.cancelRequested){
-          item.kind="existing";item.url=url;item.uploadState="done";item.name=fileName;delete item.uploadError;
+          item.kind="existing";item.url=url;item.uploadState="done";item.uploadProgress=100;item.name=fileName;delete item.uploadError;
           if(item.previewUrl){URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;}delete item.file;
           if(entry.source==="variant")variantImageSyncPending=true;else mainImageSyncPending=true;
           updateEditorDirtyState();scheduleLocalRecoverySave();result={ok:true,url};
         }
       }catch(error){
-        if(photoEntryIsCurrent(entry,token)&&!item.cancelRequested){item.uploadState="failed";item.uploadError=error?.message||"Error desconocido";result={ok:false,error};}
+        if(photoEntryIsCurrent(entry,token)&&!item.cancelRequested){item.uploadState="failed";item.uploadStage="failed";item.uploadError=error?.message||"Error desconocido";result={ok:false,error};}
       }finally{
         activePhotoUploads=Math.max(0,activePhotoUploads-1);
         if(item.uploadPromise===job.promise)item.uploadPromise=null;
@@ -1304,7 +1353,9 @@ function renderMainImagePreviews(){
    const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.mainImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);
   }
   const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.mainImageRemove="true";remove.title="Quitar fotografía";
-  controls.append(remove);card.append(badge,img,caption,controls);mainImagesPreview.append(card);
+  controls.append(remove);
+  card.append(badge,img,caption,createPhotoUploadProgress(item),controls);
+  mainImagesPreview.append(card);
   });
   updateMainImageRetryButton();
 }
@@ -1407,7 +1458,11 @@ function renderVariantImagePreview(row){
   const badge=document.createElement("span");badge.className="admin-image-order-badge"+(index===0?" is-cover":"");badge.setAttribute("aria-label",index===0?"Fotografía de portada":"Fotografía "+(index+1));badge.title=index===0?"Fotografía de portada":"Fotografía "+(index+1);badge.innerHTML=index===0?'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19h14l1-9-5 3-3-7-3 7-5-3 1 9Z"></path><path d="M7 22h10"></path></svg>':'<span>'+String(index+1)+'</span>';
   const controls=document.createElement("div");controls.className="admin-image-controls";
   for(const [label,offset,disabled] of [["↑",-1,index===0],["↓",1,index===items.length-1]]){const b=document.createElement("button");b.type="button";b.className="admin-mini-button";b.textContent=label;b.disabled=disabled;b.dataset.variantImageMove=String(offset);b.title=offset<0?"Mover antes":"Mover después";controls.append(b);}
-  const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.variantImageRemove="true";remove.title="Quitar fotografía";controls.append(remove);card.append(badge,img,controls);preview.append(card);
+  const caption=document.createElement("figcaption");
+  const itemLabel=item.name||item.file?.name||"Imagen guardada";
+  caption.textContent=item.kind==="new"?itemLabel:item.name||"Imagen guardada";
+  const remove=document.createElement("button");remove.type="button";remove.className="admin-mini-button danger";remove.textContent="×";remove.dataset.variantImageRemove="true";remove.title="Quitar fotografía";controls.append(remove);
+  card.append(badge,img,caption,createPhotoUploadProgress(item),controls);preview.append(card);
  });
 }
 function moveVariantImage(row,id,offset){initVariantImageItems(row);const a=row._variantImageItems,from=a.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=a.length)return;const [item]=a.splice(from,1);a.splice(to,0,item);syncVariantImageFields(row);renderVariantImagePreview(row);updateEditorDirtyState();}
@@ -3398,7 +3453,51 @@ async function recoverUploadedImageUrl(bucket, path) {
   }
 }
 
-async function uploadImage(productId, file, subfolder = "") {
+async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
+  const {data,error:sessionError}=await supabase.auth.getSession();
+  if(sessionError)throw sessionError;
+  const accessToken=data?.session?.access_token;
+  if(!accessToken)throw new Error("La sesión administrativa expiró. Volvé a iniciar sesión antes de subir fotografías.");
+  const baseUrl=String(CONFIG.supabaseUrl||"").replace(/\/+$/,"");
+  if(!baseUrl||!CONFIG.supabaseAnonKey)throw new Error("Falta la configuración pública de Supabase para subir fotografías.");
+  const encodedBucket=encodeURIComponent(bucket);
+  const encodedPath=String(path).split("/").map(part=>encodeURIComponent(part)).join("/");
+  const endpoint=baseUrl+"/storage/v1/object/"+encodedBucket+"/"+encodedPath;
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open("POST",endpoint,true);
+    xhr.setRequestHeader("apikey",CONFIG.supabaseAnonKey);
+    xhr.setRequestHeader("Authorization","Bearer "+accessToken);
+    xhr.setRequestHeader("Content-Type",contentType);
+    xhr.setRequestHeader("x-upsert","false");
+    xhr.setRequestHeader("cache-control","max-age=3600");
+    xhr.upload.addEventListener("progress",event=>{
+      if(!event.lengthComputable||typeof onProgress!=="function")return;
+      const percent=Math.max(0,Math.min(100,Math.round(event.loaded/event.total*100)));
+      try{onProgress(percent);}catch(error){console.warn("No se pudo actualizar el progreso visual de la fotografía.",error);}
+    });
+    xhr.onload=()=>{
+      if(xhr.status>=200&&xhr.status<300){resolve();return;}
+      let detail="";
+      try{
+        const body=JSON.parse(xhr.responseText||"{}");
+        detail=String(body.message||body.error||body.error_description||"");
+      }catch{}
+      const message=detail||("Supabase Storage respondió HTTP "+xhr.status+".");
+      const uploadError=new Error(message);
+      uploadError.status=xhr.status;
+      uploadError.responseText=xhr.responseText||"";
+      reject(uploadError);
+    };
+    xhr.onerror=()=>reject(new Error("Failed to fetch: se interrumpió la conexión durante la subida de la fotografía."));
+    xhr.onabort=()=>reject(new Error("Failed to fetch: la subida de la fotografía fue interrumpida."));
+    xhr.ontimeout=()=>reject(new Error("Failed to fetch: la subida superó el tiempo de espera."));
+    xhr.timeout=120000;
+    xhr.send(file);
+  });
+}
+
+async function uploadImage(productId, file, subfolder = "", onProgress = null) {
   if (!file) return "";
 
   const originalMime = inferImageMime(file);
@@ -3431,34 +3530,19 @@ async function uploadImage(productId, file, subfolder = "") {
   const maxAttempts = 3;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const uploadResult = await supabase
-        .storage
-        .from(bucket)
-        .upload(path, uploadFile, {
-          contentType: uploadMime,
-          upsert: false
-        });
-
-      if (!uploadResult.error) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return data.publicUrl;
-      }
-
-      lastError = uploadResult.error;
-      if (isTransientImageUploadError(lastError)) {
-        const recoveredUrl = await recoverUploadedImageUrl(bucket, path);
-        if (recoveredUrl) return recoveredUrl;
-      }
-      if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(lastError.message || ""))) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return data.publicUrl;
-      }
-      if (!isTransientImageUploadError(lastError) || attempt === maxAttempts - 1) break;
+      await uploadStorageObjectWithProgress(bucket, path, uploadFile, uploadMime, onProgress);
+      if (typeof onProgress === "function") onProgress(100);
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      return data.publicUrl;
     } catch (error) {
       lastError = error;
       if (isTransientImageUploadError(error)) {
         const recoveredUrl = await recoverUploadedImageUrl(bucket, path);
         if (recoveredUrl) return recoveredUrl;
+      }
+      if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(error?.message || ""))) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+        return data.publicUrl;
       }
       if (!isTransientImageUploadError(error) || attempt === maxAttempts - 1) break;
     }
@@ -3722,6 +3806,15 @@ form?.addEventListener("submit", async event => {
       else if (item.url) uploadedMainImages.push(item.url);
     }
     renderMainImagePreviews();
+
+    if (imageUploadErrors.length) {
+      const details = imageUploadErrors.slice(0, 3).join(" · ");
+      throw new Error(
+        "No se guardó la ficha porque todavía hay fotografías que no se pudieron subir. " +
+        "Los archivos siguen en el formulario; revisá la conexión y pulsá Guardar para reintentar. " +
+        "Detalle: " + details
+      );
+    }
 
     const colors = isPerfume ? [] : deriveColorsFromVariants(variants, existingProduct?.colors || []);
     const baseUSD = isPerfume ? toOptionalNumber($("#product-price-usd").value, "Precio base en dólares") : null;

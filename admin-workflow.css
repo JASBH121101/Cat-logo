@@ -125,3 +125,62 @@ html[data-theme='dark'] body.admin-body form#product-form .retry-main-image-uplo
 .background-photo-upload-status[data-state="uploading"]{color:#66d8f3}
 .background-photo-upload-status[data-state="error"]{color:#f39aaa}
 .background-photo-upload-status[data-state="success"]{color:#89d7b2}
+
+
+/* Progreso real por archivo para las galerías principal y de variantes. */
+html body.admin-body .admin-photo-upload-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 7px 0 2px;
+}
+html body.admin-body .admin-photo-upload-progress[hidden] { display: none !important; }
+html body.admin-body .admin-photo-progress-track {
+  position: relative;
+  display: block;
+  min-width: 0;
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid #bfcee5;
+  border-radius: 999px;
+  background: #e8eef8;
+}
+html body.admin-body .admin-photo-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0d9fc1, #5365ec);
+  transition: width .12s linear;
+}
+html body.admin-body .admin-photo-progress-label {
+  min-width: 68px;
+  color: #49617f;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: right;
+  white-space: nowrap;
+}
+html body.admin-body .admin-photo-upload-progress[data-state="queued"] .admin-photo-progress-fill {
+  width: 4% !important;
+  opacity: .5;
+}
+html body.admin-body .admin-photo-upload-progress[data-state="failed"] .admin-photo-progress-fill {
+  background: #dc5260;
+}
+html body.admin-body .admin-photo-upload-progress[data-state="failed"] .admin-photo-progress-label {
+  color: #d84352;
+}
+html body.admin-body .admin-photo-upload-progress[data-state="done"] .admin-photo-progress-label {
+  color: #0b9468;
+}
+html[data-theme="dark"] body.admin-body .admin-photo-progress-track {
+  border-color: #32496b;
+  background: #14223a;
+}
+html[data-theme="dark"] body.admin-body .admin-photo-progress-label { color: #c4d6f4; }
+html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state="failed"] .admin-photo-progress-label { color: #ff9da8; }
+html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state="done"] .admin-photo-progress-label { color: #8be4bd; }

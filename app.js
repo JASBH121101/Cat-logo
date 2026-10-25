@@ -635,7 +635,7 @@ function renderCard(product) {
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
-        ${renderProductColorSwatches(product, cardConfiguration)}
+        <div class="product-card-color-slot">${renderProductColorSwatches(product, cardConfiguration)}</div>
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
@@ -1009,11 +1009,12 @@ function renderVariantControls(product, variants, selected) {
 
   const dialogImage = $("#dialog-image");
   if (dialogImage) {
+    // Never substitute a different variant's general gallery when this variant has no photos.
     const chosenImages = selected.images?.length
       ? selected.images
       : selected.image_url
         ? [selected.image_url]
-        : getProductImages(product);
+        : [];
     dialogImage.innerHTML = chosenImages.length
       ? `
         <div class="dialog-gallery-main" data-inline-gallery>
