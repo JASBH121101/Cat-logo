@@ -150,7 +150,7 @@
       </div>
 
       <div class="catalog-extra-filters" aria-label="Buscar por marca y ordenar productos">
-        <label class="catalog-control-field"><span>Buscar marca</span><input id="brand-search-input" list="brand-suggestions" type="search" placeholder="Escribí una marca…" autocomplete="off" aria-label="Filtrar por marca"></label><datalist id="brand-suggestions"></datalist>
+        <label class="catalog-control-field"><span>Buscar marca o modelo</span><div class="live-search-wrap"><input id="brand-search-input" type="search" placeholder="Escribí una marca o modelo…" autocomplete="off" aria-label="Filtrar por marca o modelo" aria-autocomplete="list" aria-controls="brand-suggestions"><div id="brand-suggestions" class="live-search-menu" role="listbox" hidden></div></div></label>
         <label class="catalog-control-field"><span>Ordenar por</span><select id="catalog-sort-select" aria-label="Ordenar productos"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
       </div>
 
