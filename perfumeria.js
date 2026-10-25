@@ -157,7 +157,6 @@ function priceBound(input) {
 function hasActiveFilters() {
   return Boolean(
     (searchInput?.value || "").trim() ||
-    (searchInput?.value || "").trim() ||
     (perfumeSortSelect?.value || "recent") !== "recent" ||
     selectedFamilies.size > 0 ||
     selectedAudiences.size > 0 ||
@@ -261,7 +260,6 @@ function renderCard(product) {
 }
 
 function visibleProducts() {
-  const query = normalizeText(searchInput?.value);
   const brandQuery = normalizeText(searchInput?.value);
   const min = priceBound(minPriceInput);
   const max = priceBound(maxPriceInput);
@@ -333,8 +331,8 @@ function renderProducts() {
       : perfumes.length + (perfumes.length === 1 ? " producto publicado" : " productos publicados") + (featured.length ? " · " + featured.length + " destacadas" : ""))
     : "Próximamente: estamos preparando la colección.";
   if (clearPriceButton) clearPriceButton.disabled = priceBound(minPriceInput) === null && priceBound(maxPriceInput) === null;
-  updateFilterButtons(categoryFilters, "category", selectedFamilies);
-  updateFilterButtons(audienceFilters, "audience", selectedAudiences);
+  if (familySelect) familySelect.value = selectedFamilies.values().next().value || "all";
+  if (audienceSelect) audienceSelect.value = selectedAudiences.values().next().value || "all";
   updateFilterButtons(productTypeFilters, "productType", selectedProductTypes);
   const familyLabels = [...selectedFamilies].map(value => ({arabes:"Árabes",nicho:"Nicho",disenador:"Diseñador"})[value] || value);
   const audienceLabels = [...selectedAudiences].map(value => ({hombre:"Hombre",mujer:"Mujer",unisex:"Unisex"})[value] || value);
