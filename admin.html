@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="admin-workflow.css?v=20261025-storage-retry1">
 
   <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261025-storage-retry1"></script>
+  <script type="module" src="admin.js?v=20261025-exclusive-immediate1"></script>
   <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
 </head>
 
@@ -305,7 +305,7 @@
                 <input id="product-model" maxlength="100">
               </label>
 
-              <label>
+              <label id="product-category-field">
                 Categoría <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-category" required>
                   <option value="" disabled selected>Seleccionar categoría…</option>
@@ -321,7 +321,6 @@
                 <div class="admin-perfume-fields-heading">
                   <p class="eyebrow">FICHA OLFATIVA</p>
                   <h3 id="perfume-fields-title">Detalles de perfumería</h3>
-                  <p>Elegí si registrás una fragancia individual o un set de perfumes. Perfume y fragancia son el mismo tipo de producto.</p>
                 </div>
                 <div class="admin-perfume-fields-grid">
                   <label>
@@ -365,9 +364,6 @@
                       <option value="Unisex">Unisex</option>
                     </select>
                   </label>
-                  <p class="admin-perfume-data-note span-2">
-                    Registrá solo datos confirmados por GoPartner o por una ficha oficial. No necesitás adivinar la familia olfativa detallada, las notas ni la originalidad para guardar una fragancia.
-                  </p>
                   <div class="hidden" aria-hidden="true">
                     <input id="product-perfume-scent-family" type="text">
                     <textarea id="product-perfume-top-notes"></textarea>
@@ -476,7 +472,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z"></path><path d="M15 3v5h4M9 13h6M9 17h3"></path><path d="m14.5 16.5 4.5-4.5 2 2-4.5 4.5-3 1z"></path></svg>
               </button>
               <button type="button" id="toggle-product-exclusive" class="workflow-action workflow-action-exclusive"
-                      aria-label="Destacar en el catálogo" aria-pressed="false" title="Destacar en el catálogo">
+                      aria-label="Destacar en el catálogo" aria-pressed="false" title="Marcar o desmarcar exclusividad">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>
               </button>
               <button type="button" id="cancel-edit-button" class="workflow-action workflow-action-cancel"
