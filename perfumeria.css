@@ -607,3 +607,91 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
 .perfume-page .brand-filter-option:last-child{border-bottom:0}
 .perfume-page .brand-filter-option:hover,.perfume-page .brand-filter-option[aria-selected="true"]{background:rgba(185,148,84,.15)}
 .perfume-page .brand-filter-empty{margin:8px;padding:8px;color:var(--perfume-muted);font-size:12px}
+
+
+/* JB PARFUMS — luxury finish for single-select filters */
+.perfume-page .perfume-product-type-filters .filter-chip{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:46px;
+  padding:10px 9px;
+  border:1px solid var(--perfume-border);
+  border-radius:6px;
+  color:var(--perfume-ink);
+  background:linear-gradient(135deg,var(--perfume-card),var(--perfume-paper));
+  box-shadow:none;
+  font-size:clamp(10px,2.65vw,12px);
+  font-weight:750;
+  letter-spacing:.015em;
+  line-height:1.25;
+  text-align:center;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease;
+}
+.perfume-page .perfume-product-type-filters .filter-chip:hover{
+  border-color:var(--perfume-gold);
+  color:var(--perfume-ink);
+  background:color-mix(in srgb,var(--perfume-gold) 9%,var(--perfume-card));
+  box-shadow:none;
+  transform:translateY(-1px);
+}
+.perfume-page .perfume-product-type-filters .filter-chip.active{
+  border-color:var(--perfume-gold-light);
+  color:#21190d;
+  background:linear-gradient(115deg,var(--perfume-gold-light),var(--perfume-gold));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 3px 10px rgba(115,80,28,.08);
+}
+.perfume-page .perfume-product-type-filters .filter-chip.active:hover{
+  color:#21190d;
+  background:linear-gradient(115deg,var(--perfume-gold-light),var(--perfume-gold));
+  border-color:var(--perfume-gold-light);
+  transform:translateY(-1px);
+}
+.perfume-page .perfume-product-type-filters .filter-chip:focus-visible{
+  outline:2px solid var(--perfume-gold);
+  outline-offset:3px;
+}
+.perfume-page .brand-filter-toggle{
+  border-color:var(--perfume-border);
+  background:linear-gradient(135deg,var(--perfume-card),var(--perfume-paper));
+  color:var(--perfume-ink);
+  transition:border-color .18s ease,background .18s ease;
+}
+.perfume-page .brand-filter-toggle:hover,
+.perfume-page .brand-filter-toggle[aria-expanded="true"]{
+  border-color:var(--perfume-gold);
+}
+.perfume-page .brand-filter-toggle > span:last-child{color:var(--perfume-gold);font-size:16px}
+.perfume-page .brand-filter-menu{
+  background:var(--perfume-card);
+  border-color:var(--perfume-gold);
+  box-shadow:0 16px 36px rgba(0,0,0,.24);
+}
+.perfume-page .brand-filter-search{
+  background:var(--perfume-input);
+  color:var(--perfume-ink);
+}
+.perfume-page .brand-filter-option{
+  min-height:42px;
+  border-bottom-color:var(--perfume-border);
+  color:var(--perfume-ink);
+}
+.perfume-page .brand-filter-option:hover,
+.perfume-page .brand-filter-option[aria-selected="true"]{
+  background:color-mix(in srgb,var(--perfume-gold) 13%,var(--perfume-card));
+}
+@media(max-width:760px){
+  .perfume-page .perfume-product-type-filters .filter-chip{
+    min-height:44px;
+    padding:9px 5px;
+    font-size:clamp(9.5px,2.55vw,11px);
+    letter-spacing:0;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .perfume-page .perfume-product-type-filters .filter-chip,
+  .perfume-page .brand-filter-toggle{transition:none}
+  .perfume-page .perfume-product-type-filters .filter-chip:hover{transform:none}
+}
+
