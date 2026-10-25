@@ -123,11 +123,7 @@ function statusLabel(value) {
 function refreshBrandSuggestions() {
   const list = document.getElementById("perfume-brand-suggestions");
   if (!list) return;
-  const suggestions = [...new Set(perfumes.flatMap(product => [
-    String(product.brand || "").trim(),
-    String(product.name || "").trim(),
-    String(product.model || "").trim()
-  ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const suggestions = [...new Set(perfumes.map(product => String(product.brand || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
   const query = normalizeText(searchInput?.value);
   const matches = (query ? suggestions.filter(value => normalizeText(value).includes(query)) : suggestions).slice(0, query ? 8 : 20);
   list.replaceChildren(...matches.map(value => {
