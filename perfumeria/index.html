@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="../perfumeria.css?v=20261025-brand-sort1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261024-share-preview-delete9">
   <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261025-filter-ui2"></script>
+  <script type="module" src="../perfumeria.js?v=20261025-live-search1"></script>
   <script src="../ui.js?v=20261024-auto-close3" defer></script>
 </head>
 <body class="perfume-page">
@@ -69,7 +69,7 @@
       </div>
 
       <div class="catalog-extra-filters perfume-extra-filters" aria-label="Buscar y ordenar fragancias">
-        <label class="catalog-control-field perfume-search-control"><span>Buscar fragancia o marca</span><input id="perfume-search-input" list="perfume-brand-suggestions" type="search" placeholder="Escribí para buscar…" autocomplete="off" aria-label="Buscar fragancia o marca"><datalist id="perfume-brand-suggestions"></datalist></label>
+        <label class="catalog-control-field perfume-search-control"><span>Buscar fragancia o marca</span><div class="live-search-wrap"><input id="perfume-search-input" type="search" placeholder="Escribí para buscar…" autocomplete="off" aria-label="Buscar fragancia o marca" aria-autocomplete="list" aria-controls="perfume-brand-suggestions"><div id="perfume-brand-suggestions" class="live-search-menu" role="listbox" hidden></div></div></label>
         <label class="catalog-control-field"><span>Familia</span><select id="perfume-family-select" aria-label="Filtrar por familia"><option value="all">Todas las familias</option><option value="arabes">Árabes</option><option value="nicho">Nicho</option><option value="disenador">Diseñador</option></select></label>
         <label class="catalog-control-field"><span>Género</span><select id="perfume-audience-select" aria-label="Filtrar por género"><option value="all">Todos los géneros</option><option value="hombre">Hombre</option><option value="mujer">Mujer</option><option value="unisex">Unisex</option></select></label>
         <label class="catalog-control-field"><span>Ordenar por</span><select id="perfume-sort-select" aria-label="Ordenar fragancias"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
