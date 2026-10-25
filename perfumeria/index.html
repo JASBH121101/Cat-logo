@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles.css?v=20261025-luxe-controls1">
   <link rel="stylesheet" href="../theme-ui.css?v=20261024-final-responsive-audit1">
-  <link rel="stylesheet" href="../perfumeria.css?v=20261025-carousel-responsive1">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261025-carousel-polish1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261025-badge-row1">
   <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261025-catalog-spacing3">
   <script src="../config.js"></script>
@@ -46,6 +46,10 @@
         <div class="perfume-hero-notes"><span>AROMAS CON IDENTIDAD</span><i></i><span>SELECCIÓN ESPECIAL</span></div>
       </div>
       <section class="perfume-hero-art perfume-hero-carousel" id="perfume-hero-carousel" role="region" aria-roledescription="carrusel" aria-label="Selección de fragancias">
+        <div class="perfume-carousel-topline" aria-hidden="true">
+          <span class="perfume-carousel-brandline">JB PARFUMS <i></i> SELECCIÓN DE AUTOR</span>
+          <span class="perfume-carousel-edition">COLECCIÓN 01</span>
+        </div>
         <div class="perfume-carousel-stage" id="perfume-carousel-stage">
           <img id="perfume-carousel-image-a" class="perfume-carousel-image is-active" src="../img/perfume-carousel/supremacy-pour-femme.svg?v=20261025-carousel1" alt="Afnan Supremacy Pour Femme" width="600" height="600" loading="eager" fetchpriority="high" decoding="async">
           <img id="perfume-carousel-image-b" class="perfume-carousel-image" alt="" aria-hidden="true" width="600" height="600" decoding="async">
@@ -53,10 +57,16 @@
         <button class="perfume-carousel-arrow is-previous" id="perfume-carousel-previous" type="button" aria-label="Mostrar fragancia anterior"><span aria-hidden="true">‹</span></button>
         <button class="perfume-carousel-arrow is-next" id="perfume-carousel-next" type="button" aria-label="Mostrar fragancia siguiente"><span aria-hidden="true">›</span></button>
         <div class="perfume-carousel-caption" aria-live="polite" aria-atomic="true">
-          <span class="perfume-carousel-count" id="perfume-carousel-count">01 / 11</span>
-          <span class="perfume-carousel-title" id="perfume-carousel-title">Afnan Supremacy Pour Femme</span>
+          <div class="perfume-carousel-caption-copy">
+            <span class="perfume-carousel-eyebrow">FRAGANCIA EN FOCO</span>
+            <span class="perfume-carousel-title" id="perfume-carousel-title">Afnan Supremacy Pour Femme</span>
+          </div>
+          <span class="perfume-carousel-count" id="perfume-carousel-count">01 <i>/</i> 11</span>
         </div>
         <div class="perfume-carousel-dots" id="perfume-carousel-dots" role="group" aria-label="Elegir fragancia"></div>
+        <div class="perfume-carousel-progress" role="progressbar" aria-label="Progreso de la colección" aria-valuemin="1" aria-valuemax="11" aria-valuenow="1" id="perfume-carousel-progress">
+          <span id="perfume-carousel-progress-fill"></span>
+        </div>
       </section>
     </section>
 
