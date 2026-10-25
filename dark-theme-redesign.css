@@ -1085,3 +1085,37 @@ html[data-theme="dark"] body.technology-catalog #product-grid .product-card .buy
 html[data-theme="dark"] body.technology-catalog #product-grid .product-card {
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease !important;
 }
+
+
+/* JB TECH: mantener simetría vertical entre tarjetas con distinta cantidad de colores. */
+body.technology-catalog .product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+body.technology-catalog .product-card > .product-image {
+  flex: 0 0 auto;
+}
+body.technology-catalog .product-card > .product-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+body.technology-catalog .product-card-color-slot {
+  flex: 0 0 auto;
+  min-height: 104px;
+}
+body.technology-catalog .product-card .product-actions {
+  margin-top: auto !important;
+  padding-top: 12px;
+}
+@media (max-width: 760px) {
+  body.technology-catalog .product-card-color-slot {
+    min-height: 132px;
+  }
+}
