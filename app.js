@@ -10,6 +10,8 @@ const grid = document.querySelector("#product-grid");
 const statusNode = document.querySelector("#catalog-status");
 const emptyNode = document.querySelector("#empty-results");
 const searchInput = document.querySelector("#search-input");
+const brandSearchInput = document.querySelector("#brand-search-input");
+const catalogSortSelect = document.querySelector("#catalog-sort-select");
 const productDetailPage = document.querySelector("#product-detail-page");
 const productHeaderBack = document.querySelector("#product-detail-header-back");
 const dialogContent = document.querySelector("#dialog-content");
@@ -654,13 +656,15 @@ function readPriceBound(input) {
 }
 
 function hasActiveCatalogFilters() {
-  return Boolean((searchInput?.value || "").trim() || selectedCategory !== "all" ||
-    readPriceBound(minPriceInput) !== null || readPriceBound(maxPriceInput) !== null);
+  return Boolean((searchInput?.value || "").trim() || (brandSearchInput?.value || "").trim() ||
+    selectedCategory !== "all" || readPriceBound(minPriceInput) !== null ||
+    readPriceBound(maxPriceInput) !== null || (catalogSortSelect?.value || "recent") !== "recent");
 }
 
 
 function visibleProducts() {
   const query = (searchInput.value || "").trim().toLocaleLowerCase("es");
+  const brandQuery = (brandSearchInput?.value || "").trim().toLocaleLowerCase("es");
   const minPrice = readPriceBound(minPriceInput);
   const maxPrice = readPriceBound(maxPriceInput);
   const validRange = minPrice === null || maxPrice === null || minPrice <= maxPrice;
@@ -679,13 +683,25 @@ function visibleProducts() {
     ];
     const haystack = searchableFields.join(" ").toLocaleLowerCase("es");
     const queryMatches = !query || haystack.includes(query);
+    const brandMatches = !brandQuery || String(product.brand || "").toLocaleLowerCase("es").includes(brandQuery);
     let priceMatches = true;
     if (minPrice !== null || maxPrice !== null) {
       const rawPrice = startingPrice(product, "price_usd");
       const price = rawPrice === null || rawPrice === undefined || rawPrice === "" ? NaN : Number(rawPrice);
       priceMatches = Number.isFinite(price) && (minPrice === null || price >= minPrice) && (maxPrice === null || price <= maxPrice);
     }
-    return categoryMatches && queryMatches && priceMatches;
+    return categoryMatches && queryMatches && brandMatches && priceMatches;
+  }).sort((a, b) => {
+    const sort = catalogSortSelect?.value || "recent";
+    if (sort === "price-asc" || sort === "price-desc") {
+      const priceA = Number(a.price_usd);
+      const priceB = Number(b.price_usd);
+      const validA = Number.isFinite(priceA) ? priceA : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+      const validB = Number.isFinite(priceB) ? priceB : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+      return sort === "price-asc" ? validA - validB : validB - validA;
+    }
+    if (sort === "name-asc") return String(a.name || "").localeCompare(String(b.name || ""), "es", { sensitivity: "base" });
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
 }
 
@@ -1351,10 +1367,14 @@ categoryFilters.addEventListener("click", event => {
 });
 
 searchInput.addEventListener("input", renderProducts);
+brandSearchInput?.addEventListener("input", renderProducts);
+catalogSortSelect?.addEventListener("change", renderProducts);
 minPriceInput?.addEventListener("input", renderProducts);
 maxPriceInput?.addEventListener("input", renderProducts);
 clearPriceFilterButton?.addEventListener("click", () => {
   if (searchInput) searchInput.value = "";
+  if (brandSearchInput) brandSearchInput.value = "";
+  if (catalogSortSelect) catalogSortSelect.value = "recent";
   if (minPriceInput) minPriceInput.value = "";
   if (maxPriceInput) maxPriceInput.value = "";
   const allCategoryButton = categoryFilters?.querySelector('[data-category="all"]');
