@@ -262,8 +262,10 @@ function visibleProducts() {
   }).sort((a, b) => {
     const sort = perfumeSortSelect?.value || "recent";
     if (sort === "price-asc" || sort === "price-desc") {
-      const priceA = Number(a.price_usd);
-      const priceB = Number(b.price_usd);
+      const rawA = a.price_usd;
+      const rawB = b.price_usd;
+      const priceA = rawA === null || rawA === undefined || rawA === "" ? NaN : Number(rawA);
+      const priceB = rawB === null || rawB === undefined || rawB === "" ? NaN : Number(rawB);
       const validA = Number.isFinite(priceA) ? priceA : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
       const validB = Number.isFinite(priceB) ? priceB : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
       return sort === "price-asc" ? validA - validB : validB - validA;
