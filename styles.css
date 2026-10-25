@@ -3593,3 +3593,11 @@ html[data-theme="light"] .primary-config-slot .variant-base-group {
 .admin-icon-button{width:40px;height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px}
 .admin-icon-button.danger{color:#b91c1c}
 @media(max-width:600px){.workflow-form-actions{gap:10px}.workflow-action{width:44px;height:44px;min-width:44px}.admin-icon-button{width:42px;height:42px;min-width:42px}}
+
+
+/* Filtros adicionales de marca y ordenamiento */
+.catalog-extra-filters{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(220px,.85fr);gap:14px;margin:0 0 20px;align-items:end}
+.catalog-control-field{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--muted,#64748b);font-size:12px;font-weight:700}
+.catalog-control-field input,.catalog-control-field select{width:100%;min-width:0;min-height:43px;padding:10px 12px;border:1px solid var(--border,#dfe5f2);border-radius:10px;background:var(--surface,#fff);color:var(--text,#1f2937);font:inherit;font-size:14px;outline-offset:2px}
+.catalog-control-field input:focus,.catalog-control-field select:focus{border-color:var(--primary,#4f46e5);outline:2px solid color-mix(in srgb,var(--primary,#4f46e5) 18%,transparent)}
+@media(max-width:600px){.catalog-extra-filters{grid-template-columns:1fr;gap:10px;margin-bottom:16px}.catalog-control-field input,.catalog-control-field select{min-height:45px}}
