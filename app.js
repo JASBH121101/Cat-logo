@@ -1009,11 +1009,12 @@ function renderVariantControls(product, variants, selected) {
 
   const dialogImage = $("#dialog-image");
   if (dialogImage) {
+    // Never substitute a different variant's general gallery when this variant has no photos.
     const chosenImages = selected.images?.length
       ? selected.images
       : selected.image_url
         ? [selected.image_url]
-        : getProductImages(product);
+        : [];
     dialogImage.innerHTML = chosenImages.length
       ? `
         <div class="dialog-gallery-main" data-inline-gallery>
