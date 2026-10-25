@@ -1148,7 +1148,7 @@ function syncPhotoProgressMarkup(wrapper,item){
   const label=wrapper.querySelector("[data-photo-progress-label]");
   const progress=Math.max(0,Math.min(100,Math.round(Number(item.uploadProgress)||0)));
   const state=item.uploadState||"";
-  const stateLabel=state==="queued"?"En cola":state==="uploading"?progress+"%":state==="failed"?"Error · reintentá":state==="done"?"100% completada":"";
+  const stateLabel=state==="queued"?"En cola":state==="uploading"&&item.uploadStage==="processing"?"Optimizando":state==="uploading"?progress+"%":state==="failed"?"Error · reintentá":state==="done"?"100% completada":"";
   wrapper.hidden=!state;
   wrapper.dataset.state=state;
   if(track){
@@ -1269,7 +1269,7 @@ function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   if(item.uploadPromise)return item.uploadPromise;
   if(item.uploadState==="failed"&&!retryFailed)return Promise.resolve({ok:false,skipped:true});
   const productId=getOrCreatePhotoProductId();
-  item.name=item.name||item.file.name;item.uploadState="queued";item.uploadProgress=0;item.uploadError="";
+  item.name=item.name||item.file.name;item.uploadState="queued";item.uploadStage="queued";item.uploadProgress=0;item.uploadError="";
   const token=photoUploadEditorToken;
   let resolveTask;
   const promise=new Promise(resolve=>{resolveTask=resolve;});
@@ -1291,7 +1291,8 @@ function pumpPhotoUploadQueue(){
       let result={ok:false};
       try{
         const fileName=item.name||item.file.name;
-        const url=await uploadImage(productId,item.file,entry.source==="variant"?"variants":"",percent=>{item.uploadProgress=percent;updatePhotoProgressVisual(entry);});
+        item.uploadStage="processing";updatePhotoProgressVisual(entry);
+        const url=await uploadImage(productId,item.file,entry.source==="variant"?"variants":"",percent=>{item.uploadStage="uploading";item.uploadProgress=percent;updatePhotoProgressVisual(entry);});
         if(photoEntryIsCurrent(entry,token)&&!item.cancelRequested){
           item.kind="existing";item.url=url;item.uploadState="done";item.uploadProgress=100;item.name=fileName;delete item.uploadError;
           if(item.previewUrl){URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;}delete item.file;
@@ -1299,7 +1300,7 @@ function pumpPhotoUploadQueue(){
           updateEditorDirtyState();scheduleLocalRecoverySave();result={ok:true,url};
         }
       }catch(error){
-        if(photoEntryIsCurrent(entry,token)&&!item.cancelRequested){item.uploadState="failed";item.uploadError=error?.message||"Error desconocido";result={ok:false,error};}
+        if(photoEntryIsCurrent(entry,token)&&!item.cancelRequested){item.uploadState="failed";item.uploadStage="failed";item.uploadError=error?.message||"Error desconocido";result={ok:false,error};}
       }finally{
         activePhotoUploads=Math.max(0,activePhotoUploads-1);
         if(item.uploadPromise===job.promise)item.uploadPromise=null;
