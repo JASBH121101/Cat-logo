@@ -3457,7 +3457,7 @@ async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onPr
   if(sessionError)throw sessionError;
   const accessToken=data?.session?.access_token;
   if(!accessToken)throw new Error("La sesión administrativa expiró. Volvé a iniciar sesión antes de subir fotografías.");
-  const baseUrl=String(CONFIG.supabaseUrl||"").replace(/\\/+$/,"");
+  const baseUrl=String(CONFIG.supabaseUrl||"").replace(/\/+$/,"");
   if(!baseUrl||!CONFIG.supabaseAnonKey)throw new Error("Falta la configuración pública de Supabase para subir fotografías.");
   const encodedBucket=encodeURIComponent(bucket);
   const encodedPath=String(path).split("/").map(part=>encodeURIComponent(part)).join("/");
