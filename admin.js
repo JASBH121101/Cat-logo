@@ -3971,6 +3971,7 @@ publishReviewDialog?.addEventListener("click", event => {
   if (invalid && currentPublishReview) {
     const issue = currentPublishReview.blockingIssues[Number(invalid.dataset.publishReviewIssue)];
     currentFormPhotoIssues = [issue];
+    renderFormPhotoIssues([issue]);
     navigateToPhotoIssue(issue);
     return;
   }
@@ -4002,6 +4003,44 @@ form?.addEventListener("change", event => {
     renderFormPhotoIssues([]);
   }
 });
+
+async function validateTrackedRemotePhotos() {
+  const candidates = [];
+  mainImageItems.forEach(item => {
+    if (item.kind === "existing" && item.url) {
+      candidates.push({ source: "main", row: null, item: item, src: item.url,
+        label: "Fotografía general" + (item.name ? " · " + item.name : "") });
+    }
+  });
+  if (activeCatalogType === "technology") {
+    form?.querySelectorAll("[data-variant-row]").forEach(row => {
+      const color = row.querySelector("[data-variant-color]")?.value.trim() || "sin nombre";
+      const group = row.closest("[data-variant-group]");
+      const config = group ? formatReviewConfig(group) : "";
+      initVariantImageItems(row);
+      (row._variantImageItems || []).forEach((item, index) => {
+        if (item.kind !== "existing" || !item.url) return;
+        candidates.push({
+          source: "variant", row: row, item: item, src: item.url,
+          label: "No se pudo validar la fotografía del color " + color +
+            (config && config !== "Configuración base" ? " · " + config : "") +
+            " · foto " + (index + 1)
+        });
+      });
+    });
+  }
+  const checked = await Promise.all(candidates.map(async candidate => ({
+    candidate: candidate, valid: await imageLoadsAndDecodes(candidate.src)
+  })));
+  return checked.filter(result => !result.valid).map(result => makePhotoReviewIssue(
+    result.candidate.source,
+    result.candidate.row,
+    result.candidate.item,
+    result.candidate.label,
+    "La imagen no se pudo cargar o decodificar después de subirla. Reemplazala antes de publicar."
+  ));
+}
+
 function uploadPhotoFailureTargets() {
   return getPendingPhotoUploads().filter(entry => entry.item?.file && entry.item.kind === "new").map(entry => {
     const isMain = entry.source === "main";
@@ -4055,6 +4094,7 @@ form?.addEventListener("submit", async event => {
   submitButtons.forEach(item => { item.disabled = true; item.setAttribute("aria-busy", "true"); });
   const wasEditing = Boolean(editorRecordExists && $("#product-id").value);
   const imageUploadErrors = [];
+  let postUploadPhotoIssues = [];
   const isPerfume = activeCatalogType === "perfumery";
 
   try {
@@ -4097,6 +4137,8 @@ form?.addEventListener("submit", async event => {
       else if (item.url) uploadedMainImages.push(item.url);
     }
     renderMainImagePreviews();
+    postUploadPhotoIssues = await validateTrackedRemotePhotos();
+    postUploadPhotoIssues.forEach(issue => imageUploadErrors.push(issue.label + ": " + issue.reason));
 
     if (imageUploadErrors.length || preflightPhotoIssues.length) {
       // A product with a failed photo must be saved as a draft, never published.
@@ -4196,13 +4238,14 @@ form?.addEventListener("submit", async event => {
       }));
       const allIssues = [];
       const seenIssueKeys = new Set();
-      [...preflightPhotoIssues, ...issuesFromUploads, ...fallbackIssues].forEach(issue => {
+      [...preflightPhotoIssues, ...postUploadPhotoIssues, ...issuesFromUploads].forEach(issue => {
         if (!issue) return;
         const key = (issue.source || "") + "|" + (issue.itemId || issue.label || "");
         if (seenIssueKeys.has(key)) return;
         seenIssueKeys.add(key);
         allIssues.push(issue);
       });
+      if (!allIssues.length) allIssues.push(...fallbackIssues);
       await saveLocalRecoveryDraft().catch(error => console.warn("No se pudo guardar una recuperación local tras un fallo de foto.", error));
       await loadProducts();
       renderFormPhotoIssues(allIssues);
