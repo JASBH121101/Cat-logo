@@ -1352,3 +1352,22 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
   object-position: center;
   padding: 0;
 }
+
+
+/* JB PARFUMS · fotos claras: detectar y recortar el margen interno sin deformar el frasco. */
+.perfume-page .product-image.has-white-background img {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover !important;
+  object-position: center;
+  padding: 0 !important;
+  transform: scale(1.18) !important;
+  transform-origin: center;
+}
+@media (max-width: 390px) {
+  .perfume-page .product-image.has-white-background img {
+    transform: scale(1.10) !important;
+  }
+}

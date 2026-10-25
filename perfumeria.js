@@ -266,7 +266,7 @@ async function recordEvent(productId, eventType) {
 // Detect a plain white/light background from the image corners when the image host permits CORS.
 const perfumePhotoFitChecks = new Map();
 
-function detectLightPhotoBackground(url) {
+function detectLightPhotoBackground(url, fallbackLightBackground = false) {
   return new Promise(resolve => {
     const probe = new Image();
     probe.crossOrigin = "anonymous";
@@ -294,17 +294,21 @@ function detectLightPhotoBackground(url) {
           const blue = pixels[offset + 2];
           const alpha = pixels[offset + 3];
           const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
-          if (alpha < 35 || (red >= 238 && green >= 238 && blue >= 238 && spread <= 28)) {
+          const brightness = (red + green + blue) / 3;
+          if (alpha < 35 || (brightness >= 216 && red >= 205 && green >= 205 && blue >= 210 && spread <= 48)) {
             lightPixels += 1;
           }
         }
-        resolve(lightPixels >= 9);
+        resolve(lightPixels >= 7);
       } catch {
-        // Cross-origin pixel access may be restricted; leave the image in contain mode.
-        resolve(false);
+        // Cross-origin pixel access may be restricted; use the known-photo fallback.
+        resolve(fallbackLightBackground);
       }
     };
-    probe.onerror = () => resolve(false);
+    // Some external image hosts do not permit canvas pixel inspection. For the
+    // white-margin product photos already identified in the catalog, use a
+    // conservative named fallback rather than silently leaving them undersized.
+    probe.onerror = () => resolve(fallbackLightBackground);
     probe.src = url;
   });
 }
@@ -314,9 +318,10 @@ function applyAutomaticPerfumePhotoFit(image) {
   const url = image.currentSrc || image.src;
   if (!url) return;
   image.dataset.perfumeImageFit = "checking";
+  const knownLightMarginPhoto = /\\b(?:sauvage(?:\\s+elixir)?|bleu\\s+de\\s+chanel|greenley)\\b/i.test(image.alt || "");
   let check = perfumePhotoFitChecks.get(url);
   if (!check) {
-    check = detectLightPhotoBackground(url);
+    check = detectLightPhotoBackground(url, knownLightMarginPhoto);
     perfumePhotoFitChecks.set(url, check);
   }
   check.then(hasLightBackground => {
