@@ -48,6 +48,24 @@ const yearNode = $("#perfume-year");
 if (yearNode) yearNode.textContent = new Date().getFullYear();
 
 const normalizeText = value => String(value || "").trim().toLocaleLowerCase("es");
+
+const normalizeSearchQuery = value => normalizeText(value)
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/\bplay\s*station\s*(\d+)\b/g, "ps$1")
+  .replace(/\bps\s*(\d+)\b/g, "ps$1")
+  .replace(/\b(\d+)\s+(am|pm)\b/g, "$1$2")
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
+
+function searchTokensMatch(haystack, query) {
+  const tokens = normalizeSearchQuery(query).split(/\s+/).filter(Boolean);
+  return tokens.length > 0 && tokens.every(token => haystack.includes(token));
+}
+
+function perfumeIdentityText(product) {
+  return normalizeSearchQuery([product.name, product.brand, product.model].filter(Boolean).join(" "));
+}
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[char]));
@@ -286,12 +304,19 @@ function renderCard(product) {
 }
 
 function visibleProducts() {
-  const query = normalizeText(searchInput?.value);
+  const rawQuery = (searchInput?.value || "").trim();
+  const query = normalizeSearchQuery(rawQuery);
   const min = priceBound(minPriceInput);
   const max = priceBound(maxPriceInput);
   const validRange = min === null || max === null || min <= max;
   if (priceFeedback) priceFeedback.textContent = validRange ? "" : "El mínimo no puede superar al máximo.";
   if (!validRange) return [];
+
+  // Prioritize name, brand and model. Search notes/details only if no identity matches exist.
+  const identityMatches = rawQuery
+    ? new Set(perfumes.filter(product => searchTokensMatch(perfumeIdentityText(product), query)))
+    : null;
+  const useIdentityMatches = Boolean(identityMatches?.size);
 
   return perfumes.filter(product => {
     if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
@@ -303,8 +328,12 @@ function visibleProducts() {
       ...(Array.isArray(detail.top_notes) ? detail.top_notes : []),
       ...(Array.isArray(detail.heart_notes) ? detail.heart_notes : []),
       ...(Array.isArray(detail.base_notes) ? detail.base_notes : [])
-    ].join(" ").toLocaleLowerCase("es");
-    if (query && !searchable.includes(query)) return false;
+    ].filter(Boolean).join(" ");
+    const haystack = normalizeSearchQuery(searchable);
+    const queryMatches = !query || (useIdentityMatches
+      ? identityMatches.has(product)
+      : searchTokensMatch(haystack, query));
+    if (!queryMatches) return false;
     if (min !== null || max !== null) {
       if (product.price_usd === null || product.price_usd === undefined || product.price_usd === "") return false;
       const price = Number(product.price_usd);
@@ -503,7 +532,29 @@ function bindMultiSelect(container, attribute, selectedSet) {
   });
 }
 bindMultiSelect(productTypeFilters, "productType", selectedProductTypes);
+function applyPerfumeSearch() {
+  renderProducts();
+  closeBrandFilterMenu();
+  searchInput?.blur();
+  const target = resultsHeading || grid;
+  if (!target) return;
+  const scrollToTarget = () => {
+    const stickyHeader = document.querySelector(".site-header");
+    const offset = (stickyHeader?.getBoundingClientRect().height || 0) + 12;
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    window.scrollTo({ top, behavior: reducedMotion ? "auto" : "smooth" });
+  };
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => requestAnimationFrame(scrollToTarget));
+  else scrollToTarget();
+}
+
 searchInput.addEventListener("input", renderProducts);
+searchInput.addEventListener("keydown", event => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  applyPerfumeSearch();
+});
 brandFilterToggle?.addEventListener("click", () => {
   const opening = Boolean(brandFilterMenu?.hidden);
   if (brandFilterMenu) brandFilterMenu.hidden = !opening;
