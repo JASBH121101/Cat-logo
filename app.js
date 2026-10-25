@@ -650,11 +650,7 @@ function renderCard(product) {
 function refreshBrandSuggestions() {
   const list = document.getElementById("brand-suggestions");
   if (!list) return;
-  const suggestions = [...new Set(products.flatMap(product => [
-    String(product.brand || "").trim(),
-    String(product.name || "").trim(),
-    String(product.model || "").trim()
-  ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const suggestions = [...new Set(products.map(product => String(product.brand || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
   const query = String(brandSearchInput?.value || "").trim().toLocaleLowerCase("es");
   const matches = (query ? suggestions.filter(value => value.toLocaleLowerCase("es").includes(query)) : suggestions).slice(0, query ? 8 : 20);
   list.replaceChildren(...matches.map(value => {
