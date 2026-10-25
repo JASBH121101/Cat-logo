@@ -650,14 +650,28 @@ function renderCard(product) {
 function refreshBrandSuggestions() {
   const list = document.getElementById("brand-suggestions");
   if (!list) return;
-  const brands = [...new Set(products
-    .map(product => String(product.brand || "").trim())
-    .filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
-  list.replaceChildren(...brands.map(brand => {
-    const option = document.createElement("option");
-    option.value = brand;
+  const suggestions = [...new Set(products.flatMap(product => [
+    String(product.brand || "").trim(),
+    String(product.name || "").trim(),
+    String(product.model || "").trim()
+  ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const query = String(brandSearchInput?.value || "").trim().toLocaleLowerCase("es");
+  const matches = query ? suggestions.filter(value => value.toLocaleLowerCase("es").includes(query)).slice(0, 8) : [];
+  list.replaceChildren(...matches.map(value => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "live-search-option";
+    option.setAttribute("role", "option");
+    option.textContent = value;
+    option.addEventListener("mousedown", event => event.preventDefault());
+    option.addEventListener("click", () => {
+      brandSearchInput.value = value;
+      list.hidden = true;
+      renderProducts();
+    });
     return option;
   }));
+  list.hidden = matches.length === 0;
 }
 
 function readPriceBound(input) {
@@ -1382,7 +1396,10 @@ categoryFilters.addEventListener("click", event => {
 });
 
 searchInput.addEventListener("input", renderProducts);
-brandSearchInput?.addEventListener("input", renderProducts);
+brandSearchInput?.addEventListener("input", () => { refreshBrandSuggestions(); renderProducts(); });
+brandSearchInput?.addEventListener("focus", refreshBrandSuggestions);
+brandSearchInput?.addEventListener("keydown", event => { if (event.key === "Escape") { const menu = document.getElementById("brand-suggestions"); if (menu) menu.hidden = true; } });
+document.addEventListener("click", event => { if (!event.target.closest("#brand-search-input") && !event.target.closest("#brand-suggestions")) { const menu = document.getElementById("brand-suggestions"); if (menu) menu.hidden = true; } });
 catalogSortSelect?.addEventListener("change", renderProducts);
 minPriceInput?.addEventListener("input", renderProducts);
 maxPriceInput?.addEventListener("input", renderProducts);
