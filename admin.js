@@ -321,7 +321,7 @@ const COLOR_PALETTE = [
   { name: "Titanium Pinkgold", hex: "#B99498", aliases: ["Titanium Pink Gold", "Titanio oro rosa"] },
   { name: "Titanium Violet", hex: "#817A9D", aliases: ["Titanio violeta", "Titanium Purple"] },
   { name: "Titanium Yellow", hex: "#D5B15F", aliases: ["Titanio amarillo"] },
-  { name: "Blue Titanium", hex: "#657D9E", aliases: ["Titanium Blue", "Azul titanio", "Titanio azul"] },
+  { name: "Blue Titanium", hex: "#657D9E", aliases: ["Azul titanio", "Titanio azul"] },
   { name: "Deep Blue", hex: "#203958", aliases: ["Azul profundo", "Dark Deep Blue"] },
   { name: "Ultramarine", hex: "#4864B8", aliases: ["Ultramarino", "Azul ultramarino"] },
   { name: "Teal", hex: "#579B91", aliases: ["Verde azulado", "Azul verdoso"] },
@@ -1000,6 +1000,15 @@ function colorPaletteOptions(variant) {
   `;
 }
 
+function visibleColorSwatches(selectedHex = "") {
+  const base = COLOR_PALETTE.slice(0, 20);
+  const selected = COLOR_PALETTE.find(item => item.hex.toLowerCase() === String(selectedHex || "").toLowerCase());
+  if (selected && !base.some(item => item.hex.toLowerCase() === selected.hex.toLowerCase())) {
+    return [...base, selected];
+  }
+  return base;
+}
+
 function variantRowMarkup(variant = {}) {
   const images = Array.isArray(variant.images)
     ? variant.images.filter(Boolean)
@@ -1042,7 +1051,7 @@ function variantRowMarkup(variant = {}) {
           </div>
           <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
-          <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${COLOR_PALETTE.map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
+          <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${visibleColorSwatches(v.color_hex).map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
           <label>Disponibilidad de este color<select data-variant-availability>
             <option value="available" ${v.availability === "available" ? "selected" : ""}>Disponible</option>
             <option value="order" ${v.availability === "order" ? "selected" : ""}>Por pedido</option>
