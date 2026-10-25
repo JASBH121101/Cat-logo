@@ -1128,12 +1128,27 @@ requestAnimationFrame(resizeSpecsTextarea);
 const variantsContainer = $("#product-variants-list");
 const baseColorManager = $("#base-color-manager");
 const mainImagesInput = $("#product-images"), mainImagesPreview = $("#product-images-preview"), mainImagesSummary = $("#product-images-summary");
+const retryMainImagesButton = $("#retry-main-image-uploads");
 let mainImageItems = [], draggingMainImageId = null, draggingVariantImage = null;
+let mainImageSyncPending = false;
+let retryMainImageUploadsInProgress = false;
 const imageId = () => crypto.randomUUID();
 const imagePreviewUrl = item => item.kind === "new" ? item.previewUrl : item.url;
 function disposeImageItems(items){items.forEach(item=>{if(item.kind==="new"&&item.previewUrl)URL.revokeObjectURL(item.previewUrl);});}
-function clearMainImagePreviews(){disposeImageItems(mainImageItems);mainImageItems=[];mainImagesPreview?.replaceChildren();}
-function setExistingMainImages(urls=[]){disposeImageItems(mainImageItems);mainImageItems=[...new Set(urls.filter(url=>typeof url==="string"&&url.trim()))].map(url=>({id:imageId(),kind:"existing",url}));renderMainImagePreviews();}
+function updateMainImageRetryButton(){
+  if(!retryMainImagesButton)return;
+  const productId=$("#product-id")?.value?.trim()||"";
+  const pending=mainImageItems.filter(item=>item.kind==="new"&&item.file).length;
+  const show=Boolean(productId&&(pending>0||mainImageSyncPending));
+  retryMainImagesButton.hidden=!show;
+  retryMainImagesButton.disabled=retryMainImageUploadsInProgress||!currentUser||!supabase||!productId;
+  retryMainImagesButton.setAttribute("aria-busy",String(retryMainImageUploadsInProgress));
+  retryMainImagesButton.textContent=pending
+    ?"Subir / reintentar "+pending+" fotografía"+(pending===1?"":"s")+" pendiente"+(pending===1?"":"s")
+    :"Guardar fotografías subidas";
+}
+function clearMainImagePreviews(){disposeImageItems(mainImageItems);mainImageItems=[];mainImageSyncPending=false;mainImagesPreview?.replaceChildren();updateMainImageRetryButton();}
+function setExistingMainImages(urls=[]){disposeImageItems(mainImageItems);mainImageSyncPending=false;mainImageItems=[...new Set(urls.filter(url=>typeof url==="string"&&url.trim()))].map(url=>({id:imageId(),kind:"existing",url}));renderMainImagePreviews();}
 function renderMainImagePreviews(){
  if(!mainImagesInput||!mainImagesPreview||!mainImagesSummary)return;
  mainImagesPreview.replaceChildren();
@@ -1151,9 +1166,82 @@ function renderMainImagePreviews(){
   controls.append(remove);card.append(badge,img,caption,controls);mainImagesPreview.append(card);
  });
 }
+  updateMainImageRetryButton();
 function moveMainImage(id,offset){const from=mainImageItems.findIndex(i=>i.id===id),to=from+offset;if(from<0||to<0||to>=mainImageItems.length)return;const [item]=mainImageItems.splice(from,1);mainImageItems.splice(to,0,item);renderMainImagePreviews();updateEditorDirtyState();}
 function removeMainImage(id){const from=mainImageItems.findIndex(i=>i.id===id);if(from<0)return;disposeImageItems([mainImageItems[from]]);mainImageItems.splice(from,1);renderMainImagePreviews();updateEditorDirtyState();}
 mainImagesInput?.addEventListener("change",()=>{for(const file of Array.from(mainImagesInput.files||[]))mainImageItems.push({id:imageId(),kind:"new",file,previewUrl:URL.createObjectURL(file)});mainImagesInput.value="";renderMainImagePreviews();updateEditorDirtyState();scheduleLocalRecoverySave();});
+retryMainImagesButton?.addEventListener("click",async()=>{
+  if(retryMainImageUploadsInProgress)return;
+  const productId=$("#product-id")?.value?.trim()||"";
+  if(!productId||!currentUser||!supabase){
+    message("#product-form-status","Guardá primero la ficha del producto. Después podés subir las fotografías pendientes sin volver a guardar los demás datos.","error");
+    return;
+  }
+  const pending=mainImageItems.filter(item=>item.kind==="new"&&item.file);
+  if(!pending.length&&!mainImageSyncPending)return;
+  retryMainImageUploadsInProgress=true;
+  updateMainImageRetryButton();
+  const errors=[];
+  let uploadedCount=0;
+  try{
+    for(let index=0;index<pending.length;index++){
+      const item=pending[index];
+      const fileName=item.file?.name||("Fotografía "+(index+1));
+      message("#product-form-status","Subiendo fotografía "+(index+1)+" de "+pending.length+": "+fileName+"…");
+      try{
+        const url=await uploadImage(productId,item.file);
+        item.kind="existing";
+        item.url=url;
+        delete item.uploadError;
+        if(item.previewUrl){URL.revokeObjectURL(item.previewUrl);delete item.previewUrl;}
+        delete item.file;
+        mainImageSyncPending=true;
+        uploadedCount++;
+      }catch(error){
+        item.uploadError=error?.message||"Error desconocido";
+        errors.push(fileName+": "+item.uploadError);
+      }
+      renderMainImagePreviews();
+    }
+    if(mainImageSyncPending){
+      const imageUrls=mainImageItems.filter(item=>item.kind==="existing"&&item.url).map(item=>item.url);
+      const {error}=await supabase.from("products").update({
+        images:imageUrls,
+        image_url:imageUrls[0]||null,
+        updated_at:new Date().toISOString(),
+        updated_by:currentUser.id
+      }).eq("id",productId);
+      if(error)throw new Error("Las fotografías se subieron, pero no se pudieron vincular a la ficha: "+error.message+". Pulsá de nuevo “Guardar fotografías subidas” para reintentar solo ese paso.");
+      mainImageSyncPending=false;
+      await loadProducts().catch(error=>console.warn("Las fotos se guardaron; no se pudo refrescar la lista del panel.",error));
+    }
+    renderMainImagePreviews();
+    updateEditorDirtyState();
+    if(errors.length){
+      message("#product-form-status",
+        (uploadedCount?"Se subieron y guardaron "+uploadedCount+" fotografía(s). ":"")+
+        "Todavía quedan "+errors.length+" fotografía(s) pendientes. Revisá la conexión y volvé a pulsar el botón de reintento. Detalle: "+errors.slice(0,2).join(" · "),
+        "error");
+      await saveLocalRecoveryDraft();
+    }else{
+      message("#product-form-status",
+        uploadedCount
+          ?"Las "+uploadedCount+" fotografía(s) se subieron y quedaron vinculadas al producto."
+          :"Las fotografías ya subidas quedaron vinculadas al producto.",
+        "success");
+      $("#form-title").textContent=activeCatalogType==="perfumery"?"Editar fragancia":"Editar producto";
+      markEditorClean();
+      await recoveryAction("readwrite",store=>store.delete(RECOVERY_KEY)).catch(error=>console.warn("No se pudo limpiar el respaldo local tras guardar las fotos.",error));
+    }
+  }catch(error){
+    message("#product-form-status",error?.message||"No se pudieron guardar las fotografías. Los archivos pendientes permanecen en el formulario.","error");
+    await saveLocalRecoveryDraft();
+  }finally{
+    retryMainImageUploadsInProgress=false;
+    updateMainImageRetryButton();
+  }
+});
+
 mainImagesPreview?.addEventListener("click",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;const m=e.target.closest("[data-main-image-move]");if(m)moveMainImage(card.dataset.imageItemId,Number(m.dataset.mainImageMove));else if(e.target.closest("[data-main-image-remove]"))removeMainImage(card.dataset.imageItemId);});
 mainImagesPreview?.addEventListener("dragstart",e=>{const card=e.target.closest("[data-image-item-id]");if(!card)return;draggingMainImageId=card.dataset.imageItemId;card.classList.add("is-dragging");e.dataTransfer?.setData("text/plain",draggingMainImageId);if(e.dataTransfer)e.dataTransfer.effectAllowed="move";});
 mainImagesPreview?.addEventListener("dragover",e=>{if(e.target.closest("[data-image-item-id]"))e.preventDefault();});
@@ -3140,15 +3228,17 @@ async function uploadImage(productId, file, subfolder = "") {
       if (!isTransientImageUploadError(error) || attempt === maxAttempts - 1) break;
     }
 
-    await waitBeforeRetry(500 * (attempt + 1));
+    await waitBeforeRetry(1000 * (attempt + 1));
   }
 
   const detail = String(lastError?.message || "fallo de red sin detalle del servidor");
   const connectionAdvice = navigator.onLine === false
     ? "El teléfono aparece sin conexión."
-    : "Comprobá que la conexión del teléfono siga activa; la subida se reintentó automáticamente.";
+    : isTransientImageUploadError(lastError)
+      ? "El navegador no recibió una respuesta de Supabase Storage. Puede ser una interrupción de red o un bloqueo de la solicitud; probá de nuevo cuando la conexión esté estable."
+      : "Supabase Storage respondió con un error. Revisá el detalle técnico que aparece al final.";
   throw new Error(
-    `No se pudo subir ${file.name} después de ${maxAttempts} intentos. ${connectionAdvice} Si se repite, probá con menos fotos por vez. Detalle: ${detail}`
+    `No se pudo subir ${file.name} después de ${maxAttempts} intentos. ${connectionAdvice} El archivo se conserva en el formulario para reintentar. Detalle técnico: ${detail}`
   );
 }
 
@@ -3488,7 +3578,7 @@ form?.addEventListener("submit", async event => {
       $("#form-title").textContent = isPerfume ? "Fragancia guardada · fotografías pendientes" : "Producto guardado · fotografías pendientes";
       message(
         "#product-form-status",
-        "Producto guardado, pero " + imageUploadErrors.length + " fotografía(s) no se pudieron subir. Los datos quedaron guardados y las fotografías pendientes siguen en el formulario. Revisá conexión/permisos de Storage y pulsá “Reintentar fotografías”. Detalle: " + imageUploadErrors.slice(0, 2).join(" · "),
+        "Producto guardado, pero " + imageUploadErrors.length + " fotografía(s) no se pudieron subir. Los datos se conservaron y las imágenes pendientes siguen en el formulario. Revisá la conexión y usá el botón “Subir / reintentar fotografías pendientes” que aparece debajo de la galería. Detalle: " + imageUploadErrors.slice(0, 2).join(" · "),
         "error"
       );
       setStatus("Guardado con fotografías pendientes: " + name, "error");
