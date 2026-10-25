@@ -3937,16 +3937,36 @@ async function openPublishReview() {
   if (publishButton.dataset.reviewLoading === "true") return;
   publishButton.dataset.reviewLoading = "true";
   publishButton.disabled = true;
+  let handingOffToDraftSave = false;
   try {
     $("#publish-review-intro").textContent = "Comprobando que las fotografías realmente carguen y se puedan decodificar…";
     currentPublishReview = await buildPublishReview();
+
+    // Una imagen que no carga o no se puede decodificar bloquea la publicación.
+    // Guardamos primero la ficha en Borradores y luego llevamos al usuario al error
+    // exacto, conservando todos los demás datos del formulario.
+    if (currentPublishReview.blockingIssues.length && form && currentUser && supabase) {
+      form.dataset.forceDraftOnPhotoIssue = "true";
+      form.dataset.publishConfirmed = "true";
+      handingOffToDraftSave = true;
+      delete publishButton.dataset.reviewLoading;
+      message(
+        "#product-form-status",
+        "Detecté una fotografía que no se puede cargar o decodificar. La ficha se guardará en Borradores y te llevaré directamente al campo que necesita corrección."
+      );
+      form.requestSubmit(publishButton);
+      return;
+    }
+
     renderPublishReview(currentPublishReview);
     if (!publishReviewDialog.open) publishReviewDialog.showModal();
   } catch (error) {
     message("#product-form-status", "No se pudo completar la revisión previa: " + (error.message || "error desconocido") + ". No se publicó el producto.", "error");
   } finally {
-    publishButton.disabled = false;
-    delete publishButton.dataset.reviewLoading;
+    if (!handingOffToDraftSave) {
+      publishButton.disabled = false;
+      delete publishButton.dataset.reviewLoading;
+    }
   }
 }
 function clearPhotoIssueHighlights() {
