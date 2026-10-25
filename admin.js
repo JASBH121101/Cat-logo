@@ -4284,7 +4284,8 @@ function parseQuickImportVariants() {
     }
     const priceUsd = quickImportMoney(parts[2], "precio USD", entry.number);
     const priceNio = quickImportMoney(parts[3], "precio C$", entry.number);
-    const configKey = normalizeQuickImportText(storage.amount + " " + storage.unit + " " + ramMatch[1]);
+    const normalizedRam = String(Number(ramMatch[1].replace(",", ".")));
+      const configKey = normalizeQuickImportText(storage.amount + " " + storage.unit + " " + normalizedRam);
     if (seenConfigurations.has(configKey)) {
       throw new Error("La configuración de RAM y almacenamiento está repetida en la línea " + entry.number + ".");
     }
@@ -4621,7 +4622,7 @@ function quickImportPrepareWizardVariants() {
         const state = color.availability === "available" ? "disponible" : color.availability === "out_of_stock" ? "agotado" : "pedido";
         return colorName + ":" + state;
       });
-      lines.push(String(Number(ramMatch[1].replace(",", "."))) + " | " + storage.amount + " " + storage.unit + " | " +
+      lines.push(normalizedRam + " | " + storage.amount + " " + storage.unit + " | "
         (priceUsd || "-") + " | " + (priceNio || "-") + " | " + colorTokens.join(", "));
     });
     const raw = lines.join("\n");
@@ -4651,8 +4652,10 @@ function quickImportGoToStep(step) {
     return;
   }
   if (target >= 3) {
-    quickImportShowStep(2);
-    if (!quickImportPrepareWizardVariants()) return;
+    if (!quickImportPrepareWizardVariants()) {
+      quickImportShowStep(2);
+      return;
+    }
   }
   quickImportShowStep(target);
   setQuickImportStatus("", "");
