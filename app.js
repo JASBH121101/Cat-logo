@@ -656,7 +656,7 @@ function refreshBrandSuggestions() {
     String(product.model || "").trim()
   ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
   const query = String(brandSearchInput?.value || "").trim().toLocaleLowerCase("es");
-  const matches = query ? suggestions.filter(value => value.toLocaleLowerCase("es").includes(query)).slice(0, 8) : [];
+  const matches = (query ? suggestions.filter(value => value.toLocaleLowerCase("es").includes(query)) : suggestions).slice(0, query ? 8 : 20);
   list.replaceChildren(...matches.map(value => {
     const option = document.createElement("button");
     option.type = "button";
