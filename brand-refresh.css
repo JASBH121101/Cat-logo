@@ -854,3 +854,32 @@ html[data-theme="dark"] .product-detail-page .dialog-color-card.is-selected {
   border-color:#8ea0ff !important;
   box-shadow:0 0 0 2px rgba(142,160,255,.20) !important;
 }
+
+/* FIX: mantener separadas las insignias de destacado y disponibilidad en perfumería */
+body.perfume-page .perfume-product-image .perfume-featured-badge {
+  left: 10px !important;
+  right: auto !important;
+  max-width: calc(100% - 145px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.perfume-page .perfume-product-image .perfume-state-badge {
+  left: auto !important;
+  right: 10px !important;
+  max-width: calc(100% - 145px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 600px) {
+  body.perfume-page .perfume-product-image .perfume-featured-badge {
+    left: 8px !important;
+    max-width: calc(100% - 128px);
+  }
+  body.perfume-page .perfume-product-image .perfume-state-badge {
+    left: auto !important;
+    right: 8px !important;
+    max-width: calc(100% - 128px);
+  }
+}
