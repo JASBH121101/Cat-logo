@@ -3469,7 +3469,7 @@ async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onPr
     xhr.setRequestHeader("Authorization","Bearer "+accessToken);
     xhr.setRequestHeader("Content-Type",contentType);
     xhr.setRequestHeader("x-upsert","false");
-    xhr.setRequestHeader("cache-control","3600");
+    xhr.setRequestHeader("cache-control","max-age=3600");
     xhr.upload.addEventListener("progress",event=>{
       if(!event.lengthComputable||typeof onProgress!=="function")return;
       const percent=Math.max(0,Math.min(100,Math.round(event.loaded/event.total*100)));
