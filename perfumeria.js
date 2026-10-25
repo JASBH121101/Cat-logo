@@ -93,6 +93,15 @@ function familyLabel(family) {
   })[normalizeText(family)] || "Perfumería";
 }
 
+function syncFamilyNavigation() {
+  const activeCategory = familySelect?.value || "all";
+  document.querySelectorAll(".perfume-family-link").forEach(button => {
+    const active = button.dataset.familyCategory === activeCategory;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
 function familyMatches(product) {
   return !selectedFamilies.size || selectedFamilies.has(normalizeText(product.perfume_details?.family));
 }
@@ -448,6 +457,7 @@ function visibleProducts() {
 }
 
 function renderProducts() {
+  syncFamilyNavigation();
   const matched = visibleProducts();
   const filtering = hasActiveFilters();
   const featured = filtering ? [] : matched.filter(product => Boolean(product.featured));
@@ -684,6 +694,28 @@ familySelect?.addEventListener("change", () => {
   selectedFamilies.clear();
   if (familySelect.value !== "all") selectedFamilies.add(familySelect.value);
   renderProducts();
+});
+
+document.querySelectorAll(".perfume-family-link").forEach(button => {
+  button.addEventListener("click", () => {
+    const category = button.dataset.familyCategory;
+    if (!category) return;
+    if (familySelect) {
+      familySelect.value = category;
+      familySelect.dispatchEvent(new Event("change", { bubbles: true }));
+    } else {
+      selectedFamilies.clear();
+      selectedFamilies.add(category);
+      renderProducts();
+    }
+
+    const target = resultsHeading || grid;
+    if (!target) return;
+    const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height || 0;
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - headerHeight - 12);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    window.scrollTo({ top, behavior: reducedMotion ? "auto" : "smooth" });
+  });
 });
 audienceSelect?.addEventListener("change", () => {
   selectedAudiences.clear();
