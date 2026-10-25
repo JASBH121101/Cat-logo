@@ -128,11 +128,23 @@ function refreshBrandSuggestions() {
     String(product.name || "").trim(),
     String(product.model || "").trim()
   ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
-  list.replaceChildren(...suggestions.map(value => {
-    const option = document.createElement("option");
-    option.value = value;
+  const query = normalizeText(searchInput?.value);
+  const matches = query ? suggestions.filter(value => normalizeText(value).includes(query)).slice(0, 8) : [];
+  list.replaceChildren(...matches.map(value => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "live-search-option";
+    option.setAttribute("role", "option");
+    option.textContent = value;
+    option.addEventListener("mousedown", event => event.preventDefault());
+    option.addEventListener("click", () => {
+      searchInput.value = value;
+      list.hidden = true;
+      renderProducts();
+    });
     return option;
   }));
+  list.hidden = matches.length === 0;
 }
 
 function priceBound(input) {
@@ -467,7 +479,10 @@ function bindMultiSelect(container, attribute, selectedSet) {
   });
 }
 bindMultiSelect(productTypeFilters, "productType", selectedProductTypes);
-searchInput.addEventListener("input", renderProducts);
+searchInput.addEventListener("input", () => { refreshBrandSuggestions(); renderProducts(); });
+searchInput.addEventListener("focus", refreshBrandSuggestions);
+searchInput.addEventListener("keydown", event => { if (event.key === "Escape") { const menu = document.getElementById("perfume-brand-suggestions"); if (menu) menu.hidden = true; } });
+document.addEventListener("click", event => { if (!event.target.closest(".perfume-search-control")) { const menu = document.getElementById("perfume-brand-suggestions"); if (menu) menu.hidden = true; } });
 familySelect?.addEventListener("change", () => {
   selectedFamilies.clear();
   if (familySelect.value !== "all") selectedFamilies.add(familySelect.value);
