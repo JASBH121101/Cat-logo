@@ -13,12 +13,12 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles.css?v=20261025-luxe-controls1">
   <link rel="stylesheet" href="../theme-ui.css?v=20261024-final-responsive-audit1">
-  <link rel="stylesheet" href="../perfumeria.css?v=20261025-auto-photo-fit2">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261025-category-nav-preview1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261025-badge-row1">
   <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261025-catalog-spacing3">
   <link rel="stylesheet" href="../catalog-performance.css?v=20261025-luxe-perf1">
   <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261025-auto-photo-fit2"></script>
+  <script type="module" src="../perfumeria.js?v=20261025-category-nav-preview1"></script>
   <script src="../ui.js?v=20261024-auto-close3" defer></script>
 </head>
 <body class="perfume-page">
@@ -29,7 +29,7 @@
     </a>
     <nav class="perfume-header-nav" aria-label="Navegación de perfumería">
       <a href="#coleccion">Colección</a>
-      <a href="#familias">Familias</a>
+      <a href="#familias">Categorías</a>
       <a href="#contacto">Contacto</a>
     </nav>
   </header>
@@ -71,10 +71,16 @@
       </section>
     </section>
 
-    <section class="perfume-family-band" id="familias" aria-label="Familias de perfumería">
-      <div><span class="perfume-family-number">01</span><strong>Árabes</strong><small>Intensos · Envolventes</small></div>
-      <div><span class="perfume-family-number">02</span><strong>Nicho</strong><small>Creativos · Distintivos</small></div>
-      <div><span class="perfume-family-number">03</span><strong>Diseñador</strong><small>Icónicos · Atemporales</small></div>
+    <section class="perfume-family-band" id="familias" aria-label="Categorías de perfumería">
+      <button class="perfume-family-link" type="button" data-family-category="nicho" aria-pressed="false">
+        <span class="perfume-family-number">01</span><strong>Perfumería de Nicho</strong><small>Casas especializadas · Perfiles distintivos</small><span class="perfume-family-arrow" aria-hidden="true">↗</span>
+      </button>
+      <button class="perfume-family-link" type="button" data-family-category="arabes" aria-pressed="false">
+        <span class="perfume-family-number">02</span><strong>Perfumería Árabe</strong><small>Intensos · Envolventes</small><span class="perfume-family-arrow" aria-hidden="true">↗</span>
+      </button>
+      <button class="perfume-family-link" type="button" data-family-category="disenador" aria-pressed="false">
+        <span class="perfume-family-number">03</span><strong>Perfumería de Diseñador</strong><small>Icónicos · Atemporales</small><span class="perfume-family-arrow" aria-hidden="true">↗</span>
+      </button>
     </section>
 
     
@@ -102,7 +108,7 @@
             </div>
           </div>
         </div>
-        <label class="catalog-control-field"><span>Familia</span><select id="perfume-family-select" aria-label="Filtrar por familia"><option value="all">Todas las familias</option><option value="arabes">Árabes</option><option value="nicho">Nicho</option><option value="disenador">Diseñador</option></select></label>
+        <label class="catalog-control-field"><span>Categoría</span><select id="perfume-family-select" aria-label="Filtrar por categoría"><option value="all">Todas las familias</option><option value="arabes">Árabes</option><option value="nicho">Nicho</option><option value="disenador">Diseñador</option></select></label>
         <label class="catalog-control-field"><span>Género</span><select id="perfume-audience-select" aria-label="Filtrar por género"><option value="all">Todos los géneros</option><option value="hombre">Hombre</option><option value="mujer">Mujer</option><option value="unisex">Unisex</option></select></label>
         <label class="catalog-control-field"><span>Ordenar por</span><select id="perfume-sort-select" aria-label="Ordenar fragancias"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
       </div>
@@ -124,7 +130,7 @@
 
       <section id="featured-section" class="perfume-featured-section hidden" aria-labelledby="featured-section-title">
         <div class="perfume-featured-heading">
-          <div><p class="perfume-kicker">CURADURÍA EXCLUSIVA</p><h2 id="featured-section-title">Fragancias <em>destacadas</em></h2></div>
+          <div><p class="perfume-kicker">SELECCIÓN DESTACADA</p><h2 id="featured-section-title">Fragancias <em>destacadas</em></h2></div>
           <span id="featured-count" class="perfume-featured-count"></span>
         </div>
         <div id="featured-grid" class="featured-grid perfume-product-grid"></div>
