@@ -170,6 +170,7 @@ function updateProductFormMode() {
       : isPerfume ? "Perfumería" : "";
   }
 
+  $("#product-category-field")?.classList.toggle("hidden", isPerfume);
   if ($("#product-perfume-family")) $("#product-perfume-family").required = isPerfume;
   if ($("#product-type")) $("#product-type").value = isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard";
   const isSet = isPerfume && $("#product-type")?.value === "set";
@@ -2977,18 +2978,101 @@ async function discardEditorChanges() {
 $("#new-product-button")?.addEventListener("click", () => void discardEditorChanges());
 $("#cancel-edit-button")?.addEventListener("click", () => void discardEditorChanges());
 const exclusiveToggleButton = $("#toggle-product-exclusive");
-exclusiveToggleButton?.addEventListener("click", () => {
+let exclusiveToggleInProgress = false;
+function setExclusiveToggleUI(value) {
+  const field = $("#product-exclusive");
+  const featuredField = $("#product-featured");
+  if (field) field.checked = Boolean(value);
+  if (featuredField) featuredField.checked = Boolean(value);
+  exclusiveToggleButton?.setAttribute("aria-pressed", String(Boolean(value)));
+  exclusiveToggleButton?.setAttribute("aria-label", value ? "Exclusividad activada" : "Marcar como exclusivo");
+  if (exclusiveToggleButton) exclusiveToggleButton.title = value
+    ? "Exclusividad activada. Tocá para desactivarla."
+    : "Marcar este producto como exclusivo";
+  exclusiveToggleButton?.classList.toggle("is-active", Boolean(value));
+}
+function updateExclusiveBaseline(value) {
+  try {
+    const baseline = JSON.parse(editorBaseline || "{}");
+    for (const field of baseline.fields || []) {
+      if (field[0] === "product-exclusive" || field[0] === "product-featured") field[1] = Boolean(value);
+    }
+    editorBaseline = JSON.stringify(baseline);
+  } catch {}
+  updateEditorDirtyState();
+}
+exclusiveToggleButton?.addEventListener("click", async () => {
+  if (exclusiveToggleInProgress) return;
   const field = $("#product-exclusive");
   const featuredField = $("#product-featured");
   if (!field || !featuredField) return;
-  const next = !(field.checked || featuredField.checked);
-  field.checked = next;
-  featuredField.checked = next;
-  exclusiveToggleButton.setAttribute("aria-pressed", String(next));
-  exclusiveToggleButton.setAttribute("aria-label", next ? "Destacado / exclusivo activado" : "Destacar en el catálogo");
-  exclusiveToggleButton.title = next ? "Destacado / exclusivo activado" : "Destacar en el catálogo";
-  exclusiveToggleButton.classList.toggle("is-active", next);
+  const previous = Boolean(field.checked || featuredField.checked);
+  const next = !previous;
+  const productId = $("#product-id")?.value?.trim() || "";
+  setExclusiveToggleUI(next);
   field.dispatchEvent(new Event("change", { bubbles: true }));
+
+  /* A new, unsaved product has no row to update yet; include the flag on the next save. */
+  if (!productId) {
+    message("#product-form-status",
+      next
+        ? "Exclusividad seleccionada. Se guardará cuando guardés, publiques o guardés como borrador."
+        : "Exclusividad desactivada. Se aplicará cuando guardés el producto.",
+      "success");
+    return;
+  }
+
+  if (!currentUser || !supabase) {
+    setExclusiveToggleUI(previous);
+    updateEditorDirtyState();
+    message("#product-form-status", "No se pudo guardar la exclusividad porque la sesión administrativa no está activa. Volvé a iniciar sesión.", "error");
+    return;
+  }
+
+  exclusiveToggleInProgress = true;
+  exclusiveToggleButton.disabled = true;
+  exclusiveToggleButton.setAttribute("aria-busy", "true");
+  try {
+    const updatedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("products")
+      .update({
+        featured: next,
+        is_exclusive: next,
+        updated_at: updatedAt,
+        updated_by: currentUser.id
+      })
+      .eq("id", productId)
+      .select("id, featured, is_exclusive")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("Supabase no confirmó el cambio en el producto.");
+
+    products = products.map(product => String(product.id) === String(productId)
+      ? { ...product, featured: next, is_exclusive: next, updated_at: updatedAt, updated_by: currentUser.id }
+      : product);
+    updateExclusiveBaseline(next);
+    renderAdminList();
+    renderDashboardOverview();
+    void loadCatalogAnalytics();
+
+    message("#product-form-status",
+      next
+        ? "Exclusividad activada y guardada en el producto."
+        : "Exclusividad desactivada y guardada en el producto.",
+      "success");
+  } catch (error) {
+    setExclusiveToggleUI(previous);
+    updateEditorDirtyState();
+    message("#product-form-status",
+      "No se pudo guardar la exclusividad. El botón volvió a su estado anterior. Detalle: " + (error?.message || "error desconocido"),
+      "error");
+  } finally {
+    exclusiveToggleInProgress = false;
+    exclusiveToggleButton.disabled = false;
+    exclusiveToggleButton.removeAttribute("aria-busy");
+    updateMainImageRetryButton();
+  }
 });
 $("#product-type")?.addEventListener("change", () => {
   const isPerfume = activeCatalogType === "perfumery";
