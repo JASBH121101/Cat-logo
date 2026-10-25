@@ -805,7 +805,7 @@ initializePerfumes();
     { src: "../img/perfume-showcase/la-bomba.webp?v=20261025-carousel-photos2", title: "Carolina Herrera La Bomba", alt: "Fragancia Carolina Herrera La Bomba con frasco en forma de mariposa y caja rosa", maxWidth: 270 },
     { src: "../img/perfume-showcase/afnan-9pm.webp?v=20261025-carousel-photos2", title: "Afnan 9 PM", alt: "Perfume Afnan 9 PM junto a su caja negra" },
     { src: "../img/perfume-showcase/afnan-9am.webp?v=20261025-carousel-photos2", title: "Afnan 9 AM Dive", alt: "Perfume Afnan 9 AM Dive en tonos turquesa" },
-    { src: "../img/perfume-showcase/qaed-al-fursan.webp?v=20261025-carousel-photos2", title: "Lattafa Qaed Al Fursan", alt: "Perfume Lattafa Qaed Al Fursan con caja negra y detalles dorados" },
+    { src: "../img/perfume-hero-qaed.webp?v=20261025-carousel-fix3", title: "Lattafa Qaed Al Fursan", alt: "Perfume Lattafa Qaed Al Fursan con caja negra y detalles dorados" },
     { src: "../img/perfume-showcase/pdm-oajan.webp?v=20261025-carousel-photos2", title: "Parfums de Marly Oajan", alt: "Perfume Parfums de Marly Oajan en frasco oscuro y caja negra" },
     { src: "../img/perfume-showcase/creed-absolu-aventus.webp?v=20261025-carousel-photos2", title: "Creed Absolu Aventus", alt: "Frasco oscuro Creed Absolu Aventus" },
     { src: "../img/perfume-showcase/dior-sauvage.webp?v=20261025-carousel-photos2", title: "Dior Sauvage", alt: "Perfume Dior Sauvage acompañado por su caja" },
