@@ -579,7 +579,7 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
 .catalog-control-field{color:var(--perfume-muted);font-size:12px;letter-spacing:.01em}.catalog-control-field input,.catalog-control-field select{border-color:var(--perfume-border);border-radius:3px;background:var(--perfume-input);color:var(--perfume-ink)}.catalog-control-field input:focus,.catalog-control-field select:focus{border-color:var(--perfume-gold);outline:2px solid color-mix(in srgb,var(--perfume-gold) 20%,transparent)}.perfume-extra-filters{margin:0 0 20px}@media(max-width:640px){.perfume-extra-filters{grid-template-columns:1fr;gap:10px}}
 
 /* Compact single-select catalog filters */
-.perfume-extra-filters{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:0 0 14px}
+.perfume-extra-filters{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(4,minmax(0,1fr));gap:10px;align-items:end;margin:0 0 14px}
 .perfume-extra-filters .catalog-control-field{min-width:0}
 .perfume-extra-filters .catalog-control-field input,.perfume-extra-filters .catalog-control-field select{min-width:0;width:100%;min-height:44px;padding:9px 10px;font-size:13px}
 .perfume-product-type-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 16px;align-items:stretch}
@@ -594,3 +594,16 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
 .live-search-option{display:block;width:100%;padding:11px 13px;border:0;border-bottom:1px solid var(--perfume-border,#d8d0c0);background:transparent;color:var(--perfume-ink,#302820);text-align:left;font:inherit;font-size:14px;cursor:pointer}
 .live-search-option:last-child{border-bottom:0}
 .live-search-option:hover,.live-search-option:focus{background:rgba(185,148,84,.16);outline:0}
+
+/* Compact brand dropdown for perfume: only brand names are listed. */
+.perfume-page .brand-filter-toggle,.perfume-page .brand-filter-search{box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid var(--perfume-border);border-radius:3px;background:var(--perfume-input);color:var(--perfume-ink);font:inherit;font-size:13px}
+.perfume-page .brand-filter-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;text-align:left;cursor:pointer}
+.perfume-page .brand-filter-search{padding:9px 10px}
+.perfume-page .brand-filter-toggle:focus-visible,.perfume-page .brand-filter-search:focus-visible,.perfume-page .brand-filter-option:focus-visible{outline:2px solid var(--perfume-gold);outline-offset:2px}
+.perfume-page .brand-filter-menu{position:absolute;z-index:90;top:calc(100% + 6px);left:0;right:0;min-width:180px;padding:9px;border:1px solid var(--perfume-border);border-radius:5px;background:var(--perfume-paper);color:var(--perfume-ink);box-shadow:0 14px 34px rgba(0,0,0,.28)}
+.perfume-page .brand-filter-menu[hidden]{display:none!important}
+.perfume-page .brand-filter-options{max-height:250px;overflow-y:auto;margin-top:8px}
+.perfume-page .brand-filter-option{display:block;width:100%;padding:11px 10px;border:0;border-bottom:1px solid var(--perfume-border);background:transparent;color:var(--perfume-ink);text-align:left;font:inherit;font-size:13px;cursor:pointer}
+.perfume-page .brand-filter-option:last-child{border-bottom:0}
+.perfume-page .brand-filter-option:hover,.perfume-page .brand-filter-option[aria-selected="true"]{background:rgba(185,148,84,.15)}
+.perfume-page .brand-filter-empty{margin:8px;padding:8px;color:var(--perfume-muted);font-size:12px}
