@@ -260,7 +260,7 @@ function renderCard(product) {
 }
 
 function visibleProducts() {
-  const brandQuery = normalizeText(searchInput?.value);
+  const query = normalizeText(searchInput?.value);
   const min = priceBound(minPriceInput);
   const max = priceBound(maxPriceInput);
   const validRange = min === null || max === null || min <= max;
@@ -269,7 +269,6 @@ function visibleProducts() {
 
   return perfumes.filter(product => {
     if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
-    if (brandQuery && ![product.brand, product.name, product.model].some(value => normalizeText(value).includes(brandQuery))) return false;
     const detail = product.perfume_details || {};
     const searchable = [
       product.name, product.brand, product.model, product.description, product.product_type,
