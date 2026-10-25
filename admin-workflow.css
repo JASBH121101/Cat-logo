@@ -226,3 +226,20 @@ html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state=
 .publish-review-footer { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; padding:16px 22px; border-top:1px solid var(--admin-border,#e4e7ef); }
 .publish-review-confirm-draft { background:#a52a20 !important; border-color:#a52a20 !important; }
 @media (max-width:560px) { .publish-review-header,.publish-review-body { padding:16px; } .publish-review-footer { padding:14px 16px; } .publish-review-row { grid-template-columns:1fr; gap:4px; padding:11px 12px; } .publish-review-footer > button { flex:1 1 100%; } }
+
+/* JB Collections: banner de marca, sin ampliación al hover ni brillo pesado. */
+.admin-welcome-image {
+  border-color: rgba(196, 161, 93, .48);
+  background: #090f21;
+}
+.admin-welcome-image img {
+  object-fit: cover;
+  object-position: center;
+  transition: none;
+}
+.admin-welcome-image:hover img {
+  transform: none;
+}
+.admin-image-badge {
+  display: none;
+}

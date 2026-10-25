@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="250" viewBox="0 0 720 250" role="img" aria-labelledby="title desc">
+  <title id="title">JB Collections</title>
+  <desc id="desc">Monograma JB azul noche y dorado con la palabra Collections en letras serif espaciadas.</desc>
+  <defs>
+    <linearGradient id="jb-metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1c1"/>
+      <stop offset=".23" stop-color="#caa45b"/>
+      <stop offset=".5" stop-color="#f5d99b"/>
+      <stop offset=".75" stop-color="#8d632b"/>
+      <stop offset="1" stop-color="#e8c16b"/>
+    </linearGradient>
+    <linearGradient id="jb-blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e4d5ff"/>
+      <stop offset=".34" stop-color="#8371ff"/>
+      <stop offset=".68" stop-color="#5140d3"/>
+      <stop offset="1" stop-color="#00bfe8"/>
+    </linearGradient>
+  </defs>
+  <g text-anchor="middle" font-family="Bodoni MT, Didot, 'Times New Roman', serif" font-weight="500" font-size="126">
+    <text x="352" y="122" fill="#050a18" stroke="#050a18" stroke-width="7" opacity=".62" transform="translate(2 4)">JB</text>
+    <text x="352" y="122" fill="url(#jb-metal)" stroke="#7b582b" stroke-width="1.2">J</text>
+    <text x="385" y="122" fill="url(#jb-blue)" stroke="#d9bd78" stroke-width=".6">B</text>
+  </g>
+  <path d="M162 150 H558" stroke="url(#jb-metal)" stroke-width="1.2" opacity=".9"/>
+  <path d="M350 143 l8 7 -8 7 -8 -7z" fill="url(#jb-metal)"/>
+  <text x="360" y="207" text-anchor="middle" fill="url(#jb-metal)" font-family="Bodoni MT, Didot, 'Times New Roman', serif" font-size="40" letter-spacing="11">COLLECTIONS</text>
+</svg>
