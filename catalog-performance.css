@@ -1,0 +1,125 @@
+/* =========================================================
+   JB COLLECTIONS · ACABADO PREMIUM CON MENOS TRABAJO DE RENDER
+   Mantiene identidad y destellos; reduce efectos caros en móvil.
+   ========================================================= */
+
+/* JB TECH: conservar el marco luminoso, con un recorrido más pausado.
+   El brillo diagonal sigue existiendo, pero sin blur ni mezcla de capas. */
+body.technology-catalog .featured-section:before {
+  animation-duration: 20s;
+}
+body.technology-catalog .featured-section:after {
+  filter: none;
+  mix-blend-mode: normal;
+}
+body.technology-catalog .featured-section.signature-shine-active:after {
+  animation-duration: 12s;
+  will-change: transform, opacity;
+}
+body.technology-catalog .featured-section:not(.signature-shine-active):after {
+  will-change: auto;
+}
+
+/* Evitar movimientos y filtros innecesarios al recorrer las tarjetas. */
+body.technology-catalog .product-card,
+body.technology-catalog .featured-product-card {
+  backface-visibility: hidden;
+}
+body.technology-catalog .product-card:hover,
+body.technology-catalog .featured-product-card:hover {
+  filter: none;
+}
+body.technology-catalog .product-view-button {
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+body.technology-catalog .product-view-button:hover {
+  filter: none;
+}
+body.technology-catalog .hero-image-frame {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* JB PARFUMS: lujo discreto en oro champán, tinta y luz suave.
+   El acento es estático; la respuesta al toque es corta y no anima sombras enormes. */
+body.perfume-page .perfume-featured-section {
+  position: relative;
+  isolation: isolate;
+}
+body.perfume-page .perfume-product-card {
+  position: relative;
+  overflow: clip;
+  contain: paint;
+  transition: transform .16s ease, border-color .16s ease;
+}
+body.perfume-page .perfume-product-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(190,151,82,.72), rgba(248,226,173,.95), rgba(190,151,82,.72), transparent);
+  opacity: .72;
+}
+body.perfume-page .perfume-product-card.featured-product-card::before {
+  height: 3px;
+  opacity: .95;
+}
+body.perfume-page .perfume-product-card:hover,
+body.perfume-page .perfume-product-card:focus-within {
+  transform: translateY(-2px);
+  border-color: rgba(183,145,76,.72);
+  box-shadow: var(--perfume-shadow, 0 12px 28px rgba(38,27,12,.12));
+}
+body.perfume-page .perfume-product-card .perfume-view-button {
+  transition: transform .16s ease, background-color .16s ease, border-color .16s ease;
+}
+body.perfume-page .perfume-product-card .perfume-view-button:hover {
+  filter: none;
+}
+body.perfume-page .perfume-product-image img {
+  transition: transform .22s ease;
+}
+body.perfume-page .perfume-product-card:hover .perfume-product-image img {
+  transform: none;
+}
+
+/* En pantallas táctiles se conserva el marco de lujo, sin animación de hover
+   persistente ni sombras amplias que compitan con el scroll. */
+@media (hover: none), (max-width: 760px) {
+  body.technology-catalog .featured-section:before {
+    animation-duration: 26s;
+  }
+  body.technology-catalog .featured-section.signature-shine-active:after {
+    animation-duration: 14s;
+  }
+  body.technology-catalog .product-card:hover,
+  body.technology-catalog .featured-product-card:hover {
+    transform: none;
+  }
+  body.perfume-page .perfume-product-card:hover,
+  body.perfume-page .perfume-product-card:focus-within {
+    transform: none;
+    box-shadow: none;
+  }
+  body.perfume-page .perfume-product-image img {
+    transition: none;
+  }
+}
+
+/* Respeta el ajuste de accesibilidad del sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  body.technology-catalog .featured-section:before,
+  body.technology-catalog .featured-section.signature-shine-active:after {
+    animation: none !important;
+  }
+  body.technology-catalog .product-card,
+  body.technology-catalog .product-view-button,
+  body.perfume-page .perfume-product-card,
+  body.perfume-page .perfume-product-image img,
+  body.perfume-page .perfume-product-card .perfume-view-button {
+    transition: none !important;
+    transform: none !important;
+  }
+}
