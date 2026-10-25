@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="../perfumeria.css?v=20261025-brand-sort1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261024-share-preview-delete9">
   <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261025-publication-sort2"></script>
+  <script type="module" src="../perfumeria.js?v=20261025-filter-ui2"></script>
   <script src="../ui.js?v=20261024-auto-close3" defer></script>
 </head>
 <body class="perfume-page">
@@ -65,34 +65,20 @@
           <h2>Encontrá tu <em>próximo aroma.</em></h2>
           <p class="perfume-section-subtitle">Explorá por familia, buscá tu fragancia favorita o encontrá una opción dentro de tu presupuesto.</p>
         </div>
-        <label class="perfume-search-box">
-          <span aria-hidden="true">⌕</span>
-          <input id="perfume-search-input" type="search" placeholder="Buscar fragancia o marca…" aria-label="Buscar fragancias">
-          <kbd>Buscar</kbd>
-        </label>
+
       </div>
 
-      <div class="catalog-extra-filters perfume-extra-filters" aria-label="Buscar marca y ordenar fragancias">
-        <label class="catalog-control-field"><span>Buscar marca</span><input id="perfume-brand-search-input" list="perfume-brand-suggestions" type="search" placeholder="Escribí una marca…" autocomplete="off" aria-label="Filtrar por marca de perfume"></label><datalist id="perfume-brand-suggestions"></datalist>
+      <div class="catalog-extra-filters perfume-extra-filters" aria-label="Buscar y ordenar fragancias">
+        <label class="catalog-control-field perfume-search-control"><span>Buscar fragancia o marca</span><input id="perfume-search-input" list="perfume-brand-suggestions" type="search" placeholder="Escribí para buscar…" autocomplete="off" aria-label="Buscar fragancia o marca"><datalist id="perfume-brand-suggestions"></datalist></label>
+        <label class="catalog-control-field"><span>Familia</span><select id="perfume-family-select" aria-label="Filtrar por familia"><option value="all">Todas las familias</option><option value="arabes">Árabes</option><option value="nicho">Nicho</option><option value="disenador">Diseñador</option></select></label>
+        <label class="catalog-control-field"><span>Género</span><select id="perfume-audience-select" aria-label="Filtrar por género"><option value="all">Todos los géneros</option><option value="hombre">Hombre</option><option value="mujer">Mujer</option><option value="unisex">Unisex</option></select></label>
         <label class="catalog-control-field"><span>Ordenar por</span><select id="perfume-sort-select" aria-label="Ordenar fragancias"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
       </div>
 
-      <div class="filter-row perfume-family-filters" id="category-filters" data-mobile-filter-label="Familia" aria-label="Filtrar por familia de perfumería">
-        <button class="filter-chip active" type="button" data-category="all" aria-pressed="true">Todas las familias</button>
-        <button class="filter-chip" type="button" data-category="arabes" aria-pressed="false">Árabes</button>
-        <button class="filter-chip" type="button" data-category="nicho" aria-pressed="false">Nicho</button>
-        <button class="filter-chip" type="button" data-category="disenador" aria-pressed="false">Diseñador</button>
-      </div>
       <div class="filter-row perfume-family-filters perfume-product-type-filters" id="product-type-filters" data-mobile-filter-label="Presentación" aria-label="Filtrar por presentación">
         <button class="filter-chip active" type="button" data-product-type="all" aria-pressed="true">Todos los formatos</button>
         <button class="filter-chip" type="button" data-product-type="perfume" aria-pressed="false">Perfumes y fragancias</button>
         <button class="filter-chip" type="button" data-product-type="set" aria-pressed="false">Sets de perfumes</button>
-      </div>
-      <div class="filter-row perfume-family-filters perfume-audience-filters" id="audience-filters" data-mobile-filter-label="Género" aria-label="Filtrar por género">
-        <button class="filter-chip active" type="button" data-audience="all" aria-pressed="true">Todos los géneros</button>
-        <button class="filter-chip" type="button" data-audience="hombre" aria-pressed="false">Hombre</button>
-        <button class="filter-chip" type="button" data-audience="mujer" aria-pressed="false">Mujer</button>
-        <button class="filter-chip" type="button" data-audience="unisex" aria-pressed="false">Unisex</button>
       </div>
       <div class="perfume-filter-controls"><p id="perfume-filter-summary" aria-live="polite">Todos los tipos · Todos los géneros</p><button id="clear-all-filters" class="perfume-clear-all-button" type="button" disabled>Limpiar todos los filtros</button></div>
 
