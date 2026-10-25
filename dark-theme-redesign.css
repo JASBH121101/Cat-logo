@@ -1108,7 +1108,7 @@ body.technology-catalog .product-card > .product-card-content {
 }
 body.technology-catalog .product-card-color-slot {
   flex: 0 0 auto;
-  min-height: 104px;
+  min-height: 88px;
 }
 body.technology-catalog .product-card .product-actions {
   margin-top: auto !important;
@@ -1116,6 +1116,12 @@ body.technology-catalog .product-card .product-actions {
 }
 @media (max-width: 760px) {
   body.technology-catalog .product-card-color-slot {
-    min-height: 132px;
+    min-height: 92px;
+  }
+
+  /* En las tarjetas destacadas se ocultan los nombres de color en móvil,
+     por lo que basta reservar espacio para una o dos filas de muestras. */
+  body.technology-catalog .featured-grid .product-card-color-slot {
+    min-height: 28px;
   }
 }
