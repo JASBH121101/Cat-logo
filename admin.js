@@ -4733,8 +4733,40 @@ $("#quick-import-next-1")?.addEventListener("click", () => quickImportGoToStep(2
 $("#quick-import-back-2")?.addEventListener("click", () => quickImportShowStep(1));
 $("#quick-import-next-2")?.addEventListener("click", () => quickImportGoToStep(3));
 $("#quick-import-back-3")?.addEventListener("click", () => quickImportShowStep(2));
+function quickImportResetWizard() {
+  quickImportWizardVersions = [quickImportNewVersion()];
+  quickImportColorHexByVariant = new Map();
+  quickImportWizardTopologySignature = "";
+  quickImportVariantPlan = [];
+  quickImportParsedText = "";
+  if (quickImportVariantText) quickImportVariantText.value = "";
+  ["#quick-import-name", "#quick-import-brand", "#quick-import-model", "#quick-import-characteristics"].forEach(selector => {
+    const field = $(selector);
+    if (field) field.value = "";
+  });
+  const availability = $("#quick-import-availability");
+  if (availability) availability.value = "on_order";
+  syncQuickImportCategoryOptions();
+  const category = $("#quick-import-category");
+  if (category) category.value = Array.from(category.options).some(option => option.value === "Celulares")
+    ? "Celulares"
+    : (category.options[0]?.value || "");
+  quickImportRenderWizardVersions();
+  renderQuickImportPhotoUI();
+  quickImportShowStep(1);
+  setQuickImportStatus("", "");
+}
+
 $("#quick-import-apply")?.addEventListener("click", event => {
-  if (!quickImportPrepareWizardVariants()) event.stopImmediatePropagation();
+  if (!quickImportPrepareWizardVariants()) {
+    event.stopImmediatePropagation();
+    return;
+  }
+  // If transfer succeeded, clear the assistant for the next item. If
+  // the existing editor rejects it, keep the user's draft intact.
+  queueMicrotask(() => {
+    if (quickImportMode === "written") quickImportResetWizard();
+  });
 });
 $("#quick-import-cancel")?.addEventListener("click", () => quickImportShowStep(1));
 quickImportWizardVersions = [quickImportNewVersion()];
