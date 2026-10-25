@@ -985,3 +985,71 @@ html[data-theme="dark"] body.perfume-page .perfume-view-button:hover {
   background: linear-gradient(115deg, #F0D8A1, #C59D58) !important;
   box-shadow: 0 5px 15px rgba(0, 0, 0, .18) !important;
 }
+
+
+/* Interactive polish: make CTAs feel alive without permanent animation. */
+html[data-theme="dark"] body.technology-catalog .product-card .product-view-button,
+html[data-theme="dark"] body.technology-catalog .product-card .view-product-button,
+html[data-theme="dark"] body.technology-catalog .product-card a[href*="producto"],
+html[data-theme="dark"] body.technology-catalog .product-card button {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background-position .25s ease, filter .18s ease !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .product-card a,
+html[data-theme="dark"] body.technology-catalog .product-card button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card .product-view-button,
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card .view-product-button,
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card a[href*="producto"],
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card button {
+  background-size: 180% 180% !important;
+  box-shadow: 0 4px 0 #101A45, 0 0 0 1px rgba(0, 217, 255, .25), 0 7px 20px rgba(0, 217, 255, .10) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="dark"] body.technology-catalog .featured-grid .product-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 230, 255, .78) !important;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, .38), 0 0 22px rgba(0, 217, 255, .10) !important;
+  }
+
+  html[data-theme="dark"] body.technology-catalog .featured-grid .product-card a:hover,
+  html[data-theme="dark"] body.technology-catalog .featured-grid .product-card button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+    border-color: #00E5FF !important;
+    box-shadow: 0 5px 0 #101A45, 0 0 20px rgba(0, 217, 255, .22), 0 0 28px rgba(124, 77, 255, .16) !important;
+  }
+
+  html[data-theme="dark"] body.perfume-page .perfume-product-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(211, 177, 111, .62) !important;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, .30), 0 0 18px rgba(211, 177, 111, .055) !important;
+  }
+
+  html[data-theme="dark"] body.perfume-page .perfume-product-card .perfume-view-button:hover,
+  html[data-theme="dark"] body.perfume-page .perfume-view-button:hover {
+    transform: translateY(-1px);
+  }
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card a:active,
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card button:active,
+html[data-theme="dark"] body.perfume-page .perfume-product-card .perfume-view-button:active,
+html[data-theme="dark"] body.perfume-page .perfume-view-button:active {
+  transform: translateY(1px) scale(.99) !important;
+  filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="dark"] body.technology-catalog .featured-grid .product-card,
+  html[data-theme="dark"] body.technology-catalog .featured-grid .product-card a,
+  html[data-theme="dark"] body.technology-catalog .featured-grid .product-card button,
+  html[data-theme="dark"] body.perfume-page .perfume-product-card,
+  html[data-theme="dark"] body.perfume-page .perfume-view-button {
+    transition: none !important;
+    animation: none !important;
+  }
+}
