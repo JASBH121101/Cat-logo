@@ -600,6 +600,23 @@
     </section>
   </main>
 
+  <dialog id="publish-review-dialog" class="publish-review-dialog" aria-labelledby="publish-review-title">
+    <div class="publish-review-shell">
+      <header class="publish-review-header">
+        <div><p class="publish-review-eyebrow">REVISIÓN ANTES DE PUBLICAR</p><h2 id="publish-review-title">Revisá la ficha del producto</h2></div>
+        <button class="admin-product-preview-close" type="button" id="publish-review-close" aria-label="Cerrar revisión" title="Cerrar">×</button>
+      </header>
+      <div class="publish-review-body">
+        <p id="publish-review-intro">Comprobá nombre, variantes, precios y fotografías. La publicación no se hará hasta que confirmés.</p>
+        <div id="publish-review-summary" class="publish-review-summary"></div>
+        <section id="publish-review-warnings-section" class="publish-review-section publish-review-warnings" hidden><h3>Precios para revisar</h3><ul id="publish-review-warnings"></ul></section>
+        <section id="publish-review-issues-section" class="publish-review-section publish-review-errors" hidden><h3>Fotografías que requieren atención</h3><p>Estas imágenes no se pudieron cargar o decodificar. La ficha no se publicará; se guardará en Borradores para corregirlas.</p><div id="publish-review-issues"></div></section>
+        <section id="publish-review-missing-section" class="publish-review-section publish-review-missing" hidden><h3>Colores sin fotografía</h3><p>Podés volver al color indicado para agregar una foto, o confirmar expresamente que querés continuar sin ella.</p><div id="publish-review-missing"></div></section>
+      </div>
+      <footer class="publish-review-footer"><button type="button" id="publish-review-cancel" class="button button-outline">Volver a revisar</button><button type="button" id="publish-review-confirm" class="button button-primary">Confirmar y publicar</button></footer>
+    </div>
+  </dialog>
+
   <dialog id="admin-product-preview-dialog" class="admin-product-preview-dialog" aria-labelledby="admin-product-preview-dialog-title">
     <div class="admin-product-preview-shell">
       <header class="admin-product-preview-header">

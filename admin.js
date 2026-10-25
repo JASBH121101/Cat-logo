@@ -3749,6 +3749,275 @@ function deriveColorsFromVariants(variants, fallbackColors = []) {
   return Array.from(byColor.values());
 }
 
+
+/* =========================================================
+   REVISIÓN PREVIA A PUBLICAR Y VALIDACIÓN DE FOTOGRAFÍAS
+   ========================================================= */
+const publishReviewDialog = $("#publish-review-dialog");
+let currentPublishReview = null;
+let currentFormPhotoIssues = [];
+
+function imageLoadsAndDecodes(source) {
+  return new Promise(resolve => {
+    if (!source) { resolve(false); return; }
+    const image = new Image();
+    let settled = false;
+    let timeout;
+    const finish = ok => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve(Boolean(ok));
+    };
+    timeout = window.setTimeout(() => finish(false), 12000);
+    const verifyDecoded = () => {
+      const decoded = typeof image.decode === "function" ? image.decode() : Promise.resolve();
+      Promise.resolve(decoded).then(() => finish(image.naturalWidth > 0 && image.naturalHeight > 0)).catch(() => finish(false));
+    };
+    image.onload = verifyDecoded;
+    image.onerror = () => finish(false);
+    image.src = source;
+    if (image.complete) {
+      if (image.naturalWidth > 0 && image.naturalHeight > 0) verifyDecoded();
+      else finish(false);
+    }
+  });
+}
+function reviewCurrency(value, currency) {
+  if (value === "" || value === null || value === undefined || !Number.isFinite(Number(value))) return "Sin precio";
+  return currency + " " + Number(value).toLocaleString("es-NI", { maximumFractionDigits: 2 });
+}
+function formatReviewConfig(group) {
+  const storageRaw = group.querySelector("[data-group-storage]")?.value.trim() || "";
+  const ramRaw = group.querySelector("[data-group-ram]")?.value.trim() || "";
+  const storageUnit = group.querySelector("[data-group-storage-unit]")?.value || "GB";
+  const storage = storageRaw ? formatStorageLabel(storageRaw, storageUnit) : "";
+  const ram = ramRaw ? ramRaw + " GB RAM" : "";
+  return [ram, storage].filter(Boolean).join(" / ") || "Configuración base";
+}
+function makePhotoReviewIssue(source, row, item, label, reason) {
+  return { source: source, row: row || null, itemId: item?.id || "", item: item || null, label: label, reason: reason || "", isMissing: false };
+}
+function addPriceWarning(warnings, value, currency, label) {
+  if (value === "" || value === null || value === undefined) return;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return;
+  if (number <= 0) warnings.push(label + ": el precio es " + reviewCurrency(number, currency) + ". Confirmá que el valor sea intencional.");
+  if (currency === "US$" && number > 5000) warnings.push(label + ": " + reviewCurrency(number, currency) + " es un importe alto. Revisá que no se haya agregado un dígito por error.");
+  if (currency === "C$" && number > 250000) warnings.push(label + ": " + reviewCurrency(number, currency) + " es un importe alto. Revisá que no se haya agregado un dígito por error.");
+  if (currency === "US$" && number > 0 && number < 1) warnings.push(label + ": el precio en dólares es menor de US$ 1. Confirmá el importe.");
+  if (currency === "C$" && number > 0 && number < 20) warnings.push(label + ": el precio en córdobas es menor de C$ 20. Confirmá el importe.");
+}
+function addCurrencyPairWarning(warnings, usd, nio, label) {
+  const us = Number(usd), cs = Number(nio);
+  if (usd === "" || nio === "" || !Number.isFinite(us) || !Number.isFinite(cs) || us <= 0 || cs <= 0) return;
+  const ratio = cs / us;
+  if (ratio < 15 || ratio > 60) warnings.push(label + ": los importes " + reviewCurrency(us, "US$") + " y " + reviewCurrency(cs, "C$") + " parecen no guardar una relación habitual. Revisá ambos valores antes de publicar.");
+}
+async function buildPublishReview() {
+  const name = $("#product-name")?.value.trim() || "";
+  const brand = $("#product-brand")?.value.trim() || "";
+  const isPerfume = activeCatalogType === "perfumery";
+  const family = isPerfume ? perfumeFamilyLabel($("#product-perfume-family")?.value) : ($("#product-category")?.value || "Sin categoría");
+  const warnings = [], missingPhotos = [], candidates = [], variantSummary = [];
+  mainImageItems.forEach((item, index) => {
+    const source = item.kind === "new" ? (item.previewUrl || "") : (item.url || "");
+    const label = "Fotografía general " + (index + 1) + (item.name ? " · " + item.name : "");
+    candidates.push({ source: "main", row: null, item: item, src: source, label: label });
+  });
+  if (isPerfume) {
+    const usd = $("#product-price-usd")?.value.trim() || "";
+    const nio = $("#product-price-nio")?.value.trim() || "";
+    addPriceWarning(warnings, usd, "US$", "Precio base en dólares");
+    addPriceWarning(warnings, nio, "C$", "Precio base en córdobas");
+    addCurrencyPairWarning(warnings, usd, nio, "Precio base");
+    variantSummary.push("Familia: " + family);
+    variantSummary.push("Tipo: " + ($("#product-type")?.value === "set" ? "Set de perfumes" : "Perfume / fragancia"));
+    variantSummary.push("Concentración: " + ($("#product-perfume-concentration")?.value || "No especificada"));
+    variantSummary.push("Contenido: " + ($("#product-perfume-volume")?.value ? $("#product-perfume-volume").value + " ml" : "No especificado"));
+    variantSummary.push("Público: " + ($("#product-perfume-audience")?.value || "No especificado"));
+    variantSummary.push("Precio: " + reviewCurrency(usd, "US$") + " · " + reviewCurrency(nio, "C$"));
+  } else {
+    const groups = Array.from(form?.querySelectorAll("[data-variant-group]") || []);
+    groups.forEach(group => {
+      const configLabel = formatReviewConfig(group);
+      const usd = group.querySelector("[data-group-price-usd]")?.value.trim() || "";
+      const nio = group.querySelector("[data-group-price-nio]")?.value.trim() || "";
+      const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
+      addPriceWarning(warnings, usd, "US$", configLabel + " · precio");
+      addPriceWarning(warnings, nio, "C$", configLabel + " · precio");
+      addCurrencyPairWarning(warnings, usd, nio, configLabel);
+      rows.forEach(row => {
+        const color = row.querySelector("[data-variant-color]")?.value.trim() || "Color sin nombre";
+        initVariantImageItems(row);
+        const items = row._variantImageItems || [];
+        const colorLabel = "Color " + color + (configLabel === "Configuración base" ? "" : " · " + configLabel);
+        if (!items.length) missingPhotos.push({ source: "variant", row: row, itemId: "", label: colorLabel + " · sin fotografía", isMissing: true });
+        items.forEach((item, itemIndex) => {
+          const source = item.kind === "new" ? (item.previewUrl || "") : (item.url || "");
+          candidates.push({ source: "variant", row: row, item: item, src: source, label: colorLabel + " · foto " + (itemIndex + 1) + (item.name ? " · " + item.name : "") });
+        });
+      });
+      const colors = rows.map(row => {
+        const color = row.querySelector("[data-variant-color]")?.value.trim() || "Color sin nombre";
+        initVariantImageItems(row);
+        const photos = (row._variantImageItems || []).length;
+        return color + " (" + photos + (photos === 1 ? " foto" : " fotos") + ")";
+      });
+      variantSummary.push(configLabel + ": " + (colors.length ? colors.join(", ") : "sin colores") + " · " + reviewCurrency(usd, "US$") + " · " + reviewCurrency(nio, "C$"));
+    });
+    if (!variantSummary.length) variantSummary.push("No hay configuraciones por color añadidas.");
+  }
+  if (!mainImageItems.length) warnings.push("No hay fotografía general del producto; confirmá que querés continuar sin una portada.");
+  const checked = await Promise.all(candidates.map(async candidate => ({ candidate: candidate, valid: await imageLoadsAndDecodes(candidate.src) })));
+  const blockingIssues = checked.filter(result => !result.valid).map(result =>
+    makePhotoReviewIssue(result.candidate.source, result.candidate.row, result.candidate.item, result.candidate.label,
+      result.candidate.src ? "No se pudo cargar o decodificar esta imagen." : "No hay un archivo o una URL de imagen válidos asociados a este elemento.")
+  );
+  const savedCount = mainImageItems.filter(item => item.kind === "existing" && item.url).length;
+  const pendingCount = mainImageItems.filter(item => item.kind === "new").length;
+  const mainImageStatus = mainImageItems.length
+    ? mainImageItems.length + " fotografía(s) generales · " + savedCount + " guardada(s) · " + pendingCount + " pendiente(s) de subir"
+    : "Sin fotografía general";
+  return { name: name, brand: brand, family: family, variants: variantSummary, mainImageStatus: mainImageStatus,
+    warnings: [...new Set(warnings)], missingPhotos: missingPhotos, blockingIssues: blockingIssues };
+}
+function renderPublishReview(review) {
+  $("#publish-review-summary").innerHTML =
+    '<div class="publish-review-row"><span>Producto</span><strong>' + escapeHtml(review.name || "Sin nombre") + '</strong></div>' +
+    '<div class="publish-review-row"><span>Marca</span><strong>' + escapeHtml(review.brand || "Sin marca indicada") + '</strong></div>' +
+    '<div class="publish-review-row"><span>Categoría / familia</span><strong>' + escapeHtml(review.family) + '</strong></div>' +
+    '<div class="publish-review-row"><span>Fotografías generales</span><strong>' + escapeHtml(review.mainImageStatus) + '</strong></div>' +
+    '<div class="publish-review-row publish-review-variants"><span>Variantes, colores y precios</span><div>' +
+    review.variants.map(item => '<p>' + escapeHtml(item) + '</p>').join("") + '</div></div>';
+  $("#publish-review-warnings-section").hidden = !review.warnings.length;
+  $("#publish-review-warnings").innerHTML = review.warnings.map(item => '<li>' + escapeHtml(item) + '</li>').join("");
+  $("#publish-review-issues-section").hidden = !review.blockingIssues.length;
+  $("#publish-review-issues").innerHTML = review.blockingIssues.map((issue, index) =>
+    '<button type="button" class="publish-review-issue" data-publish-review-issue="' + index + '"><strong>' + escapeHtml(issue.label) + '</strong><span>' + escapeHtml(issue.reason) + '</span><small>Abrir este campo</small></button>').join("");
+  $("#publish-review-missing-section").hidden = !review.missingPhotos.length;
+  $("#publish-review-missing").innerHTML = review.missingPhotos.map((issue, index) =>
+    '<button type="button" class="publish-review-issue" data-publish-missing-issue="' + index + '"><strong>' + escapeHtml(issue.label) + '</strong><small>Abrir este color para agregar una foto</small></button>').join("");
+  $("#publish-review-intro").textContent = review.blockingIssues.length
+    ? "Encontré fotografías que no se pueden validar. No se publicará la ficha; al continuar, se guardará en Borradores para que corrijás las imágenes."
+    : review.missingPhotos.length
+      ? "Revisá los datos y confirmá expresamente si querés publicar sin fotografía en los colores señalados."
+      : "Comprobá nombre, variantes, precios y fotografías. La publicación no se hará hasta que confirmés.";
+  const confirmButton = $("#publish-review-confirm");
+  confirmButton.textContent = review.blockingIssues.length
+    ? "Guardar en Borradores y corregir fotos"
+    : review.missingPhotos.length ? "Confirmar y publicar sin estas fotos" : "Confirmar y publicar";
+  confirmButton.classList.toggle("publish-review-confirm-draft", Boolean(review.blockingIssues.length));
+}
+async function openPublishReview() {
+  const publishButton = $("#publish-product-button");
+  if (!publishReviewDialog || !publishButton) {
+    message("#product-form-status", "No se pudo abrir la revisión previa. No se publicó el producto.", "error");
+    return;
+  }
+  if (publishButton.dataset.reviewLoading === "true") return;
+  publishButton.dataset.reviewLoading = "true";
+  publishButton.disabled = true;
+  try {
+    $("#publish-review-intro").textContent = "Comprobando que las fotografías realmente carguen y se puedan decodificar…";
+    currentPublishReview = await buildPublishReview();
+    renderPublishReview(currentPublishReview);
+    if (!publishReviewDialog.open) publishReviewDialog.showModal();
+  } catch (error) {
+    message("#product-form-status", "No se pudo completar la revisión previa: " + (error.message || "error desconocido") + ". No se publicó el producto.", "error");
+  } finally {
+    publishButton.disabled = false;
+    delete publishButton.dataset.reviewLoading;
+  }
+}
+function clearPhotoIssueHighlights() {
+  form?.querySelectorAll(".photo-validation-error").forEach(node => node.classList.remove("photo-validation-error"));
+}
+function renderFormPhotoIssues(issues) {
+  currentFormPhotoIssues = issues || [];
+  const node = $("#product-photo-validation-issues");
+  if (!node) return;
+  if (!currentFormPhotoIssues.length) { node.hidden = true; node.replaceChildren(); return; }
+  node.hidden = false;
+  node.innerHTML = '<strong>Fotografías para corregir</strong><p>La ficha se guardó como borrador. Tocá un aviso para ir directamente al color o fotografía correspondiente.</p>' +
+    currentFormPhotoIssues.map((issue, index) => '<button type="button" data-form-photo-issue="' + index + '">' + escapeHtml(issue.label) + ' <span>Ir al campo ↗</span></button>').join("");
+}
+function navigateToPhotoIssue(issue) {
+  if (!issue) return;
+  if (publishReviewDialog?.open) publishReviewDialog.close();
+  showAdminSection("add");
+  clearPhotoIssueHighlights();
+  if (!currentFormPhotoIssues.length) renderFormPhotoIssues([issue]);
+  let target = null;
+  if (issue.source === "main") {
+    target = issue.itemId && mainImagesPreview ? mainImagesPreview.querySelector('[data-image-item-id="' + CSS.escape(issue.itemId) + '"]') : null;
+    target = target || $("#product-images-preview") || $("#product-images");
+  } else {
+    const row = issue.row || null;
+    target = row;
+    if (row && issue.itemId) target = row.querySelector('[data-variant-image-id="' + CSS.escape(issue.itemId) + '"]') || row;
+    target = target || $("#technology-variants-section") || $("#product-variants-list");
+  }
+  target?.classList.add("photo-validation-error");
+  if (issue.row) issue.row.classList.add("photo-validation-error");
+  window.setTimeout(() => {
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const focusTarget = target?.querySelector("[data-variant-image], [data-variant-color], [data-main-image-remove]") || target;
+    if (focusTarget && typeof focusTarget.focus === "function") focusTarget.focus({ preventScroll: true });
+  }, 80);
+}
+publishReviewDialog?.addEventListener("click", event => {
+  const invalid = event.target.closest("[data-publish-review-issue]");
+  if (invalid && currentPublishReview) {
+    const issue = currentPublishReview.blockingIssues[Number(invalid.dataset.publishReviewIssue)];
+    currentFormPhotoIssues = [issue];
+    navigateToPhotoIssue(issue);
+    return;
+  }
+  const missing = event.target.closest("[data-publish-missing-issue]");
+  if (missing && currentPublishReview) {
+    const issue = currentPublishReview.missingPhotos[Number(missing.dataset.publishMissingIssue)];
+    currentFormPhotoIssues = [issue];
+    renderFormPhotoIssues([issue]);
+    message("#product-form-status", "El color señalado no tiene fotografía. Agregá una imagen o volvé a la revisión para confirmar que publicarás sin ella.", "error");
+    navigateToPhotoIssue(issue);
+  }
+});
+$("#publish-review-cancel")?.addEventListener("click", () => publishReviewDialog?.close());
+$("#publish-review-close")?.addEventListener("click", () => publishReviewDialog?.close());
+$("#publish-review-confirm")?.addEventListener("click", () => {
+  if (!currentPublishReview || !form) return;
+  form.dataset.forceDraftOnPhotoIssue = currentPublishReview.blockingIssues.length ? "true" : "false";
+  form.dataset.publishConfirmed = "true";
+  publishReviewDialog?.close();
+  form.requestSubmit($("#publish-product-button"));
+});
+form?.addEventListener("click", event => {
+  const issueButton = event.target.closest("[data-form-photo-issue]");
+  if (issueButton) navigateToPhotoIssue(currentFormPhotoIssues[Number(issueButton.dataset.formPhotoIssue)]);
+});
+form?.addEventListener("change", event => {
+  if (event.target.matches("[data-variant-image], #product-images")) {
+    clearPhotoIssueHighlights();
+    renderFormPhotoIssues([]);
+  }
+});
+function uploadPhotoFailureTargets() {
+  return getPendingPhotoUploads().filter(entry => entry.item?.file && entry.item.kind === "new").map(entry => {
+    const isMain = entry.source === "main";
+    const config = entry.row?.closest("[data-variant-group]");
+    const configLabel = config ? formatReviewConfig(config) : "";
+    const photoName = entry.item.name || entry.item.file?.name || "fotografía";
+    return {
+      source: entry.source, row: entry.row || null, itemId: entry.item.id || "", item: entry.item,
+      label: isMain ? "No se pudo completar la subida de la fotografía general: " + photoName :
+        "No se pudo subir la fotografía del color " + (entry.color || "sin nombre") +
+        (configLabel && configLabel !== "Configuración base" ? " · " + configLabel : "") + " · " + photoName,
+      reason: entry.item.uploadError || "La imagen permanece pendiente de subir.", isMissing: false
+    };
+  });
+}
+
 /* =========================================================
    GUARDAR PRODUCTOS
    ========================================================= */
