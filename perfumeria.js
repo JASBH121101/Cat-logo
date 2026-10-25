@@ -783,3 +783,196 @@ async function initializePerfumes() {
 }
 
 initializePerfumes();
+
+/* JB PARFUMS · carrusel ligero: una imagen inicial y precarga de una sola foto. */
+(() => {
+  const carousel = document.querySelector("#perfume-hero-carousel");
+  const stage = document.querySelector("#perfume-carousel-stage");
+  const imageA = document.querySelector("#perfume-carousel-image-a");
+  const imageB = document.querySelector("#perfume-carousel-image-b");
+  const previousButton = document.querySelector("#perfume-carousel-previous");
+  const nextButton = document.querySelector("#perfume-carousel-next");
+  const countNode = document.querySelector("#perfume-carousel-count");
+  const titleNode = document.querySelector("#perfume-carousel-title");
+  const dotsNode = document.querySelector("#perfume-carousel-dots");
+  if (!carousel || !stage || !imageA || !imageB || !previousButton || !nextButton || !countNode || !titleNode || !dotsNode) return;
+
+  const slides = [
+    { src: "../img/perfume-carousel/supremacy-pour-femme.svg?v=20261025-carousel1", title: "Afnan Supremacy Pour Femme", alt: "Fragancia Afnan Supremacy Pour Femme en presentación de frasco y caja" },
+    { src: "../img/perfume-carousel/creed-wind-flowers.svg?v=20261025-carousel1", title: "Creed Wind Flowers", alt: "Fragancia Creed Wind Flowers en frasco rosa con su caja" },
+    { src: "../img/perfume-carousel/carolina-herrera-la-bomba.svg?v=20261025-carousel1", title: "Carolina Herrera La Bomba", alt: "Fragancia Carolina Herrera La Bomba con frasco en forma de mariposa y caja rosa" },
+    { src: "../img/perfume-carousel/afnan-9pm.svg?v=20261025-carousel1", title: "Afnan 9 PM", alt: "Perfume Afnan 9 PM junto a su caja negra" },
+    { src: "../img/perfume-carousel/afnan-9am-dive.svg?v=20261025-carousel1", title: "Afnan 9 AM Dive", alt: "Perfume Afnan 9 AM Dive en tonos turquesa" },
+    { src: "../img/perfume-carousel/lattafa-qaed-al-fursan.svg?v=20261025-carousel1", title: "Lattafa Qaed Al Fursan", alt: "Perfume Lattafa Qaed Al Fursan con caja negra y detalles dorados" },
+    { src: "../img/perfume-carousel/parfums-de-marly-oajan.svg?v=20261025-carousel1", title: "Parfums de Marly Oajan", alt: "Perfume Parfums de Marly Oajan en frasco oscuro y caja negra" },
+    { src: "../img/perfume-carousel/creed-absolu-aventus.svg?v=20261025-carousel1", title: "Creed Absolu Aventus", alt: "Frasco oscuro Creed Absolu Aventus" },
+    { src: "../img/perfume-carousel/dior-sauvage.svg?v=20261025-carousel1", title: "Dior Sauvage", alt: "Perfume Dior Sauvage acompañado por su caja" },
+    { src: "../img/perfume-carousel/afnan-odyssey-mandarin-sky.svg?v=20261025-carousel1", title: "Afnan Odyssey Mandarin Sky", alt: "Perfume Afnan Odyssey Mandarin Sky con frasco azul y caja naranja" },
+    { src: "../img/perfume-carousel/valentino-born-in-roma-intense.svg?v=20261025-carousel1", title: "Valentino Born in Roma Intense Uomo", alt: "Perfume Valentino Born in Roma Intense Uomo en un ambiente oscuro" }
+  ];
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const layers = [imageA, imageB];
+  const cache = new Map();
+  let currentIndex = 0;
+  let activeLayer = 0;
+  let changing = false;
+  let autoplayTimer = 0;
+  let preloadTimer = 0;
+  let paused = false;
+  let touchStart = null;
+
+  function wrapIndex(index) {
+    return (index + slides.length) % slides.length;
+  }
+
+  function preload(index) {
+    index = wrapIndex(index);
+    if (cache.has(index)) return cache.get(index);
+    const promise = new Promise((resolve, reject) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.onload = async () => {
+        try { if (image.decode) await image.decode(); } catch (_) {}
+        resolve(image);
+      };
+      image.onerror = () => {
+        cache.delete(index);
+        reject(new Error("No se pudo cargar la fotografía " + slides[index].title));
+      };
+      image.src = slides[index].src;
+    });
+    cache.set(index, promise);
+    return promise;
+  }
+
+  function renderDots() {
+    Array.from(dotsNode.querySelectorAll("button")).forEach((button, index) => {
+      const active = index === currentIndex;
+      button.setAttribute("aria-current", active ? "true" : "false");
+      button.setAttribute("aria-label", "Mostrar fragancia " + (index + 1) + ": " + slides[index].title);
+    });
+  }
+
+  function renderCaption() {
+    countNode.textContent = String(currentIndex + 1).padStart(2, "0") + " / " + String(slides.length).padStart(2, "0");
+    titleNode.textContent = slides[currentIndex].title;
+    renderDots();
+  }
+
+  function clearTimers() {
+    if (autoplayTimer) window.clearTimeout(autoplayTimer);
+    if (preloadTimer) window.clearTimeout(preloadTimer);
+    autoplayTimer = 0;
+    preloadTimer = 0;
+  }
+
+  function scheduleNextPreload() {
+    if (preloadTimer) window.clearTimeout(preloadTimer);
+    preloadTimer = window.setTimeout(() => {
+      preload(wrapIndex(currentIndex + 1)).catch(() => {});
+    }, 1100);
+  }
+
+  function scheduleAutoplay() {
+    if (autoplayTimer) window.clearTimeout(autoplayTimer);
+    autoplayTimer = 0;
+    if (paused || reduceMotion.matches || document.hidden || changing) return;
+    autoplayTimer = window.setTimeout(async () => {
+      await showSlide(currentIndex + 1, false);
+      scheduleAutoplay();
+    }, 5600);
+  }
+
+  async function showSlide(index, fromUser) {
+    index = wrapIndex(index);
+    if (index === currentIndex || changing) return;
+    changing = true;
+    if (fromUser) {
+      if (autoplayTimer) window.clearTimeout(autoplayTimer);
+      autoplayTimer = 0;
+    }
+    const target = slides[index];
+    const incomingLayerIndex = 1 - activeLayer;
+    const incoming = layers[incomingLayerIndex];
+    const outgoing = layers[activeLayer];
+    try {
+      await preload(index);
+      incoming.onload = null;
+      incoming.onerror = null;
+      incoming.src = target.src;
+      incoming.alt = target.alt;
+      incoming.removeAttribute("aria-hidden");
+      try { if (incoming.decode) await incoming.decode(); } catch (_) {}
+      incoming.classList.add("is-active");
+      outgoing.classList.remove("is-active");
+      outgoing.setAttribute("aria-hidden", "true");
+      currentIndex = index;
+      activeLayer = incomingLayerIndex;
+      renderCaption();
+      changing = false;
+      scheduleNextPreload();
+      scheduleAutoplay();
+    } catch (error) {
+      changing = false;
+      carousel.dataset.loadError = "true";
+      scheduleAutoplay();
+      console.warn("JB Parfums: no se pudo cargar una imagen del carrusel.", error);
+    }
+  }
+
+  slides.forEach((slide, index) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-current", index === 0 ? "true" : "false");
+    dot.setAttribute("aria-label", "Mostrar fragancia " + (index + 1) + ": " + slide.title);
+    dot.addEventListener("click", () => showSlide(index, true));
+    dotsNode.appendChild(dot);
+  });
+
+  previousButton.addEventListener("click", () => showSlide(currentIndex - 1, true));
+  nextButton.addEventListener("click", () => showSlide(currentIndex + 1, true));
+  carousel.addEventListener("mouseenter", () => { paused = true; clearTimers(); });
+  carousel.addEventListener("mouseleave", () => { paused = false; scheduleNextPreload(); scheduleAutoplay(); });
+  carousel.addEventListener("focusin", () => { paused = true; clearTimers(); });
+  carousel.addEventListener("focusout", event => {
+    if (!carousel.contains(event.relatedTarget)) {
+      paused = false;
+      scheduleNextPreload();
+      scheduleAutoplay();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearTimers();
+    else { scheduleNextPreload(); scheduleAutoplay(); }
+  });
+  if (reduceMotion.addEventListener) {
+    reduceMotion.addEventListener("change", () => scheduleAutoplay());
+  }
+  stage.addEventListener("touchstart", event => {
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (touch) touchStart = { x: touch.clientX, y: touch.clientY };
+  }, { passive: true });
+  stage.addEventListener("touchend", event => {
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!touch || !touchStart) return;
+    const dx = touch.clientX - touchStart.x;
+    const dy = touch.clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+      showSlide(currentIndex + (dx < 0 ? 1 : -1), true);
+    }
+  }, { passive: true });
+  carousel.addEventListener("keydown", event => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      showSlide(currentIndex - 1, true);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      showSlide(currentIndex + 1, true);
+    }
+  });
+
+  renderCaption();
+  scheduleNextPreload();
+  scheduleAutoplay();
+})();
