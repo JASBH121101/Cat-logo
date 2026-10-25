@@ -149,11 +149,16 @@
         <button class="filter-chip" data-category="Otros">Otros</button>
       </div>
 
+      <div class="catalog-extra-filters" aria-label="Buscar por marca y ordenar productos">
+        <label class="catalog-control-field"><span>Buscar marca</span><input id="brand-search-input" type="search" placeholder="Escribí una marca…" autocomplete="off" aria-label="Filtrar por marca"></label>
+        <label class="catalog-control-field"><span>Ordenar por</span><select id="catalog-sort-select" aria-label="Ordenar productos"><option value="recent">Más recientes primero</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name-asc">Nombre: A–Z</option></select></label>
+      </div>
+
       <section class="budget-filter-bar" id="budget-filter-bar" aria-label="Filtrar por rango de precio">
         <div class="budget-filter-heading"><strong>Rango</strong><small>Precio en dólares</small></div>
         <label class="budget-price-field" for="price-min-input"><span>Desde</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-min-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Mínimo" aria-label="Precio mínimo en dólares"></span></label>
         <label class="budget-price-field" for="price-max-input"><span>Hasta</span><span class="budget-price-input-wrap"><span aria-hidden="true">US$</span><input id="price-max-input" type="number" min="0" step="1" inputmode="decimal" placeholder="Máximo" aria-label="Precio máximo en dólares"></span></label>
-        <button id="clear-price-filter" class="budget-clear-button" type="button" aria-label="Limpiar búsqueda, categoría y rango de precio" title="Limpiar búsqueda, categoría y rango de precio" disabled>Limpiar</button>
+        <button id="clear-price-filter" class="budget-clear-button" type="button" aria-label="Limpiar filtros de catálogo" title="Limpiar filtros de catálogo" disabled>Limpiar</button>
         <span id="budget-filter-feedback" class="budget-filter-feedback" aria-live="polite"></span>
       </section>
 
