@@ -1053,3 +1053,35 @@ html[data-theme="dark"] body.perfume-page .perfume-view-button:active {
     animation: none !important;
   }
 }
+
+
+/* Polish normal catalog cards as well as the featured selection. */
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="dark"] body.technology-catalog #product-grid .product-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 230, 255, .72) !important;
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .34), 0 0 18px rgba(0, 217, 255, .09) !important;
+  }
+
+  html[data-theme="dark"] body.technology-catalog #product-grid .product-card .buy-button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+    border-color: #00E5FF !important;
+    box-shadow: 0 5px 0 #101A45, 0 0 18px rgba(0, 217, 255, .20), 0 0 25px rgba(124, 77, 255, .15) !important;
+  }
+}
+
+html[data-theme="dark"] body.technology-catalog #product-grid .product-card .buy-button {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease !important;
+  background-size: 180% 180% !important;
+  box-shadow: 0 4px 0 #101A45, 0 0 0 1px rgba(0, 217, 255, .22), 0 7px 18px rgba(0, 217, 255, .09) !important;
+}
+
+html[data-theme="dark"] body.technology-catalog #product-grid .product-card .buy-button:active {
+  transform: translateY(1px) scale(.99) !important;
+  filter: brightness(1.08);
+}
+
+html[data-theme="dark"] body.technology-catalog #product-grid .product-card {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease !important;
+}
