@@ -4162,6 +4162,7 @@ const QUICK_IMPORT_MAX_PHOTOS = 60;
 const QUICK_IMPORT_MAX_FILE_BYTES = 30 * 1024 * 1024;
 const QUICK_IMPORT_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 let quickImportColorHexByVariant = new Map();
+let quickImportWizardTopologySignature = "";
 let quickImportWizardVersions = [];
 let quickImportVersionSequence = 0;
 let quickImportColorSequence = 0;
@@ -4588,6 +4589,7 @@ function quickImportPrepareWizardVariants() {
     if (!quickImportWizardVersions.length) throw new Error("Agregá al menos una versión.");
     const seenConfigs = new Set();
     const hexMap = new Map();
+    const topologyParts = [];
     const lines = [];
     quickImportWizardVersions.forEach((version, index) => {
       const lineNumber = index + 1;
@@ -4617,6 +4619,7 @@ function quickImportPrepareWizardVariants() {
         const nameKey = normalizeQuickImportText(colorName);
         if (seenColors.has(nameKey)) throw new Error("El color «" + colorName + "» está repetido en la versión " + lineNumber + ".");
         seenColors.add(nameKey);
+        topologyParts.push(configKey + "|" + nameKey);
         const hex = validHex(color.hex);
         hexMap.set(configKey + "|" + nameKey, hex);
         const state = color.availability === "available" ? "disponible" : color.availability === "out_of_stock" ? "agotado" : "pedido";
@@ -4626,8 +4629,9 @@ function quickImportPrepareWizardVariants() {
         (priceUsd || "-") + " | " + (priceNio || "-") + " | " + colorTokens.join(", "));
     });
     const raw = lines.join("\n");
-    const planChanged = raw !== quickImportParsedText;
-    if (planChanged) quickImportPhotos.forEach(item => {
+    const topologySignature = topologyParts.join("||");
+    const targetsMustReset = topologySignature !== quickImportWizardTopologySignature;
+    if (targetsMustReset) quickImportPhotos.forEach(item => {
       if (String(item.target || "").startsWith("variant:")) item.target = "";
     });
     quickImportColorHexByVariant = hexMap;
@@ -4636,6 +4640,7 @@ function quickImportPrepareWizardVariants() {
     if (quickImportParsedText !== raw || !quickImportVariantPlan.length) {
       throw new Error("No se pudieron preparar las versiones. Revisá los datos e intentá de nuevo.");
     }
+    quickImportWizardTopologySignature = topologySignature;
     return true;
   } catch (error) {
     setQuickImportStatus(error?.message || "No se pudieron preparar las versiones.", "error");
