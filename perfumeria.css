@@ -874,6 +874,7 @@ html[data-theme="dark"] .perfume-page .perfume-hero-art {
   max-height:none;
   min-width:0;
   min-height:0;
+  margin:auto;
   padding:42px 34px 70px;
   box-sizing:border-box;
   object-fit:contain;
