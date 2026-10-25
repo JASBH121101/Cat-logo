@@ -899,3 +899,89 @@ html[data-theme="dark"] body.perfume-page .perfume-dialog-price {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Final cascade fixes for legacy !important rules in theme-ui.css / brand-refresh.css. */
+html[data-theme="dark"] body.technology-catalog .featured-section {
+  --signature-ring-gold: #00D9FF;
+  --signature-ring-violet: #9B7BFF;
+  --featured-border: rgba(0, 217, 255, .46);
+  --featured-card-border: rgba(0, 217, 255, .24);
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-section::after {
+  background: linear-gradient(90deg,
+    transparent 48.2%,
+    rgba(0, 217, 255, .035) 49%,
+    rgba(0, 217, 255, .23) 49.65%,
+    rgba(159, 132, 255, .40) 50%,
+    rgba(0, 217, 255, .18) 50.35%,
+    rgba(0, 217, 255, .03) 51%,
+    transparent 51.8%);
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-section-heading h2 {
+  color: #F4F7FF !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .eyebrow {
+  color: #61E9FF !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .section-subtitle {
+  color: #BCD0F0 !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card {
+  border-color: rgba(0, 217, 255, .42) !important;
+  color: #F4F7FF !important;
+  background: linear-gradient(150deg, #12223C, #0A1326 88%) !important;
+  box-shadow: 0 12px 27px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-image {
+  border-bottom-color: rgba(0, 217, 255, .25) !important;
+  background: radial-gradient(ellipse at 50% 36%, rgba(0, 217, 255, .12), transparent 68%), #0A1428 !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card-content,
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card h3 {
+  color: #F4F7FF !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-category {
+  color: #61E9FF !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card-capacity {
+  color: #D8E6FF !important;
+  border-color: #35557D !important;
+  background: #13233D !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-label,
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-secondary {
+  color: #AFC2E2 !important;
+}
+
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price {
+  color: #7DEEFF !important;
+}
+
+/* Brand-refresh deliberately uses !important for perfume CTAs; keep that visual language premium. */
+html[data-theme="dark"] body.perfume-page .perfume-product-card .perfume-view-button,
+html[data-theme="dark"] body.perfume-page .perfume-view-button {
+  border: 1px solid #B99555 !important;
+  border-radius: 3px !important;
+  color: #F0D8A1 !important;
+  background: linear-gradient(145deg, #211712, #17100D) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body.perfume-page .perfume-product-card .perfume-view-button:hover,
+html[data-theme="dark"] body.perfume-page .perfume-view-button:hover {
+  border-color: #F0D8A1 !important;
+  color: #21180D !important;
+  background: linear-gradient(115deg, #F0D8A1, #C59D58) !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .18) !important;
+}
