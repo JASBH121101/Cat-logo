@@ -129,7 +129,7 @@ function refreshBrandSuggestions() {
     String(product.model || "").trim()
   ]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
   const query = normalizeText(searchInput?.value);
-  const matches = query ? suggestions.filter(value => normalizeText(value).includes(query)).slice(0, 8) : [];
+  const matches = (query ? suggestions.filter(value => normalizeText(value).includes(query)) : suggestions).slice(0, query ? 8 : 20);
   list.replaceChildren(...matches.map(value => {
     const option = document.createElement("button");
     option.type = "button";
