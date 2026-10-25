@@ -256,7 +256,7 @@ function visibleProducts() {
 
   return perfumes.filter(product => {
     if (!familyMatches(product) || !audienceMatches(product) || !productTypeMatches(product)) return false;
-    if (brandQuery && !normalizeText(product.brand).includes(brandQuery)) return false;
+    if (brandQuery && !normalizeText(product.brand).startsWith(brandQuery)) return false;
     const detail = product.perfume_details || {};
     const searchable = [
       product.name, product.brand, product.model, product.description, product.product_type,
