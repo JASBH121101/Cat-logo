@@ -9219,17 +9219,12 @@ body.technology-catalog .featured-exclusive-badge {
 
 
 /* JB SIGNATURE · borde orbital y destello diagonal visible, sin lavar el contenido. */
-@property --signature-border-angle {
-  syntax:"<angle>";
-  inherits:false;
-  initial-value:0deg;
-}
 body.technology-catalog .featured-section {
   isolation:isolate;
   overflow:hidden;
   --signature-ring-gold:#c4a15d;
   --signature-ring-violet:#7777ed;
-  --signature-shine-duration:9000ms;
+  --signature-shine-duration:5200ms;
   --signature-shine-angle:45deg;
 }
 html[data-theme="light"] body.technology-catalog .featured-section {
@@ -9263,7 +9258,7 @@ body.technology-catalog .featured-section:before {
   border-radius:inherit;
   box-sizing:border-box;
   background:conic-gradient(
-    from var(--signature-border-angle,0deg),
+    from 0deg,
     transparent 0deg,
     var(--signature-ring-gold) 42deg,
     var(--signature-ring-violet) 92deg,
@@ -9274,25 +9269,26 @@ body.technology-catalog .featured-section:before {
     transparent 360deg
   );
   pointer-events:none;
-  animation:signature-border-orbit 12s linear infinite;
+  animation:signature-border-pulse 3.6s ease-in-out infinite alternate;
+  opacity:.9;
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;
   mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   mask-composite:exclude;
 }
-@keyframes signature-border-orbit {
-  from { --signature-border-angle:0deg; }
-  to { --signature-border-angle:360deg; }
+@keyframes signature-border-pulse {
+  from { opacity:.72; }
+  to { opacity:1; }
 }
 
 /* La pasada cruza el panel completo como una línea estrecha, no como un velo blanco. */
 body.technology-catalog .featured-section:after {
   content:"";
   position:absolute;
-  top:-80%;
-  left:-80%;
-  width:260%;
-  height:260%;
+  top:-40%;
+  left:-40%;
+  width:180%;
+  height:180%;
   z-index:8;
   opacity:0;
   pointer-events:none;
@@ -9306,11 +9302,11 @@ body.technology-catalog .featured-section:after {
     rgba(255,255,255,.02) 51.0%,
     transparent 51.8%
   );
-  filter:blur(.7px);
+  filter:none;
   transform-origin:center center;
   transform:rotate(var(--signature-shine-angle,45deg)) translate3d(-100%,0,0);
-  will-change:transform,opacity;
-  mix-blend-mode:screen;
+  will-change:auto;
+  mix-blend-mode:normal;
 }
 html[data-theme="dark"] body.technology-catalog .featured-section:after {
   background:linear-gradient(
@@ -9323,7 +9319,7 @@ html[data-theme="dark"] body.technology-catalog .featured-section:after {
     rgba(118,150,255,.05) 51.0%,
     transparent 51.8%
   );
-  mix-blend-mode:screen;
+  mix-blend-mode:normal;
 }
 body.technology-catalog .featured-section.signature-shine-active:after {
   animation:signature-diagonal-shine var(--signature-shine-duration,9000ms) linear both;
@@ -9336,7 +9332,7 @@ body.technology-catalog .featured-section.signature-shine-active:after {
   100% { opacity:0; transform:rotate(var(--signature-shine-angle,45deg)) translate3d(100%,0,0); }
 }
 @media(max-width:760px) {
-  body.technology-catalog .featured-section { --signature-shine-duration:10000ms; }
+  body.technology-catalog .featured-section { --signature-shine-duration:5800ms; }
   body.technology-catalog .featured-section.signature-shine-active:after {
     animation-duration:var(--signature-shine-duration,10000ms);
   }
