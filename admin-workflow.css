@@ -118,3 +118,10 @@ html[data-theme='dark'] body.admin-body form#product-form .retry-main-image-uplo
   background:linear-gradient(115deg,#183453,#24204a);
   box-shadow:0 3px 0 #111b39,0 0 14px rgba(0,217,255,.08);
 }
+
+/* Compact status for photos uploaded in the background. */
+.background-photo-upload-status{margin:8px 0 0;color:var(--muted,#96a9c8);font-size:.84rem;line-height:1.45}
+.background-photo-upload-status:empty{display:none}
+.background-photo-upload-status[data-state="uploading"]{color:#66d8f3}
+.background-photo-upload-status[data-state="error"]{color:#f39aaa}
+.background-photo-upload-status[data-state="success"]{color:#89d7b2}
