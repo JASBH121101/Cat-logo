@@ -3550,6 +3550,7 @@ form?.addEventListener("submit", async event => {
     // if detail save fails, a retry updates this product instead of duplicating it.
     $("#product-id").value = id;
     $("#catalog-key").value = catalogKey;
+    updateMainImageRetryButton();
 
     if (isPerfume && $("#product-perfume-family").value) {
       const perfumePayload = {
