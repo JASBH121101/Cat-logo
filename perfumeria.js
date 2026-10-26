@@ -587,7 +587,6 @@ function openPerfume(product) {
           '<div><dt>Tipo de producto</dt><dd>' + escapeHtml(productTypeLabel) + '</dd></div>' +
           (detail.audience ? '<div><dt>Género</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(statusLabel(product.availability)) + '</dd></div>' +
-          (detail.is_original === true ? '<div><dt>Originalidad</dt><dd>Original confirmado</dd></div>' : '') +
           (detail.scent_family ? '<div><dt>Familia olfativa</dt><dd>' + escapeHtml(detail.scent_family) + '</dd></div>' : '') +
         '</dl>' +
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
@@ -966,9 +965,11 @@ function recommendPerfumes(preferences) {
       const pattern = scentTerms[preferences.scent];
       if (pattern && pattern.test(scentText)) score += 4;
     }
-    const price = Number(product.price_usd);
     if (preferences.budget !== null) {
-      if (!Number.isFinite(price) || price > preferences.budget) return null;
+      const rawPrice = product.price_usd;
+      if (rawPrice === null || rawPrice === undefined || String(rawPrice).trim() === "") return null;
+      const price = Number(rawPrice);
+      if (!Number.isFinite(price) || price < 0 || price > preferences.budget) return null;
       score += 2;
     }
     return { product, score };
