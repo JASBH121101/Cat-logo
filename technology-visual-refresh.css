@@ -1745,3 +1745,7 @@ body.technology-catalog.product-detail-active #product-detail-page #dialog-image
     height:clamp(280px,41svh,350px) !important;
   }
 }
+
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-load-error {
+  grid-column:1 !important;
+}
