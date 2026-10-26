@@ -1,0 +1,174 @@
+/* JB MANAGER · legibilidad ampliada en escritorio.
+   Cargado al final de las hojas del admin para unificar formularios y etiquetas.
+   No altera el tamaño móvil ni los catálogos públicos. */
+@media (min-width: 761px) {
+  /* Formularios principales: el título del campo y su contenido deben leerse igual de bien. */
+  html[data-theme] body.admin-body .admin-form label {
+    font-size: 15px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-form select,
+  html[data-theme] body.admin-body .admin-form textarea {
+    font-size: 16px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-form select {
+    min-height: 46px;
+  }
+  html[data-theme] body.admin-body .admin-form textarea {
+    min-height: 82px;
+  }
+  html[data-theme] body.admin-body .admin-form label > small,
+  html[data-theme] body.admin-body .admin-form .field-help,
+  html[data-theme] body.admin-body .admin-form .form-hint {
+    font-size: 13px !important;
+    line-height: 1.55;
+  }
+
+  /* Variantes, colores y atributos de los productos. */
+  html[data-theme] body.admin-body .variant-config-fields > label,
+  html[data-theme] body.admin-body .primary-config-slot .variant-config-fields label,
+  html[data-theme] body.admin-body .variant-color-fields > label,
+  html[data-theme] body.admin-body .inline-color-details .variant-color-fields > label {
+    font-size: 15px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .variant-config-fields input:not([type="checkbox"]):not([type="color"]),
+  html[data-theme] body.admin-body .variant-config-fields select,
+  html[data-theme] body.admin-body .variant-color-fields input:not([type="checkbox"]):not([type="color"]),
+  html[data-theme] body.admin-body .variant-color-fields select,
+  html[data-theme] body.admin-body .inline-color-name-field input,
+  html[data-theme] body.admin-body .primary-config-slot input:not([type="checkbox"]):not([type="color"]),
+  html[data-theme] body.admin-body .primary-config-slot select {
+    font-size: 16px !important;
+  }
+  html[data-theme] body.admin-body .variant-choice,
+  html[data-theme] body.admin-body .variant-option,
+  html[data-theme] body.admin-body .color-choice,
+  html[data-theme] body.admin-body .variant-selected-summary {
+    font-size: 14.5px;
+    line-height: 1.45;
+  }
+
+  /* Contexto del catálogo y panel de atributos de perfumería. */
+  html[data-theme] body.admin-body .admin-catalog-context label,
+  html[data-theme] body.admin-body .admin-perfume-fields-grid > label,
+  html[data-theme] body.admin-body .admin-perfume-fields label {
+    font-size: 15px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .admin-catalog-context select,
+  html[data-theme] body.admin-body .admin-perfume-fields-grid input:not([type="checkbox"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-perfume-fields-grid select,
+  html[data-theme] body.admin-body .admin-perfume-fields-grid textarea,
+  html[data-theme] body.admin-body .admin-perfume-fields input:not([type="checkbox"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-perfume-fields select,
+  html[data-theme] body.admin-body .admin-perfume-fields textarea {
+    font-size: 16px !important;
+  }
+  html[data-theme] body.admin-body #admin-context-hint,
+  html[data-theme] body.admin-body .admin-perfume-fields-heading p {
+    font-size: 13.5px !important;
+    line-height: 1.55;
+  }
+
+  /* Revisión del proveedor e importador JSON/CSV. */
+  html[data-theme] body.admin-body .provider-field > span,
+  html[data-theme] body.admin-body .provider-dialog-fields label > span,
+  html[data-theme] body.admin-body .provider-import-options legend,
+  html[data-theme] body.admin-body .quick-import-panel label {
+    font-size: 15px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .provider-field input,
+  html[data-theme] body.admin-body .provider-field select,
+  html[data-theme] body.admin-body .provider-dialog-fields input,
+  html[data-theme] body.admin-body .provider-dialog-fields select,
+  html[data-theme] body.admin-body .provider-dialog-fields textarea,
+  html[data-theme] body.admin-body .provider-import-controls select,
+  html[data-theme] body.admin-body .quick-import-panel input:not([type="checkbox"]):not([type="file"]):not([type="color"]),
+  html[data-theme] body.admin-body .quick-import-panel select,
+  html[data-theme] body.admin-body .quick-import-panel textarea {
+    font-size: 16px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .provider-import-options strong,
+  html[data-theme] body.admin-body .quick-import-panel > p,
+  html[data-theme] body.admin-body .quick-import-intro p,
+  html[data-theme] body.admin-body .quick-import-status,
+  html[data-theme] body.admin-body .quick-import-help,
+  html[data-theme] body.admin-body .provider-import-explainer p,
+  html[data-theme] body.admin-body .provider-private-note {
+    font-size: 13.5px !important;
+    line-height: 1.6;
+  }
+  html[data-theme] body.admin-body .provider-import-options small,
+  html[data-theme] body.admin-body .provider-import-preview-heading p,
+  html[data-theme] body.admin-body .provider-product-facts span,
+  html[data-theme] body.admin-body .provider-product-main > p {
+    font-size: 13px !important;
+    line-height: 1.55;
+  }
+  html[data-theme] body.admin-body .provider-product-actions .button,
+  html[data-theme] body.admin-body .provider-review-state,
+  html[data-theme] body.admin-body .provider-catalog-tag {
+    font-size: 13px !important;
+  }
+
+  /* Comisiones: etiquetas, importes y datos registrados. */
+  html[data-theme] body.admin-body .commission-form label {
+    font-size: 14.5px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .commission-form input:not([type="hidden"]),
+  html[data-theme] body.admin-body .commission-form select,
+  html[data-theme] body.admin-body .commission-form textarea {
+    font-size: 16px !important;
+    min-height: 46px;
+  }
+  html[data-theme] body.admin-body .commission-summary-grid span,
+  html[data-theme] body.admin-body .commission-record-meta,
+  html[data-theme] body.admin-body .commission-empty-state,
+  html[data-theme] body.admin-body .department-stat-legend {
+    font-size: 13px !important;
+    line-height: 1.5;
+  }
+  html[data-theme] body.admin-body .commission-record-title,
+  html[data-theme] body.admin-body .department-stat-name {
+    font-size: 14.5px !important;
+    line-height: 1.45;
+  }
+  html[data-theme] body.admin-body .commission-record-actions button,
+  html[data-theme] body.admin-body .commission-status-pill {
+    font-size: 12.5px !important;
+  }
+
+  /* Dashboard: etiquetas secundarias más claras, sin agrandar los números protagonistas. */
+  html[data-theme] body.admin-body .metric-label {
+    font-size: .88rem !important;
+    line-height: 1.4;
+  }
+  html[data-theme] body.admin-body .dashboard-widget-note,
+  html[data-theme] body.admin-body .dashboard-chart-legend,
+  html[data-theme] body.admin-body .dashboard-task-row small,
+  html[data-theme] body.admin-body .dashboard-quick-action small,
+  html[data-theme] body.admin-body .dashboard-activity-item,
+  html[data-theme] body.admin-body .dashboard-updated {
+    font-size: 13px !important;
+    line-height: 1.5;
+  }
+  html[data-theme] body.admin-body .dashboard-scope-control label,
+  html[data-theme] body.admin-body .dashboard-overview-controls label {
+    font-size: 14px !important;
+  }
+  html[data-theme] body.admin-body .admin-nav-button {
+    font-size: 14px !important;
+  }
+  html[data-theme] body.admin-body .admin-sidebar-section-label,
+  html[data-theme] body.admin-body .admin-sidebar-footer small,
+  html[data-theme] body.admin-body .admin-header-context small {
+    font-size: 11px !important;
+  }
+}
