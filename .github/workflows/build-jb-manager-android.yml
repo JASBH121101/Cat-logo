@@ -224,8 +224,13 @@ jobs:
           grep -Fq 'catalog_events' app.js
 
           # The product detail must package the same final gallery fix as the public source.
-          grep -Fq 'technology-visual-refresh.css?v=20261026-product-gallery-fix3' mobile/www/tecnologia/index.html
+          grep -Fq 'technology-visual-refresh.css?v=20261026-hero-cleanup1' mobile/www/tecnologia/index.html
           grep -Fq 'app.js?v=20261026-product-gallery-fix4' mobile/www/tecnologia/index.html
+          grep -Fq 'perfumeria.css?v=20261026-hero-cleanup1' mobile/www/perfumeria/index.html
+          ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
+          ! grep -Fq 'Explorar perfumería' mobile/www/perfumeria/index.html
+          grep -Fq 'Hero cleanup: remove the redundant scroll CTA' mobile/www/technology-visual-refresh.css
+          grep -Fq 'Editorial hero cleanup: the collection is already discoverable below' mobile/www/perfumeria.css
           grep -Fq 'dialog-image-load-error' mobile/www/technology-visual-refresh.css
           grep -Fq 'Gallery resilience: broken full-size images' mobile/www/app.js
           grep -Fq 'mainImage.alt = photoLabel' mobile/www/app.js
