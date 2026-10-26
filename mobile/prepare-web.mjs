@@ -686,9 +686,13 @@ if (!updaterScript[1].includes("api.downloadAndInstall")) {
   throw new Error("The update button must use the native Android download flow inside the APK.");
 }
 
-if (!builtAdminHtml.includes('data-admin-catalog-link="technology"')
-  || !builtAdminHtml.includes('data-admin-catalog-link="perfumery"')) {
-  throw new Error("The admin panel must include independent technology and perfumery catalog links.");
+if (!builtAdminHtml.includes('class="dashboard-public-link"')
+  || !builtAdminHtml.includes('class="admin-sidebar-brand"')) {
+  throw new Error("The admin panel must include dashboard and sidebar catalog navigation links.");
+}
+const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
+if (!builtAdminScript.includes('isPerfume ? "./perfumeria/" : "./tecnologia/"')) {
+  throw new Error("The admin panel must switch its public catalog link between technology and perfumery.");
 }
 
 for (const catalogPath of ["tecnologia/index.html", "perfumeria/index.html"]) {
