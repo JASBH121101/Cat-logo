@@ -62,6 +62,50 @@ public class ApkUpdaterPlugin extends Plugin {
     }
     private String filename(String version) { return "JB-Manager-Collections-v" + version + ".apk"; }
 
+    private int compareVersions(String left, String right) {
+        String[] a = left.split("\\.");
+        String[] b = right.split("\\.");
+        for (int i = 0; i < Math.max(a.length, b.length); i++) {
+            long av = i < a.length ? parseVersionPart(a[i]) : 0L;
+            long bv = i < b.length ? parseVersionPart(b[i]) : 0L;
+            if (av != bv) return Long.compare(av, bv);
+        }
+        return 0;
+    }
+
+    private long parseVersionPart(String value) {
+        try { return Long.parseLong(value); }
+        catch (NumberFormatException ignored) { return 0L; }
+    }
+
+    // An older version's failed DownloadManager task can survive an APK update.
+    // Clear it when the installed package is newer so the new updater never
+    // displays a stale "calculando" download from the previous app version.
+    private void clearObsoleteDownloadIfInstalledVersionIsNewer(SharedPreferences store) {
+        String savedVersion = store.getString(VERSION, "");
+        if (!VERSION_PATTERN.matcher(savedVersion).matches()) return;
+        try {
+            PackageInfo installed = getContext().getPackageManager()
+                .getPackageInfo(getContext().getPackageName(), 0);
+            String installedVersion = installed.versionName == null ? "" : installed.versionName;
+            if (!VERSION_PATTERN.matcher(installedVersion).matches()
+                || compareVersions(savedVersion, installedVersion) >= 0) return;
+
+            long staleId = store.getLong(ID, -1);
+            DownloadManager dm = manager();
+            if (dm != null && staleId > 0) {
+                try { dm.remove(staleId); } catch (Exception ignored) {}
+            }
+            String staleName = store.getString(FILENAME, filename(savedVersion));
+            File staleFile = fileFor(staleName);
+            if (staleFile != null && staleFile.exists()) {
+                try { staleFile.delete(); } catch (Exception ignored) {}
+            }
+            store.edit().remove(ID).remove(VERSION).remove(FILENAME).remove(PROMPTED).apply();
+        } catch (Exception ignored) {
+            // Never block normal startup because optional stale-state cleanup failed.
+        }
+    }
 
     private void validateDownloadedApk(File file, String expectedVersion, long downloadId) throws Exception {
         if (file == null || !file.isFile() || file.length() < 1024L) {
@@ -151,6 +195,7 @@ public class ApkUpdaterPlugin extends Plugin {
             call.reject("Por seguridad, solo se permiten APK de las publicaciones oficiales de JB Collections."); return;
         }
         SharedPreferences store = prefs();
+        clearObsoleteDownloadIfInstalledVersionIsNewer(store);
         long oldId = store.getLong(ID, -1);
         if (oldId > 0 && version.equals(store.getString(VERSION, ""))) {
             int oldStatus = status(oldId);
@@ -195,6 +240,7 @@ public class ApkUpdaterPlugin extends Plugin {
     @PluginMethod
     public void getDownloadStatus(PluginCall call) {
         SharedPreferences store = prefs();
+        clearObsoleteDownloadIfInstalledVersionIsNewer(store);
         long id = store.getLong(ID, -1);
         JSObject out = new JSObject();
         out.put("downloadId", id); out.put("version", store.getString(VERSION, "")); out.put("filename", store.getString(FILENAME, ""));
