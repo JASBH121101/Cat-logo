@@ -161,38 +161,88 @@ const updateChecker = `
     document.body.append(notice);
   }
 
-  async function checkForUpdates() {
+  function addUpdateButton() {
+    if (document.getElementById("jb-manager-update-button")) return;
+    const button = document.createElement("button");
+    button.id = "jb-manager-update-button";
+    button.type = "button";
+    button.textContent = "↻ Actualizar APK";
+    button.setAttribute("aria-label", "Buscar e instalar una actualización de JB Manager Collections");
+    Object.assign(button.style, {
+      position: "fixed",
+      zIndex: "99998",
+      right: "14px",
+      bottom: "max(14px, env(safe-area-inset-bottom))",
+      padding: "12px 15px",
+      border: "1px solid #d9c18a",
+      borderRadius: "999px",
+      background: "#d9b56c",
+      color: "#161616",
+      boxShadow: "0 8px 24px rgba(0,0,0,.24)",
+      font: "700 13px/1.2 system-ui, sans-serif",
+      cursor: "pointer"
+    });
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      const oldLabel = button.textContent;
+      button.textContent = "Buscando…";
+      void checkForUpdates(true).finally(() => {
+        button.disabled = false;
+        button.textContent = oldLabel;
+      });
+    });
+    document.body.append(button);
+  }
+
+  async function checkForUpdates(manual = false) {
     try {
       const response = await fetch(releasesUrl, {
         headers: { Accept: "application/vnd.github+json" },
         cache: "no-store"
       });
-      if (!response.ok) return;
+      if (!response.ok) throw new Error("GitHub no respondió con una lista de versiones.");
       const releases = await response.json();
       const release = releases.find(item =>
         !item.draft && /^jb-manager-v\\d+\\.\\d+\\.\\d+$/i.test(item.tag_name || "")
       );
-      if (!release) return;
-
+      if (!release) throw new Error("No se encontró una versión publicada.");
       const match = release.tag_name.match(/^jb-manager-v(\\d+\\.\\d+\\.\\d+)$/i);
-      if (!match || !isNewer(match[1], currentVersion)) return;
+      if (!match) throw new Error("La versión publicada no tiene un formato válido.");
 
       const asset = (release.assets || []).find(item => item.name === "JB-Manager-Collections.apk");
-      if (!asset || !/^https:\\/\\/github\\.com\\/JASBH121101\\/Cat-logo\\/releases\\/download\\//i.test(asset.browser_download_url || "")) return;
-      addNotice(match[1], asset.browser_download_url);
+      if (!asset || !/^https:\\/\\/github\\.com\\/JASBH121101\\/Cat-logo\\/releases\\/download\\//i.test(asset.browser_download_url || "")) {
+        throw new Error("La APK no está adjunta a la versión publicada.");
+      }
+      if (isNewer(match[1], currentVersion)) {
+        addNotice(match[1], asset.browser_download_url);
+        if (manual) {
+          const notice = document.getElementById("jb-manager-update-notice");
+          notice?.scrollIntoView?.({ behavior: "smooth", block: "end" });
+        }
+      } else if (manual) {
+        alert("JB Manager Collections ya está actualizado (v" + currentVersion + ").");
+      }
     } catch (error) {
-      // Update checks are optional and must never block catalog administration.
       console.info("No se pudo consultar si hay una actualización disponible.", error);
+      if (manual) {
+        const goToReleases = confirm("No pude comprobar la versión automáticamente. ¿Querés abrir la página oficial de actualizaciones?");
+        if (goToReleases) window.location.href = "https://github.com/JASBH121101/Cat-logo/releases";
+      }
     }
   }
 
+  function startUpdater() {
+    addUpdateButton();
+    void checkForUpdates(false);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", checkForUpdates, { once: true });
+    document.addEventListener("DOMContentLoaded", startUpdater, { once: true });
   } else {
-    void checkForUpdates();
+    startUpdater();
   }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") void checkForUpdates();
+    if (document.visibilityState === "visible") void checkForUpdates(false);
   });
 })();
 </script>
@@ -261,11 +311,22 @@ await writeFile(join(assetDir, "splash-dark.png"), splashPng);
 const internalLinkHandler = `
 <script data-jb-manager-android-shell>
 (() => {
+  // A catalog link is an intentional navigation: the editor's recovery draft
+  // is saved while leaving, so don't let the unsaved-changes warning cancel it.
+  window.addEventListener("beforeunload", (event) => {
+    if (!window.__jbManagerAllowCatalogNavigation) return;
+    event.stopImmediatePropagation();
+    event.stopPropagation();
+  }, true);
+
   document.addEventListener("click", (event) => {
     const anchor = event.target && event.target.closest
       ? event.target.closest("a[href]")
       : null;
     if (!anchor) return;
+    if (anchor.matches(".admin-sidebar-catalog-link")) {
+      window.__jbManagerAllowCatalogNavigation = true;
+    }
 
     let destination;
     try {
