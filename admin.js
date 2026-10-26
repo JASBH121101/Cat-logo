@@ -281,8 +281,10 @@ function updateProductFormMode() {
 
   const publicLink = document.querySelector(".dashboard-public-link");
   if (publicLink) publicLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
-  const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
-  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
+  document.querySelectorAll("[data-admin-catalog-link]").forEach(link => {
+    const targetCatalog = normalizeCatalogType(link.dataset.adminCatalogLink);
+    link.href = targetCatalog === "perfumery" ? "./perfumeria/" : "./tecnologia/";
+  });
 }
 
 function setActiveCatalogType(value) {
