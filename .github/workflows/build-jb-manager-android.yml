@@ -80,6 +80,15 @@ jobs:
         working-directory: mobile
         run: npm install --no-audit --no-fund
 
+      - name: Prepare a self-contained admin web bundle
+        env:
+          JB_MANAGER_VERSION: 1.0.${{ github.run_number }}
+        run: node mobile/prepare-web.mjs
+
+      - name: Create Android project
+        working-directory: mobile
+        run: npx cap add android
+
       - name: Set Android app version
         env:
           VERSION_CODE: ${{ github.run_number }}
@@ -88,17 +97,19 @@ jobs:
         run: |
           python3 - <<'PY'
           import os
-          import re
           from pathlib import Path
 
           path = Path("mobile/android/app/build.gradle")
           source = path.read_text()
-          source, code_count = re.subn(
-              r'(?m)^(\s*versionCode\s+)\d+\s*
-
-      - name: Create Android project
-        working-directory: mobile
-        run: npx cap add android
+          old_code = "versionCode 1"
+          old_name = 'versionName "1.0"'
+          if old_code not in source or old_name not in source:
+              raise SystemExit("Could not locate Android default version fields.")
+          source = source.replace(old_code, "versionCode " + os.environ["VERSION_CODE"], 1)
+          source = source.replace(old_name, 'versionName "' + os.environ["VERSION_NAME"] + '"', 1)
+          path.write_text(source)
+          print("Configured Android version", os.environ["VERSION_NAME"])
+          PY
 
       - name: Generate the JB Manager app icon and splash resources
         working-directory: mobile
@@ -167,101 +178,6 @@ jobs:
             --title "JB Manager Collections v1.0.$GITHUB_RUN_NUMBER" \
             --notes "Update for JB Manager Collections. Download and install the APK on Android; the system will ask you to confirm installation." \
             --prerelease
-
-      - name: Build summary
-        if: success()
-        shell: bash
-        run: |
-          {
-            echo "## JB Manager Collections"
-            echo ""
-            echo "The Android debug APK was built successfully."
-            echo ""
-            echo "Download the **JB-Manager-Collections-APK** artifact from this workflow run."
-            echo "The APK is unsigned for store distribution but can be installed directly on a personal Android device."
-          } >> "$GITHUB_STEP_SUMMARY"
-,
-              lambda match: match.group(1) + os.environ["VERSION_CODE"],
-              source,
-              count=1,
-          )
-          source, name_count = re.subn(
-              r"""(?m)^(\s*versionName\s+)["'][^"']+["']\s*$""",
-              lambda match: match.group(1) + '"' + os.environ["VERSION_NAME"] + '"',
-              source,
-              count=1,
-          )
-          if code_count != 1 or name_count != 1:
-              raise SystemExit("Could not set Android versionCode and versionName.")
-          path.write_text(source)
-          print("Configured Android version", os.environ["VERSION_NAME"])
-          PY
-
-      - name: Prepare a self-contained admin web bundle
-        env:
-          JB_MANAGER_VERSION: 1.0.${{ github.run_number }}
-        run: node mobile/prepare-web.mjs
-
-      - name: Create Android project
-        working-directory: mobile
-        run: npx cap add android
-
-      - name: Generate the JB Manager app icon and splash resources
-        working-directory: mobile
-        run: >
-          npx @capacitor/assets generate --android --assetPath assets
-          --iconBackgroundColor '#11172a'
-          --iconBackgroundColorDark '#11172a'
-          --splashBackgroundColor '#11172a'
-          --splashBackgroundColorDark '#11172a'
-
-      - name: Sync web assets into Android
-        working-directory: mobile
-        run: npx cap sync android
-
-      - name: Build debug APK
-        working-directory: mobile/android
-        run: ./gradlew --no-daemon assembleDebug
-
-      - name: Verify packaged panel, styles, scripts, and both catalogs
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
-          for asset in \
-            assets/public/index.html \
-            assets/public/admin.html \
-            assets/public/styles.css \
-            assets/public/theme-ui.css \
-            assets/public/admin.js \
-            assets/public/config.js \
-            assets/public/img/hero-catalogo.png \
-            assets/public/tecnologia/index.html \
-            assets/public/perfumeria/index.html \
-            assets/public/favicon-collections.svg
-          do
-            unzip -l "$APK" "$asset" | grep -q "$asset" || {
-              echo "Missing APK asset: $asset" >&2
-              exit 1
-            }
-          done
-          unzip -p "$APK" assets/public/index.html | grep -q '<base href="https://localhost/">' || {
-            echo "Admin start page is missing its local asset base." >&2
-            exit 1
-          }
-          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections"' || {
-            echo "Unexpected application name." >&2
-            exit 1
-          }
-          echo "APK bundle checks passed."
-
-      - name: Upload installable APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: JB-Manager-Collections-APK
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
 
       - name: Build summary
         if: success()
