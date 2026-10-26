@@ -1295,6 +1295,12 @@ dialogContent.addEventListener("click", event => {
   });
 });
 
+function setCatalogDetailOverlayOffset() {
+  const header = document.querySelector(".site-header");
+  const headerHeight = Math.max(0, Math.ceil(header?.getBoundingClientRect().height || 76));
+  document.documentElement.style.setProperty("--catalog-detail-overlay-top", headerHeight + "px");
+}
+
 function openProduct(product, requestedVariant = null) {
   dialogContent.dataset.analyticsProductId = String(product.id);
   dialogContent.dataset.analyticsVariantColor = "";
@@ -1427,6 +1433,7 @@ function openProduct(product, requestedVariant = null) {
     });
   }
 
+  setCatalogDetailOverlayOffset();
   productDetailPage?.classList.remove("hidden");
   if (productHeaderBack) productHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-product-detail-view");
@@ -1434,7 +1441,6 @@ function openProduct(product, requestedVariant = null) {
   document.title = `${product.name || "Producto"} | JB TECH`;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) canonical.href = productLink(product);
-  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
@@ -1559,6 +1565,7 @@ function showCatalogView() {
   if (productHeaderBack) productHeaderBack.hidden = true;
   document.querySelector("main")?.classList.remove("is-product-detail-view");
   document.body.classList.remove("product-detail-active");
+  document.documentElement.style.removeProperty("--catalog-detail-overlay-top");
   document.title = catalogDocumentTitle;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical && catalogCanonical) canonical.href = catalogCanonical;
@@ -1571,7 +1578,9 @@ function handleProductRoute() {
     const wasDetail = document.body.classList.contains("product-detail-active");
     const scrollY = Number(window.history.state?.catalogScrollY) || 0;
     showCatalogView();
-    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    if (wasDetail && Math.abs(window.scrollY - scrollY) > 2) {
+      window.scrollTo({ top: scrollY, behavior: "instant" });
+    }
     return;
   }
   const product = products.find(item => String(item.id) === route.id);
@@ -1587,30 +1596,22 @@ function handleProductRoute() {
 }
 
 
-/* Cierre por teclado de la ficha de producto.
-   Cierra en el lugar actual y restaura la posición con desplazamiento suave. */
+/* Cierre por teclado de la ficha de producto sin desplazar el catálogo. */
 document.addEventListener("keydown", event => {
   if (event.key !== "Escape" || event.defaultPrevented) return;
   if (!document.body.classList.contains("product-detail-active")) return;
   if (document.querySelector("dialog[open]")) return;
 
   event.preventDefault();
-
-  // Evitar history.back(): el navegador restauraba la posición instantáneamente.
-  const savedScrollY = Math.max(0, Number(window.history.state?.catalogScrollY) || 0);
   const nextState = { ...(window.history.state || {}) };
   delete nextState.productDetailRoute;
   delete nextState.productId;
-  nextState.catalogScrollY = savedScrollY;
 
   const url = new URL(window.location.href);
   url.searchParams.delete("producto");
   url.hash = "";
   window.history.replaceState(nextState, document.title, url.href);
   showCatalogView();
-
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-  window.scrollTo({ top: savedScrollY, behavior: reducedMotion ? "auto" : "smooth" });
 });
 
 productHeaderBack?.addEventListener("click", () => {
