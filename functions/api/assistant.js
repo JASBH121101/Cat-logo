@@ -317,7 +317,7 @@ function recommendations(entries, products) {
 }
 function historyMessages(history) {
   if (!Array.isArray(history)) return [];
-  return history.slice(-6).map(item => ({
+  return history.slice(-8).map(item => ({
     role:item && item.role === "assistant" ? "assistant" : "user",
     content:clean(item && item.content,450)
   })).filter(item => item.content);
