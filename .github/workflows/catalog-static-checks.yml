@@ -24,6 +24,43 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done
+          echo "Checking Cloudflare Pages Function syntax"
+          node --input-type=module --check < functions/api/share.js
+      - name: Test Cloudflare Pages share endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
+
+      - name: Check canonical URLs and public share origin
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+
+          root = Path(".")
+          required = {
+              "config.js": 'publicCatalogUrl: "https://jb-collections.pages.dev"',
+              "index.html": 'href="https://jb-collections.pages.dev/"',
+              "tecnologia/index.html": 'href="https://jb-collections.pages.dev/tecnologia/"',
+              "perfumeria/index.html": 'href="https://jb-collections.pages.dev/perfumeria/"',
+              "functions/api/share.js": "export async function onRequest",
+          }
+          errors = []
+          for filename, needle in required.items():
+              content = (root / filename).read_text(encoding="utf-8")
+              if needle not in content:
+                  errors.append(f"{filename}: required configuration missing: {needle}")
+          for filename in ("tecnologia/index.html", "perfumeria/index.html", "perfumeria.html"):
+              if "jasbh121101.github.io/Cat-logo/" in (root / filename).read_text(encoding="utf-8"):
+                  errors.append(f"{filename}: old GitHub Pages URL remains")
+          if errors:
+              print("\n".join(errors))
+              sys.exit(1)
+          print("Public URL, canonical links, and Cloudflare Functions entry point are consistent.")
+          PY
+
       - name: Check HTML IDs and local references
         shell: bash
         run: |
