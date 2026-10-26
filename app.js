@@ -417,7 +417,7 @@ function renderColorSummary(product) {
     <span class="product-color-chip">
       ${
         color.image_url
-          ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
           : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
       }
       ${escapeHtml(color.name)}
@@ -444,7 +444,7 @@ function imageMarkup(product) {
     return `
       <img src="${escapeHtml(url)}"
            alt="${escapeHtml(product.name)}"
-           loading="lazy"
+           loading="lazy" decoding="async"
            data-product-image>
     `;
   }
@@ -1045,7 +1045,7 @@ function renderVariantControls(product, variants, selected) {
                         class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
                         data-gallery-image="${escapeHtml(url)}"
                         aria-label="Ver fotografía ${index + 1}">
-                  <img src="${escapeHtml(url)}" alt="" loading="lazy">
+                  <img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async">
                 </button>
               `).join("")}
             </div>`
@@ -1069,7 +1069,7 @@ function renderLegacyColorOptions(product, selectedColorName = "") {
             <div class="dialog-color-image">
               ${
                 color.image_url
-                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy">`
+                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy" decoding="async">`
                   : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
               }
             </div>

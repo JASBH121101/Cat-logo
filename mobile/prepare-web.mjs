@@ -570,6 +570,17 @@ new Function(updaterScript[1]);
 
 const builtCatalogHtml = await readFile(join(webDir, "tecnologia", "index.html"), "utf8");
 const perfumeCatalogHtml = await readFile(join(webDir, "perfumeria", "index.html"), "utf8");
+const responsiveAdminHtml = builtAdminHtml;
+for (const [pagePath, html] of [
+  ["admin.html", responsiveAdminHtml],
+  ["tecnologia/index.html", builtCatalogHtml],
+  ["perfumeria/index.html", perfumeCatalogHtml]
+]) {
+  if (!html.includes("responsive-layout.css")) {
+    throw new Error("The responsive layout stylesheet is missing from " + pagePath + ".");
+  }
+}
+
 const navigationScript = builtCatalogHtml.match(/<script\s+data-jb-manager-android-shell>([\s\S]*?)<\/script>/i);
 if (!navigationScript) throw new Error("Android catalog navigation script was not generated.");
 new Function(navigationScript[1]);
@@ -608,6 +619,10 @@ if (!builtAdminHtml.includes("jb-manager-check-updates")) {
 if (!updaterScript[1].includes("document.documentElement.append(button)")) {
   throw new Error("The update button is not attached to the fixed viewport root.");
 }
+if (!updaterScript[1].includes("api.downloadAndInstall")) {
+  throw new Error("The update button must use the native Android download flow inside the APK.");
+}
+
 if (!builtAdminHtml.includes('data-admin-catalog-link="technology"')
   || !builtAdminHtml.includes('data-admin-catalog-link="perfumery"')) {
   throw new Error("The admin panel must include independent technology and perfumery catalog links.");

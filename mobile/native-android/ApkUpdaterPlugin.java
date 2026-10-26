@@ -86,11 +86,8 @@ public class ApkUpdaterPlugin extends Plugin {
             }
             try { DownloadManager dm = manager(); if (dm != null) dm.remove(oldId); } catch (Exception ignored) {}
         }
-        if (!canInstall()) {
-            try { openPermissionSettings(); call.resolve(permissionResult()); }
-            catch (Exception e) { call.reject("Android necesita permiso para instalar aplicaciones desde JB Manager Collections.", e); }
-            return;
-        }
+        // Downloading is allowed without install-package permission. Android
+        // will request that permission only when the completed APK is opened.
         DownloadManager dm = manager();
         if (dm == null) { call.reject("Android no tiene disponible el administrador de descargas."); return; }
         String name = filename(version);

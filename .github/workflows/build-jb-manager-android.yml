@@ -230,6 +230,7 @@ jobs:
             assets/public/admin.html \
             assets/public/styles.css \
             assets/public/theme-ui.css \
+            assets/public/responsive-layout.css \
             assets/public/admin.js \
             assets/public/config.js \
             assets/public/jb-manager-back-navigation.js \
