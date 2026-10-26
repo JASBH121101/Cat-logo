@@ -92,7 +92,7 @@ const foregroundSvg =
   '<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">' +
   '<stop stop-color="#fff0c5"/><stop offset=".5" stop-color="#d1a45a"/><stop offset="1" stop-color="#fff0c5"/>' +
   '</linearGradient></defs>' +
-  '<g transform="translate(13.04 16.88) scale(1.28)">' +
+  '<g transform="translate(-2 16.88) scale(1.75 1.28)">' +
   '<path d="M32 6 L34.5 12.5 L41 15 L34.5 17.5 L32 24 L29.5 17.5 L23 15 L29.5 12.5 Z" fill="url(#gold)"/>' +
   '<text x="31" y="45" text-anchor="middle" fill="url(#gold)" font-family="Georgia,serif" font-size="29" font-weight="600" letter-spacing="-3">JB</text>' +
   '</g></svg>';
@@ -113,9 +113,7 @@ await writeFile(join(assetDir, "icon-background.png"), backgroundPng);
 // A restrained splash screen, using the original logo on the same navy gradient.
 const splashBackgroundSvg =
   '<svg xmlns="http://www.w3.org/2000/svg" width="2732" height="2732" viewBox="0 0 2732 2732">' +
-  '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">' +
-  '<stop stop-color="#19100d"/><stop offset=".5" stop-color="#11172a"/><stop offset="1" stop-color="#07101f"/>' +
-  '</linearGradient></defs><rect width="2732" height="2732" fill="url(#bg)"/></svg>';
+  '<rect width="2732" height="2732" fill="#11172a"/></svg>';
 const splashBackgroundPng = await sharp(Buffer.from(splashBackgroundSvg)).png().toBuffer();
 const splashLogo = await sharp(iconOnlyPng).resize(820, 820).png().toBuffer();
 const splashPng = await sharp(splashBackgroundPng)
