@@ -32,6 +32,7 @@ jobs:
           cp -a mobile "$SUPPORT_DIR/mobile"
           cp .github/workflows/build-jb-manager-android.yml "$SUPPORT_DIR/build-jb-manager-android.yml"
           cp .github/android-signing-key-persisted "$SUPPORT_DIR/android-signing-key-persisted"
+          cp responsive-layout.css "$SUPPORT_DIR/responsive-layout.css"
 
           git fetch origin main
           git checkout -B android-source origin/main
@@ -40,6 +41,7 @@ jobs:
           mkdir -p .github/workflows
           cp "$SUPPORT_DIR/build-jb-manager-android.yml" .github/workflows/build-jb-manager-android.yml
           cp "$SUPPORT_DIR/android-signing-key-persisted" .github/android-signing-key-persisted
+          cp "$SUPPORT_DIR/responsive-layout.css" responsive-layout.css
 
           grep -Fq 'publicCatalogUrl: "https://jb-collections.pages.dev"' config.js
           grep -Fq 'href="https://jb-collections.pages.dev/"' index.html
