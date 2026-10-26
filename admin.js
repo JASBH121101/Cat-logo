@@ -1,4 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { initProviderTools } from "./admin-provider.js";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -123,6 +124,11 @@ let activeCatalogType = "technology";
 let dashboardCatalogScope = "all";
 const activeCatalogSelector = $("#active-catalog-selector");
 const dashboardScopeSelector = $("#dashboard-scope-selector");
+const providerTools = initProviderTools({
+  getSupabase: () => supabase,
+  getCurrentUser: () => currentUser,
+  getProducts: () => products
+});
 
 function normalizeCatalogType(value) {
   return value === "perfumery" ? "perfumery" : "technology";
@@ -2278,6 +2284,8 @@ async function loadProducts() {
       }));
     }
   }
+
+  await providerTools.refresh();
 
   updateProductFormMode();
   renderAdminList();
