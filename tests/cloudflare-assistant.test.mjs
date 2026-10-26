@@ -30,6 +30,9 @@ function productRow(overrides = {}) {
     price_usd: 220,
     price_nio: 8030,
     availability: "available",
+    image_url: "https://images.example.test/jb-phone-one.webp",
+    featured: false,
+    sort_order: 10,
     is_published: true,
     workflow_status: "published",
     deleted_at: null,
@@ -100,7 +103,7 @@ test("uses published technology products and discards recommendations not in the
   };
   const ai = {
     run:async (model, input) => {
-      assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fp8");
+      assert.equal(model, "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
       promptSent = input.messages.map(item=>item.content).join("\n");
       return {response:JSON.stringify({
         reply:"Para tu presupuesto, esta opción puede servirte.",
@@ -215,6 +218,132 @@ test("the landing-page mode combines both catalogues and routes recommendations 
   }
 });
 
+
+
+test("uses JSON-schema output and validates model reasons against published recommendations", async () => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    assert.equal(parsed.pathname, "/rest/v1/products");
+    return new Response(JSON.stringify([productRow()]), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+  let runOptions;
+  try {
+    const response = await onRequest({
+      request: makeRequest({
+        catalogType: "technology",
+        message: "Necesito un celular para el día a día hasta US$250."
+      }, { ip: "192.0.2.141" }),
+      env: {
+        AI: {
+          run: async (model, options) => {
+            runOptions = { model, options };
+            return {
+              response: {
+                reply: "Esta opción puede encajar con tu presupuesto y uso diario.",
+                recommendations: [
+                  { id: "tech-1", reason: "El catálogo la describe como una opción para el día a día." },
+                  { id: "not-in-catalog", reason: "No debería aparecer." }
+                ]
+              }
+            };
+          }
+        }
+      }
+    });
+    assert.equal(response.status, 200);
+    assert.equal(runOptions.model, "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
+    assert.equal(runOptions.options.response_format.type, "json_schema");
+    assert.deepEqual(runOptions.options.response_format.json_schema.required, ["reply", "recommendations"]);
+    const data = await response.json();
+    assert.equal(data.recommendations.length, 1);
+    assert.equal(data.recommendations[0].id, "tech-1");
+    assert.equal(data.recommendations[0].reason, "El catálogo la describe como una opción para el día a día.");
+    assert.equal(data.recommendations[0].image_url, "https://images.example.test/jb-phone-one.webp");
+    assert.match(data.recommendations[0].summary, /Celulares/);
+    assert.equal(data.memory, "session");
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("ranks current catalog context by the customer's use case and latest stated budget", async () => {
+  const previousFetch = globalThis.fetch;
+  const products = [
+    productRow({
+      id: "gaming-expensive",
+      name: "Gaming Ultra",
+      brand: "Studio",
+      description: "Celular orientado a juegos",
+      specifications: { RAM: "16 GB", battery: "5000 mAh" },
+      price_usd: 699,
+      price_nio: 25513,
+      featured: true
+    }),
+    productRow({
+      id: "gaming-fit",
+      name: "Gaming Lite",
+      brand: "Studio",
+      description: "Celular para juegos y uso diario",
+      specifications: { RAM: "8 GB", storage: "256 GB" },
+      price_usd: 230,
+      price_nio: 8395,
+      featured: false
+    }),
+    productRow({
+      id: "basic-phone",
+      name: "Basic Phone",
+      brand: "Everyday",
+      description: "Celular para llamadas y mensajes",
+      price_usd: 120,
+      price_nio: 4380,
+      featured: true
+    })
+  ];
+  let catalogContext;
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    assert.equal(parsed.pathname, "/rest/v1/products");
+    return new Response(JSON.stringify(products), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+  try {
+    const response = await onRequest({
+      request: makeRequest({
+        catalogType: "technology",
+        message: "Busco un celular para juegos hasta US$250",
+        history: [
+          { role: "user", content: "Me gustan los videojuegos." },
+          { role: "assistant", content: "¿Qué presupuesto manejás?" },
+          { role: "user", content: "Hasta US$250." }
+        ]
+      }, { ip: "192.0.2.142" }),
+      env: {
+        AI: {
+          run: async (_model, options) => {
+            const userMessage = options.messages[options.messages.length - 1].content;
+            const marker = "Consulta actual y catálogo publicado de solo lectura. Elegí solo IDs presentes en estos productos y no inventés datos.\n";
+            catalogContext = JSON.parse(userMessage.slice(userMessage.indexOf(marker) + marker.length));
+            return { response: JSON.stringify({ reply: "Te muestro una opción ajustada.", recommended_ids: ["gaming-fit"] }) };
+          }
+        }
+      }
+    });
+    assert.equal(response.status, 200);
+    const ranked = catalogContext.published_products_ranked_for_this_request.map(product => product.id);
+    assert.equal(ranked[0], "gaming-fit");
+    assert.ok(ranked.includes("gaming-expensive"));
+    assert.equal((await response.json()).recommendations[0].id, "gaming-fit");
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test("rate-limits repeated requests from the same client address", async () => {
   const ip = "192.0.2.199";
   const env = {AI:{run:async()=>({response:"{}"})}};
@@ -233,4 +362,82 @@ test("rate-limits repeated requests from the same client address", async () => {
   } finally {
     globalThis.fetch = previousFetch;
   }
+});
+
+
+test("compares exactly the two selected published technology devices in the requested order", async () => {
+  const previousFetch = globalThis.fetch;
+  const products = [
+    productRow({
+      id:"tech-1",
+      name:"Phone Atlas",
+      specifications:{RAM:"8 GB",Storage:"256 GB",Battery:"5000 mAh"},
+      price_usd:249
+    }),
+    productRow({
+      id:"tech-2",
+      name:"Phone Nova",
+      specifications:{RAM:"12 GB",Storage:"512 GB",Battery:"4800 mAh"},
+      price_usd:279
+    }),
+    productRow({
+      id:"tech-3",
+      name:"Phone Unselected",
+      specifications:{RAM:"4 GB"},
+      price_usd:99
+    })
+  ];
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    assert.equal(parsed.pathname,"/rest/v1/products");
+    assert.equal(parsed.searchParams.get("catalog_type"),"eq.technology");
+    return new Response(JSON.stringify(products),{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  let catalogContext;
+  try {
+    const response = await onRequest({
+      request:makeRequest({
+        catalogType:"technology",
+        message:"Compará estos equipos por rendimiento y precio.",
+        comparisonIds:["tech-2","tech-1"]
+      },{ip:"192.0.2.171"}),
+      env:{
+        AI:{
+          run:async (_model, options) => {
+            const prompt = options.messages[options.messages.length - 1].content;
+            catalogContext = JSON.parse(prompt.slice(prompt.indexOf("{")));
+            return {response:{
+              reply:"Phone Nova ofrece más RAM y almacenamiento; Phone Atlas cuesta menos.",
+              recommendations:[{id:"tech-1",reason:"Opción de menor precio."}]
+            }};
+          }
+        }
+      }
+    });
+    assert.equal(response.status,200);
+    assert.equal(catalogContext.request_mode,"comparison_of_exactly_two_selected_technology_products");
+    assert.deepEqual(
+      catalogContext.published_products_ranked_for_this_request.map(product => product.id),
+      ["tech-2","tech-1"]
+    );
+    assert.equal(catalogContext.published_products_ranked_for_this_request.length,2);
+    const data = await response.json();
+    assert.deepEqual(data.recommendations.map(product => product.id),["tech-2","tech-1"]);
+    assert.equal(data.recommendations.length,2);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("rejects comparison requests unless exactly two distinct technology IDs are supplied", async () => {
+  const response = await onRequest({
+    request:makeRequest({
+      catalogType:"technology",
+      message:"Compará estos equipos",
+      comparisonIds:["tech-1","tech-1"]
+    },{ip:"192.0.2.172"}),
+    env:{AI:{run:async()=>({response:"{}"})}}
+  });
+  assert.equal(response.status,400);
+  assert.equal((await response.json()).error,"invalid_comparison");
 });

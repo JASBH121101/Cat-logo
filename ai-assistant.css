@@ -69,6 +69,7 @@ body.perfume-page .jb-ai-launcher {
   box-shadow: 0 12px 30px rgba(42, 65, 155, .34);
 }
 .jb-ai-launcher:focus-visible,
+.jb-ai-reset:focus-visible,
 .jb-ai-close:focus-visible,
 .jb-ai-send:focus-visible,
 .jb-ai-quick-prompts button:focus-visible,
@@ -169,6 +170,28 @@ body.perfume-page .jb-ai-avatar {
   font: 400 25px/1 system-ui, sans-serif;
   cursor: pointer;
 }
+
+.jb-ai-reset {
+  appearance: none;
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 7%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-muted);
+  font: 500 20px/1 system-ui, sans-serif;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.jb-ai-reset:hover {
+  background: color-mix(in srgb, var(--jb-ai-accent) 15%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+}
+
 .jb-ai-trust {
   padding: 9px 14px;
   border-bottom: 1px solid var(--jb-ai-border);
@@ -310,15 +333,61 @@ body.perfume-page .jb-ai-send {
 .jb-ai-recommendations {
   display: grid;
   width: 100%;
-  gap: 8px;
+  gap: 9px;
+}
+.jb-ai-recommendations-heading {
+  color: var(--jb-ai-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  padding: 1px 2px;
 }
 .jb-ai-product {
   display: grid;
-  gap: 5px;
-  padding: 11px;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--jb-ai-accent) 18%, var(--jb-ai-border));
+  border-radius: 15px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--jb-ai-accent) 4%, var(--jb-ai-panel-bg)), var(--jb-ai-panel-bg) 55%);
+  box-shadow: 0 7px 18px rgba(8, 18, 39, .07);
+}
+.jb-ai-product-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.jb-ai-product-media {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   border: 1px solid var(--jb-ai-border);
-  border-radius: 13px;
-  background: var(--jb-ai-panel-bg);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--jb-ai-assistant-bubble) 75%, var(--jb-ai-panel-bg));
+}
+.jb-ai-product-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.jb-ai-product-main {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  align-content: start;
+  gap: 4px;
+}
+.jb-ai-product-eyebrow {
+  color: var(--jb-ai-accent-strong);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .13em;
 }
 .jb-ai-product-name {
   color: var(--jb-ai-text);
@@ -335,6 +404,22 @@ body.perfume-page .jb-ai-send {
   color: var(--jb-ai-accent-strong);
   font-size: 13px;
   font-weight: 850;
+}
+.jb-ai-product-summary {
+  margin: 0;
+  color: var(--jb-ai-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.jb-ai-product-reason {
+  margin: 0;
+  padding: 8px 9px;
+  border-left: 2px solid var(--jb-ai-accent);
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--jb-ai-accent) 7%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+  font-size: 11px;
+  line-height: 1.45;
 }
 .jb-ai-product-actions {
   display: flex;
@@ -406,8 +491,149 @@ body.perfume-page .jb-ai-product-whatsapp {
     min-height: min(360px, calc(100dvh - 150px));
     border-radius: 19px;
   }
+  .jb-ai-reset { flex-basis: 32px; width: 32px; height: 32px; }
+  .jb-ai-product-media { flex-basis: 62px; width: 62px; height: 62px; }
   .jb-ai-message { font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .jb-ai-launcher, .jb-ai-panel, .jb-ai-messages { transition: none; animation: none; scroll-behavior: auto; }
+}
+
+
+/* Equipment comparison: consistent with both the JB TECH and JB Parfums themes. */
+.jb-ai-compare-toggle,
+.jb-ai-compare-ai {
+  appearance: none;
+  display: inline-flex;
+  min-height: 31px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--jb-ai-accent) 42%, var(--jb-ai-border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 7%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+  font: 750 11px/1.2 "DM Sans", system-ui, sans-serif;
+  cursor: pointer;
+}
+.jb-ai-compare-toggle[aria-pressed="true"],
+.jb-ai-compare-ai {
+  border-color: var(--jb-ai-accent);
+  background: var(--jb-ai-accent);
+  color: #fff;
+}
+body.perfume-page .jb-ai-compare-toggle[aria-pressed="true"],
+body.perfume-page .jb-ai-compare-ai {
+  color: #181207;
+}
+.jb-ai-compare-toggle:hover,
+.jb-ai-compare-ai:hover {
+  filter: brightness(1.04);
+}
+.jb-ai-compare-toggle:focus-visible,
+.jb-ai-compare-ai:focus-visible,
+.jb-ai-compare-whatsapp:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--jb-ai-accent) 42%, transparent);
+  outline-offset: 2px;
+}
+.jb-ai-compare-status {
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 5%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.jb-ai-compare-status[hidden] {
+  display: none !important;
+}
+.jb-ai-compare-panel {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--jb-ai-accent) 35%, var(--jb-ai-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 5%, var(--jb-ai-panel-bg));
+}
+.jb-ai-compare-panel:empty {
+  display: none;
+}
+.jb-ai-compare-title {
+  margin: 0;
+  color: var(--jb-ai-text);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+.jb-ai-compare-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.jb-ai-compare-table {
+  width: 100%;
+  min-width: 440px;
+  border-collapse: collapse;
+  background: var(--jb-ai-panel-bg);
+  color: var(--jb-ai-text);
+  font-size: 10px;
+  line-height: 1.45;
+  table-layout: fixed;
+}
+.jb-ai-compare-table th,
+.jb-ai-compare-table td {
+  width: 31%;
+  padding: 8px;
+  border-bottom: 1px solid var(--jb-ai-border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.jb-ai-compare-table th:first-child,
+.jb-ai-compare-table td:first-child {
+  width: 25%;
+}
+.jb-ai-compare-table thead th {
+  background: color-mix(in srgb, var(--jb-ai-accent) 10%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+  font-weight: 850;
+}
+.jb-ai-compare-table tbody th {
+  color: var(--jb-ai-muted);
+  font-weight: 750;
+}
+.jb-ai-compare-table tbody tr:last-child th,
+.jb-ai-compare-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.jb-ai-compare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.jb-ai-compare-whatsapp {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border: 1px solid #238d62;
+  border-radius: 9px;
+  background: #238d62;
+  color: #fff;
+  font: 750 11px/1.3 "DM Sans", system-ui, sans-serif;
+  text-decoration: none;
+}
+@media (max-width: 520px) {
+  .jb-ai-compare-panel { padding: 8px; }
+  .jb-ai-compare-table { min-width: 410px; font-size: 9.5px; }
+  .jb-ai-compare-table th,
+  .jb-ai-compare-table td { padding: 7px 6px; }
+  .jb-ai-compare-actions > * { flex: 1 1 120px; }
 }
