@@ -3248,7 +3248,8 @@ function clearEditor() {
   $("#product-perfume-top-notes").value = "";
   $("#product-perfume-heart-notes").value = "";
   $("#product-perfume-base-notes").value = "";
-  $("#product-perfume-original").checked = false;
+  const originalField = $("#product-perfume-original");
+  if (originalField) originalField.checked = false;
 
   updateProductFormMode();
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Registrar fragancia" : "Agregar producto";
@@ -3293,7 +3294,8 @@ function fillEditor(product) {
   $("#product-perfume-top-notes").value = Array.isArray(detail.top_notes) ? detail.top_notes.join(", ") : "";
   $("#product-perfume-heart-notes").value = Array.isArray(detail.heart_notes) ? detail.heart_notes.join(", ") : "";
   $("#product-perfume-base-notes").value = Array.isArray(detail.base_notes) ? detail.base_notes.join(", ") : "";
-  $("#product-perfume-original").checked = Boolean(detail.is_original);
+  const originalField = $("#product-perfume-original");
+  if (originalField) originalField.checked = Boolean(detail.is_original);
 
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
@@ -4498,7 +4500,7 @@ form?.addEventListener("submit", async event => {
         top_notes: splitPerfumeNotes($("#product-perfume-top-notes").value),
         heart_notes: splitPerfumeNotes($("#product-perfume-heart-notes").value),
         base_notes: splitPerfumeNotes($("#product-perfume-base-notes").value),
-        is_original: $("#product-perfume-original").checked,
+        is_original: null,
         updated_at: now
       };
       const detailResult = await supabase.from("perfume_details").upsert(perfumePayload, { onConflict: "product_id" });
