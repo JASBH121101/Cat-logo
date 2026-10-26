@@ -173,8 +173,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk JB-Manager-Collections.apk
           TAG="jb-manager-v1.0.$GITHUB_RUN_NUMBER"
-          gh release create "$TAG" mobile/android/app/build/outputs/apk/debug/app-debug.apk \
+          gh release create "$TAG" JB-Manager-Collections.apk \
             --title "JB Manager Collections v1.0.$GITHUB_RUN_NUMBER" \
             --notes "Update for JB Manager Collections. Download and install the APK on Android; the system will ask you to confirm installation." \
             --prerelease
