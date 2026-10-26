@@ -220,6 +220,12 @@ const updateChecker = `
 })();
 </script>
 `;
+if (!adminHtml.includes("data-jb-manager-updater")) {
+  const bodyEnd = adminHtml.toLowerCase().lastIndexOf("</body>");
+  if (bodyEnd < 0) throw new Error("Expected admin.html body end for update checker.");
+  adminHtml = adminHtml.slice(0, bodyEnd) + updateChecker + "\\n" + adminHtml.slice(bodyEnd);
+}
+
 // The app's first screen is the administration panel. Keep both routes available.
 await writeFile(adminPath, adminHtml, "utf8");
 await writeFile(join(webDir, "index.html"), adminHtml, "utf8");
