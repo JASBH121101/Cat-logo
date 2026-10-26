@@ -4947,3 +4947,225 @@ handleSession().catch(async error => {
     "error"
   );
 });
+
+/* JB Manager · control privado de comisiones. Solo registra la comisión propia, nunca el precio del producto. */
+const commissionNode = id => document.getElementById(id);
+const commissionForm = commissionNode("commission-form");
+const commissionRecordsNode = commissionNode("commission-records");
+const commissionStatusLabels = {
+  pending_confirmation: "Por confirmar",
+  confirmed_pending_payment: "Confirmada · pendiente de recibir",
+  received: "Recibida",
+  cancelled: "Cancelada"
+};
+const commissionCatalogLabels = { technology: "JB TECH", perfumery: "JB Parfums" };
+let commissionRecords = [];
+let commissionLoadToken = 0;
+
+function commissionMoney(amount, currency) {
+  if (amount === null || amount === undefined || amount === "" || !Number.isFinite(Number(amount))) return "Por definir";
+  return (currency === "USD" ? "US$ " : "C$ ") +
+    Number(amount).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function commissionTotal(rows, states) {
+  const totals = { NIO: 0, USD: 0 };
+  for (const row of rows) {
+    if (!states.includes(row.status) || row.commission_amount == null) continue;
+    totals[row.commission_currency === "USD" ? "USD" : "NIO"] += Number(row.commission_amount) || 0;
+  }
+  const result = [];
+  if (totals.NIO) result.push(commissionMoney(totals.NIO, "NIO"));
+  if (totals.USD) result.push(commissionMoney(totals.USD, "USD"));
+  return result.length ? result.join(" · ") : "C$ 0.00";
+}
+function visibleCommissionRows() {
+  return dashboardCatalogScope === "all"
+    ? commissionRecords
+    : commissionRecords.filter(row => row.catalog_type === dashboardCatalogScope);
+}
+function setCommissionMessage(text, state = "") {
+  const node = commissionNode("commission-form-status");
+  if (node) { node.textContent = text; node.dataset.state = state; }
+}
+function populateCommissionProducts(selectedId = "") {
+  const select = commissionNode("commission-product-select");
+  const catalog = commissionNode("commission-catalog");
+  if (!select || !catalog) return;
+  const options = products.filter(product => normalizeCatalogType(product.catalog_type) === catalog.value);
+  select.innerHTML = '<option value="">Sin producto vinculado</option>' + options.map(product =>
+    '<option value="' + escapeHtml(String(product.id)) + '">' +
+    escapeHtml(product.name || "Producto sin nombre") + '</option>'
+  ).join("");
+  select.value = selectedId && options.some(product => String(product.id) === String(selectedId)) ? String(selectedId) : "";
+}
+function renderCommissionSummary(rows) {
+  commissionNode("commission-total-confirmed").textContent = commissionTotal(rows, ["confirmed_pending_payment", "received"]);
+  commissionNode("commission-total-pending").textContent = commissionTotal(rows, ["confirmed_pending_payment"]);
+  commissionNode("commission-total-received").textContent = commissionTotal(rows, ["received"]);
+  commissionNode("commission-total-unconfirmed").textContent = rows
+    .filter(row => row.status === "pending_confirmation").length.toLocaleString("es-NI");
+}
+function renderCommissionRecords() {
+  const target = commissionRecordsNode;
+  if (!target) return;
+  const rows = visibleCommissionRows().slice()
+    .sort((a, b) => String(b.operation_date || b.created_at || "").localeCompare(String(a.operation_date || a.created_at || "")))
+    .slice(0, 20);
+  if (!rows.length) {
+    target.innerHTML = '<div class="commission-empty-state">Todavía no hay comisiones registradas. Usá «Registrar comisión» cuando tengas una operación que quieras seguir.</div>';
+    return;
+  }
+  target.innerHTML = rows.map(row => {
+    const date = row.operation_date ? new Date(row.operation_date + "T12:00:00").toLocaleDateString("es-NI") : "Sin fecha";
+    const channel = row.channel === "messenger" ? "Messenger" : row.channel === "other" ? "Otro canal" : "WhatsApp";
+    const reference = row.order_reference ? " · Referencia: " + escapeHtml(row.order_reference) : "";
+    return '<article class="commission-record-row">' +
+      '<div class="commission-record-main"><h5 class="commission-record-title">' + escapeHtml(row.product_name || "Operación sin nombre") + '</h5>' +
+      '<div class="commission-record-meta">' + escapeHtml(commissionCatalogLabels[row.catalog_type] || "Catálogo") + ' · ' +
+      escapeHtml(row.department || "Departamento sin especificar") + ' · ' + date + ' · ' + channel + reference + '</div>' +
+      '<span class="commission-status-pill" data-status="' + escapeHtml(row.status) + '">' + escapeHtml(commissionStatusLabels[row.status] || "Sin estado") + '</span>' +
+      (row.notes ? '<div class="commission-record-meta">' + escapeHtml(row.notes) + '</div>' : '') +
+      '</div><div class="commission-record-amount">' + escapeHtml(commissionMoney(row.commission_amount, row.commission_currency)) + '</div>' +
+      '<div class="commission-record-actions"><button type="button" data-commission-edit="' + escapeHtml(row.id) + '">Editar</button>' +
+      '<button type="button" class="is-danger" data-commission-delete="' + escapeHtml(row.id) + '">Eliminar</button></div></article>';
+  }).join("");
+}
+async function loadCommissionDashboard() {
+  if (!supabase || !currentUser || !commissionRecordsNode) return;
+  const token = ++commissionLoadToken;
+  const { data, error } = await supabase.from("commission_records")
+    .select("*").order("operation_date", { ascending: false }).limit(200);
+  if (token !== commissionLoadToken) return;
+  if (error) {
+    commissionRecordsNode.innerHTML = '<div class="commission-empty-state">No se pudieron cargar las comisiones. Verificá que esté aplicada la migración <code>20261026194000_commission_tracking_and_visitor_departments.sql</code> en Supabase.</div>';
+    ["commission-total-confirmed", "commission-total-pending", "commission-total-received", "commission-total-unconfirmed"]
+      .forEach(id => { commissionNode(id).textContent = "—"; });
+    console.warn("No se pudieron cargar las comisiones:", error.message);
+    return;
+  }
+  commissionRecords = Array.isArray(data) ? data : [];
+  renderCommissionSummary(visibleCommissionRows());
+  renderCommissionRecords();
+}
+function resetCommissionForm() {
+  if (!commissionForm) return;
+  commissionForm.reset();
+  commissionNode("commission-id").value = "";
+  commissionNode("commission-catalog").value = dashboardCatalogScope === "perfumery" ? "perfumery" : "technology";
+  commissionNode("commission-operation-date").value = new Date().toLocaleDateString("en-CA");
+  commissionNode("commission-status").value = "pending_confirmation";
+  commissionNode("commission-currency").value = "NIO";
+  commissionNode("commission-channel").value = "whatsapp";
+  populateCommissionProducts();
+  commissionNode("commission-form-summary").textContent = "＋ Registrar comisión";
+  commissionNode("commission-save-button").textContent = "Guardar registro";
+  commissionNode("commission-cancel-edit").hidden = true;
+  commissionNode("commission-editor-details").open = false;
+  commissionNode("commission-amount").required = false;
+  setCommissionMessage("");
+}
+function editCommissionRecord(row) {
+  if (!row || !commissionForm) return;
+  commissionNode("commission-editor-details").open = true;
+  commissionNode("commission-id").value = row.id || "";
+  commissionNode("commission-catalog").value = row.catalog_type || "technology";
+  populateCommissionProducts(row.product_id || "");
+  commissionNode("commission-product-name").value = row.product_name || "";
+  commissionNode("commission-department").value = row.department || "";
+  commissionNode("commission-channel").value = row.channel || "whatsapp";
+  commissionNode("commission-amount").value = row.commission_amount ?? "";
+  commissionNode("commission-currency").value = row.commission_currency || "NIO";
+  commissionNode("commission-status").value = row.status || "pending_confirmation";
+  commissionNode("commission-operation-date").value = row.operation_date || new Date().toLocaleDateString("en-CA");
+  commissionNode("commission-order-reference").value = row.order_reference || "";
+  commissionNode("commission-notes").value = row.notes || "";
+  commissionNode("commission-form-summary").textContent = "Editando comisión";
+  commissionNode("commission-save-button").textContent = "Guardar cambios";
+  commissionNode("commission-cancel-edit").hidden = false;
+  commissionNode("commission-amount").required = ["confirmed_pending_payment", "received"].includes(row.status);
+  setCommissionMessage("Editando un registro existente.");
+  commissionForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+commissionNode("commission-catalog")?.addEventListener("change", () => populateCommissionProducts());
+commissionNode("commission-product-select")?.addEventListener("change", event => {
+  const product = products.find(item => String(item.id) === String(event.currentTarget.value));
+  if (!product) return;
+  commissionNode("commission-product-name").value = product.name || "";
+  commissionNode("commission-catalog").value = normalizeCatalogType(product.catalog_type);
+  populateCommissionProducts(String(product.id));
+});
+commissionNode("commission-status")?.addEventListener("change", event => {
+  commissionNode("commission-amount").required = ["confirmed_pending_payment", "received"].includes(event.currentTarget.value);
+});
+commissionNode("commission-cancel-edit")?.addEventListener("click", resetCommissionForm);
+commissionNode("commission-refresh-button")?.addEventListener("click", () => { void loadCommissionDashboard(); });
+commissionForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!supabase || !currentUser) { setCommissionMessage("Iniciá sesión para registrar comisiones.", "error"); return; }
+  if (!commissionForm.reportValidity()) return;
+  const id = commissionNode("commission-id").value.trim();
+  const productId = commissionNode("commission-product-select").value || null;
+  const product = products.find(item => String(item.id) === String(productId));
+  const productName = commissionNode("commission-product-name").value.trim() || product?.name || "";
+  const status = commissionNode("commission-status").value;
+  const rawAmount = commissionNode("commission-amount").value.trim();
+  const amount = rawAmount === "" ? null : Number(rawAmount);
+  if (!productName) { setCommissionMessage("Indicá el producto o la referencia de la operación.", "error"); return; }
+  if (amount !== null && (!Number.isFinite(amount) || amount < 0)) { setCommissionMessage("La comisión debe ser un importe válido y no negativo.", "error"); return; }
+  if (["confirmed_pending_payment", "received"].includes(status) && amount === null) {
+    setCommissionMessage("Indicá el importe de la comisión para confirmar el registro.", "error"); return;
+  }
+  const payload = {
+    catalog_type: commissionNode("commission-catalog").value,
+    product_id: productId,
+    product_name: productName,
+    department: commissionNode("commission-department").value || null,
+    channel: commissionNode("commission-channel").value,
+    commission_amount: amount,
+    commission_currency: commissionNode("commission-currency").value,
+    status,
+    operation_date: commissionNode("commission-operation-date").value,
+    received_date: status === "received" ? new Date().toLocaleDateString("en-CA") : null,
+    order_reference: commissionNode("commission-order-reference").value.trim() || null,
+    notes: commissionNode("commission-notes").value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  const button = commissionNode("commission-save-button");
+  const editing = Boolean(id);
+  button.disabled = true;
+  button.textContent = "Guardando…";
+  try {
+    const result = editing
+      ? await supabase.from("commission_records").update(payload).eq("id", id)
+      : await supabase.from("commission_records").insert({ ...payload, created_by: currentUser.id });
+    if (result.error) throw result.error;
+    await loadCommissionDashboard();
+    resetCommissionForm();
+    commissionNode("commission-editor-details").open = true;
+    setCommissionMessage("Registro guardado.", "success");
+  } catch (error) {
+    setCommissionMessage("No se pudo guardar. Verificá la migración y los permisos del administrador.", "error");
+    console.warn("Error al guardar comisión:", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = editing ? "Guardar cambios" : "Guardar registro";
+  }
+});
+commissionRecordsNode?.addEventListener("click", async event => {
+  const target = event.target instanceof Element ? event.target : null;
+  const editButton = target?.closest("[data-commission-edit]");
+  const deleteButton = target?.closest("[data-commission-delete]");
+  if (editButton) {
+    const row = commissionRecords.find(item => String(item.id) === String(editButton.dataset.commissionEdit));
+    if (row) editCommissionRecord(row);
+    return;
+  }
+  if (deleteButton) {
+    const row = commissionRecords.find(item => String(item.id) === String(deleteButton.dataset.commissionDelete));
+    if (!row || !window.confirm("¿Eliminar este registro de comisión? No se modificarán productos ni precios.")) return;
+    const { error } = await supabase.from("commission_records").delete().eq("id", row.id);
+    if (error) { window.alert("No se pudo eliminar el registro. Revisá los permisos de administrador."); return; }
+    await loadCommissionDashboard();
+  }
+});
+resetCommissionForm();
