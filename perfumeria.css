@@ -1755,3 +1755,29 @@ body.perfume-page .product-grid .product-image.is-tight-photo-frame img {
     padding-top:calc(68px + 12px) !important;
   }
 }
+
+
+/* Ajuste final solicitado: flecha a la izquierda, marca centrada y tema a la derecha. */
+body.perfume-detail-active .site-header.perfume-header > [data-theme-toggle] {
+  left:auto !important;
+  right:max(18px,4.2vw) !important;
+}
+@media (max-width:640px) {
+  body.perfume-detail-active .site-header.perfume-header > [data-theme-toggle] {
+    left:auto !important;
+    right:10px !important;
+    min-height:36px !important;
+    padding:7px 9px !important;
+    font-size:10px !important;
+  }
+  body.perfume-detail-active .site-header.perfume-header > .perfume-brand {
+    left:50% !important;
+    right:auto !important;
+    transform:translate(-50%,-50%) !important;
+    max-width:40% !important;
+  }
+  body.perfume-detail-active .site-header.perfume-header .perfume-brand-logo {
+    width:clamp(118px,35vw,155px) !important;
+    max-height:40px !important;
+  }
+}
