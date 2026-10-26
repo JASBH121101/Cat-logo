@@ -1679,3 +1679,34 @@ body.perfume-detail-active .site-header.perfume-header > [data-theme-toggle] {
     margin-left:0 !important;
   }
 }
+
+
+/* Fotos de producto: ocupar todo el marco sin cortar el frasco ni la caja. */
+.perfume-page .product-image {
+  width:100%;
+  min-width:0;
+  background:radial-gradient(ellipse at 50% 35%,rgba(190,151,85,.10),transparent 65%),var(--perfume-card);
+}
+.perfume-page .product-image img,
+.perfume-page .product-image.has-white-background img {
+  display:block;
+  width:100% !important;
+  height:100% !important;
+  min-height:0;
+  max-width:100%;
+  box-sizing:border-box;
+  padding:0 !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+}
+.perfume-page .product-card:hover .product-image img {
+  transform:scale(1.015);
+}
+@media(max-width:760px) {
+  .perfume-page .product-image img,
+  .perfume-page .product-image.has-white-background img {
+    padding:0 !important;
+    min-height:0 !important;
+    object-fit:contain !important;
+  }
+}
