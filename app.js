@@ -475,10 +475,13 @@ function productLink(product) {
 }
 
 function productShareLink(product, variant = null, fallbackColor = null) {
-  const currentHost = window.location.hostname.toLocaleLowerCase();
-  const shareOrigin = currentHost.endsWith(".github.io")
-    ? "https://cat-logo-preview.vercel.app"
-    : window.location.origin;
+  const configuredPublicUrl = String(window.CATALOG_CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").trim();
+  let shareOrigin = "https://jb-collections.pages.dev";
+  try {
+    shareOrigin = new URL(configuredPublicUrl).origin;
+  } catch {
+    shareOrigin = "https://jb-collections.pages.dev";
+  }
   const share = new URL("/api/share", shareOrigin);
   share.searchParams.set("catalog", "technology");
   share.searchParams.set("id", String(product.id));
