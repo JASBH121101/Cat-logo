@@ -277,6 +277,16 @@ jobs:
             echo "APK native APK downloader bridge is missing." >&2
             exit 1
           }
+          grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
+            echo "Native APK updater plugin is not registered in MainActivity." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
+            echo "Unexpected application name." >&2
+            exit 1
+          }
+          echo "APK bundle checks passed."
+
       - name: Verify native updater source, manifest and package identity
         shell: bash
         run: |
@@ -292,17 +302,11 @@ jobs:
             echo "Unexpected Android applicationId." >&2
             exit 1
           }
-          echo "Native updater source and package identity checks passed."
-
           grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
             echo "Native APK updater plugin is not registered in MainActivity." >&2
             exit 1
           }
-          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
-            echo "Unexpected application name." >&2
-            exit 1
-          }
-          echo "APK bundle checks passed."
+          echo "Native updater source and package identity checks passed."
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
