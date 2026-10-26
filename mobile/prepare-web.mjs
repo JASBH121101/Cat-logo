@@ -102,6 +102,29 @@ const internalLinkHandler = `
 </script>
 `;
 
+async function addExplicitCapacitorBase(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const fullPath = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      await addExplicitCapacitorBase(fullPath);
+      continue;
+    }
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".html")) continue;
+
+    const relativePath = relative(webDir, fullPath).split(sep).join("/");
+    const folder = dirname(relativePath);
+    const routePath = folder === "." ? "/" : `/${folder}/`;
+    const baseTag = `<base href="https://localhost${routePath}">`;
+    let html = await readFile(fullPath, "utf8");
+    if (/<base\\s/i.test(html)) {
+      html = html.replace(/<base\\s+[^>]*>/i, baseTag);
+    } else {
+      html = html.replace(/<head([^>]*)>/i, `<head$1>\\n  ${baseTag}`);
+    }
+    await writeFile(fullPath, html, "utf8");
+  }
+}
+
 async function injectNavigationSupport(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const fullPath = join(directory, entry.name);
@@ -119,6 +142,7 @@ async function injectNavigationSupport(directory) {
   }
 }
 
+await addExplicitCapacitorBase(webDir);
 await injectNavigationSupport(webDir);
 
 console.log("Prepared local Android web bundle from repository source.");
