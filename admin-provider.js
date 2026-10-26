@@ -182,8 +182,14 @@ function getImportedCatalogFields(row) {
   };
   for (const [field, keys] of Object.entries(aliases)) {
     const value = firstValue(row, keys);
-    if (value !== null) fields[field] = ["price_usd", "price_nio"].includes(field) ? cleanPrice(value)
-      : field === "availability" ? normalizeAvailability(value, false) : String(value).trim();
+    if (value !== null) {
+      if (["price_usd", "price_nio"].includes(field)) fields[field] = cleanPrice(value);
+      else if (field === "availability") {
+        const normalized = normalizeAvailability(value, false);
+        if (!normalized) throw new Error("Disponibilidad del catálogo no reconocida: " + value);
+        fields[field] = normalized;
+      } else fields[field] = String(value).trim();
+    }
   }
   const variantSource = firstValue(row, ["catalog_variants", "variants_json", "variants"]);
   if (variantSource !== null) fields.variants = parseMaybeJSON(variantSource, null);
@@ -630,9 +636,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
             const family = firstValue(row, ["family", "perfume_family", "familia_olfativa"]);
             if (family !== null) {
               const cleanFamily = normalizedText(family);
-              detail.family = ["arabes", "arabe"].includes(cleanFamily) ? "arabes"
+              const normalizedFamily = ["arabes", "arabe"].includes(cleanFamily) ? "arabes"
                 : ["nicho"].includes(cleanFamily) ? "nicho"
-                : ["disenador", "designer"].includes(cleanFamily) ? "disenador" : existing.family || "arabes";
+                : ["disenador", "designer"].includes(cleanFamily) ? "disenador" : null;
+              if (normalizedFamily) detail.family = normalizedFamily;
             }
             const detailAliases = {
               concentration: ["concentration", "concentracion"],
