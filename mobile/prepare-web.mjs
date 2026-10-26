@@ -82,7 +82,7 @@ if (!adminHtml.includes('src="./jb-manager-apk-updater.js"')) {
   const scriptBodyEnd = adminHtml.toLowerCase().lastIndexOf("</body>");
   if (scriptBodyEnd < 0) throw new Error("Expected admin.html body end for native updater bridge.");
   adminHtml = adminHtml.slice(0, scriptBodyEnd)
-    + '<script src="./jb-manager-apk-updater.js"></script>\\n'
+    + '<script src="./jb-manager-apk-updater.js"></script>\n'
     + adminHtml.slice(scriptBodyEnd);
 }
 
