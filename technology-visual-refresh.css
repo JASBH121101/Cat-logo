@@ -1475,3 +1475,273 @@ body.technology-catalog .site-header > .product-detail-header-back:not([hidden])
   body.technology-catalog .tech-header-wordmark small { font-size:6px; }
   body.technology-catalog .site-header > [data-theme-toggle] { padding-inline:6px !important; }
 }
+
+
+/* =========================================================
+   JB TECH · PRODUCT DETAIL GALLERY FIX
+   Uses the real DOM (.product-detail-page), not legacy .product-dialog selectors.
+   ========================================================= */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  align-items:stretch !important;
+  gap:clamp(18px,2.4vw,32px) !important;
+  overflow:visible !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  grid-template-rows:minmax(0,1fr) auto !important;
+  align-content:stretch !important;
+  align-items:stretch !important;
+  justify-items:stretch !important;
+  gap:10px !important;
+  width:100% !important;
+  height:clamp(390px,56vh,610px) !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:12px !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  border:1px solid var(--tech-line) !important;
+  border-radius:16px !important;
+  background:
+    radial-gradient(ellipse at 50% 34%,rgba(49,94,232,.10),transparent 65%),
+    var(--tech-card-soft) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image:not(:has(.dialog-gallery-thumbs)) {
+  grid-template-rows:minmax(0,1fr) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+  display:grid !important;
+  grid-template-columns:36px minmax(0,1fr) 36px !important;
+  grid-template-rows:minmax(0,1fr) !important;
+  align-items:stretch !important;
+  justify-items:stretch !important;
+  gap:6px !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+  box-sizing:border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) {
+  grid-template-columns:minmax(0,1fr) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-image-zoom {
+  display:grid !important;
+  grid-column:2 !important;
+  grid-row:1 !important;
+  place-items:center !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  border:0 !important;
+  border-radius:10px !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  cursor:zoom-in;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-zoom {
+  grid-column:1 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:clamp(6px,1.2vw,16px) !important;
+  box-sizing:border-box !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+  mix-blend-mode:multiply;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  mix-blend-mode:normal !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumbs {
+  display:flex !important;
+  flex:0 0 48px !important;
+  flex-wrap:nowrap !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  width:100% !important;
+  height:48px !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-height:48px !important;
+  margin:0 !important;
+  padding:2px 3px !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  overscroll-behavior-x:contain;
+  box-sizing:border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb {
+  display:grid !important;
+  flex:0 0 44px !important;
+  place-items:center !important;
+  width:44px !important;
+  min-width:44px !important;
+  max-width:44px !important;
+  height:44px !important;
+  min-height:44px !important;
+  max-height:44px !important;
+  margin:0 !important;
+  padding:3px !important;
+  overflow:hidden !important;
+  border:1px solid var(--tech-line) !important;
+  border-radius:9px !important;
+  background:var(--tech-card) !important;
+  box-sizing:border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb.active {
+  border:2px solid var(--tech-blue) !important;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--tech-blue) 15%,transparent) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  mix-blend-mode:multiply;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb img {
+  mix-blend-mode:normal !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-nav {
+  position:static !important;
+  grid-row:1 !important;
+  align-self:center !important;
+  justify-self:center !important;
+  display:grid !important;
+  place-items:center !important;
+  width:32px !important;
+  min-width:32px !important;
+  height:32px !important;
+  min-height:32px !important;
+  margin:0 !important;
+  padding:0 0 2px !important;
+  border:1px solid var(--tech-line) !important;
+  border-radius:50% !important;
+  color:var(--tech-blue) !important;
+  background:var(--tech-card) !important;
+  box-shadow:0 3px 9px rgba(15,35,75,.08) !important;
+  font-size:22px !important;
+  line-height:1 !important;
+  transform:none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-prev { grid-column:1 !important; }
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-next { grid-column:3 !important; }
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-nav {
+  border-color:rgba(75,214,255,.30) !important;
+  color:#5de5ff !important;
+  background:#10213a !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-image-load-error {
+  grid-column:2;
+  grid-row:1;
+  align-self:center;
+  justify-self:center;
+  max-width:220px;
+  padding:12px 14px;
+  border:1px dashed var(--tech-line);
+  border-radius:12px;
+  color:var(--tech-muted);
+  background:var(--tech-card);
+  text-align:center;
+  font-size:13px;
+  line-height:1.5;
+}
+@media (max-width:760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:14px !important;
+    padding:12px !important;
+    border-radius:16px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    grid-template-rows:minmax(0,1fr) 44px !important;
+    gap:6px !important;
+    height:clamp(300px,43svh,390px) !important;
+    min-height:0 !important;
+    max-height:390px !important;
+    padding:8px !important;
+    border-radius:13px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image:not(:has(.dialog-gallery-thumbs)) {
+    grid-template-rows:minmax(0,1fr) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+    grid-template-columns:28px minmax(0,1fr) 28px !important;
+    height:100% !important;
+    min-height:0 !important;
+    max-height:100% !important;
+    gap:4px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-zoom {
+    grid-column:1 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-nav {
+    width:27px !important;
+    min-width:27px !important;
+    height:27px !important;
+    min-height:27px !important;
+    font-size:20px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumbs {
+    flex-basis:44px !important;
+    height:44px !important;
+    max-height:44px !important;
+    justify-content:flex-start !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb {
+    flex-basis:38px !important;
+    width:38px !important;
+    min-width:38px !important;
+    max-width:38px !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+    padding:4px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    min-width:0;
+    padding:8px 3px 16px !important;
+  }
+}
+@media (max-width:390px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height:clamp(280px,41svh,350px) !important;
+  }
+}
