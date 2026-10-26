@@ -28,8 +28,9 @@ body {
 a { color: inherit; }
 .collections-stage {
   position: relative;
-  width: min(100%, 1680px);
-  margin-inline: auto;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
