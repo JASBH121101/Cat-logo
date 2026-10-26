@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
   <link rel="stylesheet" href="admin-provider.css?v=20261026-dropship-tools2">
-  <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-geography1">
+  <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
 
   <script src="config.js?v=20261026-cloudflare-url1"></script>
   <script type="module" src="admin.js?v=20261026-commission-geography2"></script>
@@ -308,15 +308,15 @@
                 <input id="commission-id" type="hidden">
                 <label><span>Catálogo</span><select id="commission-catalog" required><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
                 <label><span>Producto del catálogo (opcional)</span><select id="commission-product-select"><option value="">Sin producto vinculado</option></select></label>
-                <label class="commission-form-wide"><span>Producto o referencia</span><input id="commission-product-name" type="text" maxlength="180" placeholder="Nombre del producto o referencia" required></label>
+                <label class="commission-form-wide"><span>Producto o referencia</span><input id="commission-product-name" type="text" maxlength="180"  required></label>
                 <label><span>Departamento de entrega</span><select id="commission-department"><option value="">Sin especificar</option><option>Boaco</option><option>Carazo</option><option>Chinandega</option><option>Chontales</option><option>Estelí</option><option>Granada</option><option>Jinotega</option><option>León</option><option>Madriz</option><option>Managua</option><option>Masaya</option><option>Matagalpa</option><option>Nueva Segovia</option><option>Río San Juan</option><option>Rivas</option><option>Costa Caribe Norte</option><option>Costa Caribe Sur</option><option>Fuera de Nicaragua</option></select></label>
                 <label><span>Canal</span><select id="commission-channel"><option value="whatsapp">WhatsApp</option><option value="messenger">Messenger</option><option value="other">Otro</option></select></label>
-                <label><span>Mi comisión</span><input id="commission-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Importe que ganás"></label>
+                <label><span>Mi comisión</span><input id="commission-amount" type="number" min="0" step="0.01" inputmode="decimal" ></label>
                 <label><span>Moneda de la comisión</span><select id="commission-currency"><option value="NIO">Córdobas (C$)</option><option value="USD">Dólares (US$)</option></select></label>
                 <label><span>Estado</span><select id="commission-status"><option value="pending_confirmation">Por confirmar</option><option value="confirmed_pending_payment">Confirmada · pendiente de recibir</option><option value="received">Recibida</option><option value="cancelled">Cancelada</option></select></label>
                 <label><span>Fecha de operación</span><input id="commission-operation-date" type="date" required></label>
-                <label><span>Referencia de pedido (opcional)</span><input id="commission-order-reference" type="text" maxlength="140" placeholder="Código o referencia"></label>
-                <label class="commission-form-wide"><span>Notas (opcional)</span><textarea id="commission-notes" rows="2" maxlength="1200" placeholder="Seguimiento o comprobación del pago"></textarea></label>
+                <label><span>Referencia de pedido (opcional)</span><input id="commission-order-reference" type="text" maxlength="140" ></label>
+                <label class="commission-form-wide"><span>Notas (opcional)</span><textarea id="commission-notes" rows="2" maxlength="1200"></textarea></label>
                 <div class="commission-form-actions commission-form-wide"><button class="button button-primary" id="commission-save-button" type="submit">Guardar registro</button><button class="button" id="commission-cancel-edit" type="button" hidden>Cancelar edición</button></div>
                 <p id="commission-form-status" class="form-status commission-form-wide" role="status" aria-live="polite"></p>
               </form>
