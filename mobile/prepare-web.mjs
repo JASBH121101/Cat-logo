@@ -323,7 +323,7 @@ const updateChecker = `
       checking = false;
       if (button) {
         button.disabled = false;
-        button.textContent = "Buscar actualizaciones";
+        button.textContent = "↻";
         button.style.opacity = "1";
       }
     }
@@ -334,23 +334,49 @@ const updateChecker = `
       const button = document.createElement("button");
       button.id = "jb-manager-check-updates";
       button.type = "button";
-      button.textContent = "Buscar actualizaciones";
+      button.textContent = "↻";
+      button.title = "Buscar actualizaciones";
       button.setAttribute("aria-label", "Buscar actualizaciones de JB Manager Collections");
       Object.assign(button.style, {
         position: "fixed", zIndex: "2147483000",
-        right: "max(14px, env(safe-area-inset-right, 0px))",
-        bottom: "max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px))",
+        right: "max(8px, env(safe-area-inset-right, 0px))",
+        bottom: "max(8px, calc(env(safe-area-inset-bottom, 0px) + 5px))",
+        width: "34px", height: "34px", minWidth: "34px",
         transform: "translateZ(0)", willChange: "transform",
-        padding: "12px 15px", borderRadius: "999px",
-        border: "1px solid #d9c18a", background: "#101827",
-        color: "#ffffff", boxShadow: "0 6px 22px rgba(0,0,0,.24)",
-        font: "600 13px/1.2 system-ui, sans-serif", cursor: "pointer"
+        padding: "0", display: "grid", placeItems: "center",
+        borderRadius: "50%",
+        border: "1px solid rgba(217,181,108,.65)", background: "rgba(16,24,39,.84)",
+        color: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,.16)",
+        opacity: ".72", font: "600 17px/1 system-ui, sans-serif", cursor: "pointer"
       });
       button.addEventListener("click", () => void checkForUpdates(true));
       document.documentElement.append(button);
     }
     void checkForUpdates(false);
     void resumeNativeDownloadIfNeeded();
+
+    // Keep the compact update control out of the way while editing or while
+    // Android's on-screen keyboard reduces the visible viewport.
+    const updateButton = document.getElementById("jb-manager-check-updates");
+    const syncUpdateButtonVisibility = () => {
+      if (!updateButton) return;
+      const active = document.activeElement;
+      const isEditing = Boolean(active && (
+        active.matches("input, textarea, select")
+        || active.isContentEditable
+      ));
+      const viewport = window.visualViewport;
+      const keyboardIsVisible = Boolean(
+        viewport && viewport.height < window.innerHeight * 0.78
+      );
+      updateButton.hidden = isEditing || keyboardIsVisible;
+    };
+    document.addEventListener("focusin", syncUpdateButtonVisibility);
+    document.addEventListener("focusout", () => window.setTimeout(syncUpdateButtonVisibility, 100));
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncUpdateButtonVisibility);
+    }
+    syncUpdateButtonVisibility();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });

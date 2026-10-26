@@ -78,6 +78,14 @@
           </span>
         </label>
 
+        <label class="login-remember-option" for="login-remember-user">
+          <input id="login-remember-user" type="checkbox" autocomplete="off">
+          <span class="login-remember-copy">
+            <strong>Recordar mi sesión</strong>
+            <small>En este dispositivo no tendrás que iniciar sesión cada vez. Tu contraseña nunca se guarda.</small>
+          </span>
+        </label>
+
         <button class="button button-primary" type="submit">
           Iniciar sesión
         </button>
@@ -153,6 +161,11 @@
             <span>Ver catálogo de perfumería</span>
           </a>
         </div>
+
+        <button id="remember-user-toggle" class="admin-sidebar-remember" type="button" aria-pressed="false">
+          <span aria-hidden="true">◉</span>
+          <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span>
+        </button>
 
         <button id="logout-button" class="admin-sidebar-logout" type="button">
           <span aria-hidden="true">↪</span>

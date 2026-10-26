@@ -9513,3 +9513,75 @@ html[data-theme="light"] body.admin-body .admin-preview-color-dot {
     min-height: 145px !important;
   }
 }
+
+
+/* Compact remember-session controls for login and the mobile admin sidebar. */
+body.admin-body .login-remember-option {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 2px 0 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--admin-border, #34415f);
+  border-radius: 12px;
+  background: rgba(112, 130, 174, .07);
+  color: var(--admin-text, inherit);
+  cursor: pointer;
+}
+body.admin-body .login-remember-option input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: #7286f3;
+}
+body.admin-body .login-remember-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+body.admin-body .login-remember-copy strong {
+  font-size: 13px;
+  font-weight: 750;
+}
+body.admin-body .login-remember-copy small {
+  display: block;
+  color: var(--admin-muted, #9aa9c7);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+body.admin-body .admin-sidebar-remember {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 42px;
+  margin: 0 0 8px;
+  padding: 9px 13px;
+  border: 1px solid rgba(201, 171, 103, .34);
+  border-radius: 12px;
+  color: var(--admin-text, #dce5ff);
+  background: rgba(190, 157, 91, .09);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+body.admin-body .admin-sidebar-remember > span:first-child {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: #d9b56c;
+  background: rgba(217, 181, 108, .11);
+  font-size: 18px;
+}
+body.admin-body .admin-sidebar-remember:hover:not(:disabled) {
+  border-color: rgba(217, 181, 108, .65);
+  background: rgba(190, 157, 91, .15);
+}
