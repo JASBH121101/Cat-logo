@@ -52,16 +52,19 @@ const supabase = configured
     })
   : null;
 
-/* Vercel deployments are test previews: block product writes and Storage mutations. */
-const IS_READ_ONLY_VERCEL_PREVIEW = /\.vercel\.app$/i.test(window.location.hostname);
-if (supabase && IS_READ_ONLY_VERCEL_PREVIEW) {
+/* Preview deployments are read-only: protect production data while testing Vercel/Cloudflare previews. */
+const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
+const IS_READ_ONLY_PREVIEW =
+  /\.vercel\.app$/i.test(adminHostname) ||
+  (/\.pages\.dev$/i.test(adminHostname) && adminHostname !== "jb-collections.pages.dev");
+if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalFrom = supabase.from.bind(supabase);
   supabase.from = table => {
     const query = originalFrom(table);
     for (const method of ["insert", "update", "upsert", "delete"]) {
       if (typeof query[method] === "function") {
         query[method] = () => {
-          throw new Error("Vista previa segura: no se permiten cambios en la base de datos desde Vercel.");
+          throw new Error("Vista previa segura: no se permiten cambios en la base de datos desde un despliegue de prueba.");
         };
       }
     }
@@ -73,7 +76,7 @@ if (supabase && IS_READ_ONLY_VERCEL_PREVIEW) {
     for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl", "createSignedUrls"]) {
       if (typeof storageApi[method] === "function") {
         storageApi[method] = async () => {
-          throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde Vercel.");
+          throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde un despliegue de prueba.");
         };
       }
     }
