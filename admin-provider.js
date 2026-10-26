@@ -100,6 +100,13 @@ function firstValue(row, aliases) {
   for (const alias of aliases) {
     if (Object.prototype.hasOwnProperty.call(row, alias) && row[alias] !== "" && row[alias] !== null && row[alias] !== undefined) return row[alias];
   }
+  // CSV exports commonly use labels like "Provider Price USD"; normalize headers as a fallback.
+  const headerKey = value => normalizedText(value).replace(/\\s+/g, "_");
+  const headers = Object.keys(row);
+  for (const alias of aliases) {
+    const matchedHeader = headers.find(header => headerKey(header) === headerKey(alias));
+    if (matchedHeader && row[matchedHeader] !== "" && row[matchedHeader] !== null && row[matchedHeader] !== undefined) return row[matchedHeader];
+  }
   return null;
 }
 
@@ -571,6 +578,18 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const updateDescription = $("#provider-import-update-description")?.checked === true;
     const updateVariants = $("#provider-import-update-variants")?.checked === true;
     const updatePerfumeDetails = $("#provider-import-update-perfume")?.checked === true;
+    if (updateVariants) {
+      const invalidVariantUpdate = matchedItems.find(item => {
+        const imported = item.catalogFields?.variants;
+        if (imported === undefined) return false;
+        return !Array.isArray(imported) ||
+          (imported.length === 0 && Array.isArray(item.product.variants) && item.product.variants.length > 0);
+      });
+      if (invalidVariantUpdate) {
+        say(importMessage, "La fila " + invalidVariantUpdate.index + " no contiene una lista válida de variantes o intenta borrar todas las variantes. Corregí el archivo antes de aplicar cambios; esta protección evita perder configuraciones por accidente.", "error");
+        return;
+      }
+    }
     const messageText = `Se procesarán ${matchedItems.length} producto(s). No se cambiarán fotografías, publicación ni categorías de publicación. ¿Continuar?`;
     if (!window.confirm(messageText)) return;
 
@@ -724,8 +743,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
           provider_availability: "available",
           provider_url: "https://example.com/producto",
           catalog_price_usd: 219.99,
-          catalog_availability: "available",
-          catalog_variants: []
+          catalog_availability: "available"
         },
         {
           catalog_type: "perfumery",
