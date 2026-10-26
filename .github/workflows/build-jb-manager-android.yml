@@ -210,7 +210,7 @@ jobs:
             echo "APK is missing the Android catalog-navigation fix." >&2
             exit 1
           }
-          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections"' || {
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
             echo "Unexpected application name." >&2
             exit 1
           }
