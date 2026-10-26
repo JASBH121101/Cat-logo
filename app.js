@@ -843,7 +843,7 @@ function renderCategorizedProducts(productList) {
   return [...grouped.entries()]
     .filter(([, items]) => items.length > 0)
     .map(([category, items]) => {
-      const slug = normalizeCatalogSearch(category).replace(/\\s+/g, "-");
+      const slug = normalizeCatalogSearch(category).replace(/\s+/g, "-");
       const titleId = "catalog-category-" + slug;
       const countLabel = items.length + " producto" + (items.length === 1 ? "" : "s");
       return `
