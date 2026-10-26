@@ -54,7 +54,7 @@ jobs:
         id: android-signing-key
         with:
           path: ~/.android/debug.keystore
-          key: jb-manager-collections-debug-signing-v1-\${{ runner.os }}
+          key: jb-manager-collections-debug-signing-v1-${{ runner.os }}
 
       - name: Ensure stable Android signing key
         shell: bash
