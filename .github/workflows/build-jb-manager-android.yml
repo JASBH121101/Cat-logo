@@ -76,7 +76,7 @@ jobs:
           path, source = sys.argv[1], sys.argv[2]
           data = Path(path).read_bytes()
           tail_start = max(0, len(data) - 65557)
-          eocd = data.rfind(b"PK\\x05\\x06", tail_start)
+          eocd = data.rfind(bytes.fromhex("504b0506"), tail_start)
           print(f"{source} ZIP diagnostics: bytes={len(data)}, head={data[:8].hex()}, eocd_index={eocd}, tail={data[-32:].hex()}")
           if len(data) < 1_000_000 or len(data) > 52_428_800:
               raise SystemExit(f"{source} response size outside APK limits")
