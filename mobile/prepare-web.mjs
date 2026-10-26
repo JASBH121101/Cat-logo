@@ -323,7 +323,11 @@ const updateChecker = `
     checking = true;
     const sequence = ++checkSequence;
     const button = document.getElementById("jb-manager-check-updates");
-    if (button) { button.disabled = true; button.textContent = "Comprobando…"; button.style.opacity = ".75"; }
+    if (button) {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      button.style.opacity = ".76";
+    }
     try {
       const response = await fetch(releasesUrl, { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" });
       if (!response.ok) throw new Error("GitHub respondió " + response.status);
@@ -343,7 +347,11 @@ const updateChecker = `
       console.info("No se pudo consultar si hay una actualización disponible.", error);
     } finally {
       checking = false;
-      if (button && sequence === checkSequence) { button.disabled = false; button.textContent = "↻"; button.style.opacity = "1"; }
+      if (button && sequence === checkSequence) {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        button.style.opacity = "1";
+      }
     }
   }
 
@@ -352,20 +360,32 @@ const updateChecker = `
       const button = document.createElement("button");
       button.id = "jb-manager-check-updates";
       button.type = "button";
-      button.textContent = "↻";
+      button.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M20 7v5h-5"></path><path d="M20 12a8 8 0 1 1-2.34-5.66L20 9"></path></svg>';
       button.title = "Buscar actualizaciones";
       button.setAttribute("aria-label", "Buscar actualizaciones de JB Manager Collections");
+      button.setAttribute("aria-busy", "false");
       Object.assign(button.style, {
+        appearance: "none", boxSizing: "border-box",
         position: "fixed", zIndex: "2147483000",
-        right: "max(8px, env(safe-area-inset-right, 0px))",
-        bottom: "max(8px, calc(env(safe-area-inset-bottom, 0px) + 5px))",
-        width: "34px", height: "34px", minWidth: "34px",
-        transform: "translateZ(0)", willChange: "transform",
-        padding: "0", display: "grid", placeItems: "center", borderRadius: "50%",
-        border: "1px solid rgba(217,181,108,.65)", background: "rgba(16,24,39,.84)",
-        color: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,.16)", opacity: ".72",
-        font: "600 17px/1 system-ui, sans-serif", cursor: "pointer"
+        right: "max(14px, env(safe-area-inset-right, 0px))",
+        bottom: "max(64px, calc(env(safe-area-inset-bottom, 0px) + 20px))",
+        width: "44px", height: "44px", minWidth: "44px",
+        overflow: "hidden", transform: "translateZ(0)", willChange: "transform",
+        padding: "0", display: "grid", placeItems: "center", borderRadius: "14px",
+        border: "1px solid rgba(120,150,255,.8)",
+        background: "linear-gradient(135deg, rgba(35,89,205,.98), rgba(94,61,204,.98))",
+        color: "#f5f7ff", boxShadow: "0 5px 16px rgba(11,25,78,.3)",
+        opacity: ".96", fontSize: "0", lineHeight: "0", cursor: "pointer"
       });
+      const updateIcon = button.querySelector("svg");
+      if (updateIcon) {
+        updateIcon.style.display = "block";
+        updateIcon.style.fill = "none";
+        updateIcon.style.stroke = "currentColor";
+        updateIcon.style.strokeWidth = "1.8";
+        updateIcon.style.strokeLinecap = "round";
+        updateIcon.style.strokeLinejoin = "round";
+      }
       button.addEventListener("click", () => void checkForUpdates(true));
       document.documentElement.append(button);
     }
