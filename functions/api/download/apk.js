@@ -143,7 +143,7 @@ export async function onRequest({ request }) {
 
     const headers = new Headers({
       "Content-Type": "application/vnd.android.package-archive",
-      "Content-Disposition": \`attachment; filename="JB-Manager-Collections-v\${version}.apk"\`,
+      "Content-Disposition": `attachment; filename="JB-Manager-Collections-v${version}.apk"`,
       "Cache-Control": "no-store, no-cache, must-revalidate",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
