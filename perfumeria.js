@@ -1045,6 +1045,7 @@ async function initializePerfumes() {
     updateBrandFilterLabel();
     renderProducts();
     loadDeepLink();
+    restoreConciergeSelection();
   } catch (error) {
     statusNode.textContent = "No pudimos cargar las fragancias. Revisá las políticas de lectura y la tabla de detalles de Supabase.";
     productGrids.forEach(container => { if (container) container.innerHTML = ""; });
@@ -1152,6 +1153,7 @@ if (conciergeForm && conciergeResults) {
       audience: $("#concierge-audience")?.value || "all",
       budget: budgetValue !== null && Number.isFinite(budgetValue) && budgetValue >= 0 ? budgetValue : null
     };
+    persistConciergeSelection(true);
     const recommendations = recommendPerfumes(preferences);
     conciergeResults.hidden = false;
     if (!recommendations.length) {
@@ -1160,6 +1162,19 @@ if (conciergeForm && conciergeResults) {
     }
     conciergeResults.innerHTML = '<div class="perfume-concierge-results-heading"><p class="perfume-kicker">SELECCIÓN PERSONALIZADA</p><h3>Opciones para vos</h3><p>Una selección orientativa basada en los datos disponibles de cada fragancia.</p></div><div class="product-grid perfume-product-grid perfume-concierge-grid">' + recommendations.map(renderCard).join("") + '</div>';
     const grid = conciergeResults.querySelector(".perfume-concierge-grid");
+    grid?.addEventListener("click", event => {
+      const target = event.target instanceof Element ? event.target : null;
+      const link = target?.closest("a[data-details]");
+      if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const product = recommendations.find(item => String(item.id) === String(link.dataset.details));
+      if (!product) return;
+      event.preventDefault();
+      persistConciergeSelection(true);
+      const scrollY = window.scrollY;
+      window.history.replaceState({ ...(window.history.state || {}), catalogScrollY: scrollY }, document.title, window.location.href);
+      window.history.pushState({ productDetailRoute: true, catalogScrollY: scrollY, productId: String(product.id) }, document.title, productLink(product));
+      openPerfume(product);
+    });
     grid?.querySelectorAll("a[data-details]").forEach(viewLink => {
       const product = recommendations.find(item => String(item.id) === String(viewLink.dataset.details));
       if (!product) return;
