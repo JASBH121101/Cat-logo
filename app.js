@@ -1586,6 +1586,28 @@ function handleProductRoute() {
   openProduct(product, route);
 }
 
+
+/* Cierre por teclado de la ficha de producto. Si hay una galería nativa abierta,
+   se deja que su propio diálogo procese Escape primero. */
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || event.defaultPrevented) return;
+  if (!document.body.classList.contains("product-detail-active")) return;
+  if (document.querySelector("dialog[open]")) return;
+
+  event.preventDefault();
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("producto");
+  url.hash = "";
+  window.history.replaceState(window.history.state, document.title, url.href);
+  showCatalogView();
+  window.scrollTo({ top: 0, behavior: "auto" });
+});
+
 productHeaderBack?.addEventListener("click", () => {
   if (window.history.state?.productDetailRoute) {
     window.history.back();
