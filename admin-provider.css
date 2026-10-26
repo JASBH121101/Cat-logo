@@ -170,3 +170,83 @@ html[data-theme="dark"] .provider-review-state.current { color: #9ee6b8; backgro
   .provider-dialog-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .provider-dialog-actions .button { width: 100%; }
 }
+
+
+/* Corrección de contraste para revisión del proveedor e importación en ambos temas. */
+html[data-theme="dark"] .provider-page-heading h2,
+html[data-theme="dark"] .provider-page-heading p:not(.eyebrow),
+html[data-theme="dark"] .provider-field > span,
+html[data-theme="dark"] .provider-dialog-fields label > span,
+html[data-theme="dark"] .provider-product-main > p,
+html[data-theme="dark"] .provider-product-facts span,
+html[data-theme="dark"] .provider-import-explainer p,
+html[data-theme="dark"] .provider-import-options legend,
+html[data-theme="dark"] .provider-import-options strong,
+html[data-theme="dark"] .provider-import-preview-heading h3,
+html[data-theme="dark"] .provider-import-preview-heading p,
+html[data-theme="dark"] .provider-import-options small,
+html[data-theme="dark"] .provider-product-facts b,
+html[data-theme="dark"] .provider-product-title-line > strong {
+  color: #dbe6fb !important;
+}
+html[data-theme="dark"] .provider-list-card,
+html[data-theme="dark"] .provider-import-card,
+html[data-theme="dark"] .provider-product-row,
+html[data-theme="dark"] .provider-metric,
+html[data-theme="dark"] .provider-import-options,
+html[data-theme="dark"] .provider-import-explainer {
+  color: #e6edfc !important;
+  background: #0e1930 !important;
+  border-color: #304466 !important;
+}
+html[data-theme="dark"] .provider-import-explainer,
+html[data-theme="dark"] .provider-private-note {
+  background: #14233e !important;
+}
+html[data-theme="dark"] .provider-field input,
+html[data-theme="dark"] .provider-field select,
+html[data-theme="dark"] .provider-dialog-fields input,
+html[data-theme="dark"] .provider-dialog-fields select,
+html[data-theme="dark"] .provider-dialog-fields textarea,
+html[data-theme="dark"] .provider-import-controls select {
+  background-color: #101d35 !important;
+  color: #f0f5ff !important;
+  border-color: #526584 !important;
+  color-scheme: dark;
+}
+html[data-theme="dark"] .provider-import-options code,
+html[data-theme="dark"] .provider-import-explainer code {
+  color: #a8dfff !important;
+}
+html[data-theme="light"] .provider-page-heading h2,
+html[data-theme="light"] .provider-field > span,
+html[data-theme="light"] .provider-dialog-fields label > span,
+html[data-theme="light"] .provider-import-options legend,
+html[data-theme="light"] .provider-import-options strong,
+html[data-theme="light"] .provider-import-preview-heading h3,
+html[data-theme="light"] .provider-product-title-line > strong {
+  color: #25324a !important;
+}
+html[data-theme="light"] .provider-import-options,
+html[data-theme="light"] .provider-list-card,
+html[data-theme="light"] .provider-import-card,
+html[data-theme="light"] .provider-product-row,
+html[data-theme="light"] .provider-metric {
+  background: #ffffff !important;
+  color: #25324a !important;
+  border-color: #d7deeb !important;
+}
+html[data-theme="light"] .provider-field input,
+html[data-theme="light"] .provider-field select,
+html[data-theme="light"] .provider-dialog-fields input,
+html[data-theme="light"] .provider-dialog-fields select,
+html[data-theme="light"] .provider-dialog-fields textarea {
+  background-color: #ffffff !important;
+  color: #25324a !important;
+  border-color: #aab6ca !important;
+  color-scheme: light;
+}
+.provider-import-options label > input { flex: 0 0 18px; margin-top: 4px; }
+.provider-import-options label > span { line-height: 1.55; }
+.provider-import-options strong { line-height: 1.5; }
+.provider-import-options small { line-height: 1.6; }
