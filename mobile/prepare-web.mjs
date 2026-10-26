@@ -312,7 +312,8 @@ const internalLinkHandler = `
     if (destination.origin === window.location.origin) {
       const isDirectoryRoute =
         destination.pathname.endsWith("/") && destination.pathname !== "/";
-      const isCatalogRoute = /\/(tecnologia|perfumeria)(?:\/index\.html)?\/?$/i.test(destination.pathname);
+      const cleanRoutePath = destination.pathname.endsWith("/") ? destination.pathname.slice(0, -1) : destination.pathname;
+      const isCatalogRoute = cleanRoutePath.endsWith("/tecnologia") || cleanRoutePath.endsWith("/perfumeria") || cleanRoutePath.endsWith("/tecnologia/index.html") || cleanRoutePath.endsWith("/perfumeria/index.html");
       if (isDirectoryRoute) destination.pathname += "index.html";
 
       // Leaving the admin for either public catalog is intentional. The editor's
