@@ -227,6 +227,19 @@ function updateProductFormMode() {
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
 
+  // Exclusivity/featured is a technology-only control. Keep it out of JB Parfums.
+  const exclusiveToggle = $("#toggle-product-exclusive");
+  exclusiveToggle?.classList.toggle("hidden", isPerfume);
+  if (exclusiveToggle) {
+    exclusiveToggle.disabled = isPerfume;
+    if (isPerfume) {
+      $("#product-exclusive").checked = false;
+      $("#product-featured").checked = false;
+      exclusiveToggle.setAttribute("aria-pressed", "false");
+      exclusiveToggle.classList.remove("is-active");
+    }
+  }
+
   const galleryTitle = $("#product-images-title");
   if (galleryTitle) galleryTitle.textContent = isPerfume
     ? (isSet ? "Fotografías generales del set" : "Fotografías generales de la fragancia")
@@ -3303,7 +3316,7 @@ function fillEditor(product) {
     if (primaryNIO && !primaryNIO.value && product.price_nio != null) primaryNIO.value = String(product.price_nio);
   }
 
-  const productIsFeatured = Boolean(product.featured || product.is_exclusive);
+  const productIsFeatured = activeCatalogType !== "perfumery" && Boolean(product.featured || product.is_exclusive);
   $("#product-featured").checked = productIsFeatured;
   $("#product-exclusive").checked = productIsFeatured;
   $("#product-active").checked = Boolean(product.is_published);
@@ -3356,6 +3369,10 @@ function updateExclusiveBaseline(value) {
   updateEditorDirtyState();
 }
 exclusiveToggleButton?.addEventListener("click", async () => {
+  if (activeCatalogType === "perfumery") {
+    setExclusiveToggleUI(false);
+    return;
+  }
   if (exclusiveToggleInProgress) return;
   const field = $("#product-exclusive");
   const featuredField = $("#product-featured");
@@ -4458,8 +4475,8 @@ form?.addEventListener("submit", async event => {
         ""
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
-      featured: Boolean($("#product-featured").checked || $("#product-exclusive").checked),
-      is_exclusive: Boolean($("#product-featured").checked || $("#product-exclusive").checked),
+      featured: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked),
+      is_exclusive: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked),
       product_type: isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard",
       workflow_status: targetStatus,
       deleted_at: null,
