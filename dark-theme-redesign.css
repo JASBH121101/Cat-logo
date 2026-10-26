@@ -549,13 +549,15 @@ html[data-theme="dark"] body.perfume-page .perfume-hero {
 html[data-theme="dark"] body.perfume-page .perfume-kicker,
 html[data-theme="dark"] body.perfume-page .perfume-hero h1 em,
 html[data-theme="dark"] body.perfume-page .perfume-section-heading h2 em,
-html[data-theme="dark"] body.perfume-page .perfume-featured-heading h2 em {
+html[data-theme="dark"] body.perfume-page .perfume-featured-heading h2 em,
+html[data-theme="dark"] body.perfume-page .perfume-category-heading h2 em {
   color: #D3B16F;
 }
 
 html[data-theme="dark"] body.perfume-page .perfume-hero h1,
 html[data-theme="dark"] body.perfume-page .perfume-section-heading h2,
 html[data-theme="dark"] body.perfume-page .perfume-featured-heading h2,
+html[data-theme="dark"] body.perfume-page .perfume-category-heading h2,
 html[data-theme="dark"] body.perfume-page .perfume-results-heading h2 {
   color: #F1E6D4;
 }
@@ -591,8 +593,21 @@ html[data-theme="dark"] body.perfume-page .perfume-family-band {
   border-bottom-color: #49342D;
 }
 
-html[data-theme="dark"] body.perfume-page .perfume-family-band > div {
+html[data-theme="dark"] body.perfume-page .perfume-family-band > .perfume-family-link {
   border-color: #49342D;
+  color: #F1E6D4;
+}
+
+html[data-theme="dark"] body.perfume-page .perfume-family-band > .perfume-family-link:hover,
+html[data-theme="dark"] body.perfume-page .perfume-family-band > .perfume-family-link.active {
+  background: linear-gradient(135deg, rgba(211,177,111,.13), rgba(94,37,48,.10));
+  box-shadow: inset 0 -2px 0 #D3B16F;
+}
+
+html[data-theme="dark"] body.perfume-page .perfume-category-empty {
+  border-color: #49342D;
+  color: #B7A58D;
+  background: linear-gradient(145deg, #1A1310, #100B09);
 }
 
 html[data-theme="dark"] body.perfume-page .perfume-family-number {
