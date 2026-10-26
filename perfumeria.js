@@ -6,7 +6,8 @@ const whatsappNumber = String(CONFIG.whatsappNumber || "").replace(/\D/g, "");
 const categoryDefinitions = [
   { key: "nicho", section: $("#category-nicho"), grid: $("#product-grid-nicho"), count: $("#category-nicho-count"), empty: $("#empty-category-nicho") },
   { key: "arabes", section: $("#category-arabes"), grid: $("#product-grid-arabes"), count: $("#category-arabes-count"), empty: $("#empty-category-arabes") },
-  { key: "disenador", section: $("#category-disenador"), grid: $("#product-grid-disenador"), count: $("#category-disenador-count"), empty: $("#empty-category-disenador") }
+  { key: "disenador", section: $("#category-disenador"), grid: $("#product-grid-disenador"), count: $("#category-disenador-count"), empty: $("#empty-category-disenador") },
+  { key: "otras", section: $("#category-otras"), grid: $("#product-grid-otras"), count: $("#category-otras-count"), empty: null, optional: true }
 ];
 const productGrids = categoryDefinitions.map(category => category.grid).filter(Boolean);
 const statusNode = $("#catalog-status");
@@ -217,6 +218,18 @@ function hasActiveFilters() {
     (searchInput?.value || "").trim() ||
     selectedBrand ||
     (perfumeSortSelect?.value || "recent") !== "recent" ||
+    selectedFamilies.size > 0 ||
+    selectedAudiences.size > 0 ||
+    selectedProductTypes.size > 0 ||
+    priceBound(minPriceInput) !== null ||
+    priceBound(maxPriceInput) !== null
+  );
+}
+
+function hasContentFilters() {
+  return Boolean(
+    (searchInput?.value || "").trim() ||
+    selectedBrand ||
     selectedFamilies.size > 0 ||
     selectedAudiences.size > 0 ||
     selectedProductTypes.size > 0 ||
@@ -470,7 +483,7 @@ function visibleProducts() {
 function renderProducts() {
   syncFamilyNavigation();
   const matched = visibleProducts();
-  const filtering = hasActiveFilters();
+  const filtering = hasContentFilters();
   const catalogEmpty = perfumes.length === 0;
   const hasMatchedProducts = matched.length > 0;
 
@@ -481,10 +494,16 @@ function renderProducts() {
   categoryDefinitions.forEach(category => {
     const categoryProducts = matched.filter(product => canonicalFamily(product.perfume_details?.family) === category.key);
     const hasCategoryProducts = categoryProducts.length > 0;
-    category.section.classList.toggle("hidden", filtering && !hasCategoryProducts);
+
+    if (category.optional) {
+      category.section.classList.toggle("hidden", !hasCategoryProducts);
+    } else {
+      category.section.classList.toggle("hidden", filtering && !hasCategoryProducts);
+      category.empty.classList.toggle("hidden", hasCategoryProducts || filtering);
+    }
+
     category.grid.innerHTML = categoryProducts.map(renderCard).join("");
     category.count.textContent = categoryProducts.length + (categoryProducts.length === 1 ? " fragancia" : " fragancias");
-    category.empty.classList.toggle("hidden", hasCategoryProducts || filtering);
     category.grid.querySelectorAll("img[data-perfume-image]").forEach(image => {
       if (image.complete && image.naturalWidth > 0) applyAutomaticPerfumePhotoFit(image);
     });
@@ -862,9 +881,22 @@ const generalWhatsAppMessage = "Hola, quisiera consultar en JB Parfums por fraga
   link.rel = "noopener";
 });
 
+function showCategoryNotice(message) {
+  categoryDefinitions.forEach(category => {
+    if (category.optional || !category.section || !category.empty) return;
+    category.section.classList.remove("hidden");
+    category.grid.innerHTML = "";
+    category.count.textContent = "No disponible";
+    category.empty.classList.remove("hidden");
+    const paragraph = category.empty.querySelector("p");
+    if (paragraph) paragraph.textContent = message;
+  });
+}
+
 async function initializePerfumes() {
   if (!supabase) {
     statusNode.textContent = "No se pudo conectar con el catálogo. Verificá la configuración pública de Supabase.";
+    showCategoryNotice("No se pudo conectar con el catálogo. Recargá la página o intentá de nuevo más tarde.");
     return;
   }
 
@@ -901,6 +933,7 @@ async function initializePerfumes() {
   } catch (error) {
     statusNode.textContent = "No pudimos cargar las fragancias. Revisá las políticas de lectura y la tabla de detalles de Supabase.";
     productGrids.forEach(container => { if (container) container.innerHTML = ""; });
+    showCategoryNotice("No pudimos cargar esta categoría. Recargá la página e intentá de nuevo.");
     console.error("Error al consultar el catálogo de perfumería:", error);
   }
 }
