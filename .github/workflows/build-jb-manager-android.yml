@@ -119,13 +119,13 @@ jobs:
                       raise SystemExit("Could not locate generated MainActivity class declaration.")
                   source = source.replace("package " + package_name + ";", "package " + package_name + ";\n\nimport android.os.Bundle;", 1)
                   class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
-                  method = """
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  registerPlugin(ApkUpdaterPlugin.class);
-                  super.onCreate(savedInstanceState);
-              }
-          """
+                  method = (
+                      "\n    @Override\n"
+                      "    public void onCreate(Bundle savedInstanceState) {\n"
+                      "        registerPlugin(ApkUpdaterPlugin.class);\n"
+                      "        super.onCreate(savedInstanceState);\n"
+                      "    }\n"
+                  )
                   source = source[:class_open.end()] + method + source[class_open.end():]
               main_path.write_text(source)
           manifest = Path("mobile/android/app/src/main/AndroidManifest.xml")
