@@ -9638,3 +9638,39 @@ html[data-theme="light"] body.technology-catalog #product-detail-page:not(.hidde
     padding: 12px 10px max(20px, env(safe-area-inset-bottom, 0px));
   }
 }
+
+
+/* Desktop image-fit refinement: give product photos more of each card without cropping. */
+/* Desktop only: use a balanced split and reduce inner whitespace around images.
+   object-fit:contain keeps every product fully visible and avoids artificial cropping. */
+@media (min-width: 1061px) and (hover: hover) and (pointer: fine) {
+  body.technology-catalog #featured-grid.featured-grid > .product-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    padding: 5px !important;
+    box-sizing: border-box !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    image-rendering: auto !important;
+    transform: none !important;
+  }
+
+  body.technology-catalog #product-grid > .product-card > .product-image img {
+    padding: 9px !important;
+    box-sizing: border-box !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    image-rendering: auto !important;
+  }
+}
