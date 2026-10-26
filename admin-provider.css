@@ -57,6 +57,7 @@
 .provider-empty-state.is-error { border-color: #eab0b0; color: #a83232; }
 .provider-feedback { margin: 0; }
 .provider-feedback:empty { display: none; }
+#provider-review-message { margin: 0; padding: 0 1px; }
 .provider-feedback.is-error { color: #b42323; }
 .provider-feedback.is-success { color: #187347; }
 .provider-import-explainer { padding: 18px; border: 1px solid var(--border, #dbe3f1); border-radius: 14px; background: var(--surface-muted, #f8fafc); }
