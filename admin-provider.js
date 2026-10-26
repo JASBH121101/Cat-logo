@@ -101,7 +101,7 @@ function firstValue(row, aliases) {
     if (Object.prototype.hasOwnProperty.call(row, alias) && row[alias] !== "" && row[alias] !== null && row[alias] !== undefined) return row[alias];
   }
   // CSV exports commonly use labels like "Provider Price USD"; normalize headers as a fallback.
-  const headerKey = value => normalizedText(value).replace(/\\s+/g, "_");
+  const headerKey = value => normalizedText(value).replace(/\s+/g, "_");
   const headers = Object.keys(row);
   for (const alias of aliases) {
     const matchedHeader = headers.find(header => headerKey(header) === headerKey(alias));
