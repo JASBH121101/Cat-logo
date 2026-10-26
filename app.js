@@ -1329,6 +1329,32 @@ function moveTechnologyGallery(step) {
   thumbnails[(currentIndex + step + thumbnails.length) % thumbnails.length].click();
 }
 
+
+/* Gallery resilience: broken full-size images are shown as a useful fallback,
+   and broken thumbnails are hidden instead of displaying a broken-image icon. */
+dialogContent.addEventListener("error", event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+
+  if (image.matches("#dialog-image .dialog-main-image")) {
+    image.style.visibility = "hidden";
+    const gallery = image.closest(".dialog-gallery-main");
+    if (gallery && !gallery.querySelector(".dialog-image-load-error")) {
+      const fallback = document.createElement("div");
+      fallback.className = "dialog-image-load-error";
+      fallback.setAttribute("role", "status");
+      fallback.textContent = "No se pudo cargar esta fotografía. Probá otra imagen de la galería.";
+      gallery.appendChild(fallback);
+    }
+    return;
+  }
+
+  if (image.matches("#dialog-image .dialog-gallery-thumb img")) {
+    const thumbnail = image.closest(".dialog-gallery-thumb");
+    if (thumbnail) thumbnail.hidden = true;
+  }
+}, true);
+
 let technologyGalleryTouchStart = null;
 dialogContent.addEventListener("touchstart", event => {
   const target = event.target instanceof Element ? event.target : null;
