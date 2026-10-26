@@ -122,6 +122,7 @@ const updateChecker = `
     if (downloadUrl) {
       const download = document.createElement("a");
       download.href = downloadUrl;
+      download.target = "_blank";
       download.textContent = "Descargar e instalar";
       download.rel = "noopener noreferrer";
       Object.assign(download.style, {
