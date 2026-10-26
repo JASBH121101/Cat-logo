@@ -23,6 +23,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Assemble latest main source with the Android build system
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPPORT_DIR="$RUNNER_TEMP/jb-manager-build-support"
+          mkdir -p "$SUPPORT_DIR"
+          cp -a mobile "$SUPPORT_DIR/mobile"
+          cp .github/workflows/build-jb-manager-android.yml "$SUPPORT_DIR/build-jb-manager-android.yml"
+          cp .github/android-signing-key-persisted "$SUPPORT_DIR/android-signing-key-persisted"
+
+          git fetch origin main
+          git checkout -B android-source origin/main
+
+          cp -a "$SUPPORT_DIR/mobile" ./mobile
+          mkdir -p .github/workflows
+          cp "$SUPPORT_DIR/build-jb-manager-android.yml" .github/workflows/build-jb-manager-android.yml
+          cp "$SUPPORT_DIR/android-signing-key-persisted" .github/android-signing-key-persisted
+
+          grep -Fq 'publicCatalogUrl: "https://jb-collections.pages.dev"' config.js
+          grep -Fq 'href="https://jb-collections.pages.dev/"' index.html
+          grep -Fq 'href="https://jb-collections.pages.dev/tecnologia/"' tecnologia/index.html
+          grep -Fq 'href="https://jb-collections.pages.dev/perfumeria/"' perfumeria/index.html
+          echo "Latest main catalog/admin code assembled with the existing Android signing/build system."
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
