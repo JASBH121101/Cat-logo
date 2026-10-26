@@ -2498,6 +2498,52 @@ function renderAnalyticsPie(node, legendNode, totalNode, rows) {
   }).join("");
 }
 
+function renderDepartmentAnalytics(events) {
+  const target = document.getElementById("dashboard-department-breakdown");
+  if (!target) return;
+  if (!events.length) {
+    target.innerHTML = '<p class="dashboard-empty-state">Todavía no hay eventos. El desglose empezará a llenarse con nuevas visitas.</p>';
+    return;
+  }
+  const groups = new Map();
+  for (const event of events) {
+    const country = String(event.visitor_country || "").trim().toUpperCase();
+    const department = String(event.visitor_department || "").trim();
+    let label, key;
+    if (country === "NI" && department) {
+      label = department;
+      key = "department:" + department.toLocaleLowerCase("es");
+    } else if (country && country !== "NI") {
+      label = "Fuera de Nicaragua (" + country + ")";
+      key = "country:" + country;
+    } else {
+      label = "Sin ubicación registrada";
+      key = "unknown";
+    }
+    const row = groups.get(key) || { label, views: 0, contacts: 0 };
+    if (event.event_type === "view") row.views += 1;
+    if (event.event_type === "whatsapp_click") row.contacts += 1;
+    groups.set(key, row);
+  }
+  const rows = Array.from(groups.values())
+    .sort((a, b) => (b.views + b.contacts) - (a.views + a.contacts) || a.label.localeCompare(b.label, "es"))
+    .slice(0, 12);
+  const maxValue = Math.max(1, ...rows.map(row => Math.max(row.views, row.contacts)));
+  target.innerHTML = rows.map(row => {
+    const viewsWidth = Math.round(row.views / maxValue * 100);
+    const contactsWidth = Math.round(row.contacts / maxValue * 100);
+    return '<div class="department-stat-row">' +
+      '<div class="department-stat-name">' + escapeHtml(row.label) + '</div>' +
+      '<div class="department-stat-bars">' +
+        '<div class="department-stat-bar" title="Visitas"><span style="width:' + viewsWidth + '%"></span></div>' +
+        '<div class="department-stat-bar is-contact" title="Clics de WhatsApp"><span style="width:' + contactsWidth + '%"></span></div>' +
+      '</div>' +
+      '<div class="department-stat-metrics"><span>Visitas</span><strong>' + row.views.toLocaleString("es-NI") + '</strong><span>WhatsApp</span><strong>' + row.contacts.toLocaleString("es-NI") + '</strong></div>' +
+    '</div>';
+  }).join("") +
+  '<div class="department-stat-legend"><span><i></i> Visitas a fichas</span><span><i class="contact-dot"></i> Clics de WhatsApp</span></div>';
+}
+
 async function loadCatalogAnalytics() {
   if (typeof loadCommissionDashboard === "function") void loadCommissionDashboard();
   const note = document.getElementById("dashboard-analytics-note");
