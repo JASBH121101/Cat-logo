@@ -111,7 +111,7 @@ test("rejects an incomplete APK archive instead of sending a response that hangs
   try {
     const result = await onRequest({ request: request() });
     assert.equal(result.status, 502);
-    assert.match(await result.text(), /end record is missing/i);
+    assert.match(await result.text(), /APK incomplete: received=1024 bytes/i);
   } finally { globalThis.fetch = previous; }
 });
 
