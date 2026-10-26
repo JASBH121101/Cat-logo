@@ -641,11 +641,10 @@ function renderCard(product) {
   return `
     <article class="product-card${product.featured ? " featured-product-card" : ""}">
       <div class="product-image">
-        ${badge}
-        ${availabilityBadge}
         ${image}
       </div>
       <div class="product-card-content">
+        <div class="product-card-badges">${badge}${availabilityBadge}</div>
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
