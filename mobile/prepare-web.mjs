@@ -605,25 +605,24 @@ for (const relativePage of [
   const pagePath = join(webDir, relativePage);
   let html = await readFile(pagePath, "utf8");
   if (!html.includes("responsive-layout.css")) {
-    if (!/<\\/head>/i.test(html)) {
+    if (!html.toLowerCase().includes("</head>")) {
       throw new Error("Could not insert responsive stylesheet reference into " + relativePage + ".");
     }
     html = html.replace(
-      /<\\/head>/i,
+      "</head>",
       '<link rel="stylesheet" href="/responsive-layout.css">\\n</head>'
     );
-    await writeFile(pagePath, html, "utf8");
   }
   if (!html.includes("jb-manager-back-navigation.js")) {
-    if (!/<\\/head>/i.test(html)) {
+    if (!html.toLowerCase().includes("</head>")) {
       throw new Error("Could not insert native back handler into " + relativePage + ".");
     }
     html = html.replace(
-      /<\\/head>/i,
+      "</head>",
       '<script src="/jb-manager-back-navigation.js" defer data-jb-manager-native-back></script>\\n</head>'
     );
-    await writeFile(pagePath, html, "utf8");
   }
+  await writeFile(pagePath, html, "utf8");
 }
 
 // Validate the generated browser-side scripts before Android packages them.
