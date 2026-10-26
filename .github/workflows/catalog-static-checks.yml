@@ -16,6 +16,40 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check availability of Android signing secrets without revealing values
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_FILE_BASE64: ${{ secrets.KEYSTORE_FILE_BASE64 }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          set +x
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_DEBUG_KEYSTORE_BASE64 KEYSTORE_BASE64 KEYSTORE_B64 SIGNING_KEYSTORE_BASE64 SIGNING_KEYSTORE DEBUG_KEYSTORE_BASE64 ANDROID_KEYSTORE KEYSTORE KEYSTORE_FILE_BASE64 RELEASE_KEYSTORE_BASE64 ANDROID_SIGNING_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD KEYSTORE_PASSWORD ANDROID_KEY_ALIAS KEY_ALIAS ANDROID_KEY_PASSWORD KEY_PASSWORD STORE_PASSWORD KEYSTORE_PASS KEY_PASS SIGNING_KEY_ALIAS SIGNING_KEY_PASSWORD; do
+            value="${!name}"
+            if [ -n "$value" ]; then result=present; else result=absent; fi
+            echo "$name=$result"
+          done
+
       - name: Check JavaScript syntax
         shell: bash
         run: |
