@@ -308,6 +308,19 @@ async function getPerfumeVisitorLocation() {
   return perfumeVisitorLocationPromise;
 }
 
+async function recordPerfumeCatalogPageVisit() {
+  if (!supabase || isCatalogAdminActivityActive()) return;
+  const visitor = await getPerfumeVisitorLocation();
+  const { error } = await supabase.from("catalog_events").insert({
+    product_id: null,
+    event_type: "catalog_view",
+    catalog_type: "perfumery",
+    visitor_country: visitor.country,
+    visitor_department: visitor.department
+  });
+  if (error) console.info("No se pudo registrar la visita de catálogo.", error.message);
+}
+
 async function recordEvent(productId, eventType) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view","whatsapp_click"].includes(eventType)) return;
   try {
