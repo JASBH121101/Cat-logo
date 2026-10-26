@@ -69,6 +69,7 @@ body.perfume-page .jb-ai-launcher {
   box-shadow: 0 12px 30px rgba(42, 65, 155, .34);
 }
 .jb-ai-launcher:focus-visible,
+.jb-ai-reset:focus-visible,
 .jb-ai-close:focus-visible,
 .jb-ai-send:focus-visible,
 .jb-ai-quick-prompts button:focus-visible,
@@ -169,6 +170,28 @@ body.perfume-page .jb-ai-avatar {
   font: 400 25px/1 system-ui, sans-serif;
   cursor: pointer;
 }
+
+.jb-ai-reset {
+  appearance: none;
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 7%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-muted);
+  font: 500 20px/1 system-ui, sans-serif;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.jb-ai-reset:hover {
+  background: color-mix(in srgb, var(--jb-ai-accent) 15%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+}
+
 .jb-ai-trust {
   padding: 9px 14px;
   border-bottom: 1px solid var(--jb-ai-border);
@@ -310,15 +333,61 @@ body.perfume-page .jb-ai-send {
 .jb-ai-recommendations {
   display: grid;
   width: 100%;
-  gap: 8px;
+  gap: 9px;
+}
+.jb-ai-recommendations-heading {
+  color: var(--jb-ai-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  padding: 1px 2px;
 }
 .jb-ai-product {
   display: grid;
-  gap: 5px;
-  padding: 11px;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--jb-ai-accent) 18%, var(--jb-ai-border));
+  border-radius: 15px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--jb-ai-accent) 4%, var(--jb-ai-panel-bg)), var(--jb-ai-panel-bg) 55%);
+  box-shadow: 0 7px 18px rgba(8, 18, 39, .07);
+}
+.jb-ai-product-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.jb-ai-product-media {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   border: 1px solid var(--jb-ai-border);
-  border-radius: 13px;
-  background: var(--jb-ai-panel-bg);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--jb-ai-assistant-bubble) 75%, var(--jb-ai-panel-bg));
+}
+.jb-ai-product-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.jb-ai-product-main {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  align-content: start;
+  gap: 4px;
+}
+.jb-ai-product-eyebrow {
+  color: var(--jb-ai-accent-strong);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .13em;
 }
 .jb-ai-product-name {
   color: var(--jb-ai-text);
@@ -335,6 +404,22 @@ body.perfume-page .jb-ai-send {
   color: var(--jb-ai-accent-strong);
   font-size: 13px;
   font-weight: 850;
+}
+.jb-ai-product-summary {
+  margin: 0;
+  color: var(--jb-ai-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.jb-ai-product-reason {
+  margin: 0;
+  padding: 8px 9px;
+  border-left: 2px solid var(--jb-ai-accent);
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--jb-ai-accent) 7%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+  font-size: 11px;
+  line-height: 1.45;
 }
 .jb-ai-product-actions {
   display: flex;
@@ -406,6 +491,8 @@ body.perfume-page .jb-ai-product-whatsapp {
     min-height: min(360px, calc(100dvh - 150px));
     border-radius: 19px;
   }
+  .jb-ai-reset { flex-basis: 32px; width: 32px; height: 32px; }
+  .jb-ai-product-media { flex-basis: 62px; width: 62px; height: 62px; }
   .jb-ai-message { font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
