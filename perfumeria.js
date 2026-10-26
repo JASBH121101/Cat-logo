@@ -838,17 +838,23 @@ document.addEventListener("keydown", event => {
   if (document.querySelector("dialog[open]")) return;
 
   event.preventDefault();
-  if (window.history.state?.productDetailRoute) {
-    window.history.back();
-    return;
-  }
+
+  // Close in place instead of popping browser history. That avoids the abrupt
+  // native scroll restoration that can feel like a page/app restart.
+  const savedScrollY = Math.max(0, Number(window.history.state?.catalogScrollY) || 0);
+  const nextState = { ...(window.history.state || {}) };
+  delete nextState.productDetailRoute;
+  delete nextState.productId;
+  nextState.catalogScrollY = savedScrollY;
 
   const url = new URL(window.location.href);
   url.searchParams.delete("fragancia");
   url.hash = "";
-  window.history.replaceState(window.history.state, document.title, url.href);
+  window.history.replaceState(nextState, document.title, url.href);
   showPerfumeCatalog();
-  window.scrollTo({ top: 0, behavior: "auto" });
+
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  window.scrollTo({ top: savedScrollY, behavior: reducedMotion ? "auto" : "smooth" });
 });
 
 perfumeHeaderBack?.addEventListener("click", () => {
