@@ -102,25 +102,48 @@ export async function onRequest({ request }) {
       return response(502, "The official APK host did not return a complete download");
     }
 
-    // Buffer the modest-sized APK before replying. This lets the edge verify
-    // the exact body length and prevents mobile browsers from waiting forever
-    // on a streamed response whose upstream connection did not close cleanly.
-    const bytes = await upstream.arrayBuffer();
+    // Buffer the modest-sized APK before replying so the edge can verify the
+    // actual body and send a precise Content-Length. This avoids mobile browsers
+    // waiting on a streamed upstream response that never closes cleanly.
+    const bytes = new Uint8Array(await upstream.arrayBuffer());
     const actualLength = bytes.byteLength;
     if (actualLength < (upstream.status === 206 ? 1 : 1024) || actualLength > MAX_APK_BYTES) {
       return response(502, "APK response size is outside the allowed range");
     }
-    if (upstream.status === 200 && actualLength !== found.asset.size) {
-      console.error("APK length mismatch:", actualLength, "expected", found.asset.size);
-      return response(502, "APK response was incomplete; retry the download");
-    }
-    if (upstream.status === 206 && !upstream.headers.get("Content-Range")) {
-      return response(502, "Partial APK response is missing Content-Range");
+
+    if (upstream.status === 200) {
+      // A complete APK is a ZIP archive: validate its header and end record
+      // instead of trusting release metadata that can differ from streamed bytes.
+      if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+        return response(502, "The release host returned data that is not an APK archive");
+      }
+      const searchStart = Math.max(0, actualLength - 65557);
+      let hasEndRecord = false;
+      for (let i = actualLength - 22; i >= searchStart; i--) {
+        if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b
+          && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) {
+          hasEndRecord = true;
+          break;
+        }
+      }
+      if (!hasEndRecord) {
+        return response(502, "The APK transfer was incomplete; the archive end record is missing");
+      }
+      if (actualLength !== found.asset.size) {
+        console.warn("APK release metadata size differs from verified archive bytes:", found.asset.size, actualLength);
+      }
+    } else {
+      const contentRange = upstream.headers.get("Content-Range") || "";
+      const match = /^bytes\s+(\d+)-(\d+)\/(\d+|\*)$/i.exec(contentRange);
+      if (!match || Number(match[2]) < Number(match[1])
+        || Number(match[2]) - Number(match[1]) + 1 !== actualLength) {
+        return response(502, "Partial APK response has an invalid Content-Range");
+      }
     }
 
     const headers = new Headers({
       "Content-Type": "application/vnd.android.package-archive",
-      "Content-Disposition": `attachment; filename="JB-Manager-Collections-v${version}.apk"`,
+      "Content-Disposition": \`attachment; filename="JB-Manager-Collections-v\${version}.apk"\`,
       "Cache-Control": "no-store, no-cache, must-revalidate",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
