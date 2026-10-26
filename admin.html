@@ -142,10 +142,16 @@
           </button>
         </nav>
 
-        <a href="./" class="admin-sidebar-catalog-link">
-          <span aria-hidden="true">↗</span>
-          <span>Ver catálogo</span>
-        </a>
+        <div class="admin-sidebar-catalog-links" aria-label="Accesos a los catálogos públicos">
+          <a href="./tecnologia/" class="admin-sidebar-catalog-link" data-admin-catalog-link="technology" aria-label="Ver catálogo tecnológico">
+            <span aria-hidden="true">⌘</span>
+            <span>Ver catálogo tecnológico</span>
+          </a>
+          <a href="./perfumeria/" class="admin-sidebar-catalog-link" data-admin-catalog-link="perfumery" aria-label="Ver catálogo de perfumería">
+            <span aria-hidden="true">✦</span>
+            <span>Ver catálogo de perfumería</span>
+          </a>
+        </div>
 
         <button id="logout-button" class="admin-sidebar-logout" type="button">
           <span aria-hidden="true">↪</span>
