@@ -198,6 +198,9 @@ jobs:
           grep -Fq 'dialog-image-load-error' mobile/www/technology-visual-refresh.css
           grep -Fq 'Gallery resilience: broken full-size images' mobile/www/app.js
           grep -Fq 'mainImage.alt = photoLabel' mobile/www/app.js
+          grep -Fq 'function renderProductGallery(product, images, caption = "")' mobile/www/app.js
+          grep -Fq 'renderProductGallery(product, initialImages)' mobile/www/app.js
+          grep -Fq 'renderProductGallery(product, chosenImages, configuration)' mobile/www/app.js
 
           for file in technology-visual-refresh.css app.js; do
             if ! cmp -s "$file" "mobile/www/$file"; then
