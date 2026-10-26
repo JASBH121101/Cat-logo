@@ -1084,6 +1084,45 @@ function renderVariantButtonGroup(variants, selected, field, title) {
   `;
 }
 
+function renderProductGallery(product, images, caption = "") {
+  const photoUrls = [...new Set((Array.isArray(images) ? images : [])
+    .filter(url => typeof url === "string")
+    .map(url => url.trim())
+    .filter(Boolean))];
+  if (!photoUrls.length) {
+    return '<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>';
+  }
+
+  const productName = String(product?.name || "Producto").trim();
+  const imageAlt = [productName, caption].filter(Boolean).join(" · ");
+  const multiple = photoUrls.length > 1;
+
+  return `
+    <div class="dialog-gallery-main" data-inline-gallery>
+      ${multiple ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
+      <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
+        <img id="dialog-main-image" class="dialog-main-image"
+             src="${escapeHtml(photoUrls[0])}"
+             alt="${escapeHtml(imageAlt)}"
+             loading="eager" decoding="async">
+      </button>
+      ${multiple ? '<button type="button" class="dialog-gallery-nav dialog-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>' : ""}
+    </div>
+    ${multiple
+      ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
+          ${photoUrls.map((url, index) => `
+            <button type="button"
+                    class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
+                    data-gallery-image="${escapeHtml(url)}"
+                    aria-label="Ver fotografía ${index + 1}">
+              <img src="${escapeHtml(url)}" alt="" loading="lazy">
+            </button>
+          `).join("")}
+        </div>`
+      : ""}
+  `;
+}
+
 function renderVariantControls(product, variants, selected) {
   const area = $("#variant-options-area");
   if (!area || !selected) return;
@@ -1141,32 +1180,7 @@ function renderVariantControls(product, variants, selected) {
       : selected.image_url
         ? [selected.image_url]
         : [];
-    dialogImage.innerHTML = chosenImages.length
-      ? `
-        <div class="dialog-gallery-main" data-inline-gallery>
-          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
-          <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
-            <img id="dialog-main-image" class="dialog-main-image"
-               src="${escapeHtml(chosenImages[0])}"
-               alt="${escapeHtml(`${product.name} ${configuration}`)}"
-               loading="eager" decoding="async">
-          </button>
-          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>' : ""}
-        </div>
-        ${chosenImages.length > 1
-          ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
-              ${chosenImages.map((url, index) => `
-                <button type="button"
-                        class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
-                        data-gallery-image="${escapeHtml(url)}"
-                        aria-label="Ver fotografía ${index + 1}">
-                  <img src="${escapeHtml(url)}" alt="" loading="lazy">
-                </button>
-              `).join("")}
-            </div>`
-          : ""}
-      `
-      : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
+    dialogImage.innerHTML = renderProductGallery(product, chosenImages, configuration);
   }
 }
 
@@ -1517,7 +1531,18 @@ function openProduct(product, requestedVariant = null) {
   const requestedColor = !variants.length && requestedColorName
     ? getProductColors(product).find(color => String(color.name || "").trim().toLocaleLowerCase("es") === requestedColorName.toLocaleLowerCase("es"))
     : null;
-  const initialImage = requestedColor?.image_url || getProductImages(product)[0] || "";
+  const productImages = getProductImages(product);
+  const fallbackColorImages = !variants.length
+    ? getProductColors(product).map(color => color.image_url).filter(Boolean)
+    : [];
+  // Legacy products also get the full image gallery. If a URL explicitly opens a color,
+  // prioritize that color-specific photo rather than a generic image of another finish.
+  const initialImages = requestedColor?.image_url
+    ? [requestedColor.image_url]
+    : productImages.length
+      ? productImages
+      : fallbackColorImages;
+  const initialImage = initialImages[0] || "";
 
   const warranty =
     product.warranty_months !== null &&
@@ -1533,7 +1558,7 @@ function openProduct(product, requestedVariant = null) {
       <div class="dialog-image" id="dialog-image">
         ${
           initialImage
-            ? `<div class="dialog-gallery-main"><button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto"><img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'"></button></div>`
+            ? renderProductGallery(product, initialImages)
             : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`
         }
       </div>
