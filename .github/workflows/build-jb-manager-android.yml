@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="1.0.70"
+          version="1.0.79"
           direct_url="https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v${version}/JB-Manager-Collections.apk"
           proxy_url="https://jb-collections.pages.dev/api/download/apk?version=${version}"
           for source in direct proxy; do
@@ -93,6 +93,37 @@ jobs:
             fi
           done
           echo "Both direct and Cloudflare APK download paths returned complete ZIP/APK bodies."
+
+      - name: Smoke-test live AI sales advisor
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/jb-ai-smoke.json"
+          status="$(curl --silent --show-error --location --max-time 90 \
+            --output "$body" --write-out "%{http_code}" \
+            -H "Origin: https://jb-collections.pages.dev" \
+            -H "Content-Type: application/json" \
+            --data '{"catalogType":"technology","message":"Busco un celular para juegos con presupuesto de US$250.","history":[]}' \
+            "https://jb-collections.pages.dev/api/assistant")"
+          if [ "$status" != "200" ]; then
+            echo "Live AI assistant returned HTTP $status:" >&2
+            head -c 1200 "$body" >&2 || true
+            echo >&2
+            exit 1
+          fi
+          python3 - "$body" <<'PY'
+          import json, sys
+          from pathlib import Path
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if not isinstance(data.get("reply"), str) or not data["reply"].strip():
+              raise SystemExit("AI assistant response is missing a human-readable reply.")
+          if not isinstance(data.get("recommendations"), list):
+              raise SystemExit("AI assistant response is missing the recommendations array.")
+          for item in data["recommendations"]:
+              if not isinstance(item, dict) or not item.get("id") or not item.get("name"):
+                  raise SystemExit("AI assistant returned an invalid recommendation.")
+          print(f"Live AI assistant responded successfully; validated {len(data['recommendations'])} catalogue recommendations.")
+          PY
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -412,6 +443,20 @@ jobs:
           }
           unzip -p "$APK" assets/public/admin.js | grep -q 'setRememberedSession' || {
             echo "APK is missing the session-preference handler." >&2
+            exit 1
+          }
+          for catalog in tecnologia perfumeria; do
+            unzip -p "$APK" "assets/public/$catalog/index.html" | grep -q 'ai-assistant.js' || {
+              echo "APK $catalog catalog is missing the AI assistant script." >&2
+              exit 1
+            }
+            unzip -p "$APK" "assets/public/$catalog/index.html" | grep -q 'ai-assistant.css' || {
+              echo "APK $catalog catalog is missing the AI assistant stylesheet." >&2
+              exit 1
+            }
+          done
+          unzip -p "$APK" assets/public/ai-assistant.js | grep -q '/api/assistant' || {
+            echo "APK is missing the AI assistant endpoint client." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/theme-ui.css | grep -q 'admin-sidebar-remember' || {
