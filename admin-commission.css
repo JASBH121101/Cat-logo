@@ -29,3 +29,44 @@
 .commission-status-pill[data-status="received"]{background:rgba(36,150,95,.12);color:var(--success,#198754)}.commission-status-pill[data-status="confirmed_pending_payment"]{background:rgba(190,145,55,.15);color:var(--warning,#9a741c)}
 .commission-status-pill[data-status="cancelled"]{opacity:.7;text-decoration:line-through}.commission-empty-state{padding:14px;border:1px dashed var(--border-subtle,rgba(128,128,128,.3));border-radius:9px;color:var(--text-secondary,var(--muted,#666));font-size:12px;line-height:1.55}
 @media(max-width:640px){.department-stat-row{grid-template-columns:minmax(0,1fr) auto;gap:7px 10px}.department-stat-bars{grid-column:1/-1;grid-row:2}.department-stat-metrics{grid-column:2;grid-row:1}.commission-form{grid-template-columns:minmax(0,1fr)}.commission-form-wide{grid-column:auto}.commission-summary-grid{gap:7px}.commission-summary-grid>div{padding:10px}.commission-record-row{grid-template-columns:minmax(0,1fr)}.commission-record-amount{text-align:left}.commission-record-actions{grid-column:auto;justify-content:start}}
+
+
+/* Analítica: distinguir claramente las métricas sin depender solo del color del tema. */
+.department-stat-metrics span:nth-child(1){color:var(--accent,#38bdf8)}
+.department-stat-metrics span:nth-child(3){color:var(--accent-secondary,#c49a55)}
+.department-stat-metrics span:nth-child(5){color:#c49a55}
+.department-stat-bar.is-catalog>span{background:#38bdf8}
+.department-stat-bar.is-product>span{background:#8b7cf6}
+.department-stat-bar.is-contact>span{background:#d4a85d}
+.department-stat-legend .catalog-dot{background:#38bdf8}
+.department-stat-legend .product-dot{background:#8b7cf6}
+.department-stat-legend .contact-dot{background:#d4a85d}
+
+/* Formulario de comisiones: campos legibles y coherentes en tema claro/oscuro. */
+.commission-form input:not([type="hidden"]),
+.commission-form select,
+.commission-form textarea{
+  width:100%;min-width:0;box-sizing:border-box;
+  color:var(--text-primary,var(--text,#20283b));
+  background:var(--input-bg,var(--surface,#fff));
+  border:1px solid var(--border,var(--border-subtle,#cbd5e1));
+  border-radius:11px;
+}
+.commission-form select{color-scheme:light}
+html[data-theme="dark"] .commission-form input:not([type="hidden"]),
+html[data-theme="dark"] .commission-form select,
+html[data-theme="dark"] .commission-form textarea,
+.admin-body[data-theme="dark"] .commission-form input:not([type="hidden"]),
+.admin-body[data-theme="dark"] .commission-form select,
+.admin-body[data-theme="dark"] .commission-form textarea{
+  color:#e7eefc;background:#101a30;border-color:#334566;color-scheme:dark;
+}
+.commission-form input::placeholder,
+.commission-form textarea::placeholder{color:var(--text-secondary,var(--muted,#7b8497));opacity:.78}
+html[data-theme="dark"] .commission-form input::placeholder,
+html[data-theme="dark"] .commission-form textarea::placeholder{color:#a5b4d0}
+.commission-summary-grid>div:nth-child(1){border-top:3px solid #38bdf8}
+.commission-summary-grid>div:nth-child(2){border-top:3px solid #d4a85d}
+.commission-summary-grid>div:nth-child(3){border-top:3px solid #34b879}
+.commission-summary-grid>div:nth-child(4){border-top:3px solid #8b7cf6}
+@media(max-width:520px){.commission-form{gap:14px}.commission-form label{min-width:0}.commission-form input:not([type="hidden"]),.commission-form select{min-height:48px}}
