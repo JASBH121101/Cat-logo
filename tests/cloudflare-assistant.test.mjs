@@ -363,3 +363,81 @@ test("rate-limits repeated requests from the same client address", async () => {
     globalThis.fetch = previousFetch;
   }
 });
+
+
+test("compares exactly the two selected published technology devices in the requested order", async () => {
+  const previousFetch = globalThis.fetch;
+  const products = [
+    productRow({
+      id:"tech-1",
+      name:"Phone Atlas",
+      specifications:{RAM:"8 GB",Storage:"256 GB",Battery:"5000 mAh"},
+      price_usd:249
+    }),
+    productRow({
+      id:"tech-2",
+      name:"Phone Nova",
+      specifications:{RAM:"12 GB",Storage:"512 GB",Battery:"4800 mAh"},
+      price_usd:279
+    }),
+    productRow({
+      id:"tech-3",
+      name:"Phone Unselected",
+      specifications:{RAM:"4 GB"},
+      price_usd:99
+    })
+  ];
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    assert.equal(parsed.pathname,"/rest/v1/products");
+    assert.equal(parsed.searchParams.get("catalog_type"),"eq.technology");
+    return new Response(JSON.stringify(products),{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  let catalogContext;
+  try {
+    const response = await onRequest({
+      request:makeRequest({
+        catalogType:"technology",
+        message:"Compará estos equipos por rendimiento y precio.",
+        comparisonIds:["tech-2","tech-1"]
+      },{ip:"192.0.2.171"}),
+      env:{
+        AI:{
+          run:async (_model, options) => {
+            const prompt = options.messages[options.messages.length - 1].content;
+            catalogContext = JSON.parse(prompt.slice(prompt.indexOf("{")));
+            return {response:{
+              reply:"Phone Nova ofrece más RAM y almacenamiento; Phone Atlas cuesta menos.",
+              recommendations:[{id:"tech-1",reason:"Opción de menor precio."}]
+            }};
+          }
+        }
+      }
+    });
+    assert.equal(response.status,200);
+    assert.equal(catalogContext.request_mode,"comparison_of_exactly_two_selected_technology_products");
+    assert.deepEqual(
+      catalogContext.published_products_ranked_for_this_request.map(product => product.id),
+      ["tech-2","tech-1"]
+    );
+    assert.equal(catalogContext.published_products_ranked_for_this_request.length,2);
+    const data = await response.json();
+    assert.deepEqual(data.recommendations.map(product => product.id),["tech-2","tech-1"]);
+    assert.equal(data.recommendations.length,2);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("rejects comparison requests unless exactly two distinct technology IDs are supplied", async () => {
+  const response = await onRequest({
+    request:makeRequest({
+      catalogType:"technology",
+      message:"Compará estos equipos",
+      comparisonIds:["tech-1","tech-1"]
+    },{ip:"192.0.2.172"}),
+    env:{AI:{run:async()=>({response:"{}"})}}
+  });
+  assert.equal(response.status,400);
+  assert.equal((await response.json()).error,"invalid_comparison");
+});
