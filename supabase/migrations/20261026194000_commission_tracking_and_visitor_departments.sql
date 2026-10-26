@@ -59,6 +59,10 @@ CREATE INDEX IF NOT EXISTS commission_records_created_at_idx ON public.commissio
 CREATE INDEX IF NOT EXISTS commission_records_catalog_status_date_idx
   ON public.commission_records(catalog_type,status,operation_date DESC);
 ALTER TABLE public.commission_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS commission_records_admin_select ON public.commission_records;
+DROP POLICY IF EXISTS commission_records_admin_insert ON public.commission_records;
+DROP POLICY IF EXISTS commission_records_admin_update ON public.commission_records;
+DROP POLICY IF EXISTS commission_records_admin_delete ON public.commission_records;
 CREATE POLICY commission_records_admin_select
   ON public.commission_records FOR SELECT TO authenticated USING (public.is_catalog_admin_user());
 CREATE POLICY commission_records_admin_insert
