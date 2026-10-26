@@ -2599,7 +2599,7 @@ async function loadCatalogAnalytics() {
   if (note) {
     const scopeLabel = isAllCatalogs ? "ambos catálogos" : isPerfumeCatalog ? "JB Parfums" : "JB TECH";
     note.textContent = events.length
-      ? "Eventos registrados para " + scopeLabel + ". Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
+      ? "Eventos registrados para " + scopeLabel + ". Las visitas al catálogo son cargas de página y las visitas a fichas son aperturas de productos; no representan personas únicas. Los clics de WhatsApp indican intención de consulta, no ventas confirmadas."
       : catalogProducts.length
         ? "Todavía no hay eventos para " + scopeLabel + ". Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp."
         : "Agregá productos a " + scopeLabel + " para comenzar a medir visitas y consultas.";
