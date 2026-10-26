@@ -546,6 +546,12 @@ function notesSection(title, values) {
     '</section>';
 }
 
+function setCatalogDetailOverlayOffset() {
+  const header = document.querySelector(".site-header");
+  const headerHeight = Math.max(0, Math.ceil(header?.getBoundingClientRect().height || 76));
+  document.documentElement.style.setProperty("--catalog-detail-overlay-top", headerHeight + "px");
+}
+
 function openPerfume(product) {
   const detail = product.perfume_details || {};
   const images = getImages(product);
@@ -603,6 +609,7 @@ function openPerfume(product) {
         notesSection("Notas de fondo", detail.base_notes) +
         '</div>'
       : '');
+  setCatalogDetailOverlayOffset();
   perfumeDetailPage?.classList.remove("hidden");
   if (perfumeHeaderBack) perfumeHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-perfume-detail-view");
@@ -610,7 +617,6 @@ function openPerfume(product) {
   document.title = `${product.name || "Fragancia"} | JB Parfums`;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) canonical.href = productLink(product);
-  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function readPerfumeRoute() {
@@ -629,6 +635,7 @@ function showPerfumeCatalog() {
   if (perfumeHeaderBack) perfumeHeaderBack.hidden = true;
   document.querySelector("main")?.classList.remove("is-perfume-detail-view");
   document.body.classList.remove("perfume-detail-active");
+  document.documentElement.style.removeProperty("--catalog-detail-overlay-top");
   document.title = catalogDocumentTitle;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical && catalogCanonical) canonical.href = catalogCanonical;
@@ -641,7 +648,9 @@ function loadDeepLink() {
     const wasDetail = document.body.classList.contains("perfume-detail-active");
     const scrollY = Number(window.history.state?.catalogScrollY) || 0;
     showPerfumeCatalog();
-    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    if (wasDetail && Math.abs(window.scrollY - scrollY) > 2) {
+      window.scrollTo({ top: scrollY, behavior: "instant" });
+    }
     return;
   }
 
@@ -831,30 +840,22 @@ dialogContent.addEventListener("click", event => {
 });
 
 
-/* Escape cierra la ficha de fragancia y respeta primero cualquier diálogo modal abierto. */
+/* Escape cierra la ficha sin mover el catálogo que queda detrás. */
 document.addEventListener("keydown", event => {
   if (event.key !== "Escape" || event.defaultPrevented) return;
   if (!document.body.classList.contains("perfume-detail-active")) return;
   if (document.querySelector("dialog[open]")) return;
 
   event.preventDefault();
-
-  // Close in place instead of popping browser history. That avoids the abrupt
-  // native scroll restoration that can feel like a page/app restart.
-  const savedScrollY = Math.max(0, Number(window.history.state?.catalogScrollY) || 0);
   const nextState = { ...(window.history.state || {}) };
   delete nextState.productDetailRoute;
   delete nextState.productId;
-  nextState.catalogScrollY = savedScrollY;
 
   const url = new URL(window.location.href);
   url.searchParams.delete("fragancia");
   url.hash = "";
   window.history.replaceState(nextState, document.title, url.href);
   showPerfumeCatalog();
-
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-  window.scrollTo({ top: savedScrollY, behavior: reducedMotion ? "auto" : "smooth" });
 });
 
 perfumeHeaderBack?.addEventListener("click", () => {
