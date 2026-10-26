@@ -9947,3 +9947,221 @@ body.admin-body .admin-sidebar-remember:focus-visible {
   body.admin-body .login-remember-option { padding: 10px; }
   body.admin-body .login-remember-copy small { font-size: 10.5px; }
 }
+
+
+/* =========================================================
+   JB MANAGER · ADMIN FINISH / CONTRASTE Y RESPONSIVE
+   Aislado al panel; no modifica los catálogos públicos.
+   ========================================================= */
+html[data-theme="light"] body.admin-body {
+  --admin-heading:#172544;
+  --admin-text:#263653;
+  --admin-muted:#64748b;
+  --admin-line:#d8e1ef;
+  --admin-sidebar-bg:#fbfcff;
+  --admin-control:#ffffff;
+  --admin-nav-text:#435573;
+  --admin-nav-icon:#455fe0;
+  --admin-icon-bg:#edf1ff;
+  --admin-count-border:#d3dcf7;
+  --admin-count-bg:#eef2ff;
+  --admin-nav-hover:#263c9d;
+  --admin-nav-border:#cbd6f4;
+  --admin-nav-hover-bg:#f0f4ff;
+  background:
+    radial-gradient(ellipse at 8% 0%,rgba(77,106,222,.085),transparent 31%),
+    radial-gradient(ellipse at 95% 8%,rgba(48,157,202,.055),transparent 28%),
+    linear-gradient(145deg,#f3f6fb 0%,#f8faff 54%,#eef3f9 100%);
+}
+html[data-theme="light"] body.admin-body .site-header.admin-header {
+  background:rgba(255,255,255,.96);
+  border-color:#dce4f0;
+  box-shadow:0 4px 18px rgba(33,55,94,.055);
+}
+html[data-theme="light"] body.admin-body .admin-sidebar {
+  background:linear-gradient(180deg,#ffffff 0%,#f8faff 100%);
+  border-right-color:#d9e2ef;
+  box-shadow:8px 0 26px rgba(34,53,89,.055);
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-brand {
+  border-bottom-color:#e0e7f1;
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-brand-copy strong {
+  color:#182746;
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-brand-copy small,
+html[data-theme="light"] body.admin-body .admin-sidebar-section-label,
+html[data-theme="light"] body.admin-body .admin-sidebar-footer small {
+  color:#667895;
+}
+html[data-theme="light"] body.admin-body .admin-nav-button {
+  color:#40516f !important;
+}
+html[data-theme="light"] body.admin-body .admin-nav-button:hover {
+  color:#263c9d !important;
+  border-color:#cbd6f4 !important;
+  background:#f0f4ff !important;
+  box-shadow:0 4px 12px rgba(39,66,139,.07) !important;
+}
+html[data-theme="light"] body.admin-body .admin-nav-button.active {
+  color:#fff !important;
+  background:linear-gradient(112deg,#315ee8 0%,#5450dc 100%) !important;
+  box-shadow:0 6px 14px rgba(58,77,192,.20) !important;
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-footer {
+  color:#243450;
+  border-top-color:#dfe6f1;
+}
+html[data-theme="light"] body.admin-body .admin-menu-toggle {
+  border-color:#cbd7ee;
+  color:#3150bb;
+  background:linear-gradient(135deg,#fff,#edf2ff);
+  box-shadow:0 3px 10px rgba(37,65,130,.08);
+}
+/* Evita que el texto dorado herede el blanco pensado para el tema oscuro. */
+html[data-theme="light"] body.admin-body .admin-sidebar-remember {
+  color:#654b1e !important;
+  border-color:#ddc797;
+  background:linear-gradient(120deg,#fffaf0,#f8efd9);
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-remember > span:first-child {
+  color:#76551b;
+  background:#f0e2bd;
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-remember[aria-pressed="true"] {
+  color:#145b4e !important;
+  border-color:#9dd8c8;
+  background:linear-gradient(120deg,#edfbf6,#daf5ec);
+}
+html[data-theme="light"] body.admin-body .admin-sidebar-remember[aria-pressed="true"] > span:first-child {
+  color:#147a68;
+  background:#c8eee2;
+}
+html[data-theme="dark"] body.admin-body .admin-sidebar-remember {
+  color:#f0dfba !important;
+  border-color:rgba(217,181,108,.38);
+  background:linear-gradient(120deg,rgba(114,78,25,.22),rgba(49,36,20,.34));
+}
+html[data-theme="dark"] body.admin-body .admin-sidebar-remember[aria-pressed="true"] {
+  color:#b5f5e5 !important;
+  border-color:rgba(45,212,191,.48);
+  background:linear-gradient(120deg,rgba(17,105,91,.24),rgba(14,54,58,.38));
+}
+body.admin-body .admin-sidebar-remember > span:last-child {
+  flex:1 1 auto;
+  min-width:0;
+  overflow-wrap:anywhere;
+  line-height:1.4;
+}
+html[data-theme="light"] body.admin-body .dashboard-metric,
+html[data-theme="light"] body.admin-body .dashboard-widget {
+  border-color:#d9e2ef;
+  box-shadow:0 7px 22px rgba(33,55,94,.055);
+}
+html[data-theme="light"] body.admin-body .dashboard-metric {
+  background:linear-gradient(145deg,#fff,#f9fbff);
+}
+html[data-theme="light"] body.admin-body .dashboard-widget {
+  background:linear-gradient(145deg,#fff,#f8faff);
+}
+html[data-theme="light"] body.admin-body .dashboard-metric:hover,
+html[data-theme="light"] body.admin-body .dashboard-widget:hover {
+  border-color:#bacbf0;
+  box-shadow:0 11px 26px rgba(40,66,122,.09);
+}
+html[data-theme="dark"] body.admin-body .admin-sidebar-remember > span:last-child {
+  color:#f0dfba;
+}
+html[data-theme="dark"] body.admin-body .admin-sidebar-remember[aria-pressed="true"] > span:last-child {
+  color:#b5f5e5;
+}
+/* Móvil: el sidebar funciona como cajón superpuesto; nunca desplaza ni recorta el dashboard. */
+@media (max-width:760px) {
+  body.admin-body.admin-dashboard-active .admin-main {
+    display:block !important;
+    width:100% !important;
+    max-width:100vw !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:20px 14px 52px !important;
+    box-sizing:border-box !important;
+    overflow-x:clip;
+  }
+  body.admin-body.admin-dashboard-active #dashboard,
+  body.admin-body.admin-dashboard-active .admin-nav-panel {
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+    box-sizing:border-box !important;
+  }
+  body.admin-body.admin-dashboard-active .admin-sidebar {
+    position:fixed !important;
+    top:var(--admin-header-height) !important;
+    bottom:0 !important;
+    left:0 !important;
+    width:min(276px,calc(100vw - 48px)) !important;
+    max-width:calc(100vw - 48px) !important;
+    transform:translateX(-110%) !important;
+    z-index:1101 !important;
+    padding:18px 13px 16px !important;
+    background:var(--admin-sidebar-bg,#fff) !important;
+    box-shadow:12px 0 34px rgba(15,28,55,.20) !important;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-open .admin-sidebar {
+    transform:translateX(0) !important;
+  }
+  body.admin-body.admin-dashboard-active .admin-sidebar-backdrop:not([hidden]) {
+    display:block !important;
+    position:fixed !important;
+    inset:var(--admin-header-height) 0 0 !important;
+    width:100% !important;
+    height:auto !important;
+    margin:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    z-index:1100 !important;
+    background:rgba(12,22,43,.48) !important;
+    backdrop-filter:blur(2px);
+  }
+  body.admin-body.admin-dashboard-active .site-header.admin-header {
+    position:sticky;
+    top:0;
+    z-index:1200 !important;
+  }
+  body.admin-body.admin-dashboard-active .admin-header-context {
+    min-width:0;
+    flex:1 1 auto;
+  }
+  body.admin-body.admin-dashboard-active .admin-header-context strong {
+    color:var(--admin-heading,#172544);
+  }
+  body.admin-body.admin-dashboard-active .dashboard-overview,
+  body.admin-body.admin-dashboard-active .dashboard-content-grid,
+  body.admin-body.admin-dashboard-active .dashboard-metrics,
+  body.admin-body.admin-dashboard-active .dashboard-widget {
+    min-width:0;
+    max-width:100%;
+  }
+  body.admin-body.admin-dashboard-active .dashboard-metrics {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:11px;
+  }
+}
+@media (max-width:430px) {
+  body.admin-body.admin-dashboard-active .admin-main {
+    padding-right:12px !important;
+    padding-left:12px !important;
+  }
+  body.admin-body.admin-dashboard-active .dashboard-metric {
+    padding:13px 12px;
+  }
+  body.admin-body.admin-dashboard-active .dashboard-metric strong {
+    font-size:clamp(1.35rem,7vw,1.8rem);
+    overflow-wrap:anywhere;
+  }
+  body.admin-body.admin-dashboard-active .admin-sidebar {
+    width:min(276px,calc(100vw - 42px)) !important;
+    max-width:calc(100vw - 42px) !important;
+  }
+}
