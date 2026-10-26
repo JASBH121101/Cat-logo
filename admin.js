@@ -2510,38 +2510,34 @@ function renderDepartmentAnalytics(events) {
     const country = String(event.visitor_country || "").trim().toUpperCase();
     const department = String(event.visitor_department || "").trim();
     let label, key;
-    if (country === "NI" && department) {
-      label = department;
-      key = "department:" + department.toLocaleLowerCase("es");
-    } else if (country && country !== "NI") {
-      label = "Fuera de Nicaragua (" + country + ")";
-      key = "country:" + country;
-    } else {
-      label = "Sin ubicación registrada";
-      key = "unknown";
-    }
-    const row = groups.get(key) || { label, views: 0, contacts: 0 };
+    if (country === "NI" && department) { label = department; key = "department:" + department.toLocaleLowerCase("es"); }
+    else if (country && country !== "NI") { label = "Fuera de Nicaragua (" + country + ")"; key = "country:" + country; }
+    else { label = "Sin ubicación registrada"; key = "unknown"; }
+    const row = groups.get(key) || { label, catalogVisits: 0, views: 0, contacts: 0 };
+    if (event.event_type === "catalog_view") row.catalogVisits += 1;
     if (event.event_type === "view") row.views += 1;
     if (event.event_type === "whatsapp_click") row.contacts += 1;
     groups.set(key, row);
   }
   const rows = Array.from(groups.values())
-    .sort((a, b) => (b.views + b.contacts) - (a.views + a.contacts) || a.label.localeCompare(b.label, "es"))
+    .sort((a, b) => (b.catalogVisits + b.views + b.contacts) - (a.catalogVisits + a.views + a.contacts) || a.label.localeCompare(b.label, "es"))
     .slice(0, 12);
-  const maxValue = Math.max(1, ...rows.map(row => Math.max(row.views, row.contacts)));
+  const maxValue = Math.max(1, ...rows.map(row => Math.max(row.catalogVisits, row.views, row.contacts)));
   target.innerHTML = rows.map(row => {
+    const catalogWidth = Math.round(row.catalogVisits / maxValue * 100);
     const viewsWidth = Math.round(row.views / maxValue * 100);
     const contactsWidth = Math.round(row.contacts / maxValue * 100);
     return '<div class="department-stat-row">' +
       '<div class="department-stat-name">' + escapeHtml(row.label) + '</div>' +
       '<div class="department-stat-bars">' +
-        '<div class="department-stat-bar" title="Visitas"><span style="width:' + viewsWidth + '%"></span></div>' +
+        '<div class="department-stat-bar" title="Visitas al catálogo"><span style="width:' + catalogWidth + '%"></span></div>' +
+        '<div class="department-stat-bar" title="Aperturas de fichas"><span style="width:' + viewsWidth + '%"></span></div>' +
         '<div class="department-stat-bar is-contact" title="Clics de WhatsApp"><span style="width:' + contactsWidth + '%"></span></div>' +
       '</div>' +
-      '<div class="department-stat-metrics"><span>Visitas</span><strong>' + row.views.toLocaleString("es-NI") + '</strong><span>WhatsApp</span><strong>' + row.contacts.toLocaleString("es-NI") + '</strong></div>' +
+      '<div class="department-stat-metrics"><span>Catálogo</span><strong>' + row.catalogVisits.toLocaleString("es-NI") + '</strong><span>Fichas</span><strong>' + row.views.toLocaleString("es-NI") + '</strong><span>WhatsApp</span><strong>' + row.contacts.toLocaleString("es-NI") + '</strong></div>' +
     '</div>';
   }).join("") +
-  '<div class="department-stat-legend"><span><i></i> Visitas a fichas</span><span><i class="contact-dot"></i> Clics de WhatsApp</span></div>';
+  '<div class="department-stat-legend"><span><i></i> Visitas al catálogo</span><span><i></i> Fichas de productos</span><span><i class="contact-dot"></i> Clics de WhatsApp</span></div>';
 }
 
 async function loadCatalogAnalytics() {
