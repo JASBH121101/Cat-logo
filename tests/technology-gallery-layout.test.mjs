@@ -9,7 +9,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261026-product-gallery-fix3/);
+  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261026-hero-cleanup1/);
   assert.match(html, /app\.js\?v=20261026-product-gallery-fix4/);
 });
 
@@ -41,4 +41,15 @@ test("legacy products and variants share one full image gallery renderer", () =>
   assert.match(app, /dialogImage\.innerHTML = renderProductGallery\(product, chosenImages, configuration\)/);
   assert.match(app, /renderProductGallery\(product, initialImages\)/);
   assert.match(app, /fallbackColorImages/);
+});
+
+
+test("hero CTAs are removed while the useful trust notes and catalog links remain", () => {
+  const perfume = readFileSync("perfumeria/index.html", "utf8");
+  assert.doesNotMatch(html, /Explorar equipos/);
+  assert.doesNotMatch(perfume, /Explorar perfumería/);
+  assert.match(html, /Consultas directas por WhatsApp/);
+  assert.match(html, /Opciones de pago sujetas a confirmación/);
+  assert.match(perfume, /AROMAS CON IDENTIDAD/);
+  assert.match(perfume, /href="#coleccion"/);
 });
