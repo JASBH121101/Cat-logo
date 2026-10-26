@@ -53,14 +53,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          url="https://jb-collections.pages.dev/api/download/apk?version=1.0.63"
+          url="https://jb-collections.pages.dev/api/download/apk?version=1.0.70"
           headers="$RUNNER_TEMP/jb-apk-proxy.headers"
           body="$RUNNER_TEMP/jb-apk-proxy.apk"
-          curl --fail --silent --show-error --location --max-time 120 \
-            --dump-header "$headers" --output "$body" "$url"
+          http_status="$(curl --silent --show-error --location --max-time 120 \
+            --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
+          if [ "$http_status" != "200" ]; then
+            echo "APK proxy returned HTTP $http_status. Response body:" >&2
+            head -c 1000 "$body" >&2 || true
+            echo >&2
+            exit 1
+          fi
           size="$(wc -c < "$body" | tr -d ' ')"
           if [ "$size" -lt 1000000 ] || [ "$size" -gt 52428800 ]; then
             echo "APK proxy returned an unexpected size: $size bytes." >&2
+            head -c 1000 "$body" >&2 || true
             exit 1
           fi
           signature="$(od -An -N2 -t x1 "$body" | tr -d ' \\n')"
