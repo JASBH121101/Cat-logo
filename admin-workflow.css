@@ -243,3 +243,142 @@ html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state=
 .admin-image-badge {
   display: none;
 }
+
+
+/* Compact perfume-note editor and publication-review summary. */
+/* Place the optional perfume-note editor across the form width instead of leaving
+   a large empty grid cell beneath the audience selector. */
+html body.admin-body .product-perfume-notes-fields {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: start;
+  gap: 9px 12px;
+  min-width: 0;
+  margin: 2px 0 0;
+  padding: 12px;
+  border: 1px solid var(--admin-border, #d7deec);
+  border-radius: 12px;
+  background: var(--admin-card, #f8faff);
+}
+html body.admin-body .product-perfume-notes-fields > h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.35;
+}
+html body.admin-body .product-perfume-notes-fields > label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  color: var(--admin-text, #25334c);
+  font-size: .78rem;
+  font-weight: 700;
+}
+html body.admin-body .product-perfume-notes-fields input,
+html body.admin-body .product-perfume-notes-fields textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid var(--admin-border, #d6deeb);
+  border-radius: 8px;
+  color: var(--admin-text, #1f2937);
+  background: var(--admin-input, #fff);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 450;
+}
+html body.admin-body .product-perfume-notes-fields textarea {
+  min-height: 58px;
+  resize: vertical;
+  line-height: 1.4;
+}
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields {
+  border-color: #35496b;
+  background: #121d34;
+}
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields > label {
+  color: #d4e0f5;
+}
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields input,
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields textarea {
+  border-color: #334768;
+  color: #e9f0fc;
+  background: #0d172b;
+}
+
+/* A wider, denser confirmation keeps the extra olfactory details readable without
+   turning this review step into a tall modal on desktop. */
+.publish-review-dialog {
+  width: min(820px, calc(100vw - 24px));
+  max-width: 820px;
+  max-height: min(86vh, 820px);
+}
+.publish-review-shell {
+  max-height: min(86vh, 820px);
+}
+.publish-review-header {
+  padding: 15px 20px;
+}
+.publish-review-body {
+  padding: 12px 20px;
+}
+.publish-review-body > p {
+  margin-bottom: 10px;
+}
+.publish-review-row {
+  gap: 12px;
+  padding: 8px 12px;
+}
+.publish-review-variants p {
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.publish-review-notes {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.publish-review-notes p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  font-size: .86rem;
+}
+.publish-review-notes p strong {
+  color: var(--admin-text, #26334b);
+  font-weight: 750;
+}
+.publish-review-notes-empty {
+  color: var(--admin-muted, #697386);
+}
+.publish-review-section {
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+.publish-review-footer {
+  gap: 8px;
+  padding: 11px 20px;
+}
+@media (max-width: 900px) {
+  html body.admin-body .product-perfume-notes-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 560px) {
+  html body.admin-body .product-perfume-notes-fields {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .publish-review-header,
+  .publish-review-body {
+    padding: 13px 14px;
+  }
+  .publish-review-footer {
+    padding: 11px 14px;
+  }
+}
