@@ -11,14 +11,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261024-workflow-perfume-type4">
-  <link rel="stylesheet" href="theme-ui.css?v=20261024-light-preview-contrast1">
+  <link rel="stylesheet" href="styles.css?v=20261026-remember-session3">
+  <link rel="stylesheet" href="theme-ui.css?v=20261026-remember-session3">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
   <link rel="stylesheet" href="admin-provider.css?v=20261026-dropship-tools2">
 
   <script src="config.js?v=20261026-cloudflare-url1"></script>
-  <script type="module" src="admin.js?v=20261026-provider-review-import2"></script>
+  <script type="module" src="admin.js?v=20261026-remember-session3"></script>
   <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
 </head>
 
@@ -75,6 +75,14 @@
             <button class="password-visibility-button" id="toggle-password-visibility" type="button" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </button>
+          </span>
+        </label>
+
+        <label class="login-remember-option" for="login-remember-user">
+          <input id="login-remember-user" type="checkbox" autocomplete="off">
+          <span class="login-remember-copy">
+            <strong>Recordar mi sesión</strong>
+            <small>En este dispositivo no tendrás que iniciar sesión cada vez. Tu contraseña nunca se guarda.</small>
           </span>
         </label>
 
@@ -153,6 +161,11 @@
           <span aria-hidden="true">↗</span>
           <span>Ver catálogo</span>
         </a>
+
+        <button id="remember-user-toggle" class="admin-sidebar-remember" type="button" aria-pressed="false">
+          <span aria-hidden="true">◉</span>
+          <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span>
+        </button>
 
         <button id="logout-button" class="admin-sidebar-logout" type="button">
           <span aria-hidden="true">↪</span>
