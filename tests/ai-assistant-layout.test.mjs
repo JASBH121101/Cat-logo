@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 
 const aiCss = readFileSync(new URL("../ai-assistant.css", import.meta.url), "utf8");
 const themeCss = readFileSync(new URL("../theme-ui.css", import.meta.url), "utf8");
+const aiJs = readFileSync(new URL("../ai-assistant.js", import.meta.url), "utf8");
+const assistantApi = readFileSync(new URL("../functions/api/assistant.js", import.meta.url), "utf8");
 
 test("AI launcher stays above the fixed back-to-top button on desktop", () => {
   const aiRoot = aiCss.match(/\.jb-ai-advisor\s*\{([^}]+)\}/);
@@ -25,4 +27,31 @@ test("AI launcher reserves the same clearance on narrow mobile screens and respe
     /bottom:\s*calc\(max\(23px,\s*env\(safe-area-inset-bottom,\s*0px\)\)\s*\+\s*48px\s*\+\s*14px\)/
   );
   assert.match(mobile[1], /right:\s*max\(12px,\s*env\(safe-area-inset-right,\s*0px\)\)/);
+});
+
+
+test("AI conversation remembers preferences only for the current browser tab session", () => {
+  assert.match(aiJs, /sessionStorageKey\s*=\s*"jb-ai-conversation-v2"/);
+  assert.match(aiJs, /window\.sessionStorage\.getItem\(sessionStorageKey/);
+  assert.match(aiJs, /window\.sessionStorage\.setItem\(sessionStorageKey/);
+  assert.match(aiJs, /class="jb-ai-reset"/);
+  assert.match(aiJs, /function resetConversation\(\)/);
+  assert.match(aiJs, /history\.length\s*=\s*0/);
+});
+
+test("AI does not duplicate the current question inside the history sent to the model", () => {
+  const contextIndex = aiJs.indexOf("const previousHistory = history.slice(-maxHistory)");
+  const pushIndex = aiJs.indexOf('history.push({ role: "user", content: cleanMessage })');
+  assert.ok(contextIndex >= 0, "previous history is created");
+  assert.ok(pushIndex > contextIndex, "prior history is captured before the current message is appended");
+  assert.match(aiJs, /content: String\(item\.content \|\| ""\)\.slice\(0, 450\)/);
+});
+
+test("AI response schema provides evidence-based reasons and only allows catalogue product IDs", () => {
+  assert.match(assistantApi, /const RESPONSE_FORMAT = \{/);
+  assert.match(assistantApi, /reason: \{ type: "string" \}/);
+  assert.match(assistantApi, /const allowedIds = new Set\(contextProducts\.map/);
+  assert.match(assistantApi, /image_url:safeImageUrl\(row\.image_url\)/);
+  assert.match(aiCss, /\.jb-ai-product-reason\s*\{/);
+  assert.match(aiCss, /\.jb-ai-product-media\s*\{/);
 });
