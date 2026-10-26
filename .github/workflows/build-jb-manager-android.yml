@@ -49,6 +49,31 @@ jobs:
           grep -Fq 'href="https://jb-collections.pages.dev/perfumeria/"' perfumeria/index.html
           echo "Latest main catalog/admin code assembled with the existing Android signing/build system."
 
+      - name: Smoke-test the live Cloudflare APK download proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://jb-collections.pages.dev/api/download/apk?version=1.0.63"
+          headers="$RUNNER_TEMP/jb-apk-proxy.headers"
+          body="$RUNNER_TEMP/jb-apk-proxy.apk"
+          curl --fail --silent --show-error --location --max-time 120 \
+            --dump-header "$headers" --output "$body" "$url"
+          size="$(wc -c < "$body" | tr -d ' ')"
+          if [ "$size" -lt 1000000 ] || [ "$size" -gt 52428800 ]; then
+            echo "APK proxy returned an unexpected size: $size bytes." >&2
+            exit 1
+          fi
+          signature="$(od -An -N2 -t x1 "$body" | tr -d ' \\n')"
+          if [ "$signature" != "504b" ]; then
+            echo "APK proxy response does not start with ZIP/APK signature." >&2
+            exit 1
+          fi
+          grep -Eiq '^content-type: application/vnd\\.android\\.package-archive' "$headers" || {
+            echo "APK proxy did not return the Android package MIME type." >&2
+            exit 1
+          }
+          echo "Cloudflare APK proxy returned a valid-looking APK ($size bytes)."
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -360,6 +385,8 @@ jobs:
           grep -q 'EXPECTED_PACKAGE = "com.jbcollections.manager.v2"' "$PLUGIN"
           grep -q 'validateDownloadedApk' "$PLUGIN"
           grep -q 'sameHashSet' "$PLUGIN"
+          grep -q 'clearObsoleteDownloadIfInstalledVersionIsNewer' "$PLUGIN"
+          grep -q 'api/download/apk?version=' mobile/prepare-web.mjs
           grep -q 'REQUEST_INSTALL_PACKAGES' "$MANIFEST"
           grep -q 'applicationId "com.jbcollections.manager.v2"' mobile/android/app/build.gradle || {
             echo "Unexpected Android applicationId." >&2
