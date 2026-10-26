@@ -938,6 +938,87 @@ async function initializePerfumes() {
   }
 }
 
+
+const conciergeForm = $("#perfume-concierge-form");
+const conciergeResults = $("#perfume-concierge-results");
+
+function recommendPerfumes(preferences) {
+  const scentTerms = {
+    dulce: /dulc|vainill|caramel|pralin|tonka|chocolate|gourmand|miel/,
+    fresco: /fresc|citr|bergamot|limon|naranja|marin|acuatic|verde/,
+    amaderado: /mader|oud|agar|cedro|sandal|vetiver|pimienta|especiad|cuero/,
+    intenso: /ambar|ambarad|resin|incienso|oud|almizcle|intens|oriental|especiad/,
+    floral: /flor|rosa|jazmin|tuberosa|peonia|iris|violeta|floral/
+  };
+  return perfumes.map(product => {
+    const detail = product.perfume_details || {};
+    let score = 0;
+    if (preferences.family !== "all" && canonicalFamily(detail.family) === preferences.family) score += 5;
+    if (preferences.audience !== "all" && canonicalAudience(detail.audience) === preferences.audience) score += 3;
+    if (preferences.scent !== "all") {
+      const scentText = normalizeSearchQuery([
+        detail.scent_family,
+        ...(Array.isArray(detail.top_notes) ? detail.top_notes : []),
+        ...(Array.isArray(detail.heart_notes) ? detail.heart_notes : []),
+        ...(Array.isArray(detail.base_notes) ? detail.base_notes : []),
+        product.description
+      ].filter(Boolean).join(" "));
+      const pattern = scentTerms[preferences.scent];
+      if (pattern && pattern.test(scentText)) score += 4;
+    }
+    const price = Number(product.price_usd);
+    if (preferences.budget !== null) {
+      if (!Number.isFinite(price) || price > preferences.budget) return null;
+      score += 2;
+    }
+    return { product, score };
+  }).filter(Boolean)
+    .sort((a, b) => b.score - a.score || Number(a.product.price_usd || Infinity) - Number(b.product.price_usd || Infinity))
+    .slice(0, 3)
+    .map(item => item.product);
+}
+
+if (conciergeForm && conciergeResults) {
+  conciergeForm.addEventListener("submit", event => {
+    event.preventDefault();
+    if (!perfumes.length) {
+      conciergeResults.hidden = false;
+      conciergeResults.innerHTML = '<p class="perfume-concierge-message">Estamos cargando la colección. Probá de nuevo en unos segundos.</p>';
+      return;
+    }
+    const rawBudget = $("#concierge-budget")?.value?.trim() || "";
+    const budgetValue = rawBudget ? Number(rawBudget) : null;
+    const preferences = {
+      family: $("#concierge-family")?.value || "all",
+      scent: $("#concierge-scent")?.value || "all",
+      audience: $("#concierge-audience")?.value || "all",
+      budget: budgetValue !== null && Number.isFinite(budgetValue) && budgetValue >= 0 ? budgetValue : null
+    };
+    const recommendations = recommendPerfumes(preferences);
+    conciergeResults.hidden = false;
+    if (!recommendations.length) {
+      conciergeResults.innerHTML = '<p class="perfume-concierge-message">No encontramos coincidencias con ese presupuesto y perfil. Probá ampliar el presupuesto o cambiar alguna preferencia.</p>';
+      return;
+    }
+    conciergeResults.innerHTML = '<div class="perfume-concierge-results-heading"><p class="perfume-kicker">SELECCIÓN PERSONALIZADA</p><h3>Opciones para vos</h3><p>Una selección orientativa basada en los datos disponibles de cada fragancia.</p></div><div class="product-grid perfume-product-grid perfume-concierge-grid">' + recommendations.map(renderCard).join("") + '</div>';
+    const grid = conciergeResults.querySelector(".perfume-concierge-grid");
+    grid?.querySelectorAll("a[data-details]").forEach(viewLink => {
+      const product = recommendations.find(item => String(item.id) === String(viewLink.dataset.details));
+      if (!product) return;
+      const actions = viewLink.closest(".product-actions");
+      if (!actions) return;
+      const contact = document.createElement("a");
+      contact.className = "perfume-concierge-whatsapp";
+      contact.href = whatsappLink(buildWhatsAppMessage(product, "quisiera consultar por esta recomendación personalizada."));
+      contact.target = "_blank";
+      contact.rel = "noopener";
+      contact.textContent = "Consultar por WhatsApp";
+      contact.addEventListener("click", () => recordEvent(product.id, "whatsapp_click"));
+      actions.appendChild(contact);
+    });
+  });
+}
+
 initializePerfumes();
 
 /* JB PARFUMS · carrusel ligero: una imagen inicial y precarga de una sola foto. */
