@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@capacitor/assets": "3.0.5",
-    "@capacitor/cli": "8.5.3"
+    "@capacitor/cli": "8.5.3",
+    "sharp": "0.34.1"
   }
 }

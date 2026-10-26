@@ -1,5 +1,9 @@
 name: Build JB Manager Collections APK
 
+concurrency:
+  group: jb-manager-android-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -45,6 +49,33 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Restore persistent Android debug signing key
+        uses: actions/cache@v4
+        id: android-signing-key
+        with:
+          path: ~/.android/debug.keystore
+          key: jb-manager-collections-debug-signing-v1-\${{ runner.os }}
+
+      - name: Ensure stable Android signing key
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ -f "$HOME/.android/debug.keystore" ]; then
+            echo "Restored the existing signing key for update-compatible builds."
+          elif [ -f .github/android-signing-key-persisted ]; then
+            echo "ERROR: The saved signing key cache is missing. Refusing to generate a different key because it would block app updates." >&2
+            exit 1
+          else
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            echo "Created the initial persistent signing key; it will be cached after a successful build."
+          fi
+
       - name: Install Capacitor dependencies
         working-directory: mobile
         run: npm install --no-audit --no-fund
@@ -72,6 +103,38 @@ jobs:
       - name: Build debug APK
         working-directory: mobile/android
         run: ./gradlew --no-daemon assembleDebug
+
+      - name: Verify packaged panel, styles, scripts, and both catalogs
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          for asset in \
+            assets/public/index.html \
+            assets/public/admin.html \
+            assets/public/styles.css \
+            assets/public/theme-ui.css \
+            assets/public/admin.js \
+            assets/public/config.js \
+            assets/public/img/hero-catalogo.png \
+            assets/public/tecnologia/index.html \
+            assets/public/perfumeria/index.html \
+            assets/public/favicon-collections.svg
+          do
+            unzip -l "$APK" "$asset" | grep -q "$asset" || {
+              echo "Missing APK asset: $asset" >&2
+              exit 1
+            }
+          done
+          unzip -p "$APK" assets/public/index.html | grep -q '<base href="https://localhost/">' || {
+            echo "Admin start page is missing its local asset base." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections"' || {
+            echo "Unexpected application name." >&2
+            exit 1
+          }
+          echo "APK bundle checks passed."
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
