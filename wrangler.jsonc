@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "jb-collections",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-10-26",
+  "compatibility_flags": [],
+  "ai": {
+    "binding": "AI"
+  }
+}
