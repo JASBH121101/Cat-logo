@@ -737,7 +737,7 @@ if (!builtAdminHtml.includes('class="dashboard-public-link"')
   || !builtAdminHtml.includes('class="admin-sidebar-brand"')) {
   throw new Error("The admin panel must include dashboard and sidebar catalog navigation links.");
 }
-const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
+
 if (!builtAdminScript.includes('isPerfume ? "./perfumeria/" : "./tecnologia/"')) {
   throw new Error("The admin panel must switch its public catalog link between technology and perfumery.");
 }
