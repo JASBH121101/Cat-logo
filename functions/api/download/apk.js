@@ -107,7 +107,7 @@ export async function onRequest({ request }) {
     // on a streamed response whose upstream connection did not close cleanly.
     const bytes = await upstream.arrayBuffer();
     const actualLength = bytes.byteLength;
-    if (actualLength < 1024 || actualLength > MAX_APK_BYTES) {
+    if (actualLength < (upstream.status === 206 ? 1 : 1024) || actualLength > MAX_APK_BYTES) {
       return response(502, "APK response size is outside the allowed range");
     }
     if (upstream.status === 200 && actualLength !== found.asset.size) {
