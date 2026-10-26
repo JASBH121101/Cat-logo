@@ -830,6 +830,27 @@ dialogContent.addEventListener("click", event => {
   dialogContent.querySelectorAll("[data-gallery-image]").forEach(item => item.classList.toggle("active", item === thumb));
 });
 
+
+/* Escape cierra la ficha de fragancia y respeta primero cualquier diálogo modal abierto. */
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || event.defaultPrevented) return;
+  if (!document.body.classList.contains("perfume-detail-active")) return;
+  if (document.querySelector("dialog[open]")) return;
+
+  event.preventDefault();
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("fragancia");
+  url.hash = "";
+  window.history.replaceState(window.history.state, document.title, url.href);
+  showPerfumeCatalog();
+  window.scrollTo({ top: 0, behavior: "auto" });
+});
+
 perfumeHeaderBack?.addEventListener("click", () => {
   if (window.history.state?.productDetailRoute) {
     window.history.back();
