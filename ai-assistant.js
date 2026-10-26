@@ -242,7 +242,10 @@
   async function sendMessage(text) {
     const cleanMessage = String(text || "").trim();
     if (!cleanMessage || pending) return;
-    const previousHistory = history.slice(-maxHistory);
+    const previousHistory = history.slice(-maxHistory).map(item => ({
+      role: item.role === "assistant" ? "assistant" : "user",
+      content: String(item.content || "").slice(0, 450)
+    }));
 
     addMessage("user", cleanMessage);
     history.push({ role: "user", content: cleanMessage });
