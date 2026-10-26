@@ -5545,7 +5545,23 @@ html[data-theme="light"] body.admin-body .admin-sidebar-catalog-link {
 }
 
 
-/* Cerrar sesión junto a Ver catálogo dentro del menú lateral. */
+/* Dos accesos públicos separados; el grupo conserva una sola separación del menú. */
+body.admin-body .admin-sidebar-catalog-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px 0 14px;
+}
+body.admin-body .admin-sidebar-catalog-links .admin-sidebar-catalog-link {
+  width: 100%;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  body.admin-body .admin-sidebar-catalog-links { gap: 7px; margin: 14px 0 12px; }
+  body.admin-body .admin-sidebar-catalog-links .admin-sidebar-catalog-link { margin: 0; }
+}
+
+/* Cerrar sesión junto a los accesos a catálogos dentro del menú lateral. */
 body.admin-body .admin-sidebar-logout {
   display: flex;
   align-items: center;
