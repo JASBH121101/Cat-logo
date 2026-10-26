@@ -407,6 +407,24 @@ new Function(navigationScript[1]);
 if (!builtAdminHtml.includes("jb-manager-check-updates")) {
   throw new Error("The APK update button is missing from the admin panel.");
 }
+if (!updaterScript[1].includes("document.documentElement.append(button)")) {
+  throw new Error("The update button is not attached to the fixed viewport root.");
+}
+if (!builtAdminHtml.includes('data-admin-catalog-link="technology"')
+  || !builtAdminHtml.includes('data-admin-catalog-link="perfumery"')) {
+  throw new Error("The admin panel must include independent technology and perfumery catalog links.");
+}
+
+for (const catalogPath of ["tecnologia/index.html", "perfumeria/index.html"]) {
+  const catalogHtml = await readFile(join(webDir, catalogPath), "utf8");
+  const shellScript = catalogHtml.match(/<script\\s+data-jb-manager-android-shell>([\\s\\S]*?)<\\/script>/i);
+  if (!shellScript) throw new Error("Android navigation script is missing from " + catalogPath + ".");
+  new Function(shellScript[1]);
+  if (!shellScript[1].includes("__jbManagerCatalogBackGuard")
+    || !shellScript[1].includes("/index.html?jb-manager-return=dashboard")) {
+    throw new Error("Android back gesture must return to the admin dashboard from " + catalogPath + ".");
+  }
+}
 
 console.log("Prepared local Android web bundle from repository source.");
 console.log("Start page: mobile/www/index.html (private admin panel)");
