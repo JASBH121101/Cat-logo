@@ -1536,3 +1536,32 @@ body.perfume-page #perfume-detail-page #perfume-dialog-content {
     padding: 12px 10px max(20px, env(safe-area-inset-bottom, 0px));
   }
 }
+
+
+/* Keep the catalog back button above the full-screen fragrance detail layer. */
+body.perfume-detail-active .site-header.perfume-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 120 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  background: var(--perfume-paper) !important;
+  border-bottom: 1px solid var(--perfume-border) !important;
+}
+body.perfume-detail-active #perfume-detail-page:not(.hidden) {
+  padding-top: calc(var(--catalog-detail-overlay-top, 76px) + clamp(12px, 2.3vw, 28px)) !important;
+}
+body.perfume-detail-active .site-header.perfume-header > .product-detail-header-back:not([hidden]) {
+  position: absolute !important;
+  top: 50% !important;
+  left: max(16px, 3vw) !important;
+  z-index: 121 !important;
+  transform: translateY(-50%) !important;
+}
+@media (max-width: 760px) {
+  body.perfume-detail-active .site-header.perfume-header > .product-detail-header-back:not([hidden]) {
+    left: 10px !important;
+  }
+}
