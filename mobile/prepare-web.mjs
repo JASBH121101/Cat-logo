@@ -306,7 +306,12 @@ const internalLinkHandler = `
     if (destination.origin === window.location.origin) {
       const isDirectoryRoute =
         destination.pathname.endsWith("/") && destination.pathname !== "/";
+      const isCatalogRoute = /\\/(tecnologia|perfumeria)(?:\\/index\\.html)?\\/?$/i.test(destination.pathname);
       if (isDirectoryRoute) destination.pathname += "index.html";
+
+      // Leaving the admin for either public catalog is intentional. The editor's
+      // recovery draft is already saved locally, so suppress only this exit warning.
+      if (isCatalogRoute) window.__jbManagerAllowCatalogNavigation = true;
 
       // Keep same-app links in the WebView; external links are left to Android.
       if (anchor.target === "_blank" || isDirectoryRoute) {
