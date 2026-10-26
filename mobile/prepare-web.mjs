@@ -310,7 +310,8 @@ const updateChecker = `
         showMessage(
           "Actualización disponible · v" + match[1],
           "Descargá la nueva APK y abrila. Android te pedirá confirmar la actualización; no hace falta desinstalar la versión actual.",
-          asset.browser_download_url
+          asset.browser_download_url,
+          match[1]
         );
       } else if (interactive) {
         showMessage("JB Manager está actualizado", "Versión instalada: v" + currentVersion + ". No hay una versión más reciente.");
