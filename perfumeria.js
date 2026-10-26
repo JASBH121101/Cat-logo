@@ -93,7 +93,7 @@ function canonicalFamily(value) {
   if (["arabes", "arabe", "arabic", "arabian"].includes(family)) return "arabes";
   if (["nicho", "niche"].includes(family)) return "nicho";
   if (["disenador", "designer", "design"].includes(family)) return "disenador";
-  return family;
+  return family || "otras";
 }
 
 function familyLabel(family) {
