@@ -1,4 +1,5 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { build } from "esbuild";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -290,14 +291,21 @@ const internalLinkHandler = `
       || clean.endsWith("/perfumeria/index.html");
   };
 
-  // The native Android back gesture must return to the admin dashboard, not
-  // finish the app while a bundled catalog is open. A same-document state makes
-  // WebView history navigable, then popstate redirects to the admin start page.
+  // Keep a history checkpoint on catalog routes. Native Android back handling
+  // is implemented by the bundled Capacitor App plugin below. This popstate
+  // fallback handles WebView/browser history without hijacking the return from
+  // an in-catalog product detail to the catalog list.
   if (isCatalogPath() && !window.history.state?.__jbManagerCatalogBackGuard) {
     window.history.pushState({ __jbManagerCatalogBackGuard: true }, "", window.location.href);
   }
-  window.addEventListener("popstate", () => {
+  window.addEventListener("popstate", (event) => {
     if (!isCatalogPath()) return;
+    if (event.state?.__jbManagerCatalogBackGuard || window.history.state?.__jbManagerCatalogBackGuard) return;
+    const currentUrl = new URL(window.location.href);
+    const isProductDetail = currentUrl.searchParams.has("producto")
+      || currentUrl.searchParams.has("fragancia")
+      || /^#(producto|fragancia)=/.test(currentUrl.hash);
+    if (isProductDetail) return;
     window.__jbManagerAllowCatalogNavigation = true;
     window.location.replace(new URL("/index.html?jb-manager-return=dashboard", window.location.origin).href);
   });
@@ -373,6 +381,20 @@ async function addExplicitCapacitorBase(directory) {
   }
 }
 
+// Bundle Capacitor's native back-button plugin locally so back navigation
+// does not depend on downloading JavaScript at runtime.
+const nativeBackBundlePath = join(webDir, "jb-manager-back-navigation.js");
+await build({
+  entryPoints: [join(mobileDir, "back-navigation.js")],
+  outfile: nativeBackBundlePath,
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  target: ["es2020"],
+  minify: true,
+  legalComments: "none"
+});
+
 async function injectNavigationSupport(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const fullPath = join(directory, entry.name);
@@ -384,7 +406,10 @@ async function injectNavigationSupport(directory) {
     let html = await readFile(fullPath, "utf8");
     if (html.includes("data-jb-manager-android-shell")) continue;
     if (/<\/head>/i.test(html)) {
-      html = html.replace(/<\/head>/i, `${internalLinkHandler}\n</head>`);
+      html = html.replace(
+        /<\/head>/i,
+        `${internalLinkHandler}\n<script src="/jb-manager-back-navigation.js" defer data-jb-manager-native-back></script>\n</head>`
+      );
       await writeFile(fullPath, html, "utf8");
     }
   }
@@ -400,9 +425,28 @@ if (!updaterScript) throw new Error("APK update button script was not generated.
 new Function(updaterScript[1]);
 
 const builtCatalogHtml = await readFile(join(webDir, "tecnologia", "index.html"), "utf8");
+const perfumeCatalogHtml = await readFile(join(webDir, "perfumeria", "index.html"), "utf8");
 const navigationScript = builtCatalogHtml.match(/<script\s+data-jb-manager-android-shell>([\s\S]*?)<\/script>/i);
 if (!navigationScript) throw new Error("Android catalog navigation script was not generated.");
 new Function(navigationScript[1]);
+
+const builtNativeBackBundle = await readFile(nativeBackBundlePath, "utf8");
+new Function(builtNativeBackBundle);
+if (!builtNativeBackBundle.includes("backButton")
+  || !builtNativeBackBundle.includes("jb-manager-return=dashboard")) {
+  throw new Error("Native Android back-button behavior is missing from the local bundle.");
+}
+for (const [catalogPath, html] of [
+  ["tecnologia/index.html", builtCatalogHtml],
+  ["perfumeria/index.html", perfumeCatalogHtml]
+]) {
+  if (!html.includes('src="/jb-manager-back-navigation.js"')) {
+    throw new Error(`Native back-button bundle is not loaded by ${catalogPath}.`);
+  }
+}
+if (!builtAdminHtml.includes('src="/jb-manager-back-navigation.js"')) {
+  throw new Error("Native back-button bundle is not loaded by the admin dashboard.");
+}
 
 if (!builtAdminHtml.includes("jb-manager-check-updates")) {
   throw new Error("The APK update button is missing from the admin panel.");

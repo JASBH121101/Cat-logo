@@ -184,6 +184,7 @@ jobs:
             assets/public/theme-ui.css \
             assets/public/admin.js \
             assets/public/config.js \
+            assets/public/jb-manager-back-navigation.js \
             assets/public/img/hero-catalogo.png \
             assets/public/tecnologia/index.html \
             assets/public/perfumeria/index.html \
@@ -207,7 +208,19 @@ jobs:
             exit 1
           }
           unzip -p "$APK" assets/public/index.html | grep -q '__jbManagerAllowCatalogNavigation' || {
-            echo "APK is missing the Android catalog-navigation fix." >&2
+            echo "APK is missing the Android catalog-navigation fallback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'jb-manager-back-navigation.js' || {
+            echo "APK admin page is missing the native back-button handler reference." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'backButton' || {
+            echo "APK is missing the native Capacitor back-button handler." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'jb-manager-return=dashboard' || {
+            echo "APK native back-button handler does not route to the admin dashboard." >&2
             exit 1
           }
           unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
