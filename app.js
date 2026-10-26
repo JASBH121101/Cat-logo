@@ -73,13 +73,22 @@ async function recordCatalogEvent(productId, eventType, variant = {}) {
   };
 
   try {
-    const { error } = await supabase.from("catalog_events").insert({
+    const visitor = await getCatalogVisitorLocation();
+    const eventBase = {
       product_id: productId,
       event_type: eventType,
       variant_color: cleanValue(variant.color),
       variant_ram: cleanValue(variant.ram),
       variant_storage: cleanValue(variant.storage)
+    };
+    let { error } = await supabase.from("catalog_events").insert({
+      ...eventBase,
+      visitor_country: visitor.country,
+      visitor_department: visitor.department
     });
+    if (error && /visitor_(country|department)|schema cache|column .*does not exist/i.test(error.message || "")) {
+      ({ error } = await supabase.from("catalog_events").insert(eventBase));
+    }
     if (error) console.warn("No se pudo registrar el evento de analítica:", error.message);
   } catch (error) {
     console.warn("No se pudo registrar el evento de analítica.", error);
