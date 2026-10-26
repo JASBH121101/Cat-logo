@@ -102,19 +102,36 @@ export async function onRequest({ request }) {
       return response(502, "The official APK host did not return a complete download");
     }
 
+    // Buffer the modest-sized APK before replying. This lets the edge verify
+    // the exact body length and prevents mobile browsers from waiting forever
+    // on a streamed response whose upstream connection did not close cleanly.
+    const bytes = await upstream.arrayBuffer();
+    const actualLength = bytes.byteLength;
+    if (actualLength < 1024 || actualLength > MAX_APK_BYTES) {
+      return response(502, "APK response size is outside the allowed range");
+    }
+    if (upstream.status === 200 && actualLength !== found.asset.size) {
+      console.error("APK length mismatch:", actualLength, "expected", found.asset.size);
+      return response(502, "APK response was incomplete; retry the download");
+    }
+    if (upstream.status === 206 && !upstream.headers.get("Content-Range")) {
+      return response(502, "Partial APK response is missing Content-Range");
+    }
+
     const headers = new Headers({
       "Content-Type": "application/vnd.android.package-archive",
       "Content-Disposition": `attachment; filename="JB-Manager-Collections-v${version}.apk"`,
       "Cache-Control": "no-store, no-cache, must-revalidate",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
+      "Content-Length": String(actualLength),
       "Accept-Ranges": upstream.headers.get("Accept-Ranges") || "bytes"
     });
-    for (const name of ["Content-Length", "Content-Range", "ETag", "Last-Modified"]) {
+    for (const name of ["Content-Range", "ETag", "Last-Modified"]) {
       const value = upstream.headers.get(name);
       if (value) headers.set(name, value);
     }
-    return new Response(upstream.body, { status: upstream.status, headers });
+    return new Response(bytes, { status: upstream.status, headers });
   } catch (error) {
     console.error("APK proxy failed:", error instanceof Error ? error.message : "unknown error");
     return response(502, "Download service could not retrieve the official APK. Retry shortly.");
