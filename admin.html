@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261024-light-preview-contrast1">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
+  <link rel="stylesheet" href="admin-provider.css?v=20261026-dropship-tools1">
 
   <script src="config.js?v=20261026-cloudflare-url1"></script>
   <script type="module" src="admin.js?v=20261026-cloudflare-preview-safe1"></script>
@@ -139,6 +140,12 @@
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="trash">
             <span class="admin-nav-icon" aria-hidden="true">▱</span><span class="admin-nav-label" id="admin-nav-trash-label">Papelera</span><span class="admin-nav-count" id="trash-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="provider">
+            <span class="admin-nav-icon" aria-hidden="true">↻</span><span class="admin-nav-label">Proveedor</span><span class="admin-nav-count" id="provider-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="updates">
+            <span class="admin-nav-icon" aria-hidden="true">⇄</span><span class="admin-nav-label">Actualizar catálogo</span>
           </button>
         </nav>
 
@@ -628,8 +635,86 @@
         <p id="import-status" class="form-status" role="status"></p>
       </section>
       </div>
+
+      <section id="admin-section-provider" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="provider">
+        <header class="provider-page-heading">
+          <div><p class="eyebrow">DROPSHIPPING · CONTROL DE FUENTE</p><h2>Seguimiento del proveedor</h2>
+            <p>Registrá cuándo revisaste GoPartner, los precios de referencia y la disponibilidad. Este historial es privado y no cambia el precio público por sí solo.</p></div>
+          <button type="button" id="provider-refresh" class="button button-outline">Actualizar datos</button>
+        </header>
+        <section class="provider-metrics" aria-label="Estado de revisiones">
+          <article class="provider-metric"><span>Sin revisar</span><strong id="provider-count-missing">0</strong><small>Productos sin comprobación</small></article>
+          <article class="provider-metric"><span>Necesitan revisión</span><strong id="provider-count-overdue">0</strong><small>Última comprobación hace 7 días o más</small></article>
+          <article class="provider-metric"><span>Al día</span><strong id="provider-count-current">0</strong><small>Revisados en los últimos 7 días</small></article>
+        </section>
+        <section class="admin-card provider-list-card">
+          <div class="provider-toolbar">
+            <label class="provider-field"><span>Catálogo</span><select id="provider-catalog-filter"><option value="all">Ambos catálogos</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+            <label class="provider-field"><span>Estado de revisión</span><select id="provider-review-filter"><option value="all">Todos</option><option value="missing">Sin revisar</option><option value="overdue">Necesitan revisión</option><option value="current">Al día</option></select></label>
+            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-search" type="search" placeholder="Nombre, marca o modelo…" autocomplete="off"></label>
+          </div>
+          <div id="provider-product-list" class="provider-product-list" aria-live="polite"><p class="provider-empty-state">Cargando seguimiento…</p></div>
+        </section>
+        <p id="provider-status-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="admin-section-updates" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="updates">
+        <header class="provider-page-heading">
+          <div><p class="eyebrow">ACTUALIZACIONES SEGURAS</p><h2>Importar cambios del proveedor</h2>
+            <p>Compará un archivo JSON o CSV con tus productos existentes. Primero verás una vista previa; no se crea ni publica ningún producto automáticamente.</p></div>
+          <button type="button" id="provider-import-download-template" class="button button-outline">Descargar plantilla JSON</button>
+        </header>
+        <section class="admin-card provider-import-card">
+          <div class="provider-import-explainer">
+            <h3>¿Cómo funcionará?</h3>
+            <p>Guardá o convertí los datos que recibas de GoPartner a la plantilla. El sistema intentará identificar productos por ID del proveedor, clave del catálogo o una combinación única de marca y modelo/nombre. Las coincidencias ambiguas se omiten para que no se actualice el producto equivocado.</p>
+            <p><strong>Importante:</strong> <code>provider_price_usd</code> y <code>provider_price_nio</code> son los precios de referencia del proveedor, no tu comisión ni el precio público. Para cambiar el precio que ve el cliente, el archivo debe incluir expresamente <code>catalog_price_usd</code> o <code>catalog_price_nio</code>.</p>
+            <p>Las fotografías, la publicación, los productos destacados/exclusivos y el estado de borrador se conservan. Solo se actualizan campos que estén en el archivo y que hayas habilitado abajo.</p>
+          </div>
+          <div class="provider-import-controls">
+            <label class="provider-field"><span>Catálogo si el archivo no especifica uno</span><select id="provider-import-catalog"><option value="all">Ambos / usar tipo por producto</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+            <label class="file-button provider-import-file-button">Seleccionar JSON o CSV<input id="provider-import-file" type="file" accept="application/json,.json,text/csv,.csv"></label>
+          </div>
+          <fieldset class="provider-import-options">
+            <legend>Qué datos permitir actualizar</legend>
+            <label><input id="provider-import-update-catalog" type="checkbox" checked> <span><strong>Datos del catálogo</strong><small>Solo columnas explícitas como <code>catalog_price_usd</code>, <code>catalog_availability</code>, <code>catalog_name</code> y equivalentes.</small></span></label>
+            <label><input id="provider-import-update-description" type="checkbox"> <span><strong>Descripción comercial</strong><small>Actualizar el texto de la ficha únicamente si el archivo incluye <code>catalog_description</code>.</small></span></label>
+            <label><input id="provider-import-update-variants" type="checkbox"> <span><strong>Precios, disponibilidad y configuraciones de variantes</strong><small>Solo con la columna <code>catalog_variants</code> o <code>variants</code> como arreglo JSON. Las galerías de fotos existentes se preservan.</small></span></label>
+            <label><input id="provider-import-update-perfume" type="checkbox"> <span><strong>Detalles de perfumería</strong><small>Actualiza familia, concentración, volumen, público y notas solo para productos de JB Parfums.</small></span></label>
+          </fieldset>
+          <div class="provider-import-preview-heading"><div><h3>Vista previa de coincidencias</h3><p id="provider-import-summary">Seleccioná un archivo para comparar los datos.</p></div><button id="provider-import-apply" type="button" class="button button-primary" disabled>Aplicar actualizaciones</button></div>
+          <div id="provider-import-preview" class="provider-import-preview"></div>
+          <p id="provider-import-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+
     </section>
   </main>
+
+  <dialog id="provider-review-dialog" class="provider-dialog" aria-labelledby="provider-review-title">
+    <form id="provider-review-form" method="dialog" class="provider-dialog-shell">
+      <header class="provider-dialog-header"><div><p class="eyebrow">COMPROBACIÓN MANUAL</p><h2 id="provider-review-title">Registrar revisión</h2><p id="provider-review-product-title" class="provider-dialog-product-title"></p><p id="provider-review-product-subtitle" class="provider-dialog-product-subtitle"></p></div><button class="admin-product-preview-close" type="button" data-provider-dialog-close aria-label="Cerrar">×</button></header>
+      <div class="provider-dialog-fields">
+        <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
+        <label><span>ID / SKU del proveedor (si existe)</span><input id="provider-review-id" type="text" maxlength="180" autocomplete="off"></label>
+        <label class="provider-dialog-wide"><span>Enlace al producto del proveedor</span><input id="provider-review-url" type="url" placeholder="https://…" maxlength="1000"></label>
+        <label><span>Precio indicado por proveedor (US$)</span><input id="provider-review-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label><span>Precio indicado por proveedor (C$)</span><input id="provider-review-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label class="provider-dialog-wide"><span>Disponibilidad confirmada en el proveedor</span><select id="provider-review-availability"><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
+        <label class="provider-dialog-wide"><span>Notas de la revisión</span><textarea id="provider-review-notes" rows="3" maxlength="2000" placeholder="Cambios detectados, condiciones, fecha estimada…"></textarea></label>
+      </div>
+      <p class="provider-private-note"><span aria-hidden="true">🔒</span> Estos datos se guardan en tablas privadas de administración. No se publican en las fichas del catálogo ni calculan automáticamente tu comisión.</p>
+      <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cancelar</button><button type="submit" id="provider-review-save" class="button button-primary">Guardar revisión</button></footer>
+      <input id="provider-review-product-id" type="hidden">
+    </form>
+  </dialog>
+
+  <dialog id="provider-history-dialog" class="provider-dialog provider-history-dialog" aria-labelledby="provider-history-title">
+    <div class="provider-dialog-shell"><header class="provider-dialog-header"><div><p class="eyebrow">HISTORIAL PRIVADO</p><h2 id="provider-history-title">Cambios del proveedor</h2></div><button class="admin-product-preview-close" type="button" data-provider-dialog-close aria-label="Cerrar">×</button></header>
+      <div id="provider-history-content" class="provider-history-content"></div>
+      <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cerrar</button></footer>
+    </div>
+  </dialog>
 
   <dialog id="publish-review-dialog" class="publish-review-dialog" aria-labelledby="publish-review-title">
     <div class="publish-review-shell">
