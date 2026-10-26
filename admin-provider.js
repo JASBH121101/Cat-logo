@@ -635,6 +635,27 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
           if (updateDescription && Object.prototype.hasOwnProperty.call(fields, "description")) productUpdate.description = fields.description || null;
           if (updateVariants && fields.variants !== undefined) {
             productUpdate.variants = mergeVariantImages(fields.variants, product.variants);
+            // Keep the product color summary synchronized without losing color metadata/images already saved.
+            const previousColors = Array.isArray(product.colors) ? product.colors : parseMaybeJSON(product.colors, []);
+            const colorByName = new Map((Array.isArray(previousColors) ? previousColors : []).map(color => [
+              normalizedText(typeof color === "string" ? color : color?.color || color?.name),
+              typeof color === "string" ? { color } : color
+            ]));
+            for (const variant of productUpdate.variants) {
+              const colorName = String(variant.color || "").trim();
+              if (!colorName) continue;
+              const key = normalizedText(colorName);
+              const previousColor = colorByName.get(key) || {};
+              const variantImages = Array.isArray(variant.images) ? variant.images.filter(Boolean) : [variant.image_url].filter(Boolean);
+              colorByName.set(key, {
+                ...previousColor,
+                color: colorName,
+                color_hex: variant.color_hex || previousColor.color_hex || previousColor.hex || "",
+                images: variantImages.length ? variantImages : previousColor.images || [],
+                image_url: variantImages[0] || previousColor.image_url || ""
+              });
+            }
+            productUpdate.colors = Array.from(colorByName.values());
             const usdPrices = productUpdate.variants.map(v => Number(v.price_usd)).filter(n => Number.isFinite(n) && n >= 0);
             const nioPrices = productUpdate.variants.map(v => Number(v.price_nio)).filter(n => Number.isFinite(n) && n >= 0);
             if (usdPrices.length) productUpdate.price_usd = Math.min(...usdPrices);
