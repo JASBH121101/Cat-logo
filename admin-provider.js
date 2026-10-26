@@ -147,6 +147,11 @@ function getProviderFields(row) {
   const providerName = String(firstValue(row, ["provider_name", "supplier_name", "proveedor"]) || "GoPartner").trim() || "GoPartner";
   const providerProductId = firstValue(row, ["provider_product_id", "supplier_product_id", "gopartner_id", "external_id", "sku_proveedor", "provider_sku"]);
   const providerURL = firstValue(row, ["provider_url", "supplier_url", "gopartner_url", "product_url", "url_proveedor"]);
+  if (providerURL) {
+    let parsedURL;
+    try { parsedURL = new URL(String(providerURL)); } catch { throw new Error("La URL del proveedor no es válida: " + providerURL); }
+    if (!["https:", "http:"].includes(parsedURL.protocol)) throw new Error("La URL del proveedor debe usar HTTP o HTTPS.");
+  }
   const priceUSDSource = firstValue(row, ["provider_price_usd", "supplier_price_usd", "precio_proveedor_usd", "price_usd", "precio_usd"]);
   const priceNIOSource = firstValue(row, ["provider_price_nio", "supplier_price_nio", "precio_proveedor_nio", "price_nio", "precio_nio"]);
   const availabilitySource = firstValue(row, ["provider_availability", "supplier_availability", "availability", "estado", "disponibilidad"]);
@@ -186,9 +191,10 @@ function getImportedCatalogFields(row) {
 }
 
 function matchProduct(row, products, statuses, fallbackType) {
-  const rowType = importCatalogType(firstValue(row, ["catalog_type", "catalog", "tipo_catalogo", "catalogo"]), fallbackType);
+  const sourceType = firstValue(row, ["catalog_type", "catalog", "tipo_catalogo", "catalogo"]);
+  const rowType = sourceType === null ? fallbackType : importCatalogType(sourceType, fallbackType);
   const candidates = products.filter(product =>
-    importCatalogType(product.catalog_type, "technology") === rowType &&
+    (rowType === "all" || importCatalogType(product.catalog_type, "technology") === rowType) &&
     !["trash", "deleting"].includes(product.workflow_status)
   );
   const internalId = firstValue(row, ["product_uuid", "local_product_id"]);
@@ -697,6 +703,53 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }));
   $("#provider-import-file")?.addEventListener("change", event => { void previewImport(event); });
   $("#provider-import-apply")?.addEventListener("click", () => { void applyImport(); });
+  $("#provider-import-download-template")?.addEventListener("click", () => {
+    const template = {
+      products: [
+        {
+          catalog_type: "technology",
+          provider_product_id: "ID-DEL-PROVEEDOR",
+          name: "Nombre del producto tal como aparece en el proveedor",
+          brand: "Marca",
+          model: "Modelo",
+          provider_price_usd: 199.99,
+          provider_availability: "available",
+          provider_url: "https://example.com/producto",
+          catalog_price_usd: 219.99,
+          catalog_availability: "available",
+          catalog_variants: []
+        },
+        {
+          catalog_type: "perfumery",
+          provider_product_id: "ID-PERFUME-PROVEEDOR",
+          name: "Nombre de la fragancia",
+          brand: "Marca",
+          provider_price_usd: 39.99,
+          provider_availability: "on_order",
+          provider_url: "https://example.com/fragancia",
+          catalog_price_usd: 44.99,
+          catalog_availability: "on_order",
+          family: "arabes",
+          concentration: "Eau de Parfum",
+          volume_ml: 100,
+          audience: "unisex",
+          scent_family: "amaderado",
+          top_notes: ["bergamota"],
+          heart_notes: ["lavanda"],
+          base_notes: ["ámbar"]
+        }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "jb-collections-plantilla-actualizaciones.json";
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  });
   ["#provider-import-catalog", "#provider-import-update-catalog", "#provider-import-update-description",
    "#provider-import-update-variants", "#provider-import-update-perfume"].forEach(selector =>
     $(selector)?.addEventListener("change", () => {
