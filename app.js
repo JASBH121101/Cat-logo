@@ -1429,7 +1429,11 @@ dialogContent.addEventListener("click", event => {
   const mainImage = dialogContent.querySelector("#dialog-main-image");
   if (mainImage) {
     mainImage.src = thumbnail.dataset.galleryImage;
+    const productName = dialogContent.querySelector(".dialog-detail h2")?.textContent?.trim() || "Producto";
+    const photoLabel = thumbnail.getAttribute("aria-label") || "";
+    mainImage.alt = photoLabel ? `${productName} — ${photoLabel.toLocaleLowerCase("es")}` : productName;
     mainImage.style.visibility = "visible";
+    mainImage.closest(".dialog-gallery-main")?.querySelector(".dialog-image-load-error")?.remove();
   }
   dialogContent.querySelectorAll("[data-gallery-image]").forEach(button => {
     button.classList.toggle("active", button === thumbnail);
