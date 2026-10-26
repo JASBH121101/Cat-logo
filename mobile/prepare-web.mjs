@@ -128,18 +128,29 @@ const internalLinkHandler = `
 (() => {
   document.addEventListener("click", (event) => {
     const anchor = event.target && event.target.closest
-      ? event.target.closest('a[target="_blank"]')
+      ? event.target.closest("a[href]")
       : null;
     if (!anchor) return;
+
     let destination;
     try {
       destination = new URL(anchor.href, document.baseURI);
     } catch {
       return;
     }
+
+    // Android's bundled asset server can fall back to the app's root page when
+    // navigating to a directory URL. Resolve catalog routes to their index file.
     if (destination.origin === window.location.origin) {
-      event.preventDefault();
-      window.location.assign(destination.href);
+      const isDirectoryRoute =
+        destination.pathname.endsWith("/") && destination.pathname !== "/";
+      if (isDirectoryRoute) destination.pathname += "index.html";
+
+      // Keep same-app links in the WebView; external links are left to Android.
+      if (anchor.target === "_blank" || isDirectoryRoute) {
+        event.preventDefault();
+        window.location.assign(destination.href);
+      }
     }
   }, true);
 })();
