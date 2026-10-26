@@ -72,10 +72,10 @@ for (const [from, to] of replacements) {
 // Add a persistent update button and check GitHub Releases for a newer APK.
 // Android still requires the user to confirm installation of a downloaded APK.
 const appVersion = process.env.JB_MANAGER_VERSION || "1.0.0";
-const updateChecker = \`
+const updateChecker = `
 <script data-jb-manager-updater>
 (() => {
-  const currentVersion = \${JSON.stringify(appVersion)};
+  const currentVersion = ${JSON.stringify(appVersion)};
   const releasesUrl = "https://api.github.com/repos/JASBH121101/Cat-logo/releases?per_page=20";
   let checking = false;
 
@@ -219,7 +219,7 @@ const updateChecker = \`
   });
 })();
 </script>
-\`;
+`;
 // The app's first screen is the administration panel. Keep both routes available.
 await writeFile(adminPath, adminHtml, "utf8");
 await writeFile(join(webDir, "index.html"), adminHtml, "utf8");
