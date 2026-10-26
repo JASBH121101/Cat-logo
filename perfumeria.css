@@ -1565,3 +1565,41 @@ body.perfume-detail-active .site-header.perfume-header > .product-detail-header-
     left: 10px !important;
   }
 }
+
+/* Acciones de compra menos rígidas y botón explícito para limpiar preferencias. */
+.perfume-dialog-actions {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+}
+.perfume-dialog-actions > a {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 50px;
+  padding: 13px 15px;
+  border-radius: 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.perfume-dialog-actions .perfume-primary-link {
+  box-shadow: 0 5px 14px rgba(113,79,29,.14);
+}
+.perfume-dialog-actions .perfume-outline-link {
+  background: var(--perfume-card);
+}
+.perfume-dialog-actions .perfume-outline-link:hover {
+  background: var(--perfume-input);
+}
+.perfume-concierge-clear {
+  width: 100%;
+  min-height: 48px;
+  cursor: pointer;
+  font: inherit;
+}
+@media (max-width: 560px) {
+  .perfume-dialog-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+  .perfume-dialog-actions > a { width: 100%; }
+}
