@@ -1,0 +1,35 @@
+name: Temporary Android signing availability check
+on:
+  push:
+    branches:
+      - fix/cloudflare-pages-production
+permissions:
+  contents: read
+jobs:
+  check-signing-material:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+    steps:
+      - name: Report whether known signing secret names are configured
+        shell: bash
+        run: |
+          set +x
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_DEBUG_KEYSTORE_BASE64 KEYSTORE_BASE64 SIGNING_KEYSTORE_BASE64 DEBUG_KEYSTORE_BASE64 ANDROID_KEYSTORE_B64 ANDROID_SIGNING_KEYSTORE_BASE64 RELEASE_KEYSTORE_BASE64 KEYSTORE_PASSWORD ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS KEY_ALIAS ANDROID_KEY_PASSWORD KEY_PASSWORD; do
+            value="${!name}"
+            if [ -n "$value" ]; then result=present; else result=absent; fi
+            echo "$name=$result"
+          done
