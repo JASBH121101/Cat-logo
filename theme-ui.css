@@ -9600,3 +9600,41 @@ html[data-theme="light"] body.admin-body .admin-preview-color-dot {
     letter-spacing: .045em !important;
   }
 }
+
+
+/* PRODUCT DETAIL OVERLAY · keep the technology catalog scroll position intact. */
+body.technology-catalog #product-detail-page:not(.hidden) {
+  position: fixed !important;
+  inset: var(--catalog-detail-overlay-top, 76px) 0 0;
+  z-index: 80;
+  width: auto;
+  max-width: none !important;
+  height: auto;
+  margin: 0 !important;
+  padding: clamp(12px, 2.3vw, 30px) max(14px, 4vw) 32px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  background: #F5F8FF;
+  color: #17213A;
+}
+body.technology-catalog #product-detail-page #dialog-content {
+  width: min(1180px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+}
+html[data-theme="dark"] body.technology-catalog #product-detail-page:not(.hidden) {
+  background: #080D1B;
+  color: #E9EDFF;
+}
+html[data-theme="light"] body.technology-catalog #product-detail-page:not(.hidden) {
+  background: #F5F8FF;
+  color: #17213A;
+}
+@media (max-width: 760px) {
+  body.technology-catalog #product-detail-page:not(.hidden) {
+    padding: 12px 10px max(20px, env(safe-area-inset-bottom, 0px));
+  }
+}
