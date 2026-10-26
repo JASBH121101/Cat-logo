@@ -13,8 +13,33 @@
   const baseUrl = String(config.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
   const endpoint = baseUrl + "/api/assistant";
   const whatsappNumber = String(config.whatsappNumber || "").replace(/\D/g, "");
-  const history = [];
-  const maxHistory = 6;
+  const maxHistory = 8;
+  const sessionStorageKey = "jb-ai-conversation-v2";
+  const history = restoreSessionHistory();
+
+  function restoreSessionHistory() {
+    try {
+      const stored = JSON.parse(window.sessionStorage.getItem(sessionStorageKey) || "[]");
+      if (!Array.isArray(stored)) return [];
+      return stored.filter(item =>
+        item && (item.role === "user" || item.role === "assistant")
+        && typeof item.content === "string" && item.content.trim()
+      ).map(item => ({
+        role: item.role,
+        content: item.content.trim().slice(0, 1500)
+      })).slice(-maxHistory * 2);
+    } catch { return []; }
+  }
+
+  function persistSessionHistory() {
+    try {
+      window.sessionStorage.setItem(sessionStorageKey, JSON.stringify(history.slice(-maxHistory * 2)));
+    } catch {}
+  }
+
+  function trimSessionHistory() {
+    if (history.length > maxHistory * 2) history.splice(0, history.length - maxHistory * 2);
+  }
 
   const root = document.createElement("div");
   root.className = "jb-ai-advisor";
@@ -27,16 +52,17 @@
       '<header class="jb-ai-header">' +
         '<span class="jb-ai-avatar" aria-hidden="true">✦</span>' +
         '<span class="jb-ai-title-wrap"><strong>Asesor IA · ' + catalogName + '</strong><small>Te ayuda a elegir, sin compromiso</small></span>' +
-        '<button type="button" class="jb-ai-close" aria-label="Cerrar asesor IA">×</button>' +
+        '<button type="button" class="jb-ai-reset" aria-label="Nueva conversación" title="Nueva conversación">↻</button>' +
+      '<button type="button" class="jb-ai-close" aria-label="Cerrar asesor IA">×</button>' +
       '</header>' +
       '<div class="jb-ai-trust">Recomendaciones basadas en productos publicados. Confirmá disponibilidad con la tienda.</div>' +
       '<div class="jb-ai-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>' +
       '<div class="jb-ai-quick-prompts">' +
         (catalogType === "perfumery"
-          ? '<button type="button" data-prompt="Recomendame un perfume para uso diario.">Para diario</button><button type="button" data-prompt="Busco un perfume para regalar.">Para regalar</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>'
+          ? '<button type="button" data-prompt="Recomendame un perfume para uso diario.">Para diario</button><button type="button" data-prompt="Busco un perfume para regalar.">Para regalar</button><button type="button" data-prompt="Compará opciones según mis preferencias.">Comparar opciones</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>'
           : catalogType === "technology"
-            ? '<button type="button" data-prompt="Busco un celular para juegos.">Para juegos</button><button type="button" data-prompt="Quiero una buena cámara y batería.">Cámara y batería</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>'
-            : '<button type="button" data-prompt="Quiero un celular para juegos.">Tecnología</button><button type="button" data-prompt="Busco un perfume para regalar.">Perfumería</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>') +
+            ? '<button type="button" data-prompt="Busco un celular para juegos.">Para juegos</button><button type="button" data-prompt="Quiero una buena cámara y batería.">Cámara y batería</button><button type="button" data-prompt="Compará opciones según mi uso y presupuesto.">Comparar opciones</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>'
+            : '<button type="button" data-prompt="Quiero un celular para juegos.">Tecnología</button><button type="button" data-prompt="Busco un perfume para regalar.">Perfumería</button><button type="button" data-prompt="Compará opciones de los dos catálogos según mis preferencias.">Comparar opciones</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>') +
       '</div>' +
       '<form class="jb-ai-form">' +
         '<label class="jb-ai-sr-only" for="jb-ai-input">Tu consulta</label>' +
@@ -50,6 +76,7 @@
   const launcher = root.querySelector(".jb-ai-launcher");
   const panel = root.querySelector(".jb-ai-panel");
   const closeButton = root.querySelector(".jb-ai-close");
+  const resetButton = root.querySelector(".jb-ai-reset");
   const messagesNode = root.querySelector(".jb-ai-messages");
   const form = root.querySelector(".jb-ai-form");
   const input = root.querySelector("#jb-ai-input");
@@ -97,28 +124,81 @@
     if (!Array.isArray(items) || !items.length) return;
     const group = document.createElement("div");
     group.className = "jb-ai-recommendations";
-    items.slice(0, 3).forEach(product => {
+    const heading = document.createElement("div");
+    heading.className = "jb-ai-recommendations-heading";
+    heading.textContent = items.length === 1 ? "La opción que mejor encaja" : "Opciones para comparar";
+    group.appendChild(heading);
+
+    items.slice(0, 3).forEach((product, index) => {
       const card = document.createElement("article");
       card.className = "jb-ai-product";
+      card.dataset.productId = String(product.id || "");
+
+      const top = document.createElement("div");
+      top.className = "jb-ai-product-top";
+      if (product.image_url) {
+        try {
+          const imageUrl = new URL(product.image_url);
+          if (imageUrl.protocol === "https:") {
+            const media = document.createElement("div");
+            media.className = "jb-ai-product-media";
+            const image = document.createElement("img");
+            image.src = imageUrl.href;
+            image.alt = "";
+            image.loading = "lazy";
+            image.decoding = "async";
+            image.referrerPolicy = "no-referrer";
+            image.addEventListener("error", () => media.remove(), { once: true });
+            media.appendChild(image);
+            top.appendChild(media);
+          }
+        } catch {}
+      }
+
+      const main = document.createElement("div");
+      main.className = "jb-ai-product-main";
+      const eyebrow = document.createElement("span");
+      eyebrow.className = "jb-ai-product-eyebrow";
+      eyebrow.textContent = "OPCIÓN " + String(index + 1).padStart(2, "0");
+      main.appendChild(eyebrow);
+
       const title = document.createElement("strong");
       title.className = "jb-ai-product-name";
       title.textContent = product.name || "Producto del catálogo";
-      card.appendChild(title);
+      main.appendChild(title);
+
       if (product.brand) {
         const brand = document.createElement("span");
         brand.className = "jb-ai-product-brand";
         brand.textContent = product.brand;
-        card.appendChild(brand);
+        main.appendChild(brand);
       }
+      top.appendChild(main);
+      card.appendChild(top);
+
       const prices = [];
       if (Number.isFinite(product.price_usd)) prices.push("US$" + product.price_usd.toFixed(2));
-      if (Number.isFinite(product.price_nio)) prices.push("C$" + product.price_nio.toLocaleString("es-NI", {maximumFractionDigits:2}));
+      if (Number.isFinite(product.price_nio)) prices.push("C$" + product.price_nio.toLocaleString("es-NI", { maximumFractionDigits: 2 }));
       if (prices.length) {
         const price = document.createElement("span");
         price.className = "jb-ai-product-price";
         price.textContent = prices.join(" · ");
         card.appendChild(price);
       }
+
+      if (product.summary) {
+        const summary = document.createElement("p");
+        summary.className = "jb-ai-product-summary";
+        summary.textContent = product.summary;
+        card.appendChild(summary);
+      }
+      if (product.reason) {
+        const reason = document.createElement("p");
+        reason.className = "jb-ai-product-reason";
+        reason.textContent = product.reason;
+        card.appendChild(reason);
+      }
+
       const actions = document.createElement("div");
       actions.className = "jb-ai-product-actions";
       const productCatalog = product.catalog_type || catalogType;
@@ -130,10 +210,13 @@
       details.textContent = "Ver producto";
       details.className = "jb-ai-product-link";
       actions.appendChild(details);
+
       if (whatsappNumber) {
         const whats = document.createElement("a");
         const summary = product.name + (prices.length ? " (" + prices.join(" / ") + ")" : "");
-        whats.href = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent("Hola, me interesa " + summary + ". ¿Me confirmás la disponibilidad?");
+        const inquiry = "Hola, vengo del asesor IA de " + (productIsPerfume ? "JB Parfums" : "JB TECH")
+          + ". Me interesa " + summary + ". ¿Me confirmás disponibilidad y detalles?";
+        whats.href = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(inquiry);
         whats.target = "_blank";
         whats.rel = "noopener";
         whats.textContent = "Consultar";
@@ -159,17 +242,20 @@
   async function sendMessage(text) {
     const cleanMessage = String(text || "").trim();
     if (!cleanMessage || pending) return;
-    addMessage("user", cleanMessage);
     const previousHistory = history.slice(-maxHistory);
-    history.push({role:"user", content:cleanMessage});
+
+    addMessage("user", cleanMessage);
+    history.push({ role: "user", content: cleanMessage });
+    trimSessionHistory();
+    persistSessionHistory();
     input.value = "";
     input.style.height = "auto";
     setPending(true);
-    const loading = addMessage("assistant", "Estoy revisando el catálogo…");
+    const loading = addMessage("assistant", "Estoy revisando el catálogo y tus preferencias…");
     try {
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           catalogType: catalogType,
           message: cleanMessage,
@@ -180,29 +266,49 @@
       try { data = await response.json(); } catch { data = null; }
       if (!response.ok) throw new Error(data && data.message ? data.message : "No se pudo completar la consulta.");
       loading.textContent = data.reply || "No encontré una respuesta. Probá con otros detalles.";
-      history.push({role:"assistant", content:loading.textContent});
-      if (history.length > 10) history.splice(0, history.length - 10);
+      history.push({ role: "assistant", content: loading.textContent });
+      trimSessionHistory();
+      persistSessionHistory();
       addRecommendations(data.recommendations);
     } catch (error) {
       loading.textContent = error && error.message
         ? error.message
         : "El asesor no está disponible en este momento.";
-      if (!whatsappNumber) return;
-      const help = document.createElement("a");
-      help.className = "jb-ai-fallback-link";
-      help.href = whatsappLink.href;
-      help.target = "_blank";
-      help.rel = "noopener";
-      help.textContent = "Continuar por WhatsApp";
-      messagesNode.appendChild(help);
+      history.push({ role: "assistant", content: loading.textContent });
+      trimSessionHistory();
+      persistSessionHistory();
+      if (whatsappNumber) {
+        const help = document.createElement("a");
+        help.className = "jb-ai-fallback-link";
+        help.href = whatsappLink.href;
+        help.target = "_blank";
+        help.rel = "noopener";
+        help.textContent = "Continuar por WhatsApp";
+        messagesNode.appendChild(help);
+      }
     } finally {
       setPending(false);
       scrollMessages();
     }
   }
 
+  function resetConversation() {
+    history.length = 0;
+    persistSessionHistory();
+    messagesNode.replaceChildren();
+    welcomeShown = false;
+    addMessage("assistant", catalogType === "perfumery"
+      ? "¡Hola! Soy el asesor virtual de JB Parfums. Contame qué tipo de fragancia te gusta, para qué ocasión o cuál es tu presupuesto."
+      : catalogType === "technology"
+        ? "¡Hola! Soy el asesor virtual de JB TECH. Contame para qué usarías el equipo y tu presupuesto; te ayudo a comparar las opciones publicadas."
+        : "¡Hola! Soy el asesor virtual de JB Collections. Te puedo orientar entre tecnología y perfumería. Contame qué buscás, para quién es y cuánto querés invertir.");
+    welcomeShown = true;
+    input.focus();
+  }
+
   launcher.addEventListener("click", () => panel.hidden ? openPanel() : closePanel());
   closeButton.addEventListener("click", closePanel);
+  resetButton.addEventListener("click", resetConversation);
   form.addEventListener("submit", event => {
     event.preventDefault();
     void sendMessage(input.value);
@@ -218,4 +324,9 @@
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !panel.hidden) closePanel();
   });
+
+  if (history.length) {
+    history.forEach(item => addMessage(item.role, item.content));
+    welcomeShown = true;
+  }
 })();
