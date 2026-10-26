@@ -89,7 +89,7 @@ async function publishedProducts(catalogType) {
   return rows.map(row => {
     const d = detailsById.get(String(row.id));
     return {
-      id:safeId(row.id), name:clean(row.name,100), brand:clean(row.brand,60),
+      id:safeId(row.id), catalog_type:catalogType, name:clean(row.name,100), brand:clean(row.brand,60),
       category:clean(row.category,50), description:clean(row.description,220),
       product_type:clean(row.product_type,30),
       price_usd:row.price_usd == null ? null : Number(row.price_usd),
@@ -129,7 +129,7 @@ function recommendations(ids, products) {
     const p = known.get(id);
     if (!p || seen.has(id)) continue;
     seen.add(id);
-    out.push({id:p.id,name:p.name,brand:p.brand,price_usd:p.price_usd,price_nio:p.price_nio,availability:p.availability,category:p.category,product_type:p.product_type});
+    out.push({id:p.id,catalog_type:p.catalog_type,name:p.name,brand:p.brand,price_usd:p.price_usd,price_nio:p.price_nio,availability:p.availability,category:p.category,product_type:p.product_type});
   }
   return out;
 }
@@ -159,7 +159,7 @@ export async function onRequest(context) {
     body = await request.json();
   } catch { return json(400,{error:"invalid_json",message:"No pudimos leer tu mensaje."},origin); }
   const catalogType = body && body.catalogType;
-  if (catalogType !== "technology" && catalogType !== "perfumery") return json(400,{error:"invalid_catalog",message:"Catálogo no válido."},origin);
+  if (catalogType !== "technology" && catalogType !== "perfumery" && catalogType !== "collections") return json(400,{error:"invalid_catalog",message:"Catálogo no válido."},origin);
   const rawMessage = String(body && body.message != null ? body.message : "");
   if (rawMessage.length > MAX_MESSAGE) return json(413,{error:"message_too_long",message:"Tu mensaje es demasiado largo; resumilo en 600 caracteres o menos."},origin);
   const message = clean(rawMessage,MAX_MESSAGE);
@@ -168,9 +168,13 @@ export async function onRequest(context) {
     return json(503,{error:"ai_not_configured",message:"El asesor IA todavía no está conectado. Podés escribirnos por WhatsApp mientras terminamos la configuración."},origin);
   }
   try {
-    const products = await publishedProducts(catalogType);
+    const products = catalogType === "collections"
+      ? (await Promise.all([publishedProducts("technology"), publishedProducts("perfumery")])).flat()
+      : await publishedProducts(catalogType);
     if (!products.length) return json(200,{reply:"Por el momento no encuentro productos publicados en este catálogo. Escribinos por WhatsApp y te ayudamos a revisar opciones.",recommendations:[]},origin);
-    const label = catalogType === "technology" ? "JB TECH / tecnología" : "JB Parfums / perfumería";
+    const label = catalogType === "technology" ? "JB TECH / tecnología"
+      : catalogType === "perfumery" ? "JB Parfums / perfumería"
+      : "JB Collections / ambos catálogos";
     const catalogContext = JSON.stringify({catalog:label,published_products:products,customer_question:message});
     const output = await env.AI.run(MODEL,{
       messages:[
