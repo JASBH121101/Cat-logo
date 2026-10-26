@@ -153,9 +153,6 @@
           <button type="button" class="admin-nav-button" data-admin-section="provider">
             <span class="admin-nav-icon" aria-hidden="true">↻</span><span class="admin-nav-label">Proveedor</span><span class="admin-nav-count" id="provider-nav-count">0</span>
           </button>
-          <button type="button" class="admin-nav-button" data-admin-section="updates">
-            <span class="admin-nav-icon" aria-hidden="true">⇄</span><span class="admin-nav-label">Actualizar catálogo</span>
-          </button>
         </nav>
 
         <a href="./" class="admin-sidebar-catalog-link">
@@ -705,35 +702,6 @@
         <p id="provider-status-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
       </section>
 
-      <section id="admin-section-updates" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="updates">
-        <header class="provider-page-heading">
-          <div><p class="eyebrow">ACTUALIZACIONES SEGURAS</p><h2>Importar cambios del proveedor</h2>
-            <p>Compará un archivo JSON o CSV con tus productos existentes. Primero verás una vista previa; no se crea ni publica ningún producto automáticamente.</p></div>
-          <button type="button" id="provider-import-download-template" class="button button-outline">Descargar plantilla JSON</button>
-        </header>
-        <section class="admin-card provider-import-card">
-          <div class="provider-import-explainer">
-            <h3>¿Cómo funcionará?</h3>
-            <p>Guardá o convertí los datos que recibas de GoPartner a la plantilla. El sistema intentará identificar productos por ID del proveedor, clave del catálogo o una combinación única de marca y modelo/nombre. Las coincidencias ambiguas se omiten para que no se actualice el producto equivocado.</p>
-            <p><strong>Importante:</strong> <code>provider_price_usd</code> y <code>provider_price_nio</code> son los precios de referencia del proveedor, no tu comisión ni el precio público. Para cambiar el precio que ve el cliente, el archivo debe incluir expresamente <code>catalog_price_usd</code> o <code>catalog_price_nio</code>.</p>
-            <p>Las fotografías, la publicación, los productos destacados/exclusivos y el estado de borrador se conservan. Solo se actualizan campos que estén en el archivo y que hayas habilitado abajo.</p>
-          </div>
-          <div class="provider-import-controls">
-            <label class="provider-field"><span>Catálogo si el archivo no especifica uno</span><select id="provider-import-catalog"><option value="all">Ambos / usar tipo por producto</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
-            <label class="file-button provider-import-file-button">Seleccionar JSON o CSV<input id="provider-import-file" type="file" accept="application/json,.json,text/csv,.csv"></label>
-          </div>
-          <fieldset class="provider-import-options">
-            <legend>Qué datos permitir actualizar</legend>
-            <label><input id="provider-import-update-catalog" type="checkbox" checked> <span><strong>Datos del catálogo</strong><small>Solo columnas explícitas como <code>catalog_price_usd</code>, <code>catalog_availability</code>, <code>catalog_name</code> y equivalentes.</small></span></label>
-            <label><input id="provider-import-update-description" type="checkbox"> <span><strong>Descripción comercial</strong><small>Actualizar el texto de la ficha únicamente si el archivo incluye <code>catalog_description</code>.</small></span></label>
-            <label><input id="provider-import-update-variants" type="checkbox"> <span><strong>Precios, disponibilidad y configuraciones de variantes</strong><small>Solo con la columna <code>catalog_variants</code> o <code>variants</code> como arreglo JSON. Las galerías de fotos existentes se preservan.</small></span></label>
-            <label><input id="provider-import-update-perfume" type="checkbox"> <span><strong>Detalles de perfumería</strong><small>Actualiza familia, concentración, volumen, público y notas solo para productos de JB Parfums.</small></span></label>
-          </fieldset>
-          <div class="provider-import-preview-heading"><div><h3>Vista previa de coincidencias</h3><p id="provider-import-summary">Seleccioná un archivo para comparar los datos.</p></div><button id="provider-import-apply" type="button" class="button button-primary" disabled>Aplicar actualizaciones</button></div>
-          <div id="provider-import-preview" class="provider-import-preview"></div>
-          <p id="provider-import-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
-        </section>
-      </section>
 
     </section>
   </main>
