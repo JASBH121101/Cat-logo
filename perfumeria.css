@@ -1511,7 +1511,7 @@ html[data-theme="dark"] .perfume-concierge {
 /* PRODUCT DETAIL OVERLAY · keep the perfume catalog scroll position intact. */
 body.perfume-page #perfume-detail-page:not(.hidden) {
   position: fixed !important;
-  inset: var(--catalog-detail-overlay-top, 76px) 0 0;
+  inset: 0 !important;
   z-index: 80;
   width: auto;
   max-width: none !important;
