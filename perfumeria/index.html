@@ -13,12 +13,12 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles.css?v=20261025-luxe-controls1">
   <link rel="stylesheet" href="../theme-ui.css?v=20261024-final-responsive-audit1">
-  <link rel="stylesheet" href="../perfumeria.css?v=20261025-category-sections-preview2">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261026-luxe-concierge1">
   <link rel="stylesheet" href="../brand-refresh.css?v=20261025-badge-row1">
-  <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261025-category-sections-preview1">
+  <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261026-luxe-concierge1">
   <link rel="stylesheet" href="../catalog-performance.css?v=20261025-luxe-perf1">
   <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261025-category-sections-preview3"></script>
+  <script type="module" src="../perfumeria.js?v=20261026-luxe-concierge1"></script>
   <script src="../ui.js?v=20261024-auto-close3" defer></script>
 </head>
 <body class="perfume-page">
@@ -81,6 +81,36 @@
       <a class="perfume-family-link" href="#category-disenador" data-family-category="disenador">
         <span class="perfume-family-number">03</span><strong>Perfumería de Diseñador</strong><small>Icónicos · Atemporales</small><span class="perfume-family-arrow" aria-hidden="true">↗</span>
       </a>
+    </section>
+
+    <section class="perfume-concierge" id="encontra-tu-aroma" aria-labelledby="perfume-concierge-title">
+      <div class="perfume-concierge-intro">
+        <p class="perfume-kicker">TU RITUAL · TU IDENTIDAD</p>
+        <h2 id="perfume-concierge-title">Encontrá una fragancia <em>a tu medida.</em></h2>
+        <p>Contanos qué te gusta. Te mostraremos opciones de nuestra colección que se acerquen a tu estilo y presupuesto.</p>
+      </div>
+      <form id="perfume-concierge-form" class="perfume-concierge-form">
+        <label class="catalog-control-field"><span>¿Qué familia te atrae?</span>
+          <select id="concierge-family">
+            <option value="all">Sorprendeme</option><option value="nicho">Nicho</option><option value="arabes">Árabe</option><option value="disenador">Diseñador</option>
+          </select>
+        </label>
+        <label class="catalog-control-field"><span>¿Qué perfil preferís?</span>
+          <select id="concierge-scent">
+            <option value="all">Estoy abierto a descubrir</option><option value="dulce">Dulce / avainillado</option><option value="fresco">Fresco / cítrico</option><option value="amaderado">Amaderado / especiado</option><option value="intenso">Intenso / ambarado</option><option value="floral">Floral</option>
+          </select>
+        </label>
+        <label class="catalog-control-field"><span>¿Para quién?</span>
+          <select id="concierge-audience">
+            <option value="all">Sin preferencia</option><option value="hombre">Masculino</option><option value="mujer">Femenino</option><option value="unisex">Unisex</option>
+          </select>
+        </label>
+        <label class="catalog-control-field"><span>Presupuesto máximo (US$)</span>
+          <input id="concierge-budget" type="number" min="0" step="5" inputmode="decimal" placeholder="Sin límite definido">
+        </label>
+        <button class="perfume-primary-link perfume-concierge-submit" type="submit">Descubrir mi selección <span aria-hidden="true">↗</span></button>
+      </form>
+      <div id="perfume-concierge-results" class="perfume-concierge-results" aria-live="polite" hidden></div>
     </section>
 
     
