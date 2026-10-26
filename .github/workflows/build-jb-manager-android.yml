@@ -68,7 +68,7 @@ jobs:
             echo "APK proxy response does not start with ZIP/APK signature." >&2
             exit 1
           fi
-          grep -Eiq '^content-type: application/vnd\\.android\\.package-archive' "$headers" || {
+          grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
             echo "APK proxy did not return the Android package MIME type." >&2
             exit 1
           }
