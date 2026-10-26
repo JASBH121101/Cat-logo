@@ -1489,3 +1489,11 @@ html[data-theme="dark"] .perfume-concierge {
   .perfume-concierge-intro { margin-bottom:22px; }
   .perfume-concierge-results { margin-top:24px; padding-top:22px; }
 }
+
+
+/* Luxury category icons: fine-line champagne gold */
+.perfume-family-link { grid-template-columns: auto 34px minmax(0,1fr) auto; }
+.perfume-family-icon { width:34px; height:34px; display:grid; place-items:center; color:var(--perfume-gold); border:1px solid color-mix(in srgb, var(--perfume-gold) 48%, transparent); border-radius:50%; background:linear-gradient(145deg, rgba(201,166,105,.10), rgba(201,166,105,.025)); transition:transform .25s ease, background .25s ease, box-shadow .25s ease; }
+.perfume-family-icon svg { display:block; width:23px; height:23px; }
+.perfume-family-link:hover .perfume-family-icon, .perfume-family-link:focus-visible .perfume-family-icon { transform:translateY(-2px); background:rgba(201,166,105,.14); box-shadow:0 0 18px rgba(201,166,105,.12); }
+@media (max-width:560px) { .perfume-family-link { grid-template-columns:auto 30px minmax(0,1fr) auto; gap:9px; } .perfume-family-icon { width:30px; height:30px; } .perfume-family-icon svg { width:20px; height:20px; } }
