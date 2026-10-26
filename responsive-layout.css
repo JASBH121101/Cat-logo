@@ -1,0 +1,107 @@
+/* JB Collections · shared responsive layout guardrails
+   This file is loaded last. Brand and component styling stays in the page CSS;
+   device-width adjustments live here so desktop/tablet/mobile rules are easy to audit. */
+
+:where(.admin-main, .dashboard, .dashboard-top, .dashboard-overview, .admin-form,
+  .product-grid, .featured-grid, .perfume-product-grid) {
+  min-width: 0;
+}
+
+:where(.admin-main, .dashboard-top > *, .dashboard-overview > *,
+  .admin-form > *, .product-grid > *, .featured-grid > *,
+  .perfume-product-grid > *) {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+body.admin-body .admin-form input,
+body.admin-body .admin-form select,
+body.admin-body .admin-form textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* DESKTOP · 1200 px and wider */
+@media (min-width: 1200px) {
+  body.technology-catalog .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(16px, 1.3vw, 24px);
+  }
+
+  body.perfume-page .product-grid,
+  body.perfume-page .perfume-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr));
+    gap: clamp(14px, 1.3vw, 20px);
+  }
+}
+
+/* TABLET / SMALL LAPTOP · 761–1199 px */
+@media (min-width: 761px) and (max-width: 1199px) {
+  body.technology-catalog .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, 1.4vw, 18px);
+  }
+
+  body.perfume-page .product-grid,
+  body.perfume-page .perfume-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 215px), 1fr));
+    gap: clamp(12px, 1.5vw, 18px);
+  }
+}
+
+/* TABLET ADMIN · the fixed sidebar leaves less width for the welcome row. */
+@media (min-width: 761px) and (max-width: 1050px) {
+  body.admin-body.admin-dashboard-active .dashboard-top {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-catalog-context {
+    width: 100%;
+    max-width: 520px;
+    min-width: 0;
+  }
+
+  body.admin-body.admin-dashboard-active .dashboard-top > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* MOBILE · keep technology products in the requested two-column layout. */
+@media (max-width: 760px) {
+  body.technology-catalog .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  body.admin-body .admin-main,
+  body.admin-body .dashboard-top > *,
+  body.admin-body .dashboard-overview > *,
+  body.admin-body .admin-form > *,
+  body.technology-catalog main > *,
+  body.perfume-page main > * {
+    min-width: 0;
+  }
+
+  body.admin-body .admin-catalog-context {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* EXTRA-NARROW PHONES · preserve the single-column perfume reading layout. */
+@media (max-width: 390px) {
+  body.perfume-page .product-grid,
+  body.perfume-page .perfume-product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -2,7 +2,7 @@ name: Catalog static checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/jb-manager-android-apk]
   pull_request:
   workflow_dispatch:
 
@@ -20,9 +20,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in admin.js app.js collections.js config.js perfumeria.js ui.js; do
-            echo "Checking $file"
+          for file in admin.js app.js perfumeria.js api/share.js; do
+            echo "Checking ES module $file"
+            node --input-type=module --check < "$file"
+          done
+          for file in collections.js config.js ui.js; do
+            echo "Checking script $file"
             node --check "$file"
+          done
+          node --check mobile/prepare-web.mjs
+          for file in mobile/apk-updater.js mobile/back-navigation.js; do
+            echo "Checking mobile ES module $file"
+            node --input-type=module --check < "$file"
           done
       - name: Check HTML IDs and local references
         shell: bash

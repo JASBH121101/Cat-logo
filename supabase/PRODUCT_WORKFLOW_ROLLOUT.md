@@ -11,8 +11,8 @@
 4. In Supabase Vault, create:
    - `cat_logo_project_url`: the Catálogo project URL.
    - `cat_logo_cleanup_secret`: exactly the same secret as `CATALOG_TRASH_CLEANUP_SECRET`.
-5. Run `supabase/setup_catalog_trash_cron.sql` in the Catálogo SQL Editor.
-6. Verify the job in the Cron Jobs screen. Test the Edge Function manually with its secret only in a secure request header; never include the secret in a URL or commit it to this repository.
+5. Run `supabase/setup_catalog_trash_cron.sql` in the Catálogo SQL Editor. The script removes the old `catlogo-cleanup-expired-trash-daily` schedule before enabling the secret-authenticated job, avoiding duplicate cleanup runs.
+6. Verify that only `cat-logo-trash-cleanup` remains active in the Cron Jobs screen. Test the Edge Function manually with its secret only in a secure request header; never include the secret in a URL or commit it to this repository.
 
 ## Behavior
 

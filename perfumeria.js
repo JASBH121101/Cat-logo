@@ -389,7 +389,7 @@ document.addEventListener("load", event => {
 function imageMarkup(product) {
   const url = getImages(product)[0] || "";
   return url
-    ? '<img data-perfume-image src="' + escapeHtml(url) + '" alt="' + escapeHtml(product.name || "Fragancia") + '" loading="lazy">'
+    ? '<img data-perfume-image src="' + escapeHtml(url) + '" alt="' + escapeHtml(product.name || "Fragancia") + '" loading="lazy" decoding="async">'
     : '<div class="perfume-photo-placeholder"><span aria-hidden="true">✦</span><small>Foto por agregar</small></div>';
 }
 
@@ -568,7 +568,7 @@ function openPerfume(product) {
       '</div>' +
       (images.length > 1
         ? '<div class="perfume-dialog-thumbnails">' + images.map((url,index) =>
-            '<button type="button" class="perfume-dialog-thumb ' + (index===0 ? "active" : "") + '" data-gallery-image="' + escapeHtml(url) + '" aria-label="Ver fotografía ' + (index+1) + '"><img src="' + escapeHtml(url) + '" alt="" loading="lazy"></button>'
+            '<button type="button" class="perfume-dialog-thumb ' + (index===0 ? "active" : "") + '" data-gallery-image="' + escapeHtml(url) + '" aria-label="Ver fotografía ' + (index+1) + '"><img src="' + escapeHtml(url) + '" alt="" loading="lazy" decoding="async"></button>'
           ).join("") + '</div>'
         : "")
     : '<div class="perfume-photo-placeholder perfume-dialog-photo-placeholder"><span aria-hidden="true">✦</span><small>Fotografía no disponible</small></div>';

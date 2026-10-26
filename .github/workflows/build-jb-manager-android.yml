@@ -1,0 +1,379 @@
+name: Build JB Manager Collections APK
+
+concurrency:
+  group: jb-manager-android-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+      - feature/jb-manager-android-apk
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "ANDROID_HOME/ANDROID_SDK_ROOT is not configured on this runner." >&2
+            exit 1
+          fi
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Android sdkmanager was not found." >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Restore persistent Android debug signing key
+        uses: actions/cache@v4
+        id: android-signing-key
+        with:
+          path: ~/.android/debug.keystore
+          key: jb-manager-collections-debug-signing-v1-${{ runner.os }}
+
+      - name: Ensure stable Android signing key
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ -f "$HOME/.android/debug.keystore" ]; then
+            echo "Restored the existing signing key for update-compatible builds."
+          elif [ -f .github/android-signing-key-persisted ]; then
+            echo "ERROR: The saved signing key cache is missing. Refusing to generate a different key because it would block app updates." >&2
+            exit 1
+          else
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            echo "Created the initial persistent signing key; it will be cached after a successful build."
+          fi
+
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare a self-contained admin web bundle
+        env:
+          JB_MANAGER_VERSION: 1.0.${{ github.run_number }}
+        run: node mobile/prepare-web.mjs
+
+      - name: Verify shared web assets match the browser source
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The APK must package the same business logic, Supabase config, and styles
+          # as the browser panel. Only the HTML shell/native bridges are platform-specific.
+          for file in admin.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css admin-workflow.css admin-bulk-import.css responsive-layout.css; do
+            if ! cmp -s "$file" "mobile/www/$file"; then
+              echo "Shared source and APK bundle differ: $file" >&2
+              diff -u "$file" "mobile/www/$file" || true
+              exit 1
+            fi
+          done
+
+          for page in admin.html tecnologia/index.html perfumeria/index.html; do
+            test -s "mobile/www/$page" || {
+              echo "Missing shared page in APK bundle: $page" >&2
+              exit 1
+            }
+          done
+
+          for page in admin.html mobile/www/admin.html; do
+            grep -Fq 'id="dashboard-activity-list"' "$page" || {
+              echo "Recent activity widget is missing from $page." >&2
+              exit 1
+            }
+            grep -Fq 'id="dashboard-activity-refresh"' "$page" || {
+              echo "Recent activity refresh control is missing from $page." >&2
+              exit 1
+            }
+          done
+
+          grep -Fq 'updated_at || a.created_at' admin.js
+          grep -Fq 'catalog_events' app.js
+          echo "Browser source and APK shared assets match; recent activity and catalog analytics are present."
+
+      - name: Create Android project
+        working-directory: mobile
+        run: npx cap add android
+
+      - name: Install native APK downloader
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          native_source = Path("mobile/native-android/ApkUpdaterPlugin.java")
+          if not native_source.exists():
+              raise SystemExit("Native APK updater source is missing.")
+          candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
+          if len(candidates) != 1:
+              raise SystemExit("Expected one MainActivity.java, found " + str(len(candidates)))
+          main_path = candidates[0]
+          source = main_path.read_text()
+          package_match = re.search(r"^package\s+([A-Za-z0-9_.]+);", source, re.M)
+          if not package_match:
+              raise SystemExit("Could not determine generated Android package.")
+          package_name = package_match.group(1)
+          plugin_text = re.sub(r"^package\s+[^;]+;", "package " + package_name + ";", native_source.read_text(), count=1, flags=re.M)
+          (main_path.parent / "ApkUpdaterPlugin.java").write_text(plugin_text)
+          if "registerPlugin(ApkUpdaterPlugin.class)" not in source:
+              needle = "super.onCreate(savedInstanceState);"
+              if needle in source:
+                  source = source.replace(needle, "registerPlugin(ApkUpdaterPlugin.class);\n        " + needle, 1)
+              else:
+                  class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
+                  if not class_open:
+                      raise SystemExit("Could not locate generated MainActivity class declaration.")
+                  source = source.replace("package " + package_name + ";", "package " + package_name + ";\n\nimport android.os.Bundle;", 1)
+                  class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
+                  method = (
+                      "\n    @Override\n"
+                      "    public void onCreate(Bundle savedInstanceState) {\n"
+                      "        registerPlugin(ApkUpdaterPlugin.class);\n"
+                      "        super.onCreate(savedInstanceState);\n"
+                      "    }\n"
+                  )
+                  source = source[:class_open.end()] + method + source[class_open.end():]
+              main_path.write_text(source)
+          manifest = Path("mobile/android/app/src/main/AndroidManifest.xml")
+          manifest_text = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
+          if permission not in manifest_text:
+              manifest_text = manifest_text.replace("<application", permission + "\n    <application", 1)
+          manifest.write_text(manifest_text)
+          print("Installed native DownloadManager bridge and APK-install permission.")
+          PY
+
+      - name: Set Android app version
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("mobile/android/app/build.gradle")
+          source = path.read_text()
+          old_code = "versionCode 1"
+          old_name = 'versionName "1.0"'
+          if old_code not in source or old_name not in source:
+              raise SystemExit("Could not locate Android default version fields.")
+          source = source.replace(old_code, "versionCode " + os.environ["VERSION_CODE"], 1)
+          source = source.replace(old_name, 'versionName "' + os.environ["VERSION_NAME"] + '"', 1)
+
+          # Explicitly pin the debug build to the persistent cached key.
+          # The generated Capacitor project must not silently create a fresh
+          # project-local debug certificate for every APK.
+          android_open = "android {"
+          signing_block = """android {
+              signingConfigs {
+                  debug {
+                      storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                  }
+              }
+          """
+          if android_open not in source:
+              raise SystemExit("Could not locate the Android Gradle configuration.")
+          source = source.replace(android_open, signing_block, 1)
+
+          build_types = "    buildTypes {"
+          debug_signing = '        debug {\n            signingConfig signingConfigs.debug\n        }\n'
+          if build_types not in source:
+              raise SystemExit("Could not locate Android buildTypes.")
+          source = source.replace(build_types, build_types + "\n" + debug_signing, 1)
+          path.write_text(source)
+          print("Configured Android version", os.environ["VERSION_NAME"])
+          print("Pinned the debug APK signing config to ~/.android/debug.keystore.")
+          PY
+
+      - name: Generate the JB Manager app icon and splash resources
+        working-directory: mobile
+        run: >
+          npx @capacitor/assets generate --android --assetPath assets
+          --iconBackgroundColor '#11172a'
+          --iconBackgroundColorDark '#11172a'
+          --splashBackgroundColor '#11172a'
+          --splashBackgroundColorDark '#11172a'
+
+      - name: Sync web assets into Android
+        working-directory: mobile
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Verify APK uses persistent update-compatible signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="$HOME/.android/debug.keystore"
+          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          EXPECTED="$(keytool -list -v -keystore "$KEYSTORE" -storepass android -alias androiddebugkey 2>/dev/null | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          ACTUAL="$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | awk -F': ' '/certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [ -z "$EXPECTED" ] || [ -z "$ACTUAL" ]; then
+            echo "Could not determine the APK signing certificate fingerprint." >&2
+            exit 1
+          fi
+          echo "Persistent keystore SHA-256: $EXPECTED"
+          echo "APK signer SHA-256:          $ACTUAL"
+          test "$EXPECTED" = "$ACTUAL" || {
+            echo "APK was not signed with the persistent update key." >&2
+            exit 1
+          }
+
+      - name: Verify packaged panel, styles, scripts, and both catalogs
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          for asset in \
+            assets/public/index.html \
+            assets/public/admin.html \
+            assets/public/styles.css \
+            assets/public/theme-ui.css \
+            assets/public/responsive-layout.css \
+            assets/public/admin.js \
+            assets/public/config.js \
+            assets/public/jb-manager-back-navigation.js \
+            assets/public/jb-manager-apk-updater.js \
+            assets/public/img/hero-catalogo.png \
+            assets/public/tecnologia/index.html \
+            assets/public/perfumeria/index.html \
+            assets/public/favicon-collections.svg
+          do
+            unzip -l "$APK" "$asset" | grep -q "$asset" || {
+              echo "Missing APK asset: $asset" >&2
+              exit 1
+            }
+          done
+          unzip -p "$APK" assets/public/index.html | grep -q '<base href="https://localhost/">' || {
+            echo "Admin start page is missing its local asset base." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'jb-manager-check-updates' || {
+            echo "APK is missing the persistent update button." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'JB Manager está actualizado' || {
+            echo "APK is missing update-status feedback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q '__jbManagerAllowCatalogNavigation' || {
+            echo "APK is missing the Android catalog-navigation fallback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'jb-manager-back-navigation.js' || {
+            echo "APK admin page is missing the native back-button handler reference." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'backButton' || {
+            echo "APK is missing the native Capacitor back-button handler." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'jb-manager-return=dashboard' || {
+            echo "APK native back-button handler does not route to the admin dashboard." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-apk-updater.js | grep -q 'downloadAndInstall' || {
+            echo "APK native APK downloader bridge is missing." >&2
+            exit 1
+          }
+          grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
+            echo "Native APK updater plugin is not registered in MainActivity." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
+            echo "Unexpected application name." >&2
+            exit 1
+          }
+          echo "APK bundle checks passed."
+
+      - name: Verify native updater source, manifest and package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/ApkUpdaterPlugin.java"
+          MANIFEST="mobile/android/app/src/main/AndroidManifest.xml"
+          test -f "$PLUGIN"
+          grep -q 'EXPECTED_PACKAGE = "com.jbcollections.manager.v2"' "$PLUGIN"
+          grep -q 'validateDownloadedApk' "$PLUGIN"
+          grep -q 'sameHashSet' "$PLUGIN"
+          grep -q 'REQUEST_INSTALL_PACKAGES' "$MANIFEST"
+          grep -q 'applicationId "com.jbcollections.manager.v2"' mobile/android/app/build.gradle || {
+            echo "Unexpected Android applicationId." >&2
+            exit 1
+          }
+          grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
+            echo "Native APK updater plugin is not registered in MainActivity." >&2
+            exit 1
+          }
+          echo "Native updater source and package identity checks passed."
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JB-Manager-Collections-APK
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish APK update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk JB-Manager-Collections.apk
+          TAG="jb-manager-v1.0.$GITHUB_RUN_NUMBER"
+          gh release create "$TAG" JB-Manager-Collections.apk \
+            --title "JB Manager Collections v1.0.$GITHUB_RUN_NUMBER" \
+            --notes "Update for JB Manager Collections. Download and install the APK on Android; the system will ask you to confirm installation." \
+            --prerelease
+
+      - name: Build summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "## JB Manager Collections"
+            echo ""
+            echo "The Android debug APK was built successfully."
+            echo ""
+            echo "Download the **JB-Manager-Collections-APK** artifact from this workflow run."
+            echo "The APK is unsigned for store distribution but can be installed directly on a personal Android device."
+          } >> "$GITHUB_STEP_SUMMARY"

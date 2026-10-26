@@ -1,0 +1,1 @@
+Persistent JB Manager Collections Android signing-key cache has been established by GitHub Actions. Builds must stop if the cached signing key cannot be restored; they must never silently generate a new signing identity, because that would block APK updates.

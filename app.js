@@ -417,7 +417,7 @@ function renderColorSummary(product) {
     <span class="product-color-chip">
       ${
         color.image_url
-          ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
           : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
       }
       ${escapeHtml(color.name)}
@@ -444,7 +444,7 @@ function imageMarkup(product) {
     return `
       <img src="${escapeHtml(url)}"
            alt="${escapeHtml(product.name)}"
-           loading="lazy"
+           loading="lazy" decoding="async"
            data-product-image>
     `;
   }
@@ -601,7 +601,7 @@ function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const badge = product.featured
-    ? '<span class="product-badge featured-badge">✦ DESTACADO</span>'
+    ? '<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'
     : "";
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
@@ -809,7 +809,7 @@ function renderProducts() {
     featuredSection.classList.toggle("hidden", featured.length === 0);
     featuredGrid.innerHTML = featured.map(renderCard).join("");
   }
-  if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} destacado${featured.length === 1 ? "" : "s"}` : "";
+  if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} exclusivo${featured.length === 1 ? "" : "s"}` : "";
   if (resultsEyebrow) resultsEyebrow.textContent = hasFilters ? "TU BÚSQUEDA" : "CATÁLOGO COMPLETO";
   if (resultsTitle) resultsTitle.textContent = hasFilters ? "Resultados" : "Explorá todo el catálogo";
   if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
@@ -1045,7 +1045,7 @@ function renderVariantControls(product, variants, selected) {
                         class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
                         data-gallery-image="${escapeHtml(url)}"
                         aria-label="Ver fotografía ${index + 1}">
-                  <img src="${escapeHtml(url)}" alt="" loading="lazy">
+                  <img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async">
                 </button>
               `).join("")}
             </div>`
@@ -1069,7 +1069,7 @@ function renderLegacyColorOptions(product, selectedColorName = "") {
             <div class="dialog-color-image">
               ${
                 color.image_url
-                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy">`
+                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy" decoding="async">`
                   : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
               }
             </div>
