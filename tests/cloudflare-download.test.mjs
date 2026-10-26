@@ -75,7 +75,7 @@ test("returns a complete byte-counted APK response", async () => {
     const result = await onRequest({ request: request() });
     assert.equal(result.status, 200);
     assert.equal(result.headers.get("Content-Type"), "application/vnd.android.package-archive");
-    assert.match(result.headers.get("Content-Disposition"), /JB-Manager-Collections-v1\\.0\\.64\\.apk/);
+    assert.match(result.headers.get("Content-Disposition"), /JB-Manager-Collections-v1\.0\.64\.apk/);
     assert.equal(result.headers.get("Content-Length"), "1024");
     assert.equal(result.headers.get("Cache-Control"), "no-store, no-cache, must-revalidate");
     const body = new Uint8Array(await result.arrayBuffer());
