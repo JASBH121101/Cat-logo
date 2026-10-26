@@ -1749,3 +1749,28 @@ body.technology-catalog.product-detail-active #product-detail-page #dialog-image
 body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-load-error {
   grid-column:1 !important;
 }
+
+
+/* Hero cleanup: remove the redundant scroll CTA and reclaim vertical space. */
+body.technology-catalog .hero {
+  min-height:clamp(400px,36vw,500px);
+}
+body.technology-catalog .hero-description {
+  margin-bottom:12px;
+}
+body.technology-catalog .hero-trust {
+  margin-top:12px;
+}
+@media(max-width:760px) {
+  body.technology-catalog .hero {
+    min-height:0;
+    padding-top:34px;
+    padding-bottom:30px;
+  }
+  body.technology-catalog .hero-description {
+    margin-bottom:10px;
+  }
+  body.technology-catalog .hero-trust {
+    margin-top:10px;
+  }
+}
