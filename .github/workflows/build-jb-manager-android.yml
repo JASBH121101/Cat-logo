@@ -111,9 +111,22 @@ jobs:
           (main_path.parent / "ApkUpdaterPlugin.java").write_text(plugin_text)
           if "registerPlugin(ApkUpdaterPlugin.class)" not in source:
               needle = "super.onCreate(savedInstanceState);"
-              if needle not in source:
-                  raise SystemExit("Could not register the APK updater in MainActivity.")
-              source = source.replace(needle, "registerPlugin(ApkUpdaterPlugin.class);\n        " + needle, 1)
+              if needle in source:
+                  source = source.replace(needle, "registerPlugin(ApkUpdaterPlugin.class);\n        " + needle, 1)
+              else:
+                  class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
+                  if not class_open:
+                      raise SystemExit("Could not locate generated MainActivity class declaration.")
+                  source = source.replace("package " + package_name + ";", "package " + package_name + ";\n\nimport android.os.Bundle;", 1)
+                  class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
+                  method = """
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  registerPlugin(ApkUpdaterPlugin.class);
+                  super.onCreate(savedInstanceState);
+              }
+          """
+                  source = source[:class_open.end()] + method + source[class_open.end():]
               main_path.write_text(source)
           manifest = Path("mobile/android/app/src/main/AndroidManifest.xml")
           manifest_text = manifest.read_text()
