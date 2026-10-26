@@ -809,7 +809,7 @@ function renderProducts() {
     featuredSection.classList.toggle("hidden", featured.length === 0);
     featuredGrid.innerHTML = featured.map(renderCard).join("");
   }
-  if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} destacado${featured.length === 1 ? "" : "s"}` : "";
+  if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} exclusivo${featured.length === 1 ? "" : "s"}` : "";
   if (resultsEyebrow) resultsEyebrow.textContent = hasFilters ? "TU BÚSQUEDA" : "CATÁLOGO COMPLETO";
   if (resultsTitle) resultsTitle.textContent = hasFilters ? "Resultados" : "Explorá todo el catálogo";
   if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
