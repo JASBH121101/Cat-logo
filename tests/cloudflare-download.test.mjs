@@ -61,6 +61,7 @@ test("returns a complete byte-counted APK response", async () => {
     assert.equal(init.headers.get("Accept"), "application/octet-stream");
     const body = new Uint8Array(1024);
     body.set([0x50, 0x4b, 3, 4]);
+    body.set([0x50, 0x4b, 0x05, 0x06], body.length - 22);
     return new Response(body, {
       status: 200,
       headers: {
@@ -96,7 +97,9 @@ test("refreshes via the canonical download URL if GitHub API returns metadata in
     });
     assert.equal(String(url), publicAssetUrl);
     const body = new Uint8Array(1024);
-    body.set([9, 8, 7]);
+    body.set([0x50, 0x4b, 3, 4]);
+    body.set([9, 8, 7], 4);
+    body.set([0x50, 0x4b, 0x05, 0x06], body.length - 22);
     return new Response(body, {
       status: 200,
       headers: { "Content-Type": "application/vnd.android.package-archive", "Content-Length": "1024" }
@@ -107,7 +110,7 @@ test("refreshes via the canonical download URL if GitHub API returns metadata in
     assert.equal(result.status, 200);
     const body = new Uint8Array(await result.arrayBuffer());
     assert.equal(body.length, 1024);
-    assert.deepEqual([...body.slice(0, 3)], [9, 8, 7]);
+    assert.deepEqual([...body.slice(4, 7)], [9, 8, 7]);
     assert.deepEqual(calls, [releaseUrl, assetUrl, publicAssetUrl]);
   } finally { globalThis.fetch = previous; }
 });
