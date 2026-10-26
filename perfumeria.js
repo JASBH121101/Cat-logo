@@ -311,13 +311,22 @@ async function getPerfumeVisitorLocation() {
 async function recordEvent(productId, eventType) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view","whatsapp_click"].includes(eventType)) return;
   try {
-    const { error } = await supabase.from("catalog_events").insert({
+    const eventBase = {
       product_id: productId,
       event_type: eventType,
       variant_color: null,
       variant_ram: null,
       variant_storage: null
+    };
+    const visitor = await getPerfumeVisitorLocation();
+    let { error } = await supabase.from("catalog_events").insert({
+      ...eventBase,
+      visitor_country: visitor.country,
+      visitor_department: visitor.department
     });
+    if (error && /visitor_(country|department)|schema cache|column .*does not exist/i.test(error.message || "")) {
+      ({ error } = await supabase.from("catalog_events").insert(eventBase));
+    }
     if (error) console.info("La analítica no está disponible:", error.message);
   } catch (error) {
     console.info("La analítica no está disponible.", error);
