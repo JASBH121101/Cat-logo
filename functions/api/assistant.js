@@ -79,10 +79,15 @@ const SEARCH_STOP_WORDS = new Set([
   "recomendame","puede","pueden","ser","seria","serian","quieres"
 ]);
 const SEARCH_SYNONYM_GROUPS = [
+  ["celular","celulares","telefono","telefonos","smartphone","smartphones","movil","moviles"],
+  ["laptop","laptops","portatil","portatiles","notebook","notebooks","computadora","computadoras","pc"],
+  ["audifono","audifonos","auricular","auriculares","headset","headphones"],
+  ["perfume","perfumes","fragancia","fragancias","aroma","aromas","parfum","parfums"],
+  ["tablet","tabletas","tablets","ipad"],
   ["juego","juegos","gaming","gamer","videojuego","videojuegos","jugar"],
-  ["camara","fotos","foto","fotografia","selfie","video"],
-  ["bateria","autonomia","duracion","carga"],
-  ["economico","economica","barato","barata","accesible","asequible"],
+  ["camara","camaras","fotos","foto","fotografia","selfie","video"],
+  ["bateria","baterias","autonomia","duracion","carga"],
+  ["economico","economica","economicos","economicas","barato","barata","baratos","baratas","accesible","asequible"],
   ["memoria","almacenamiento","storage","gb","tb","ram"],
   ["amaderado","amaderada","madera","cedro","sandalwood","maderoso"],
   ["dulce","vainilla","caramelo","tonka","avainillado","avainillada"],
@@ -91,6 +96,7 @@ const SEARCH_SYNONYM_GROUPS = [
   ["regalo","regalar","obsequio","cumpleanos"],
   ["duradero","duradera","proyeccion","longevidad"],
   ["trabajo","estudio","estudiar","oficina","clases"],
+  ["garantia","durabilidad","warranty"],
   ["potente","rendimiento","rapido","rapida","procesador","multitarea"]
 ];
 function searchTokens(value) {
