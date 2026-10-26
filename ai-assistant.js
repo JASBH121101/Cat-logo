@@ -4,8 +4,12 @@
   window.__jbAiSalesAdvisorLoaded = true;
 
   const config = window.CATALOG_CONFIG || {};
-  const catalogType = document.body.classList.contains("perfume-page") ? "perfumery" : "technology";
-  const catalogName = catalogType === "perfumery" ? "JB Parfums" : "JB TECH";
+  const catalogType = document.body.classList.contains("perfume-page")
+    ? "perfumery"
+    : document.body.classList.contains("technology-catalog")
+      ? "technology"
+      : "collections";
+  const catalogName = catalogType === "perfumery" ? "JB Parfums" : catalogType === "technology" ? "JB TECH" : "JB Collections";
   const baseUrl = String(config.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
   const endpoint = baseUrl + "/api/assistant";
   const whatsappNumber = String(config.whatsappNumber || "").replace(/\D/g, "");
@@ -30,7 +34,9 @@
       '<div class="jb-ai-quick-prompts">' +
         (catalogType === "perfumery"
           ? '<button type="button" data-prompt="Recomendame un perfume para uso diario.">Para diario</button><button type="button" data-prompt="Busco un perfume para regalar.">Para regalar</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>'
-          : '<button type="button" data-prompt="Busco un celular para juegos.">Para juegos</button><button type="button" data-prompt="Quiero una buena cámara y batería.">Cámara y batería</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>') +
+          : catalogType === "technology"
+            ? '<button type="button" data-prompt="Busco un celular para juegos.">Para juegos</button><button type="button" data-prompt="Quiero una buena cámara y batería.">Cámara y batería</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>'
+            : '<button type="button" data-prompt="Quiero un celular para juegos.">Tecnología</button><button type="button" data-prompt="Busco un perfume para regalar.">Perfumería</button><button type="button" data-prompt="Ayudame a elegir según mi presupuesto.">Según presupuesto</button>') +
       '</div>' +
       '<form class="jb-ai-form">' +
         '<label class="jb-ai-sr-only" for="jb-ai-input">Tu consulta</label>' +
@@ -64,7 +70,9 @@
     if (!welcomeShown) {
       addMessage("assistant", catalogType === "perfumery"
         ? "¡Hola! Soy el asesor virtual de JB Parfums. Contame qué tipo de fragancia te gusta, para qué ocasión o cuál es tu presupuesto."
-        : "¡Hola! Soy el asesor virtual de JB TECH. Contame para qué usarías el equipo y tu presupuesto; te ayudo a comparar las opciones publicadas.");
+        : catalogType === "technology"
+          ? "¡Hola! Soy el asesor virtual de JB TECH. Contame para qué usarías el equipo y tu presupuesto; te ayudo a comparar las opciones publicadas."
+          : "¡Hola! Soy el asesor virtual de JB Collections. Te puedo orientar entre tecnología y perfumería. Contame qué buscás, para quién es y cuánto querés invertir.");
       welcomeShown = true;
     }
     scrollMessages();
@@ -113,8 +121,10 @@
       }
       const actions = document.createElement("div");
       actions.className = "jb-ai-product-actions";
-      const detailsUrl = new URL(catalogType === "perfumery" ? "/perfumeria/" : "/tecnologia/", baseUrl);
-      detailsUrl.searchParams.set(catalogType === "perfumery" ? "fragancia" : "producto", String(product.id));
+      const productCatalog = product.catalog_type || catalogType;
+      const productIsPerfume = productCatalog === "perfumery";
+      const detailsUrl = new URL(productIsPerfume ? "/perfumeria/" : "/tecnologia/", baseUrl);
+      detailsUrl.searchParams.set(productIsPerfume ? "fragancia" : "producto", String(product.id));
       const details = document.createElement("a");
       details.href = detailsUrl.href;
       details.textContent = "Ver producto";
