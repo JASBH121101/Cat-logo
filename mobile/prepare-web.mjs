@@ -677,7 +677,7 @@ const perfumeCatalogHtml = await readFile(join(webDir, "perfumeria", "index.html
 const builtAiAssistant = await readFile(join(webDir, "ai-assistant.js"), "utf8");
 new Function(builtAiAssistant);
 if (!builtAiAssistant.includes("/api/assistant")
-  || !builtAiAssistant.includes("recommended_ids")
+  || !builtAiAssistant.includes("data.recommendations")
   || !builtAiAssistant.includes("Continuar por WhatsApp")) {
   throw new Error("The AI sales advisor bundle is incomplete.");
 }
