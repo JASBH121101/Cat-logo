@@ -129,6 +129,9 @@ const providerTools = initProviderTools({
   getCurrentUser: () => currentUser,
   getProducts: () => products
 });
+window.addEventListener("jb-catalog-provider-updated", () => {
+  void loadProducts();
+});
 
 function normalizeCatalogType(value) {
   return value === "perfumery" ? "perfumery" : "technology";
