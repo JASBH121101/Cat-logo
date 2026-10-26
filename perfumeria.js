@@ -696,7 +696,7 @@ function openPerfume(product) {
         '</dl>' +
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
         '<div class="perfume-dialog-actions">' +
-          '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quiero comprar este set de perfumes." : "quiero comprar esta fragancia."))) + '" target="_blank" rel="noopener">' + (product.product_type === "set" ? "Quiero comprar este set" : "Quiero comprarla") + ' <span aria-hidden="true">↗</span></a>' +
+          '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar por este set de perfumes." : "quisiera consultar por esta fragancia."))) + '" target="_blank" rel="noopener">' + (product.product_type === "set" ? "Consultar por este set" : "Consultar por WhatsApp") + ' <span aria-hidden="true">↗</span></a>' +
           '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar opciones de pago para este set de perfumes." : "quisiera consultar las opciones de financiamiento o pago con tarjeta de crédito para esta fragancia."))) + '" target="_blank" rel="noopener">Consultar pago o financiamiento</a>' +
         '</div>' +
       '</section>' +
