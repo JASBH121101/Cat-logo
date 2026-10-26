@@ -802,6 +802,66 @@ function visibleProducts() {
   });
 }
 
+const CATALOG_CATEGORY_ORDER = [
+  "Celulares",
+  "Laptops",
+  "Tablets",
+  "Gaming",
+  "Televisores",
+  "Audio",
+  "Accesorios",
+  "Otros"
+];
+
+function canonicalCatalogCategory(product) {
+  const raw = String(product?.category || "").trim();
+  const normalized = normalizeCatalogSearch(raw);
+  const aliases = [
+    ["Celulares", ["celular", "celulares", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles"]],
+    ["Laptops", ["laptop", "laptops", "portatil", "portatiles", "notebook", "notebooks"]],
+    ["Tablets", ["tablet", "tablets"]],
+    ["Gaming", ["gaming", "consola", "consolas", "videojuego", "videojuegos", "console", "consoles"]],
+    ["Televisores", ["televisor", "televisores", "television", "televisiones", "tv"]],
+    ["Audio", ["audio", "auriculares", "parlantes", "bocinas", "altavoces", "headphones", "earbuds"]],
+    ["Accesorios", ["accesorio", "accesorios", "accessory", "accessories"]],
+    ["Otros", ["otro", "otros"]]
+  ];
+  for (const [label, values] of aliases) {
+    if (values.includes(normalized)) return label;
+  }
+  return raw ? "Otros" : "Otros";
+}
+
+function renderCategorizedProducts(productList) {
+  const grouped = new Map(CATALOG_CATEGORY_ORDER.map(category => [category, []]));
+  for (const product of productList) {
+    const category = canonicalCatalogCategory(product);
+    if (!grouped.has(category)) grouped.set(category, []);
+    grouped.get(category).push(product);
+  }
+
+  return [...grouped.entries()]
+    .filter(([, items]) => items.length > 0)
+    .map(([category, items]) => {
+      const slug = normalizeCatalogSearch(category).replace(/\\s+/g, "-");
+      const titleId = "catalog-category-" + slug;
+      const countLabel = items.length + " producto" + (items.length === 1 ? "" : "s");
+      return `
+        <section class="catalog-category-section" aria-labelledby="${titleId}">
+          <header class="catalog-category-heading">
+            <span class="catalog-category-heading-mark" aria-hidden="true"></span>
+            <div class="catalog-category-heading-copy">
+              <p class="catalog-category-eyebrow">EXPLORÁ POR CATEGORÍA</p>
+              <h3 id="${titleId}">${escapeHtml(category)}</h3>
+            </div>
+            <span class="catalog-category-count">${countLabel}</span>
+          </header>
+          <div class="catalog-category-grid">${items.map(renderCard).join("")}</div>
+        </section>
+      `;
+    }).join("");
+}
+
 function renderProducts() {
   const list = visibleProducts();
   const hasFilters = hasActiveCatalogFilters();
@@ -815,7 +875,11 @@ function renderProducts() {
   if (resultsEyebrow) resultsEyebrow.textContent = hasFilters ? "TU BÚSQUEDA" : "CATÁLOGO COMPLETO";
   if (resultsTitle) resultsTitle.textContent = hasFilters ? "Resultados" : "Explorá todo el catálogo";
   if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
-  grid.innerHTML = regularProducts.map(renderCard).join("");
+  const groupByCategory = !hasFilters && regularProducts.length > 0;
+  grid.classList.toggle("is-categorized", groupByCategory);
+  grid.innerHTML = groupByCategory
+    ? renderCategorizedProducts(regularProducts)
+    : regularProducts.map(renderCard).join("");
   emptyNode.classList.toggle("hidden", list.length > 0);
   if (clearPriceFilterButton) clearPriceFilterButton.disabled = !hasActiveCatalogFilters();
   statusNode.textContent = products.length
