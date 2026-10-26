@@ -293,6 +293,21 @@ function isCatalogAdminActivityActive() {
   }
 }
 
+let perfumeVisitorLocationPromise = null;
+async function getPerfumeVisitorLocation() {
+  if (!perfumeVisitorLocationPromise) {
+    perfumeVisitorLocationPromise = fetch("../api/catalog-location", {
+      method: "GET", credentials: "same-origin", cache: "no-store"
+    }).then(response => response.ok ? response.json() : null)
+      .then(value => ({
+        country: typeof value?.country === "string" ? value.country.slice(0, 2).toUpperCase() : null,
+        department: typeof value?.department === "string" ? value.department.slice(0, 80) : null
+      }))
+      .catch(() => ({ country: null, department: null }));
+  }
+  return perfumeVisitorLocationPromise;
+}
+
 async function recordEvent(productId, eventType) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view","whatsapp_click"].includes(eventType)) return;
   try {
