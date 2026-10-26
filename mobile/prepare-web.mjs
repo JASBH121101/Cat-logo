@@ -674,6 +674,21 @@ new Function(updaterScript[1]);
 
 const builtCatalogHtml = await readFile(join(webDir, "tecnologia", "index.html"), "utf8");
 const perfumeCatalogHtml = await readFile(join(webDir, "perfumeria", "index.html"), "utf8");
+const builtAiAssistant = await readFile(join(webDir, "ai-assistant.js"), "utf8");
+new Function(builtAiAssistant);
+if (!builtAiAssistant.includes("/api/assistant")
+  || !builtAiAssistant.includes("recommended_ids")
+  || !builtAiAssistant.includes("Continuar por WhatsApp")) {
+  throw new Error("The AI sales advisor bundle is incomplete.");
+}
+for (const [catalogPath, html] of [
+  ["tecnologia/index.html", builtCatalogHtml],
+  ["perfumeria/index.html", perfumeCatalogHtml]
+]) {
+  if (!html.includes("ai-assistant.js") || !html.includes("ai-assistant.css")) {
+    throw new Error("The AI sales advisor is missing from " + catalogPath + ".");
+  }
+}
 const responsiveAdminHtml = builtAdminHtml;
 for (const [pagePath, html] of [
   ["admin.html", responsiveAdminHtml],
