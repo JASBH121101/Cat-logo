@@ -26,11 +26,13 @@ jobs:
           done
           echo "Checking Cloudflare Pages Function syntax"
           node --input-type=module --check < functions/api/share.js
+          node --input-type=module --check < functions/api/download/apk.js
       - name: Test Cloudflare Pages share endpoint
         shell: bash
         run: |
           set -euo pipefail
           node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
+          node --experimental-default-type=module --test tests/cloudflare-download.test.mjs
 
       - name: Check canonical URLs and public share origin
         shell: bash
