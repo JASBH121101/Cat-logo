@@ -601,7 +601,7 @@ function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const badge = product.featured
-    ? '<span class="product-badge featured-badge">✦ DESTACADO</span>'
+    ? '<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'
     : "";
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
