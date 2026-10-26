@@ -93,20 +93,32 @@ const updateChecker = `
 <script data-jb-manager-updater>
 (() => {
   const currentVersion = ${JSON.stringify(appVersion)};
-  const releasesUrl = "https://api.github.com/repos/JASBH121101/Cat-logo/releases?per_page=20";
+  const releasesUrl = "https://api.github.com/repos/JASBH121101/Cat-logo/releases?per_page=30";
   let checking = false;
+  let checkSequence = 0;
+  let activeDownloadUrl = "";
+  let activeDownloadVersion = "";
+  let nativeMonitorTimer = null;
+  let nativeMonitorBusy = false;
+  let automaticInstallAttemptedFor = "";
 
-  function versionParts(value) {
-    return String(value).split(".").map(part => Number(part) || 0);
+  function compareVersions(left, right) {
+    const a = String(left).split(".").map(n => Number(n) || 0);
+    const b = String(right).split(".").map(n => Number(n) || 0);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0) ? 1 : -1;
+    }
+    return 0;
   }
 
-  function isNewer(candidate, installed) {
-    const a = versionParts(candidate), b = versionParts(installed);
-    for (let i = 0; i < Math.max(a.length, b.length); i++) {
-      const left = a[i] || 0, right = b[i] || 0;
-      if (left !== right) return left > right;
-    }
-    return false;
+  function officialRelease(item) {
+    if (!item || item.draft || item.prerelease === false) return null;
+    const match = /^jb-manager-v(\\d+\\.\\d+\\.\\d+)$/i.exec(String(item.tag_name || ""));
+    if (!match) return null;
+    const asset = (item.assets || []).find(entry => entry.name === "JB-Manager-Collections.apk");
+    const expected = new RegExp("^https://github\\.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + match[1].replace(/\\./g, "\\\\.") + "/JB-Manager-Collections\\.apk$", "i");
+    if (!asset || !expected.test(String(asset.browser_download_url || ""))) return null;
+    return { version: match[1], asset };
   }
 
   function showMessage(title, message, downloadUrl, downloadVersion) {
@@ -116,13 +128,12 @@ const updateChecker = `
       notice.id = "jb-manager-update-notice";
       notice.setAttribute("role", "status");
       Object.assign(notice.style, {
-        position: "fixed", zIndex: "99999", left: "12px", right: "12px",
+        position: "fixed", zIndex: "2147483001", left: "12px", right: "12px",
         bottom: "max(76px, calc(env(safe-area-inset-bottom) + 76px))",
         maxWidth: "520px", margin: "0 auto", padding: "15px",
         borderRadius: "16px", border: "1px solid #d9c18a",
         background: "#101827", color: "#ffffff",
-        boxShadow: "0 12px 38px rgba(0,0,0,.32)",
-        font: "14px/1.45 system-ui, sans-serif"
+        boxShadow: "0 12px 38px rgba(0,0,0,.32)", font: "14px/1.45 system-ui, sans-serif"
       });
       document.documentElement.append(notice);
     }
@@ -136,19 +147,19 @@ const updateChecker = `
     detail.style.margin = "0 0 12px";
     const actions = document.createElement("div");
     Object.assign(actions.style, { display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" });
+
     if (downloadUrl) {
       const download = document.createElement("button");
       download.type = "button";
       download.textContent = "Descargar e instalar";
-      Object.assign(download.style, {
-        display: "inline-block", padding: "10px 13px", borderRadius: "9px",
-        border: "0", background: "#d9b56c", color: "#161616",
-        fontWeight: "700", textDecoration: "none", font: "inherit", cursor: "pointer"
-      });
+      Object.assign(download.style, { padding: "10px 13px", borderRadius: "9px", border: "0", background: "#d9b56c", color: "#161616", fontWeight: "700", font: "inherit", cursor: "pointer" });
       download.addEventListener("click", async event => {
         event.preventDefault();
         const api = window.JBManagerApkUpdater;
-        if (!api || !api.isNative) { window.open(downloadUrl, "_blank", "noopener,noreferrer"); return; }
+        if (!api || !api.isNative) {
+          window.open(downloadUrl, "_blank", "noopener,noreferrer");
+          return;
+        }
         activeDownloadUrl = downloadUrl;
         activeDownloadVersion = downloadVersion || "";
         download.disabled = true;
@@ -156,14 +167,18 @@ const updateChecker = `
         try {
           const result = await api.downloadAndInstall({ url: downloadUrl, version: activeDownloadVersion });
           if (result && result.permissionRequired) {
-            showMessage("Permiso necesario para instalar", "Android abrió Ajustes. Activá «Permitir desde esta fuente» para JB Manager Collections; luego regresá y pulsá Descargar e instalar otra vez.", downloadUrl, activeDownloadVersion);
-            return;
+            showMessage("Permiso necesario para instalar", "Android abrió Ajustes. Activá «Permitir desde esta fuente» y regresá a JB Manager Collections. La descarga se conserva.", downloadUrl, activeDownloadVersion);
+          } else if (result && result.installerLaunched) {
+            showMessage("Instalador de Android abierto", "El APK ya estaba completo y se validó. Confirmá la actualización en la pantalla del sistema.");
+          } else {
+            showMessage("Descarga iniciada", "Android gestiona la descarga con DownloadManager. El progreso, pausas y errores se consultan al sistema.");
+            startNativeDownloadMonitor();
           }
-          if (result && result.installerLaunched) { showMessage("Instalador de Android abierto", "La descarga ya estaba completa. Confirmá la actualización en la pantalla del sistema."); return; }
-          showMessage("Descarga iniciada", "Android está descargando el APK con el administrador nativo. El progreso real se actualizará aquí y, al terminar, se abrirá el instalador.");
-          startNativeDownloadMonitor();
         } catch (error) {
-          showMessage("No se pudo iniciar la descarga", (error && error.message ? error.message : "Android no pudo iniciar la descarga.") + " Podés volver a intentarlo.", downloadUrl, activeDownloadVersion);
+          showMessage("No se pudo iniciar la descarga", (error && error.message) || "Android no pudo iniciar la descarga. Podés volver a intentarlo.", downloadUrl, activeDownloadVersion);
+        } finally {
+          download.disabled = false;
+          download.textContent = "Descargar e instalar";
         }
       });
       actions.append(download);
@@ -171,38 +186,52 @@ const updateChecker = `
     const dismiss = document.createElement("button");
     dismiss.type = "button";
     dismiss.textContent = "Cerrar";
-    Object.assign(dismiss.style, {
-      padding: "10px 13px", borderRadius: "9px", border: "1px solid #647084",
-      background: "transparent", color: "#ffffff", font: "inherit"
-    });
+    Object.assign(dismiss.style, { padding: "10px 13px", borderRadius: "9px", border: "1px solid #647084", background: "transparent", color: "#ffffff", font: "inherit" });
     dismiss.addEventListener("click", () => notice.remove());
     actions.append(dismiss);
     notice.append(heading, detail, actions);
   }
 
-  let activeDownloadUrl = "";
-  let activeDownloadVersion = "";
-  let nativeMonitorTimer = null;
-  let nativeMonitorBusy = false;
   function formatBytes(value) {
     const bytes = Math.max(0, Number(value) || 0);
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1048576) return (bytes / 1024).toFixed(0) + " KB";
     return (bytes / 1048576).toFixed(2) + " MB";
   }
+
   function failureReason(state) {
     if (state.error) return state.error;
-    const reasons = {1001:"Android no pudo escribir el archivo.",1002:"El servidor respondió con un código HTTP no válido.",1004:"La conexión se interrumpió mientras se recibían los datos.",1005:"El servidor redirigió demasiadas veces.",1006:"No hay espacio suficiente para guardar la actualización.",1007:"Android no encontró el almacenamiento de destino.",1008:"Android no pudo reanudar la descarga.",1009:"Ya existe un archivo con el mismo nombre.",1010:"Android bloqueó la descarga."};
-    const reason = Number(state.reason) || 0;
-    return reasons[reason] || "Android no pudo completar la descarga (código " + reason + ").";
+    const reasons = {1001:"Android no pudo escribir el archivo.",1002:"El servidor respondió con un código HTTP no válido.",1004:"La conexión se interrumpió.",1005:"El servidor redirigió demasiadas veces.",1006:"No hay espacio suficiente.",1007:"Android no encontró el almacenamiento.",1008:"Android no pudo reanudar la descarga.",1009:"Ya existe un archivo con el mismo nombre.",1010:"Android bloqueó la descarga."};
+    return reasons[Number(state.reason) || 0] || "Android no pudo completar la descarga (código " + (Number(state.reason) || 0) + ").";
   }
-  function updateDownloadNotice(title, message) {
+
+  function updateDownloadNotice(title, message, url, version) {
     const notice = document.getElementById("jb-manager-update-notice");
-    if (!notice) { showMessage(title, message); return; }
-    const heading = notice.querySelector("strong"), detail = notice.querySelector("p");
+    if (!notice) { showMessage(title, message, url, version); return; }
+    const heading = notice.querySelector("strong");
+    const detail = notice.querySelector("p");
     if (heading) heading.textContent = title;
     if (detail) detail.textContent = message;
+    if (url && !notice.querySelector("[data-jb-update-retry]")) {
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.dataset.jbUpdateRetry = "true";
+      retry.textContent = "Reintentar / abrir instalador";
+      Object.assign(retry.style, { padding:"10px 13px", borderRadius:"9px", border:"0", background:"#d9b56c", color:"#161616", font:"inherit", cursor:"pointer" });
+      retry.addEventListener("click", async () => {
+        const api = window.JBManagerApkUpdater;
+        if (!api || !api.isNative) { window.open(url, "_blank", "noopener,noreferrer"); return; }
+        try {
+          const result = await api.downloadAndInstall({ url, version: version || "" });
+          if (result && result.permissionRequired) showMessage("Permiso necesario para instalar", "Activá «Permitir desde esta fuente» y regresá.", url, version);
+          else if (result && result.installerLaunched) showMessage("Instalador de Android abierto", "Confirmá la actualización en la pantalla del sistema.");
+          else { showMessage("Descarga iniciada", "Android aceptó o recuperó la descarga."); startNativeDownloadMonitor(); }
+        } catch (error) { showMessage("No se pudo continuar", (error && error.message) || "Intentá nuevamente.", url, version); }
+      });
+      notice.querySelector("div")?.prepend(retry);
+    }
   }
+
   async function pollNativeDownload() {
     if (nativeMonitorBusy) return;
     const api = window.JBManagerApkUpdater;
@@ -210,72 +239,77 @@ const updateChecker = `
     nativeMonitorBusy = true;
     try {
       const state = await api.getDownloadStatus();
-      if (!state || ["idle","unsupported"].includes(state.status)) {
+      if (!state || ["idle", "unsupported"].includes(state.status)) {
         if (nativeMonitorTimer) window.clearInterval(nativeMonitorTimer);
-        nativeMonitorTimer = null; return;
+        nativeMonitorTimer = null;
+        return;
       }
       if (state.version) {
         activeDownloadVersion = state.version;
-        if (!activeDownloadUrl) activeDownloadUrl = "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + state.version + "/JB-Manager-Collections.apk";
+        activeDownloadUrl = "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + state.version + "/JB-Manager-Collections.apk";
       }
-      if (["pending","running","paused"].includes(state.status)) {
-        const total = Number(state.totalBytes) || 0, downloaded = Number(state.bytesDownloaded) || 0;
+      const total = Number(state.totalBytes) || 0;
+      const downloaded = Number(state.bytesDownloaded) || 0;
+      if (["pending", "running", "paused"].includes(state.status)) {
         const amount = total > 0 ? " · " + formatBytes(downloaded) + " / " + formatBytes(total) : "";
-        const percent = total > 0 ? Math.min(100, Math.round(downloaded * 100 / total)) + "%" : "calculando";
-        updateDownloadNotice("Descargando actualización · v" + state.version, "Progreso real de Android: " + percent + amount + (state.status === "paused" ? ". Android pausó temporalmente la descarga." : "."));
+        const percent = total > 0 ? Math.min(100, Math.floor(downloaded * 100 / total)) + "%" : "calculando";
+        updateDownloadNotice("Descargando actualización · v" + (state.version || activeDownloadVersion), "DownloadManager: " + percent + amount + (state.status === "paused" ? ". Android pausó la descarga temporalmente." : "."), activeDownloadUrl, activeDownloadVersion);
         return;
       }
       if (state.status === "successful") {
         if (nativeMonitorTimer) window.clearInterval(nativeMonitorTimer);
         nativeMonitorTimer = null;
-        if (state.installPrompted) {
-          updateDownloadNotice("Descarga completa", "El instalador de Android ya se abrió. Si lo cerraste, pulsá Buscar actualizaciones y luego Descargar e instalar para volver a abrirlo.");
+        const attemptKey = String(state.downloadId || "") + ":" + String(state.version || "");
+        if (automaticInstallAttemptedFor === attemptKey) {
+          updateDownloadNotice("Descarga completa", "Android confirmó el archivo. Si el instalador no está visible, pulsá «Reintentar / abrir instalador».", activeDownloadUrl, activeDownloadVersion);
           return;
         }
+        automaticInstallAttemptedFor = attemptKey;
         try {
           const result = await api.installDownloadedApk();
-          if (result && result.permissionRequired) showMessage("Permiso necesario para instalar", "Android abrió Ajustes. Activá «Permitir desde esta fuente» y regresá a la app.", activeDownloadUrl, activeDownloadVersion);
-          else showMessage("Descarga completa · v" + state.version, "Android verificó el APK y abrió el instalador. Confirmá la actualización en la pantalla del sistema.");
+          if (result && result.permissionRequired) showMessage("Permiso necesario para instalar", "Activá «Permitir desde esta fuente» y regresá. El APK ya está descargado.", activeDownloadUrl, activeDownloadVersion);
+          else showMessage("Descarga completa · v" + state.version, "Android validó el APK y abrió el instalador. Confirmá la actualización.");
         } catch (error) {
-          showMessage("APK descargado, instalación pendiente", (error && error.message ? error.message : "No se pudo abrir el instalador.") + " El archivo se conserva para reintentar.", activeDownloadUrl, activeDownloadVersion);
+          showMessage("APK descargado, instalación pendiente", (error && error.message) || "No se pudo abrir el instalador. El archivo se conserva para reintentar.", activeDownloadUrl, activeDownloadVersion);
         }
         return;
       }
       if (state.status === "failed") {
         if (nativeMonitorTimer) window.clearInterval(nativeMonitorTimer);
         nativeMonitorTimer = null;
-        showMessage("Descarga interrumpida", failureReason(state) + " Volvé a pulsar Descargar e instalar para reintentar.", activeDownloadUrl, activeDownloadVersion);
+        showMessage("Descarga interrumpida", failureReason(state) + " Pulsá «Reintentar / abrir instalador» para volver a intentarlo.", activeDownloadUrl, activeDownloadVersion);
         return;
       }
       if (state.status === "unknown") {
         if (nativeMonitorTimer) window.clearInterval(nativeMonitorTimer);
         nativeMonitorTimer = null;
-        showMessage("No se pudo consultar la descarga", "Android no encontró la descarga anterior. Pulsá Descargar e instalar para iniciar una nueva.", activeDownloadUrl, activeDownloadVersion);
+        showMessage("No se pudo consultar la descarga", "Android no encontró la descarga anterior. Podés iniciar otra.", activeDownloadUrl, activeDownloadVersion);
       }
     } catch (error) {
-      updateDownloadNotice("Comprobando descarga…", "Android sigue gestionando la descarga; se volverá a consultar automáticamente.");
+      updateDownloadNotice("Comprobando descarga…", "Android sigue gestionando la descarga; se consultará de nuevo.", activeDownloadUrl, activeDownloadVersion);
       console.info("No se pudo consultar el estado nativo de la descarga.", error);
     } finally { nativeMonitorBusy = false; }
   }
+
   function startNativeDownloadMonitor() {
     if (nativeMonitorTimer) window.clearInterval(nativeMonitorTimer);
     void pollNativeDownload();
     nativeMonitorTimer = window.setInterval(() => void pollNativeDownload(), 1200);
   }
+
   async function resumeNativeDownloadIfNeeded() {
     const api = window.JBManagerApkUpdater;
     if (!api || !api.isNative) return;
     try {
       const state = await api.getDownloadStatus();
-      if (state && ["pending","running","paused","successful"].includes(state.status)) {
-        activeDownloadVersion = state.version || "";
-        activeDownloadUrl = activeDownloadVersion ? "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + activeDownloadVersion + "/JB-Manager-Collections.apk" : "";
-        if (state.status === "successful" && state.installPrompted) return;
-        showMessage(state.status === "successful" ? "Actualización descargada" : "Descarga de actualización en curso", "Se encontró una descarga que necesita terminar o instalarse. Consultando el estado con Android.");
+      if (!state) return;
+      activeDownloadVersion = state.version || "";
+      activeDownloadUrl = activeDownloadVersion ? "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + activeDownloadVersion + "/JB-Manager-Collections.apk" : "";
+      if (["pending", "running", "paused", "successful"].includes(state.status)) {
+        showMessage(state.status === "successful" ? "Actualización descargada" : "Descarga de actualización en curso", "Se recuperó el estado persistente de Android. Podés consultar el progreso o reabrir el instalador.", activeDownloadUrl, activeDownloadVersion);
         startNativeDownloadMonitor();
-      } else if (state && state.status === "failed") {
-        activeDownloadVersion = state.version || "";
-        activeDownloadUrl = activeDownloadVersion ? "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + activeDownloadVersion + "/JB-Manager-Collections.apk" : "";
+      } else if (state.status === "failed") {
+        showMessage("La descarga anterior falló", failureReason(state) + " Podés reintentar.", activeDownloadUrl, activeDownloadVersion);
       }
     } catch (error) { console.info("No se pudo recuperar el estado de descarga.", error); }
   }
@@ -283,49 +317,29 @@ const updateChecker = `
   async function checkForUpdates(interactive = false) {
     if (checking) return;
     checking = true;
+    const sequence = ++checkSequence;
     const button = document.getElementById("jb-manager-check-updates");
-    if (button) {
-      button.disabled = true;
-      button.textContent = "Comprobando…";
-      button.style.opacity = ".75";
-    }
+    if (button) { button.disabled = true; button.textContent = "Comprobando…"; button.style.opacity = ".75"; }
     try {
-      const response = await fetch(releasesUrl, {
-        headers: { Accept: "application/vnd.github+json" }, cache: "no-store"
-      });
+      const response = await fetch(releasesUrl, { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" });
       if (!response.ok) throw new Error("GitHub respondió " + response.status);
       const releases = await response.json();
-      const release = releases.find(item =>
-        !item.draft && /^jb-manager-v\\d+\\.\\d+\\.\\d+$/i.test(item.tag_name || "")
-      );
-      if (!release) {
-        if (interactive) showMessage("No hay versiones publicadas", "Todavía no hay una actualización disponible para JB Manager Collections.");
+      const latest = releases.map(officialRelease).filter(Boolean).sort((a, b) => compareVersions(b.version, a.version))[0];
+      if (!latest) {
+        if (interactive) showMessage("No hay versiones publicadas", "No se encontró una publicación válida de JB Manager Collections con APK.");
         return;
       }
-      const match = release.tag_name.match(/^jb-manager-v(\\d+\\.\\d+\\.\\d+)$/i);
-      const asset = (release.assets || []).find(item => item.name === "JB-Manager-Collections.apk");
-      const validUrl = asset && /^https:\\/\\/github\\.com\\/JASBH121101\\/Cat-logo\\/releases\\/download\\//i.test(asset.browser_download_url || "");
-      if (!match || !validUrl) throw new Error("La publicación no contiene una APK válida.");
-      if (isNewer(match[1], currentVersion)) {
-        showMessage(
-          "Actualización disponible · v" + match[1],
-          "Descargá la nueva APK y abrila. Android te pedirá confirmar la actualización; no hace falta desinstalar la versión actual.",
-          asset.browser_download_url,
-          match[1]
-        );
+      if (compareVersions(latest.version, currentVersion) > 0) {
+        showMessage("Actualización disponible · v" + latest.version, "El APK se descargará con el administrador nativo. Al finalizar, Android validará el archivo y abrirá el instalador.", latest.asset.browser_download_url, latest.version);
       } else if (interactive) {
-        showMessage("JB Manager está actualizado", "Versión instalada: v" + currentVersion + ". No hay una versión más reciente.");
+        showMessage("JB Manager está actualizado", "Versión de esta compilación: v" + currentVersion + ". Última versión publicada: v" + latest.version + ".");
       }
     } catch (error) {
-      if (interactive) showMessage("No se pudo comprobar", "Revisá tu conexión a internet e intentá nuevamente. " + (error && error.message ? error.message : ""));
+      if (interactive) showMessage("No se pudo comprobar", "Revisá la conexión e intentá de nuevo. " + (error && error.message ? error.message : ""));
       console.info("No se pudo consultar si hay una actualización disponible.", error);
     } finally {
       checking = false;
-      if (button) {
-        button.disabled = false;
-        button.textContent = "↻";
-        button.style.opacity = "1";
-      }
+      if (button && sequence === checkSequence) { button.disabled = false; button.textContent = "↻"; button.style.opacity = "1"; }
     }
   }
 
@@ -343,39 +357,28 @@ const updateChecker = `
         bottom: "max(8px, calc(env(safe-area-inset-bottom, 0px) + 5px))",
         width: "34px", height: "34px", minWidth: "34px",
         transform: "translateZ(0)", willChange: "transform",
-        padding: "0", display: "grid", placeItems: "center",
-        borderRadius: "50%",
+        padding: "0", display: "grid", placeItems: "center", borderRadius: "50%",
         border: "1px solid rgba(217,181,108,.65)", background: "rgba(16,24,39,.84)",
-        color: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,.16)",
-        opacity: ".72", font: "600 17px/1 system-ui, sans-serif", cursor: "pointer"
+        color: "#ffffff", boxShadow: "0 2px 8px rgba(0,0,0,.16)", opacity: ".72",
+        font: "600 17px/1 system-ui, sans-serif", cursor: "pointer"
       });
       button.addEventListener("click", () => void checkForUpdates(true));
       document.documentElement.append(button);
     }
     void checkForUpdates(false);
     void resumeNativeDownloadIfNeeded();
-
-    // Keep the compact update control out of the way while editing or while
-    // Android's on-screen keyboard reduces the visible viewport.
     const updateButton = document.getElementById("jb-manager-check-updates");
     const syncUpdateButtonVisibility = () => {
       if (!updateButton) return;
       const active = document.activeElement;
-      const isEditing = Boolean(active && (
-        active.matches("input, textarea, select")
-        || active.isContentEditable
-      ));
+      const isEditing = Boolean(active && (active.matches("input, textarea, select") || active.isContentEditable));
       const viewport = window.visualViewport;
-      const keyboardIsVisible = Boolean(
-        viewport && viewport.height < window.innerHeight * 0.78
-      );
+      const keyboardIsVisible = Boolean(viewport && viewport.height < window.innerHeight * 0.78);
       updateButton.hidden = isEditing || keyboardIsVisible;
     };
     document.addEventListener("focusin", syncUpdateButtonVisibility);
     document.addEventListener("focusout", () => window.setTimeout(syncUpdateButtonVisibility, 100));
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", syncUpdateButtonVisibility);
-    }
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", syncUpdateButtonVisibility);
     syncUpdateButtonVisibility();
   }
 

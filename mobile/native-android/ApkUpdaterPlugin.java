@@ -7,11 +7,14 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.pm.Signature;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
+import java.security.MessageDigest;
+import java.util.Arrays;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -26,6 +29,7 @@ public class ApkUpdaterPlugin extends Plugin {
     private static final String PREFS = "jb_manager_native_apk_update";
     private static final String ID = "download_id", VERSION = "version", FILENAME = "filename", PROMPTED = "install_prompted";
     private static final String MIME = "application/vnd.android.package-archive";
+    private static final String EXPECTED_PACKAGE = "com.jbcollections.manager.v2";
     private static final Pattern VERSION_PATTERN = Pattern.compile("^\\d+\\.\\d+\\.\\d+$");
     private SharedPreferences prefs() { return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
     private DownloadManager manager() { return (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE); }
@@ -57,6 +61,79 @@ public class ApkUpdaterPlugin extends Plugin {
         catch (Exception e) { return -1; } finally { c.close(); }
     }
     private String filename(String version) { return "JB-Manager-Collections-v" + version + ".apk"; }
+
+
+    private void validateDownloadedApk(File file, String expectedVersion, long downloadId) throws Exception {
+        if (file == null || !file.isFile() || file.length() < 1024L) {
+            throw new IllegalStateException("el archivo de actualización está vacío o incompleto");
+        }
+        DownloadManager dm = manager();
+        Cursor cursor = query(downloadId);
+        if (dm == null || cursor == null) throw new IllegalStateException("Android no confirmó el estado final de la descarga");
+        try {
+            if (!cursor.moveToFirst() || cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) != DownloadManager.STATUS_SUCCESSFUL) {
+                throw new IllegalStateException("Android todavía no confirma que el APK esté completo");
+            }
+            long expectedBytes = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+            long downloadedBytes = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+            if (expectedBytes <= 0 || downloadedBytes != expectedBytes || file.length() != expectedBytes) {
+                throw new IllegalStateException("El tamaño final no coincide con los bytes confirmados por Android");
+            }
+        } finally { cursor.close(); }
+
+        PackageManager pm = getContext().getPackageManager();
+        int flags = Build.VERSION.SDK_INT >= 28 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
+        PackageInfo archive = pm.getPackageArchiveInfo(file.getAbsolutePath(), flags);
+        if (archive == null || !EXPECTED_PACKAGE.equals(archive.packageName)) {
+            throw new IllegalStateException("El archivo recibido no es una APK válida de JB Manager Collections");
+        }
+        if (!expectedVersion.equals(archive.versionName)) {
+            throw new IllegalStateException("La versión del APK no coincide con la versión solicitada");
+        }
+        PackageInfo installed = pm.getPackageInfo(getContext().getPackageName(), flags);
+        Signature[] installedSigs;
+        Signature[] archiveSigs;
+        if (Build.VERSION.SDK_INT >= 28) {
+            if (installed.signingInfo == null || archive.signingInfo == null) {
+                throw new IllegalStateException("No se pudieron validar los certificados de la APK");
+            }
+            installedSigs = installed.signingInfo.getApkContentsSigners();
+            archiveSigs = archive.signingInfo.getApkContentsSigners();
+        } else {
+            installedSigs = installed.signatures;
+            archiveSigs = archive.signatures;
+        }
+        byte[][] installedHashes = signatureHashes(installedSigs);
+        byte[][] archiveHashes = signatureHashes(archiveSigs);
+        if (!sameHashSet(installedHashes, archiveHashes)) {
+            throw new IllegalStateException("El certificado del APK no coincide con la aplicación instalada");
+        }
+    }
+
+    private byte[][] signatureHashes(Signature[] signatures) throws Exception {
+        if (signatures == null || signatures.length == 0) return new byte[0][];
+        byte[][] hashes = new byte[signatures.length][];
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        for (int i = 0; i < signatures.length; i++) hashes[i] = digest.digest(signatures[i].toByteArray());
+        return hashes;
+    }
+
+    private boolean sameHashSet(byte[][] left, byte[][] right) {
+        if (left.length == 0 || left.length != right.length) return false;
+        boolean[] used = new boolean[right.length];
+        for (byte[] expected : left) {
+            boolean found = false;
+            for (int i = 0; i < right.length; i++) {
+                if (!used[i] && Arrays.equals(expected, right[i])) {
+                    used[i] = true;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
 
     @PluginMethod
     public void downloadAndInstall(PluginCall call) {
@@ -127,8 +204,15 @@ public class ApkUpdaterPlugin extends Plugin {
             int reason = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON));
             String state = raw == DownloadManager.STATUS_PENDING ? "pending" : raw == DownloadManager.STATUS_RUNNING ? "running" : raw == DownloadManager.STATUS_PAUSED ? "paused" : raw == DownloadManager.STATUS_SUCCESSFUL ? "successful" : raw == DownloadManager.STATUS_FAILED ? "failed" : "unknown";
             out.put("status", state); out.put("bytesDownloaded", bytes); out.put("totalBytes", total); out.put("reason", reason);
-            if (raw == DownloadManager.STATUS_SUCCESSFUL && dm != null && dm.getUriForDownloadedFile(id) == null) {
-                out.put("status", "failed"); out.put("error", "Android marcó la descarga como completa, pero no encontró el archivo.");
+            if (raw == DownloadManager.STATUS_SUCCESSFUL && dm != null) {
+                File local = fileFor(store.getString(FILENAME, filename(store.getString(VERSION, ""))));
+                try {
+                    validateDownloadedApk(local, store.getString(VERSION, ""), id);
+                    out.put("verified", true);
+                } catch (Exception validationError) {
+                    out.put("status", "failed");
+                    out.put("error", validationError.getMessage() == null ? "No se pudo validar el APK completado." : validationError.getMessage());
+                }
             }
             call.resolve(out);
         } catch (Exception e) { call.reject("No se pudo consultar el estado de descarga: " + e.getMessage(), e); }
@@ -154,11 +238,8 @@ public class ApkUpdaterPlugin extends Plugin {
         DownloadManager dm = manager();
         if (dm == null) throw new IllegalStateException("el administrador de descargas no está disponible");
         File file = fileFor(prefs().getString(FILENAME, filename(expectedVersion)));
-        if (file == null || !file.isFile() || file.length() < 1000000L) throw new IllegalStateException("el archivo está incompleto o no se encuentra");
+        validateDownloadedApk(file, expectedVersion, id);
         PackageManager pm = getContext().getPackageManager();
-        PackageInfo archive = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
-        if (archive == null || !getContext().getPackageName().equals(archive.packageName)) throw new IllegalStateException("el archivo recibido no es una APK válida de JB Manager Collections");
-        if (!expectedVersion.equals(archive.versionName)) throw new IllegalStateException("la versión del APK no coincide con la solicitada");
         Uri uri = dm.getUriForDownloadedFile(id);
         if (uri == null) throw new IllegalStateException("Android no proporcionó un enlace seguro al APK");
         Intent intent = new Intent(Intent.ACTION_VIEW);

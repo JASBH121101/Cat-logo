@@ -277,6 +277,23 @@ jobs:
             echo "APK native APK downloader bridge is missing." >&2
             exit 1
           }
+      - name: Verify native updater source, manifest and package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/ApkUpdaterPlugin.java"
+          MANIFEST="mobile/android/app/src/main/AndroidManifest.xml"
+          test -f "$PLUGIN"
+          grep -q 'EXPECTED_PACKAGE = "com.jbcollections.manager.v2"' "$PLUGIN"
+          grep -q 'validateDownloadedApk' "$PLUGIN"
+          grep -q 'sameHashSet' "$PLUGIN"
+          grep -q 'REQUEST_INSTALL_PACKAGES' "$MANIFEST"
+          grep -q 'applicationId "com.jbcollections.manager.v2"' mobile/android/app/build.gradle || {
+            echo "Unexpected Android applicationId." >&2
+            exit 1
+          }
+          echo "Native updater source and package identity checks passed."
+
           grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
             echo "Native APK updater plugin is not registered in MainActivity." >&2
             exit 1
