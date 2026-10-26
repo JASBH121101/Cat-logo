@@ -6,10 +6,11 @@ const ORIGIN = "https://jb-collections.pages.dev";
 
 function makeRequest(body, options = {}) {
   const headers = new Headers({
-    Origin: options.origin || ORIGIN,
     "Content-Type": "application/json",
     "CF-Connecting-IP": options.ip || ("192.0.2." + String(Math.floor(Math.random() * 200) + 1))
   });
+  const requestedOrigin = Object.prototype.hasOwnProperty.call(options, "origin") ? options.origin : ORIGIN;
+  if (requestedOrigin) headers.set("Origin", requestedOrigin);
   return new Request(ORIGIN + "/api/assistant", {
     method: options.method || "POST",
     headers,
@@ -42,13 +43,16 @@ test("rejects non-POST methods", async () => {
   assert.equal((await response.json()).error, "method_not_allowed");
 });
 
-test("rejects origins outside the official site and preview hosts", async () => {
-  const response = await onRequest({
-    request: makeRequest({catalogType:"technology", message:"Busco un celular"}, {origin:"https://attacker.example"}),
-    env:{AI:{run:async()=>({response:"{}"})}}
-  });
-  assert.equal(response.status, 403);
-  assert.equal((await response.json()).error, "origin_not_allowed");
+test("rejects origins outside the official site and native app", async () => {
+  for (const origin of ["https://attacker.example", "https://feature-jb-ai-sales-assistant.jb-collections.pages.dev", null]) {
+    const options = origin === null ? {origin:""} : {origin};
+    const response = await onRequest({
+      request: makeRequest({catalogType:"technology", message:"Busco un celular"}, options),
+      env:{AI:{run:async()=>({response:"{}"})}}
+    });
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error, "origin_not_allowed");
+  }
 });
 
 test("rejects unknown catalog types and empty messages", async () => {
