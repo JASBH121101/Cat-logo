@@ -9497,3 +9497,106 @@ html[data-theme="light"] body.admin-body .admin-preview-color-dot {
     min-height: 145px !important;
   }
 }
+
+
+/* JB TECH · TARJETAS EXCLUSIVAS: equilibrio de foto y datos en escritorio.
+   Evita que las reglas heredadas conviertan la tarjeta exclusiva en una foto gigante. */
+@media (hover: hover) and (pointer: fine) {
+  body.technology-catalog #featured-grid.featured-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)) !important;
+    align-items: stretch !important;
+    gap: 18px !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr) !important;
+    align-items: stretch !important;
+    min-width: 0 !important;
+    min-height: 300px !important;
+    height: auto !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image {
+    grid-column: 1 !important;
+    align-self: start !important;
+    width: 100% !important;
+    height: 300px !important;
+    min-height: 300px !important;
+    max-height: 300px !important;
+    aspect-ratio: auto !important;
+    overflow: hidden !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 300px !important;
+    padding: 12px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-card-content {
+    grid-column: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    align-self: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 300px !important;
+    box-sizing: border-box !important;
+    padding: clamp(13px, 1.2vw, 20px) !important;
+    gap: 7px !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-card h3 {
+    font-size: clamp(16px, 1.25vw, 21px) !important;
+    line-height: 1.3 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-price {
+    font-size: clamp(19px, 1.6vw, 25px) !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-actions {
+    display: flex !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+    padding-top: 0 !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-view-button {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    white-space: normal !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-badge.featured-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: max-content !important;
+    max-width: calc(100% - 24px) !important;
+    white-space: normal !important;
+    border-color: rgba(210, 176, 104, .82) !important;
+    color: #493719 !important;
+    background: linear-gradient(135deg, #fff3cd, #e8cc8d) !important;
+    font-size: 10px !important;
+    font-weight: 850 !important;
+    letter-spacing: .045em !important;
+  }
+}
