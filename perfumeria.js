@@ -1205,6 +1205,7 @@ if (conciergeForm && conciergeResults) {
   });
 }
 
+void recordPerfumeCatalogPageVisit();
 initializePerfumes();
 
 /* JB PARFUMS · carrusel ligero: una imagen inicial y precarga de una sola foto. */
