@@ -154,6 +154,18 @@ jobs:
             echo "Admin start page is missing its local asset base." >&2
             exit 1
           }
+          unzip -p "$APK" assets/public/index.html | grep -q 'jb-manager-check-updates' || {
+            echo "APK is missing the persistent update button." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'JB Manager está actualizado' || {
+            echo "APK is missing update-status feedback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q '__jbManagerAllowCatalogNavigation' || {
+            echo "APK is missing the Android catalog-navigation fix." >&2
+            exit 1
+          }
           unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections"' || {
             echo "Unexpected application name." >&2
             exit 1
