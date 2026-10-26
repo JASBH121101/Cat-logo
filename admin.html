@@ -703,6 +703,7 @@
         <label class="provider-dialog-wide"><span>Disponibilidad confirmada en el proveedor</span><select id="provider-review-availability"><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
         <label class="provider-dialog-wide"><span>Notas de la revisión</span><textarea id="provider-review-notes" rows="3" maxlength="2000" placeholder="Cambios detectados, condiciones, fecha estimada…"></textarea></label>
       </div>
+      <p id="provider-review-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
       <p class="provider-private-note"><span aria-hidden="true">🔒</span> Estos datos se guardan en tablas privadas de administración. No se publican en las fichas del catálogo ni calculan automáticamente tu comisión.</p>
       <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cancelar</button><button type="submit" id="provider-review-save" class="button button-primary">Guardar revisión</button></footer>
       <input id="provider-review-product-id" type="hidden">
