@@ -248,7 +248,7 @@ const foregroundSvg =
   '<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">' +
   '<stop stop-color="#fff0c5"/><stop offset=".5" stop-color="#d1a45a"/><stop offset="1" stop-color="#fff0c5"/>' +
   '</linearGradient></defs>' +
-  '<g transform="translate(-2 16.88) scale(1.75 1.28)">' +
+  '<g transform="translate(2.8 13.2) scale(1.6)">' +
   '<path d="M32 6 L34.5 12.5 L41 15 L34.5 17.5 L32 24 L29.5 17.5 L23 15 L29.5 12.5 Z" fill="url(#gold)"/>' +
   '<text x="31" y="45" text-anchor="middle" fill="url(#gold)" font-family="Georgia,serif" font-size="29" font-weight="600" letter-spacing="-3">JB</text>' +
   '</g></svg>';

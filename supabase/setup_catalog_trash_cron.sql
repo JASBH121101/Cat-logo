@@ -29,7 +29,8 @@ $check$;
 
 select cron.unschedule(jobid)
 from cron.job
-where jobname = 'cat-logo-trash-cleanup';
+-- Retire the legacy schedule so only the secret-authenticated cleanup remains active.
+where jobname in ('cat-logo-trash-cleanup', 'catlogo-cleanup-expired-trash-daily');
 
 select cron.schedule(
   'cat-logo-trash-cleanup',
