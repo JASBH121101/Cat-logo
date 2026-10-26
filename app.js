@@ -48,7 +48,7 @@ function isCatalogAdminActivityActive() {
   }
 }
 
-// Analytics: record product views and WhatsApp intent, including the selected variant.
+// Analytics: record product views, WhatsApp intent and aggregate region metrics; never persist raw IP addresses.
 async function recordCatalogEvent(productId, eventType, variant = {}) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
 
