@@ -737,9 +737,11 @@ function productIdentityText(product) {
 }
 
 function hasActiveCatalogFilters() {
+  // Sorting changes order, not the result set. Keep category sections and the
+  // featured-products area visible when the customer only changes sort order.
   return Boolean((searchInput?.value || "").trim() || selectedBrand ||
     selectedCategory !== "all" || readPriceBound(minPriceInput) !== null ||
-    readPriceBound(maxPriceInput) !== null || (catalogSortSelect?.value || "recent") !== "recent");
+    readPriceBound(maxPriceInput) !== null);
 }
 
 
@@ -789,8 +791,10 @@ function visibleProducts() {
   }).sort((a, b) => {
     const sort = catalogSortSelect?.value || "recent";
     if (sort === "price-asc" || sort === "price-desc") {
-      const rawA = a.price_usd;
-      const rawB = b.price_usd;
+      // Compare the actual starting price, including variant prices, instead
+      // of relying only on the product-level reference price.
+      const rawA = startingPrice(a, "price_usd");
+      const rawB = startingPrice(b, "price_usd");
       const priceA = rawA === null || rawA === undefined || rawA === "" ? NaN : Number(rawA);
       const priceB = rawB === null || rawB === undefined || rawB === "" ? NaN : Number(rawB);
       const validA = Number.isFinite(priceA) ? priceA : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
