@@ -35,3 +35,10 @@ test("failed images get a fallback and thumbnail selection keeps accessible alt 
   assert.match(app, /mainImage\.alt = photoLabel/);
   assert.match(app, /thumbnail\.hidden = true/);
 });
+
+test("legacy products and variants share one full image gallery renderer", () => {
+  assert.match(app, /function renderProductGallery\(product, images, caption = ""\)/);
+  assert.match(app, /dialogImage\.innerHTML = renderProductGallery\(product, chosenImages, configuration\)/);
+  assert.match(app, /renderProductGallery\(product, initialImages\)/);
+  assert.match(app, /fallbackColorImages/);
+});
