@@ -49,6 +49,21 @@ function isCatalogAdminActivityActive() {
 }
 
 // Analytics: record product views, WhatsApp intent and aggregate region metrics; never persist raw IP addresses.
+let catalogVisitorLocationPromise = null;
+async function getCatalogVisitorLocation() {
+  if (!catalogVisitorLocationPromise) {
+    catalogVisitorLocationPromise = fetch("/api/catalog-location", {
+      method: "GET", credentials: "same-origin", cache: "no-store"
+    }).then(response => response.ok ? response.json() : null)
+      .then(value => ({
+        country: typeof value?.country === "string" ? value.country.slice(0, 2).toUpperCase() : null,
+        department: typeof value?.department === "string" ? value.department.slice(0, 80) : null
+      }))
+      .catch(() => ({ country: null, department: null }));
+  }
+  return catalogVisitorLocationPromise;
+}
+
 async function recordCatalogEvent(productId, eventType, variant = {}) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
 
