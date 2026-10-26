@@ -1,0 +1,8 @@
+{
+  "appId": "com.jbcollections.manager",
+  "appName": "JB Manager Collections",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
