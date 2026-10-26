@@ -1,0 +1,31 @@
+/* JB Manager · control privado de comisiones y analítica geográfica. */
+.dashboard-department-breakdown{display:grid;gap:12px;margin-top:14px}
+.department-stat-row{display:grid;grid-template-columns:minmax(110px,.9fr) minmax(90px,1.6fr) auto;gap:10px;align-items:center}
+.department-stat-name{color:var(--text-primary,var(--text,#333));font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.department-stat-bars{display:grid;gap:4px;min-width:0}.department-stat-bar{width:100%;height:6px;overflow:hidden;border-radius:99px;background:var(--border-subtle,rgba(128,128,128,.16))}
+.department-stat-bar>span{display:block;height:100%;border-radius:inherit;background:var(--accent,#6478db)}.department-stat-bar.is-contact>span{background:var(--accent-secondary,#bd965a)}
+.department-stat-metrics{display:grid;grid-template-columns:auto auto;gap:3px 10px;justify-content:end;text-align:right;font-variant-numeric:tabular-nums}
+.department-stat-metrics span{color:var(--text-secondary,var(--muted,#666));font-size:11px}.department-stat-metrics strong{font-size:12px}
+.department-stat-legend{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 0;color:var(--text-secondary,var(--muted,#666));font-size:11px}
+.department-stat-legend span{display:inline-flex;align-items:center;gap:6px}.department-stat-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent,#6478db)}.department-stat-legend .contact-dot{background:var(--accent-secondary,#bd965a)}
+.commission-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:16px 0}
+.commission-summary-grid>div{display:flex;flex-direction:column;gap:7px;min-width:0;padding:12px;border:1px solid var(--border-subtle,rgba(128,128,128,.2));border-radius:10px;background:var(--surface-muted,rgba(128,128,128,.04))}
+.commission-summary-grid span{color:var(--text-secondary,var(--muted,#666));font-size:11px;line-height:1.4}.commission-summary-grid strong{font-size:clamp(15px,2vw,20px);line-height:1.35;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.commission-editor-details{margin:16px 0;border:1px solid var(--border-subtle,rgba(128,128,128,.2));border-radius:10px;overflow:hidden}
+.commission-editor-details>summary{padding:13px 14px;cursor:pointer;font-size:13px;font-weight:700;list-style:none}.commission-editor-details>summary::-webkit-details-marker{display:none}
+.commission-editor-details>summary::after{content:"＋";float:right;opacity:.7}.commission-editor-details[open]>summary::after{content:"−"}
+.commission-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px;border-top:1px solid var(--border-subtle,rgba(128,128,128,.18))}
+.commission-form label{display:flex;flex-direction:column;gap:6px;min-width:0;color:var(--text-secondary,var(--muted,#666));font-size:12px;font-weight:600}
+.commission-form input,.commission-form select,.commission-form textarea{box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:9px 10px;border:1px solid var(--border-subtle,rgba(128,128,128,.24));border-radius:8px;color:var(--text-primary,var(--text,#222));background:var(--surface,var(--card-bg,#fff));font:inherit;font-size:13px}
+.commission-form textarea{resize:vertical}.commission-form-wide{grid-column:1/-1}.commission-form-actions{display:flex;flex-wrap:wrap;gap:8px}.commission-form-actions .button{min-height:42px}
+.commission-records-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px}.commission-records-heading h4{margin:0;font-size:14px}
+.commission-refresh-button{min-height:34px;padding:6px 10px;border:1px solid var(--border-subtle,rgba(128,128,128,.25));border-radius:7px;background:transparent;color:inherit;cursor:pointer;font:inherit;font-size:12px}
+.commission-records{display:grid;gap:9px}.commission-record-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px;border:1px solid var(--border-subtle,rgba(128,128,128,.18));border-radius:10px}
+.commission-record-main{min-width:0;display:grid;gap:5px}.commission-record-title{margin:0;overflow-wrap:anywhere;font-size:13px;font-weight:750}
+.commission-record-meta{color:var(--text-secondary,var(--muted,#666));font-size:11px;line-height:1.5}.commission-record-amount{align-self:start;font-size:14px;font-weight:800;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.commission-record-actions{display:flex;align-items:start;justify-content:end;flex-wrap:wrap;gap:6px;grid-column:1/-1}.commission-record-actions button{min-height:32px;padding:5px 9px;border:1px solid var(--border-subtle,rgba(128,128,128,.25));border-radius:7px;color:inherit;background:transparent;font:inherit;font-size:11px;cursor:pointer}
+.commission-record-actions .is-danger{border-color:rgba(190,70,70,.4);color:var(--danger,#b84b4b)}
+.commission-status-pill{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:4px 7px;border-radius:99px;background:var(--surface-muted,rgba(128,128,128,.12));color:var(--text-secondary,var(--muted,#666));font-size:10px;font-weight:750}
+.commission-status-pill[data-status="received"]{background:rgba(36,150,95,.12);color:var(--success,#198754)}.commission-status-pill[data-status="confirmed_pending_payment"]{background:rgba(190,145,55,.15);color:var(--warning,#9a741c)}
+.commission-status-pill[data-status="cancelled"]{opacity:.7;text-decoration:line-through}.commission-empty-state{padding:14px;border:1px dashed var(--border-subtle,rgba(128,128,128,.3));border-radius:9px;color:var(--text-secondary,var(--muted,#666));font-size:12px;line-height:1.55}
+@media(max-width:640px){.department-stat-row{grid-template-columns:minmax(0,1fr) auto;gap:7px 10px}.department-stat-bars{grid-column:1/-1;grid-row:2}.department-stat-metrics{grid-column:2;grid-row:1}.commission-form{grid-template-columns:minmax(0,1fr)}.commission-form-wide{grid-column:auto}.commission-summary-grid{gap:7px}.commission-summary-grid>div{padding:10px}.commission-record-row{grid-template-columns:minmax(0,1fr)}.commission-record-amount{text-align:left}.commission-record-actions{grid-column:auto;justify-content:start}}
