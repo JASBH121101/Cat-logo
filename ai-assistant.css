@@ -11,7 +11,8 @@
   position: fixed;
   z-index: 1200;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  /* Keep the launcher above the 48px back-to-top control (23px from the bottom). */
+  bottom: calc(23px + 48px + 14px);
   font-family: "DM Sans", "Manrope", system-ui, sans-serif;
   color: var(--jb-ai-text);
 }
@@ -388,7 +389,8 @@ body.perfume-page .jb-ai-product-whatsapp {
 @media (max-width: 520px) {
   .jb-ai-advisor {
     right: max(12px, env(safe-area-inset-right, 0px));
-    bottom: max(14px, env(safe-area-inset-bottom, 0px));
+    /* Match the top-button clearance and preserve devices with a larger safe area. */
+    bottom: calc(max(23px, env(safe-area-inset-bottom, 0px)) + 48px + 14px);
   }
   .jb-ai-launcher {
     min-height: 46px;
