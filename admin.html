@@ -16,9 +16,10 @@
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
   <link rel="stylesheet" href="admin-provider.css?v=20261026-dropship-tools2">
+  <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-geography1">
 
   <script src="config.js?v=20261026-cloudflare-url1"></script>
-  <script type="module" src="admin.js?v=20261026-remember-session5"></script>
+  <script type="module" src="admin.js?v=20261026-commission-geography1"></script>
   <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
 </head>
 
@@ -183,7 +184,7 @@
       <section class="admin-welcome" aria-label="Resumen del panel">
         <div class="admin-welcome-copy">
           <p class="admin-welcome-kicker">CENTRO DE CONTROL</p>
-          <h2>Tu inventario, <span>en orden.</span></h2>
+          <h2>Tus catálogos, <span>en orden.</span></h2>
           <p>
             Actualizá productos, administrá configuraciones y mantené tu
             catálogo listo para tus clientes.
@@ -289,6 +290,39 @@
 
             <div class="dashboard-interest-products-heading"><h4 id="dashboard-interest-products-title">Productos con más interés</h4><span>Visitas / WhatsApp</span></div>
             <div class="dashboard-top-products" id="dashboard-top-products"><p class="dashboard-empty-state">Aún no hay datos de visitas.</p></div>
+          </article>
+          <article class="dashboard-widget dashboard-department-widget" aria-labelledby="dashboard-department-title">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">UBICACIÓN APROXIMADA</p><h3 id="dashboard-department-title">Visitantes por departamento</h3></div><span class="dashboard-widget-icon" aria-hidden="true">⌖</span></div>
+            <p class="dashboard-widget-note">Estimación por conexión de red; no utiliza GPS ni identifica personas. Los eventos antiguos pueden no incluir ubicación.</p>
+            <div id="dashboard-department-breakdown" class="dashboard-department-breakdown" aria-live="polite"><p class="dashboard-empty-state">El desglose aparecerá cuando se registren nuevas visitas.</p></div>
+          </article>
+          <article class="dashboard-widget dashboard-commission-widget" aria-labelledby="commission-widget-title">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">GANANCIA DEL NEGOCIO</p><h3 id="commission-widget-title">Mis comisiones</h3></div><span class="dashboard-widget-icon" aria-hidden="true">C$</span></div>
+            <p class="dashboard-widget-note">Registrá únicamente lo que te corresponde ganar. No se guardan precios del producto ni costos del proveedor.</p>
+            <div class="commission-summary-grid">
+              <div><span>Comisiones confirmadas</span><strong id="commission-total-confirmed">—</strong></div><div><span>Pendientes de recibir</span><strong id="commission-total-pending">—</strong></div>
+              <div><span>Ya recibidas</span><strong id="commission-total-received">—</strong></div><div><span>Por confirmar</span><strong id="commission-total-unconfirmed">—</strong></div>
+            </div>
+            <details class="commission-editor-details" id="commission-editor-details"><summary id="commission-form-summary">＋ Registrar comisión</summary>
+              <form id="commission-form" class="commission-form">
+                <input id="commission-id" type="hidden">
+                <label><span>Catálogo</span><select id="commission-catalog" required><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+                <label><span>Producto del catálogo (opcional)</span><select id="commission-product-select"><option value="">Sin producto vinculado</option></select></label>
+                <label class="commission-form-wide"><span>Producto o referencia</span><input id="commission-product-name" type="text" maxlength="180" placeholder="Nombre del producto o referencia" required></label>
+                <label><span>Departamento de entrega</span><select id="commission-department"><option value="">Sin especificar</option><option>Boaco</option><option>Carazo</option><option>Chinandega</option><option>Chontales</option><option>Estelí</option><option>Granada</option><option>Jinotega</option><option>León</option><option>Madriz</option><option>Managua</option><option>Masaya</option><option>Matagalpa</option><option>Nueva Segovia</option><option>Río San Juan</option><option>Rivas</option><option>Costa Caribe Norte</option><option>Costa Caribe Sur</option><option>Fuera de Nicaragua</option></select></label>
+                <label><span>Canal</span><select id="commission-channel"><option value="whatsapp">WhatsApp</option><option value="messenger">Messenger</option><option value="other">Otro</option></select></label>
+                <label><span>Mi comisión</span><input id="commission-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Importe que ganás"></label>
+                <label><span>Moneda de la comisión</span><select id="commission-currency"><option value="NIO">Córdobas (C$)</option><option value="USD">Dólares (US$)</option></select></label>
+                <label><span>Estado</span><select id="commission-status"><option value="pending_confirmation">Por confirmar</option><option value="confirmed_pending_payment">Confirmada · pendiente de recibir</option><option value="received">Recibida</option><option value="cancelled">Cancelada</option></select></label>
+                <label><span>Fecha de operación</span><input id="commission-operation-date" type="date" required></label>
+                <label><span>Referencia de pedido (opcional)</span><input id="commission-order-reference" type="text" maxlength="140" placeholder="Código o referencia"></label>
+                <label class="commission-form-wide"><span>Notas (opcional)</span><textarea id="commission-notes" rows="2" maxlength="1200" placeholder="Seguimiento o comprobación del pago"></textarea></label>
+                <div class="commission-form-actions commission-form-wide"><button class="button button-primary" id="commission-save-button" type="submit">Guardar registro</button><button class="button" id="commission-cancel-edit" type="button" hidden>Cancelar edición</button></div>
+                <p id="commission-form-status" class="form-status commission-form-wide" role="status" aria-live="polite"></p>
+              </form>
+            </details>
+            <div class="commission-records-heading"><h4>Últimos registros</h4><button type="button" id="commission-refresh-button" class="commission-refresh-button">Actualizar</button></div>
+            <div id="commission-records" class="commission-records"><p class="dashboard-empty-state">Cargando comisiones…</p></div>
           </article>
         </div>
       </section>
