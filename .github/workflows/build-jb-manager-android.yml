@@ -49,42 +49,50 @@ jobs:
           grep -Fq 'href="https://jb-collections.pages.dev/perfumeria/"' perfumeria/index.html
           echo "Latest main catalog/admin code assembled with the existing Android signing/build system."
 
-      - name: Smoke-test the live Cloudflare APK download proxy
+      - name: Diagnose direct and Cloudflare APK download completeness
         shell: bash
         run: |
           set -euo pipefail
-          url="https://jb-collections.pages.dev/api/download/apk?version=1.0.70"
-          headers="$RUNNER_TEMP/jb-apk-proxy.headers"
-          body="$RUNNER_TEMP/jb-apk-proxy.apk"
-          http_status="$(curl --silent --show-error --location --max-time 120 \
-            --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
-          if [ "$http_status" != "200" ]; then
-            echo "APK proxy returned HTTP $http_status. Response body:" >&2
-            head -c 1000 "$body" >&2 || true
-            echo >&2
-            exit 1
-          fi
-          size="$(wc -c < "$body" | tr -d ' ')"
-          if [ "$size" -lt 1000000 ] || [ "$size" -gt 52428800 ]; then
-            echo "APK proxy returned an unexpected size: $size bytes." >&2
-            head -c 1000 "$body" >&2 || true
-            exit 1
-          fi
-          python3 - "$body" <<'PY'
+          version="1.0.70"
+          direct_url="https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v${version}/JB-Manager-Collections.apk"
+          proxy_url="https://jb-collections.pages.dev/api/download/apk?version=${version}"
+          for source in direct proxy; do
+            if [ "$source" = "direct" ]; then url="$direct_url"; else url="$proxy_url"; fi
+            headers="$RUNNER_TEMP/jb-apk-${source}.headers"
+            body="$RUNNER_TEMP/jb-apk-${source}.apk"
+            status="$(curl --silent --show-error --location --max-time 120 \
+              --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
+            size="$(wc -c < "$body" | tr -d ' ')"
+            echo "$source download: HTTP $status, $size bytes"
+            if [ "$status" != "200" ]; then
+              echo "$source response body:" >&2
+              head -c 1200 "$body" >&2 || true
+              echo >&2
+              exit 1
+            fi
+            python3 - "$body" "$source" <<'PY'
           import sys
           from pathlib import Path
-          data = Path(sys.argv[1]).read_bytes()
+          path, source = sys.argv[1], sys.argv[2]
+          data = Path(path).read_bytes()
+          tail_start = max(0, len(data) - 65557)
+          eocd = data.rfind(b"PK\\x05\\x06", tail_start)
+          print(f"{source} ZIP diagnostics: bytes={len(data)}, head={data[:8].hex()}, eocd_index={eocd}, tail={data[-32:].hex()}")
+          if len(data) < 1_000_000 or len(data) > 52_428_800:
+              raise SystemExit(f"{source} response size outside APK limits")
           if not data.startswith(b"PK"):
-              raise SystemExit("APK proxy response does not start with a ZIP/APK signature.")
-          if data.rfind(b"PK\\x05\\x06", max(0, len(data) - 65557)) < 0:
-              raise SystemExit("APK proxy response is missing the ZIP end-of-central-directory record.")
-          print("APK ZIP header and end record are present.")
+              raise SystemExit(f"{source} response is not a ZIP/APK")
+          if eocd < 0:
+              raise SystemExit(f"{source} APK lacks ZIP end-of-central-directory")
           PY
-          grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
-            echo "APK proxy did not return the Android package MIME type." >&2
-            exit 1
-          }
-          echo "Cloudflare APK proxy returned a valid-looking APK ($size bytes)."
+            if [ "$source" = "proxy" ]; then
+              grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
+                echo "Cloudflare proxy did not return the Android package MIME type." >&2
+                exit 1
+              }
+            fi
+          done
+          echo "Both direct and Cloudflare APK download paths returned complete ZIP/APK bodies."
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
