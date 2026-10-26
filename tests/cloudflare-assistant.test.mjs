@@ -179,19 +179,22 @@ test("the landing-page mode combines both catalogues and routes recommendations 
   globalThis.fetch = async url => {
     const parsed = new URL(String(url));
     requests.push(parsed);
-    assert.equal(parsed.pathname,"/rest/v1/products");
-    const catalog = parsed.searchParams.get("catalog_type");
-    if (catalog === "eq.technology") {
-      return new Response(JSON.stringify([productRow()]),{status:200,headers:{"Content-Type":"application/json"}});
+    if (parsed.pathname.endsWith("/products")) {
+      const catalog = parsed.searchParams.get("catalog_type");
+      if (catalog === "eq.technology") {
+        return new Response(JSON.stringify([productRow()]),{status:200,headers:{"Content-Type":"application/json"}});
+      }
+      assert.equal(catalog,"eq.perfumery");
+      return new Response(JSON.stringify([productRow({
+        id:"perfume-1",
+        catalog_type:"perfumery",
+        name:"Amber Night",
+        category:"Perfumes",
+        product_type:"perfume"
+      })]),{status:200,headers:{"Content-Type":"application/json"}});
     }
-    assert.equal(catalog,"eq.perfumery");
-    return new Response(JSON.stringify([productRow({
-      id:"perfume-1",
-      catalog_type:"perfumery",
-      name:"Amber Night",
-      category:"Perfumes",
-      product_type:"perfume"
-    })]),{status:200,headers:{"Content-Type":"application/json"}});
+    assert.equal(parsed.pathname,"/rest/v1/perfume_details");
+    return new Response("[]",{status:200,headers:{"Content-Type":"application/json"}});
   };
   try {
     const response = await onRequest({
@@ -202,7 +205,7 @@ test("the landing-page mode combines both catalogues and routes recommendations 
     const data = await response.json();
     assert.equal(data.recommendations.length,2);
     assert.deepEqual(data.recommendations.map(item=>item.catalog_type),["perfumery","technology"]);
-    assert.equal(requests.length,2);
+    assert.equal(requests.length,3);
   } finally {
     globalThis.fetch = previousFetch;
   }
