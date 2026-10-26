@@ -53,10 +53,6 @@ const replacements = [
     '<a class="admin-sidebar-brand" href="#app-top" aria-label="JB Manager Collections, volver al inicio">'
   ],
   [
-    '<a href="./" class="admin-sidebar-catalog-link">',
-    '<a href="./tecnologia/" class="admin-sidebar-catalog-link">'
-  ],
-  [
     "<title>JB Manager | Panel de catálogos</title>",
     "<title>JB Manager Collections | Panel de catálogos</title>"
   ]
@@ -107,7 +103,7 @@ const updateChecker = `
         boxShadow: "0 12px 38px rgba(0,0,0,.32)",
         font: "14px/1.45 system-ui, sans-serif"
       });
-      document.body.append(notice);
+      document.documentElement.append(notice);
     }
     notice.replaceChildren();
     const heading = document.createElement("strong");
@@ -200,15 +196,17 @@ const updateChecker = `
       button.textContent = "Buscar actualizaciones";
       button.setAttribute("aria-label", "Buscar actualizaciones de JB Manager Collections");
       Object.assign(button.style, {
-        position: "fixed", zIndex: "99998", right: "14px",
-        bottom: "max(14px, env(safe-area-inset-bottom))",
+        position: "fixed", zIndex: "2147483000",
+        right: "max(14px, env(safe-area-inset-right, 0px))",
+        bottom: "max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px))",
+        transform: "translateZ(0)", willChange: "transform",
         padding: "12px 15px", borderRadius: "999px",
         border: "1px solid #d9c18a", background: "#101827",
         color: "#ffffff", boxShadow: "0 6px 22px rgba(0,0,0,.24)",
         font: "600 13px/1.2 system-ui, sans-serif", cursor: "pointer"
       });
       button.addEventListener("click", () => void checkForUpdates(true));
-      document.body.append(button);
+      document.documentElement.append(button);
     }
     void checkForUpdates(false);
   }
@@ -284,6 +282,26 @@ await writeFile(join(assetDir, "splash-dark.png"), splashPng);
 const internalLinkHandler = `
 <script data-jb-manager-android-shell>
 (() => {
+  const isCatalogPath = (pathname = window.location.pathname) => {
+    const clean = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+    return clean.endsWith("/tecnologia")
+      || clean.endsWith("/perfumeria")
+      || clean.endsWith("/tecnologia/index.html")
+      || clean.endsWith("/perfumeria/index.html");
+  };
+
+  // The native Android back gesture must return to the admin dashboard, not
+  // finish the app while a bundled catalog is open. A same-document state makes
+  // WebView history navigable, then popstate redirects to the admin start page.
+  if (isCatalogPath() && !window.history.state?.__jbManagerCatalogBackGuard) {
+    window.history.pushState({ __jbManagerCatalogBackGuard: true }, "", window.location.href);
+  }
+  window.addEventListener("popstate", () => {
+    if (!isCatalogPath()) return;
+    window.__jbManagerAllowCatalogNavigation = true;
+    window.location.replace(new URL("/index.html?jb-manager-return=dashboard", window.location.origin).href);
+  });
+
   // A catalog link is an intentional navigation: the editor's recovery draft
   // is saved while leaving, so don't let the unsaved-changes warning cancel it.
   window.addEventListener("beforeunload", (event) => {
