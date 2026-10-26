@@ -102,6 +102,10 @@ const updateChecker = `
   let nativeMonitorBusy = false;
   let automaticInstallAttemptedFor = "";
 
+  function downloadUrlFor(version) {
+    return "https://jb-collections.pages.dev/api/download/apk?version=" + encodeURIComponent(String(version || ""));
+  }
+
   function compareVersions(left, right) {
     const a = String(left).split(".").map(n => Number(n) || 0);
     const b = String(right).split(".").map(n => Number(n) || 0);
@@ -118,7 +122,7 @@ const updateChecker = `
     const asset = (item.assets || []).find(entry => entry.name === "JB-Manager-Collections.apk");
     const expected = new RegExp("^https://github\\.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + match[1].replace(/\\./g, "\\\\.") + "/JB-Manager-Collections\\.apk$", "i");
     if (!asset || !expected.test(String(asset.browser_download_url || ""))) return null;
-    return { version: match[1], asset };
+    return { version: match[1], asset, downloadUrl: downloadUrlFor(match[1]) };
   }
 
   function showMessage(title, message, downloadUrl, downloadVersion) {
@@ -246,7 +250,7 @@ const updateChecker = `
       }
       if (state.version) {
         activeDownloadVersion = state.version;
-        activeDownloadUrl = "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + state.version + "/JB-Manager-Collections.apk";
+        activeDownloadUrl = downloadUrlFor(state.version);
       }
       const total = Number(state.totalBytes) || 0;
       const downloaded = Number(state.bytesDownloaded) || 0;
@@ -304,7 +308,7 @@ const updateChecker = `
       const state = await api.getDownloadStatus();
       if (!state) return;
       activeDownloadVersion = state.version || "";
-      activeDownloadUrl = activeDownloadVersion ? "https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v" + activeDownloadVersion + "/JB-Manager-Collections.apk" : "";
+      activeDownloadUrl = activeDownloadVersion ? downloadUrlFor(activeDownloadVersion) : "";
       if (["pending", "running", "paused", "successful"].includes(state.status)) {
         showMessage(state.status === "successful" ? "Actualización descargada" : "Descarga de actualización en curso", "Se recuperó el estado persistente de Android. Podés consultar el progreso o reabrir el instalador.", activeDownloadUrl, activeDownloadVersion);
         startNativeDownloadMonitor();
@@ -330,7 +334,7 @@ const updateChecker = `
         return;
       }
       if (compareVersions(latest.version, currentVersion) > 0) {
-        showMessage("Actualización disponible · v" + latest.version, "El APK se descargará con el administrador nativo. Al finalizar, Android validará el archivo y abrirá el instalador.", latest.asset.browser_download_url, latest.version);
+        showMessage("Actualización disponible · v" + latest.version, "El APK se descargará con el administrador nativo. Al finalizar, Android validará el archivo y abrirá el instalador.", latest.downloadUrl, latest.version);
       } else if (interactive) {
         showMessage("JB Manager está actualizado", "Versión de esta compilación: v" + currentVersion + ". Última versión publicada: v" + latest.version + ".");
       }
