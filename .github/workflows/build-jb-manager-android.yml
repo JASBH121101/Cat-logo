@@ -194,7 +194,7 @@ jobs:
 
           # The product detail must package the same final gallery fix as the public source.
           grep -Fq 'technology-visual-refresh.css?v=20261026-product-gallery-fix3' mobile/www/tecnologia/index.html
-          grep -Fq 'app.js?v=20261026-product-gallery-fix3' mobile/www/tecnologia/index.html
+          grep -Fq 'app.js?v=20261026-product-gallery-fix4' mobile/www/tecnologia/index.html
           grep -Fq 'dialog-image-load-error' mobile/www/technology-visual-refresh.css
           grep -Fq 'Gallery resilience: broken full-size images' mobile/www/app.js
           grep -Fq 'mainImage.alt = photoLabel' mobile/www/app.js
