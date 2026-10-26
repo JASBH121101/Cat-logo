@@ -1506,3 +1506,33 @@ html[data-theme="dark"] .perfume-concierge {
 .perfume-heading-icon--arabic { font-size:35px; }
 .perfume-heading-icon--designer { font-size:37px; }
 @media (max-width:560px) { .perfume-category-title-wrap { align-items:flex-start; gap:11px; } .perfume-heading-icon { flex-basis:38px; width:38px; height:38px; font-size:25px; } .perfume-heading-icon--arabic { font-size:29px; } .perfume-heading-icon--designer { font-size:31px; } .perfume-category-heading { align-items:flex-start; } }
+
+
+/* PRODUCT DETAIL OVERLAY · keep the perfume catalog scroll position intact. */
+body.perfume-page #perfume-detail-page:not(.hidden) {
+  position: fixed !important;
+  inset: var(--catalog-detail-overlay-top, 76px) 0 0;
+  z-index: 80;
+  width: auto;
+  max-width: none !important;
+  height: auto;
+  margin: 0 !important;
+  padding: clamp(12px, 2.3vw, 28px) max(12px, 4vw) 32px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  background: var(--perfume-paper, #F5F1E9);
+  color: var(--perfume-ink, #17130F);
+}
+body.perfume-page #perfume-detail-page #perfume-dialog-content {
+  width: min(1020px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+}
+@media (max-width: 760px) {
+  body.perfume-page #perfume-detail-page:not(.hidden) {
+    padding: 12px 10px max(20px, env(safe-area-inset-bottom, 0px));
+  }
+}
