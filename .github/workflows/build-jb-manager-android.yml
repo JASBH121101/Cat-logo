@@ -163,7 +163,7 @@ jobs:
           set -euo pipefail
           # The APK must package the same business logic, Supabase config, and styles
           # as the browser panel. Only the HTML shell/native bridges are platform-specific.
-          for file in admin.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css admin-workflow.css admin-bulk-import.css responsive-layout.css; do
+          for file in admin.js admin-provider.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css responsive-layout.css; do
             if ! cmp -s "$file" "mobile/www/$file"; then
               echo "Shared source and APK bundle differ: $file" >&2
               diff -u "$file" "mobile/www/$file" || true
@@ -191,7 +191,23 @@ jobs:
 
           grep -Fq 'updated_at || a.created_at' admin.js
           grep -Fq 'catalog_events' app.js
-          echo "Browser source and APK shared assets match; recent activity and catalog analytics are present."
+
+          # The product detail must package the same final gallery fix as the public source.
+          grep -Fq 'technology-visual-refresh.css?v=20261026-product-gallery-fix3' mobile/www/tecnologia/index.html
+          grep -Fq 'app.js?v=20261026-product-gallery-fix3' mobile/www/tecnologia/index.html
+          grep -Fq 'dialog-image-load-error' mobile/www/technology-visual-refresh.css
+          grep -Fq 'Gallery resilience: broken full-size images' mobile/www/app.js
+          grep -Fq 'mainImage.alt = photoLabel' mobile/www/app.js
+
+          for file in technology-visual-refresh.css app.js; do
+            if ! cmp -s "$file" "mobile/www/$file"; then
+              echo "Gallery fix in APK bundle differs from browser source: $file" >&2
+              diff -u "$file" "mobile/www/$file" || true
+              exit 1
+            fi
+          done
+
+          echo "Browser source and APK bundle match, including product gallery repair, admin features, and both catalogs."
 
       - name: Create Android project
         working-directory: mobile
@@ -338,8 +354,22 @@ jobs:
             assets/public/admin.html \
             assets/public/styles.css \
             assets/public/theme-ui.css \
+            assets/public/brand-refresh.css \
+            assets/public/dark-theme-redesign.css \
+            assets/public/catalog-performance.css \
+            assets/public/technology-visual-refresh.css \
+            assets/public/perfumeria.css \
+            assets/public/admin-workflow.css \
+            assets/public/admin-bulk-import.css \
+            assets/public/admin-provider.css \
+            assets/public/admin-commission.css \
+            assets/public/admin-desktop-typography.css \
             assets/public/responsive-layout.css \
             assets/public/admin.js \
+            assets/public/admin-provider.js \
+            assets/public/app.js \
+            assets/public/perfumeria.js \
+            assets/public/ui.js \
             assets/public/config.js \
             assets/public/jb-manager-back-navigation.js \
             assets/public/jb-manager-apk-updater.js \
