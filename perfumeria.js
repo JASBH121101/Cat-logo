@@ -1056,6 +1056,47 @@ async function initializePerfumes() {
 
 const conciergeForm = $("#perfume-concierge-form");
 const conciergeResults = $("#perfume-concierge-results");
+const conciergeClearButton = $("#perfume-concierge-clear");
+const CONCIERGE_SESSION_KEY = "jbparfums-concierge-selection-v1";
+
+function persistConciergeSelection(submitted = !conciergeResults?.hidden) {
+  if (!conciergeForm) return;
+  const state = {
+    family: $("#concierge-family")?.value || "all",
+    scent: $("#concierge-scent")?.value || "all",
+    audience: $("#concierge-audience")?.value || "all",
+    budget: $("#concierge-budget")?.value || "",
+    submitted: Boolean(submitted)
+  };
+  try { sessionStorage.setItem(CONCIERGE_SESSION_KEY, JSON.stringify(state)); } catch { /* La página sigue funcionando sin almacenamiento. */ }
+}
+function restoreConciergeSelection() {
+  if (!conciergeForm) return;
+  let state;
+  try { state = JSON.parse(sessionStorage.getItem(CONCIERGE_SESSION_KEY) || "null"); } catch { state = null; }
+  if (!state || typeof state !== "object") return;
+  const allowed = {
+    family: ["all", "nicho", "arabes", "disenador"],
+    scent: ["all", "dulce", "fresco", "amaderado", "intenso", "floral"],
+    audience: ["all", "hombre", "mujer", "unisex"]
+  };
+  if (allowed.family.includes(state.family)) $("#concierge-family").value = state.family;
+  if (allowed.scent.includes(state.scent)) $("#concierge-scent").value = state.scent;
+  if (allowed.audience.includes(state.audience)) $("#concierge-audience").value = state.audience;
+  $("#concierge-budget").value = typeof state.budget === "string" && /^[0-9]*(?:\\.[0-9]*)?$/.test(state.budget) ? state.budget : "";
+  if (state.submitted) conciergeForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+}
+conciergeForm?.addEventListener("input", () => persistConciergeSelection());
+conciergeForm?.addEventListener("change", () => persistConciergeSelection());
+conciergeClearButton?.addEventListener("click", () => {
+  conciergeForm.reset();
+  $("#concierge-family").value = "all";
+  $("#concierge-scent").value = "all";
+  $("#concierge-audience").value = "all";
+  $("#concierge-budget").value = "";
+  if (conciergeResults) { conciergeResults.hidden = true; conciergeResults.replaceChildren(); }
+  try { sessionStorage.removeItem(CONCIERGE_SESSION_KEY); } catch { /* Almacenamiento opcional. */ }
+});
 
 function recommendPerfumes(preferences) {
   const scentTerms = {
