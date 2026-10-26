@@ -115,9 +115,9 @@ const splashBackgroundSvg =
   '<svg xmlns="http://www.w3.org/2000/svg" width="2732" height="2732" viewBox="0 0 2732 2732">' +
   '<rect width="2732" height="2732" fill="#11172a"/></svg>';
 const splashBackgroundPng = await sharp(Buffer.from(splashBackgroundSvg)).png().toBuffer();
-const splashLogo = await sharp(iconOnlyPng).resize(820, 820).png().toBuffer();
+const splashLogo = await sharp(iconOnlyPng).resize(520, 520).png().toBuffer();
 const splashPng = await sharp(splashBackgroundPng)
-  .composite([{ input: splashLogo, left: 956, top: 956 }])
+  .composite([{ input: splashLogo, left: 1106, top: 1106 }])
   .png()
   .toBuffer();
 await writeFile(join(assetDir, "splash.png"), splashPng);
