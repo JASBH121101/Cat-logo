@@ -1,0 +1,411 @@
+.jb-ai-advisor {
+  --jb-ai-accent: #5b6bea;
+  --jb-ai-accent-strong: #4654cf;
+  --jb-ai-gold: #d1b16f;
+  --jb-ai-panel-bg: #fff;
+  --jb-ai-text: #172033;
+  --jb-ai-muted: #69758c;
+  --jb-ai-border: #dce3ef;
+  --jb-ai-assistant-bubble: #f1f4fb;
+  --jb-ai-shadow: 0 22px 60px rgba(7, 16, 38, .26);
+  position: fixed;
+  z-index: 1200;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  font-family: "DM Sans", "Manrope", system-ui, sans-serif;
+  color: var(--jb-ai-text);
+}
+html[data-theme="dark"] .jb-ai-advisor {
+  --jb-ai-panel-bg: #0e1729;
+  --jb-ai-text: #edf2ff;
+  --jb-ai-muted: #9aa9c5;
+  --jb-ai-border: #283a5a;
+  --jb-ai-assistant-bubble: #17233b;
+  --jb-ai-shadow: 0 22px 60px rgba(0, 0, 0, .46);
+}
+body.perfume-page .jb-ai-advisor {
+  --jb-ai-accent: #c8a65e;
+  --jb-ai-accent-strong: #a5823b;
+}
+html[data-theme="dark"] body.perfume-page .jb-ai-advisor {
+  --jb-ai-panel-bg: #15130f;
+  --jb-ai-text: #f6efdf;
+  --jb-ai-muted: #c1b69f;
+  --jb-ai-border: #4b3c23;
+  --jb-ai-assistant-bubble: #211c13;
+}
+.jb-ai-advisor,
+.jb-ai-advisor * {
+  box-sizing: border-box;
+}
+.jb-ai-launcher {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 17px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--jb-ai-accent), var(--jb-ai-accent-strong));
+  color: #fff;
+  box-shadow: 0 9px 26px rgba(42, 65, 155, .3);
+  font: 750 13px/1 "DM Sans", system-ui, sans-serif;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+body.perfume-page .jb-ai-launcher {
+  border-color: rgba(255, 255, 255, .3);
+  color: #15120c;
+  box-shadow: 0 8px 24px rgba(112, 82, 28, .28);
+}
+.jb-ai-launcher:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow: 0 12px 30px rgba(42, 65, 155, .34);
+}
+.jb-ai-launcher:focus-visible,
+.jb-ai-close:focus-visible,
+.jb-ai-send:focus-visible,
+.jb-ai-quick-prompts button:focus-visible,
+.jb-ai-product a:focus-visible,
+.jb-ai-whatsapp:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--jb-ai-accent) 50%, transparent);
+  outline-offset: 3px;
+}
+.jb-ai-launcher-spark {
+  font-size: 21px;
+  line-height: 1;
+}
+.jb-ai-launcher-label {
+  white-space: nowrap;
+}
+.jb-ai-launcher.is-open .jb-ai-launcher-spark {
+  transform: rotate(45deg);
+}
+.jb-ai-panel {
+  position: absolute;
+  right: 0;
+  bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  width: min(390px, calc(100vw - 24px));
+  height: min(590px, calc(100dvh - 115px));
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 22px;
+  background: var(--jb-ai-panel-bg);
+  color: var(--jb-ai-text);
+  box-shadow: var(--jb-ai-shadow);
+  isolation: isolate;
+  animation: jb-ai-panel-in .18s ease-out;
+}
+.jb-ai-panel[hidden] {
+  display: none !important;
+}
+@keyframes jb-ai-panel-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.jb-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 72px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--jb-ai-border);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--jb-ai-accent) 12%, var(--jb-ai-panel-bg)), var(--jb-ai-panel-bg));
+}
+.jb-ai-avatar {
+  display: grid;
+  flex: 0 0 39px;
+  width: 39px;
+  height: 39px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--jb-ai-accent);
+  color: #fff;
+  font-size: 22px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--jb-ai-accent) 30%, transparent);
+}
+body.perfume-page .jb-ai-avatar {
+  color: #19140a;
+}
+.jb-ai-title-wrap {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.jb-ai-title-wrap strong {
+  color: var(--jb-ai-text);
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+.jb-ai-title-wrap small {
+  color: var(--jb-ai-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+.jb-ai-close {
+  appearance: none;
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--jb-ai-text);
+  font: 400 25px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+.jb-ai-trust {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--jb-ai-border);
+  background: color-mix(in srgb, var(--jb-ai-accent) 7%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.jb-ai-messages {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 12px 10px;
+  scroll-behavior: smooth;
+}
+.jb-ai-message {
+  max-width: 90%;
+  padding: 11px 12px;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 14px;
+  color: var(--jb-ai-text);
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.jb-ai-message.is-assistant {
+  align-self: flex-start;
+  border-top-left-radius: 5px;
+  background: var(--jb-ai-assistant-bubble);
+}
+.jb-ai-message.is-user {
+  align-self: flex-end;
+  border-color: color-mix(in srgb, var(--jb-ai-accent) 32%, var(--jb-ai-border));
+  border-top-right-radius: 5px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 12%, var(--jb-ai-panel-bg));
+}
+.jb-ai-quick-prompts {
+  display: flex;
+  gap: 7px;
+  padding: 0 12px 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.jb-ai-quick-prompts button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--jb-ai-accent) 40%, var(--jb-ai-border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--jb-ai-text);
+  font: 650 11px/1.2 "DM Sans", system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.jb-ai-quick-prompts button:hover {
+  background: color-mix(in srgb, var(--jb-ai-accent) 10%, var(--jb-ai-panel-bg));
+}
+.jb-ai-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 11px;
+  border-top: 1px solid var(--jb-ai-border);
+  background: var(--jb-ai-panel-bg);
+}
+.jb-ai-form textarea {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 43px;
+  max-height: 96px;
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--jb-ai-assistant-bubble) 62%, var(--jb-ai-panel-bg));
+  color: var(--jb-ai-text);
+  font: 500 13px/1.4 "DM Sans", system-ui, sans-serif;
+  resize: none;
+  outline-offset: 2px;
+}
+.jb-ai-form textarea::placeholder {
+  color: var(--jb-ai-muted);
+}
+.jb-ai-form textarea:focus {
+  border-color: var(--jb-ai-accent);
+  outline: 2px solid color-mix(in srgb, var(--jb-ai-accent) 18%, transparent);
+}
+.jb-ai-send {
+  appearance: none;
+  display: grid;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  background: var(--jb-ai-accent);
+  color: #fff;
+  font: 700 24px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+body.perfume-page .jb-ai-send {
+  color: #17120a;
+}
+.jb-ai-send:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+.jb-ai-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px 11px;
+  color: var(--jb-ai-muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+.jb-ai-whatsapp {
+  color: var(--jb-ai-accent-strong);
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.jb-ai-whatsapp:hover {
+  text-decoration: underline;
+}
+.jb-ai-recommendations {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+}
+.jb-ai-product {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 13px;
+  background: var(--jb-ai-panel-bg);
+}
+.jb-ai-product-name {
+  color: var(--jb-ai-text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.jb-ai-product-brand {
+  color: var(--jb-ai-muted);
+  font-size: 11px;
+}
+.jb-ai-product-price {
+  color: var(--jb-ai-accent-strong);
+  font-size: 13px;
+  font-weight: 850;
+}
+.jb-ai-product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 4px;
+}
+.jb-ai-product-actions a {
+  display: inline-flex;
+  min-height: 31px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.jb-ai-product-link {
+  border: 1px solid var(--jb-ai-border);
+  color: var(--jb-ai-text);
+}
+.jb-ai-product-whatsapp {
+  border: 1px solid var(--jb-ai-accent);
+  background: var(--jb-ai-accent);
+  color: #fff;
+}
+body.perfume-page .jb-ai-product-whatsapp {
+  color: #161108;
+}
+.jb-ai-fallback-link {
+  align-self: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--jb-ai-accent);
+  border-radius: 9px;
+  color: var(--jb-ai-accent-strong);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.jb-ai-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 520px) {
+  .jb-ai-advisor {
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  }
+  .jb-ai-launcher {
+    min-height: 46px;
+    padding: 0 15px;
+    font-size: 12px;
+  }
+  .jb-ai-panel {
+    position: fixed;
+    right: max(8px, env(safe-area-inset-right, 0px));
+    bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 70px));
+    width: min(420px, calc(100vw - 16px));
+    height: min(590px, calc(100dvh - 150px));
+    min-height: min(360px, calc(100dvh - 150px));
+    border-radius: 19px;
+  }
+  .jb-ai-message { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jb-ai-launcher, .jb-ai-panel, .jb-ai-messages { transition: none; animation: none; scroll-behavior: auto; }
+}
