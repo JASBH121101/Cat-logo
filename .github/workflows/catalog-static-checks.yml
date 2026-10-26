@@ -20,19 +20,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in admin.js app.js collections.js config.js perfumeria.js ui.js; do
+          for file in admin.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js; do
             echo "Checking $file"
             node --check "$file"
           done
           echo "Checking Cloudflare Pages Function syntax"
           node --input-type=module --check < functions/api/share.js
           node --input-type=module --check < functions/api/download/apk.js
+          node --input-type=module --check < functions/api/assistant.js
       - name: Test Cloudflare Pages share endpoint
         shell: bash
         run: |
           set -euo pipefail
           node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-download.test.mjs
+          node --experimental-default-type=module --test tests/cloudflare-assistant.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
 
       - name: Check canonical URLs and public share origin
