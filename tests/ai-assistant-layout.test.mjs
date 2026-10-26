@@ -55,3 +55,25 @@ test("AI response schema provides evidence-based reasons and only allows catalog
   assert.match(aiCss, /\.jb-ai-product-reason\s*\{/);
   assert.match(aiCss, /\.jb-ai-product-media\s*\{/);
 });
+
+
+test("technology recommendations support side-by-side comparison and AI-assisted evaluation", () => {
+  assert.match(aiJs, /jb-ai-compare-toggle/);
+  assert.match(aiJs, /function renderEquipmentComparison\(/);
+  assert.match(aiJs, /Comparación de equipos/);
+  assert.match(aiJs, /Comparar con IA/);
+  assert.match(aiJs, /Consultar ambos por WhatsApp/);
+  assert.match(aiJs, /comparisonIds: Array\.isArray\(options\.comparisonIds\)/);
+  assert.match(aiCss, /\.jb-ai-compare-table\s*\{/);
+  assert.match(aiCss, /\.jb-ai-compare-scroll\s*\{/);
+  assert.match(assistantApi, /request_mode: isComparisonRequest/);
+  assert.match(assistantApi, /comparison_products_unavailable/);
+  assert.match(assistantApi, /COMPARACIÓN DE EQUIPOS/);
+});
+
+test("comparison requests are restricted to two distinct published technology product IDs", () => {
+  assert.match(assistantApi, /rawComparisonIds\.length !== 2/);
+  assert.match(assistantApi, /comparisonIds\.length !== 2/);
+  assert.match(assistantApi, /product\.catalog_type === "technology"/);
+  assert.match(assistantApi, /Equipo seleccionado para esta comparación/);
+});
