@@ -232,6 +232,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   let rawImportRows = [];
   let lastRefreshError = "";
   const statusMessage = $("#provider-status-message");
+  const reviewMessage = $("#provider-review-message");
   const importMessage = $("#provider-import-message");
   const reviewDialog = $("#provider-review-dialog");
   const historyDialog = $("#provider-history-dialog");
@@ -362,7 +363,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
     $("#provider-review-availability").value = review.provider_availability || "unknown";
     $("#provider-review-notes").value = review.review_notes || "";
-    say(statusMessage, "");
+    say(reviewMessage, "");
     if (typeof reviewDialog.showModal === "function") reviewDialog.showModal();
     else reviewDialog.setAttribute("open", "");
   }
@@ -373,20 +374,20 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const user = getCurrentUser();
     const productId = $("#provider-review-product-id").value;
     const product = activeProducts().find(item => String(item.id) === String(productId));
-    if (!supabase || !user || !product) { say(statusMessage, "Tu sesión venció o el producto ya no está disponible.", "error"); return; }
+    if (!supabase || !user || !product) { say(reviewMessage, "Tu sesión venció o el producto ya no está disponible.", "error"); return; }
 
     const providerName = $("#provider-review-name").value.trim() || "GoPartner";
     const providerURL = $("#provider-review-url").value.trim();
     if (providerURL) {
       let parsed;
-      try { parsed = new URL(providerURL); } catch { say(statusMessage, "La dirección del proveedor no es válida.", "error"); return; }
-      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") { say(statusMessage, "El enlace del proveedor debe comenzar con http:// o https://.", "error"); return; }
+      try { parsed = new URL(providerURL); } catch { say(reviewMessage, "La dirección del proveedor no es válida.", "error"); return; }
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") { say(reviewMessage, "El enlace del proveedor debe comenzar con http:// o https://.", "error"); return; }
     }
     let priceUSD, priceNIO;
     try {
       priceUSD = cleanPrice($("#provider-review-price-usd").value);
       priceNIO = cleanPrice($("#provider-review-price-nio").value);
-    } catch (error) { say(statusMessage, error.message, "error"); return; }
+    } catch (error) { say(reviewMessage, error.message, "error"); return; }
 
     const previous = providerStatuses.get(String(product.id)) || {};
     const payload = {
@@ -413,7 +414,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       say(statusMessage, "Revisión guardada. Se añadió una entrada al historial privado.", "success");
       await refresh();
     } catch (error) {
-      say(statusMessage, "No se pudo guardar la revisión: " + (error?.message || "error desconocido"), "error");
+      say(reviewMessage, "No se pudo guardar la revisión: " + (error?.message || "error desconocido"), "error");
     } finally {
       if (button) { button.disabled = false; button.textContent = "Guardar revisión"; }
     }
