@@ -1295,6 +1295,65 @@ dialogContent.addEventListener("click", event => {
   });
 });
 
+let catalogScrollLockSnapshot = null;
+
+function lockCatalogScrollPosition() {
+  if (catalogScrollLockSnapshot) return;
+
+  const body = document.body;
+  const root = document.documentElement;
+  const scrollY = Math.max(0, window.scrollY || root.scrollTop || 0);
+  const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+  const computedPaddingRight = Number.parseFloat(window.getComputedStyle(body).paddingRight) || 0;
+
+  catalogScrollLockSnapshot = {
+    scrollY,
+    bodyStyle: {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      paddingRight: body.style.paddingRight
+    },
+    rootScrollBehavior: root.style.scrollBehavior
+  };
+
+  // Freeze the document at its current scroll offset while the detail overlay is open.
+  body.style.position = "fixed";
+  body.style.top = "-" + scrollY + "px";
+  body.style.left = "0";
+  body.style.right = "0";
+  body.style.width = "100%";
+  body.style.overflow = "hidden";
+  if (scrollbarWidth > 0) body.style.paddingRight = (computedPaddingRight + scrollbarWidth) + "px";
+}
+
+function restoreCatalogScrollPosition() {
+  const snapshot = catalogScrollLockSnapshot;
+  if (!snapshot) return;
+  catalogScrollLockSnapshot = null;
+
+  const body = document.body;
+  const root = document.documentElement;
+  // Override CSS scroll-behavior:smooth for this one restoration so it never animates
+  // from the top through the whole catalog.
+  root.style.scrollBehavior = "auto";
+  body.style.position = snapshot.bodyStyle.position;
+  body.style.top = snapshot.bodyStyle.top;
+  body.style.left = snapshot.bodyStyle.left;
+  body.style.right = snapshot.bodyStyle.right;
+  body.style.width = snapshot.bodyStyle.width;
+  body.style.overflow = snapshot.bodyStyle.overflow;
+  body.style.paddingRight = snapshot.bodyStyle.paddingRight;
+  window.scrollTo({ left: 0, top: snapshot.scrollY, behavior: "auto" });
+
+  window.requestAnimationFrame(() => {
+    root.style.scrollBehavior = snapshot.rootScrollBehavior;
+  });
+}
+
 function setCatalogDetailOverlayOffset() {
   const header = document.querySelector(".site-header");
   const headerHeight = Math.max(0, Math.ceil(header?.getBoundingClientRect().height || 76));
@@ -1434,6 +1493,7 @@ function openProduct(product, requestedVariant = null) {
   }
 
   setCatalogDetailOverlayOffset();
+  lockCatalogScrollPosition();
   productDetailPage?.classList.remove("hidden");
   if (productHeaderBack) productHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-product-detail-view");
@@ -1570,6 +1630,7 @@ function showCatalogView() {
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical && catalogCanonical) canonical.href = catalogCanonical;
   if (dialogContent) dialogContent.innerHTML = "";
+  restoreCatalogScrollPosition();
 }
 
 function handleProductRoute() {
