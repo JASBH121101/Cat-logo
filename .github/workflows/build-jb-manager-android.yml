@@ -7,6 +7,7 @@ concurrency:
 on:
   push:
     branches:
+      - main
       - feature/jb-manager-android-apk
   workflow_dispatch:
 
@@ -84,6 +85,42 @@ jobs:
         env:
           JB_MANAGER_VERSION: 1.0.${{ github.run_number }}
         run: node mobile/prepare-web.mjs
+
+      - name: Verify shared web assets match the browser source
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The APK must package the same business logic, Supabase config, and styles
+          # as the browser panel. Only the HTML shell/native bridges are platform-specific.
+          for file in admin.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css admin-workflow.css admin-bulk-import.css responsive-layout.css; do
+            if ! cmp -s "$file" "mobile/www/$file"; then
+              echo "Shared source and APK bundle differ: $file" >&2
+              diff -u "$file" "mobile/www/$file" || true
+              exit 1
+            fi
+          done
+
+          for page in admin.html tecnologia/index.html perfumeria/index.html; do
+            test -s "mobile/www/$page" || {
+              echo "Missing shared page in APK bundle: $page" >&2
+              exit 1
+            }
+          done
+
+          for page in admin.html mobile/www/admin.html; do
+            grep -Fq 'id="dashboard-activity-list"' "$page" || {
+              echo "Recent activity widget is missing from $page." >&2
+              exit 1
+            }
+            grep -Fq 'id="dashboard-activity-refresh"' "$page" || {
+              echo "Recent activity refresh control is missing from $page." >&2
+              exit 1
+            }
+          done
+
+          grep -Fq 'updated_at || a.created_at' admin.js
+          grep -Fq 'catalog_events' app.js
+          echo "Browser source and APK shared assets match; recent activity and catalog analytics are present."
 
       - name: Create Android project
         working-directory: mobile
