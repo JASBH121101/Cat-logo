@@ -591,6 +591,41 @@ async function injectNavigationSupport(directory) {
 await addExplicitCapacitorBase(webDir);
 await injectNavigationSupport(webDir);
 
+// The current main branch keeps its responsive rules in the page-specific stylesheets.
+// The Android wrapper also ships a shared responsive guardrail stylesheet from its
+// build-support branch. Add its reference to the generated app and both catalog pages.
+const bundledResponsiveCss = join(webDir, "responsive-layout.css");
+await readFile(bundledResponsiveCss, "utf8");
+for (const relativePage of [
+  "index.html",
+  "admin.html",
+  "tecnologia/index.html",
+  "perfumeria/index.html"
+]) {
+  const pagePath = join(webDir, relativePage);
+  let html = await readFile(pagePath, "utf8");
+  if (!html.includes("responsive-layout.css")) {
+    if (!/<\\/head>/i.test(html)) {
+      throw new Error("Could not insert responsive stylesheet reference into " + relativePage + ".");
+    }
+    html = html.replace(
+      /<\\/head>/i,
+      '<link rel="stylesheet" href="/responsive-layout.css">\\n</head>'
+    );
+    await writeFile(pagePath, html, "utf8");
+  }
+  if (!html.includes("jb-manager-back-navigation.js")) {
+    if (!/<\\/head>/i.test(html)) {
+      throw new Error("Could not insert native back handler into " + relativePage + ".");
+    }
+    html = html.replace(
+      /<\\/head>/i,
+      '<script src="/jb-manager-back-navigation.js" defer data-jb-manager-native-back></script>\\n</head>'
+    );
+    await writeFile(pagePath, html, "utf8");
+  }
+}
+
 // Validate the generated browser-side scripts before Android packages them.
 const builtAdminHtml = await readFile(join(webDir, "admin.html"), "utf8");
 const updaterScript = builtAdminHtml.match(/<script\s+data-jb-manager-updater>([\s\S]*?)<\/script>/i);
