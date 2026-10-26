@@ -417,7 +417,7 @@ if (!builtAdminHtml.includes('data-admin-catalog-link="technology"')
 
 for (const catalogPath of ["tecnologia/index.html", "perfumeria/index.html"]) {
   const catalogHtml = await readFile(join(webDir, catalogPath), "utf8");
-  const shellScript = catalogHtml.match(/<script\\s+data-jb-manager-android-shell>([\\s\\S]*?)<\\/script>/i);
+  const shellScript = catalogHtml.match(/<script\s+data-jb-manager-android-shell>([\s\S]*?)<\/script>/i);
   if (!shellScript) throw new Error("Android navigation script is missing from " + catalogPath + ".");
   new Function(shellScript[1]);
   if (!shellScript[1].includes("__jbManagerCatalogBackGuard")
