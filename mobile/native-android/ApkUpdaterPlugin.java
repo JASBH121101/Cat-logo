@@ -141,7 +141,13 @@ public class ApkUpdaterPlugin extends Plugin {
         if (!VERSION_PATTERN.matcher(version).matches()) { call.reject("La versión de actualización no es válida."); return; }
         Uri parsed = Uri.parse(url);
         String expectedPath = "/JASBH121101/Cat-logo/releases/download/jb-manager-v" + version + "/JB-Manager-Collections.apk";
-        if (!"https".equalsIgnoreCase(parsed.getScheme()) || !"github.com".equalsIgnoreCase(parsed.getHost()) || !expectedPath.equals(parsed.getPath())) {
+        boolean officialGithubRelease = "https".equalsIgnoreCase(parsed.getScheme())
+            && "github.com".equalsIgnoreCase(parsed.getHost())
+            && expectedPath.equals(parsed.getPath())
+            && parsed.getQuery() == null;
+        String expectedProxyUrl = "https://jb-collections.pages.dev/api/download/apk?version=" + Uri.encode(version);
+        boolean officialCloudflareProxy = expectedProxyUrl.equals(url);
+        if (!officialGithubRelease && !officialCloudflareProxy) {
             call.reject("Por seguridad, solo se permiten APK de las publicaciones oficiales de JB Collections."); return;
         }
         SharedPreferences store = prefs();
