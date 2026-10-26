@@ -48,13 +48,16 @@ jobs:
           grep -Fq 'href="https://jb-collections.pages.dev/"' index.html
           grep -Fq 'href="https://jb-collections.pages.dev/tecnologia/"' tecnologia/index.html
           grep -Fq 'href="https://jb-collections.pages.dev/perfumeria/"' perfumeria/index.html
-          echo "Latest main catalog/admin code assembled with the existing Android signing/build system."
+          grep -Fq 'bottom: calc(23px + 48px + 14px)' ai-assistant.css
+          grep -Fq 'bottom: calc(max(23px, env(safe-area-inset-bottom, 0px)) + 48px + 14px)' ai-assistant.css
+          grep -Fq '.back-to-top' theme-ui.css
+          echo "Latest main source includes collision-free AI and back-to-top controls."
 
       - name: Diagnose direct and Cloudflare APK download completeness
         shell: bash
         run: |
           set -euo pipefail
-          version="1.0.79"
+          version="1.0.85"
           direct_url="https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v${version}/JB-Manager-Collections.apk"
           proxy_url="https://jb-collections.pages.dev/api/download/apk?version=${version}"
           for source in direct proxy; do
