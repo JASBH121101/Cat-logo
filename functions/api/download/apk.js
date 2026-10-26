@@ -95,7 +95,13 @@ export async function onRequest({ request }) {
         }
       }
       if (!hasEndRecord) {
-        return response(502, "The APK transfer was incomplete; the archive end record is missing");
+        const tailHex = Array.from(bytes.slice(-32), value => value.toString(16).padStart(2, "0")).join("");
+        const upstreamLength = upstream.headers.get("Content-Length") || "unknown";
+        const upstreamType = upstream.headers.get("Content-Type") || "unknown";
+        console.error("APK archive end record missing", {
+          version, actualLength, upstreamLength, upstreamType, tailHex
+        });
+        return response(502, `APK incomplete: received=${actualLength} bytes; upstream length=${upstreamLength}; type=${upstreamType}; tail=${tailHex}`);
       }
     } else {
       const contentRange = upstream.headers.get("Content-Range") || "";
