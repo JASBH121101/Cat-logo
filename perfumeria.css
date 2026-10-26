@@ -2400,3 +2400,27 @@ body.perfume-page .perfume-hero-notes {
     margin-top:14px;
   }
 }
+
+
+/* Softer editorial caption gradient: retain the cinematic fade without obscuring the fragrance name. */
+.perfume-page .perfume-carousel-caption {
+  background:linear-gradient(
+    90deg,
+    rgba(32,24,14,.24) 0%,
+    rgba(44,33,20,.14) 23%,
+    rgba(67,51,30,.055) 45%,
+    rgba(245,238,223,.06) 57%,
+    transparent 70%
+  ) !important;
+  border-top-color:rgba(169,137,82,.25);
+}
+.perfume-page .perfume-carousel-title {
+  color:#342a1d !important;
+  text-shadow:0 1px 2px rgba(255,250,239,.55);
+}
+.perfume-page .perfume-carousel-eyebrow {
+  color:#775b2d;
+}
+.perfume-page .perfume-carousel-count {
+  color:#765c30;
+}
