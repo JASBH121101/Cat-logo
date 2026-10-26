@@ -9674,3 +9674,44 @@ html[data-theme="light"] body.technology-catalog #product-detail-page:not(.hidde
     image-rendering: auto !important;
   }
 }
+
+
+/* Product badges sit in the text area instead of covering catalog photos. */
+body.technology-catalog .product-card-badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  margin: 0 0 3px !important;
+  padding: 0 !important;
+}
+body.technology-catalog .product-card-badges:empty {
+  display: none !important;
+}
+body.technology-catalog .product-card-content .product-card-badges .product-badge {
+  position: static !important;
+  inset: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+body.technology-catalog .product-card-content .product-card-badges .featured-badge {
+  border-color: rgba(210, 176, 104, .82) !important;
+  color: #493719 !important;
+  background: linear-gradient(135deg, #fff3cd, #e8cc8d) !important;
+}
+html[data-theme="dark"] body.technology-catalog .product-card-content .product-card-badges .featured-badge {
+  border-color: #816b42 !important;
+  color: #f1dfb5 !important;
+  background: linear-gradient(110deg, rgba(37, 32, 25, .96), rgba(25, 30, 46, .96)) !important;
+}
