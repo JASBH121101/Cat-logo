@@ -2499,6 +2499,7 @@ function renderAnalyticsPie(node, legendNode, totalNode, rows) {
 }
 
 async function loadCatalogAnalytics() {
+  if (typeof loadCommissionDashboard === "function") void loadCommissionDashboard();
   const note = document.getElementById("dashboard-analytics-note");
   const topNode = document.getElementById("dashboard-top-products");
   const familyNode = document.getElementById("dashboard-interest-colors");
@@ -2531,7 +2532,7 @@ async function loadCatalogAnalytics() {
   if (!supabase || !currentUser) return;
 
   const { data, error } = await supabase.from("catalog_events")
-    .select("product_id,event_type,created_at,variant_color,variant_ram,variant_storage")
+    .select("*")
     .order("created_at", { ascending: false }).limit(10000);
   if (error) {
     setText("dashboard-views-total", "—");
@@ -2547,6 +2548,7 @@ async function loadCatalogAnalytics() {
 
   const catalogIds = new Set(catalogProducts.map(product => String(product.id)));
   const events = (data || []).filter(event => catalogIds.has(String(event.product_id)));
+  renderDepartmentAnalytics(events);
   const views = events.filter(event => event.event_type === "view");
   const clicks = events.filter(event => event.event_type === "whatsapp_click");
   setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
