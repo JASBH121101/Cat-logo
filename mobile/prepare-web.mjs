@@ -367,6 +367,21 @@ async function injectNavigationSupport(directory) {
 await addExplicitCapacitorBase(webDir);
 await injectNavigationSupport(webDir);
 
+// Validate the generated browser-side scripts before Android packages them.
+const builtAdminHtml = await readFile(join(webDir, "admin.html"), "utf8");
+const updaterScript = builtAdminHtml.match(/<script\\s+data-jb-manager-updater>([\\s\\S]*?)<\\/script>/i);
+if (!updaterScript) throw new Error("APK update button script was not generated.");
+new Function(updaterScript[1]);
+
+const builtCatalogHtml = await readFile(join(webDir, "tecnologia", "index.html"), "utf8");
+const navigationScript = builtCatalogHtml.match(/<script\\s+data-jb-manager-android-shell>([\\s\\S]*?)<\\/script>/i);
+if (!navigationScript) throw new Error("Android catalog navigation script was not generated.");
+new Function(navigationScript[1]);
+
+if (!builtAdminHtml.includes("jb-manager-check-updates")) {
+  throw new Error("The APK update button is missing from the admin panel.");
+}
+
 console.log("Prepared local Android web bundle from repository source.");
 console.log("Start page: mobile/www/index.html (private admin panel)");
 console.log("Icon source: custom PNG layers rendered from favicon-collections.svg");
