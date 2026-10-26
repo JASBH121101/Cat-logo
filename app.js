@@ -1587,7 +1587,8 @@ function handleProductRoute() {
 }
 
 
-/* Cierre por teclado de la ficha de producto. Si hay una galería nativa abierta,
+/* Cierre por teclado de la ficha de producto.
+   Cierra en el lugar actual y restaura la posición con desplazamiento suave. */
 document.addEventListener("keydown", event => {
   if (event.key !== "Escape" || event.defaultPrevented) return;
   if (!document.body.classList.contains("product-detail-active")) return;
@@ -1595,8 +1596,7 @@ document.addEventListener("keydown", event => {
 
   event.preventDefault();
 
-  // Close in place instead of popping browser history. That avoids the abrupt
-  // native scroll restoration that can feel like a page/app restart.
+  // Evitar history.back(): el navegador restauraba la posición instantáneamente.
   const savedScrollY = Math.max(0, Number(window.history.state?.catalogScrollY) || 0);
   const nextState = { ...(window.history.state || {}) };
   delete nextState.productDetailRoute;
