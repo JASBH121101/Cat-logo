@@ -15,7 +15,7 @@ function releaseResponse(overrides = {}) {
       id: 123,
       name: "JB-Manager-Collections.apk",
       state: "uploaded",
-      size: 6_500_000,
+      size: 1024,
       browser_download_url: publicAssetUrl
     }],
     ...overrides
@@ -51,7 +51,7 @@ test("returns 404 when the requested release does not exist", async () => {
   } finally { globalThis.fetch = previous; }
 });
 
-test("streams the official APK with Android download headers and forwards Range", async () => {
+test("returns a complete byte-counted APK response and forwards Range", async () => {
   const previous = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -65,7 +65,7 @@ test("streams the official APK with Android download headers and forwards Range"
       headers: {
         "Content-Type": "application/octet-stream",
         "Content-Length": "5",
-        "Content-Range": "bytes 0-4/6500000",
+        "Content-Range": "bytes 0-4/1024",
         "Accept-Ranges": "bytes",
         "ETag": '"apk-etag"'
       }
@@ -77,7 +77,7 @@ test("streams the official APK with Android download headers and forwards Range"
     assert.equal(result.headers.get("Content-Type"), "application/vnd.android.package-archive");
     assert.match(result.headers.get("Content-Disposition"), /JB-Manager-Collections-v1\.0\.64\.apk/);
     assert.equal(result.headers.get("Content-Length"), "5");
-    assert.equal(result.headers.get("Content-Range"), "bytes 0-4/6500000");
+    assert.equal(result.headers.get("Content-Range"), "bytes 0-4/1024");
     assert.equal(result.headers.get("Cache-Control"), "no-store, no-cache, must-revalidate");
     assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [1, 2, 3, 4, 5]);
     assert.equal(calls.length, 2);
@@ -94,15 +94,19 @@ test("refreshes via the canonical download URL if GitHub API returns metadata in
       status: 200, headers: { "Content-Type": "application/json" }
     });
     assert.equal(String(url), publicAssetUrl);
-    return new Response(new Uint8Array([9, 8, 7]), {
+    const body = new Uint8Array(1024);
+    body.set([9, 8, 7]);
+    return new Response(body, {
       status: 200,
-      headers: { "Content-Type": "application/vnd.android.package-archive", "Content-Length": "3" }
+      headers: { "Content-Type": "application/vnd.android.package-archive", "Content-Length": "1024" }
     });
   };
   try {
     const result = await onRequest({ request: request() });
     assert.equal(result.status, 200);
-    assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [9, 8, 7]);
+    const body = new Uint8Array(await result.arrayBuffer());
+    assert.equal(body.length, 1024);
+    assert.deepEqual([...body.slice(0, 3)], [9, 8, 7]);
     assert.deepEqual(calls, [releaseUrl, assetUrl, publicAssetUrl]);
   } finally { globalThis.fetch = previous; }
 });
@@ -115,7 +119,7 @@ test("does not allow an unexpected release asset URL", async () => {
       id: 123,
       name: "JB-Manager-Collections.apk",
       state: "uploaded",
-      size: 6_500_000,
+      size: 1024,
       browser_download_url: "https://attacker.example/file.apk"
     }] });
   };
