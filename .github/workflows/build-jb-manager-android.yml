@@ -70,11 +70,16 @@ jobs:
             head -c 1000 "$body" >&2 || true
             exit 1
           fi
-          signature="$(od -An -N2 -t x1 "$body" | tr -d ' \\n')"
-          if [ "$signature" != "504b" ]; then
-            echo "APK proxy response does not start with ZIP/APK signature." >&2
-            exit 1
-          fi
+          python3 - "$body" <<'PY'
+          import sys
+          from pathlib import Path
+          data = Path(sys.argv[1]).read_bytes()
+          if not data.startswith(b"PK"):
+              raise SystemExit("APK proxy response does not start with a ZIP/APK signature.")
+          if data.rfind(b"PK\\x05\\x06", max(0, len(data) - 65557)) < 0:
+              raise SystemExit("APK proxy response is missing the ZIP end-of-central-directory record.")
+          print("APK ZIP header and end record are present.")
+          PY
           grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
             echo "APK proxy did not return the Android package MIME type." >&2
             exit 1
@@ -350,6 +355,26 @@ jobs:
           }
           unzip -p "$APK" assets/public/index.html | grep -q 'JB Manager está actualizado' || {
             echo "APK is missing update-status feedback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'id="login-remember-user"' || {
+            echo "APK is missing the login remember-session checkbox." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'id="remember-user-toggle"' || {
+            echo "APK is missing the sidebar session-preference toggle." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'cat-logo-remember-admin-session-v1' || {
+            echo "APK is missing remembered-session storage logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'setRememberedSession' || {
+            echo "APK is missing the session-preference handler." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -q 'admin-sidebar-remember' || {
+            echo "APK is missing the session-preference styles." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/index.html | grep -q '__jbManagerAllowCatalogNavigation' || {
