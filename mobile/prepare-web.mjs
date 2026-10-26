@@ -113,13 +113,13 @@ async function addExplicitCapacitorBase(directory) {
 
     const relativePath = relative(webDir, fullPath).split(sep).join("/");
     const folder = dirname(relativePath);
-    const routePath = folder === "." ? "/" : `/${folder}/`;
-    const baseTag = `<base href="https://localhost${routePath}">`;
+    const routePath = folder === "." ? "/" : \`/\${folder}/\`;
+    const baseTag = \`<base href="https://localhost\${routePath}">\`;
     let html = await readFile(fullPath, "utf8");
-    if (/<base\\s/i.test(html)) {
-      html = html.replace(/<base\\s+[^>]*>/i, baseTag);
+    if (/<base\s/i.test(html)) {
+      html = html.replace(/<base\s+[^>]*>/i, baseTag);
     } else {
-      html = html.replace(/<head([^>]*)>/i, `<head$1>\\n  ${baseTag}`);
+      html = html.replace(/<head([^>]*)>/i, \`<head$1>\n  \${baseTag}\`);
     }
     await writeFile(fullPath, html, "utf8");
   }
