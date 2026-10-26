@@ -186,6 +186,20 @@ function rankProducts(products, preferenceContext) {
     a.index - b.index
   );
 }
+function summarizeSpecifications(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      return clean(parsed.slice(0, 4).map(item => typeof item === "string" ? item : compact(item, 70)).join(" · "), 140);
+    }
+    if (parsed && typeof parsed === "object") {
+      return clean(Object.entries(parsed).slice(0, 4).map(([key, item]) => clean(key, 28) + ": " + clean(Array.isArray(item) ? item.join(", ") : typeof item === "object" ? JSON.stringify(item) : item, 55)).join(" · "), 140);
+    }
+  } catch {}
+  return clean(text, 140);
+}
 function productSummary(product) {
   if (product.catalog_type === "perfumery" && product.perfume) {
     const perfume = product.perfume;
@@ -198,6 +212,7 @@ function productSummary(product) {
   }
   return clean([
     product.category,
+    summarizeSpecifications(product.specifications),
     product.description,
     product.warranty_months ? String(product.warranty_months) + " meses de garantía indicada" : ""
   ].filter(Boolean).join(" · "), 220);
