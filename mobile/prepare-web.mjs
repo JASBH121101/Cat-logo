@@ -651,6 +651,23 @@ for (const relativePage of [
 
 // Validate the generated browser-side scripts before Android packages them.
 const builtAdminHtml = await readFile(join(webDir, "admin.html"), "utf8");
+const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
+const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
+
+// Prevent future Android packaging from silently dropping login/session controls
+// that exist in current main but were absent from an older mobile source branch.
+for (const [label, source, fragments] of [
+  ["admin.html", builtAdminHtml, ['id="login-remember-user"', 'id="remember-user-toggle"', 'id="remember-user-toggle-label"']],
+  ["admin.js", builtAdminScript, ["REMEMBER_SESSION_KEY", "supabaseAuthStorage", "setRememberedSession", "getRememberedAdminEmail"]],
+  ["theme-ui.css", builtThemeCss, [".login-remember-option", ".admin-sidebar-remember"]]
+]) {
+  for (const fragment of fragments) {
+    if (!source.includes(fragment)) {
+      throw new Error("Android bundle lost a required remember-session feature: " + label + " is missing " + fragment);
+    }
+  }
+}
+
 const updaterScript = builtAdminHtml.match(/<script\s+data-jb-manager-updater>([\s\S]*?)<\/script>/i);
 if (!updaterScript) throw new Error("APK update button script was not generated.");
 new Function(updaterScript[1]);
@@ -705,6 +722,12 @@ if (!builtAdminHtml.includes("jb-manager-check-updates")) {
 }
 if (!updaterScript[1].includes("document.documentElement.append(button)")) {
   throw new Error("The update button is not attached to the fixed viewport root.");
+}
+if (!updaterScript[1].includes('button.innerHTML = \'<svg viewBox="0 0 24 24"')) {
+  throw new Error("The Android update button is missing its stable SVG refresh icon.");
+}
+if (updaterScript[1].includes('button.textContent = "Comprobando…";')) {
+  throw new Error("The Android update button must not replace its compact icon with overflowing status text.");
 }
 if (!updaterScript[1].includes("api.downloadAndInstall")) {
   throw new Error("The update button must use the native Android download flow inside the APK.");
