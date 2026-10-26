@@ -4063,17 +4063,38 @@ async function buildPublishReview() {
   const mainImageStatus = mainImageItems.length
     ? mainImageItems.length + " fotografía(s) generales · " + savedCount + " guardada(s) · " + pendingCount + " pendiente(s) de subir"
     : "Sin fotografía general";
+  const perfumeNotes = isPerfume ? {
+    scentFamily: $("#product-perfume-scent-family")?.value.trim() || "",
+    top: $("#product-perfume-top-notes")?.value.trim() || "",
+    heart: $("#product-perfume-heart-notes")?.value.trim() || "",
+    base: $("#product-perfume-base-notes")?.value.trim() || ""
+  } : null;
   return { name: name, brand: brand, family: family, variants: variantSummary, mainImageStatus: mainImageStatus,
+    perfumeNotes: perfumeNotes,
     warnings: [...new Set(warnings)], missingPhotos: missingPhotos, blockingIssues: blockingIssues };
 }
 function renderPublishReview(review) {
+  const perfumeNoteEntries = review.perfumeNotes ? [
+    ["Familia olfativa específica", review.perfumeNotes.scentFamily],
+    ["Salida", review.perfumeNotes.top],
+    ["Corazón", review.perfumeNotes.heart],
+    ["Fondo", review.perfumeNotes.base]
+  ].filter(([, value]) => String(value || "").trim()) : null;
+  const perfumeNotesMarkup = perfumeNoteEntries
+    ? '<div class="publish-review-row publish-review-notes-row"><span>Notas olfativas</span><div class="publish-review-notes">' +
+      (perfumeNoteEntries.length
+        ? perfumeNoteEntries.map(([label, value]) => '<p><strong>' + escapeHtml(label) + ':</strong> ' + escapeHtml(value) + '</p>').join("")
+        : '<p class="publish-review-notes-empty">Sin notas olfativas registradas.</p>') +
+      '</div></div>'
+    : "";
   $("#publish-review-summary").innerHTML =
     '<div class="publish-review-row"><span>Producto</span><strong>' + escapeHtml(review.name || "Sin nombre") + '</strong></div>' +
     '<div class="publish-review-row"><span>Marca</span><strong>' + escapeHtml(review.brand || "Sin marca indicada") + '</strong></div>' +
     '<div class="publish-review-row"><span>Categoría / familia</span><strong>' + escapeHtml(review.family) + '</strong></div>' +
     '<div class="publish-review-row"><span>Fotografías generales</span><strong>' + escapeHtml(review.mainImageStatus) + '</strong></div>' +
     '<div class="publish-review-row publish-review-variants"><span>Variantes, colores y precios</span><div>' +
-    review.variants.map(item => '<p>' + escapeHtml(item) + '</p>').join("") + '</div></div>';
+    review.variants.map(item => '<p>' + escapeHtml(item) + '</p>').join("") + '</div></div>' +
+    perfumeNotesMarkup;
   $("#publish-review-warnings-section").hidden = !review.warnings.length;
   $("#publish-review-warnings").innerHTML = review.warnings.map(item => '<li>' + escapeHtml(item) + '</li>').join("");
   $("#publish-review-issues-section").hidden = !review.blockingIssues.length;
