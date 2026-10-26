@@ -2389,3 +2389,14 @@ html[data-theme="dark"] .perfume-page .perfume-note-group li {
     transition:none !important;
   }
 }
+
+
+/* Editorial hero cleanup: the collection is already discoverable below. */
+body.perfume-page .perfume-hero-notes {
+  margin-top:18px;
+}
+@media(max-width:760px) {
+  body.perfume-page .perfume-hero-notes {
+    margin-top:14px;
+  }
+}
