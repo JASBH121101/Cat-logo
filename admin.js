@@ -2593,7 +2593,7 @@ async function loadCatalogAnalytics() {
   }
 
   const catalogIds = new Set(catalogProducts.map(product => String(product.id)));
-  const events = (data || []).filter(event => catalogIds.has(String(event.product_id)));
+  const events = (data || []).filter(event => event.event_type === "catalog_view" ? (isAllCatalogs || event.catalog_type === dashboardCatalogScope) : catalogIds.has(String(event.product_id)));
   renderDepartmentAnalytics(events);
   const views = events.filter(event => event.event_type === "view");
   const clicks = events.filter(event => event.event_type === "whatsapp_click");
