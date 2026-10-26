@@ -1,4 +1,5 @@
 name: Build JB Manager Collections APK
+# Includes the cleaned catalog hero layouts from main.
 
 concurrency:
   group: jb-manager-android-${{ github.ref }}
