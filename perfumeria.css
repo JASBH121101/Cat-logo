@@ -248,7 +248,7 @@ html[data-theme="light"] .perfume-hero-art { background:radial-gradient(ellipse 
 .perfume-note-group { min-width:0; padding:16px; border:1px solid var(--perfume-border); background:var(--perfume-card); }
 .perfume-note-group h3 { margin:0 0 10px; color:var(--perfume-gold); font-family:"Playfair Display",Georgia,serif; font-size:18px; font-weight:500; }
 .perfume-note-group ul { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none; }
-.perfume-note-group li { padding:5px 8px; border:1px solid var(--perfume-border); border-radius:99px; color:var(--perfume-muted); font-size:10px; }
+.perfume-note-group li { padding:6px 10px; border:1px solid var(--perfume-border); border-radius:99px; color:var(--perfume-muted); font-size:12px; line-height:1.35; }
 .perfume-note-group p { margin:0; color:var(--perfume-muted); font-size:11px; }
 @media (max-width:880px) {
   .perfume-hero { grid-template-columns:minmax(0,1fr) minmax(260px,.85fr); gap:24px; }
