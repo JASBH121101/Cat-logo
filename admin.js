@@ -2719,7 +2719,6 @@ function previewOpenPerfumeProduct(product) {
           '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration || "No especificada") + '</dd></div>' +
           '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' +
           '<div><dt>Público</dt><dd>' + escapeHtml(detail.audience || "No especificado") + '</dd></div>' +
-          '<div><dt>Original</dt><dd>' + (detail.is_original === true ? "Confirmado" : detail.is_original === false ? "No confirmado" : "No especificado") + '</dd></div>' +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(previewAvailability(product.availability)) + '</dd></div>' +
         '</dl>' +
         notesList +
@@ -3248,8 +3247,6 @@ function clearEditor() {
   $("#product-perfume-top-notes").value = "";
   $("#product-perfume-heart-notes").value = "";
   $("#product-perfume-base-notes").value = "";
-  const originalField = $("#product-perfume-original");
-  if (originalField) originalField.checked = false;
 
   updateProductFormMode();
   $("#form-title").textContent = activeCatalogType === "perfumery" ? "Registrar fragancia" : "Agregar producto";
@@ -3294,8 +3291,6 @@ function fillEditor(product) {
   $("#product-perfume-top-notes").value = Array.isArray(detail.top_notes) ? detail.top_notes.join(", ") : "";
   $("#product-perfume-heart-notes").value = Array.isArray(detail.heart_notes) ? detail.heart_notes.join(", ") : "";
   $("#product-perfume-base-notes").value = Array.isArray(detail.base_notes) ? detail.base_notes.join(", ") : "";
-  const originalField = $("#product-perfume-original");
-  if (originalField) originalField.checked = Boolean(detail.is_original);
 
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
@@ -4500,7 +4495,6 @@ form?.addEventListener("submit", async event => {
         top_notes: splitPerfumeNotes($("#product-perfume-top-notes").value),
         heart_notes: splitPerfumeNotes($("#product-perfume-heart-notes").value),
         base_notes: splitPerfumeNotes($("#product-perfume-base-notes").value),
-        is_original: null,
         updated_at: now
       };
       const detailResult = await supabase.from("perfume_details").upsert(perfumePayload, { onConflict: "product_id" });
