@@ -9715,3 +9715,133 @@ html[data-theme="dark"] body.technology-catalog .product-card-content .product-c
   color: #f1dfb5 !important;
   background: linear-gradient(110deg, rgba(37, 32, 25, .96), rgba(25, 30, 46, .96)) !important;
 }
+
+
+/* JB TECH category sections: organize the default catalog without removing category chips or card badges. */
+body.technology-catalog #product-grid.product-grid.is-categorized {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+}
+body.technology-catalog .catalog-category-section {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+body.technology-catalog .catalog-category-section + .catalog-category-section {
+  margin-top: clamp(28px, 3.5vw, 42px);
+  padding-top: clamp(20px, 2.5vw, 30px);
+  border-top: 1px solid var(--catalog-category-divider, rgba(104, 126, 174, .28));
+}
+body.technology-catalog .catalog-category-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 0 14px;
+  padding: 0 2px 12px;
+  border-bottom: 1px solid var(--catalog-category-divider, rgba(104, 126, 174, .24));
+}
+body.technology-catalog .catalog-category-heading-mark {
+  display: block;
+  flex: 0 0 4px;
+  width: 4px;
+  min-height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #16c9ef, #5b4bf0);
+  box-shadow: 0 0 14px rgba(72, 107, 236, .16);
+}
+body.technology-catalog .catalog-category-heading-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+body.technology-catalog .catalog-category-eyebrow {
+  margin: 0 0 3px;
+  color: var(--catalog-filter-muted, #7787a7);
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.3;
+  letter-spacing: .13em;
+}
+body.technology-catalog .catalog-category-heading h3 {
+  margin: 0;
+  color: var(--catalog-filter-title, #243658);
+  font-size: clamp(20px, 1.9vw, 27px);
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: -.025em;
+}
+body.technology-catalog .catalog-category-count {
+  flex: 0 0 auto;
+  max-width: 45%;
+  padding: 6px 10px;
+  border: 1px solid var(--catalog-category-count-border, rgba(93, 120, 186, .28));
+  border-radius: 999px;
+  color: var(--catalog-filter-muted, #65799d);
+  background: var(--catalog-category-count-bg, rgba(255, 255, 255, .54));
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: center;
+}
+body.technology-catalog .catalog-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+html[data-theme="dark"] body.technology-catalog {
+  --catalog-category-divider: rgba(136, 158, 206, .22);
+  --catalog-category-count-border: rgba(118, 145, 209, .36);
+  --catalog-category-count-bg: rgba(22, 34, 59, .7);
+}
+html[data-theme="light"] body.technology-catalog {
+  --catalog-category-divider: rgba(98, 121, 174, .23);
+  --catalog-category-count-border: rgba(93, 120, 186, .25);
+  --catalog-category-count-bg: rgba(255, 255, 255, .72);
+}
+@media (min-width: 761px) and (max-width: 1200px) {
+  body.technology-catalog .catalog-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog .catalog-category-section + .catalog-category-section {
+    margin-top: 26px;
+    padding-top: 19px;
+  }
+  body.technology-catalog .catalog-category-heading {
+    gap: 9px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+  body.technology-catalog .catalog-category-heading-mark {
+    min-height: 29px;
+  }
+  body.technology-catalog .catalog-category-heading h3 {
+    font-size: clamp(18px, 5.2vw, 23px);
+  }
+  body.technology-catalog .catalog-category-eyebrow {
+    font-size: 8px;
+  }
+  body.technology-catalog .catalog-category-count {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+  body.technology-catalog .catalog-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+@media (max-width: 350px) {
+  body.technology-catalog .catalog-category-grid {
+    gap: 7px;
+  }
+  body.technology-catalog .catalog-category-count {
+    max-width: 42%;
+    font-size: 9px;
+  }
+}
