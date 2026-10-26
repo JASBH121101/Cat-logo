@@ -89,6 +89,41 @@ jobs:
         working-directory: mobile
         run: npx cap add android
 
+      - name: Install native APK downloader
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          native_source = Path("mobile/native-android/ApkUpdaterPlugin.java")
+          if not native_source.exists():
+              raise SystemExit("Native APK updater source is missing.")
+          candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
+          if len(candidates) != 1:
+              raise SystemExit("Expected one MainActivity.java, found " + str(len(candidates)))
+          main_path = candidates[0]
+          source = main_path.read_text()
+          package_match = re.search(r"^package\s+([A-Za-z0-9_.]+);", source, re.M)
+          if not package_match:
+              raise SystemExit("Could not determine generated Android package.")
+          package_name = package_match.group(1)
+          plugin_text = re.sub(r"^package\s+[^;]+;", "package " + package_name + ";", native_source.read_text(), count=1, flags=re.M)
+          (main_path.parent / "ApkUpdaterPlugin.java").write_text(plugin_text)
+          if "registerPlugin(ApkUpdaterPlugin.class)" not in source:
+              needle = "super.onCreate(savedInstanceState);"
+              if needle not in source:
+                  raise SystemExit("Could not register the APK updater in MainActivity.")
+              source = source.replace(needle, "registerPlugin(ApkUpdaterPlugin.class);\n        " + needle, 1)
+              main_path.write_text(source)
+          manifest = Path("mobile/android/app/src/main/AndroidManifest.xml")
+          manifest_text = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
+          if permission not in manifest_text:
+              manifest_text = manifest_text.replace("<application", permission + "\n    <application", 1)
+          manifest.write_text(manifest_text)
+          print("Installed native DownloadManager bridge and APK-install permission.")
+          PY
+
       - name: Set Android app version
         env:
           VERSION_CODE: ${{ github.run_number }}
@@ -185,6 +220,7 @@ jobs:
             assets/public/admin.js \
             assets/public/config.js \
             assets/public/jb-manager-back-navigation.js \
+            assets/public/jb-manager-apk-updater.js \
             assets/public/img/hero-catalogo.png \
             assets/public/tecnologia/index.html \
             assets/public/perfumeria/index.html \
@@ -221,6 +257,14 @@ jobs:
           }
           unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'jb-manager-return=dashboard' || {
             echo "APK native back-button handler does not route to the admin dashboard." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-apk-updater.js | grep -q 'downloadAndInstall' || {
+            echo "APK native APK downloader bridge is missing." >&2
+            exit 1
+          }
+          grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
+            echo "Native APK updater plugin is not registered in MainActivity." >&2
             exit 1
           }
           unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
