@@ -95,6 +95,27 @@ async function recordCatalogEvent(productId, eventType, variant = {}) {
   }
 }
 
+async function recordCatalogPageVisit(catalogType) {
+  if (!supabase || isCatalogAdminActivityActive()) return;
+  try {
+    const visitor = await getCatalogVisitorLocation();
+    const { error } = await supabase.from("catalog_events").insert({
+      product_id: null,
+      event_type: "catalog_view",
+      catalog_type,
+      visitor_country: visitor.country,
+      visitor_department: visitor.department
+    });
+    if (error && /catalog_view|catalog_type|visitor_(country|department)|schema cache|column .*does not exist/i.test(error.message || "")) {
+      console.info("Las visitas generales empezarán a registrarse al aplicar la migración de analítica geográfica.");
+      return;
+    }
+    if (error) console.info("No se pudo registrar la visita al catálogo:", error.message);
+  } catch (error) {
+    console.info("No se pudo registrar la visita al catálogo.", error);
+  }
+}
+
 const hasSupabaseConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
 
 if (hasSupabaseConfig) {
@@ -1836,4 +1857,5 @@ async function initializeCatalog() {
   window.addEventListener("hashchange", handleProductRoute);
 }
 
+void recordCatalogPageVisit("technology");
 initializeCatalog();
