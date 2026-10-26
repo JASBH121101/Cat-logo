@@ -69,191 +69,157 @@ for (const [from, to] of replacements) {
   adminHtml = adminHtml.replace(from, to);
 }
 
-// Check GitHub Releases for a newer APK. Android will still require the user to
-// confirm installation; sideloaded apps cannot silently replace themselves.
+// Add a persistent update button and check GitHub Releases for a newer APK.
+// Android still requires the user to confirm installation of a downloaded APK.
 const appVersion = process.env.JB_MANAGER_VERSION || "1.0.0";
-const updateChecker = `
+const updateChecker = \`
 <script data-jb-manager-updater>
 (() => {
-  const currentVersion = ${JSON.stringify(appVersion)};
+  const currentVersion = \${JSON.stringify(appVersion)};
   const releasesUrl = "https://api.github.com/repos/JASBH121101/Cat-logo/releases?per_page=20";
+  let checking = false;
 
   function versionParts(value) {
     return String(value).split(".").map(part => Number(part) || 0);
   }
 
   function isNewer(candidate, installed) {
-    const a = versionParts(candidate);
-    const b = versionParts(installed);
+    const a = versionParts(candidate), b = versionParts(installed);
     for (let i = 0; i < Math.max(a.length, b.length); i++) {
-      const left = a[i] || 0;
-      const right = b[i] || 0;
+      const left = a[i] || 0, right = b[i] || 0;
       if (left !== right) return left > right;
     }
     return false;
   }
 
-  function addNotice(version, downloadUrl) {
-    if (document.getElementById("jb-manager-update-notice")) return;
-
-    const notice = document.createElement("aside");
-    notice.id = "jb-manager-update-notice";
-    notice.setAttribute("role", "status");
-    Object.assign(notice.style, {
-      position: "fixed",
-      zIndex: "99999",
-      left: "12px",
-      right: "12px",
-      bottom: "max(12px, env(safe-area-inset-bottom))",
-      maxWidth: "520px",
-      margin: "0 auto",
-      padding: "15px",
-      borderRadius: "16px",
-      border: "1px solid #d9c18a",
-      background: "#101827",
-      color: "#ffffff",
-      boxShadow: "0 12px 38px rgba(0,0,0,.32)",
-      font: "14px/1.45 system-ui, sans-serif"
-    });
-
+  function showMessage(title, message, downloadUrl) {
+    let notice = document.getElementById("jb-manager-update-notice");
+    if (!notice) {
+      notice = document.createElement("aside");
+      notice.id = "jb-manager-update-notice";
+      notice.setAttribute("role", "status");
+      Object.assign(notice.style, {
+        position: "fixed", zIndex: "99999", left: "12px", right: "12px",
+        bottom: "max(76px, calc(env(safe-area-inset-bottom) + 76px))",
+        maxWidth: "520px", margin: "0 auto", padding: "15px",
+        borderRadius: "16px", border: "1px solid #d9c18a",
+        background: "#101827", color: "#ffffff",
+        boxShadow: "0 12px 38px rgba(0,0,0,.32)",
+        font: "14px/1.45 system-ui, sans-serif"
+      });
+      document.body.append(notice);
+    }
+    notice.replaceChildren();
     const heading = document.createElement("strong");
-    heading.textContent = "Actualización disponible · v" + version;
+    heading.textContent = title;
     heading.style.display = "block";
     heading.style.marginBottom = "5px";
-
     const detail = document.createElement("p");
-    detail.textContent = "Ya hay una nueva versión de JB Manager Collections. Descargala y confirmá la instalación cuando Android te lo solicite.";
+    detail.textContent = message;
     detail.style.margin = "0 0 12px";
-
     const actions = document.createElement("div");
     Object.assign(actions.style, { display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" });
-
-    const download = document.createElement("a");
-    download.href = downloadUrl;
-    download.target = "_blank";
-    download.rel = "noopener noreferrer";
-    download.textContent = "Descargar actualización";
-    Object.assign(download.style, {
-      display: "inline-block",
-      padding: "10px 13px",
-      borderRadius: "9px",
-      background: "#d9b56c",
-      color: "#161616",
-      fontWeight: "700",
-      textDecoration: "none"
-    });
-
+    if (downloadUrl) {
+      const download = document.createElement("a");
+      download.href = downloadUrl;
+      download.textContent = "Descargar e instalar";
+      download.rel = "noopener noreferrer";
+      Object.assign(download.style, {
+        display: "inline-block", padding: "10px 13px", borderRadius: "9px",
+        background: "#d9b56c", color: "#161616", fontWeight: "700",
+        textDecoration: "none"
+      });
+      actions.append(download);
+    }
     const dismiss = document.createElement("button");
     dismiss.type = "button";
-    dismiss.textContent = "Más tarde";
+    dismiss.textContent = "Cerrar";
     Object.assign(dismiss.style, {
-      padding: "10px 13px",
-      borderRadius: "9px",
-      border: "1px solid #647084",
-      background: "transparent",
-      color: "#ffffff",
-      font: "inherit"
+      padding: "10px 13px", borderRadius: "9px", border: "1px solid #647084",
+      background: "transparent", color: "#ffffff", font: "inherit"
     });
     dismiss.addEventListener("click", () => notice.remove());
-
-    actions.append(download, dismiss);
+    actions.append(dismiss);
     notice.append(heading, detail, actions);
-    document.body.append(notice);
   }
 
-  function addUpdateButton() {
-    if (document.getElementById("jb-manager-update-button")) return;
-    const button = document.createElement("button");
-    button.id = "jb-manager-update-button";
-    button.type = "button";
-    button.textContent = "↻ Actualizar APK";
-    button.setAttribute("aria-label", "Buscar e instalar una actualización de JB Manager Collections");
-    Object.assign(button.style, {
-      position: "fixed",
-      zIndex: "99998",
-      right: "14px",
-      bottom: "max(14px, env(safe-area-inset-bottom))",
-      padding: "12px 15px",
-      border: "1px solid #d9c18a",
-      borderRadius: "999px",
-      background: "#d9b56c",
-      color: "#161616",
-      boxShadow: "0 8px 24px rgba(0,0,0,.24)",
-      font: "700 13px/1.2 system-ui, sans-serif",
-      cursor: "pointer"
-    });
-    button.addEventListener("click", () => {
+  async function checkForUpdates(interactive = false) {
+    if (checking) return;
+    checking = true;
+    const button = document.getElementById("jb-manager-check-updates");
+    if (button) {
       button.disabled = true;
-      const oldLabel = button.textContent;
-      button.textContent = "Buscando…";
-      void checkForUpdates(true).finally(() => {
-        button.disabled = false;
-        button.textContent = oldLabel;
-      });
-    });
-    document.body.append(button);
-  }
-
-  async function checkForUpdates(manual = false) {
+      button.textContent = "Comprobando…";
+      button.style.opacity = ".75";
+    }
     try {
       const response = await fetch(releasesUrl, {
-        headers: { Accept: "application/vnd.github+json" },
-        cache: "no-store"
+        headers: { Accept: "application/vnd.github+json" }, cache: "no-store"
       });
-      if (!response.ok) throw new Error("GitHub no respondió con una lista de versiones.");
+      if (!response.ok) throw new Error("GitHub respondió " + response.status);
       const releases = await response.json();
       const release = releases.find(item =>
         !item.draft && /^jb-manager-v\\d+\\.\\d+\\.\\d+$/i.test(item.tag_name || "")
       );
-      if (!release) throw new Error("No se encontró una versión publicada.");
-      const match = release.tag_name.match(/^jb-manager-v(\\d+\\.\\d+\\.\\d+)$/i);
-      if (!match) throw new Error("La versión publicada no tiene un formato válido.");
-
-      const asset = (release.assets || []).find(item => item.name === "JB-Manager-Collections.apk");
-      if (!asset || !/^https:\\/\\/github\\.com\\/JASBH121101\\/Cat-logo\\/releases\\/download\\//i.test(asset.browser_download_url || "")) {
-        throw new Error("La APK no está adjunta a la versión publicada.");
+      if (!release) {
+        if (interactive) showMessage("No hay versiones publicadas", "Todavía no hay una actualización disponible para JB Manager Collections.");
+        return;
       }
+      const match = release.tag_name.match(/^jb-manager-v(\\d+\\.\\d+\\.\\d+)$/i);
+      const asset = (release.assets || []).find(item => item.name === "JB-Manager-Collections.apk");
+      const validUrl = asset && /^https:\\/\\/github\\.com\\/JASBH121101\\/Cat-logo\\/releases\\/download\\//i.test(asset.browser_download_url || "");
+      if (!match || !validUrl) throw new Error("La publicación no contiene una APK válida.");
       if (isNewer(match[1], currentVersion)) {
-        addNotice(match[1], asset.browser_download_url);
-        if (manual) {
-          const notice = document.getElementById("jb-manager-update-notice");
-          notice?.scrollIntoView?.({ behavior: "smooth", block: "end" });
-        }
-      } else if (manual) {
-        alert("JB Manager Collections ya está actualizado (v" + currentVersion + ").");
+        showMessage(
+          "Actualización disponible · v" + match[1],
+          "Descargá la nueva APK y abrila. Android te pedirá confirmar la actualización; no hace falta desinstalar la versión actual.",
+          asset.browser_download_url
+        );
+      } else if (interactive) {
+        showMessage("JB Manager está actualizado", "Versión instalada: v" + currentVersion + ". No hay una versión más reciente.");
       }
     } catch (error) {
+      if (interactive) showMessage("No se pudo comprobar", "Revisá tu conexión a internet e intentá nuevamente. " + (error && error.message ? error.message : ""));
       console.info("No se pudo consultar si hay una actualización disponible.", error);
-      if (manual) {
-        const goToReleases = confirm("No pude comprobar la versión automáticamente. ¿Querés abrir la página oficial de actualizaciones?");
-        if (goToReleases) window.location.href = "https://github.com/JASBH121101/Cat-logo/releases";
+    } finally {
+      checking = false;
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Buscar actualizaciones";
+        button.style.opacity = "1";
       }
     }
   }
 
-  function startUpdater() {
-    addUpdateButton();
+  function init() {
+    if (!document.getElementById("jb-manager-check-updates")) {
+      const button = document.createElement("button");
+      button.id = "jb-manager-check-updates";
+      button.type = "button";
+      button.textContent = "Buscar actualizaciones";
+      button.setAttribute("aria-label", "Buscar actualizaciones de JB Manager Collections");
+      Object.assign(button.style, {
+        position: "fixed", zIndex: "99998", right: "14px",
+        bottom: "max(14px, env(safe-area-inset-bottom))",
+        padding: "12px 15px", borderRadius: "999px",
+        border: "1px solid #d9c18a", background: "#101827",
+        color: "#ffffff", boxShadow: "0 6px 22px rgba(0,0,0,.24)",
+        font: "600 13px/1.2 system-ui, sans-serif", cursor: "pointer"
+      });
+      button.addEventListener("click", () => void checkForUpdates(true));
+      document.body.append(button);
+    }
     void checkForUpdates(false);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startUpdater, { once: true });
-  } else {
-    startUpdater();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else init();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") void checkForUpdates(false);
   });
 })();
 </script>
-`;
-
-if (!adminHtml.includes("data-jb-manager-updater")) {
-  const bodyEnd = adminHtml.toLowerCase().lastIndexOf("</body>");
-  if (bodyEnd < 0) throw new Error("Expected admin.html body end for update checker.");
-  adminHtml = adminHtml.slice(0, bodyEnd) + updateChecker + "\n" + adminHtml.slice(bodyEnd);
-}
-
+\`;
 // The app's first screen is the administration panel. Keep both routes available.
 await writeFile(adminPath, adminHtml, "utf8");
 await writeFile(join(webDir, "index.html"), adminHtml, "utf8");
