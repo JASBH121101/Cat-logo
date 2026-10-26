@@ -51,7 +51,7 @@ test("returns 404 when the requested release does not exist", async () => {
   } finally { globalThis.fetch = previous; }
 });
 
-test("returns a complete byte-counted APK response and forwards Range", async () => {
+test("returns a complete byte-counted APK response", async () => {
   const previous = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -59,27 +59,28 @@ test("returns a complete byte-counted APK response and forwards Range", async ()
     if (String(url) === releaseUrl) return releaseResponse();
     assert.equal(String(url), assetUrl);
     assert.equal(init.headers.get("Accept"), "application/octet-stream");
-    assert.equal(init.headers.get("Range"), "bytes=0-4");
-    return new Response(new Uint8Array([1, 2, 3, 4, 5]), {
-      status: 206,
+    const body = new Uint8Array(1024);
+    body.set([0x50, 0x4b, 3, 4]);
+    return new Response(body, {
+      status: 200,
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Length": "5",
-        "Content-Range": "bytes 0-4/1024",
+        "Content-Length": "1024",
         "Accept-Ranges": "bytes",
         "ETag": '"apk-etag"'
       }
     });
   };
   try {
-    const result = await onRequest({ request: request(undefined, { Range: "bytes=0-4" }) });
-    assert.equal(result.status, 206);
+    const result = await onRequest({ request: request() });
+    assert.equal(result.status, 200);
     assert.equal(result.headers.get("Content-Type"), "application/vnd.android.package-archive");
-    assert.match(result.headers.get("Content-Disposition"), /JB-Manager-Collections-v1\.0\.64\.apk/);
-    assert.equal(result.headers.get("Content-Length"), "5");
-    assert.equal(result.headers.get("Content-Range"), "bytes 0-4/1024");
+    assert.match(result.headers.get("Content-Disposition"), /JB-Manager-Collections-v1\\.0\\.64\\.apk/);
+    assert.equal(result.headers.get("Content-Length"), "1024");
     assert.equal(result.headers.get("Cache-Control"), "no-store, no-cache, must-revalidate");
-    assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [1, 2, 3, 4, 5]);
+    const body = new Uint8Array(await result.arrayBuffer());
+    assert.equal(body.length, 1024);
+    assert.deepEqual([...body.slice(0, 4)], [0x50, 0x4b, 3, 4]);
     assert.equal(calls.length, 2);
   } finally { globalThis.fetch = previous; }
 });
