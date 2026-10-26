@@ -16,13 +16,30 @@ const configured = Boolean(
 );
 
 /*
-  sessionStorage conserva la sesión durante la vida de la pestaña.
-  Al cerrar la pestaña, el almacenamiento de esa sesión desaparece.
+  «Recordar mi sesión» conserva la sesión autenticada de Supabase en este
+  dispositivo, sin guardar la contraseña. Si está desactivado, se usa
+  sessionStorage y una recarga vuelve a pedir autenticación.
 */
-/*
-  Una recarga confirmada cierra la sesión de administración.
-  El formulario se respalda automáticamente en IndexedDB mientras se edita.
-*/
+const REMEMBER_SESSION_KEY = "cat-logo-remember-admin-session-v1";
+const REMEMBER_EMAIL_KEY = "cat-logo-remember-admin-email-v1";
+
+function isRememberedSessionEnabled() {
+  try {
+    return window.localStorage.getItem(REMEMBER_SESSION_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function getRememberedAdminEmail() {
+  if (!isRememberedSessionEnabled()) return "";
+  try {
+    return window.localStorage.getItem(REMEMBER_EMAIL_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
 const isPageReload = (() => {
   try {
     return performance.getEntriesByType("navigation")[0]?.type === "reload";
@@ -31,21 +48,57 @@ const isPageReload = (() => {
   }
 })();
 
-if (isPageReload) {
+if (isPageReload && !isRememberedSessionEnabled()) {
   try {
     const projectRef = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
     const key = `sb-${projectRef}-auth-token`;
     window.sessionStorage.removeItem(key);
     window.localStorage.removeItem(key);
   } catch (error) {
-    console.warn("No se pudo limpiar la sesión durante la recarga.", error);
+    console.warn("No se pudo limpiar la sesión temporal durante la recarga.", error);
   }
 }
+
+const supabaseAuthStorage = {
+  getItem(key) {
+    try {
+      if (isRememberedSessionEnabled()) {
+        const saved = window.localStorage.getItem(key);
+        if (saved !== null) return saved;
+      }
+      return window.sessionStorage.getItem(key);
+    } catch (error) {
+      console.warn("No se pudo leer el almacenamiento de sesión.", error);
+      return null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      if (isRememberedSessionEnabled()) {
+        window.localStorage.setItem(key, value);
+        window.sessionStorage.removeItem(key);
+      } else {
+        window.sessionStorage.setItem(key, value);
+        window.localStorage.removeItem(key);
+      }
+    } catch (error) {
+      console.warn("No se pudo guardar el almacenamiento de sesión.", error);
+    }
+  },
+  removeItem(key) {
+    try {
+      window.sessionStorage.removeItem(key);
+      window.localStorage.removeItem(key);
+    } catch (error) {
+      console.warn("No se pudo eliminar el almacenamiento de sesión.", error);
+    }
+  }
+};
 
 const supabase = configured
   ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
       auth: {
-        storage: window.sessionStorage,
+        storage: supabaseAuthStorage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
@@ -726,6 +779,7 @@ function authStorageKey() {
 }
 
 function clearLegacyPersistentAuth() {
+  if (isRememberedSessionEnabled()) return;
   try {
     const key = authStorageKey();
 
@@ -783,6 +837,56 @@ async function signOutLocalSafely() {
   }
 }
 
+function syncRememberControls() {
+  const enabled = isRememberedSessionEnabled();
+  const checkbox = $("#login-remember-user");
+  if (checkbox) checkbox.checked = enabled;
+  const button = $("#remember-user-toggle");
+  const label = $("#remember-user-toggle-label");
+  if (button) {
+    button.setAttribute("aria-pressed", String(enabled));
+    button.setAttribute("aria-label", enabled ? "Dejar de recordar este usuario" : "Recordar mi sesión en este dispositivo");
+    button.title = enabled ? "Desactivar sesión recordada" : "Recordar sesión";
+  }
+  if (label) label.textContent = enabled ? "Desactivar recordar sesión" : "Recordar sesión en este dispositivo";
+}
+
+function setRememberedSession(enabled, email = "") {
+  const key = authStorageKey();
+  const normalizedEmail = String(email || "").trim();
+  try {
+    const currentToken = key
+      ? (window.sessionStorage.getItem(key) || window.localStorage.getItem(key))
+      : null;
+
+    if (enabled) {
+      window.localStorage.setItem(REMEMBER_SESSION_KEY, "true");
+      if (normalizedEmail) window.localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
+      if (key && currentToken) {
+        window.localStorage.setItem(key, currentToken);
+        window.sessionStorage.removeItem(key);
+      }
+    } else {
+      // Keep a current login active until logout, but stop persisting it across app restarts.
+      if (key && currentToken) window.sessionStorage.setItem(key, currentToken);
+      if (key) window.localStorage.removeItem(key);
+      window.localStorage.removeItem(REMEMBER_SESSION_KEY);
+      window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    }
+  } catch (error) {
+    console.warn("No se pudo actualizar la preferencia para recordar la sesión.", error);
+    message("#login-status", "No se pudo actualizar esta preferencia en el dispositivo. Revisá el almacenamiento disponible.", "error");
+  }
+  syncRememberControls();
+}
+
+// Restore the saved email and visible state whenever the admin module loads.
+const rememberedLoginEmail = $("#login-email");
+if (rememberedLoginEmail && isRememberedSessionEnabled()) {
+  rememberedLoginEmail.value = getRememberedAdminEmail();
+}
+syncRememberControls();
+
 function clearLoginPassword() {
   const password = $("#login-password");
 
@@ -808,8 +912,9 @@ function showLoginScreen(statusText = "", type = "") {
 
   clearEditor();
 
-  $("#login-email").value = "";
+  $("#login-email").value = getRememberedAdminEmail();
   clearLoginPassword();
+  syncRememberControls();
 
   setStatus("");
   message("#login-status", statusText, type);
@@ -2103,6 +2208,28 @@ async function handleSession() {
 $("#restore-local-draft")?.addEventListener("click", () => { void restoreLocalRecoveryDraft(); });
 $("#delete-local-draft")?.addEventListener("click", () => { void deleteLocalRecoveryDraft(); });
 
+$("#login-remember-user")?.addEventListener("change", event => {
+  const enabled = Boolean(event.currentTarget.checked);
+  setRememberedSession(enabled, $("#login-email")?.value || "");
+  message(
+    "#login-status",
+    enabled
+      ? "Recordaremos la sesión en este dispositivo. No guardaremos tu contraseña."
+      : "La sesión ya no se recordará cuando vuelvas a abrir la aplicación.",
+    "success"
+  );
+});
+
+$("#remember-user-toggle")?.addEventListener("click", () => {
+  const nextEnabled = !isRememberedSessionEnabled();
+  setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminEmail());
+  setStatus(
+    nextEnabled
+      ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
+      : "Dejaste de recordar este usuario. La sesión actual seguirá activa hasta que la cierres."
+  );
+});
+
 $("#login-form")?.addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -2127,8 +2254,13 @@ $("#login-form")?.addEventListener("submit", async event => {
   message("#login-status", "Comprobando acceso…");
 
   try {
+    const loginEmail = $("#login-email").value.trim();
+    const rememberSession = Boolean($("#login-remember-user")?.checked);
+    // Select session storage before Supabase persists the successful login.
+    setRememberedSession(rememberSession, loginEmail);
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: $("#login-email").value.trim(),
+      email: loginEmail,
       password: $("#login-password").value
     });
 
