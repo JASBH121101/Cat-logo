@@ -33,6 +33,7 @@ jobs:
           set -euo pipefail
           node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-download.test.mjs
+          node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
 
       - name: Check canonical URLs and public share origin
         shell: bash
