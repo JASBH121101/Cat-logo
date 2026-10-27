@@ -74,6 +74,117 @@ async function verifyAdmin(request) {
     return { ok: Array.isArray(rows) && rows.some(row => String(row.user_id) === String(user.id)), status: 403 };
   } catch { return { ok: false, status: 503 }; }
 }
+
+function normalizeLibraryValue(value) {
+  return clean(value, 180)
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[^a-z0-9#]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+}
+
+function cleanLibraryEntry(value) {
+  if (!value || typeof value !== "object") return null;
+  const name = clean(value.name, 80);
+  const hex = clean(value.hex, 10).toUpperCase();
+  if (!name || !/^#[0-9A-F]{6}$/.test(hex)) return null;
+  const aliases = Array.isArray(value.aliases)
+    ? [...new Set(value.aliases.map(alias => clean(alias, 80)).filter(Boolean))].slice(0, 20)
+    : [];
+  return {
+    name,
+    name_key: normalizeLibraryValue(value.name_key || name),
+    hex,
+    aliases,
+    is_favorite: value.is_favorite === true,
+    updated_at: clean(value.updated_at, 50)
+  };
+}
+
+async function loadSharedColorLibrary(authorization) {
+  const url = new URL(SUPABASE_URL + "/rest/v1/color_library");
+  url.searchParams.set("select", "name,name_key,hex,aliases,is_favorite,updated_at");
+  url.searchParams.set("order", "updated_at.desc");
+  url.searchParams.set("limit", "500");
+  const response = await fetch(url, {
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: authorization,
+      Accept: "application/json"
+    },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error("Shared color library returned HTTP " + response.status);
+  const rows = await response.json();
+  return Array.isArray(rows) ? rows.map(cleanLibraryEntry).filter(Boolean) : [];
+}
+
+function libraryEntryTerms(entry) {
+  return [...new Set([entry.name, entry.name_key, entry.hex, ...(entry.aliases || [])]
+    .map(normalizeLibraryValue).filter(Boolean))];
+}
+
+function findSharedColorMatch(query, rows) {
+  const normalized = normalizeLibraryValue(query);
+  if (!normalized) return { match: null, ambiguous: [] };
+
+  let matches = rows.filter(entry => libraryEntryTerms(entry).includes(normalized));
+  if (!matches.length) {
+    const genericTerms = new Set([
+      "color", "colour", "codigo", "code", "modelo", "fabricante", "producto",
+      "black", "white", "blue", "green", "red", "gray", "grey", "pink", "purple",
+      "negro", "blanco", "azul", "verde", "rojo", "gris", "rosa", "morado", "dorado"
+    ]);
+    matches = rows.filter(entry => libraryEntryTerms(entry).some(term =>
+      term.length >= 5 &&
+      !genericTerms.has(term) &&
+      (normalized.startsWith(term + " ") || normalized.endsWith(" " + term) || normalized.includes(" " + term + " "))
+    ));
+  }
+
+  const unique = new Map();
+  for (const entry of matches) unique.set(entry.name + "|" + entry.hex, entry);
+  matches = [...unique.values()];
+  const distinctHex = new Set(matches.map(entry => entry.hex));
+  if (distinctHex.size > 1) return { match: null, ambiguous: matches.slice(0, 6) };
+  if (!matches.length) return { match: null, ambiguous: [] };
+
+  const chosen = matches[0];
+  return {
+    match: {
+      ...chosen,
+      aliases: [...new Set(matches.flatMap(entry => [entry.name, ...(entry.aliases || [])])
+        .filter(value => normalizeLibraryValue(value) !== normalizeLibraryValue(chosen.name)))].slice(0, 6)
+    },
+    ambiguous: []
+  };
+}
+
+function selectRelevantLibraryEntries(query, productContext, rows) {
+  const searchText = normalizeLibraryValue([query, productContext].filter(Boolean).join(" "));
+  if (!searchText || !rows.length) return [];
+  const tokens = [...new Set(searchText.split(" ").filter(token => token.length >= 2))];
+  const scored = rows.map(entry => {
+    const terms = libraryEntryTerms(entry);
+    let score = 0;
+    for (const token of tokens) {
+      if (terms.some(term => term.split(" ").includes(token))) score += token.length >= 4 ? 3 : 1;
+    }
+    if (terms.some(term => term.length >= 4 && searchText.includes(term))) score += 8;
+    if (entry.is_favorite) score += 0.25;
+    return { entry, score };
+  }).filter(item => item.score > 0);
+  scored.sort((a, b) => b.score - a.score ||
+    String(b.entry.updated_at || "").localeCompare(String(a.entry.updated_at || "")));
+  return scored.slice(0, 30).map(item => ({
+    name: item.entry.name,
+    hex: item.entry.hex,
+    aliases: item.entry.aliases
+  }));
+}
+
 export async function onRequest({ request, env }) {
   const origin = request.headers.get("Origin") || "";
   if (origin && !ALLOWED_ORIGINS.has(origin)) return respond(403, { error: "origin_not_allowed", message: "Origen no permitido." }, origin);
@@ -98,10 +209,44 @@ export async function onRequest({ request, env }) {
       "No se pudo validar la sesión. Intentá nuevamente.";
     return respond(auth.status, { error: auth.status === 401 ? "admin_auth_required" : auth.status === 403 ? "admin_only" : "auth_unavailable", message }, origin);
   }
-  if (!env || !env.AI || typeof env.AI.run !== "function") return respond(503, { error: "ai_not_configured", message: "El servicio de IA de colores no está conectado todavía." }, origin);
   const isImage = Boolean(imageDataUrl);
-  const instruction = "Respondé exclusivamente con JSON con name (nombre corto del tono en español o nombre comercial probable), hex (#RRGGBB), aliases (hasta 6), confidence (estimación no calibrada 0-1) y explanation (frase breve). No afirmés que un nombre/código es oficial a menos que haya evidencia verificable en el propio texto. No tenés navegación ni acceso a bases oficiales: un código del fabricante debe tratarse como sugerencia no verificada. Para fotografía, estimá el color principal del producto, no el fondo ni reflejos evidentes. Si no podés identificarlo claramente, devolvé name 'Por confirmar', hex '#777777', aliases [] y explicá la incertidumbre.";
-  const prompt = "Marca/modelo: " + (productContext || "No indicado") + "\nConsulta/referencia: " + (query || "Analizar el color principal del producto en la fotografía.") + "\nDevolvé nombre útil, HEX aproximado y alias; la sugerencia no es una identificación oficial.";
+  const authorization = request.headers.get("Authorization") || "";
+  let sharedColors;
+  try {
+    sharedColors = await loadSharedColorLibrary(authorization);
+  } catch (error) {
+    console.error("Could not read shared color library:", error instanceof Error ? error.message : "unknown error");
+    return respond(503, { error: "color_library_unavailable", message: "No se pudo consultar la biblioteca compartida de colores. Intentá nuevamente para evitar omitir referencias guardadas." }, origin);
+  }
+
+  if (!isImage) {
+    const lookup = findSharedColorMatch(query, sharedColors);
+    if (lookup.ambiguous.length) {
+      return respond(409, {
+        error: "ambiguous_library_match",
+        message: "La referencia coincide con varios colores guardados. Especificá un alias o código más exacto.",
+        matches: lookup.ambiguous.map(entry => ({ name: entry.name, hex: entry.hex }))
+      }, origin);
+    }
+    if (lookup.match) {
+      return respond(200, {
+        name: lookup.match.name,
+        hex: lookup.match.hex,
+        aliases: lookup.match.aliases,
+        confidence: 1,
+        basis: "shared_library_match",
+        officialVerified: false,
+        explanation: "Coincidencia exacta con la biblioteca compartida de JB Collections.",
+        note: "La biblioteca conserva referencias guardadas por administración; no constituye una verificación oficial del fabricante."
+      }, origin);
+    }
+  }
+
+  if (!env || !env.AI || typeof env.AI.run !== "function") return respond(503, { error: "ai_not_configured", message: "El servicio de IA de colores no está conectado todavía." }, origin);
+  const relevantColors = selectRelevantLibraryEntries(query, productContext, sharedColors);
+  const instruction = "Respondé exclusivamente con JSON con name (nombre corto del tono en español o nombre comercial probable), hex (#RRGGBB), aliases (hasta 6), confidence (estimación no calibrada 0-1) y explanation (frase breve). No afirmés que un nombre/código es oficial a menos que haya evidencia verificable en el propio texto. No tenés navegación ni acceso a bases oficiales: un código del fabricante debe tratarse como sugerencia no verificada. Para fotografía, estimá el color principal del producto, no el fondo ni reflejos evidentes. Si no podés identificarlo claramente, devolvé name 'Por confirmar', hex '#777777', aliases [] y explicá la incertidumbre. Si se incluyen colores de la biblioteca interna, respetá sus HEX cuando el nombre/alias coincida; la biblioteca es memoria interna, no una fuente oficial.";
+  const prompt = "Marca/modelo: " + (productContext || "No indicado") + "\nConsulta/referencia: " + (query || "Analizar el color principal del producto en la fotografía.") + "\nDevolvé nombre útil, HEX aproximado y alias; la sugerencia no es una identificación oficial." +
+    (relevantColors.length ? "\nReferencias relevantes de la biblioteca compartida (JSON; usalas solo si encajan con la consulta): " + JSON.stringify(relevantColors) : "");
   try {
     const input = isImage
       ? { messages: [{ role: "system", content: instruction }, { role: "user", content: prompt }], image: imageDataUrl, max_tokens: 320, temperature: 0.15 }
