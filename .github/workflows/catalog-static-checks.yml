@@ -42,6 +42,9 @@ jobs:
           node --experimental-default-type=module --test tests/cloudflare-color-assistant.test.mjs
           node --test tests/admin-color-assistant.test.mjs
           node --test tests/admin-mobile-menu-stability.test.mjs
+          node --test tests/perfume-card-layout.test.mjs
+          node --test tests/product-tag-formatting.test.mjs
+          node --test tests/asset-cache-contract.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
 
       - name: Check canonical URLs and public share origin

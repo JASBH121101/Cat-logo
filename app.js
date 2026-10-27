@@ -677,6 +677,24 @@ function normalizedProductTags(product) {
   return [...new Set((Array.isArray(product?.tags) ? product.tags : []).map(tag => String(tag || "").trim().toLowerCase()).filter(tag => Boolean(tag) && tag !== "recommended"))];
 }
 
+function formatCustomProductTag(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("es")
+    .replace(/(^|[\s/])([a-záéíóúñ])/g, (_, separator, letter) =>
+      separator + letter.toLocaleUpperCase("es")
+    )
+    .replace(/\b(3d|2d)\b/gi, match => match.toUpperCase())
+    .replace(/\b(4k|8k)\b/gi, match => match.toUpperCase())
+    .replace(/\bwi\s*fi\b/gi, "Wi-Fi")
+    .replace(/\busb\s*c\b/gi, "USB-C")
+    .replace(/\besim\b/gi, "eSIM")
+    .replace(/\b(ram|rom|ssd|oled|amoled|nfc|hdr|vr|ar|cpu|gpu)\b/gi, match => match.toUpperCase())
+    .replace(/\b([45])g\b/gi, "$1G");
+}
+
 const PRODUCT_TAG_LABELS = {
   high_performance: "⚡ ALTO RENDIMIENTO",
   quality_price: "💎 CALIDAD-PRECIO",
@@ -690,6 +708,12 @@ function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const tags = normalizedProductTags(product);
+  const rawTagLabels = new Map(
+    (Array.isArray(product?.tags) ? product.tags : []).map(rawTag => {
+      const raw = String(rawTag || "").trim();
+      return [raw.toLocaleLowerCase("es"), raw];
+    })
+  );
   const isExclusive = Boolean(product.featured || product.is_exclusive || tags.includes("exclusive"));
   const cardThemeClasses = [
     ...(isExclusive ? ["product-card-tag-exclusive"] : []),
@@ -698,7 +722,7 @@ function renderCard(product) {
   const badge = [
     ...(isExclusive ? ['<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'] : []),
     ...tags.filter(tag => tag !== "exclusive").map(tag => {
-      const label = PRODUCT_TAG_LABELS[tag] || tag.replace(/[_-]+/g, " ").replace(/(^|[\\s/])([a-záéíóúñ])/g, (_, separator, letter) => separator + letter.toLocaleUpperCase("es"));
+      const label = PRODUCT_TAG_LABELS[tag] || formatCustomProductTag(rawTagLabels.get(tag) || tag);
       const badgeClass = PRODUCT_TAG_LABELS[tag] ? tag.replace(/[^a-z0-9_-]/g, "") : "custom";
       return '<span class="product-badge product-tag-badge tag-' + badgeClass + '">' + escapeHtml(label) + '</span>';
     })

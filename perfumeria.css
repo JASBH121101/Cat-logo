@@ -2463,3 +2463,43 @@ body.perfume-page .perfume-hero-notes {
   .perfume-page .perfume-product-meta { font-size: 9px; }
   .perfume-page .perfume-product-card .perfume-view-button { min-height: 34px; }
 }
+
+
+/* JB PARFUMS · uniform card rhythm, shared baselines and equal CTAs */
+.perfume-page .perfume-product-grid { align-items: stretch; }
+.perfume-page .perfume-product-card { height: 100%; min-height: 0; }
+.perfume-page .perfume-product-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+.perfume-page .perfume-product-card h3 { min-height: 2.4em; }
+.perfume-page .perfume-product-card .product-actions {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+  box-sizing: border-box;
+}
+.perfume-page .perfume-product-card .perfume-view-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  line-height: 1;
+  white-space: nowrap;
+  flex: 0 0 40px;
+}
+@media (max-width: 640px) {
+  .perfume-page .perfume-product-card h3 { min-height: 2.32em; }
+  .perfume-page .perfume-product-card .perfume-view-button {
+    height: 36px;
+    min-height: 36px;
+    flex-basis: 36px;
+  }
+}
