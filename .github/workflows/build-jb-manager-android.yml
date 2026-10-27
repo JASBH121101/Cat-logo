@@ -268,7 +268,7 @@ jobs:
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
           grep -Fq 'admin.js?v=20261027-color-knowledge1' admin.html
-          grep -Fq '20261027-shared-ai-color-library1' admin.html
+          grep -Fq '20261027-mobile-sidebar-stability2' admin.html
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
           grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
           grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
@@ -567,7 +567,7 @@ jobs:
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-shared-ai-color-library1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-mobile-sidebar-stability2' || {
             echo "APK does not reference the latest admin color-assistant styles." >&2
             exit 1
           }
