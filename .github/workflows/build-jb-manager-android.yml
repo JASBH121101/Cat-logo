@@ -53,7 +53,12 @@ jobs:
           ! grep -Fq 'IS_READ_ONLY_VERCEL_PREVIEW' admin.js
           grep -Fq 'const IS_READ_ONLY_PREVIEW' admin.js
           grep -Fq '.back-to-top' theme-ui.css
-          echo "Latest main source includes collision-free AI and back-to-top controls."
+          grep -Fq 'data-ai-color-open' admin.js
+          grep -Fq '/api/color-assistant' admin.js
+          grep -Fq '.jb-color-ai-overlay' theme-ui.css
+          grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
+          test -s functions/api/color-assistant.js
+          echo "Latest main source includes the AI color assistant, shared color library, and back-to-top controls."
 
       - name: Diagnose direct and Cloudflare APK download completeness
         shell: bash
@@ -515,6 +520,22 @@ jobs:
           }
           unzip -p "$APK" assets/public/jb-manager-system-bars.js | grep -q 'SystemBars' || {
             echo "APK Android system-bars bridge is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'data-ai-color-open' || {
+            echo "APK admin.js is missing the AI color assistant control." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq '/api/color-assistant' || {
+            echo "APK admin.js is missing the AI color API client." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'from("color_library")' || {
+            echo "APK admin.js is missing shared color-library synchronization." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq '.jb-color-ai-overlay' || {
+            echo "APK theme CSS is missing the AI color dialog styles." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.html | grep -q 'id="jb-manager-android-safe-area"' || {
