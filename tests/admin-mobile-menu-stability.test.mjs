@@ -24,7 +24,7 @@ test("mobile admin sidebar avoids hover motion and backdrop-filter repaints on t
 });
 
 test("admin page cache-busts the Android-safe sidebar stylesheet", () => {
-  assert.match(html, /theme-ui\.css\?v=20261027-taxonomy-review-select1/);
+  assert.match(html, /theme-ui\.css\?v=20261027-taxonomy-review-select2/);
 });
 
 
