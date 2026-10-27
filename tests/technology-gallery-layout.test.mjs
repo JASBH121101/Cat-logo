@@ -10,7 +10,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
   assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261027-catalog-header-review1/);
-  assert.match(html, /app\.js\?v=20261027-consolas-category1/);
+  assert.match(html, /app\.js\?v=20261027-high-performance1/);
   assert.match(html, /data-category="Consolas">Consolas<\/button>/);
   assert.match(app, /"Consolas"/);
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
