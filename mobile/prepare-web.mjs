@@ -796,6 +796,13 @@ if (!builtUpdaterBridge.includes("downloadAndInstall")
   || !builtUpdaterBridge.includes("installDownloadedApk")) {
   throw new Error("The native APK updater bridge is incomplete.");
 }
+
+const builtSystemBarsBridge = await readFile(systemBarsBundlePath, "utf8");
+new Function(builtSystemBarsBridge);
+if (!builtSystemBarsBridge.includes("setStyle")
+  || !builtAdminHtml.includes('src="./jb-manager-system-bars.js"')) {
+  throw new Error("The Android system-bars bridge is incomplete.");
+}
 if (!builtAdminHtml.includes('src="./jb-manager-apk-updater.js"')) {
   throw new Error("The admin panel is missing the native APK download bridge.");
 }
@@ -807,7 +814,7 @@ if (!builtAdminHtml.includes('id="jb-manager-android-safe-area"')
   || !builtAdminHtml.includes("--jb-manager-safe-top")
   || builtAdminHtml.includes("padding-top: max(24px")) {
   throw new Error("The Android header must consume the safe-area inset without adding blank padding above the whole panel.");
-}if (!builtAdminHtml.includes("jb-manager-check-updates")) {
+}\nif (!builtAdminHtml.includes("jb-manager-check-updates")) {
   throw new Error("The APK update button is missing from the admin panel.");
 }
 if (!updaterScript[1].includes("document.documentElement.append(button)")) {
