@@ -123,6 +123,10 @@ function canonicalAudience(value) {
   if (["mujer","femenino","female","woman"].includes(audience)) return "mujer";
   return audience === "unisex" ? "unisex" : "";
 }
+
+function audienceDisplay(value) {
+  return ({ hombre: "Varón", mujer: "Mujer", unisex: "Unisex" })[canonicalAudience(value)] || "";
+}
 function audienceMatches(product) {
   return !selectedAudiences.size || selectedAudiences.has(canonicalAudience(product.perfume_details?.audience));
 }
@@ -435,16 +439,15 @@ function imageMarkup(product) {
 
 function renderCard(product) {
   const detail = product.perfume_details || {};
-  const family = familyLabel(detail.family);
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
-  const productTypeLabel = product.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia";
   const image = imageMarkup(product);
   const tightPhotoFrame = /9\s*pm\s*elixir|sauvage\s+elixir/i.test(String(product.name || ""));
   const badge = product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
   const state = statusLabel(product.availability);
   const stateBadge = state === "Disponible" ? "" : '<span class="perfume-state-badge">' + escapeHtml(state) + '</span>';
   const nio = formatNIO(product.price_nio);
+  const productMeta = [concentration, volume].filter(Boolean).map(escapeHtml).join('<span aria-hidden="true">·</span>');
 
   const badges = badge || stateBadge
     ? '<div class="perfume-product-badges">' + badge + stateBadge + '</div>'
@@ -454,15 +457,11 @@ function renderCard(product) {
     badges +
     '<div class="product-image perfume-product-image' + (tightPhotoFrame ? ' is-tight-photo-frame' : '') + '">' + image + '</div>' +
     '<div class="product-card-content perfume-product-card-content">' +
-      '<p class="perfume-card-family">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
       '<h3>' + escapeHtml(product.name || "Fragancia sin nombre") + '</h3>' +
-      (product.brand ? '<p class="perfume-card-brand">' + escapeHtml(product.brand) + '</p>' : '') +
-      '<div class="perfume-product-meta">' + [concentration, volume, detail.audience].filter(Boolean).map(escapeHtml).join('<span aria-hidden="true">·</span>') + '</div>' +
-      (detail.scent_family ? '<p class="perfume-card-scent">' + escapeHtml(detail.scent_family) + '</p>' : '') +
-      '<div class="perfume-price-label">' + 'Precio' + '</div>' +
+      (productMeta ? '<div class="perfume-product-meta">' + productMeta + '</div>' : '') +
       '<div class="perfume-product-price">' + escapeHtml(formatUSD(product.price_usd)) + '</div>' +
       (nio ? '<p class="perfume-product-price-secondary">' + escapeHtml(nio) + '</p>' : '') +
-      '<div class="product-actions"><a class="button perfume-view-button" href="' + escapeHtml(productLink(product)) + '" data-details="' + escapeHtml(product.id) + '">' + (product.product_type === "set" ? "Ver set" : "Ver fragancia") + ' <span aria-hidden="true">↗</span></a></div>' +
+      '<div class="product-actions"><a class="button perfume-view-button" href="' + escapeHtml(productLink(product)) + '" data-details="' + escapeHtml(product.id) + '">Ver producto <span aria-hidden="true">↗</span></a></div>' +
     '</div>' +
   '</article>';
 }
@@ -690,7 +689,7 @@ function openPerfume(product) {
           (concentration ? '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration) + '</dd></div>' : '') +
           (detail.volume_ml ? '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' : '') +
           '<div><dt>Tipo de producto</dt><dd>' + escapeHtml(productTypeLabel) + '</dd></div>' +
-          (detail.audience ? '<div><dt>Género</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
+          (canonicalAudience(detail.audience) ? '<div><dt>Público</dt><dd>' + escapeHtml(audienceDisplay(detail.audience)) + '</dd></div>' : '') +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(statusLabel(product.availability)) + '</dd></div>' +
           (detail.scent_family ? '<div><dt>Familia olfativa</dt><dd>' + escapeHtml(detail.scent_family) + '</dd></div>' : '') +
         '</dl>' +
