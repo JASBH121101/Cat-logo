@@ -150,7 +150,7 @@ if (!adminHtml.includes('src="./jb-manager-system-bars.js"')) {
   const scriptBodyEnd = adminHtml.toLowerCase().lastIndexOf("</body>");
   if (scriptBodyEnd < 0) throw new Error("Expected admin.html body end for native system-bars bridge.");
   adminHtml = adminHtml.slice(0, scriptBodyEnd)
-    + '<script src="./jb-manager-system-bars.js" defer></script>\\n'
+    + '<script src="./jb-manager-system-bars.js" defer></script>\n'
     + adminHtml.slice(scriptBodyEnd);
 }
 // Add a persistent update button and check GitHub Releases for a newer APK.
