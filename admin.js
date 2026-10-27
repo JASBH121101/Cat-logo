@@ -3962,6 +3962,7 @@ function fillEditor(product) {
   }
 
   const productIsFeatured = activeCatalogType !== "perfumery" && Boolean(product.featured || product.is_exclusive);
+  if (productIsFeatured) $("#product-tag-high-performance").checked = false;
   $("#product-featured").checked = productIsFeatured;
   $("#product-exclusive").checked = productIsFeatured;
   $("#product-tag-exclusive").checked = productIsFeatured;
@@ -3998,7 +3999,9 @@ function setExclusiveToggleUI(value) {
   if (field) field.checked = Boolean(value);
   if (featuredField) featuredField.checked = Boolean(value);
   const exclusiveTag = $("#product-tag-exclusive");
+  const highPerformanceTag = $("#product-tag-high-performance");
   if (exclusiveTag) exclusiveTag.checked = Boolean(value);
+  if (highPerformanceTag && value) highPerformanceTag.checked = false;
   exclusiveToggleButton?.setAttribute("aria-pressed", String(Boolean(value)));
   exclusiveToggleButton?.setAttribute("aria-label", value ? "Exclusividad activada" : "Marcar como exclusivo");
   if (exclusiveToggleButton) exclusiveToggleButton.title = value
@@ -4018,6 +4021,12 @@ function updateExclusiveBaseline(value) {
 }
 document.querySelectorAll("[data-product-tag]").forEach(input => input.addEventListener("change", () => {
   if (input.value === "exclusive") setExclusiveToggleUI(input.checked);
+  if (input.value === "high_performance" && input.checked) {
+    // High performance and Exclusive are alternative primary labels.
+    setExclusiveToggleUI(false);
+    updateEditorDirtyState();
+    scheduleLocalRecoverySave();
+  }
 }));
 exclusiveToggleButton?.addEventListener("click", async () => {
   if (activeCatalogType === "perfumery") {
