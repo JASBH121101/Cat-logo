@@ -120,6 +120,10 @@ const androidKeyboardPaintFix = `
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
+  html.jb-manager-keyboard-open [style*="transform"] {
+    -webkit-transform: none !important;
+    transform: none !important;
+  }
 </style>
 <script id="jb-manager-android-keyboard-paint-fix-script">
 (() => {
@@ -161,7 +165,7 @@ const androidKeyboardPaintFix = `
     const current = Math.max(window.innerHeight || 0, viewport?.height || 0);
     const candidate = viewport?.height || window.innerHeight || 0;
     const shrunk = maxViewportHeight - candidate > 110 || (window.screen?.height || 0) - candidate > 240;
-    keyboardOpen = isTextField(active) && (shrunk || event?.type === "focusin" || root.classList.contains("jb-manager-keyboard-open"));
+    keyboardOpen = isTextField(active) && (shrunk || event?.type === "focusin");
     if (!keyboardOpen && isTextField(active) === false) {
       maxViewportHeight = Math.max(maxViewportHeight, current, candidate);
     }
