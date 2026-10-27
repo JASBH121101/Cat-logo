@@ -241,7 +241,7 @@ const updateChecker = `
             showMessage("Permiso necesario para instalar", "Android abrió Ajustes. Activá «Permitir desde esta fuente» y regresá a JB Manager Collections. La descarga se conserva.", downloadUrl, activeDownloadVersion);
           } else if (result && result.installerLaunched) {
             document.getElementById("jb-manager-update-notice")?.remove();
-          }
+          } else {
             showMessage("Descarga iniciada", "Android gestiona la descarga con DownloadManager. El progreso, pausas y errores se consultan al sistema.");
             startNativeDownloadMonitor();
           }
