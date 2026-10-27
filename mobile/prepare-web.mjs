@@ -142,7 +142,7 @@ const androidKeyboardPaintFix = `
 </script>
 `;
 if (!adminHtml.includes('id="jb-manager-android-keyboard-paint-fix"')) {
-  adminHtml = adminHtml.replace("</head>", androidKeyboardPaintFix + "\\n</head>");
+  adminHtml = adminHtml.replace("</head>", androidKeyboardPaintFix + "\n</head>");
 }
 if (!adminHtml.includes('id="jb-manager-android-safe-area"')) {
   adminHtml = adminHtml.replace("</head>", androidSafeAreaStyle + "\n</head>");
