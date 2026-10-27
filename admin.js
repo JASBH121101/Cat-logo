@@ -649,10 +649,14 @@ function saveColorToLibrary(color) {
   if (!name || !hex) return { ok: false, message: "Ingresá un nombre y un código HEX válido antes de guardar." };
   const data = readColorLibraryData(), identity = colorIdentity({ name, hex });
   const existing = data.items.find(item => colorIdentity(item) === identity);
+  const incomingAliases = [...new Set((Array.isArray(color?.aliases) ? color.aliases : []).map(value => String(value || "").trim()).filter(Boolean))].slice(0, 20);
   const sameName = data.items.find(item => normalizeColorSearch(item.name) === normalizeColorSearch(name) && item.hex !== hex.toUpperCase());
   if (sameName) return { ok: false, message: "Ya existe ese nombre con otro HEX. Usá un nombre más específico para distinguir los tonos." };
-  if (!existing) data.items.unshift({ name, hex: hex.toUpperCase(), aliases: [], favorite: false, updatedAt: Date.now() });
-  else existing.updatedAt = Date.now();
+  if (!existing) data.items.unshift({ name, hex: hex.toUpperCase(), aliases: incomingAliases, favorite: false, updatedAt: Date.now() });
+  else {
+    existing.aliases = [...new Set([...(existing.aliases || []), ...incomingAliases])].slice(0, 20);
+    existing.updatedAt = Date.now();
+  }
   if (!writeColorLibraryData(data)) return { ok: false, message: "El navegador no permitió guardar la biblioteca local." };
   ensureColorInPalette({ name, hex });
   return { ok: true, message: name + " quedó guardado en la biblioteca de este navegador." };
@@ -807,6 +811,7 @@ function openColorAssistant(row) {
     '<p class="jb-color-ai-intro">Consultá por código o referencia, o adjuntá una foto. La sugerencia no confirma un color oficial.</p>'+
     '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180" placeholder="Ej. Samsung Galaxy S25 Ultra"></label>'+
     '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320" placeholder="Ej. Titanium Jadegreen, código X..."></label>'+
+    '<label class="jb-color-ai-field">Alias o código exacto para recordar (opcional)<input type="text" data-color-ai-library-alias maxlength="80" placeholder="Ej. SM-S938B Titanium Jadegreen"><span class="jb-color-ai-file-note">Se guardará como referencia de búsqueda solo si pulsás «Guardar en biblioteca».</span></label>'+
     '<label class="jb-color-ai-field">Fotografía del producto (opcional)<input type="file" data-color-ai-image accept="image/jpeg,image/png,image/webp,image/avif"><span class="jb-color-ai-file-note" data-color-ai-file-note>La foto solo se usa en esta consulta.</span></label>'+
     '<div class="jb-color-ai-preview" data-color-ai-preview hidden><img alt="Vista previa"><span data-color-ai-file-name></span></div>'+
     '<div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-primary" data-color-ai-analyze>Analizar color</button></div>'+
@@ -814,7 +819,7 @@ function openColorAssistant(row) {
     '<section class="jb-color-ai-result" data-color-ai-result hidden><div class="jb-color-ai-result-main"><span class="jb-color-ai-result-swatch" data-color-ai-swatch></span><div><h3 data-color-ai-name></h3><code data-color-ai-hex></code></div></div><p data-color-ai-basis></p><p data-color-ai-explanation></p><div class="jb-color-ai-aliases" data-color-ai-aliases></div><div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-secondary" data-color-ai-save>Guardar en biblioteca</button><button type="button" class="jb-color-ai-primary" data-color-ai-apply>Aplicar a esta variante</button></div></section>'+
     '<p class="jb-color-ai-disclaimer">El HEX de una foto es aproximado por la iluminación, reflejos y acabado. Los códigos por texto no se verifican contra el fabricante en tiempo real.</p></section>';
   document.body.append(overlay);
-  const productInput=overlay.querySelector("[data-color-ai-product]"), queryInput=overlay.querySelector("[data-color-ai-query]"), imageInput=overlay.querySelector("[data-color-ai-image]");
+  const productInput=overlay.querySelector("[data-color-ai-product]"), queryInput=overlay.querySelector("[data-color-ai-query]"), libraryAliasInput=overlay.querySelector("[data-color-ai-library-alias]"), imageInput=overlay.querySelector("[data-color-ai-image]");
   const fileNote=overlay.querySelector("[data-color-ai-file-note]"), preview=overlay.querySelector("[data-color-ai-preview]"), previewImage=preview.querySelector("img"), fileName=overlay.querySelector("[data-color-ai-file-name]");
   const status=overlay.querySelector("[data-color-ai-status]"), resultPanel=overlay.querySelector("[data-color-ai-result]"), analyzeButton=overlay.querySelector("[data-color-ai-analyze]");
   const saveButton=overlay.querySelector("[data-color-ai-save]"), applyButton=overlay.querySelector("[data-color-ai-apply]");
@@ -842,7 +847,7 @@ function openColorAssistant(row) {
       overlay.querySelector("[data-color-ai-swatch]").style.background=colorResult.hex;
       overlay.querySelector("[data-color-ai-name]").textContent=colorResult.name;
       overlay.querySelector("[data-color-ai-hex]").textContent=colorResult.hex;
-      overlay.querySelector("[data-color-ai-basis]").textContent=payload.basis==="visual_estimate"?"Estimación visual basada en la fotografía.":"Sugerencia por texto/código; no verificada oficialmente.";
+      overlay.querySelector("[data-color-ai-basis]").textContent=payload.basis==="visual_estimate"?"Estimación visual basada en la fotografía.":payload.basis==="shared_library_match"?"Coincidencia exacta con la biblioteca compartida; no equivale a verificación oficial.":"Sugerencia por texto/código; no verificada oficialmente.";
       overlay.querySelector("[data-color-ai-explanation]").textContent=String(payload.explanation||payload.note||"Confirmá el nombre con la ficha del fabricante antes de publicarlo.");
       const aliases=overlay.querySelector("[data-color-ai-aliases]");aliases.replaceChildren();colorResult.aliases.forEach(alias=>{const chip=document.createElement("span");chip.textContent=alias;aliases.append(chip);});
       resultPanel.hidden=false;status.textContent="Resultado listo. Guardalo en la biblioteca o aplicalo a esta variante.";status.dataset.state="success";
@@ -850,8 +855,13 @@ function openColorAssistant(row) {
     finally{analyzeButton.disabled=false;analyzeButton.textContent="Analizar color";}
   });
   saveButton.addEventListener("click",async()=>{
-    if(!colorResult)return;const local=saveColorToLibrary(colorResult);if(!local.ok){status.textContent=local.message;status.dataset.state="error";return;}
-    const shared=await persistColorLibraryEntry(colorResult);status.textContent=shared.ok?local.message+" Sincronizado en todos los dispositivos.":local.message+" "+shared.message;status.dataset.state=shared.ok?"success":"warning";
+    if(!colorResult)return;
+    const savedAlias=String(libraryAliasInput?.value||"").trim();
+    const colorToSave={...colorResult,aliases:[...new Set([...(colorResult.aliases||[]),savedAlias].filter(Boolean))]};
+    const local=saveColorToLibrary(colorToSave);if(!local.ok){status.textContent=local.message;status.dataset.state="error";return;}
+    const shared=await persistColorLibraryEntry(colorToSave);
+    status.textContent=(shared.ok?local.message+" Sincronizado en todos los dispositivos.":local.message+" "+shared.message)+(savedAlias?" Alias guardado: "+savedAlias+".":"");
+    status.dataset.state=shared.ok?"success":"warning";
     renderColorLibraryDatalist();if(typeof renderQuickColorPalette==="function")renderQuickColorPalette(typeof quickColorSearch!=="undefined"?quickColorSearch?.value||"":"");
     form?.querySelectorAll("[data-variant-row]").forEach(syncColorLibraryRowControls);
   });
