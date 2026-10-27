@@ -89,58 +89,128 @@ const androidSafeAreaStyle = `
 // the viewport. Keep this mitigation scoped to the packaged Android admin panel.
 const androidKeyboardPaintFix = `
 <style id="jb-manager-android-keyboard-paint-fix">
-  html.jb-manager-keyboard-open, html.jb-manager-keyboard-open body {
+  html.jb-manager-keyboard-open,
+  html.jb-manager-keyboard-open body {
     scroll-behavior: auto !important;
-    overscroll-behavior: contain;
+    overscroll-behavior: none !important;
   }
-  html.jb-manager-keyboard-open *, html.jb-manager-keyboard-open *::before,
+  html.jb-manager-keyboard-open *,
+  html.jb-manager-keyboard-open *::before,
   html.jb-manager-keyboard-open *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
+    -webkit-filter: none !important;
+    filter: none !important;
   }
-  html.jb-manager-keyboard-open body {
+  html.jb-manager-keyboard-open body,
+  html.jb-manager-keyboard-open .admin-layout,
+  html.jb-manager-keyboard-open .admin-main,
+  html.jb-manager-keyboard-open .admin-content {
     -webkit-transform: none !important;
     transform: none !important;
+    -webkit-perspective: none !important;
+    perspective: none !important;
+    contain: none !important;
+  }
+  html.jb-manager-keyboard-open [style*="backdrop-filter"],
+  html.jb-manager-keyboard-open [style*="transform"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 </style>
 <script id="jb-manager-android-keyboard-paint-fix-script">
 (() => {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
   const root = document.documentElement;
+  const viewport = window.visualViewport;
   let raf = 0;
   let keyboardOpen = false;
-  function repaint() {
+  let maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
+  let lastOrientation = window.screen?.orientation?.type || "";
+  const isTextField = element => Boolean(element && /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName) && !element.disabled);
+  function requestRepaint() {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      // Toggle only a root class: force WebView to recalculate styles after IME resize.
       root.classList.toggle("jb-manager-keyboard-open", keyboardOpen);
+      // Briefly force a real layout pass; this is more reliable than comparing
+      // innerHeight to visualViewport.height, which can shrink in lockstep on Android.
       void root.offsetHeight;
+      void document.body?.offsetHeight;
       requestAnimationFrame(() => {
         window.dispatchEvent(new Event("resize"));
         const active = document.activeElement;
-        if (keyboardOpen && active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) {
-          active.scrollIntoView({ block: "nearest", inline: "nearest" });
+        if (keyboardOpen && isTextField(active)) {
+          try { active.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" }); } catch (_) {}
+        }
+        // Nudge the WebView compositor after IME resize without keeping a transform.
+        if (document.body) {
+          document.body.style.webkitTransform = "translateZ(0)";
+          void document.body.offsetHeight;
+          requestAnimationFrame(() => {
+            if (document.body) document.body.style.webkitTransform = "";
+          });
         }
       });
     });
   }
-  function syncKeyboard() {
-    const vv = window.visualViewport;
-    keyboardOpen = Boolean(vv && window.innerHeight - vv.height > 140 && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || ""));
-    repaint();
+  function syncKeyboard(event) {
+    const active = document.activeElement;
+    const current = Math.max(window.innerHeight || 0, viewport?.height || 0);
+    const candidate = viewport?.height || window.innerHeight || 0;
+    const shrunk = maxViewportHeight - candidate > 110 || (window.screen?.height || 0) - candidate > 240;
+    keyboardOpen = isTextField(active) && (shrunk || event?.type === "focusin" || root.classList.contains("jb-manager-keyboard-open"));
+    if (!keyboardOpen && isTextField(active) === false) {
+      maxViewportHeight = Math.max(maxViewportHeight, current, candidate);
+    }
+    requestRepaint();
   }
-  window.visualViewport?.addEventListener("resize", syncKeyboard);
-  window.visualViewport?.addEventListener("scroll", syncKeyboard);
-  document.addEventListener("focusin", syncKeyboard, true);
-  document.addEventListener("focusout", () => { setTimeout(syncKeyboard, 120); }, true);
-  window.addEventListener("orientationchange", () => { setTimeout(syncKeyboard, 180); });
+  document.addEventListener("focusin", event => {
+    if (isTextField(event.target)) {
+      keyboardOpen = true;
+      requestRepaint();
+      setTimeout(() => syncKeyboard(event), 80);
+    }
+  }, true);
+  document.addEventListener("focusout", () => {
+    setTimeout(() => {
+      if (!isTextField(document.activeElement)) {
+        keyboardOpen = false;
+        requestRepaint();
+        setTimeout(() => {
+          maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0, maxViewportHeight);
+        }, 160);
+      } else {
+        syncKeyboard();
+      }
+    }, 160);
+  }, true);
+  viewport?.addEventListener("resize", syncKeyboard);
+  viewport?.addEventListener("scroll", syncKeyboard);
+  window.addEventListener("resize", syncKeyboard);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(() => {
+      if (!keyboardOpen) {
+        maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
+        lastOrientation = window.screen?.orientation?.type || lastOrientation;
+      }
+      syncKeyboard();
+    }, 220);
+  });
+  // When the WebView is restored from the background, refresh the viewport baseline.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !isTextField(document.activeElement)) {
+      maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
+      syncKeyboard();
+    }
+  });
   syncKeyboard();
 })();
 </script>
 `;
+
 if (!adminHtml.includes('id="jb-manager-android-keyboard-paint-fix"')) {
   adminHtml = adminHtml.replace("</head>", androidKeyboardPaintFix + "\n</head>");
 }
