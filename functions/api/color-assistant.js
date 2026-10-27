@@ -104,7 +104,7 @@ export async function onRequest({ request, env }) {
   const prompt = "Marca/modelo: " + (productContext || "No indicado") + "\nConsulta/referencia: " + (query || "Analizar el color principal del producto en la fotografía.") + "\nDevolvé nombre útil, HEX aproximado y alias; la sugerencia no es una identificación oficial.";
   try {
     const input = isImage
-      ? { messages: [{ role: "system", content: instruction }, { role: "user", content: prompt }], image: Array.from(atob(String(imageDataUrl).replace(/^data:image\/[^;]+;base64,/i, "")), character => character.charCodeAt(0)), max_tokens: 320, temperature: 0.15 }
+      ? { messages: [{ role: "system", content: instruction }, { role: "user", content: prompt }], image: imageDataUrl, max_tokens: 320, temperature: 0.15 }
       : { messages: [{ role: "system", content: instruction }, { role: "user", content: prompt }], max_tokens: 320, temperature: 0.15 };
     const output = await env.AI.run(isImage ? VISION_MODEL : TEXT_MODEL, input);
     const parsed = parseModelValue(output), name = clean(parsed && parsed.name, 80);
