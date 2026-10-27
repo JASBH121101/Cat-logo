@@ -50,6 +50,8 @@ jobs:
           grep -Fq 'href="https://jb-collections.pages.dev/perfumeria/"' perfumeria/index.html
           grep -Fq 'bottom: calc(23px + 48px + 14px)' ai-assistant.css
           grep -Fq 'bottom: calc(max(23px, env(safe-area-inset-bottom, 0px)) + 48px + 14px)' ai-assistant.css
+          ! grep -Fq 'IS_READ_ONLY_VERCEL_PREVIEW' admin.js
+          grep -Fq 'const IS_READ_ONLY_PREVIEW' admin.js
           grep -Fq '.back-to-top' theme-ui.css
           echo "Latest main source includes collision-free AI and back-to-top controls."
 
@@ -228,7 +230,7 @@ jobs:
           grep -Fq 'catalog_events' app.js
 
           # The product detail must package the same final gallery fix as the public source.
-          grep -Fq 'technology-visual-refresh.css?v=20261026-hero-cleanup1' mobile/www/tecnologia/index.html
+          grep -Fq 'technology-visual-refresh.css?v=20261027-payment-contrast1' mobile/www/tecnologia/index.html
           grep -Fq 'app.js?v=20261026-product-gallery-fix4' mobile/www/tecnologia/index.html
           grep -Fq 'perfumeria.css?v=20261026-caption-readability1' mobile/www/perfumeria/index.html
           ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
