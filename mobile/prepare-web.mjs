@@ -779,7 +779,7 @@ for (const relativePage of [
     }
     html = html.replace(
       "</head>",
-      '<link rel="stylesheet" href="/responsive-layout.css">\\n</head>'
+      '<link rel="stylesheet" href="/responsive-layout.css">\n</head>'
     );
   }
   if (!html.includes("jb-manager-back-navigation.js")) {
@@ -788,7 +788,7 @@ for (const relativePage of [
     }
     html = html.replace(
       "</head>",
-      '<script src="/jb-manager-back-navigation.js" defer data-jb-manager-native-back></script>\\n</head>'
+      '<script src="/jb-manager-back-navigation.js" defer data-jb-manager-native-back></script>\n</head>'
     );
   }
   await writeFile(pagePath, html, "utf8");
