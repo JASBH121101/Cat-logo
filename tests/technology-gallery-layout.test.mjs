@@ -9,8 +9,8 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261027-payment-contrast1/);
-  assert.match(html, /app\.js\?v=20261027-manual-tags3/);
+  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261027-catalog-header-review1/);
+  assert.match(html, /app\.js\?v=20261027-specs-clean-review1/);
 });
 
 test("detail gallery styles target the real product-detail-page DOM", () => {
