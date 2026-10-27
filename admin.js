@@ -396,33 +396,31 @@ function updateCategoryVariantVisibility() {
   const usesRamStorage = categoryUsesRamStorage(category);
   baseColorManager?.classList.toggle("is-ram-storage", usesRamStorage);
   const addVariantButton = $("#add-variant-button");
-  // Todas las categorías tecnológicas admiten variantes de precio/color.
-  // RAM y almacenamiento solo se muestran en celulares, tablets y laptops.
+
+  // Todas las categorías tecnológicas pueden tener variantes de capacidad,
+  // RAM, precio y color. Estos campos son opcionales; la categoría solo define
+  // qué datos son obligatorios al publicar ciertos productos.
   addVariantButton?.classList.remove("hidden");
   if (addVariantButton) {
     addVariantButton.textContent = "+ Agregar variante";
-    addVariantButton.title = usesRamStorage
-      ? "Agregar otra combinación de RAM y almacenamiento"
-      : "Agregar otra variante de precio y color";
-    addVariantButton.setAttribute(
-      "aria-label",
-      usesRamStorage ? "Agregar variante de RAM y almacenamiento" : "Agregar variante de precio y color"
-    );
+    addVariantButton.title = "Agregar otra variante de capacidad, RAM, precio y color";
+    addVariantButton.setAttribute("aria-label", "Agregar variante de capacidad, RAM, precio y color");
   }
+
   form?.querySelectorAll("[data-variant-group]").forEach(group => {
     group.querySelectorAll(".variant-storage-label, [data-group-ram]").forEach(field => {
       const wrapper = field.matches("label") ? field : field.closest("label");
-      wrapper?.classList.toggle("hidden", !usesRamStorage);
+      wrapper?.classList.remove("hidden");
     });
     const hint = group.querySelector(".variant-config-group-heading small");
-    if (hint) hint.textContent = usesRamStorage
-      ? (group.dataset.baseGroup === "true" ? "Definí almacenamiento, precio y colores. La RAM es opcional si el fabricante no la especifica." : "Definí almacenamiento, precio y colores. La RAM es opcional si no está especificada.")
-      : (group.dataset.baseGroup === "true" ? "Configuración opcional: agregá precios y colores solo si el producto los necesita." : "Configuración opcional: agregá precios y colores si corresponde.");
+    if (hint) hint.textContent = group.dataset.baseGroup === "true"
+      ? "Configuración opcional: agregá almacenamiento, RAM, precios y colores según corresponda."
+      : "Agregá almacenamiento, RAM, precios y colores para esta variante. Los campos que no apliquen pueden quedar vacíos.";
   });
   const title = $("#variants-editor-title");
-  if (title) title.textContent = usesRamStorage ? "Variantes, capacidades y precios" : "Variantes y precios (opcional)";
+  if (title) title.textContent = "Variantes, capacidades y precios";
   const sectionTitle = $("#product-form-section-title-2");
-  if (sectionTitle) sectionTitle.textContent = usesRamStorage ? "Variantes, capacidades y precios" : "Variantes y precios (opcional)";
+  if (sectionTitle) sectionTitle.textContent = "Variantes, capacidades y precios";
 }
 
 function setActiveCatalogType(value) {
