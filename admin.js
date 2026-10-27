@@ -350,11 +350,36 @@ function updateProductFormMode() {
   if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
 }
 
+function categoryUsesRamStorage(category = $("#product-category")?.value || "") {
+  return ["Celulares", "Tablets", "Laptops"].includes(String(category).trim());
+}
+
+function updateCategoryVariantVisibility() {
+  const category = $("#product-category")?.value || "";
+  const usesRamStorage = categoryUsesRamStorage(category);
+  form?.querySelectorAll("[data-variant-group]").forEach(group => {
+    group.querySelectorAll(".variant-storage-label, [data-group-ram]").forEach(field => {
+      const wrapper = field.matches("label") ? field : field.closest("label");
+      wrapper?.classList.toggle("hidden", !usesRamStorage);
+    });
+    const hint = group.querySelector(".variant-config-group-heading small");
+    if (hint) hint.textContent = usesRamStorage
+      ? (group.dataset.baseGroup === "true" ? "Definí RAM, almacenamiento, precio y colores de la configuración principal." : "Definí RAM, almacenamiento, precio y colores de esta configuración.")
+      : (group.dataset.baseGroup === "true" ? "Configuración opcional: agregá precios y colores solo si el producto los necesita." : "Configuración opcional: agregá precios y colores si corresponde.");
+  });
+  $("#add-variant-button")?.classList.toggle("hidden", !usesRamStorage);
+  const title = $("#variants-editor-title");
+  if (title) title.textContent = usesRamStorage ? "Variantes, capacidades y precios" : "Variantes y precios (opcional)";
+  const sectionTitle = $("#product-form-section-title-2");
+  if (sectionTitle) sectionTitle.textContent = usesRamStorage ? "Variantes, capacidades y precios" : "Variantes y precios (opcional)";
+}
+
 function setActiveCatalogType(value) {
   activeCatalogType = normalizeCatalogType(value);
   if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
   updateProductFormMode();
   syncProductFormSectionAvailability();
+  updateCategoryVariantVisibility();
   setProductFormStep(1, { scroll: false });
   renderAdminList();
   renderDashboardOverview();
@@ -4110,16 +4135,19 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const hasConfiguration = Boolean(storageRaw || ramRaw);
     const key = variantGroupKey({storage,ram});
 
-    if (!isBase && !hasConfiguration) {
+    const requiresConfiguration = categoryUsesRamStorage($("#product-category")?.value || "");
+    if (!isBase && !hasConfiguration && requiresConfiguration && !options.allowIncomplete) {
       throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex + 1}.`);
     }
 
     const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
-    // An untouched blank primary group is optional; configured groups need at least one color.
-    if (isBase && !hasConfiguration && !rows.length) continue;
-    if (hasConfiguration && !rows.length) {
-      throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
+    // Empty rows are placeholders, not configured variants.
+    const rowsWithColor = rows.filter(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim()));
+    if (!hasConfiguration && !rowsWithColor.length) continue;
+    if (hasConfiguration && !rowsWithColor.length && !options.allowIncomplete) {
+      throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
     }
+    if (options.allowIncomplete && !rowsWithColor.length) continue;
     if (hasConfiguration && seenConfigurations.has(key)) {
       throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
     }
@@ -4127,10 +4155,9 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
 
     const colors = [];
 
-    for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
-      const row = rows[colorIndex];
+    for (let colorIndex = 0; colorIndex < rowsWithColor.length; colorIndex++) {
+      const row = rowsWithColor[colorIndex];
       const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
-      if (!color) throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
       const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
       initVariantImageItems(row);
@@ -4180,6 +4207,9 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
 
+    if (hasConfiguration && !colors.length && !options.allowIncomplete) {
+      throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
+    }
     const seenColors = new Set();
     colors.forEach(item => {
       const key = item.color.toLocaleLowerCase("es");
@@ -4694,9 +4724,11 @@ form?.addEventListener("click", event => {
   if (previous) setProductFormStep(previous.dataset.productFormPrev);
 });
 
+$("#product-category")?.addEventListener("change", () => updateCategoryVariantVisibility());
 $("#new-product-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 $("#cancel-edit-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 syncProductFormSectionAvailability();
+updateCategoryVariantVisibility();
 setProductFormStep(1, { scroll: false });
 
 /* =========================================================
@@ -4756,12 +4788,16 @@ form?.addEventListener("submit", async event => {
       return groupValues || rowValues;
     });
     const draftHasContent = Boolean(name || $("#product-brand").value.trim() || $("#product-description").value.trim() || $("#product-price-usd").value.trim() || $("#product-price-nio").value.trim() || $("#product-perfume-family").value || $("#product-perfume-scent-family").value.trim() || $("#product-perfume-top-notes").value.trim() || $("#product-perfume-heart-notes").value.trim() || $("#product-perfume-base-notes").value.trim() || $("#product-specs").value.trim() || mainImageItems.length || draftVariantContent);
-    if (targetStatus === "draft" && !draftHasContent) throw new Error("Añadí al menos un dato o una fotografía antes de guardar el borrador; así evitamos crear borradores vacíos.");
-    if(targetStatus!=="draft") { if(!name) throw new Error("Escribí el nombre del producto."); if(!isPerfume&&!$("#product-category").value) throw new Error("Seleccioná la categoría del producto."); if(!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad."); if(isPerfume&&!$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume."); }
+    if (!name) throw new Error("Escribí el nombre del producto.");
+    if (targetStatus === "published") {
+      if (!isPerfume && !$("#product-category").value) throw new Error("Seleccioná la categoría del producto antes de publicar.");
+      if (!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad antes de publicar.");
+      if (isPerfume && !$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume antes de publicar.");
+    }
 
     const rawVolume = $("#product-perfume-volume").value.trim();
     const perfumeVolume = isPerfume && rawVolume ? toOptionalNumber(rawVolume, "Contenido en ml") : null;
-    if (isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
+    if (targetStatus === "published" && isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
 
     const id = $("#product-id").value || crypto.randomUUID();
     const existingProduct = products.find(product => String(product.id) === String(id));
@@ -4775,7 +4811,7 @@ form?.addEventListener("submit", async event => {
       message("#product-form-status","Subiendo "+pendingPhotosBeforeSave.length+" fotografía(s) pendiente(s) en segundo plano antes de guardar…");
       await uploadPendingPhotosInBackground({retryFailed:true});
     }
-    const variants = isPerfume ? [] : await collectVariants(id, existingProduct?.variants || [], imageUploadErrors, {skipPendingUploads:true});
+    const variants = isPerfume ? [] : await collectVariants(id, existingProduct?.variants || [], imageUploadErrors, {skipPendingUploads:true, allowIncomplete: targetStatus !== "published"});
 
     const uploadedMainImages = [];
     for (const item of mainImageItems) {
@@ -4811,7 +4847,7 @@ form?.addEventListener("submit", async event => {
       name: name || null,
       brand: $("#product-brand").value.trim() || null,
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
-      category: isPerfume ? "Perfumería" : $("#product-category").value,
+      category: isPerfume ? "Perfumería" : ($("#product-category").value.trim() || null),
       availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
       price_nio: priceNIO,
