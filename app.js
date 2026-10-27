@@ -25,6 +25,9 @@ const categoryFilters = document.querySelector("#category-filters");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
 const featuredCount = document.querySelector("#featured-count");
+const topGamingSection = document.querySelector("#top-gaming-section");
+const topGamingGrid = document.querySelector("#top-gaming-grid");
+const topGamingCount = document.querySelector("#top-gaming-count");
 const resultsHeading = document.querySelector("#catalog-results-heading");
 const resultsEyebrow = document.querySelector("#catalog-results-eyebrow");
 const resultsTitle = document.querySelector("#catalog-results-title");
@@ -645,12 +648,27 @@ function startingPrice(product, field = "price_usd") {
   return values.length ? Math.min(...values) : product[field];
 }
 
+function normalizedProductTags(product) {
+  return [...new Set((Array.isArray(product?.tags) ? product.tags : []).map(tag => String(tag || "").trim().toLowerCase()).filter(Boolean))];
+}
+
+const PRODUCT_TAG_LABELS = {
+  top_gaming: "🎮 TOP GAMING",
+  best_seller: "MÁS VENDIDO",
+  new_arrival: "NUEVO INGRESO",
+  offer: "OFERTA",
+  recommended: "RECOMENDADO"
+};
+
 function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
-  const badge = product.featured
-    ? '<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'
-    : "";
+  const tags = normalizedProductTags(product);
+  const isExclusive = Boolean(product.featured || product.is_exclusive || tags.includes("exclusive"));
+  const badge = [
+    ...(isExclusive ? ['<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'] : []),
+    ...tags.filter(tag => tag !== "exclusive" && PRODUCT_TAG_LABELS[tag]).map(tag => '<span class="product-badge product-tag-badge tag-' + tag.replace(/[^a-z0-9_-]/g, "") + '">' + PRODUCT_TAG_LABELS[tag] + '</span>')
+  ].join("");
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
     productStatus === "out_of_stock"
@@ -690,7 +708,7 @@ function renderCard(product) {
       </div>
       <div class="product-card-content">
         <div class="product-card-badges">${badge}${availabilityBadge}</div>
-        <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
+        <div class="product-category">${escapeHtml([product.category || "Tecnología", product.subcategory].filter(value => String(value || "").trim()).join(" · "))}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
         <div class="product-card-color-slot${colorSwatches ? "" : " is-empty"}">${colorSwatches}</div>
@@ -778,7 +796,7 @@ function searchTokensMatch(haystack, query) {
 }
 
 function productIdentityText(product) {
-  return normalizeCatalogSearch([product.name, product.brand, product.model].filter(Boolean).join(" "));
+  return normalizeCatalogSearch([product.name, product.brand, product.model, product.category, product.subcategory, ...normalizedProductTags(product)].filter(Boolean).join(" "));
 }
 
 function hasActiveCatalogFilters() {
@@ -914,8 +932,17 @@ function renderCategorizedProducts(productList) {
 function renderProducts() {
   const list = visibleProducts();
   const hasFilters = hasActiveCatalogFilters();
-  const featured = hasFilters ? [] : list.filter(product => Boolean(product.featured));
-  const regularProducts = hasFilters ? list : list.filter(product => !product.featured);
+  const featured = hasFilters ? [] : list.filter(product => Boolean(product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")));
+  const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
+  const regularProducts = hasFilters ? list : list.filter(product =>
+    !(product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")) &&
+    !normalizedProductTags(product).includes("top_gaming")
+  );
+  if (topGamingSection && topGamingGrid) {
+    topGamingSection.classList.toggle("hidden", topGaming.length === 0);
+    topGamingGrid.innerHTML = topGaming.map(renderCard).join("");
+  }
+  if (topGamingCount) topGamingCount.textContent = topGaming.length ? (topGaming.length + " equipo" + (topGaming.length === 1 ? "" : "s")) : "";
   if (featuredSection && featuredGrid) {
     featuredSection.classList.toggle("hidden", featured.length === 0);
     featuredGrid.innerHTML = featured.map(renderCard).join("");
