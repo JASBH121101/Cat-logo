@@ -77,3 +77,14 @@ test("comparison requests are restricted to two distinct published technology pr
   assert.match(assistantApi, /product\.catalog_type === "technology"/);
   assert.match(assistantApi, /Equipo seleccionado para esta comparación/);
 });
+
+
+test("payment-options CTA keeps readable contrast in light and dark themes", () => {
+  const techVisual = readFileSync(new URL("../technology-visual-refresh.css", import.meta.url), "utf8");
+  assert.match(techVisual, /\.product-contact-actions\s*>\s*#dialog-payment-options-toggle\.dialog-payment-toggle\s*\{/);
+  assert.match(techVisual, /color:\s*#17305f;/);
+  assert.match(techVisual, /-webkit-text-fill-color:\s*#17305f;/);
+  assert.match(techVisual, /html\[data-theme="dark"\]\s+body\.technology-catalog\s+\.product-contact-actions\s*>\s*#dialog-payment-options-toggle\.dialog-payment-toggle\s*\{/);
+  assert.match(techVisual, /color:\s*#e8f2ff;/);
+  assert.match(techVisual, /:focus-visible\s*\{/);
+});
