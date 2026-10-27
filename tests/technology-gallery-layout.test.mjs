@@ -14,7 +14,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.match(app, /product-card-tag-exclusive/);
-  assert.match(app, /product-card-tag-high_performance/);
+  assert.match(app, /"product-card-tag-" \\+ tag/);
   assert.doesNotMatch(app, /product-card-color-slot/);
   assert.doesNotMatch(app, /<div class="product-category">\$\{escapeHtml\(\[product\.category/);
   assert.doesNotMatch(html, /RECIBÍ TU PEDIDO|shipping-section|Entregas y envíos/);
