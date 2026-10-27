@@ -3806,7 +3806,7 @@ function getSelectedProductSubcategory() {
   return String(select.value || "").trim();
 }
 
-const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "high_performance", "top_gaming", "best_seller", "new_arrival", "offer", "recommended"]);
+const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "high_performance", "quality_price", "top_gaming", "best_seller", "new_arrival", "offer"]);
 
 function parseCustomProductTagTokens(value) {
   return String(value || "")
@@ -3903,7 +3903,7 @@ function selectedProductTags() {
 }
 
 function setProductTags(tags) {
-  const values = (Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim()).filter(Boolean);
+  const values = (Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim()).filter(tag => tag && tag.toLocaleLowerCase("es") !== "recommended");
   const selected = new Set(values.map(tag => tag.toLocaleLowerCase("es")));
   document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = selected.has(input.value); });
   customProductTags = values.filter(tag => !PREDEFINED_PRODUCT_TAGS.has(tag.toLowerCase()));
@@ -4761,8 +4761,8 @@ function renderPublishReview(review) {
       '</div></div>'
     : "";
   const reviewTagLabels = {
-    exclusive: "Exclusivo", top_gaming: "Top Gaming", best_seller: "Más vendido",
-    new_arrival: "Nuevo ingreso", offer: "Oferta", recommended: "Recomendado"
+    exclusive: "Exclusivo", high_performance: "Alto rendimiento", quality_price: "Calidad-precio",
+    top_gaming: "Top Gaming", best_seller: "Más vendido", new_arrival: "Nuevo ingreso", offer: "Oferta"
   };
   const tagSummary = (Array.isArray(review.tags) ? review.tags : [])
     .map(tag => reviewTagLabels[String(tag || "").toLowerCase()] || String(tag || "").trim())
