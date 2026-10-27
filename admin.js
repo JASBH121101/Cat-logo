@@ -794,7 +794,7 @@ function openColorAssistant(row) {
   const status=overlay.querySelector("[data-color-ai-status]"), resultPanel=overlay.querySelector("[data-color-ai-result]"), analyzeButton=overlay.querySelector("[data-color-ai-analyze]");
   const saveButton=overlay.querySelector("[data-color-ai-save]"), applyButton=overlay.querySelector("[data-color-ai-apply]");
   let colorResult=null, previewUrl="";
-  productInput.value=[$("#product-brand")?.value||"",$ ("#product-model")?.value||"",$ ("#product-name")?.value||""].filter(Boolean).join(" ").slice(0,180);
+  productInput.value=[$("#product-brand")?.value||"",$("#product-model")?.value||"",$("#product-name")?.value||""].filter(Boolean).join(" ").slice(0,180);
   const activeName=row.querySelector("[data-variant-color]")?.value.trim()||""; if(activeName) queryInput.value=activeName;
   function close(){if(previewUrl)URL.revokeObjectURL(previewUrl);overlay.remove();document.removeEventListener("keydown",onKeyDown,true);}
   function onKeyDown(event){if(event.key==="Escape")close();}
