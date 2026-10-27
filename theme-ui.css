@@ -10380,3 +10380,218 @@ body.admin-body .base-color-manager.is-ram-storage .variant-base-group > .varian
 /* Manual subcategory and custom-tag controls, compatible with light/dark themes. */
 .product-custom-tags-field{display:flex;flex-direction:column;gap:7px;margin-top:14px}.product-custom-tags-field small{font-size:.82rem;line-height:1.45;color:var(--text-muted,#64748b)}
 .product-tag-badge{max-width:100%;white-space:normal;overflow-wrap:anywhere}.product-tag-badge.tag-custom{background:var(--surface-soft,#f1f5f9);border-color:var(--border-color,#cbd5e1);color:var(--text-color,#334155)}
+
+/* JB Manager taxonomy controls: explicit theme colors and mobile-safe tag chips.
+   Do not rely on public-catalog tokens here; admin-body uses its own palette. */
+html[data-theme="light"] body.admin-body {
+  --admin-taxonomy-panel: #f5f7ff;
+  --admin-taxonomy-control: #ffffff;
+  --admin-taxonomy-text: #17264c;
+  --admin-taxonomy-muted: #5e6f92;
+  --admin-taxonomy-border: #d9e2f7;
+  --admin-taxonomy-checkbox-bg: #ffffff;
+  --admin-taxonomy-checkbox-border: #8493b5;
+  --admin-taxonomy-chip-bg: #eaf0ff;
+  --admin-taxonomy-chip-border: #c9d6fb;
+}
+html[data-theme="dark"] body.admin-body {
+  --admin-taxonomy-panel: linear-gradient(145deg, rgba(12, 22, 44, .98), rgba(13, 20, 42, .96));
+  --admin-taxonomy-control: #101b32;
+  --admin-taxonomy-text: #eef3ff;
+  --admin-taxonomy-muted: #a8bce2;
+  --admin-taxonomy-border: rgba(106, 139, 208, .38);
+  --admin-taxonomy-checkbox-bg: #0a1429;
+  --admin-taxonomy-checkbox-border: #7088bc;
+  --admin-taxonomy-chip-bg: rgba(56, 85, 160, .24);
+  --admin-taxonomy-chip-border: rgba(112, 142, 225, .48);
+}
+body.admin-body .admin-form .product-taxonomy-fields {
+  color: var(--admin-taxonomy-text, #17264c) !important;
+  background: var(--admin-taxonomy-panel, #f5f7ff) !important;
+  border-color: var(--admin-taxonomy-border, #d9e2f7) !important;
+}
+body.admin-body .product-taxonomy-heading h3 {
+  color: var(--admin-taxonomy-text, #17264c) !important;
+}
+body.admin-body .product-taxonomy-heading p,
+body.admin-body .product-custom-tags-field > small {
+  color: var(--admin-taxonomy-muted, #5e6f92) !important;
+}
+body.admin-body .admin-form .product-tag-options {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+body.admin-body .admin-form .product-tag-options > .product-tag-option {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex: 0 1 auto !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  align-self: flex-start !important;
+  gap: 8px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 9px 13px !important;
+  border-color: var(--admin-taxonomy-border, #d9e2f7) !important;
+  border-radius: 999px !important;
+  color: var(--admin-taxonomy-text, #17264c) !important;
+  background: var(--admin-taxonomy-control, #fff) !important;
+  text-align: left !important;
+  line-height: 1.25 !important;
+}
+body.admin-body .admin-form .product-tag-option > span {
+  display: inline !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  color: inherit !important;
+  background: transparent !important;
+  font-size: .88rem !important;
+  line-height: 1.25 !important;
+  overflow-wrap: anywhere;
+}
+body.admin-body .admin-form .product-tag-option input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: grid !important;
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1.5px solid var(--admin-taxonomy-checkbox-border, #8493b5) !important;
+  border-radius: 5px !important;
+  color: #fff !important;
+  background: var(--admin-taxonomy-checkbox-bg, #fff) !important;
+  box-shadow: none !important;
+  accent-color: #5b4ce2;
+}
+body.admin-body .admin-form .product-tag-option input[type="checkbox"]:checked {
+  border-color: #5b4ce2 !important;
+  background: #5b4ce2 !important;
+}
+body.admin-body .admin-form .product-tag-option input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+body.admin-body .admin-form .product-tag-option input[type="checkbox"]:focus-visible {
+  outline: 3px solid rgba(113, 101, 255, .5) !important;
+  outline-offset: 2px !important;
+}
+body.admin-body .admin-form .product-tag-option:has(input:checked) {
+  border-color: #7567ef !important;
+  background: rgba(99, 102, 241, .12) !important;
+}
+body.admin-body .product-custom-tags-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--admin-taxonomy-border, #d9e2f7);
+  border-radius: 12px;
+  background: var(--admin-taxonomy-control, #fff);
+}
+body.admin-body .product-custom-tags-entry:focus-within {
+  border-color: #7165ef;
+  box-shadow: 0 0 0 3px rgba(113, 101, 239, .13);
+}
+body.admin-body .product-custom-tags-chips {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+body.admin-body .product-custom-tags-chips[hidden] {
+  display: none !important;
+}
+body.admin-body .product-custom-tag-chip {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 5px 7px 5px 10px;
+  border: 1px solid var(--admin-taxonomy-chip-border, #c9d6fb);
+  border-radius: 999px;
+  color: var(--admin-taxonomy-text, #17264c);
+  background: var(--admin-taxonomy-chip-bg, #eaf0ff);
+  font-size: .84rem;
+  line-height: 1.25;
+}
+body.admin-body .product-custom-tag-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+body.admin-body .product-custom-tag-remove {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-flex !important;
+  flex: 0 0 23px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 23px !important;
+  min-width: 23px !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  color: var(--admin-taxonomy-text, #17264c) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  transform: none !important;
+}
+body.admin-body .product-custom-tag-remove:hover {
+  color: #fff !important;
+  background: #5b4ce2 !important;
+}
+body.admin-body .product-custom-tags-entry > input#product-custom-tags {
+  flex: 1 1 145px !important;
+  width: auto !important;
+  min-width: 120px !important;
+  min-height: 34px !important;
+  margin: 0 !important;
+  padding: 6px 7px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  outline-offset: 2px;
+  color: var(--admin-taxonomy-text, #17264c) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font: inherit !important;
+  font-size: .92rem !important;
+}
+body.admin-body .product-custom-tags-entry > input#product-custom-tags::placeholder {
+  color: var(--admin-taxonomy-muted, #5e6f92) !important;
+  opacity: .9;
+}
+@media (max-width: 480px) {
+  body.admin-body .admin-form .product-tag-options {
+    gap: 7px !important;
+  }
+  body.admin-body .admin-form .product-tag-options > .product-tag-option {
+    max-width: 100% !important;
+    padding: 9px 11px !important;
+    font-size: .85rem !important;
+  }
+}

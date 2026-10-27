@@ -52,6 +52,15 @@ test("technology products support editable subcategories and manually selected t
   assert.match(html, /id="product-subcategory"/);
   assert.match(html, /id="product-subcategory-options"/);
   assert.match(html, /id="product-custom-tags"/);
+  assert.match(html, /id="product-custom-tags-chips"/);
+  assert.match(html, /Presioná Enter para guardar cada etiqueta por separado/);
+  assert.match(admin, /function parseCustomProductTagTokens\(value\)/);
+  assert.match(admin, /function renderCustomProductTagChips\(\)/);
+  assert.match(admin, /function commitCustomProductTags\(\)/);
+  assert.match(admin, /event\.key === "Enter"[\s\S]*?commitCustomProductTags\(\)/);
+  assert.match(theme, /--admin-taxonomy-panel:\s*linear-gradient/);
+  assert.match(theme, /flex-direction:\s*row\s*!important/);
+  assert.match(theme, /appearance:\s*none\s*!important/);
   assert.match(admin, /PRODUCT_SUBCATEGORY_SUGGESTIONS/);
   assert.match(admin, /function updateProductSubcategorySuggestions\(\)/);
   assert.match(admin, /function selectedProductTags\(\)/);

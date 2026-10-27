@@ -7,6 +7,8 @@ import { initProviderTools } from "./admin-provider.js?v=20261026-provider-revie
    ========================================================= */
 
 const CONFIG = window.CATALOG_CONFIG || {};
+// Custom technology tags are kept as separate chips while editing a product.
+let customProductTags = [];
 
 const configured = Boolean(
   CONFIG.supabaseUrl &&
@@ -301,6 +303,8 @@ function updateProductFormMode() {
   if (isPerfume) {
     $("#product-subcategory").value = "";
     $("#product-custom-tags").value = "";
+    customProductTags = [];
+    renderCustomProductTagChips();
     document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = false; });
   }
 
@@ -3725,11 +3729,91 @@ function updateProductSubcategorySuggestions() {
 
 const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "top_gaming", "best_seller", "new_arrival", "offer", "recommended"]);
 
+function parseCustomProductTagTokens(value) {
+  return String(value || "")
+    .split(/[,;\n]+/)
+    .map(tag => tag.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+}
+
+function renderCustomProductTagChips() {
+  const container = $("#product-custom-tags-chips");
+  if (!container) return;
+  container.replaceChildren();
+  container.hidden = customProductTags.length === 0;
+
+  customProductTags.forEach((tag, index) => {
+    const chip = document.createElement("span");
+    chip.className = "product-custom-tag-chip";
+
+    const label = document.createElement("span");
+    label.className = "product-custom-tag-label";
+    label.textContent = tag;
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "product-custom-tag-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `Quitar etiqueta ${tag}`);
+    remove.addEventListener("click", () => {
+      customProductTags.splice(index, 1);
+      renderCustomProductTagChips();
+      $("#product-custom-tags")?.focus();
+    });
+
+    chip.append(label, remove);
+    container.append(chip);
+  });
+}
+
+function addCustomProductTags(tags) {
+  const seen = new Set(customProductTags.map(tag => tag.toLocaleLowerCase("es")));
+  for (const value of tags) {
+    const tag = String(value || "").trim().replace(/\s+/g, " ");
+    if (!tag) continue;
+    const key = tag.toLocaleLowerCase("es");
+    if (seen.has(key)) continue;
+    customProductTags.push(tag);
+    seen.add(key);
+  }
+  renderCustomProductTagChips();
+}
+
+function commitCustomProductTags() {
+  const input = $("#product-custom-tags");
+  if (!input) return;
+  const tokens = parseCustomProductTagTokens(input.value);
+  if (!tokens.length) return;
+  addCustomProductTags(tokens);
+  input.value = "";
+}
+
+function initializeCustomProductTagInput() {
+  const input = $("#product-custom-tags");
+  if (!input || input.dataset.customTagInputReady === "true") return;
+  input.dataset.customTagInputReady = "true";
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
+      event.preventDefault();
+      commitCustomProductTags();
+      return;
+    }
+    if (event.key === ",") {
+      event.preventDefault();
+      commitCustomProductTags();
+    }
+  });
+  // Committing on blur also supports tapping Save without pressing Enter.
+  input.addEventListener("blur", () => {
+    if (input.value.trim()) commitCustomProductTags();
+  });
+}
+
 function selectedProductTags() {
   const predefined = Array.from(document.querySelectorAll("[data-product-tag]:checked"))
     .map(input => String(input.value || "").trim().toLowerCase()).filter(Boolean);
-  const custom = String($("#product-custom-tags")?.value || "").split(",")
-    .map(tag => tag.trim()).filter(Boolean);
+  const custom = [...customProductTags, ...parseCustomProductTagTokens($("#product-custom-tags")?.value || "")];
   const result = [...predefined];
   const seen = new Set(result.map(tag => tag.toLocaleLowerCase("es")));
   for (const tag of custom) {
@@ -3743,8 +3827,13 @@ function setProductTags(tags) {
   const values = (Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim()).filter(Boolean);
   const selected = new Set(values.map(tag => tag.toLocaleLowerCase("es")));
   document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = selected.has(input.value); });
-  $("#product-custom-tags").value = values.filter(tag => !PREDEFINED_PRODUCT_TAGS.has(tag.toLowerCase())).join(", ");
+  customProductTags = values.filter(tag => !PREDEFINED_PRODUCT_TAGS.has(tag.toLowerCase()));
+  const input = $("#product-custom-tags");
+  if (input) input.value = "";
+  renderCustomProductTagChips();
 }
+
+initializeCustomProductTagInput();
 
 function fillEditor(product) {
   activeCatalogType = normalizeCatalogType(product.catalog_type);

@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261026-remember-session3">
-  <link rel="stylesheet" href="theme-ui.css?v=20261027-subcategories-tags3">
+  <link rel="stylesheet" href="theme-ui.css?v=20261027-tags-enter-theme-fix1">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
   <link rel="stylesheet" href="admin-provider.css?v=20261026-provider-contrast3">
@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261026-cloudflare-url1"></script>
-  <script type="module" src="admin.js?v=20261027-subcategories-tags3"></script>
+  <script type="module" src="admin.js?v=20261027-tags-enter-theme-fix1"></script>
   <script src="ui.js?v=20261027-admin-backtop1" defer></script>
 </head>
 
@@ -514,8 +514,11 @@
                 </div>
                 <label class="product-custom-tags-field">
                   Etiquetas personalizadas
-                  <input id="product-custom-tags" maxlength="300" placeholder="Ej. Arquitectura/Ingeniería, Negocios, Diseño 3D">
-                  <small>Separá varias etiquetas con comas. Podés combinar varias aunque el producto tenga otra subcategoría.</small>
+                  <div class="product-custom-tags-entry">
+                    <div id="product-custom-tags-chips" class="product-custom-tags-chips" aria-live="polite" hidden></div>
+                    <input id="product-custom-tags" type="text" maxlength="300" autocomplete="off" enterkeyhint="done" placeholder="Escribí una etiqueta y presioná Enter" aria-describedby="product-custom-tags-help">
+                  </div>
+                  <small id="product-custom-tags-help">Presioná Enter para guardar cada etiqueta por separado. También podés pegar varias separadas por comas o punto y coma.</small>
                 </label>
               </section>
 <input id="product-featured" type="checkbox" hidden aria-hidden="true">
