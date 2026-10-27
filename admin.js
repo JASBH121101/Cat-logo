@@ -263,6 +263,9 @@ function updateProductFormMode() {
           { value: "Accesorios", label: "Accesorios" },
           { value: "Otros", label: "Otros" }
         ];
+    if (previous && !options.some(option => option.value === previous)) {
+      options.push({ value: previous, label: previous + " (categoría existente)" });
+    }
     category.replaceChildren(...options.map(option => {
       const node = document.createElement("option");
       node.value = option.value;
@@ -4817,7 +4820,10 @@ form?.addEventListener("click", event => {
   if (previous) setProductFormStep(previous.dataset.productFormPrev);
 });
 
-$("#product-category")?.addEventListener("change", () => updateCategoryVariantVisibility());
+$("#product-category")?.addEventListener("change", () => {
+  updateCategoryVariantVisibility();
+  updateProductSubcategorySuggestions();
+});
 $("#new-product-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 $("#cancel-edit-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 syncProductFormSectionAvailability();
