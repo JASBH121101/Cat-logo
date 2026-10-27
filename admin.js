@@ -3806,7 +3806,7 @@ function getSelectedProductSubcategory() {
   return String(select.value || "").trim();
 }
 
-const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "top_gaming", "best_seller", "new_arrival", "offer", "recommended"]);
+const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "high_performance", "top_gaming", "best_seller", "new_arrival", "offer", "recommended"]);
 
 function parseCustomProductTagTokens(value) {
   return String(value || "")
