@@ -53,7 +53,7 @@ test("technology products support editable subcategories and manually selected t
   assert.match(html, /id="product-subcategory-options"/);
   assert.match(html, /id="product-custom-tags"/);
   assert.match(admin, /PRODUCT_SUBCATEGORY_SUGGESTIONS/);
-  assert.match(admin, /function updateProductSubcategorySuggestions\\(\\)/);
+  assert.match(admin, /function updateProductSubcategorySuggestions\(\)/);
   assert.match(admin, /function selectedProductTags\\(\\)/);
   assert.match(admin, /PREDEFINED_PRODUCT_TAGS/);
   assert.match(html, /id="product-taxonomy-fields"/);
