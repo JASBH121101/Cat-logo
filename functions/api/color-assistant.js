@@ -78,10 +78,10 @@ async function verifyAdmin(request) {
 function normalizeLibraryValue(value) {
   return clean(value, 180)
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("es")
     .replace(/[^a-z0-9#]+/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
