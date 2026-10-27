@@ -259,6 +259,7 @@ function updateProductFormMode() {
           { value: "Celulares", label: "Celulares" },
           { value: "Laptops", label: "Laptops" },
           { value: "Tablets", label: "Tablets" },
+          { value: "Gaming", label: "Gaming" },
           { value: "Consolas", label: "Consolas" },
           { value: "Televisores", label: "Televisores" },
           { value: "Audio", label: "Audio" },
@@ -3740,6 +3741,7 @@ function clearEditor() {
 }
 
 const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
+  "Gaming": ["Consolas"],
   "Celulares": ["Gaming", "Fotografía", "Batería de larga duración", "Gama alta", "Gama media", "Económicos"],
   "Laptops": ["Gaming", "Trabajo / Oficina", "Estudio", "Arquitectura / Ingeniería", "Creación de contenido / Diseño", "Uso general"],
   "Tablets": ["Estudio", "Trabajo / Oficina", "Diseño / Ilustración", "Gaming", "Uso general"],
