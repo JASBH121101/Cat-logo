@@ -10595,3 +10595,99 @@ body.admin-body .product-custom-tags-entry > input#product-custom-tags::placehol
     font-size: .85rem !important;
   }
 }
+
+
+/* JB Manager — explicit color contrast for publish review and taxonomy controls. */
+html[data-theme="light"] body.admin-body .publish-review-dialog {
+  color: #17243f !important;
+  background: #ffffff !important;
+  border-color: #d6dfed !important;
+}
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-shell,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-header,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-footer {
+  color: #17243f !important;
+  background: #ffffff !important;
+  border-color: #d9e1ee !important;
+}
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-header h2,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-row > strong,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-variants p,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-notes p,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-section h3 {
+  color: #1d2b45 !important;
+}
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-eyebrow,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-body > p,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-row > span,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-notes-empty {
+  color: #566781 !important;
+}
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-summary,
+html[data-theme="light"] body.admin-body .publish-review-dialog .publish-review-row {
+  border-color: #dce4ef !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-dialog {
+  color: #edf3ff !important;
+  background: #111b31 !important;
+  border-color: #394968 !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-shell,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-header,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-footer {
+  color: #edf3ff !important;
+  background: #111b31 !important;
+  border-color: #34435f !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-header h2,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-row > strong,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-variants p,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-notes p {
+  color: #edf3ff !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-eyebrow,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-body > p,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-row > span,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-notes-empty {
+  color: #a9bad8 !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-summary,
+html[data-theme="dark"] body.admin-body .publish-review-dialog .publish-review-row {
+  border-color: #34435f !important;
+}
+
+/* Match the category selector's type, spacing and theme in the new subcategory select. */
+html[data-theme="light"] body.admin-body #product-category,
+html[data-theme="light"] body.admin-body #product-subcategory,
+html[data-theme="light"] body.admin-body #product-subcategory-custom {
+  color: #17243f !important;
+  background-color: #ffffff !important;
+  border-color: #cdd8e8 !important;
+}
+html[data-theme="dark"] body.admin-body #product-category,
+html[data-theme="dark"] body.admin-body #product-subcategory,
+html[data-theme="dark"] body.admin-body #product-subcategory-custom {
+  color: #edf3ff !important;
+  background-color: #101b32 !important;
+  border-color: #465979 !important;
+}
+body.admin-body #product-category,
+body.admin-body #product-subcategory,
+body.admin-body #product-subcategory-custom {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  padding: 10px 12px !important;
+  border-style: solid !important;
+  border-width: 1px !important;
+  border-radius: 11px !important;
+  font-family: "DM Sans", "Manrope", system-ui, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+body.admin-body #product-category option,
+body.admin-body #product-subcategory option {
+  font-family: "DM Sans", "Manrope", system-ui, sans-serif;
+  font-size: 14px;
+}
