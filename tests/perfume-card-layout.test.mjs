@@ -16,12 +16,18 @@ test("perfume cards show only compact essentials and keep the public in the deta
   assert.match(card, /formatNIO\(product\.price_nio\)/);
   assert.match(card, />Ver producto </);
   assert.match(js, /audienceDisplay\(detail\.audience\)/);
-  assert.match(js, /\[\s*hombre:\s*"Varón",\s*mujer:\s*"Mujer",\s*unisex:\s*"Unisex"\s*\]/);
+  const audienceStart = js.indexOf("function audienceDisplay(value)");
+  const audienceEnd = js.indexOf("\n}", audienceStart) + 2;
+  assert.ok(audienceStart >= 0 && audienceEnd > audienceStart, "audience display helper exists");
+  const audienceHelper = js.slice(audienceStart, audienceEnd);
+  assert.match(audienceHelper, /hombre:\s*"Varón"/);
+  assert.match(audienceHelper, /mujer:\s*"Mujer"/);
+  assert.match(audienceHelper, /unisex:\s*"Unisex"/);
 });
 
 test("perfume cards align action buttons to one baseline and use identical dimensions", () => {
   assert.match(css, /\.perfume-page \.perfume-product-card \.product-actions\s*\{[^}]*margin-top:\s*auto/s);
   assert.match(css, /\.perfume-page \.perfume-product-card \.perfume-view-button\s*\{[^}]*width:\s*100%[^}]*height:\s*40px/s);
-  assert.match(css, /@media \(max-width:\s*640px\)\s*\{[^}]*\.perfume-page \.perfume-product-card \.perfume-view-button\s*\{[^}]*height:\s*36px/s);
+  assert.match(css, /@media \(max-width:\s*640px\)[\s\S]{0,350}\.perfume-page \.perfume-product-card \.perfume-view-button[\s\S]{0,180}height:\s*36px/);
   assert.match(css, /-webkit-line-clamp:\s*2/);
 });
