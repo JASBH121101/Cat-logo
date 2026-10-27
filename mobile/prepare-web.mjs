@@ -40,6 +40,26 @@ for (const entry of await readdir(repoRoot, { withFileTypes: true })) {
 const adminPath = join(webDir, "admin.html");
 let adminHtml = await readFile(adminPath, "utf8");
 
+// Android 15+ may draw the WebView behind the transparent system status bar.
+// Reserve the status-bar inset in the packaged admin page only, without
+// changing the public browser catalog layout or desktop dashboard.
+adminHtml = adminHtml.replace(
+  '<meta name="viewport" content="width=device-width, initial-scale=1">',
+  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+);
+const androidSafeAreaStyle = `
+<style id="jb-manager-android-safe-area">
+  html { min-height: 100%; }
+  body.admin-body {
+    padding-top: max(24px, env(safe-area-inset-top, 0px)) !important;
+    box-sizing: border-box;
+  }
+</style>
+`;
+if (!adminHtml.includes('id="jb-manager-android-safe-area"')) {
+  adminHtml = adminHtml.replace(/<\\/head>/i, androidSafeAreaStyle + "\\n</head>");
+}
+
 const updaterBundlePath = join(webDir, "jb-manager-apk-updater.js");
 await build({
   entryPoints: [join(mobileDir, "apk-updater.js")],
