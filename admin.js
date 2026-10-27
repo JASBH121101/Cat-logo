@@ -3663,6 +3663,11 @@ function clearEditor() {
   editorRecordExists=false;
   form.reset();
 
+  // A fresh product must not inherit custom tags from the previous editor.
+  // Do not call setProductTags here: clearEditor can run before its const set is initialized.
+  customProductTags = [];
+  renderCustomProductTagChips();
+
   $("#product-id").value = "";
   $("#catalog-key").value = "";
   $("#product-description").value = "";
