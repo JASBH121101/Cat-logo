@@ -13,7 +13,7 @@ test("variant color controls add AI/photo assistance without removing palette to
   assert.match(adminJs, /\/api\/color-assistant/);
   assert.match(adminJs, /access_token/);
   assert.match(adminJs, /applyColorToRow\(row,colorResult\)/);
-  assert.match(adminJs, /no verificada oficialmente/);
+  assert.match(adminJs, /data-color-ai-library-alias/);\n  assert.match(adminJs, /basis===\"shared_library_match\"/);\n  assert.match(adminJs, /incomingAliases/);\n  assert.match(adminJs, /no verificada oficialmente/);
   assert.match(themeCss, /\.jb-color-ai-overlay\s*\{/);
   assert.match(themeCss, /html\[data-theme="dark"\] body\.admin-body \.jb-color-ai-dialog/);
   assert.match(adminHtml, /admin\.js\?v=20261027-draft-validation1/);
@@ -23,6 +23,13 @@ test("shared color library uses the authenticated Supabase client", () => {
   assert.match(adminJs, /from\("color_library"\)/);
   assert.match(adminJs, /syncSharedColorLibrary\(\{\s*migrateLocal:\s*true\s*\}\)/);
   assert.match(adminJs, /onConflict:"name_key"/);
+});
+
+test("AI color identifiers are stored as reusable library aliases", () => {
+  assert.match(adminJs, /data-color-ai-library-alias/);
+  assert.match(adminJs, /saveColorToLibrary\\(colorToSave\\)/);
+  assert.match(adminJs, /persistColorLibraryEntry\\(colorToSave\\)/);
+  assert.match(adminJs, /shared_library_match/);
 });
 
 test("mobile color dialog height declaration has balanced calc parentheses", () => {
