@@ -80,10 +80,10 @@ test("opening the drawer locks document scrolling and closing restores the saved
   };
   const result = vm.runInNewContext(
     handler + "\nsetMobileSidebarOpen(true);" +
-    "\nconst opened = {bodyLocked:document.body.classList.contains('admin-sidebar-scroll-locked'),rootLocked:document.documentElement.classList.contains('admin-sidebar-scroll-locked'),drawerOpen:document.body.classList.contains('admin-sidebar-open'),backdropHidden:backdrop.hidden,storedScroll:document.body.dataset.adminSidebarScrollY};" +
+    "\nconst opened = {bodyLocked:document.body.classList.contains('admin-sidebar-scroll-locked'),rootLocked:document.documentElement.classList.contains('admin-sidebar-scroll-locked'),drawerOpen:document.body.classList.contains('admin-sidebar-open'),backdropHidden:document.getElementById('admin-sidebar-backdrop').hidden,storedScroll:document.body.dataset.adminSidebarScrollY};" +
     "\nsetMobileSidebarOpen(false);" +
-    "\n({opened,bodyUnlocked:!document.body.classList.contains('admin-sidebar-scroll-locked'),rootUnlocked:!document.documentElement.classList.contains('admin-sidebar-scroll-locked'),drawerClosed:!document.body.classList.contains('admin-sidebar-open'),backdropHidden:backdrop.hidden,storedScroll:document.body.dataset.adminSidebarScrollY,scrollCalls});",
-    { document, window, Math, Number, String, Boolean }
+    "\n({opened,bodyUnlocked:!document.body.classList.contains('admin-sidebar-scroll-locked'),rootUnlocked:!document.documentElement.classList.contains('admin-sidebar-scroll-locked'),drawerClosed:!document.body.classList.contains('admin-sidebar-open'),backdropHidden:document.getElementById('admin-sidebar-backdrop').hidden,storedScroll:document.body.dataset.adminSidebarScrollY,scrollCalls});",
+    { document, window, scrollCalls, Math, Number, String, Boolean }
   );
   assert.deepEqual({ ...result.opened }, {
     bodyLocked: true,
