@@ -4728,6 +4728,7 @@ $("#product-category")?.addEventListener("change", () => updateCategoryVariantVi
 $("#new-product-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 $("#cancel-edit-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 syncProductFormSectionAvailability();
+updateCategoryVariantVisibility();
 setProductFormStep(1, { scroll: false });
 
 /* =========================================================
