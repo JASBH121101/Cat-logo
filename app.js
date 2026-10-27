@@ -28,6 +28,9 @@ const featuredCount = document.querySelector("#featured-count");
 const highPerformanceSection = document.querySelector("#high-performance-section");
 const highPerformanceGrid = document.querySelector("#high-performance-grid");
 const highPerformanceCount = document.querySelector("#high-performance-count");
+const qualityPriceSection = document.querySelector("#quality-price-section");
+const qualityPriceGrid = document.querySelector("#quality-price-grid");
+const qualityPriceCount = document.querySelector("#quality-price-count");
 const topGamingSection = document.querySelector("#top-gaming-section");
 const topGamingGrid = document.querySelector("#top-gaming-grid");
 const topGamingCount = document.querySelector("#top-gaming-count");
@@ -676,11 +679,11 @@ function normalizedProductTags(product) {
 
 const PRODUCT_TAG_LABELS = {
   high_performance: "⚡ ALTO RENDIMIENTO",
+  quality_price: "💎 CALIDAD-PRECIO",
   top_gaming: "🎮 TOP GAMING",
   best_seller: "MÁS VENDIDO",
   new_arrival: "NUEVO INGRESO",
-  offer: "OFERTA",
-  recommended: "RECOMENDADO"
+  offer: "OFERTA"
 };
 
 function renderCard(product) {
@@ -969,11 +972,13 @@ function renderProducts() {
     const tags = normalizedProductTags(product);
     return tags.includes("high_performance") && !isExclusiveProduct(product);
   });
+  const qualityPrice = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("quality_price"));
   const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
   const regularProducts = hasFilters ? list : list.filter(product => {
     const tags = normalizedProductTags(product);
     return !isExclusiveProduct(product) &&
       !tags.includes("high_performance") &&
+      !tags.includes("quality_price") &&
       !tags.includes("top_gaming");
   });
   if (highPerformanceSection && highPerformanceGrid) {
@@ -985,6 +990,13 @@ function renderProducts() {
       ? highPerformance.length + " equipo" + (highPerformance.length === 1 ? "" : "s")
       : "";
   }
+  if (qualityPriceSection && qualityPriceGrid) {
+    qualityPriceSection.classList.toggle("hidden", qualityPrice.length === 0);
+    qualityPriceGrid.innerHTML = qualityPrice.map(renderCard).join("");
+  }
+  if (qualityPriceCount) qualityPriceCount.textContent = qualityPrice.length
+    ? qualityPrice.length + " producto" + (qualityPrice.length === 1 ? "" : "s")
+    : "";
   if (topGamingSection && topGamingGrid) {
     topGamingSection.classList.toggle("hidden", topGaming.length === 0);
     topGamingGrid.innerHTML = topGaming.map(renderCard).join("");
