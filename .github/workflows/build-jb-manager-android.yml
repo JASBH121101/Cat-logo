@@ -251,6 +251,15 @@ jobs:
           grep -Fq 'updated_at || a.created_at' admin.js
           grep -Fq 'catalog_events' app.js
 
+          # New shared AI color tools must be present in the web source copied into the APK.
+          grep -Fq 'data-ai-color-open' admin.js
+          grep -Fq '/api/color-assistant' admin.js
+          grep -Fq 'from("color_library")' admin.js
+          grep -Fq '20261027-shared-ai-color-library1' admin.html
+          grep -Fq '.jb-color-ai-overlay' theme-ui.css
+          test -s functions/api/color-assistant.js
+          echo "Shared AI color assistant source and API are present."
+
           # The product detail must package the same final gallery fix as the public source.
           grep -Fq 'technology-visual-refresh.css?v=20261027-payment-contrast1' mobile/www/tecnologia/index.html
           grep -Fq 'app.js?v=20261026-product-gallery-fix4' mobile/www/tecnologia/index.html
@@ -496,6 +505,26 @@ jobs:
           }
           unzip -p "$APK" assets/public/theme-ui.css | grep -q 'admin-sidebar-remember' || {
             echo "APK is missing the session-preference styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'data-ai-color-open' || {
+            echo "APK is missing the AI color/photo assistant in the admin variant editor." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q '/api/color-assistant' || {
+            echo "APK is missing the AI color assistant API client." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'from("color_library")' || {
+            echo "APK is missing shared color library synchronization." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -q '.jb-color-ai-overlay' || {
+            echo "APK is missing the light/dark AI color dialog styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q '20261027-shared-ai-color-library1' || {
+            echo "APK does not reference the latest admin color-assistant assets." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/index.html | grep -q '__jbManagerAllowCatalogNavigation' || {
