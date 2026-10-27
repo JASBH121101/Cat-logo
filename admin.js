@@ -257,12 +257,14 @@ function updateProductFormMode() {
           { value: "Celulares", label: "Celulares" },
           { value: "Laptops", label: "Laptops" },
           { value: "Tablets", label: "Tablets" },
-          { value: "Gaming", label: "Gaming" },
           { value: "Televisores", label: "Televisores" },
           { value: "Audio", label: "Audio" },
           { value: "Accesorios", label: "Accesorios" },
           { value: "Otros", label: "Otros" }
         ];
+    if (previous && !options.some(option => option.value === previous)) {
+      options.push({ value: previous, label: previous + " (categoría existente)" });
+    }
     if (previous && !options.some(option => option.value === previous)) {
       options.push({ value: previous, label: previous + " (categoría existente)" });
     }
