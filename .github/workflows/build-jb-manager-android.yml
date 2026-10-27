@@ -56,6 +56,8 @@ jobs:
           grep -Fq 'data-ai-color-open' admin.js
           grep -Fq '/api/color-assistant' admin.js
           grep -Fq '.jb-color-ai-overlay' theme-ui.css
+          grep -Fq 'jb-manager-mobile-sidebar-stability' theme-ui.css
+          grep -Fq 'theme-ui.css?v=20261027-mobile-sidebar-stability2' admin.html
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
           grep -Fq 'admin.js?v=20261027-color-knowledge1' admin.html
@@ -300,7 +302,13 @@ jobs:
             fi
           done
 
-          echo "Browser source and APK bundle match, including product gallery repair, admin features, and both catalogs."
+          grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
+          grep -Fq 'theme-ui.css?v=20261027-mobile-sidebar-stability2' mobile/www/admin.html
+          grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
+          grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
+          ! grep -Fq 'willChange: "transform"' mobile/www/admin.html
+          ! grep -Fq 'transform: "translateZ(0)"' mobile/www/admin.html
+          echo "Browser source and APK bundle match, including gallery repair, admin features, catalogs, and mobile drawer stability."
 
       - name: Create Android project
         working-directory: mobile
@@ -521,6 +529,22 @@ jobs:
           }
           unzip -p "$APK" assets/public/theme-ui.css | grep -q 'admin-sidebar-remember' || {
             echo "APK is missing the session-preference styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq 'jb-manager-mobile-sidebar-stability' || {
+            echo "APK is missing the mobile sidebar stability patch."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -Fq 'document.body.classList.contains("admin-sidebar-open")' || {
+            echo "APK updater does not hide its floating button while the sidebar is open."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -Fq 'sidebarClassObserver.observe(document.body' || {
+            echo "APK updater does not observe sidebar open/close state."
+            exit 1
+          }
+          ! unzip -p "$APK" assets/public/index.html | grep -Fq 'willChange: "transform"' || {
+            echo "APK updater still forces the compositor layer that can flicker on touch screens."
             exit 1
           }
           unzip -p "$APK" assets/public/admin.js | grep -q 'data-ai-color-open' || {
