@@ -302,6 +302,8 @@ function updateProductFormMode() {
   $("#product-subcategory-field")?.classList.toggle("hidden", isPerfume);
   if (isPerfume) {
     $("#product-subcategory").value = "";
+    $("#product-subcategory-custom").value = "";
+    $("#product-subcategory-custom").hidden = true;
     $("#product-custom-tags").value = "";
     customProductTags = [];
     renderCustomProductTagChips();
@@ -1131,25 +1133,46 @@ function showLoginScreen(statusText = "", type = "") {
    ESPECIFICACIONES E IMÁGENES
    ========================================================= */
 
+function isGeneratedSpecificationLabel(label) {
+  return /^dato(?:\s+\d+)?$/i.test(String(label || "").trim());
+}
+
+function cleanSpecificationLine(value) {
+  let line = String(value ?? "").trim();
+  line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
+  line = line.replace(/^Dato\s*\d+\s*:\s*/i, "");
+  line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
+  return line.trim();
+}
+
 function parseSpecs(text) {
-  const result = {};
-
-  String(text || "")
+  const lines = String(text || "")
     .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .forEach(line => {
+    .map(cleanSpecificationLine)
+    .filter(Boolean);
+
+  if (!lines.length) return {};
+
+  const allLinesHaveLabels = lines.every(line => {
+    const colon = line.indexOf(":");
+    return colon > 0 && !isGeneratedSpecificationLabel(line.slice(0, colon));
+  });
+
+  if (allLinesHaveLabels) {
+    const result = {};
+    lines.forEach(line => {
       const colon = line.indexOf(":");
-
-      if (colon > 0) {
-        result[line.slice(0, colon).trim()] =
-          line.slice(colon + 1).trim();
-      } else {
-        result[`Dato ${Object.keys(result).length + 1}`] = line;
-      }
+      result[line.slice(0, colon).trim()] = cleanSpecificationLine(line.slice(colon + 1));
     });
+    return result;
+  }
 
-  return result;
+  return lines.map(line => {
+    const colon = line.indexOf(":");
+    return colon > 0 && isGeneratedSpecificationLabel(line.slice(0, colon))
+      ? cleanSpecificationLine(line.slice(colon + 1))
+      : line;
+  });
 }
 
 function specsText(specs) {
@@ -1157,21 +1180,22 @@ function specsText(specs) {
 
   if (Array.isArray(specs)) {
     return specs.map(item => {
-      if (typeof item === "string") {
-        return item;
-      }
-
+      if (typeof item === "string") return cleanSpecificationLine(item);
       if (item && typeof item === "object") {
-        return `${item.label || item.name || "Dato"}: ${item.value || ""}`;
+        const label = String(item.label || item.name || "").trim();
+        const value = cleanSpecificationLine(item.value || "");
+        return !label || isGeneratedSpecificationLabel(label) ? value : `${label}: ${value}`;
       }
-
-      return String(item ?? "");
-    }).join("\n");
+      return cleanSpecificationLine(item);
+    }).filter(Boolean).join("\n");
   }
 
   if (specs && typeof specs === "object") {
     return Object.entries(specs)
-      .map(([key, value]) => `${key}: ${value}`)
+      .map(([key, value]) => isGeneratedSpecificationLabel(key)
+        ? cleanSpecificationLine(value)
+        : `${key}: ${cleanSpecificationLine(value)}`)
+      .filter(Boolean)
       .join("\n");
   }
 
@@ -3662,6 +3686,9 @@ function clearEditor() {
   cancelQueuedPhotoUploadsForEditor();
   editorRecordExists=false;
   form.reset();
+  $("#product-subcategory").value = "";
+  $("#product-subcategory-custom").value = "";
+  $("#product-subcategory-custom").hidden = true;
 
   // A fresh product must not inherit custom tags from the previous editor.
   // Do not call setProductTags here: clearEditor can run before its const set is initialized.
@@ -3719,17 +3746,59 @@ const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
   "Accesorios": ["Cargadores", "Fundas", "Protección", "Conectividad", "Gaming", "Periféricos"],
   "Otros": ["Uso general"]
 };
+const CUSTOM_PRODUCT_SUBCATEGORY_VALUE = "__custom__";
 
-function updateProductSubcategorySuggestions() {
+function updateProductSubcategorySuggestions(preferredValue) {
+  const select = $("#product-subcategory");
+  const customInput = $("#product-subcategory-custom");
+  if (!select) return;
+
+  const currentValue = preferredValue !== undefined
+    ? String(preferredValue || "").trim()
+    : select.value === CUSTOM_PRODUCT_SUBCATEGORY_VALUE
+      ? String(customInput?.value || "").trim()
+      : String(select.value || "").trim();
   const category = normalizeTechnologyCategory($("#product-category")?.value || "");
-  const list = $("#product-subcategory-options");
-  if (!list) return;
-  const suggestions = PRODUCT_SUBCATEGORY_SUGGESTIONS[category] || [];
-  list.replaceChildren(...suggestions.map(value => {
+  const suggestions = [...new Set(PRODUCT_SUBCATEGORY_SUGGESTIONS[category] || [])];
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Seleccionar subcategoría…";
+  select.replaceChildren(placeholder);
+  suggestions.forEach(value => {
     const option = document.createElement("option");
     option.value = value;
-    return option;
-  }));
+    option.textContent = value;
+    select.append(option);
+  });
+  const customOption = document.createElement("option");
+  customOption.value = CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+  customOption.textContent = "Otra (escribir…)";
+  select.append(customOption);
+
+  const matchingSuggestion = suggestions.find(value =>
+    value.toLocaleLowerCase("es") === currentValue.toLocaleLowerCase("es")
+  );
+  if (matchingSuggestion) {
+    select.value = matchingSuggestion;
+    if (customInput) customInput.value = "";
+  } else if (currentValue) {
+    select.value = CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+    if (customInput) customInput.value = currentValue;
+  } else {
+    select.value = "";
+    if (customInput) customInput.value = "";
+  }
+  if (customInput) customInput.hidden = select.value !== CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+}
+
+function getSelectedProductSubcategory() {
+  const select = $("#product-subcategory");
+  if (!select) return "";
+  if (select.value === CUSTOM_PRODUCT_SUBCATEGORY_VALUE) {
+    return String($("#product-subcategory-custom")?.value || "").trim();
+  }
+  return String(select.value || "").trim();
 }
 
 const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "top_gaming", "best_seller", "new_arrival", "offer", "recommended"]);
@@ -3853,8 +3922,7 @@ function fillEditor(product) {
   $("#product-brand").value = product.brand || "";
   $("#product-model").value = product.model || "";
   $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : normalizeTechnologyCategory(product.category || "Otros");
-  $("#product-subcategory").value = activeCatalogType === "perfumery" ? "" : (product.subcategory || "");
-  updateProductSubcategorySuggestions();
+  updateProductSubcategorySuggestions(activeCatalogType === "perfumery" ? "" : (product.subcategory || ""));
   setProductTags(activeCatalogType === "perfumery" ? [] : (product.tags || []));
   $("#product-description").value = product.description || "";
   $("#product-availability").value = normalizeProductAvailability(product.availability);
@@ -4587,6 +4655,8 @@ async function buildPublishReview() {
   const brand = $("#product-brand")?.value.trim() || "";
   const isPerfume = activeCatalogType === "perfumery";
   const family = isPerfume ? perfumeFamilyLabel($("#product-perfume-family")?.value) : ($("#product-category")?.value || "Sin categoría");
+  const subcategory = isPerfume ? "" : getSelectedProductSubcategory();
+  const tags = isPerfume ? [] : selectedProductTags();
   const warnings = [], missingPhotos = [], candidates = [], variantSummary = [];
   const priceSamples = { usd: [], nio: [] };
   mainImageItems.forEach((item, index) => {
@@ -4658,8 +4728,8 @@ async function buildPublishReview() {
     heart: $("#product-perfume-heart-notes")?.value.trim() || "",
     base: $("#product-perfume-base-notes")?.value.trim() || ""
   } : null;
-  return { name: name, brand: brand, family: family, variants: variantSummary, mainImageStatus: mainImageStatus,
-    perfumeNotes: perfumeNotes,
+  return { name: name, brand: brand, family: family, subcategory: subcategory, tags: tags, isPerfume: isPerfume,
+    variants: variantSummary, mainImageStatus: mainImageStatus, perfumeNotes: perfumeNotes,
     warnings: [...new Set(warnings)], missingPhotos: missingPhotos, blockingIssues: blockingIssues };
 }
 function renderPublishReview(review) {
@@ -4676,10 +4746,21 @@ function renderPublishReview(review) {
         : '<p class="publish-review-notes-empty">Sin notas olfativas registradas.</p>') +
       '</div></div>'
     : "";
+  const reviewTagLabels = {
+    exclusive: "Exclusivo", top_gaming: "Top Gaming", best_seller: "Más vendido",
+    new_arrival: "Nuevo ingreso", offer: "Oferta", recommended: "Recomendado"
+  };
+  const tagSummary = (Array.isArray(review.tags) ? review.tags : [])
+    .map(tag => reviewTagLabels[String(tag || "").toLowerCase()] || String(tag || "").trim())
+    .filter(Boolean).join(" · ") || "Sin etiquetas manuales";
+  const taxonomyReviewMarkup = review.isPerfume ? "" :
+    '<div class="publish-review-row"><span>Subcategoría</span><strong>' + escapeHtml(review.subcategory || "Sin subcategoría") + '</strong></div>' +
+    '<div class="publish-review-row"><span>Etiquetas manuales</span><strong>' + escapeHtml(tagSummary) + '</strong></div>';
   $("#publish-review-summary").innerHTML =
     '<div class="publish-review-row"><span>Producto</span><strong>' + escapeHtml(review.name || "Sin nombre") + '</strong></div>' +
     '<div class="publish-review-row"><span>Marca</span><strong>' + escapeHtml(review.brand || "Sin marca indicada") + '</strong></div>' +
     '<div class="publish-review-row"><span>Categoría / familia</span><strong>' + escapeHtml(review.family) + '</strong></div>' +
+    taxonomyReviewMarkup +
     '<div class="publish-review-row"><span>Fotografías generales</span><strong>' + escapeHtml(review.mainImageStatus) + '</strong></div>' +
     '<div class="publish-review-row publish-review-variants"><span>Variantes, colores y precios</span><div>' +
     review.variants.map(item => '<p>' + escapeHtml(item) + '</p>').join("") + '</div></div>' +
@@ -4956,6 +5037,13 @@ $("#product-category")?.addEventListener("change", () => {
   updateCategoryVariantVisibility();
   updateProductSubcategorySuggestions();
 });
+$("#product-subcategory")?.addEventListener("change", () => {
+  const customInput = $("#product-subcategory-custom");
+  if (!customInput) return;
+  const isCustom = $("#product-subcategory").value === CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+  customInput.hidden = !isCustom;
+  if (isCustom) customInput.focus();
+});
 $("#new-product-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 $("#cancel-edit-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 syncProductFormSectionAvailability();
@@ -5079,7 +5167,7 @@ form?.addEventListener("submit", async event => {
       brand: $("#product-brand").value.trim() || null,
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
       category: isPerfume ? "Perfumería" : ($("#product-category").value.trim() || null),
-      subcategory: isPerfume ? (existingProduct?.subcategory ?? null) : ($("#product-subcategory").value.trim() || null),
+      subcategory: isPerfume ? (existingProduct?.subcategory ?? null) : (getSelectedProductSubcategory() || null),
       tags: isPerfume ? (existingProduct?.tags ?? []) : selectedProductTags(),
       availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
