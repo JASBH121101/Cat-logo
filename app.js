@@ -25,6 +25,9 @@ const categoryFilters = document.querySelector("#category-filters");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
 const featuredCount = document.querySelector("#featured-count");
+const highPerformanceSection = document.querySelector("#high-performance-section");
+const highPerformanceGrid = document.querySelector("#high-performance-grid");
+const highPerformanceCount = document.querySelector("#high-performance-count");
 const topGamingSection = document.querySelector("#top-gaming-section");
 const topGamingGrid = document.querySelector("#top-gaming-grid");
 const topGamingCount = document.querySelector("#top-gaming-count");
@@ -672,6 +675,7 @@ function normalizedProductTags(product) {
 }
 
 const PRODUCT_TAG_LABELS = {
+  high_performance: "⚡ ALTO RENDIMIENTO",
   top_gaming: "🎮 TOP GAMING",
   best_seller: "MÁS VENDIDO",
   new_arrival: "NUEVO INGRESO",
@@ -957,12 +961,30 @@ function renderCategorizedProducts(productList) {
 function renderProducts() {
   const list = visibleProducts();
   const hasFilters = hasActiveCatalogFilters();
-  const featured = hasFilters ? [] : list.filter(product => Boolean(product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")));
-  const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
-  const regularProducts = hasFilters ? list : list.filter(product =>
-    !(product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")) &&
-    !normalizedProductTags(product).includes("top_gaming")
+  const isExclusiveProduct = product => Boolean(
+    product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")
   );
+  const featured = hasFilters ? [] : list.filter(isExclusiveProduct);
+  const highPerformance = hasFilters ? [] : list.filter(product => {
+    const tags = normalizedProductTags(product);
+    return tags.includes("high_performance") && !isExclusiveProduct(product);
+  });
+  const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
+  const regularProducts = hasFilters ? list : list.filter(product => {
+    const tags = normalizedProductTags(product);
+    return !isExclusiveProduct(product) &&
+      !tags.includes("high_performance") &&
+      !tags.includes("top_gaming");
+  });
+  if (highPerformanceSection && highPerformanceGrid) {
+    highPerformanceSection.classList.toggle("hidden", highPerformance.length === 0);
+    highPerformanceGrid.innerHTML = highPerformance.map(renderCard).join("");
+  }
+  if (highPerformanceCount) {
+    highPerformanceCount.textContent = highPerformance.length
+      ? highPerformance.length + " equipo" + (highPerformance.length === 1 ? "" : "s")
+      : "";
+  }
   if (topGamingSection && topGamingGrid) {
     topGamingSection.classList.toggle("hidden", topGaming.length === 0);
     topGamingGrid.innerHTML = topGaming.map(renderCard).join("");
