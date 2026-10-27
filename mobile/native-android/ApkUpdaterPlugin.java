@@ -78,9 +78,9 @@ public class ApkUpdaterPlugin extends Plugin {
         catch (NumberFormatException ignored) { return 0L; }
     }
 
-    // An older version's failed DownloadManager task can survive an APK update.
-    // Clear it when the installed package is newer so the new updater never
-    // displays a stale "calculando" download from the previous app version.
+    // Remove persisted DownloadManager state once the installed APK is at least
+    // as new as the downloaded version. If installation was cancelled and the
+    // installed version is older, keep the completed APK available for manual retry.
     private void clearObsoleteDownloadIfInstalledVersionIsNewer(SharedPreferences store) {
         String savedVersion = store.getString(VERSION, "");
         if (!VERSION_PATTERN.matcher(savedVersion).matches()) return;
@@ -89,7 +89,7 @@ public class ApkUpdaterPlugin extends Plugin {
                 .getPackageInfo(getContext().getPackageName(), 0);
             String installedVersion = installed.versionName == null ? "" : installed.versionName;
             if (!VERSION_PATTERN.matcher(installedVersion).matches()
-                || compareVersions(savedVersion, installedVersion) >= 0) return;
+                || compareVersions(savedVersion, installedVersion) > 0) return;
 
             long staleId = store.getLong(ID, -1);
             DownloadManager dm = manager();

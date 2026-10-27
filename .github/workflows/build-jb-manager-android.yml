@@ -206,7 +206,10 @@ jobs:
           grep -Fq '"insetsHandling": "css"' mobile/capacitor.config.json
           grep -Fq '"initialViewportFitValueHint": "cover"' mobile/capacitor.config.json
           test -s mobile/www/jb-manager-system-bars.js
-          echo "Android safe area is part of the header; no extra body spacer is injected."
+          grep -Fq 'compareVersions(savedVersion, installedVersion) > 0' mobile/native-android/ApkUpdaterPlugin.java
+          grep -Fq 'state.installPrompted' mobile/prepare-web.mjs
+          grep -Fq 'Android installer is the confirmation UI' mobile/prepare-web.mjs
+          echo "Android safe area and updater recovery checks passed; completed install state will not recreate stale notices."
 
       - name: Verify shared web assets match the browser source
         shell: bash

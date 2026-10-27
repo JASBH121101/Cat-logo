@@ -240,8 +240,8 @@ const updateChecker = `
           if (result && result.permissionRequired) {
             showMessage("Permiso necesario para instalar", "Android abrió Ajustes. Activá «Permitir desde esta fuente» y regresá a JB Manager Collections. La descarga se conserva.", downloadUrl, activeDownloadVersion);
           } else if (result && result.installerLaunched) {
-            showMessage("Instalador de Android abierto", "El APK ya estaba completo y se validó. Confirmá la actualización en la pantalla del sistema.");
-          } else {
+            document.getElementById("jb-manager-update-notice")?.remove();
+          }
             showMessage("Descarga iniciada", "Android gestiona la descarga con DownloadManager. El progreso, pausas y errores se consultan al sistema.");
             startNativeDownloadMonitor();
           }
@@ -295,7 +295,7 @@ const updateChecker = `
         try {
           const result = await api.downloadAndInstall({ url, version: version || "" });
           if (result && result.permissionRequired) showMessage("Permiso necesario para instalar", "Activá «Permitir desde esta fuente» y regresá.", url, version);
-          else if (result && result.installerLaunched) showMessage("Instalador de Android abierto", "Confirmá la actualización en la pantalla del sistema.");
+          else if (result && result.installerLaunched) document.getElementById("jb-manager-update-notice")?.remove();
           else { showMessage("Descarga iniciada", "Android aceptó o recuperó la descarga."); startNativeDownloadMonitor(); }
         } catch (error) { showMessage("No se pudo continuar", (error && error.message) || "Intentá nuevamente.", url, version); }
       });
@@ -330,16 +330,27 @@ const updateChecker = `
       if (state.status === "successful") {
         if (nativeMonitorTimer) window.clearInterval(nativeMonitorTimer);
         nativeMonitorTimer = null;
+        // Android persists download state across WebView reloads. Once the installer
+        // has already been opened, never recreate a modal on every panel visit.
+        if (state.installPrompted) {
+          document.getElementById("jb-manager-update-notice")?.remove();
+          return;
+        }
         const attemptKey = String(state.downloadId || "") + ":" + String(state.version || "");
         if (automaticInstallAttemptedFor === attemptKey) {
-          updateDownloadNotice("Descarga completa", "Android confirmó el archivo. Si el instalador no está visible, pulsá «Reintentar / abrir instalador».", activeDownloadUrl, activeDownloadVersion);
+          document.getElementById("jb-manager-update-notice")?.remove();
           return;
         }
         automaticInstallAttemptedFor = attemptKey;
         try {
           const result = await api.installDownloadedApk();
-          if (result && result.permissionRequired) showMessage("Permiso necesario para instalar", "Activá «Permitir desde esta fuente» y regresá. El APK ya está descargado.", activeDownloadUrl, activeDownloadVersion);
-          else showMessage("Descarga completa · v" + state.version, "Android validó el APK y abrió el instalador. Confirmá la actualización.");
+          if (result && result.permissionRequired) {
+            showMessage("Permiso necesario para instalar", "Activá «Permitir desde esta fuente» y regresá. El APK ya está descargado.", activeDownloadUrl, activeDownloadVersion);
+          } else if (result && result.installerLaunched) {
+            // The Android installer is the confirmation UI; don't place a second
+            // persistent dialog on top of the admin panel.
+            document.getElementById("jb-manager-update-notice")?.remove();
+          }
         } catch (error) {
           showMessage("APK descargado, instalación pendiente", (error && error.message) || "No se pudo abrir el instalador. El archivo se conserva para reintentar.", activeDownloadUrl, activeDownloadVersion);
         }
@@ -376,8 +387,16 @@ const updateChecker = `
       if (!state) return;
       activeDownloadVersion = state.version || "";
       activeDownloadUrl = activeDownloadVersion ? downloadUrlFor(activeDownloadVersion) : "";
-      if (["pending", "running", "paused", "successful"].includes(state.status)) {
-        showMessage(state.status === "successful" ? "Actualización descargada" : "Descarga de actualización en curso", "Se recuperó el estado persistente de Android. Podés consultar el progreso o reabrir el instalador.", activeDownloadUrl, activeDownloadVersion);
+      if (["pending", "running", "paused"].includes(state.status)) {
+        showMessage("Descarga de actualización en curso", "Se recuperó el estado persistente de Android. Podés consultar el progreso.", activeDownloadUrl, activeDownloadVersion);
+        startNativeDownloadMonitor();
+      } else if (state.status === "successful") {
+        if (state.installPrompted) {
+          document.getElementById("jb-manager-update-notice")?.remove();
+          return;
+        }
+        // Download completed before the installer was opened (for example, if
+        // the app was closed). Try the installer without recreating a modal.
         startNativeDownloadMonitor();
       } else if (state.status === "failed") {
         showMessage("La descarga anterior falló", failureReason(state) + " Podés reintentar.", activeDownloadUrl, activeDownloadVersion);
@@ -829,6 +848,10 @@ if (updaterScript[1].includes('button.textContent = "Comprobando…";')) {
 }
 if (!updaterScript[1].includes("api.downloadAndInstall")) {
   throw new Error("The update button must use the native Android download flow inside the APK.");
+}
+if (!updaterScript[1].includes("state.installPrompted")
+  || !updaterScript[1].includes('document.getElementById("jb-manager-update-notice")?.remove()')) {
+  throw new Error("The Android updater must suppress stale install notices after opening the installer.");
 }
 
 if (!builtAdminHtml.includes('class="dashboard-public-link"')
