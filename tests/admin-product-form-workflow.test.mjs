@@ -70,6 +70,7 @@ test("technology products support editable subcategories and manually selected t
   assert.match(admin, /subcategory: isPerfume \? \(existingProduct\?\.subcategory \?\? null\) : \(\$\("#product-subcategory"\)\.value\.trim\(\) \|\| null\)/);
   assert.match(admin, /tags: isPerfume \? \(existingProduct\?\.tags \?\? \[\]\) : selectedProductTags\(\)/);
   assert.match(admin, /function setProductTags\(tags\)/);
+  assert.match(admin, /function clearEditor\(\)[\s\S]*?customProductTags = \[\];[\s\S]*?renderCustomProductTagChips\(\)/);
 });
 
 test("public technology catalog renders manual badges and a dedicated Top Gaming section", () => {
