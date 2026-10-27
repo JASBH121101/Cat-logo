@@ -10215,6 +10215,6 @@ html[data-theme="dark"] body.admin-body .jb-color-ai-status[data-state="warning"
 .jb-color-ai-trigger { border-color:rgba(89,110,224,.52) !important; }
 @media (max-width:600px) {
   .jb-color-ai-overlay { place-items:start center; padding:max(8px,env(safe-area-inset-top,0px)) 8px max(8px,env(safe-area-inset-bottom,0px)); }
-  .jb-color-ai-dialog { width:100%; max-height:calc(100dvh - max(16px,env(safe-area-inset-top,0px)) - max(16px,env(safe-area-inset-bottom,0px)); padding:15px; border-radius:16px; }
+  .jb-color-ai-dialog { width:100%; max-height:calc(100dvh - max(16px,env(safe-area-inset-top,0px)) - max(16px,env(safe-area-inset-bottom,0px))); padding:15px; border-radius:16px; }
   .jb-color-ai-actions button { flex:1 1 180px; }
 }
