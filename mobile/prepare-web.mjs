@@ -873,6 +873,39 @@ const builtAdminHtml = await readFile(join(webDir, "admin.html"), "utf8");
 const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
+const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
+if (!builtAdminHtml.includes('admin.js?v=20261027-color-knowledge1')) {
+  throw new Error("The APK must load the cache-busted admin script containing the current color-knowledge updates.");
+}
+if (!builtAdminHtml.includes('theme-ui.css?v=20261027-shared-ai-color-library1')) {
+  throw new Error("The APK admin page is missing the expected AI color dialog styles.");
+}
+for (const [label, source, fragments] of [
+  ["admin.js", builtAdminScript, [
+    "data-ai-color-open",
+    "data-color-ai-library-alias",
+    "/api/color-assistant",
+    'from("color_library")',
+    "saveColorToLibrary(colorToSave)",
+    "persistColorLibraryEntry(colorToSave)",
+    "shared_library_match"
+  ]],
+  ["functions/api/color-assistant.js", colorAssistantSource, [
+    "loadSharedColorLibrary",
+    "findSharedColorMatch",
+    "selectRelevantLibraryEntries",
+    "ambiguous_library_match",
+    "shared_library_match",
+    "image: imageDataUrl"
+  ]]
+]) {
+  for (const fragment of fragments) {
+    if (!source.includes(fragment)) {
+      throw new Error("Color knowledge regression: " + label + " is missing " + fragment);
+    }
+  }
+}
+
 // Prevent future Android packaging from silently dropping login/session controls
 // that exist in current main but were absent from an older mobile source branch.
 for (const [label, source, fragments] of [
