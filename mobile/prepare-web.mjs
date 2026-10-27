@@ -45,7 +45,7 @@ let adminHtml = await readFile(adminPath, "utf8");
 // by Capacitor and expose a zero CSS inset; newer WebViews expose the real inset.
 adminHtml = adminHtml.replace(
   '<meta name="viewport" content="width=device-width, initial-scale=1">',
-  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover>'
+  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
 );
 const androidSafeAreaStyle = `
 <style id="jb-manager-android-safe-area">
