@@ -123,7 +123,7 @@ test("rejects an invalid HEX from the model", async () => {
   await withAdminFetch(async () => {
     const response = await onRequest({
       request: makeRequest({ query: "unknown color code" }, { authorization: TOKEN }),
-      env: { AI: { run: async () => ({ response: JSON.stringify({ name: "Por confirmar", hex: "no sé" }) }) }
+      env: { AI: { run: async () => ({ response: JSON.stringify({ name: "Por confirmar", hex: "no sé" }) }) } }
     });
     assert.equal(response.status, 422);
     assert.equal((await response.json()).error, "color_not_identified");
