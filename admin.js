@@ -4797,7 +4797,7 @@ form?.addEventListener("submit", async event => {
 
     const rawVolume = $("#product-perfume-volume").value.trim();
     const perfumeVolume = isPerfume && rawVolume ? toOptionalNumber(rawVolume, "Contenido en ml") : null;
-    if (isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
+    if (targetStatus === "published" && isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
 
     const id = $("#product-id").value || crypto.randomUUID();
     const existingProduct = products.find(product => String(product.id) === String(id));
