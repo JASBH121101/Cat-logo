@@ -9,10 +9,13 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261027-catalog-header-review1/);
+  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261027-card-colors-compact1/);
   assert.match(html, /app\.js\?v=20261027-quality-price1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
+  assert.match(app, /product-card-tag-exclusive/);
+  assert.match(app, /product-card-tag-high_performance/);
+  assert.match(css, /JB TECH · section-specific card palettes and compact product information/);
   assert.doesNotMatch(app, /recommended: "RECOMENDADO"/);
   assert.match(html, /data-category="Consolas">Consolas<\/button>/);
   assert.match(app, /"Consolas"/);
