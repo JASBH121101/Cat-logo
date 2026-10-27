@@ -58,8 +58,8 @@ test("technology products support editable subcategories and manually selected t
   assert.match(admin, /PREDEFINED_PRODUCT_TAGS/);
   assert.match(html, /id="product-taxonomy-fields"/);
   assert.match(html, /data-product-tag value="top_gaming"/);
-  assert.match(admin, /subcategory: isPerfume \? null : \(\$\("#product-subcategory"\)\.value\.trim\(\) \|\| null\)/);
-  assert.match(admin, /tags: isPerfume \? \[\] : selectedProductTags\(\)/);
+  assert.match(admin, /subcategory: isPerfume \? \(existingProduct\?\.subcategory \?\? null\) : \(\$\("#product-subcategory"\)\.value\.trim\(\) \|\| null\)/);
+  assert.match(admin, /tags: isPerfume \? \(existingProduct\?\.tags \?\? \[\]\) : selectedProductTags\(\)/);
   assert.match(admin, /function setProductTags\(tags\)/);
 });
 
