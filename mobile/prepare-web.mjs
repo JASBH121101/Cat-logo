@@ -814,7 +814,7 @@ if (!builtAdminHtml.includes('id="jb-manager-android-safe-area"')
   || !builtAdminHtml.includes("--jb-manager-safe-top")
   || builtAdminHtml.includes("padding-top: max(24px")) {
   throw new Error("The Android header must consume the safe-area inset without adding blank padding above the whole panel.");
-}}
+}
 if (!builtAdminHtml.includes("jb-manager-check-updates")) {
   throw new Error("The APK update button is missing from the admin panel.");
 }
