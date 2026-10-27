@@ -741,7 +741,6 @@ function renderCard(product) {
       </div>
       <div class="product-card-content">
         <div class="product-card-badges">${badge}${availabilityBadge}</div>
-        <div class="product-category">${escapeHtml([product.category || "Tecnología", product.subcategory].filter(value => String(value || "").trim()).join(" · "))}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
