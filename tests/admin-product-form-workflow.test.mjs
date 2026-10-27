@@ -48,6 +48,24 @@ test("admin hides the floating back-to-top control and forces fresh script URLs"
   assert.match(html, /ui\.js\?v=20261027-admin-backtop1/);
 });
 
+test("technology products support editable subcategories and manually selected tags", () => {
+  assert.match(html, /id="product-subcategory"/);
+  assert.match(html, /id="product-taxonomy-fields"/);
+  assert.match(html, /data-product-tag value="top_gaming"/);
+  assert.match(admin, /subcategory: isPerfume \? null : \(\$\("#product-subcategory"\)\.value\.trim\(\) \|\| null\)/);
+  assert.match(admin, /tags: isPerfume \? \[\] : selectedProductTags\(\)/);
+  assert.match(admin, /function setProductTags\(tags\)/);
+});
+
+test("public technology catalog renders manual badges and a dedicated Top Gaming section", () => {
+  const app = readFileSync(new URL("../app.js", import.meta.url), "utf8");
+  const technologyHtml = readFileSync(new URL("../tecnologia/index.html", import.meta.url), "utf8");
+  assert.match(app, /PRODUCT_TAG_LABELS/);
+  assert.match(app, /normalizedProductTags\(product\)\.includes\("top_gaming"\)/);
+  assert.match(technologyHtml, /id="top-gaming-section"/);
+  assert.match(technologyHtml, /id="top-gaming-grid"/);
+});
+
 test("photo color analysis forwards the base64 data URL in the format documented by Cloudflare", () => {
   assert.match(colorApi, /image:\s*imageDataUrl/);
   assert.doesNotMatch(colorApi, /image:\s*Array\.from\(atob/);
