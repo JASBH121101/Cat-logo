@@ -10691,3 +10691,29 @@ body.admin-body #product-subcategory option {
   font-family: "DM Sans", "Manrope", system-ui, sans-serif;
   font-size: 14px;
 }
+
+
+/* Dark-mode status cards in the publication review need their own dark surfaces. */
+html[data-theme="dark"] body.admin-body .publish-review-warnings {
+  color: #f7d895 !important;
+  background: #302817 !important;
+  border-color: #826633 !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-errors {
+  color: #ffc0b8 !important;
+  background: #351d26 !important;
+  border-color: #8d4250 !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-missing {
+  color: #f7d9a1 !important;
+  background: #30251a !important;
+  border-color: #82613b !important;
+}
+html[data-theme="dark"] body.admin-body .publish-review-issue {
+  color: #edf3ff !important;
+  background: #17233a !important;
+  border-color: #465979 !important;
+}
+body.admin-body #product-subcategory-custom[hidden] {
+  display: none !important;
+}
