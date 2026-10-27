@@ -46,7 +46,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261027-consolas-category1/);
+  assert.match(html, /admin\.js\?v=20261027-high-performance1/);
   assert.match(html, /ui\.js\?v=20261027-admin-backtop1/);
 });
 
@@ -71,6 +71,7 @@ test("technology products support editable subcategories and manually selected t
   assert.match(admin, /PREDEFINED_PRODUCT_TAGS/);
   assert.match(html, /id="product-taxonomy-fields"/);
   assert.match(html, /data-product-tag[^>]*value="top_gaming"/);
+  assert.match(html, /data-product-tag[^>]*value="high_performance"/);
   assert.match(admin, /subcategory: isPerfume \? \(existingProduct\?\.subcategory \?\? null\) : \(getSelectedProductSubcategory\(\) \|\| null\)/);
   assert.match(admin, /tags: isPerfume \? \(existingProduct\?\.tags \?\? \[\]\) : selectedProductTags\(\)/);
   assert.match(admin, /function setProductTags\(tags\)/);
@@ -83,11 +84,15 @@ test("technology products support editable subcategories and manually selected t
   assert.match(publicApp, /function specsArray\(specs\)[\s\S]*?isGeneratedSpecificationLabel\(key\)/);
 });
 
-test("public technology catalog renders manual badges and a dedicated Top Gaming section", () => {
+test("public technology catalog renders manual badges and dedicated product sections", () => {
   const app = readFileSync(new URL("../app.js", import.meta.url), "utf8");
   const technologyHtml = readFileSync(new URL("../tecnologia/index.html", import.meta.url), "utf8");
   assert.match(app, /PRODUCT_TAG_LABELS/);
+  assert.match(app, /high_performance:\s*"⚡ ALTO RENDIMIENTO"/);
+  assert.match(app, /tags\.includes\("high_performance"\)/);
   assert.match(app, /normalizedProductTags\(product\)\.includes\("top_gaming"\)/);
+  assert.match(technologyHtml, /id="high-performance-section"/);
+  assert.match(technologyHtml, /id="high-performance-grid"/);
   assert.match(technologyHtml, /id="top-gaming-section"/);
   assert.match(technologyHtml, /id="top-gaming-grid"/);
 });
