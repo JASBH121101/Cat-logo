@@ -85,6 +85,65 @@ const androidSafeAreaStyle = `
   }
 </style>
 `;
+// Android WebView can leave stale composited frames when the soft keyboard resizes
+// the viewport. Keep this mitigation scoped to the packaged Android admin panel.
+const androidKeyboardPaintFix = `
+<style id="jb-manager-android-keyboard-paint-fix">
+  html.jb-manager-keyboard-open, html.jb-manager-keyboard-open body {
+    scroll-behavior: auto !important;
+    overscroll-behavior: contain;
+  }
+  html.jb-manager-keyboard-open *, html.jb-manager-keyboard-open *::before,
+  html.jb-manager-keyboard-open *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  html.jb-manager-keyboard-open body {
+    -webkit-transform: none !important;
+    transform: none !important;
+  }
+</style>
+<script id="jb-manager-android-keyboard-paint-fix-script">
+(() => {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const root = document.documentElement;
+  let raf = 0;
+  let keyboardOpen = false;
+  function repaint() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      // Toggle only a root class: force WebView to recalculate styles after IME resize.
+      root.classList.toggle("jb-manager-keyboard-open", keyboardOpen);
+      void root.offsetHeight;
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+        const active = document.activeElement;
+        if (keyboardOpen && active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) {
+          active.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+      });
+    });
+  }
+  function syncKeyboard() {
+    const vv = window.visualViewport;
+    keyboardOpen = Boolean(vv && window.innerHeight - vv.height > 140 && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || ""));
+    repaint();
+  }
+  window.visualViewport?.addEventListener("resize", syncKeyboard);
+  window.visualViewport?.addEventListener("scroll", syncKeyboard);
+  document.addEventListener("focusin", syncKeyboard, true);
+  document.addEventListener("focusout", () => { setTimeout(syncKeyboard, 120); }, true);
+  window.addEventListener("orientationchange", () => { setTimeout(syncKeyboard, 180); });
+  syncKeyboard();
+})();
+</script>
+`;
+if (!adminHtml.includes('id="jb-manager-android-keyboard-paint-fix"')) {
+  adminHtml = adminHtml.replace("</head>", androidKeyboardPaintFix + "\\n</head>");
+}
 if (!adminHtml.includes('id="jb-manager-android-safe-area"')) {
   adminHtml = adminHtml.replace("</head>", androidSafeAreaStyle + "\n</head>");
 }
