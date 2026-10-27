@@ -57,7 +57,7 @@ const androidSafeAreaStyle = `
 </style>
 `;
 if (!adminHtml.includes('id="jb-manager-android-safe-area"')) {
-  adminHtml = adminHtml.replace(/<\\/head>/i, androidSafeAreaStyle + "\\n</head>");
+  adminHtml = adminHtml.replace("</head>", androidSafeAreaStyle + "\n</head>");
 }
 
 const updaterBundlePath = join(webDir, "jb-manager-apk-updater.js");
