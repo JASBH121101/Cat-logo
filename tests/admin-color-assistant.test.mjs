@@ -14,7 +14,7 @@ test("variant color controls add AI/photo assistance without removing palette to
   assert.match(adminJs, /access_token/);
   assert.match(adminJs, /applyColorToRow\(row,colorResult\)/);
   assert.match(adminJs, /data-color-ai-library-alias/);
-  assert.match(adminJs, /basis===\"shared_library_match\"/);
+  assert.match(adminJs, /basis==="shared_library_match"/);
   assert.match(adminJs, /incomingAliases/);
   assert.match(adminJs, /no verificada oficialmente/);
   assert.match(themeCss, /\.jb-color-ai-overlay\s*\{/);
@@ -30,8 +30,8 @@ test("shared color library uses the authenticated Supabase client", () => {
 
 test("AI color identifiers are stored as reusable library aliases", () => {
   assert.match(adminJs, /data-color-ai-library-alias/);
-  assert.match(adminJs, /saveColorToLibrary\\(colorToSave\\)/);
-  assert.match(adminJs, /persistColorLibraryEntry\\(colorToSave\\)/);
+  assert.ok(adminJs.includes("saveColorToLibrary(colorToSave)"));
+  assert.ok(adminJs.includes("persistColorLibraryEntry(colorToSave)"));
   assert.match(adminJs, /shared_library_match/);
 });
 
