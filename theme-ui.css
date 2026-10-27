@@ -10719,11 +10719,16 @@ body.admin-body #product-subcategory-custom[hidden] {
 }
 
 
-/* JB TECH — curated high-performance section and badge. */
+/* JB TECH — curated high-performance and quality-price sections and badges. */
 .product-tag-badge.tag-high_performance {
   border-color: #0e7490;
   color: #ffffff;
   background: #0e7490;
+}
+.product-tag-badge.tag-quality_price {
+  border-color: #047857;
+  color: #ffffff;
+  background: #047857;
 }
 .high-performance-section {
   margin: 22px 0 30px;
@@ -10750,6 +10755,21 @@ body.admin-body #product-subcategory-custom[hidden] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
+.quality-price-section {
+  margin: 22px 0 30px;
+  padding: clamp(16px, 2.5vw, 28px);
+  border: 1px solid rgba(5, 150, 105, .24);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, .08), rgba(20, 184, 166, .045));
+}
+.quality-price-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.quality-price-heading h2 { margin:0; font-size:clamp(1.7rem, 3vw, 2.4rem); }
+.quality-price-heading h2 span { color:#047857; }
+.quality-price-heading .section-subtitle { margin:8px 0 0; }
+.quality-price-section .featured-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+html[data-theme="dark"] .quality-price-section { border-color:rgba(52,211,153,.27); background:linear-gradient(135deg,rgba(5,150,105,.16),rgba(20,184,166,.09)); }
+html[data-theme="dark"] .quality-price-heading h2 span { color:#6ee7b7; }
+html[data-theme="dark"] .product-tag-badge.tag-quality_price { border-color:#047857; color:#ecfdf5; background:#065f46; }
 html[data-theme="dark"] .high-performance-section {
   border-color: rgba(34, 211, 238, .27);
   background: linear-gradient(135deg, rgba(8, 145, 178, .16), rgba(37, 99, 235, .10));
@@ -10763,4 +10783,6 @@ html[data-theme="dark"] .product-tag-badge.tag-high_performance {
 @media (max-width: 600px) {
   .high-performance-heading { align-items: flex-start; flex-direction: column; }
   .high-performance-section .featured-grid { grid-template-columns: minmax(0, 1fr); }
+  .quality-price-heading { align-items:flex-start; flex-direction:column; }
+  .quality-price-section .featured-grid { grid-template-columns:minmax(0,1fr); }
 }
