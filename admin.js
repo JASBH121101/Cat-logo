@@ -406,7 +406,7 @@ function updateCategoryVariantVisibility() {
     });
     const hint = group.querySelector(".variant-config-group-heading small");
     if (hint) hint.textContent = usesRamStorage
-      ? (group.dataset.baseGroup === "true" ? "Definí RAM, almacenamiento, precio y colores de la configuración principal." : "Definí RAM, almacenamiento, precio y colores de esta configuración.")
+      ? (group.dataset.baseGroup === "true" ? "Definí almacenamiento, precio y colores. La RAM es opcional si el fabricante no la especifica." : "Definí almacenamiento, precio y colores. La RAM es opcional si no está especificada.")
       : (group.dataset.baseGroup === "true" ? "Configuración opcional: agregá precios y colores solo si el producto los necesita." : "Configuración opcional: agregá precios y colores si corresponde.");
   });
   const title = $("#variants-editor-title");
@@ -4431,10 +4431,10 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const rowsWithColor = rows.filter(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim()));
     if (!hasConfiguration && !rowsWithColor.length) continue;
 
-    // Phones, tablets and laptops need both capacity fields for every published configuration,
-    // including the primary group. Drafts/unpublished records can remain incomplete while prepared.
-    if (requiresConfiguration && !options.allowIncomplete && (!storageRaw || !ramRaw)) {
-      throw new Error(`Indicá la RAM y el almacenamiento en la configuración ${groupIndex + 1}.`);
+    // Storage identifies the purchasable configuration; RAM is optional because some
+    // manufacturers (notably Apple) do not officially specify it for every device.
+    if (requiresConfiguration && !options.allowIncomplete && !storageRaw) {
+      throw new Error(`Indicá el almacenamiento en la configuración ${groupIndex + 1}.`);
     }
     if (hasConfiguration && !rowsWithColor.length && !options.allowIncomplete) {
       throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
@@ -4518,7 +4518,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
   }
 
   if (categoryUsesRamStorage($("#product-category")?.value || "") && !options.allowIncomplete && !configs.length) {
-    throw new Error("Agregá al menos una variante con RAM, almacenamiento y color antes de publicar.");
+    throw new Error("Agregá al menos una variante con almacenamiento y color antes de publicar.");
   }
 
   return configs.flatMap(config => config.colors.map(color => ({
