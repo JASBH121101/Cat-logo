@@ -57,10 +57,12 @@ jobs:
           grep -Fq '/api/color-assistant' admin.js
           grep -Fq '.jb-color-ai-overlay' theme-ui.css
           grep -Fq 'jb-manager-mobile-sidebar-stability' theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261027-mobile-sidebar-stability2' admin.html
+          grep -Fq 'theme-ui.css?v=20261027-android-menu-scroll-lock1' admin.html
+          grep -Fq 'admin-sidebar-scroll-locked' admin.js
+          grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
-          grep -Fq 'admin.js?v=20261027-color-knowledge1' admin.html
+          grep -Fq 'admin.js?v=20261027-android-menu-scroll-lock1' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
@@ -267,8 +269,8 @@ jobs:
           grep -Fq 'from("color_library")' admin.js
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
-          grep -Fq 'admin.js?v=20261027-color-knowledge1' admin.html
-          grep -Fq '20261027-mobile-sidebar-stability2' admin.html
+          grep -Fq 'admin.js?v=20261027-android-menu-scroll-lock1' admin.html
+          grep -Fq '20261027-android-menu-scroll-lock1' admin.html
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
           grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
           grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
@@ -303,9 +305,12 @@ jobs:
           done
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261027-mobile-sidebar-stability2' mobile/www/admin.html
+          grep -Fq 'theme-ui.css?v=20261027-android-menu-scroll-lock1' mobile/www/admin.html
           grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
           grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
+          grep -Fq 'updateButton.style.display = shouldHide ? "none" : "grid"' mobile/www/admin.html
+          grep -Fq 'admin-sidebar-scroll-locked' mobile/www/admin.js
+          grep -Fq 'html.admin-sidebar-scroll-locked' mobile/www/theme-ui.css
           ! grep -Fq 'willChange: "transform"' mobile/www/admin.html
           ! grep -Fq 'transform: "translateZ(0)"' mobile/www/admin.html
           echo "Browser source and APK bundle match, including gallery repair, admin features, catalogs, and mobile drawer stability."
@@ -543,6 +548,18 @@ jobs:
             echo "APK updater does not observe sidebar open/close state."
             exit 1
           }
+          unzip -p "$APK" assets/public/index.html | grep -Fq 'updateButton.style.display = shouldHide ? "none" : "grid"' || {
+            echo "APK updater still cannot hide its inline display-grid button."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'admin-sidebar-scroll-locked' || {
+            echo "APK admin script is missing the document scroll lock."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq 'html.admin-sidebar-scroll-locked' || {
+            echo "APK stylesheet is missing the document scroll lock rules."
+            exit 1
+          }
           ! unzip -p "$APK" assets/public/index.html | grep -Fq 'willChange: "transform"' || {
             echo "APK updater still forces the compositor layer that can flicker on touch screens."
             exit 1
@@ -563,11 +580,11 @@ jobs:
             echo "APK is missing the light/dark AI color dialog styles." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261027-color-knowledge1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261027-android-menu-scroll-lock1' || {
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-mobile-sidebar-stability2' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-android-menu-scroll-lock1' || {
             echo "APK does not reference the latest admin color-assistant styles." >&2
             exit 1
           }

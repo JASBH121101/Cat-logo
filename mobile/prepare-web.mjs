@@ -617,7 +617,10 @@ const updateChecker = `
       const keyboardIsVisible = Boolean(viewport && viewport.height < window.innerHeight * 0.78);
       const sidebarOpen = window.matchMedia("(max-width: 760px)").matches
         && document.body.classList.contains("admin-sidebar-open");
-      updateButton.hidden = isEditing || keyboardIsVisible || sidebarOpen;
+      const shouldHide = isEditing || keyboardIsVisible || sidebarOpen;
+      updateButton.hidden = shouldHide;
+      // The updater has an inline display:grid style; hidden alone cannot override it.
+      updateButton.style.display = shouldHide ? "none" : "grid";
     };
     document.addEventListener("focusin", syncUpdateButtonVisibility);
     document.addEventListener("focusout", () => window.setTimeout(syncUpdateButtonVisibility, 100));
@@ -877,10 +880,10 @@ const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
-if (!builtAdminHtml.includes('admin.js?v=20261027-color-knowledge1')) {
+if (!builtAdminHtml.includes('admin.js?v=20261027-android-menu-scroll-lock1')) {
   throw new Error("The APK must load the cache-busted admin script containing the current color-knowledge updates.");
 }
-if (!builtAdminHtml.includes('theme-ui.css?v=20261027-mobile-sidebar-stability2')) {
+if (!builtAdminHtml.includes('theme-ui.css?v=20261027-android-menu-scroll-lock1')) {
   throw new Error("The APK admin page is missing the latest mobile sidebar stability styles.");
 }
 if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
@@ -1018,8 +1021,9 @@ if (!updaterScript[1].includes('zIndex: "1050"')
   throw new Error("The Android update button must not force a GPU layer above the mobile drawer.");
 }
 if (!updaterScript[1].includes('document.body.classList.contains("admin-sidebar-open")')
-  || !updaterScript[1].includes("sidebarClassObserver.observe(document.body")) {
-  throw new Error("The Android update button must hide and resync when the mobile admin drawer opens.");
+  || !updaterScript[1].includes("sidebarClassObserver.observe(document.body")
+  || !updaterScript[1].includes('updateButton.style.display = shouldHide ? "none" : "grid"')) {
+  throw new Error("The Android update button must hide, display, and resync correctly when the mobile admin drawer opens.");
 }
 if (!updaterScript[1].includes('button.innerHTML = \'<svg viewBox="0 0 24 24"')) {
   throw new Error("The Android update button is missing its stable SVG refresh icon.");
