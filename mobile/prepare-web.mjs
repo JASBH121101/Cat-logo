@@ -94,123 +94,81 @@ const androidKeyboardPaintFix = `
     scroll-behavior: auto !important;
     overscroll-behavior: none !important;
   }
-  html.jb-manager-keyboard-open *,
-  html.jb-manager-keyboard-open *::before,
-  html.jb-manager-keyboard-open *::after {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    -webkit-filter: none !important;
-    filter: none !important;
-  }
-  html.jb-manager-keyboard-open body,
-  html.jb-manager-keyboard-open .admin-layout,
-  html.jb-manager-keyboard-open .admin-main,
-  html.jb-manager-keyboard-open .admin-content {
-    -webkit-transform: none !important;
-    transform: none !important;
-    -webkit-perspective: none !important;
-    perspective: none !important;
-    contain: none !important;
-  }
-  html.jb-manager-keyboard-open [style*="backdrop-filter"],
-  html.jb-manager-keyboard-open [style*="transform"] {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-  html.jb-manager-keyboard-open [style*="transform"] {
-    -webkit-transform: none !important;
-    transform: none !important;
-  }
 </style>
 <script id="jb-manager-android-keyboard-paint-fix-script">
 (() => {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
   const root = document.documentElement;
   const viewport = window.visualViewport;
-  let raf = 0;
+  let frame = 0;
   let keyboardOpen = false;
   let maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
-  let lastOrientation = window.screen?.orientation?.type || "";
-  const isTextField = element => Boolean(element && /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName) && !element.disabled);
-  function requestRepaint() {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      root.classList.toggle("jb-manager-keyboard-open", keyboardOpen);
-      // Briefly force a real layout pass; this is more reliable than comparing
-      // innerHeight to visualViewport.height, which can shrink in lockstep on Android.
-      void root.offsetHeight;
-      void document.body?.offsetHeight;
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new Event("resize"));
-        const active = document.activeElement;
-        if (keyboardOpen && isTextField(active)) {
-          try { active.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" }); } catch (_) {}
-        }
-        // Nudge the WebView compositor after IME resize without keeping a transform.
-        if (document.body) {
-          document.body.style.webkitTransform = "translateZ(0)";
-          void document.body.offsetHeight;
-          requestAnimationFrame(() => {
-            if (document.body) document.body.style.webkitTransform = "";
-          });
-        }
-      });
-    });
+
+  const isTextField = element => Boolean(
+    element &&
+    /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName) &&
+    !element.disabled
+  );
+
+  function setKeyboardOpen(open) {
+    const next = Boolean(open);
+    if (keyboardOpen === next && root.classList.contains("jb-manager-keyboard-open") === next) return;
+    keyboardOpen = next;
+    root.classList.toggle("jb-manager-keyboard-open", next);
   }
-  function syncKeyboard(event) {
+
+  function syncKeyboard() {
+    frame = 0;
     const active = document.activeElement;
-    const current = Math.max(window.innerHeight || 0, viewport?.height || 0);
-    const candidate = viewport?.height || window.innerHeight || 0;
-    const shrunk = maxViewportHeight - candidate > 110 || (window.screen?.height || 0) - candidate > 240;
-    keyboardOpen = isTextField(active) && (shrunk || event?.type === "focusin");
-    if (!keyboardOpen && isTextField(active) === false) {
-      maxViewportHeight = Math.max(maxViewportHeight, current, candidate);
+    const candidate = Math.max(0, viewport?.height || window.innerHeight || 0);
+    const screenHeight = window.screen?.height || maxViewportHeight;
+    const shrunk = maxViewportHeight - candidate > 110 || screenHeight - candidate > 240;
+
+    if (isTextField(active)) {
+      setKeyboardOpen(shrunk);
+    } else {
+      setKeyboardOpen(false);
+      if (candidate > 0) {
+        maxViewportHeight = Math.max(maxViewportHeight, candidate, window.innerHeight || 0);
+      }
     }
-    requestRepaint();
   }
+
+  function scheduleSync() {
+    if (frame) cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(syncKeyboard);
+  }
+
   document.addEventListener("focusin", event => {
-    if (isTextField(event.target)) {
-      keyboardOpen = true;
-      requestRepaint();
-      setTimeout(() => syncKeyboard(event), 80);
-    }
+    if (isTextField(event.target)) scheduleSync();
   }, true);
+
   document.addEventListener("focusout", () => {
-    setTimeout(() => {
-      if (!isTextField(document.activeElement)) {
-        keyboardOpen = false;
-        requestRepaint();
-        setTimeout(() => {
-          maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0, maxViewportHeight);
-        }, 160);
-      } else {
-        syncKeyboard();
-      }
-    }, 160);
+    window.setTimeout(scheduleSync, 180);
   }, true);
-  viewport?.addEventListener("resize", syncKeyboard);
-  viewport?.addEventListener("scroll", syncKeyboard);
-  window.addEventListener("resize", syncKeyboard);
+
+  viewport?.addEventListener("resize", scheduleSync, { passive: true });
+  window.addEventListener("resize", scheduleSync, { passive: true });
+
   window.addEventListener("orientationchange", () => {
-    setTimeout(() => {
-      if (!keyboardOpen) {
+    window.setTimeout(() => {
+      if (!isTextField(document.activeElement)) {
         maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
-        lastOrientation = window.screen?.orientation?.type || lastOrientation;
       }
-      syncKeyboard();
+      scheduleSync();
     }, 220);
   });
-  // When the WebView is restored from the background, refresh the viewport baseline.
+
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && !isTextField(document.activeElement)) {
-      maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
-      syncKeyboard();
+    if (document.visibilityState === "visible") {
+      if (!isTextField(document.activeElement)) {
+        maxViewportHeight = Math.max(window.innerHeight || 0, viewport?.height || 0);
+      }
+      scheduleSync();
     }
   });
-  syncKeyboard();
+
+  scheduleSync();
 })();
 </script>
 `;
