@@ -2517,19 +2517,46 @@ function minimumPrice(variants, field) {
 }
 
 function setMobileSidebarOpen(open) {
+  const body = document.body;
+  const root = document.documentElement;
   const toggle = document.getElementById("admin-menu-toggle");
   const backdrop = document.getElementById("admin-sidebar-backdrop");
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const wasOpen = body.classList.contains("admin-sidebar-open");
   const shouldOpen = Boolean(open && isMobile);
 
-  document.body.classList.toggle("admin-sidebar-open", shouldOpen);
+  // Save the document scroll position once, before locking the page behind the drawer.
+  if (shouldOpen && !wasOpen) {
+    const currentScrollY = Math.max(
+      0,
+      Number(window.scrollY) || Number(root.scrollTop) || Number(body.scrollTop) || 0
+    );
+    body.dataset.adminSidebarScrollY = String(currentScrollY);
+  }
+
+  body.classList.toggle("admin-sidebar-open", shouldOpen);
+  root.classList.toggle("admin-sidebar-scroll-locked", shouldOpen);
+  body.classList.toggle("admin-sidebar-scroll-locked", shouldOpen);
+
   if (toggle) {
     toggle.setAttribute("aria-expanded", String(shouldOpen));
     toggle.setAttribute("aria-label", shouldOpen ? "Cerrar menú de administración" : "Abrir menú de administración");
     toggle.setAttribute("title", shouldOpen ? "Cerrar menú" : "Abrir menú");
-    toggle.querySelector("span").textContent = shouldOpen ? "×" : "☰";
+    const icon = toggle.querySelector("span");
+    if (icon) icon.textContent = shouldOpen ? "×" : "☰";
   }
   if (backdrop) backdrop.hidden = !shouldOpen;
+
+  // Restore the exact scroll position on close; don't leave a new panel halfway down.
+  if (!shouldOpen && wasOpen) {
+    const savedScrollY = Number(body.dataset.adminSidebarScrollY);
+    delete body.dataset.adminSidebarScrollY;
+    if (Number.isFinite(savedScrollY)) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: savedScrollY, left: 0, behavior: "auto" });
+      });
+    }
+  }
 }
 
 document.getElementById("admin-menu-toggle")?.addEventListener("click", () => {

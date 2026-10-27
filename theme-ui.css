@@ -10312,3 +10312,24 @@ html[data-theme="dark"] body.admin-body .jb-color-ai-status[data-state="warning"
     transition: none !important;
   }
 }
+
+
+/* Android drawer regression fix: freeze the document while the drawer is open.
+   The drawer itself keeps its own vertical scrolling; the dashboard behind it does not. */
+html.admin-sidebar-scroll-locked,
+html.admin-sidebar-scroll-locked body.admin-body,
+body.admin-body.admin-sidebar-scroll-locked {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body.admin-body.admin-sidebar-scroll-locked .admin-main {
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
+
+body.admin-body.admin-dashboard-active.admin-sidebar-open .admin-sidebar-backdrop:not([hidden]) {
+  touch-action: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
