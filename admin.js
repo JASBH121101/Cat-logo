@@ -249,7 +249,7 @@ function updateProductFormMode() {
   const isPerfume = activeCatalogType === "perfumery";
   const category = $("#product-category");
   if (category) {
-    const previous = category.value;
+    const previous = isPerfume ? category.value : normalizeTechnologyCategory(category.value);
     const options = isPerfume
       ? [{ value: "Perfumería", label: "Perfumería" }]
       : [
@@ -350,13 +350,37 @@ function updateProductFormMode() {
   if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
 }
 
+function normalizeTechnologyCategory(value = "") {
+  const original = String(value || "").trim();
+  const normalized = original
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (["celular", "celulares", "smartphone", "smartphones", "telefono", "telefonos", "movil", "moviles", "mobile", "mobiles"].includes(normalized)) return "Celulares";
+  if (["laptop", "laptops", "portatil", "portatiles", "notebook", "notebooks"].includes(normalized)) return "Laptops";
+  if (["tablet", "tablets", "tableta", "tabletas"].includes(normalized)) return "Tablets";
+  return original;
+}
+
 function categoryUsesRamStorage(category = $("#product-category")?.value || "") {
-  return ["Celulares", "Tablets", "Laptops"].includes(String(category).trim());
+  return ["Celulares", "Tablets", "Laptops"].includes(normalizeTechnologyCategory(category));
 }
 
 function updateCategoryVariantVisibility() {
-  const category = $("#product-category")?.value || "";
+  const category = normalizeTechnologyCategory($("#product-category")?.value || "");
   const usesRamStorage = categoryUsesRamStorage(category);
+  baseColorManager?.classList.toggle("is-ram-storage", usesRamStorage);
+  const addVariantButton = $("#add-variant-button");
+  addVariantButton?.classList.toggle("hidden", !usesRamStorage);
+  if (addVariantButton) {
+    addVariantButton.textContent = "+ Agregar variante";
+    addVariantButton.title = "Agregar otra combinación de RAM y almacenamiento";
+    addVariantButton.setAttribute("aria-label", "Agregar variante de RAM y almacenamiento");
+  }
   form?.querySelectorAll("[data-variant-group]").forEach(group => {
     group.querySelectorAll(".variant-storage-label, [data-group-ram]").forEach(field => {
       const wrapper = field.matches("label") ? field : field.closest("label");
@@ -367,7 +391,6 @@ function updateCategoryVariantVisibility() {
       ? (group.dataset.baseGroup === "true" ? "Definí RAM, almacenamiento, precio y colores de la configuración principal." : "Definí RAM, almacenamiento, precio y colores de esta configuración.")
       : (group.dataset.baseGroup === "true" ? "Configuración opcional: agregá precios y colores solo si el producto los necesita." : "Configuración opcional: agregá precios y colores si corresponde.");
   });
-  $("#add-variant-button")?.classList.toggle("hidden", !usesRamStorage);
   const title = $("#variants-editor-title");
   if (title) title.textContent = usesRamStorage ? "Variantes, capacidades y precios" : "Variantes y precios (opcional)";
   const sectionTitle = $("#product-form-section-title-2");
@@ -3643,6 +3666,7 @@ function clearEditor() {
   renderMainImagePreviews();
 
   renderVariantRows([]);
+  updateCategoryVariantVisibility();
 
   $("#product-perfume-family").value = "";
   if ($("#product-type")) $("#product-type").value = activeCatalogType === "perfumery" ? "perfume" : "standard";
@@ -3677,7 +3701,7 @@ function fillEditor(product) {
   $("#product-name").value = product.name || "";
   $("#product-brand").value = product.brand || "";
   $("#product-model").value = product.model || "";
-  $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : (product.category || "Otros");
+  $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : normalizeTechnologyCategory(product.category || "Otros");
   $("#product-description").value = product.description || "";
   $("#product-availability").value = normalizeProductAvailability(product.availability);
   $("#product-price-usd").value = product.price_usd ?? "";
@@ -3701,6 +3725,7 @@ function fillEditor(product) {
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
   renderVariantRows(activeCatalogType === "perfumery" ? [] : legacyVariants(product));
+  updateCategoryVariantVisibility();
   if (activeCatalogType !== "perfumery") {
     const primaryGroup = baseColorManager?.querySelector('[data-variant-group][data-base-group="true"]');
     const primaryUSD = primaryGroup?.querySelector("[data-group-price-usd]");
@@ -4171,16 +4196,18 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const ram = ramRaw ? `${ramRaw} GB` : "";
     const hasConfiguration = Boolean(storageRaw || ramRaw);
     const key = variantGroupKey({storage,ram});
-
     const requiresConfiguration = categoryUsesRamStorage($("#product-category")?.value || "");
-    if (!isBase && !hasConfiguration && requiresConfiguration && !options.allowIncomplete) {
-      throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex + 1}.`);
-    }
 
     const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
-    // Empty rows are placeholders, not configured variants.
+    // Empty rows/groups are placeholders, not configured variants.
     const rowsWithColor = rows.filter(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim()));
     if (!hasConfiguration && !rowsWithColor.length) continue;
+
+    // Phones, tablets and laptops need both capacity fields for every published configuration,
+    // including the primary group. Drafts/unpublished records can remain incomplete while prepared.
+    if (requiresConfiguration && !options.allowIncomplete && (!storageRaw || !ramRaw)) {
+      throw new Error(`Indicá la RAM y el almacenamiento en la configuración ${groupIndex + 1}.`);
+    }
     if (hasConfiguration && !rowsWithColor.length && !options.allowIncomplete) {
       throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
     }
@@ -4260,6 +4287,10 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       price_nio: toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex + 1}`),
       colors, isBase
     });
+  }
+
+  if (categoryUsesRamStorage($("#product-category")?.value || "") && !options.allowIncomplete && !configs.length) {
+    throw new Error("Agregá al menos una variante con RAM, almacenamiento y color antes de publicar.");
   }
 
   return configs.flatMap(config => config.colors.map(color => ({

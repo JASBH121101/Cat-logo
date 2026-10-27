@@ -10333,3 +10333,37 @@ body.admin-body.admin-dashboard-active.admin-sidebar-open .admin-sidebar-backdro
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+
+/* JB TECH: mostrar también RAM/almacenamiento en la configuración principal de móviles, tablets y laptops. */
+body.admin-body .base-color-manager.is-ram-storage .variant-base-group {
+  margin: 0 0 12px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(111, 133, 199, .36) !important;
+  border-radius: 14px !important;
+  background: rgba(93, 117, 205, .045) !important;
+}
+body.admin-body .base-color-manager.is-ram-storage .variant-base-group > .variant-config-group-heading {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  margin-bottom: 10px !important;
+  padding: 0 0 10px !important;
+  border-bottom: 1px solid rgba(111, 133, 199, .25) !important;
+}
+body.admin-body .base-color-manager.is-ram-storage .variant-base-group > .variant-config-fields {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin: 12px 0 !important;
+}
+@media (max-width: 620px) {
+  body.admin-body .base-color-manager.is-ram-storage .variant-base-group {
+    padding: 10px !important;
+  }
+  body.admin-body .base-color-manager.is-ram-storage .variant-base-group > .variant-config-fields {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+}

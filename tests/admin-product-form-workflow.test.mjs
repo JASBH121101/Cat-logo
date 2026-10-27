@@ -7,6 +7,7 @@ const ui = readFileSync(new URL("../ui.js", import.meta.url), "utf8");
 const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261027141445_allow_incomplete_unpublished_products.sql", import.meta.url), "utf8");
 const colorApi = readFileSync(new URL("../functions/api/color-assistant.js", import.meta.url), "utf8");
+const theme = readFileSync(new URL("../theme-ui.css", import.meta.url), "utf8");
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
   assert.match(admin, /if \(!name\) throw new Error\("Escribí el nombre del producto\."\);/);
@@ -20,6 +21,20 @@ test("RAM and storage controls are limited to phones, tablets, and laptops", () 
   assert.match(admin, /function updateCategoryVariantVisibility[\s\S]*?classList\.toggle\("hidden", !usesRamStorage\)/);
 });
 
+test("variant editor restores the add button and exposes the primary RAM/storage configuration for legacy categories", () => {
+  assert.match(admin, /function normalizeTechnologyCategory[\s\S]*?return "Celulares"[\s\S]*?return "Laptops"[\s\S]*?return "Tablets"/);
+  assert.match(admin, /baseColorManager\?\.classList\.toggle\("is-ram-storage", usesRamStorage\)/);
+  assert.match(admin, /renderVariantRows\(activeCatalogType === "perfumery" \? \[\] : legacyVariants\(product\)\);\s*updateCategoryVariantVisibility\(\);/);
+  assert.match(html, /id="add-variant-button"[^>]*aria-label="Agregar variante de RAM y almacenamiento"/);
+  assert.match(theme, /base-color-manager\.is-ram-storage \.variant-base-group > \.variant-config-fields/);
+});
+
+test("published phone/tablet/laptop products require complete configurations and at least one variant", () => {
+  assert.match(admin, /requiresConfiguration && !options\.allowIncomplete && \(!storageRaw \|\| !ramRaw\)/);
+  assert.match(admin, /categoryUsesRamStorage\(\$\("#product-category"\)\?\.value \|\| ""\) && !options\.allowIncomplete && !configs\.length/);
+  assert.match(admin, /Agregá al menos una variante con RAM, almacenamiento y color antes de publicar/);
+});
+
 test("database constraint allows incomplete draft and unpublished records but validates publication", () => {
   assert.match(migration, /workflow_status in \('draft', 'unpublished'\)/);
   assert.match(migration, /category is not null[\s\S]*?availability is not null/);
@@ -29,7 +44,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261027-android-menu-scroll-lock1/);
+  assert.match(html, /admin\.js\?v=20261027-multi-variant-fix1/);
   assert.match(html, /ui\.js\?v=20261027-admin-backtop1/);
 });
 
