@@ -10717,3 +10717,50 @@ html[data-theme="dark"] body.admin-body .publish-review-issue {
 body.admin-body #product-subcategory-custom[hidden] {
   display: none !important;
 }
+
+
+/* JB TECH — curated high-performance section and badge. */
+.product-tag-badge.tag-high_performance {
+  border-color: #0e7490;
+  color: #ffffff;
+  background: #0e7490;
+}
+.high-performance-section {
+  margin: 22px 0 30px;
+  padding: clamp(16px, 2.5vw, 28px);
+  border: 1px solid rgba(8, 145, 178, .25);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(8, 145, 178, .08), rgba(37, 99, 235, .05));
+}
+.high-performance-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.high-performance-heading h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+}
+.high-performance-heading h2 span { color: #0e7490; }
+.high-performance-heading .section-subtitle { margin: 8px 0 0; }
+.high-performance-section .featured-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+html[data-theme="dark"] .high-performance-section {
+  border-color: rgba(34, 211, 238, .27);
+  background: linear-gradient(135deg, rgba(8, 145, 178, .16), rgba(37, 99, 235, .10));
+}
+html[data-theme="dark"] .high-performance-heading h2 span { color: #67e8f9; }
+html[data-theme="dark"] .product-tag-badge.tag-high_performance {
+  border-color: #0e7490;
+  color: #ecfeff;
+  background: #155e75;
+}
+@media (max-width: 600px) {
+  .high-performance-heading { align-items: flex-start; flex-direction: column; }
+  .high-performance-section .featured-grid { grid-template-columns: minmax(0, 1fr); }
+}
