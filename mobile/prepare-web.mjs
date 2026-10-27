@@ -880,10 +880,10 @@ const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
-if (!builtAdminHtml.includes('admin.js?v=20261027-android-menu-scroll-lock1')) {
+if (!builtAdminHtml.includes('admin.js?v=20261027-taxonomy-review-select1')) {
   throw new Error("The APK must load the cache-busted admin script containing the current color-knowledge updates.");
 }
-if (!builtAdminHtml.includes('theme-ui.css?v=20261027-android-menu-scroll-lock1')) {
+if (!builtAdminHtml.includes('theme-ui.css?v=20261027-taxonomy-review-select2')) {
   throw new Error("The APK admin page is missing the latest mobile sidebar stability styles.");
 }
 if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
