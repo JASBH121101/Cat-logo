@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css?v=20261026-remember-session3">
-  <link rel="stylesheet" href="theme-ui.css?v=20261027-multi-variant-fix1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261027-subcategories-tags1">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
   <link rel="stylesheet" href="admin-provider.css?v=20261026-provider-contrast3">
@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261026-cloudflare-url1"></script>
-  <script type="module" src="admin.js?v=20261027-multi-variant-fix1"></script>
+  <script type="module" src="admin.js?v=20261027-subcategories-tags1"></script>
   <script src="ui.js?v=20261027-admin-backtop1" defer></script>
 </head>
 
@@ -381,6 +381,11 @@
                 </select>
               </label>
 
+              <label id="product-subcategory-field">
+                Subcategoría
+                <input id="product-subcategory" maxlength="80" placeholder="Ej. Gaming, Gama alta, Para estudio">
+              </label>
+
               <label class="span-2">
                 Descripción comercial
                 <textarea id="product-description" rows="3" maxlength="1800" placeholder="Describí brevemente el producto y sus puntos principales."></textarea>
@@ -495,6 +500,18 @@
                 <textarea id="product-shipping"
                           rows="2"></textarea>
               </label>
+
+              <section id="product-taxonomy-fields" class="span-2 product-taxonomy-fields" aria-labelledby="product-tags-title">
+                <div class="product-taxonomy-heading"><h3 id="product-tags-title">Etiquetas manuales</h3><p>Elegí solo las que correspondan; no se asignan automáticamente por marca.</p></div>
+                <div class="product-tag-options">
+                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="exclusive" id="product-tag-exclusive"><span>✦ Exclusivo</span></label>
+                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="top_gaming"><span>🎮 Top Gaming</span></label>
+                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="best_seller"><span>Más vendido</span></label>
+                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="new_arrival"><span>Nuevo ingreso</span></label>
+                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="offer"><span>Oferta</span></label>
+                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="recommended"><span>Recomendado</span></label>
+                </div>
+              </section>
 <input id="product-featured" type="checkbox" hidden aria-hidden="true">
               <input id="product-active" type="checkbox" hidden aria-hidden="true">
               <input id="product-exclusive" type="checkbox" hidden aria-hidden="true">
