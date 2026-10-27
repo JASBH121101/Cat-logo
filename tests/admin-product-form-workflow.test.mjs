@@ -30,9 +30,10 @@ test("variant editor restores the add button and exposes the primary RAM/storage
 });
 
 test("published phone/tablet/laptop products require complete configurations and at least one variant", () => {
-  assert.match(admin, /requiresConfiguration && !options\.allowIncomplete && \(!storageRaw \|\| !ramRaw\)/);
+  assert.match(admin, /requiresConfiguration && !options\.allowIncomplete && !storageRaw/);
+  assert.match(admin, /RAM es opcional si el fabricante no la especifica/);
   assert.match(admin, /categoryUsesRamStorage\(\$\("#product-category"\)\?\.value \|\| ""\) && !options\.allowIncomplete && !configs\.length/);
-  assert.match(admin, /Agregá al menos una variante con RAM, almacenamiento y color antes de publicar/);
+  assert.match(admin, /Agregá al menos una variante con almacenamiento y color antes de publicar/);
 });
 
 test("database constraint allows incomplete draft and unpublished records but validates publication", () => {
