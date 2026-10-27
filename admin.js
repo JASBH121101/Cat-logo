@@ -259,6 +259,7 @@ function updateProductFormMode() {
           { value: "Celulares", label: "Celulares" },
           { value: "Laptops", label: "Laptops" },
           { value: "Tablets", label: "Tablets" },
+          { value: "Consolas", label: "Consolas" },
           { value: "Televisores", label: "Televisores" },
           { value: "Audio", label: "Audio" },
           { value: "Accesorios", label: "Accesorios" },
@@ -381,6 +382,7 @@ function normalizeTechnologyCategory(value = "") {
   if (["celular", "celulares", "smartphone", "smartphones", "telefono", "telefonos", "movil", "moviles", "mobile", "mobiles"].includes(normalized)) return "Celulares";
   if (["laptop", "laptops", "portatil", "portatiles", "notebook", "notebooks"].includes(normalized)) return "Laptops";
   if (["tablet", "tablets", "tableta", "tabletas"].includes(normalized)) return "Tablets";
+  if (["consola", "consolas", "console", "consoles", "videojuego", "videojuegos", "gaming console", "gaming consoles"].includes(normalized)) return "Consolas";
   return original;
 }
 
@@ -3741,6 +3743,7 @@ const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
   "Celulares": ["Gaming", "Fotografía", "Batería de larga duración", "Gama alta", "Gama media", "Económicos"],
   "Laptops": ["Gaming", "Trabajo / Oficina", "Estudio", "Arquitectura / Ingeniería", "Creación de contenido / Diseño", "Uso general"],
   "Tablets": ["Estudio", "Trabajo / Oficina", "Diseño / Ilustración", "Gaming", "Uso general"],
+  "Consolas": ["PlayStation", "Xbox", "Nintendo"],
   "Televisores": ["Smart TV", "4K / UHD", "OLED", "QLED", "Uso comercial"],
   "Audio": ["Audífonos", "Bocinas", "Gaming", "Profesional"],
   "Accesorios": ["Cargadores", "Fundas", "Protección", "Conectividad", "Gaming", "Periféricos"],
