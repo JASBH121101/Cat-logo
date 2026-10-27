@@ -7,13 +7,19 @@ This folder wraps the existing private admin panel in a Capacitor Android applic
 1. GitHub Actions copies the repository's live web assets into a temporary bundle.
 2. The bundle starts at the existing `admin.html` panel, not the public catalog landing page.
 3. The application uses the existing Supabase configuration and current JB Collections icon artwork.
-4. GitHub Actions builds a debug APK and publishes it as the `JB-Manager-Collections-APK` artifact for 14 days.
+4. GitHub Actions builds a versioned debug APK from the latest `main` web assets and publishes an artifact for 14 days plus a GitHub prerelease.
 
 ## Generate the APK
 
 Open the repository's **Actions** tab and select **Build JB Manager Collections APK**. On the branch `feature/jb-manager-android-apk`, the workflow also runs automatically after a push.
 
-When the run has completed successfully, open the run and download the artifact named **JB-Manager-Collections-APK**. Extract the ZIP to get `app-debug.apk), then install it on Android. Android may ask to allow installs from the browser or file manager used to open the APK.
+When the run has completed successfully, open the run and download the artifact named **JB-Manager-Collections-APK**. Extract the ZIP to get `app-debug.apk`, then install it on Android. Android may ask to allow installs from the browser or file manager used to open the APK.
+
+## Updating the app already installed
+
+- Every successful build packages the latest web assets from `main` inside a higher APK version. The installed app cannot receive those bundled HTML/CSS/JS changes from a website deployment alone.
+- Updates are intended to replace the existing app in place: keep `appId` as `com.jbcollections.manager.v2` and keep the persistent Android signing key unchanged. Android still asks the user to confirm installation.
+- The in-app updater checks GitHub Releases, validates the requested version, downloaded APK, package identity, and signing certificate before it opens the Android installer. Do not publish an APK with a regenerated signing key; Android will reject it as an update.
 
 ## Notes
 
