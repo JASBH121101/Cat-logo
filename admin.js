@@ -396,11 +396,18 @@ function updateCategoryVariantVisibility() {
   const usesRamStorage = categoryUsesRamStorage(category);
   baseColorManager?.classList.toggle("is-ram-storage", usesRamStorage);
   const addVariantButton = $("#add-variant-button");
-  addVariantButton?.classList.toggle("hidden", !usesRamStorage);
+  // Todas las categorías tecnológicas admiten variantes de precio/color.
+  // RAM y almacenamiento solo se muestran en celulares, tablets y laptops.
+  addVariantButton?.classList.remove("hidden");
   if (addVariantButton) {
     addVariantButton.textContent = "+ Agregar variante";
-    addVariantButton.title = "Agregar otra combinación de RAM y almacenamiento";
-    addVariantButton.setAttribute("aria-label", "Agregar variante de RAM y almacenamiento");
+    addVariantButton.title = usesRamStorage
+      ? "Agregar otra combinación de RAM y almacenamiento"
+      : "Agregar otra variante de precio y color";
+    addVariantButton.setAttribute(
+      "aria-label",
+      usesRamStorage ? "Agregar variante de RAM y almacenamiento" : "Agregar variante de precio y color"
+    );
   }
   form?.querySelectorAll("[data-variant-group]").forEach(group => {
     group.querySelectorAll(".variant-storage-label, [data-group-ram]").forEach(field => {
@@ -2115,8 +2122,10 @@ $("#add-variant-button")?.addEventListener("click", event => {
     message("#product-form-status", "No se pudo crear la configuración. Recargá el panel e intentá nuevamente.", "error");
     return;
   }
+  updateCategoryVariantVisibility();
   updateVariantRowHeadings();
-  newGroup.querySelector("[data-group-storage]")?.focus();
+  const focusSelector = categoryUsesRamStorage() ? "[data-group-storage]" : "[data-group-price-usd]";
+  newGroup.querySelector(focusSelector)?.focus();
   updateEditorDirtyState();
 });
 

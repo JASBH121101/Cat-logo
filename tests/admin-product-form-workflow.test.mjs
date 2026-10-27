@@ -18,7 +18,14 @@ test("product draft and unpublished saves require a name but defer publish-only 
 
 test("RAM and storage controls are limited to phones, tablets, and laptops", () => {
   assert.match(admin, /function categoryUsesRamStorage[\s\S]*?\["Celulares", "Tablets", "Laptops"\]/);
-  assert.match(admin, /function updateCategoryVariantVisibility[\s\S]*?classList\.toggle\("hidden", !usesRamStorage\)/);
+  assert.match(admin, /group\.querySelectorAll\("\.variant-storage-label, \[data-group-ram\]"\)[\s\S]*?classList\.toggle\("hidden", !usesRamStorage\)/);
+});
+
+test("variant add control is available for every technology category and fields adapt immediately", () => {
+  assert.match(admin, /addVariantButton\?\.classList\.remove\("hidden"\)/);
+  assert.match(admin, /addVariantButton\.title = usesRamStorage \?[\s\S]*?Agregar otra variante de precio y color/);
+  assert.match(admin, /updateCategoryVariantVisibility\(\);[\s\S]*?const focusSelector = categoryUsesRamStorage\(\) \?[\s\S]*?data-group-price-usd/);
+  assert.match(html, /id="base-color-manager" class="base-color-manager primary-config-slot"/);
 });
 
 test("variant editor restores the add button and exposes the primary RAM/storage configuration for legacy categories", () => {
@@ -46,8 +53,8 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261027-audit-cascade1/);
-  assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
+  assert.match(html, /admin\.js\?v=20261027-variant-editor-add1/);
+  assert.match(html, /ui\.js\?v=20261027-variant-editor-add1/);
 });
 
 test("technology products support editable subcategories and manually selected tags", () => {
