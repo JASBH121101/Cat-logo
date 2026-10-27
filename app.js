@@ -691,6 +691,10 @@ function renderCard(product) {
   const variants = getProductVariants(product);
   const tags = normalizedProductTags(product);
   const isExclusive = Boolean(product.featured || product.is_exclusive || tags.includes("exclusive"));
+  const cardThemeClasses = [
+    ...(isExclusive ? ["product-card-tag-exclusive"] : []),
+    ...tags.filter(tag => ["high_performance", "top_gaming", "quality_price"].includes(tag)).map(tag => "product-card-tag-" + tag)
+  ].join(" ");
   const badge = [
     ...(isExclusive ? ['<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'] : []),
     ...tags.filter(tag => tag !== "exclusive").map(tag => {
@@ -732,7 +736,7 @@ function renderCard(product) {
   const colorSwatches = renderProductColorSwatches(product, cardConfiguration);
 
   return `
-    <article class="product-card${product.featured ? " featured-product-card" : ""}">
+    <article class="product-card${product.featured ? " featured-product-card" : ""}${cardThemeClasses ? " " + cardThemeClasses : ""}">
       <div class="product-image">
         ${image}
       </div>
