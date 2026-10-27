@@ -4847,7 +4847,7 @@ form?.addEventListener("submit", async event => {
       name: name || null,
       brand: $("#product-brand").value.trim() || null,
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
-      category: isPerfume ? "Perfumería" : $("#product-category").value,
+      category: isPerfume ? "Perfumería" : ($("#product-category").value.trim() || null),
       availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
       price_nio: priceNIO,
