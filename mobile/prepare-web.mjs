@@ -40,19 +40,48 @@ for (const entry of await readdir(repoRoot, { withFileTypes: true })) {
 const adminPath = join(webDir, "admin.html");
 let adminHtml = await readFile(adminPath, "utf8");
 
-// Android 15+ may draw the WebView behind the transparent system status bar.
-// Reserve the status-bar inset in the packaged admin page only, without
-// changing the public browser catalog layout or desktop dashboard.
+// Capacitor 8 edge-to-edge: keep the top inset inside the header instead of
+// adding blank padding before the entire page. Older WebViews are padded natively
+// by Capacitor and expose a zero CSS inset; newer WebViews expose the real inset.
 adminHtml = adminHtml.replace(
   '<meta name="viewport" content="width=device-width, initial-scale=1">',
-  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover>'
 );
 const androidSafeAreaStyle = `
 <style id="jb-manager-android-safe-area">
+  :root {
+    --jb-manager-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  }
   html { min-height: 100%; }
   body.admin-body {
-    padding-top: max(24px, env(safe-area-inset-top, 0px)) !important;
+    padding-top: 0 !important;
     box-sizing: border-box;
+  }
+  body.admin-body.admin-dashboard-active .site-header.admin-header {
+    height: calc(var(--admin-header-height, 64px) + var(--jb-manager-safe-top, 0px)) !important;
+    min-height: calc(var(--admin-header-height, 64px) + var(--jb-manager-safe-top, 0px)) !important;
+    padding-top: var(--jb-manager-safe-top, 0px) !important;
+    box-sizing: border-box !important;
+    margin-top: 0 !important;
+  }
+  body.admin-body:not(.admin-dashboard-active) .site-header.admin-header {
+    min-height: calc(68px + var(--jb-manager-safe-top, 0px)) !important;
+    padding-top: calc(10px + var(--jb-manager-safe-top, 0px)) !important;
+    box-sizing: border-box !important;
+  }
+  @media (max-width: 760px) {
+    body.admin-body.admin-dashboard-active .admin-sidebar {
+      top: calc(var(--admin-header-height, 64px) + var(--jb-manager-safe-top, 0px)) !important;
+    }
+    body.admin-body.admin-dashboard-active .admin-sidebar-backdrop:not([hidden]) {
+      inset: calc(var(--admin-header-height, 64px) + var(--jb-manager-safe-top, 0px)) 0 0 !important;
+    }
+  }
+  @media (max-width: 430px) {
+    body.admin-body:not(.admin-dashboard-active) .site-header.admin-header {
+      min-height: calc(62px + var(--jb-manager-safe-top, 0px)) !important;
+      padding-top: calc(8px + var(--jb-manager-safe-top, 0px)) !important;
+    }
   }
 </style>
 `;
@@ -64,6 +93,17 @@ const updaterBundlePath = join(webDir, "jb-manager-apk-updater.js");
 await build({
   entryPoints: [join(mobileDir, "apk-updater.js")],
   outfile: updaterBundlePath,
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  target: ["es2020"],
+  minify: true,
+  legalComments: "none"
+});
+const systemBarsBundlePath = join(webDir, "jb-manager-system-bars.js");
+await build({
+  entryPoints: [join(mobileDir, "system-bars.js")],
+  outfile: systemBarsBundlePath,
   bundle: true,
   platform: "browser",
   format: "iife",
@@ -106,6 +146,13 @@ if (!adminHtml.includes('src="./jb-manager-apk-updater.js"')) {
     + adminHtml.slice(scriptBodyEnd);
 }
 
+if (!adminHtml.includes('src="./jb-manager-system-bars.js"')) {
+  const scriptBodyEnd = adminHtml.toLowerCase().lastIndexOf("</body>");
+  if (scriptBodyEnd < 0) throw new Error("Expected admin.html body end for native system-bars bridge.");
+  adminHtml = adminHtml.slice(0, scriptBodyEnd)
+    + '<script src="./jb-manager-system-bars.js" defer></script>\\n'
+    + adminHtml.slice(scriptBodyEnd);
+}
 // Add a persistent update button and check GitHub Releases for a newer APK.
 // Android still requires the user to confirm installation of a downloaded APK.
 const appVersion = process.env.JB_MANAGER_VERSION || "1.0.0";
@@ -752,7 +799,15 @@ if (!builtUpdaterBridge.includes("downloadAndInstall")
 if (!builtAdminHtml.includes('src="./jb-manager-apk-updater.js"')) {
   throw new Error("The admin panel is missing the native APK download bridge.");
 }
-if (!builtAdminHtml.includes("jb-manager-check-updates")) {
+
+if (!builtAdminHtml.includes('src="./jb-manager-system-bars.js"')) {
+  throw new Error("The admin panel is missing the Android system-bars bridge.");
+}
+if (!builtAdminHtml.includes('id="jb-manager-android-safe-area"')
+  || !builtAdminHtml.includes("--jb-manager-safe-top")
+  || builtAdminHtml.includes("padding-top: max(24px")) {
+  throw new Error("The Android header must consume the safe-area inset without adding blank padding above the whole panel.");
+}if (!builtAdminHtml.includes("jb-manager-check-updates")) {
   throw new Error("The APK update button is missing from the admin panel.");
 }
 if (!updaterScript[1].includes("document.documentElement.append(button)")) {
