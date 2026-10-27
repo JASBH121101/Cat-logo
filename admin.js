@@ -1540,7 +1540,7 @@ function photoEntryIsCurrent(entry,token){
 function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   const item=entry?.item;
   if(!item||item.kind!=="new"||!item.file)return Promise.resolve({ok:item?.kind==="existing"});
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     item.uploadState = "";
     item.uploadStage = "preview-only";
     item.uploadProgress = 0;
@@ -1654,7 +1654,7 @@ mainImagesInput?.addEventListener("change",()=>{
   added.forEach(item=>void queueBackgroundPhotoUpload({source:"main",item}));
 });
 retryMainImagesButton?.addEventListener("click",async()=>{
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     message("#product-form-status", "Vista previa segura: la subida a Storage está deshabilitada en Vercel.", "error");
     return;
   }
@@ -3819,7 +3819,7 @@ async function recoverUploadedImageUrl(bucket, path) {
 }
 
 async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían a Supabase.");
   }
   const {data,error:sessionError}=await supabase.auth.getSession();
@@ -4570,7 +4570,7 @@ form?.addEventListener("click", event => {
 form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     message("#product-form-status", "Vista previa segura de Vercel: los cambios no se guardan. Usá esta vista para probar el importador sin modificar producción.", "error");
     return;
   }
