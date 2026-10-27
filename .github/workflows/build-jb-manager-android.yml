@@ -632,6 +632,50 @@ jobs:
             --notes "Update for JB Manager Collections. Download and install the APK on Android; the system will ask you to confirm installation." \
             --prerelease
 
+      - name: Verify freshly published APK over GitHub and Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.0.${GITHUB_RUN_NUMBER}"
+          direct_url="https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v${version}/JB-Manager-Collections.apk"
+          proxy_url="https://jb-collections.pages.dev/api/download/apk?version=${version}"
+          for source in direct proxy; do
+            if [ "$source" = "direct" ]; then url="$direct_url"; else url="$proxy_url"; fi
+            headers="$RUNNER_TEMP/jb-apk-latest-${source}.headers"
+            body="$RUNNER_TEMP/jb-apk-latest-${source}.apk"
+            status="$(curl --silent --show-error --location --max-time 120 \
+              --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
+            size="$(wc -c < "$body" | tr -d ' ')"
+            echo "$source latest APK: HTTP $status, $size bytes, version $version"
+            if [ "$status" != "200" ]; then
+              echo "$source latest download did not return HTTP 200." >&2
+              head -c 1200 "$body" >&2 || true
+              exit 1
+            fi
+            if [ "$source" = "proxy" ]; then
+              grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
+                echo "Cloudflare did not return the expected APK MIME type." >&2
+                exit 1
+              }
+            fi
+            python3 - "$body" "$source" <<'PY'
+          import sys, zipfile
+          from pathlib import Path
+          path, source = sys.argv[1], sys.argv[2]
+          data = Path(path).read_bytes()
+          print(f"{source} latest APK diagnostics: bytes={len(data)}, ZIP magic={data[:4].hex()}")
+          if len(data) < 1_000_000 or len(data) > 52_428_800:
+              raise SystemExit(f"{source} latest APK size is outside the expected limits")
+          if not data.startswith(b"PK") or not zipfile.is_zipfile(path):
+              raise SystemExit(f"{source} latest download is not a valid APK/ZIP")
+          with zipfile.ZipFile(path) as archive:
+              broken = archive.testzip()
+              if broken:
+                  raise SystemExit(f"{source} latest APK has a corrupt entry: {broken}")
+          PY
+          done
+          echo "Freshly published APK passed direct and Cloudflare download integrity checks."
+
       - name: Build summary
         if: success()
         shell: bash
