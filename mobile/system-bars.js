@@ -3,7 +3,7 @@ import { Capacitor, SystemBars, SystemBarsStyle } from "@capacitor/core";
 function syncAndroidStatusBarStyle() {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") return;
   const darkTheme = document.documentElement.getAttribute("data-theme") === "dark";
-  const style = darkTheme ? SystemBarsStyle.Light : SystemBarsStyle.Dark;
+  const style = darkTheme ? SystemBarsStyle.Dark : SystemBarsStyle.Light;
   SystemBars.setStyle({ style }).catch(error => {
     console.info("No se pudo sincronizar el estilo de la barra de estado.", error);
   });
