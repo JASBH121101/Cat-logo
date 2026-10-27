@@ -1822,3 +1822,101 @@ html[data-theme="dark"] body.technology-catalog .product-contact-actions > #dial
 html[data-theme="dark"] body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle:focus-visible {
   outline-color: rgba(95, 170, 255, .58);
 }
+
+
+/* JB TECH header — explicit light/dark palette and stable mobile grid. */
+body.technology-catalog .site-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  visibility: visible !important;
+  isolation: isolate !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1200 !important;
+}
+body.technology-catalog .site-header > .product-detail-header-back:not([hidden]) {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  align-self: center !important;
+  display: grid !important;
+  place-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+body.technology-catalog .site-header > .tech-header-brand {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+body.technology-catalog .site-header > [data-theme-toggle] {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+html[data-theme="light"] body.technology-catalog .site-header {
+  color: #172541 !important;
+  background: rgba(248, 250, 255, .98) !important;
+  border-bottom: 1px solid #dce4f3 !important;
+  box-shadow: 0 3px 14px rgba(31, 48, 96, .08) !important;
+}
+html[data-theme="light"] body.technology-catalog .tech-header-name {
+  color: #172541 !important;
+}
+html[data-theme="light"] body.technology-catalog .tech-header-name strong {
+  color: #375fdf !important;
+  text-shadow: none !important;
+}
+html[data-theme="light"] body.technology-catalog .tech-header-wordmark small {
+  color: #63728f !important;
+}
+html[data-theme="light"] body.technology-catalog .site-header > [data-theme-toggle] {
+  color: #263b78 !important;
+  border-color: #c8d5ed !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 0 #dce5f5, 0 4px 10px rgba(31, 48, 96, .08) !important;
+}
+html[data-theme="light"] body.technology-catalog .site-header > .product-detail-header-back:not([hidden]) {
+  color: #263b78 !important;
+  border-color: #d0dbef !important;
+  background: #eef3ff !important;
+}
+html[data-theme="dark"] body.technology-catalog .site-header {
+  color: #f3f7ff !important;
+  background: rgba(7, 13, 25, .96) !important;
+  border-bottom-color: rgba(75, 214, 255, .23) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .22), 0 1px 0 rgba(124, 77, 255, .12) !important;
+}
+html[data-theme="dark"] body.technology-catalog .tech-header-name { color: #f3f7ff !important; }
+html[data-theme="dark"] body.technology-catalog .tech-header-name strong { color: #52e4ff !important; }
+html[data-theme="dark"] body.technology-catalog .tech-header-wordmark small { color: #93b0d6 !important; }
+@media (max-width: 760px) {
+  body.technology-catalog .site-header {
+    min-height: 66px !important;
+    height: 66px !important;
+    grid-template-rows: 66px !important;
+    padding: 6px 10px !important;
+    gap: 5px !important;
+  }
+  body.technology-catalog .site-header > .tech-header-brand {
+    min-width: 0 !important;
+    max-width: calc(100vw - 110px) !important;
+    gap: 7px !important;
+  }
+  body.technology-catalog .tech-header-monogram {
+    flex-basis: 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+  body.technology-catalog .tech-header-name { font-size: clamp(14px, 4vw, 18px) !important; }
+  body.technology-catalog .tech-header-wordmark small { font-size: 7px !important; }
+}
