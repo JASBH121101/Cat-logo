@@ -4141,12 +4141,13 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     }
 
     const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
-    // An untouched blank primary group is optional; configured groups need at least one color.
-    if (isBase && !hasConfiguration && !rows.length) continue;
-    if (hasConfiguration && !rows.length && requiresConfiguration && !options.allowIncomplete) {
-      throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
+    // Empty rows are placeholders, not configured variants.
+    const rowsWithColor = rows.filter(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim()));
+    if (!hasConfiguration && !rowsWithColor.length) continue;
+    if (hasConfiguration && !rowsWithColor.length && !options.allowIncomplete) {
+      throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
     }
-    if (options.allowIncomplete && !rows.length) continue;
+    if (options.allowIncomplete && !rowsWithColor.length) continue;
     if (hasConfiguration && seenConfigurations.has(key)) {
       throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
     }
@@ -4154,13 +4155,9 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
 
     const colors = [];
 
-    for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
-      const row = rows[colorIndex];
+    for (let colorIndex = 0; colorIndex < rowsWithColor.length; colorIndex++) {
+      const row = rowsWithColor[colorIndex];
       const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
-      if (!color) {
-        if (options.allowIncomplete) continue;
-        throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
-      }
       const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
       initVariantImageItems(row);
@@ -4210,6 +4207,9 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
 
+    if (hasConfiguration && !colors.length && !options.allowIncomplete) {
+      throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
+    }
     const seenColors = new Set();
     colors.forEach(item => {
       const key = item.color.toLocaleLowerCase("es");
