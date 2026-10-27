@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const admin = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
 const ui = readFileSync(new URL("../ui.js", import.meta.url), "utf8");
 const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
-const migration = readFileSync(new URL("../supabase/migrations/20261027140900_allow_incomplete_unpublished_products.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../supabase/migrations/20261027141445_allow_incomplete_unpublished_products.sql", import.meta.url), "utf8");
 const colorApi = readFileSync(new URL("../functions/api/color-assistant.js", import.meta.url), "utf8");
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
