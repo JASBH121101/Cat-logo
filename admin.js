@@ -300,6 +300,7 @@ function updateProductFormMode() {
   $("#product-subcategory-field")?.classList.toggle("hidden", isPerfume);
   if (isPerfume) {
     $("#product-subcategory").value = "";
+    $("#product-custom-tags").value = "";
     document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = false; });
   }
 
@@ -3700,15 +3701,49 @@ function clearEditor() {
   markEditorClean();
 }
 
+const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
+  "Celulares": ["Gaming", "Fotografía", "Batería de larga duración", "Gama alta", "Gama media", "Económicos"],
+  "Laptops": ["Gaming", "Trabajo / Oficina", "Estudio", "Arquitectura / Ingeniería", "Creación de contenido / Diseño", "Uso general"],
+  "Tablets": ["Estudio", "Trabajo / Oficina", "Diseño / Ilustración", "Gaming", "Uso general"],
+  "Televisores": ["Smart TV", "4K / UHD", "OLED", "QLED", "Uso comercial"],
+  "Audio": ["Audífonos", "Bocinas", "Gaming", "Profesional"],
+  "Accesorios": ["Cargadores", "Fundas", "Protección", "Conectividad", "Gaming", "Periféricos"],
+  "Otros": ["Uso general"]
+};
+
+function updateProductSubcategorySuggestions() {
+  const category = normalizeTechnologyCategory($("#product-category")?.value || "");
+  const list = $("#product-subcategory-options");
+  if (!list) return;
+  const suggestions = PRODUCT_SUBCATEGORY_SUGGESTIONS[category] || [];
+  list.replaceChildren(...suggestions.map(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    return option;
+  }));
+}
+
+const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "top_gaming", "best_seller", "new_arrival", "offer", "recommended"]);
+
 function selectedProductTags() {
-  return Array.from(document.querySelectorAll("[data-product-tag]:checked"))
-    .map(input => String(input.value || "").trim().toLowerCase())
-    .filter(Boolean);
+  const predefined = Array.from(document.querySelectorAll("[data-product-tag]:checked"))
+    .map(input => String(input.value || "").trim().toLowerCase()).filter(Boolean);
+  const custom = String($("#product-custom-tags")?.value || "").split(",")
+    .map(tag => tag.trim()).filter(Boolean);
+  const result = [...predefined];
+  const seen = new Set(result.map(tag => tag.toLocaleLowerCase("es")));
+  for (const tag of custom) {
+    const key = tag.toLocaleLowerCase("es");
+    if (!seen.has(key)) { result.push(tag); seen.add(key); }
+  }
+  return result;
 }
 
 function setProductTags(tags) {
-  const selected = new Set((Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim().toLowerCase()));
+  const values = (Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim()).filter(Boolean);
+  const selected = new Set(values.map(tag => tag.toLocaleLowerCase("es")));
   document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = selected.has(input.value); });
+  $("#product-custom-tags").value = values.filter(tag => !PREDEFINED_PRODUCT_TAGS.has(tag.toLowerCase())).join(", ");
 }
 
 function fillEditor(product) {
@@ -3725,6 +3760,7 @@ function fillEditor(product) {
   $("#product-model").value = product.model || "";
   $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : normalizeTechnologyCategory(product.category || "Otros");
   $("#product-subcategory").value = activeCatalogType === "perfumery" ? "" : (product.subcategory || "");
+  updateProductSubcategorySuggestions();
   setProductTags(activeCatalogType === "perfumery" ? [] : (product.tags || []));
   $("#product-description").value = product.description || "";
   $("#product-availability").value = normalizeProductAvailability(product.availability);
