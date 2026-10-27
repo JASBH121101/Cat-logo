@@ -667,7 +667,10 @@ function renderCard(product) {
   const isExclusive = Boolean(product.featured || product.is_exclusive || tags.includes("exclusive"));
   const badge = [
     ...(isExclusive ? ['<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'] : []),
-    ...tags.filter(tag => tag !== "exclusive" && PRODUCT_TAG_LABELS[tag]).map(tag => '<span class="product-badge product-tag-badge tag-' + tag.replace(/[^a-z0-9_-]/g, "") + '">' + PRODUCT_TAG_LABELS[tag] + '</span>')
+    ...tags.filter(tag => tag !== "exclusive").map(tag => {
+      const label = PRODUCT_TAG_LABELS[tag] || tag.replace(/[_-]+/g, " ").replace(/(^|[\\s/])([a-záéíóúñ])/g, (_, separator, letter) => separator + letter.toLocaleUpperCase("es"));
+      return '<span class="product-badge product-tag-badge tag-' + tag.replace(/[^a-z0-9_-]/g, "custom") + '">' + escapeHtml(label) + '</span>';
+    })
   ].join("");
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
