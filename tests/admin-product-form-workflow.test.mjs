@@ -44,13 +44,14 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261027-tags-enter-theme-fix1/);
+  assert.match(html, /admin\.js\?v=20261027-taxonomy-review-select1/);
   assert.match(html, /ui\.js\?v=20261027-admin-backtop1/);
 });
 
 test("technology products support editable subcategories and manually selected tags", () => {
-  assert.match(html, /id="product-subcategory"/);
-  assert.match(html, /id="product-subcategory-options"/);
+  assert.match(html, /<select id="product-subcategory"/);
+  assert.match(html, /id="product-subcategory-custom"/);
+  assert.doesNotMatch(html, /<input id="product-subcategory" list=/);
   assert.match(html, /id="product-custom-tags"/);
   assert.match(html, /id="product-custom-tags-chips"/);
   assert.match(html, /Presioná Enter para guardar cada etiqueta por separado/);
@@ -62,15 +63,22 @@ test("technology products support editable subcategories and manually selected t
   assert.match(theme, /flex-direction:\s*row\s*!important/);
   assert.match(theme, /appearance:\s*none\s*!important/);
   assert.match(admin, /PRODUCT_SUBCATEGORY_SUGGESTIONS/);
-  assert.match(admin, /function updateProductSubcategorySuggestions\(\)/);
+  assert.match(admin, /function updateProductSubcategorySuggestions\(preferredValue\)/);
+  assert.match(admin, /function getSelectedProductSubcategory\(\)/);
   assert.match(admin, /function selectedProductTags\(\)/);
   assert.match(admin, /PREDEFINED_PRODUCT_TAGS/);
   assert.match(html, /id="product-taxonomy-fields"/);
   assert.match(html, /data-product-tag[^>]*value="top_gaming"/);
-  assert.match(admin, /subcategory: isPerfume \? \(existingProduct\?\.subcategory \?\? null\) : \(\$\("#product-subcategory"\)\.value\.trim\(\) \|\| null\)/);
+  assert.match(admin, /subcategory: isPerfume \? \(existingProduct\?\.subcategory \?\? null\) : \(getSelectedProductSubcategory\(\) \|\| null\)/);
   assert.match(admin, /tags: isPerfume \? \(existingProduct\?\.tags \?\? \[\]\) : selectedProductTags\(\)/);
   assert.match(admin, /function setProductTags\(tags\)/);
   assert.match(admin, /function clearEditor\(\)[\s\S]*?customProductTags = \[\];[\s\S]*?renderCustomProductTagChips\(\)/);
+  assert.match(admin, /function parseSpecs\(text\)[\s\S]*?return lines\.map\(line =>/);
+  assert.match(admin, /function specsText\(specs\)[\s\S]*?isGeneratedSpecificationLabel\(key\)/);
+  assert.match(admin, /taxonomyReviewMarkup/);
+  assert.match(admin, /reviewTagLabels/);
+  const publicApp = readFileSync(new URL("../app.js", import.meta.url), "utf8");
+  assert.match(publicApp, /function specsArray\(specs\)[\s\S]*?isGeneratedSpecificationLabel\(key\)/);
 });
 
 test("public technology catalog renders manual badges and a dedicated Top Gaming section", () => {
