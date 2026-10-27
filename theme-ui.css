@@ -10218,3 +10218,97 @@ html[data-theme="dark"] body.admin-body .jb-color-ai-status[data-state="warning"
   .jb-color-ai-dialog { width:100%; max-height:calc(100dvh - max(16px,env(safe-area-inset-top,0px)) - max(16px,env(safe-area-inset-bottom,0px))); padding:15px; border-radius:16px; }
   .jb-color-ai-actions button { flex:1 1 180px; }
 }
+
+
+/* jb-manager-mobile-sidebar-stability
+   Drawer compacto, desplazable y seguro para gestos Android.
+   Evita que los controles inferiores queden bajo la barra del sistema y
+   reduce repaints/hover sticky del WebView táctil. */
+@media (max-width: 760px) {
+  body.admin-body.admin-dashboard-active .admin-sidebar {
+    box-sizing: border-box !important;
+    gap: 9px !important;
+    padding: 14px 13px calc(18px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y;
+    will-change: auto !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-sidebar-brand,
+  body.admin-body.admin-dashboard-active .admin-sidebar-section-label,
+  body.admin-body.admin-dashboard-active .admin-section-nav,
+  body.admin-body.admin-dashboard-active .admin-sidebar-catalog-link,
+  body.admin-body.admin-dashboard-active .admin-sidebar-remember,
+  body.admin-body.admin-dashboard-active .admin-sidebar-logout,
+  body.admin-body.admin-dashboard-active .admin-sidebar-footer {
+    flex-shrink: 0 !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-section-nav {
+    gap: 6px !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-nav-button {
+    min-height: 39px !important;
+    padding: 8px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-sidebar-catalog-link {
+    min-height: 42px !important;
+    margin: 7px 0 3px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-sidebar-remember,
+  body.admin-body.admin-dashboard-active .admin-sidebar-logout {
+    min-height: 42px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-sidebar-footer {
+    margin-top: 4px !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-sidebar-backdrop:not([hidden]) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Android WebView puede conservar :hover después del toque y alternar el
+   aspecto de botones al abrir/cerrar el cajón. En táctil no animar ni moverlos. */
+@media (hover: none) and (pointer: coarse) {
+  body.admin-body .admin-sidebar-catalog-link:hover,
+  body.admin-body .admin-sidebar-remember:hover:not(:disabled),
+  body.admin-body .admin-sidebar-logout:hover:not(:disabled),
+  body.admin-body .admin-sidebar .admin-nav-button:hover:not(.active) {
+    transform: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+  }
+
+  body.admin-body .admin-sidebar-catalog-link:hover {
+    border-color: var(--admin-catalog-link-border, rgba(83, 113, 238, .38)) !important;
+    background: var(--admin-catalog-link-bg, rgba(235, 241, 255, .92)) !important;
+  }
+
+  body.admin-body .admin-sidebar-logout:hover:not(:disabled) {
+    border-color: var(--admin-logout-border, rgba(224, 76, 112, .3)) !important;
+    background: var(--admin-logout-bg, #fff0f4) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.admin-body.admin-dashboard-active .admin-sidebar,
+  body.admin-body .admin-sidebar-catalog-link,
+  body.admin-body .admin-sidebar-remember,
+  body.admin-body .admin-sidebar-logout,
+  body.admin-body .admin-sidebar .admin-nav-button {
+    transition: none !important;
+  }
+}
