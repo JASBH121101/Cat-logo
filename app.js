@@ -733,7 +733,6 @@ function renderCard(product) {
     : cardRam || cardStorage;
   const nioPrice = cardConfiguration ? cardConfiguration.price_nio : startingPrice(product, "price_nio");
   const nio = formatNIO(nioPrice);
-  const colorSwatches = renderProductColorSwatches(product, cardConfiguration);
 
   return `
     <article class="product-card${product.featured ? " featured-product-card" : ""}${cardThemeClasses ? " " + cardThemeClasses : ""}">
@@ -745,7 +744,6 @@ function renderCard(product) {
         <div class="product-category">${escapeHtml([product.category || "Tecnología", product.subcategory].filter(value => String(value || "").trim()).join(" · "))}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
-        <div class="product-card-color-slot${colorSwatches ? "" : " is-empty"}">${colorSwatches}</div>
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
