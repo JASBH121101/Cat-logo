@@ -674,7 +674,7 @@ function startingPrice(product, field = "price_usd") {
 }
 
 function normalizedProductTags(product) {
-  return [...new Set((Array.isArray(product?.tags) ? product.tags : []).map(tag => String(tag || "").trim().toLowerCase()).filter(Boolean))];
+  return [...new Set((Array.isArray(product?.tags) ? product.tags : []).map(tag => String(tag || "").trim().toLowerCase()).filter(tag => Boolean(tag) && tag !== "recommended"))];
 }
 
 const PRODUCT_TAG_LABELS = {
