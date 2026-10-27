@@ -194,6 +194,20 @@ jobs:
           JB_MANAGER_VERSION: 1.0.${{ github.run_number }}
         run: node mobile/prepare-web.mjs
 
+      - name: Verify Android system bars and header safe area
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'viewport-fit=cover' mobile/www/admin.html
+          grep -Fq 'id="jb-manager-android-safe-area"' mobile/www/admin.html
+          grep -Fq -- '--jb-manager-safe-top: var(--safe-area-inset-top' mobile/www/admin.html
+          ! grep -Fq 'padding-top: max(24px' mobile/www/admin.html
+          grep -Fq 'src="./jb-manager-system-bars.js"' mobile/www/admin.html
+          grep -Fq '"insetsHandling": "css"' mobile/capacitor.config.json
+          grep -Fq '"initialViewportFitValueHint": "cover"' mobile/capacitor.config.json
+          test -s mobile/www/jb-manager-system-bars.js
+          echo "Android safe area is part of the header; no extra body spacer is injected."
+
       - name: Verify shared web assets match the browser source
         shell: bash
         run: |
@@ -419,6 +433,7 @@ jobs:
             assets/public/config.js \
             assets/public/jb-manager-back-navigation.js \
             assets/public/jb-manager-apk-updater.js \
+            assets/public/jb-manager-system-bars.js \
             assets/public/img/hero-catalogo.png \
             assets/public/tecnologia/index.html \
             assets/public/perfumeria/index.html \
@@ -493,6 +508,22 @@ jobs:
           }
           unzip -p "$APK" assets/public/jb-manager-apk-updater.js | grep -q 'downloadAndInstall' || {
             echo "APK native APK downloader bridge is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-system-bars.js | grep -q 'SystemBars' || {
+            echo "APK Android system-bars bridge is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'id="jb-manager-android-safe-area"' || {
+            echo "APK admin header safe-area style is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q -- '--jb-manager-safe-top' || {
+            echo "APK admin header does not consume the safe-area inset." >&2
+            exit 1
+          }
+          ! unzip -p "$APK" assets/public/admin.html | grep -q 'padding-top: max(24px' || {
+            echo "APK admin page still includes a blank body top spacer." >&2
             exit 1
           }
           grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
