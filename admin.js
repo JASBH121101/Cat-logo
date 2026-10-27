@@ -291,6 +291,12 @@ function updateProductFormMode() {
   $("#technology-variants-section")?.classList.toggle("hidden", isPerfume);
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
+  $("#product-taxonomy-fields")?.classList.toggle("hidden", isPerfume);
+  $("#product-subcategory-field")?.classList.toggle("hidden", isPerfume);
+  if (isPerfume) {
+    $("#product-subcategory").value = "";
+    document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = false; });
+  }
 
   // Exclusivity/featured is a technology-only control. Keep it out of JB Parfums.
   const exclusiveToggle = $("#toggle-product-exclusive");
@@ -3689,6 +3695,17 @@ function clearEditor() {
   markEditorClean();
 }
 
+function selectedProductTags() {
+  return Array.from(document.querySelectorAll("[data-product-tag]:checked"))
+    .map(input => String(input.value || "").trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function setProductTags(tags) {
+  const selected = new Set((Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim().toLowerCase()));
+  document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = selected.has(input.value); });
+}
+
 function fillEditor(product) {
   activeCatalogType = normalizeCatalogType(product.catalog_type);
   if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
@@ -3702,6 +3719,8 @@ function fillEditor(product) {
   $("#product-brand").value = product.brand || "";
   $("#product-model").value = product.model || "";
   $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : normalizeTechnologyCategory(product.category || "Otros");
+  $("#product-subcategory").value = activeCatalogType === "perfumery" ? "" : (product.subcategory || "");
+  setProductTags(activeCatalogType === "perfumery" ? [] : (product.tags || []));
   $("#product-description").value = product.description || "";
   $("#product-availability").value = normalizeProductAvailability(product.availability);
   $("#product-price-usd").value = product.price_usd ?? "";
@@ -3737,6 +3756,7 @@ function fillEditor(product) {
   const productIsFeatured = activeCatalogType !== "perfumery" && Boolean(product.featured || product.is_exclusive);
   $("#product-featured").checked = productIsFeatured;
   $("#product-exclusive").checked = productIsFeatured;
+  $("#product-tag-exclusive").checked = productIsFeatured;
   $("#product-active").checked = Boolean(product.is_published);
   $("#toggle-product-exclusive")?.setAttribute("aria-pressed",String(productIsFeatured));
   $("#toggle-product-exclusive")?.setAttribute("aria-label", productIsFeatured ? "Destacado / exclusivo activado" : "Destacar en el catálogo");
@@ -3769,6 +3789,8 @@ function setExclusiveToggleUI(value) {
   const featuredField = $("#product-featured");
   if (field) field.checked = Boolean(value);
   if (featuredField) featuredField.checked = Boolean(value);
+  const exclusiveTag = $("#product-tag-exclusive");
+  if (exclusiveTag) exclusiveTag.checked = Boolean(value);
   exclusiveToggleButton?.setAttribute("aria-pressed", String(Boolean(value)));
   exclusiveToggleButton?.setAttribute("aria-label", value ? "Exclusividad activada" : "Marcar como exclusivo");
   if (exclusiveToggleButton) exclusiveToggleButton.title = value
@@ -3786,6 +3808,9 @@ function updateExclusiveBaseline(value) {
   } catch {}
   updateEditorDirtyState();
 }
+document.querySelectorAll("[data-product-tag]").forEach(input => input.addEventListener("change", () => {
+  if (input.value === "exclusive") setExclusiveToggleUI(input.checked);
+}));
 exclusiveToggleButton?.addEventListener("click", async () => {
   if (activeCatalogType === "perfumery") {
     setExclusiveToggleUI(false);
@@ -4916,6 +4941,8 @@ form?.addEventListener("submit", async event => {
       brand: $("#product-brand").value.trim() || null,
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
       category: isPerfume ? "Perfumería" : ($("#product-category").value.trim() || null),
+      subcategory: isPerfume ? null : ($("#product-subcategory").value.trim() || null),
+      tags: isPerfume ? [] : selectedProductTags(),
       availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
       price_nio: priceNIO,
@@ -4931,8 +4958,8 @@ form?.addEventListener("submit", async event => {
         ""
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
-      featured: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked),
-      is_exclusive: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked),
+      featured: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked || $("#product-tag-exclusive").checked),
+      is_exclusive: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked || $("#product-tag-exclusive").checked),
       product_type: isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard",
       workflow_status: targetStatus,
       deleted_at: null,
