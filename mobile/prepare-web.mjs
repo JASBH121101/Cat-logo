@@ -545,7 +545,6 @@ const updateChecker = `
     if (button) {
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
-      button.style.opacity = ".76";
     }
     try {
       const response = await fetch(releasesUrl, { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" });
@@ -569,7 +568,6 @@ const updateChecker = `
       if (button && sequence === checkSequence) {
         button.disabled = false;
         button.removeAttribute("aria-busy");
-        button.style.opacity = "1";
       }
     }
   }
@@ -585,11 +583,11 @@ const updateChecker = `
       button.setAttribute("aria-busy", "false");
       Object.assign(button.style, {
         appearance: "none", boxSizing: "border-box",
-        position: "fixed", zIndex: "2147483000",
+        position: "fixed", zIndex: "1050",
         right: "max(14px, env(safe-area-inset-right, 0px))",
         bottom: "max(64px, calc(env(safe-area-inset-bottom, 0px) + 20px))",
         width: "44px", height: "44px", minWidth: "44px",
-        overflow: "hidden", transform: "translateZ(0)", willChange: "transform",
+        overflow: "hidden",
         padding: "0", display: "grid", placeItems: "center", borderRadius: "14px",
         border: "1px solid rgba(120,150,255,.8)",
         background: "linear-gradient(135deg, rgba(35,89,205,.98), rgba(94,61,204,.98))",
@@ -617,11 +615,16 @@ const updateChecker = `
       const isEditing = Boolean(active && (active.matches("input, textarea, select") || active.isContentEditable));
       const viewport = window.visualViewport;
       const keyboardIsVisible = Boolean(viewport && viewport.height < window.innerHeight * 0.78);
-      updateButton.hidden = isEditing || keyboardIsVisible;
+      const sidebarOpen = window.matchMedia("(max-width: 760px)").matches
+        && document.body.classList.contains("admin-sidebar-open");
+      updateButton.hidden = isEditing || keyboardIsVisible || sidebarOpen;
     };
     document.addEventListener("focusin", syncUpdateButtonVisibility);
     document.addEventListener("focusout", () => window.setTimeout(syncUpdateButtonVisibility, 100));
     if (window.visualViewport) window.visualViewport.addEventListener("resize", syncUpdateButtonVisibility);
+    window.addEventListener("resize", syncUpdateButtonVisibility);
+    const sidebarClassObserver = new MutationObserver(syncUpdateButtonVisibility);
+    sidebarClassObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     syncUpdateButtonVisibility();
   }
 
@@ -877,8 +880,11 @@ const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-
 if (!builtAdminHtml.includes('admin.js?v=20261027-color-knowledge1')) {
   throw new Error("The APK must load the cache-busted admin script containing the current color-knowledge updates.");
 }
-if (!builtAdminHtml.includes('theme-ui.css?v=20261027-shared-ai-color-library1')) {
-  throw new Error("The APK admin page is missing the expected AI color dialog styles.");
+if (!builtAdminHtml.includes('theme-ui.css?v=20261027-mobile-sidebar-stability2')) {
+  throw new Error("The APK admin page is missing the latest mobile sidebar stability styles.");
+}
+if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
+  throw new Error("The APK stylesheet is missing the Android mobile-sidebar stability patch.");
 }
 for (const [label, source, fragments] of [
   ["admin.js", builtAdminScript, [
@@ -1005,6 +1011,15 @@ if (!builtAdminHtml.includes("jb-manager-check-updates")) {
 }
 if (!updaterScript[1].includes("document.documentElement.append(button)")) {
   throw new Error("The update button is not attached to the fixed viewport root.");
+}
+if (!updaterScript[1].includes('zIndex: "1050"')
+  || updaterScript[1].includes('transform: "translateZ(0)"')
+  || updaterScript[1].includes('willChange: "transform"')) {
+  throw new Error("The Android update button must not force a GPU layer above the mobile drawer.");
+}
+if (!updaterScript[1].includes('document.body.classList.contains("admin-sidebar-open")')
+  || !updaterScript[1].includes("sidebarClassObserver.observe(document.body")) {
+  throw new Error("The Android update button must hide and resync when the mobile admin drawer opens.");
 }
 if (!updaterScript[1].includes('button.innerHTML = \'<svg viewBox="0 0 24 24"')) {
   throw new Error("The Android update button is missing its stable SVG refresh icon.");
