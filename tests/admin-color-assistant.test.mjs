@@ -21,7 +21,7 @@ test("variant color controls add AI/photo assistance without removing palette to
 
 test("shared color library uses the authenticated Supabase client", () => {
   assert.match(adminJs, /from\("color_library"\)/);
-  assert.match(adminJs, /syncSharedColorLibrary\(\{migrateLocal:true\}\)/);
+  assert.match(adminJs, /syncSharedColorLibrary\(\{\s*migrateLocal:\s*true\s*\}\)/);
   assert.match(adminJs, /onConflict:"name_key"/);
 });
 
