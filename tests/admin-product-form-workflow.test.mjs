@@ -22,7 +22,8 @@ test("RAM and storage controls are limited to phones, tablets, and laptops", () 
 });
 
 test("variant editor restores the add button and exposes the primary RAM/storage configuration for legacy categories", () => {
-  assert.match(admin, /function normalizeTechnologyCategory[\s\S]*?return "Celulares"[\s\S]*?return "Laptops"[\s\S]*?return "Tablets"/);
+  assert.match(admin, /function normalizeTechnologyCategory[\s\S]*?return "Celulares"[\s\S]*?return "Laptops"[\s\S]*?return "Tablets"[\s\S]*?return "Consolas"/);
+  assert.match(admin, /value: "Consolas", label: "Consolas"/);
   assert.match(admin, /baseColorManager\?\.classList\.toggle\("is-ram-storage", usesRamStorage\)/);
   assert.match(admin, /renderVariantRows\(activeCatalogType === "perfumery" \? \[\] : legacyVariants\(product\)\);\s*updateCategoryVariantVisibility\(\);/);
   assert.match(html, /id="add-variant-button"[^>]*aria-label="Agregar variante de RAM y almacenamiento"/);
@@ -45,7 +46,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261027-taxonomy-review-select1/);
+  assert.match(html, /admin\.js\?v=20261027-consolas-category1/);
   assert.match(html, /ui\.js\?v=20261027-admin-backtop1/);
 });
 
