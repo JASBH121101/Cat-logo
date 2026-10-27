@@ -271,7 +271,7 @@ jobs:
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
           grep -Fq 'admin.js?v=20261027-audit-cascade1' admin.html
-          grep -Fq '20261027-taxonomy-review-select1' admin.html
+          grep -Fq '20261027-audit-cascade1' admin.html
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
           grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
           grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
@@ -282,9 +282,9 @@ jobs:
           echo "Shared AI color knowledge, manufacturer aliases, exact lookups, and photo endpoint are present."
 
           # The product detail must package the same final gallery fix as the public source.
-          grep -Fq 'technology-visual-refresh.css?v=20261027-catalog-header-review1' mobile/www/tecnologia/index.html
-          grep -Fq 'app.js?v=20261027-specs-clean-review1' mobile/www/tecnologia/index.html
-          grep -Fq 'perfumeria.css?v=20261026-caption-readability1' mobile/www/perfumeria/index.html
+          grep -Fq 'technology-visual-refresh.css?v=20261027-audit-cascade1' mobile/www/tecnologia/index.html
+          grep -Fq 'app.js?v=20261027-audit-cascade1' mobile/www/tecnologia/index.html
+          grep -Fq 'perfumeria.css?v=20261027-audit-cascade1' mobile/www/perfumeria/index.html
           ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
           ! grep -Fq 'Explorar perfumería' mobile/www/perfumeria/index.html
           grep -Fq 'Hero cleanup: remove the redundant scroll CTA' mobile/www/technology-visual-refresh.css
@@ -589,7 +589,7 @@ jobs:
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-taxonomy-review-select1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-audit-cascade1' || {
             echo "APK does not reference the latest admin color-assistant styles." >&2
             exit 1
           }
