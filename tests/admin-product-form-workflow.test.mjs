@@ -23,7 +23,7 @@ test("RAM and storage controls are limited to phones, tablets, and laptops", () 
 
 test("variant add control is available for every technology category and fields adapt immediately", () => {
   assert.match(admin, /addVariantButton\?\.classList\.remove\("hidden"\)/);
-  assert.match(admin, /addVariantButton\.title = usesRamStorage \?[\s\S]*?Agregar otra variante de precio y color/);
+  assert.match(admin, /addVariantButton\.title = usesRamStorage[\s\S]*?Agregar otra variante de precio y color/);
   assert.match(admin, /updateCategoryVariantVisibility\(\);[\s\S]*?const focusSelector = categoryUsesRamStorage\(\) \?[\s\S]*?data-group-price-usd/);
   assert.match(html, /id="base-color-manager" class="base-color-manager primary-config-slot"/);
 });
@@ -54,7 +54,7 @@ test("admin hides the floating back-to-top control and forces fresh script URLs"
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
   assert.match(html, /admin\.js\?v=20261027-variant-editor-add1/);
-  assert.match(html, /ui\.js\?v=20261027-variant-editor-add1/);
+  assert.match(html, /ui\.js\?v=20261027-admin-backtop1/);
 });
 
 test("technology products support editable subcategories and manually selected tags", () => {
