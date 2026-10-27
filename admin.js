@@ -705,6 +705,139 @@ function applyColorToRow(row, color, options = {}) {
   syncColorLibraryRowControls(row);
   updateEditorDirtyState();
 }
+
+function sharedColorNameKey(value) { return normalizeColorSearch(value).replace(/\s+/g, " ").trim(); }
+async function persistColorLibraryEntry(color, options = {}) {
+  const name = String(color?.name || "").trim(), hex = validHex(color?.hex, "").toUpperCase(), name_key = sharedColorNameKey(name);
+  if (!name || !hex || !name_key) return {ok:false, message:"Nombre o HEX inválido."};
+  if (!supabase || !currentUser?.id) return {ok:false, message:"No hay sesión para sincronizar."};
+  try {
+    const lookup = await supabase.from("color_library").select("id,name,name_key,hex,aliases,is_favorite").eq("name_key", name_key).maybeSingle();
+    if (lookup.error) throw lookup.error;
+    const existing = lookup.data || null;
+    if (existing && String(existing.hex || "").toUpperCase() !== hex) return {ok:false, message:"Ese nombre ya está registrado con otro HEX. Usá un nombre más específico."};
+    const aliases = [...new Set([...(existing?.aliases || []), ...(color?.aliases || []), ...(options.aliases || [])].map(v=>String(v||"").trim()).filter(Boolean))].slice(0,20);
+    const favorite = typeof options.favorite === "boolean" ? options.favorite : Boolean(existing?.is_favorite || color?.favorite);
+    const {error} = await supabase.from("color_library").upsert({name,name_key,hex,aliases,is_favorite:favorite,updated_by:currentUser.id,updated_at:new Date().toISOString()},{onConflict:"name_key"});
+    if (error) throw error;
+    return {ok:true,message:"Color sincronizado con la biblioteca compartida."};
+  } catch (error) {
+    console.warn("No se pudo sincronizar la biblioteca compartida de colores.",error);
+    return {ok:false,message:"Quedó en este dispositivo, pero no se pudo sincronizar con Supabase."};
+  }
+}
+async function syncSharedColorLibrary(options = {}) {
+  if (!supabase || !currentUser?.id) return false;
+  try {
+    let result = await supabase.from("color_library").select("id,name,name_key,hex,aliases,is_favorite,updated_at").order("updated_at",{ascending:false}).limit(500);
+    if (result.error) throw result.error;
+    let rows = Array.isArray(result.data) ? result.data : [];
+    const local = readColorLibraryData(), remote = new Map(rows.map(v=>[v.name_key || sharedColorNameKey(v.name),v]));
+    if (options.migrateLocal !== false) {
+      for (const item of local.items) {
+        const key = sharedColorNameKey(item.name), existing = remote.get(key);
+        if (!existing) {
+          const saved = await persistColorLibraryEntry(item,{favorite:Boolean(item.favorite),aliases:item.aliases||[]});
+          if (saved.ok) remote.set(key,{name:item.name,name_key:key,hex:item.hex,aliases:item.aliases||[],is_favorite:Boolean(item.favorite)});
+        } else if (String(existing.hex||"").toUpperCase() === String(item.hex||"").toUpperCase()) {
+          const aliases = [...new Set([...(existing.aliases||[]),...(item.aliases||[])])], favorite = Boolean(existing.is_favorite||item.favorite);
+          if (aliases.length !== (existing.aliases||[]).length || favorite !== Boolean(existing.is_favorite)) await persistColorLibraryEntry({...item,aliases},{favorite,aliases});
+        }
+      }
+      result = await supabase.from("color_library").select("id,name,name_key,hex,aliases,is_favorite,updated_at").order("updated_at",{ascending:false}).limit(500);
+      if (result.error) throw result.error;
+      rows = Array.isArray(result.data) ? result.data : [];
+    }
+    const merged = new Map();
+    rows.forEach(item=>{ const name=String(item.name||"").trim(), hex=validHex(item.hex,"").toUpperCase(); if(name&&hex) merged.set(sharedColorNameKey(name),{name,hex,aliases:Array.isArray(item.aliases)?item.aliases:[],favorite:Boolean(item.is_favorite),updatedAt:item.updated_at?Date.parse(item.updated_at)||0:0}); });
+    for (const item of local.items) if (!merged.has(sharedColorNameKey(item.name))) merged.set(sharedColorNameKey(item.name),item);
+    const data=readColorLibraryData();
+    data.items=[...merged.values()].sort((a,b)=>Number(b.updatedAt||0)-Number(a.updatedAt||0)).slice(0,500);
+    writeColorLibraryData(data); data.items.forEach(ensureColorInPalette); renderColorLibraryDatalist();
+    if (typeof renderQuickColorPalette==="function") renderQuickColorPalette(typeof quickColorSearch!=="undefined"?quickColorSearch?.value||"":"");
+    form?.querySelectorAll("[data-variant-row]").forEach(syncColorLibraryRowControls);
+    return true;
+  } catch(error) { console.warn("No se pudo cargar la biblioteca compartida de colores.",error); return false; }
+}
+async function colorImageToDataUrl(file) {
+  if (!file || !String(file.type||"").startsWith("image/")) throw new Error("Elegí una fotografía válida del producto.");
+  if (file.size > 18*1024*1024) throw new Error("La imagen es demasiado grande. Elegí una de menos de 18 MB.");
+  let bitmap; try { bitmap=await createImageBitmap(file); } catch { throw new Error("No se pudo abrir la imagen. Probá con JPG, PNG o WebP."); }
+  try {
+    const scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height)), canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale)); canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    const context=canvas.getContext("2d"); if(!context) throw new Error("No se pudo procesar la fotografía.");
+    context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+    const url=canvas.toDataURL("image/jpeg",0.82); if(url.length>5600000) throw new Error("La imagen todavía pesa demasiado. Elegí otra fotografía.");
+    return url;
+  } finally { bitmap.close?.(); }
+}
+function openColorAssistant(row) {
+  if(!row) return;
+  document.getElementById("jb-color-ai-overlay")?.remove();
+  const overlay=document.createElement("div"); overlay.id="jb-color-ai-overlay"; overlay.className="jb-color-ai-overlay";
+  overlay.innerHTML=
+    '<section class="jb-color-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="jb-color-ai-title">'+
+    '<header class="jb-color-ai-header"><div><p class="jb-color-ai-eyebrow">JB COLLECTIONS · COLOR LAB</p><h2 id="jb-color-ai-title">Identificar color con IA</h2></div><button type="button" class="jb-color-ai-close" data-color-ai-close aria-label="Cerrar">×</button></header>'+
+    '<p class="jb-color-ai-intro">Consultá por código o referencia, o adjuntá una foto. La sugerencia no confirma un color oficial.</p>'+
+    '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180" placeholder="Ej. Samsung Galaxy S25 Ultra"></label>'+
+    '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320" placeholder="Ej. Titanium Jadegreen, código X..."></label>'+
+    '<label class="jb-color-ai-field">Fotografía del producto (opcional)<input type="file" data-color-ai-image accept="image/jpeg,image/png,image/webp,image/avif"><span class="jb-color-ai-file-note" data-color-ai-file-note>La foto solo se usa en esta consulta.</span></label>'+
+    '<div class="jb-color-ai-preview" data-color-ai-preview hidden><img alt="Vista previa"><span data-color-ai-file-name></span></div>'+
+    '<div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-primary" data-color-ai-analyze>Analizar color</button></div>'+
+    '<p class="jb-color-ai-status" data-color-ai-status role="status" aria-live="polite"></p>'+
+    '<section class="jb-color-ai-result" data-color-ai-result hidden><div class="jb-color-ai-result-main"><span class="jb-color-ai-result-swatch" data-color-ai-swatch></span><div><h3 data-color-ai-name></h3><code data-color-ai-hex></code></div></div><p data-color-ai-basis></p><p data-color-ai-explanation></p><div class="jb-color-ai-aliases" data-color-ai-aliases></div><div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-secondary" data-color-ai-save>Guardar en biblioteca</button><button type="button" class="jb-color-ai-primary" data-color-ai-apply>Aplicar a esta variante</button></div></section>'+
+    '<p class="jb-color-ai-disclaimer">El HEX de una foto es aproximado por la iluminación, reflejos y acabado. Los códigos por texto no se verifican contra el fabricante en tiempo real.</p></section>';
+  document.body.append(overlay);
+  const productInput=overlay.querySelector("[data-color-ai-product]"), queryInput=overlay.querySelector("[data-color-ai-query]"), imageInput=overlay.querySelector("[data-color-ai-image]");
+  const fileNote=overlay.querySelector("[data-color-ai-file-note]"), preview=overlay.querySelector("[data-color-ai-preview]"), previewImage=preview.querySelector("img"), fileName=overlay.querySelector("[data-color-ai-file-name]");
+  const status=overlay.querySelector("[data-color-ai-status]"), resultPanel=overlay.querySelector("[data-color-ai-result]"), analyzeButton=overlay.querySelector("[data-color-ai-analyze]");
+  const saveButton=overlay.querySelector("[data-color-ai-save]"), applyButton=overlay.querySelector("[data-color-ai-apply]");
+  let colorResult=null, previewUrl="";
+  productInput.value=[$("#product-brand")?.value||"",$ ("#product-model")?.value||"",$ ("#product-name")?.value||""].filter(Boolean).join(" ").slice(0,180);
+  const activeName=row.querySelector("[data-variant-color]")?.value.trim()||""; if(activeName) queryInput.value=activeName;
+  function close(){if(previewUrl)URL.revokeObjectURL(previewUrl);overlay.remove();document.removeEventListener("keydown",onKeyDown,true);}
+  function onKeyDown(event){if(event.key==="Escape")close();}
+  overlay.querySelector("[data-color-ai-close]").addEventListener("click",close);
+  overlay.addEventListener("click",event=>{if(event.target===overlay)close();});
+  document.addEventListener("keydown",onKeyDown,true);
+  imageInput.addEventListener("change",()=>{const file=imageInput.files?.[0];if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl="";if(!file){preview.hidden=true;return;}previewUrl=URL.createObjectURL(file);previewImage.src=previewUrl;fileName.textContent=file.name;preview.hidden=false;fileNote.textContent="Fotografía preparada para analizar.";});
+  analyzeButton.addEventListener("click",async()=>{
+    const query=queryInput.value.trim(), productContext=productInput.value.trim(), file=imageInput.files?.[0]||null;
+    if(!query&&!file){status.textContent="Escribí una referencia/pregunta o adjuntá una foto.";status.dataset.state="error";return;}
+    if(!supabase||!currentUser?.id){status.textContent="Volvé a iniciar sesión como administrador.";status.dataset.state="error";return;}
+    analyzeButton.disabled=true;analyzeButton.textContent="Analizando…";status.textContent=file?"Analizando la fotografía…":"Consultando la referencia…";status.dataset.state="busy";resultPanel.hidden=true;colorResult=null;
+    try{
+      const session=await supabase.auth.getSession(), token=session.data?.session?.access_token||"";if(!token)throw new Error("La sesión expiró. Volvé a iniciar sesión.");
+      const imageDataUrl=file?await colorImageToDataUrl(file):"", apiBase=String(CONFIG.publicCatalogUrl||"https://jb-collections.pages.dev").replace(/\/+$/,"");
+      const response=await fetch(apiBase+"/api/color-assistant",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({query,productContext,imageDataUrl})});
+      const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.message||"No se pudo analizar el color (HTTP "+response.status+").");
+      if(!payload.name||!/^#[0-9a-f]{6}$/i.test(String(payload.hex||"")))throw new Error("La IA no encontró un color claro. Probá otra foto o agregá el modelo exacto.");
+      colorResult={name:String(payload.name).trim(),hex:String(payload.hex).toUpperCase(),aliases:Array.isArray(payload.aliases)?payload.aliases.map(v=>String(v||"").trim()).filter(Boolean).slice(0,8):[],favorite:false};
+      overlay.querySelector("[data-color-ai-swatch]").style.background=colorResult.hex;
+      overlay.querySelector("[data-color-ai-name]").textContent=colorResult.name;
+      overlay.querySelector("[data-color-ai-hex]").textContent=colorResult.hex;
+      overlay.querySelector("[data-color-ai-basis]").textContent=payload.basis==="visual_estimate"?"Estimación visual basada en la fotografía.":"Sugerencia por texto/código; no verificada oficialmente.";
+      overlay.querySelector("[data-color-ai-explanation]").textContent=String(payload.explanation||payload.note||"Confirmá el nombre con la ficha del fabricante antes de publicarlo.");
+      const aliases=overlay.querySelector("[data-color-ai-aliases]");aliases.replaceChildren();colorResult.aliases.forEach(alias=>{const chip=document.createElement("span");chip.textContent=alias;aliases.append(chip);});
+      resultPanel.hidden=false;status.textContent="Resultado listo. Guardalo en la biblioteca o aplicalo a esta variante.";status.dataset.state="success";
+    }catch(error){status.textContent=error.message||"No se pudo analizar el color.";status.dataset.state="error";}
+    finally{analyzeButton.disabled=false;analyzeButton.textContent="Analizar color";}
+  });
+  saveButton.addEventListener("click",async()=>{
+    if(!colorResult)return;const local=saveColorToLibrary(colorResult);if(!local.ok){status.textContent=local.message;status.dataset.state="error";return;}
+    const shared=await persistColorLibraryEntry(colorResult);status.textContent=shared.ok?local.message+" Sincronizado en todos los dispositivos.":local.message+" "+shared.message;status.dataset.state=shared.ok?"success":"warning";
+    renderColorLibraryDatalist();if(typeof renderQuickColorPalette==="function")renderQuickColorPalette(typeof quickColorSearch!=="undefined"?quickColorSearch?.value||"":"");
+    form?.querySelectorAll("[data-variant-row]").forEach(syncColorLibraryRowControls);
+  });
+  applyButton.addEventListener("click",()=>{
+    if(!colorResult)return;applyColorToRow(row,colorResult);
+    const search=row.querySelector("[data-variant-library-search]");if(search)search.value=colorResult.name;
+    const rowStatus=row.querySelector("[data-variant-status]");if(rowStatus){rowStatus.textContent="Color sugerido por IA aplicado al formulario. Guardá el producto para persistir la variante.";rowStatus.dataset.state="success";}
+    close();
+  });
+  overlay.querySelector("[data-color-ai-close]").focus();
+}
 hydrateColorLibraryPalette();
 
 
@@ -1177,6 +1310,7 @@ function variantRowMarkup(variant = {}) {
             <div class="variant-color-library-actions">
               <button class="admin-mini-button" type="button" data-save-color-library aria-pressed="${String(librarySaved)}">${librarySaved ? "✓ Biblioteca" : "＋ Biblioteca"}</button>
               <button class="admin-mini-button" type="button" data-toggle-color-favorite aria-pressed="${String(libraryFavorite)}">${libraryFavorite ? "★ Favorito" : "☆ Favorito"}</button>
+              <button class="admin-mini-button jb-color-ai-trigger" type="button" data-ai-color-open aria-label="Identificar color con IA o fotografía" title="Identificar color con IA o fotografía">✦ IA / foto</button>
             </div>
           </div>
           <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
@@ -1885,20 +2019,24 @@ $("#add-variant-button")?.addEventListener("click", event => {
   updateEditorDirtyState();
 });
 
-form?.addEventListener("click", event => {
+form?.addEventListener("click", async event => {
+  const aiColorButton = event.target.closest("[data-ai-color-open]");
+  if (aiColorButton) { openColorAssistant(aiColorButton.closest("[data-variant-row]")); return; }
   const saveLibraryButton = event.target.closest("[data-save-color-library]");
   if (saveLibraryButton) {
     const row = saveLibraryButton.closest("[data-variant-row]");
     const color = { name: row?.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row?.querySelector("[data-variant-hex]")?.value, "") };
     const result = saveColorToLibrary(color);
     const status = row?.querySelector("[data-variant-status]");
+    if (result.ok) {
+      const shared = await persistColorLibraryEntry(color);
+      result.message += shared.ok ? " Sincronizado en todos los dispositivos." : " " + shared.message;
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+    }
     if (status) {
       status.textContent = result.message;
       status.dataset.state = result.ok ? "success" : "error";
-    }
-    if (result.ok) {
-      renderColorLibraryDatalist();
-      renderQuickColorPalette(quickColorSearch?.value || "");
     }
     syncColorLibraryRowControls(row);
     return;
@@ -1910,13 +2048,15 @@ form?.addEventListener("click", event => {
     const color = { name: row?.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row?.querySelector("[data-variant-hex]")?.value, "") };
     const result = toggleColorFavorite(color);
     const status = row?.querySelector("[data-variant-status]");
+    if (result.ok) {
+      const shared = await persistColorLibraryEntry(color, { favorite: result.favorite });
+      result.message += shared.ok ? " Favorito sincronizado." : " " + shared.message;
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+    }
     if (status) {
       status.textContent = result.message;
       status.dataset.state = result.ok ? "success" : "error";
-    }
-    if (result.ok) {
-      renderColorLibraryDatalist();
-      renderQuickColorPalette(quickColorSearch?.value || "");
     }
     syncColorLibraryRowControls(row);
     return;
@@ -2160,6 +2300,7 @@ async function showDashboard(user) {
   setStatus("Sesión iniciada");
   window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
 
+  await syncSharedColorLibrary({ migrateLocal: true });
   await loadProducts();
   await checkLocalRecoveryDraft();
 }
