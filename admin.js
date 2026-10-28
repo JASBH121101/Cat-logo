@@ -3169,16 +3169,39 @@ function privateChatRenderSelected() {
   const item = privateChatSelectedConversation();
   if (!item) {
     privateChatSelectedPanel.hidden = true;
-    if (privateChatEmptyPanel) privateChatEmptyPanel.hidden = true;
-    if (privateChatThreadEl) privateChatThreadEl.hidden = true;
+    privateChatSelectedPanel.style.display = "none";
+    if (privateChatEmptyPanel) {
+      privateChatEmptyPanel.hidden = true;
+      privateChatEmptyPanel.style.display = "none";
+    }
+    if (privateChatThreadEl) {
+      privateChatThreadEl.hidden = true;
+      privateChatThreadEl.style.display = "none";
+      privateChatThreadEl.style.height = "auto";
+      privateChatThreadEl.style.minHeight = "0";
+    }
     privateChatLayoutEl?.classList.remove("has-selection");
     privateChatReplyForm.hidden = true;
     privateChatRenderMessages([]);
     return;
   }
   privateChatSelectedPanel.hidden = false;
-  if (privateChatEmptyPanel) privateChatEmptyPanel.hidden = true;
-  if (privateChatThreadEl) privateChatThreadEl.hidden = false;
+  privateChatSelectedPanel.style.display = "block";
+  privateChatSelectedPanel.style.flex = "0 0 auto";
+  privateChatSelectedPanel.style.minHeight = "0";
+  privateChatSelectedPanel.style.height = "auto";
+  if (privateChatEmptyPanel) {
+    privateChatEmptyPanel.hidden = true;
+    privateChatEmptyPanel.style.display = "none";
+  }
+  if (privateChatThreadEl) {
+    privateChatThreadEl.hidden = false;
+    privateChatThreadEl.style.display = "block";
+    privateChatThreadEl.style.height = "auto";
+    privateChatThreadEl.style.minHeight = "0";
+    privateChatThreadEl.style.maxHeight = "none";
+    privateChatThreadEl.style.justifyContent = "flex-start";
+  }
   privateChatLayoutEl?.classList.add("has-selection");
   const status = String(item.status || "");
   const canClaim = status === "pending_advisor" && !item.claimed_by;
@@ -3197,10 +3220,30 @@ function privateChatRenderSelected() {
     ? item.product_url : "https://jb-collections.pages.dev/";
   productLink.href = safeProductUrl;
   productLink.hidden = !item.product_id;
-  document.getElementById("private-chat-admin-claim").hidden = !canClaim;
-  document.getElementById("private-chat-admin-purchase").hidden = !canExtend;
-  document.getElementById("private-chat-admin-close").hidden = !canClose;
+  const claimButton = document.getElementById("private-chat-admin-claim");
+  const purchaseButton = document.getElementById("private-chat-admin-purchase");
+  const closeButton = document.getElementById("private-chat-admin-close");
+  claimButton.hidden = !canClaim;
+  claimButton.style.display = canClaim ? "" : "none";
+  purchaseButton.hidden = !canExtend;
+  purchaseButton.style.display = canExtend ? "" : "none";
+  closeButton.hidden = !canClose;
+  closeButton.style.display = canClose ? "" : "none";
   privateChatReplyForm.hidden = !ownActive;
+  privateChatReplyForm.style.display = ownActive ? "" : "none";
+  productLink.style.display = item.product_id ? "" : "none";
+
+  const actionsPanel = document.getElementById("private-chat-admin-actions");
+  if (actionsPanel) {
+    actionsPanel.style.display = [canClaim, canExtend, canClose].some(Boolean) ? "flex" : "none";
+  }
+  const messagesPanel = document.getElementById("private-chat-admin-messages");
+  if (messagesPanel) {
+    messagesPanel.style.flex = "0 1 auto";
+    messagesPanel.style.minHeight = "0";
+    messagesPanel.style.height = "auto";
+    messagesPanel.style.maxHeight = "260px";
+  }
   if (status === "pending_consent") {
     privateChatSetStatus("La conversación está pendiente de que el cliente elija atención o autorice continuar con una compra.");
   } else if (status === "declined_pending_delete") {
