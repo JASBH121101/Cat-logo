@@ -275,7 +275,7 @@ function whatsappLink(message) {
   return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
 }
 
-async function openPerfumeAIContact(product, paymentType = "product", button = null) {
+async function startPerfumePrivateChat(product, paymentType = "product", button = null) {
   if (!product) {
     window.alert("No pudimos identificar esta fragancia. Cerrá la ficha y volvé a abrirla.");
     return;
@@ -1077,7 +1077,7 @@ dialogContent.addEventListener("click", event => {
     const paymentType = aiContactButton.id === "perfume-payment-jb"
       ? (dialogContent.querySelector("#perfume-payment-type")?.value || "product")
       : "product";
-    if (product) void openPerfumeAIContact(product, paymentType, aiContactButton);
+    if (product) void startPerfumePrivateChat(product, paymentType, aiContactButton);
     return;
   }
   const galleryStep = target?.closest("[data-gallery-step]");
