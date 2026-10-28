@@ -839,6 +839,71 @@
         </section>
       </section>
 
+      <section id="admin-section-messages" class="admin-nav-panel hidden private-chat-admin-panel" data-admin-panel="messages">
+        <header class="private-chat-admin-heading">
+          <div>
+            <p class="eyebrow">ATENCIÓN PERSONAL · PRIVADO</p>
+            <h2>Mensajería privada</h2>
+            <p>Revisá las consultas aceptadas, tomá una conversación y respondé manualmente. La IA puede preparar un borrador, pero nunca lo envía por su cuenta.</p>
+          </div>
+          <div class="private-chat-admin-heading-actions">
+            <button id="private-chat-refresh" type="button" class="button button-outline">Actualizar</button>
+            <button id="private-chat-notifications" type="button" class="button button-outline">Activar avisos</button>
+          </div>
+        </header>
+        <section class="admin-card private-chat-invite-card">
+          <div class="private-chat-invite-copy">
+            <h3>Crear enlace temporal</h3>
+            <p>El enlace vence en 30 minutos y solo puede utilizarse una vez. No lo compartás en publicaciones públicas.</p>
+          </div>
+          <form id="private-chat-invite-form" class="private-chat-invite-form">
+            <label><span>Catálogo</span><select id="private-chat-invite-catalog"><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option><option value="collections">JB Collections</option></select></label>
+            <label><span>Motivo</span><select id="private-chat-invite-topic"><option value="product">Consulta general</option><option value="financing">Financiamiento</option><option value="credit_card">Tarjeta de crédito</option><option value="other">Otra consulta</option></select></label>
+            <label class="private-chat-invite-wide"><span>Producto (opcional)</span><input id="private-chat-invite-product" maxlength="160" placeholder="Nombre del producto o consulta general"></label>
+            <button id="private-chat-create-invite" type="submit" class="button button-primary">Crear enlace</button>
+          </form>
+          <div id="private-chat-invite-result" class="private-chat-invite-result" hidden>
+            <label for="private-chat-invite-url">Enlace de un solo uso</label>
+            <div><input id="private-chat-invite-url" type="url" readonly><button id="private-chat-copy-invite" type="button" class="button button-outline">Copiar</button></div>
+            <p id="private-chat-invite-expiry">Vence en 30 minutos.</p>
+          </div>
+        </section>
+        <div class="private-chat-admin-layout">
+          <section class="admin-card private-chat-admin-list-section" aria-labelledby="private-chat-list-title">
+            <div class="private-chat-section-heading">
+              <div><h3 id="private-chat-list-title">Conversaciones</h3><p id="private-chat-list-subtitle">Cargando consultas…</p></div>
+              <select id="private-chat-filter" aria-label="Filtrar conversaciones"><option value="active">Pendientes y activas</option><option value="all">Todas las visibles</option><option value="pending">Pendientes de asesor</option><option value="claimed">Tomadas por asesor</option><option value="consent">Esperando consentimiento</option></select>
+            </div>
+            <div id="private-chat-admin-list" class="private-chat-admin-list" aria-live="polite"><p class="admin-empty-state">Cargando conversaciones privadas…</p></div>
+            <p id="private-chat-admin-status" class="form-status private-chat-feedback" role="status" aria-live="polite"></p>
+          </section>
+          <section class="admin-card private-chat-thread-section" aria-labelledby="private-chat-thread-title">
+            <div id="private-chat-thread-empty" class="private-chat-thread-empty"><span aria-hidden="true">✉</span><h3>Elegí una conversación</h3><p>Los mensajes del cliente aparecerán aquí. Tomá una consulta para responder.</p></div>
+            <div id="private-chat-thread-view" hidden>
+              <header class="private-chat-thread-heading">
+                <div><p class="eyebrow" id="private-chat-thread-catalog">JB COLLECTIONS</p><h3 id="private-chat-thread-title">Consulta</h3><p id="private-chat-thread-topic">Consulta general</p></div>
+                <span id="private-chat-thread-state" class="private-chat-state-pill">Pendiente</span>
+              </header>
+              <div class="private-chat-thread-product"><a id="private-chat-thread-product-link" href="../" target="_blank" rel="noopener">Ver producto</a><span id="private-chat-thread-created"></span></div>
+              <div id="private-chat-thread-messages" class="private-chat-thread-messages" role="log" aria-live="polite"></div>
+              <div class="private-chat-thread-actions">
+                <button id="private-chat-claim" type="button" class="button button-primary">Tomar conversación</button>
+                <button id="private-chat-close" type="button" class="button button-outline">Cerrar conversación</button>
+              </div>
+              <form id="private-chat-reply-form" class="private-chat-reply-form">
+                <label for="private-chat-reply">Respuesta manual</label>
+                <textarea id="private-chat-reply" rows="3" maxlength="1200" placeholder="Escribí una respuesta para el cliente…"></textarea>
+                <div class="private-chat-reply-actions">
+                  <button id="private-chat-ai-draft" type="button" class="button button-outline">Preparar borrador con IA</button>
+                  <button id="private-chat-send" type="submit" class="button button-primary">Enviar respuesta</button>
+                </div>
+                <p>El borrador de IA solo se coloca en el cuadro de texto. Revisalo y presioná «Enviar respuesta» para mandarlo.</p>
+              </form>
+            </div>
+          </section>
+        </div>
+      </section>
+
     </section>
   </main>
 
