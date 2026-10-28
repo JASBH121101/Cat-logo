@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261028210000_private_chat_secure_workflow.sql", import.meta.url), "utf8");
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213000_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
+const duplicateNoticeFix = readFileSync(new URL("../supabase/migrations/20261028230000_remove_duplicate_private_chat_consent.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
@@ -43,6 +44,18 @@ test("database workflow restricts direct table access and protects admin actions
   assert.match(migration, /interval '10 minutes'/);
   assert.match(migration, /interval '30 minutes'/);
   assert.match(migration, /interval '7 days'/);
+});
+
+test("purchase consent is shown once and private chat supports the selected light/dark theme", () => {
+  assert.match(duplicateNoticeFix, /delete from public\\.private_chat_messages/i);
+  assert.match(duplicateNoticeFix, /create or replace function public\\.private_chat_choose_route/i);
+  assert.doesNotMatch(duplicateNoticeFix, /insert into public\\.private_chat_messages \\(conversation_id, sender_type, content\\)\\s*values \\(v_row\\.id, 'assistant', v_notice\\)/i);
+  assert.match(customerJs, /threadPanel\\.hidden = routeNotChosen \\|\\| isWaitingConsent/);
+  assert.match(customerHtml, /id="private-chat-theme-toggle"/);
+  assert.match(customerJs, /ct-catalog-theme/);
+  assert.match(readFileSync(new URL("../private-chat.css", import.meta.url), "utf8"), /:root\\[data-theme="dark"\\]/);
+  assert.match(adminCss, /#admin-section-messages \\[hidden\\]\\{display:none!important\\}/);
+  assert.match(adminCss, /html\\[data-theme="dark"\\] body\\.admin-body #admin-section-messages/);
 });
 
 test("identity detection fix requires a digit for cédula/passport-like values", () => {
