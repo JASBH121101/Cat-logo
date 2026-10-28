@@ -47,9 +47,9 @@ function cleanPrice(value) {
 
 function normalizeAvailability(value, allowUnknown = true) {
   const normalized = normalizedText(value).replace(/ /g, "_");
-  if (["available", "disponible", "in_stock", "en_stock", "si"].includes(normalized)) return "available";
-  if (["on_order", "order", "por_pedido", "pedido", "bajo_pedido"].includes(normalized)) return "on_order";
-  if (["out_of_stock", "agotado", "no_disponible", "sin_stock", "unavailable"].includes(normalized)) return "out_of_stock";
+  if (["available", "disponible", "in_stock", "en_stock", "instock", "stock", "si"].includes(normalized)) return "available";
+  if (["on_order", "order", "por_pedido", "pedido", "bajo_pedido", "backorder", "preorder", "pre_order"].includes(normalized)) return "on_order";
+  if (["out_of_stock", "agotado", "no_disponible", "sin_stock", "unavailable", "sold_out"].includes(normalized)) return "out_of_stock";
   return allowUnknown ? "unknown" : null;
 }
 
@@ -392,16 +392,88 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     container.dataset.catalogType = isPerfume ? "perfumery" : "technology";
   }
 
+  function priceDifferenceText(currentValue, providerValue, currency) {
+    if (providerValue === null || providerValue === undefined || providerValue === "") {
+      return "Ingresá el precio del proveedor para calcular la diferencia.";
+    }
+    const providerAmount = Number(providerValue);
+    if (!Number.isFinite(providerAmount)) return "El precio indicado no es válido.";
+    if (currentValue === null || currentValue === undefined || currentValue === "" || !Number.isFinite(Number(currentValue))) {
+      return "No hay precio público registrado para comparar.";
+    }
+    const currentAmount = Number(currentValue);
+    const difference = Math.round((providerAmount - currentAmount + Number.EPSILON) * 100) / 100;
+    if (difference === 0) return "Sin diferencias: ambos precios coinciden.";
+    const sign = difference > 0 ? "+" : "−";
+    const percent = currentAmount === 0 ? "" : " (" + sign +
+      Math.abs((difference / currentAmount) * 100).toLocaleString("es-NI", { maximumFractionDigits: 2 }) + "%)";
+    const direction = difference > 0 ? "por encima" : "por debajo";
+    return "Diferencia: " + sign + money(Math.abs(difference), currency) + percent +
+      ". El proveedor está " + direction + " del precio público.";
+  }
+
   function renderReviewPriceComparison(product, review = {}) {
     const container = $("#provider-review-price-comparison");
     if (!container) return;
     const format = (value, currency) => value === null || value === undefined || value === ""
       ? "Sin registrar" : money(value, currency);
-    container.innerHTML = '<div class="provider-price-compare-card"><span>Precio publicado actual</span><strong>' +
-      escapeHTML(format(product.price_usd, "USD")) + '</strong><small>' + escapeHTML(format(product.price_nio, "NIO")) +
-      '</small></div><div class="provider-price-compare-card"><span>Último precio registrado de GoPartner</span><strong>' +
-      escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' +
-      escapeHTML(format(review.provider_price_nio, "NIO")) + '</small></div>';
+    const usdDiff = priceDifferenceText(product.price_usd, review.provider_price_usd, "USD");
+    const nioDiff = priceDifferenceText(product.price_nio, review.provider_price_nio, "NIO");
+    const diffClass = value => value.startsWith("Sin diferencias") ? "is-match"
+      : value.startsWith("Diferencia:") ? "is-different" : "is-pending";
+    container.innerHTML =
+      '<div class="provider-price-compare-card"><span>Precio publicado actual · US$</span><strong>' +
+        escapeHTML(format(product.price_usd, "USD")) + '</strong><small>Precio público en córdobas: ' +
+        escapeHTML(format(product.price_nio, "NIO")) + '</small></div>' +
+      '<div class="provider-price-compare-card"><span>Precio del proveedor introducido · US$</span><strong>' +
+        escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>Precio del proveedor en córdobas: ' +
+        escapeHTML(format(review.provider_price_nio, "NIO")) + '</small></div>' +
+      '<div class="provider-price-difference ' + diffClass(usdDiff) + '"><strong>US$ · diferencia</strong><span>' +
+        escapeHTML(usdDiff) + '</span></div>' +
+      '<div class="provider-price-difference ' + diffClass(nioDiff) + '"><strong>C$ · diferencia</strong><span>' +
+        escapeHTML(nioDiff) + '</span></div>';
+  }
+
+  function renderReviewAvailabilityComparison(product, providerAvailability) {
+    const container = $("#provider-review-validation-summary");
+    if (!container) return;
+    const current = normalizeAvailability(product.availability, false);
+    const incoming = normalizeAvailability(providerAvailability, false);
+    let availabilityHTML;
+    if (!incoming || incoming === "unknown") {
+      availabilityHTML = '<p class="provider-validation-line is-pending"><strong>Disponibilidad:</strong> seleccioná un estado confirmado del proveedor para compararlo.</p>';
+    } else if (!current || current === "unknown") {
+      availabilityHTML = '<p class="provider-validation-line is-pending"><strong>Disponibilidad:</strong> el catálogo no tiene un estado comparable; proveedor: ' +
+        escapeHTML(availabilityLabel(incoming)) + '.</p>';
+    } else if (current === incoming) {
+      availabilityHTML = '<p class="provider-validation-line is-match"><strong>Disponibilidad:</strong> coincide (' +
+        escapeHTML(availabilityLabel(current)) + ').</p>';
+    } else {
+      availabilityHTML = '<p class="provider-validation-line is-different"><strong>Diferencia de disponibilidad:</strong> catálogo: ' +
+        escapeHTML(availabilityLabel(current)) + ' · proveedor: ' + escapeHTML(availabilityLabel(incoming)) + '.</p>';
+    }
+    container.innerHTML = availabilityHTML;
+  }
+
+  function updateReviewComparison() {
+    const productId = $("#provider-review-product-id")?.value;
+    const product = activeProducts().find(item => String(item.id) === String(productId));
+    if (!product) return;
+    let priceUSD = null, priceNIO = null;
+    try {
+      priceUSD = cleanPrice($("#provider-review-price-usd")?.value);
+      priceNIO = cleanPrice($("#provider-review-price-nio")?.value);
+    } catch (error) {
+      const container = $("#provider-review-validation-summary");
+      if (container) container.innerHTML = '<p class="provider-validation-line is-different">' +
+        escapeHTML(error.message || "Revisá los precios indicados.") + '</p>';
+      return;
+    }
+    renderReviewPriceComparison(product, {
+      provider_price_usd: priceUSD,
+      provider_price_nio: priceNIO
+    });
+    renderReviewAvailabilityComparison(product, $("#provider-review-availability")?.value || "unknown");
   }
 
   function openReview(productId) {
@@ -412,12 +484,12 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-product-title").textContent = product.name || "Producto sin nombre";
     $("#provider-review-product-subtitle").textContent = importCatalogType(product.catalog_type, "technology") === "perfumery" ? "JB Parfums" : "JB TECH";
     renderReviewProductDetails(product);
-    renderReviewPriceComparison(product, review);
     $("#provider-review-name").value = review.provider_name || "GoPartner";
     $("#provider-review-price-usd").value = review.provider_price_usd ?? "";
     $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
     $("#provider-review-availability").value = review.provider_availability || "unknown";
     $("#provider-review-notes").value = review.review_notes || "";
+    updateReviewComparison();
     say(reviewMessage, "");
     if (typeof reviewDialog.showModal === "function") reviewDialog.showModal();
     else reviewDialog.setAttribute("open", "");
@@ -441,22 +513,14 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     } catch (error) { say(reviewMessage, error.message, "error"); return; }
 
     const previous = providerStatuses.get(String(product.id)) || {};
-    const publishedUSD = product.price_usd === null || product.price_usd === undefined || product.price_usd === "" ? null : Number(product.price_usd);
-    const publishedNIO = product.price_nio === null || product.price_nio === undefined || product.price_nio === "" ? null : Number(product.price_nio);
-    const priceChanged = (priceUSD !== null && Number.isFinite(publishedUSD) && priceUSD !== publishedUSD) ||
-      (priceNIO !== null && Number.isFinite(publishedNIO) && priceNIO !== publishedNIO);
-    const hasBothProviderPrices = priceUSD !== null && priceNIO !== null;
-    const priceSyncNeeded = hasBothProviderPrices && (
-      !Number.isFinite(publishedUSD) || !Number.isFinite(publishedNIO) ||
-      priceUSD !== publishedUSD || priceNIO !== publishedNIO
-    );
     const payload = {
       product_id: product.id,
       provider_name: providerName,
-      provider_product_id: null,
-      provider_url: null,
-      provider_price_usd: priceUSD,
-      provider_price_nio: priceNIO,
+      provider_product_id: previous.provider_product_id ?? null,
+      provider_url: previous.provider_url ?? null,
+      // Blank fields mean "not provided this time"; retain the latest known supplier values.
+      provider_price_usd: priceUSD ?? previous.provider_price_usd ?? null,
+      provider_price_nio: priceNIO ?? previous.provider_price_nio ?? null,
       provider_availability: $("#provider-review-availability").value || "unknown",
       review_notes: $("#provider-review-notes").value.trim() || null,
       last_reviewed_at: new Date().toISOString(),
@@ -472,30 +536,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       if (error) throw error;
       providerStatuses.set(String(product.id), payload);
 
-      let catalogPriceMessage = "";
-      if (priceSyncNeeded) {
-        const { error: priceError } = await supabase.from("products")
-          .update({ price_usd: priceUSD, price_nio: priceNIO })
-          .eq("id", product.id)
-          .eq("catalog_type", product.catalog_type);
-        if (priceError) {
-          catalogPriceMessage = " La revisión quedó guardada, pero no se pudo actualizar el precio publicado: " + (priceError.message || "error desconocido") + ".";
-        } else {
-          product.price_usd = priceUSD;
-          product.price_nio = priceNIO;
-          if (typeof window.dispatchEvent === "function") window.dispatchEvent(new CustomEvent("jb-catalog-provider-updated"));
-          catalogPriceMessage = " El precio publicado se actualizó automáticamente a " + money(priceUSD, "USD") + " y " + money(priceNIO, "NIO") + ".";
-        }
-      } else if ((priceUSD === null || priceNIO === null) && priceChanged) {
-        catalogPriceMessage = " La revisión quedó guardada, pero para sincronizar el precio publicado se necesitan ambos precios de GoPartner (US$ y C$); el catálogo no se modificó.";
-      } else if (hasBothProviderPrices && !priceSyncNeeded) {
-        catalogPriceMessage = " El precio de GoPartner coincide con el publicado; no fue necesario modificarlo.";
-      } else if (!hasBothProviderPrices) {
-        catalogPriceMessage = " No se modificó el precio publicado porque faltan uno o ambos precios del proveedor.";
-      }
-
+      const catalogPriceMessage = " Los precios públicos se conservaron sin cambios; las diferencias quedan como referencia para que decidás si querés modificarlos desde el catálogo.";
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
-      say(statusMessage, "Revisión guardada. Se añadió una entrada al historial privado." + catalogPriceMessage, catalogPriceMessage.includes("no se pudo") ? "error" : "success");
+      say(statusMessage, "Revisión guardada. Se añadió una entrada al historial privado." + catalogPriceMessage, "success");
       await refresh();
     } catch (error) {
       say(reviewMessage, "No se pudo guardar la revisión: " + (error?.message || "error desconocido"), "error");
@@ -515,12 +558,22 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (typeof historyDialog.showModal === "function") historyDialog.showModal();
     else historyDialog.setAttribute("open", "");
     try {
-      const { data, error } = await supabase.from("product_provider_review_history")
-        .select("provider_name,provider_product_id,provider_url,provider_price_usd,provider_price_nio,provider_availability,review_notes,reviewed_at")
-        .eq("product_id", product.id).order("reviewed_at", { ascending: false }).limit(30);
-      if (error) throw error;
-      if (!data?.length) { body.innerHTML = '<p class="provider-empty-state">No hay revisiones anteriores para este producto.</p>'; return; }
-      body.innerHTML = data.map(row => `<article class="provider-history-entry">
+      const historyRows = [];
+      const pageSize = 500;
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await supabase.from("product_provider_review_history")
+          .select("provider_name,provider_product_id,provider_url,provider_price_usd,provider_price_nio,provider_availability,review_notes,reviewed_at")
+          .eq("product_id", product.id).order("reviewed_at", { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        const page = data || [];
+        historyRows.push(...page);
+        if (page.length < pageSize) break;
+      }
+      $("#provider-history-title").textContent = "Historial · " + (product.name || "Producto") +
+        " (" + historyRows.length.toLocaleString("es-NI") + " revisiones)";
+      if (!historyRows.length) { body.innerHTML = '<p class="provider-empty-state">No hay revisiones anteriores para este producto.</p>'; return; }
+      body.innerHTML = historyRows.map(row => `<article class="provider-history-entry">
         <div class="provider-history-entry-heading"><strong>${escapeHTML(displayDate(row.reviewed_at))}</strong><span>${escapeHTML(row.provider_name || "GoPartner")}</span></div>
         <p>Precio proveedor: ${escapeHTML(money(row.provider_price_usd, "USD"))} ${row.provider_price_nio != null ? " · " + escapeHTML(money(row.provider_price_nio, "NIO")) : ""}</p>
         <p>Disponibilidad: ${escapeHTML(availabilityLabel(row.provider_availability))}</p>
@@ -824,6 +877,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   });
   const reviewForm = $("#provider-review-form");
   const reviewSaveButton = $("#provider-review-save");
+  ["#provider-review-price-usd", "#provider-review-price-nio", "#provider-review-availability"].forEach(selector =>
+    $(selector)?.addEventListener("input", updateReviewComparison)
+  );
+  $("#provider-review-availability")?.addEventListener("change", updateReviewComparison);
   // Explicit click handling is reliable in desktop browsers and Android WebView.
   // Keep the button out of native submit dispatch to avoid duplicate writes.
   reviewSaveButton?.addEventListener("click", () => { void saveReview(); });
