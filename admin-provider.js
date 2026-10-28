@@ -277,9 +277,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       const type = importCatalogType(product.catalog_type, "technology");
       const state = reviewState(product);
       const blob = normalizedText([product.name, product.brand, product.model, product.category].join(" "));
-      const inWorkflow = providerWorkflowView === "reviewed" ? state.code === "current" : state.code !== "current";
-      return inWorkflow &&
-        (typeFilter === "all" || type === typeFilter) &&
+      return (typeFilter === "all" || type === typeFilter) &&
         (stateFilter === "all" || state.code === stateFilter) &&
         (!query || blob.includes(query));
     }).sort((a, b) => {
@@ -297,10 +295,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     setText("provider-count-overdue", overdue);
     setText("provider-count-current", current);
     setText("provider-nav-count", missing + overdue);
-    setText("provider-pending-count", missing + overdue);
-    setText("provider-reviewed-count", current);
-    const workflowHint = $("#provider-workflow-hint");
-    if (workflowHint) workflowHint.textContent = providerWorkflowView === "reviewed" ? "Revisiones completadas recientemente. El historial de cada producto está disponible aquí." : "Productos que necesitan una primera revisión o cuya revisión ya venció.";
 
     if (lastRefreshError) {
       list.innerHTML = '<p class="provider-empty-state is-error">' + escapeHTML(lastRefreshError) + '</p>';
@@ -403,19 +397,11 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (!container) return;
     const format = (value, currency) => value === null || value === undefined || value === ""
       ? "Sin registrar" : money(value, currency);
-    const publicUSD = product.price_usd == null || product.price_usd === "" ? null : Number(product.price_usd);
-    const publicNIO = product.price_nio == null || product.price_nio === "" ? null : Number(product.price_nio);
-    const providerUSD = review.provider_price_usd == null || review.provider_price_usd === "" ? null : Number(review.provider_price_usd);
-    const providerNIO = review.provider_price_nio == null || review.provider_price_nio === "" ? null : Number(review.provider_price_nio);
-    const deltaUSD = publicUSD !== null && providerUSD !== null ? providerUSD - publicUSD : null;
-    const deltaNIO = publicNIO !== null && providerNIO !== null ? providerNIO - publicNIO : null;
-    const delta = (value, currency) => value === null ? "No disponible" : (value > 0 ? "+" : "") + money(value, currency);
     container.innerHTML = '<div class="provider-price-compare-card"><span>Precio publicado actual</span><strong>' +
       escapeHTML(format(product.price_usd, "USD")) + '</strong><small>' + escapeHTML(format(product.price_nio, "NIO")) +
-      '</small></div><div class="provider-price-compare-card"><span>Precio actual GoPartner</span><strong>' +
-      escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' + escapeHTML(format(review.provider_price_nio, "NIO")) +
-      '</small></div><div class="provider-price-compare-card provider-price-difference"><span>Diferencia (GoPartner − publicado)</span><strong>' +
-      escapeHTML(delta(deltaUSD, "USD")) + '</strong><small>' + escapeHTML(delta(deltaNIO, "NIO")) + '</small></div>';
+      '</small></div><div class="provider-price-compare-card"><span>Último precio registrado de GoPartner</span><strong>' +
+      escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' +
+      escapeHTML(format(review.provider_price_nio, "NIO")) + '</small></div>';
   }
 
   function openReview(productId) {
@@ -438,7 +424,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }
 
   let savingReview = false;
-  let providerWorkflowView = "pending";
   async function saveReview(event) {
     event?.preventDefault?.();
     if (savingReview) return;
@@ -827,17 +812,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     }
   }
 
-  $("[data-provider-workflow]").forEach(button => button.addEventListener("click", () => {
-    providerWorkflowView = button.dataset.providerWorkflow === "reviewed" ? "reviewed" : "pending";
-    $("[data-provider-workflow]").forEach(item => {
-      const active = item === button;
-      item.classList.toggle("is-active", active);
-      item.setAttribute("aria-pressed", String(active));
-    });
-    const filter = $("#provider-review-filter");
-    if (filter) filter.value = providerWorkflowView === "reviewed" ? "current" : "all";
-    renderProviderList();
-  }));
   $("#provider-refresh")?.addEventListener("click", () => { void refresh(); });
   ["#provider-catalog-filter", "#provider-review-filter", "#provider-search"].forEach(selector =>
     $(selector)?.addEventListener(selector === "#provider-search" ? "input" : "change", renderProviderList)
