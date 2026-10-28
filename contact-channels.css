@@ -1,0 +1,156 @@
+/* JB Collections: dual-channel contact and payment-topic selector. */
+.product-contact-channel-actions,
+.payment-channel-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.contact-channel-button,
+.payment-channel-button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.contact-channel-button:hover,
+.payment-channel-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(20, 37, 68, .12);
+}
+.contact-channel-button:focus-visible,
+.payment-channel-button:focus-visible,
+.payment-choice-select:focus-visible {
+  outline: 3px solid rgba(61, 115, 235, .48);
+  outline-offset: 3px;
+}
+.contact-channel-svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+.contact-channel-button--whatsapp,
+.payment-channel-button--whatsapp {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+  border-color: #128c7e;
+  background: #128c7e;
+}
+.contact-channel-button--whatsapp:hover,
+.payment-channel-button--whatsapp:hover {
+  color: #fff !important;
+  background: #0d796c;
+  border-color: #0d796c;
+}
+.contact-channel-button--jb,
+.payment-channel-button--jb {
+  color: var(--tech-ink, var(--perfume-ink, #243148)) !important;
+  -webkit-text-fill-color: var(--tech-ink, var(--perfume-ink, #243148));
+  border-color: var(--tech-line, var(--perfume-border, #d5dce8));
+  background: var(--tech-card-soft, var(--perfume-card, #fff));
+}
+.contact-channel-button--jb:hover,
+.payment-channel-button--jb:hover {
+  border-color: var(--tech-blue, var(--perfume-gold, #80652c));
+}
+.product-detail-page .product-contact-actions { gap: 10px; }
+.product-detail-page .product-contact-channel-actions { width: 100%; }
+.payment-choice-panel {
+  display: grid;
+  gap: 11px;
+  margin: 11px 0 20px;
+  padding: 15px;
+  border: 1px solid var(--tech-line, var(--perfume-border, #d5dce8));
+  border-radius: 13px;
+  background: var(--tech-card-soft, var(--perfume-card, #fff));
+}
+.payment-choice-heading label {
+  display: block;
+  margin: 0 0 5px;
+  color: var(--tech-ink, var(--perfume-ink, #243148));
+  font-size: 14px;
+  font-weight: 850;
+}
+.payment-choice-heading p {
+  margin: 0;
+  color: var(--tech-muted, var(--perfume-muted, #697386));
+  font-size: 12px;
+  line-height: 1.55;
+}
+.payment-choice-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--tech-line, var(--perfume-border, #d5dce8));
+  border-radius: 9px;
+  color: var(--tech-ink, var(--perfume-ink, #243148));
+  background: var(--tech-card, var(--perfume-paper, #fff));
+  font: inherit;
+  font-size: 13px;
+}
+.payment-channel-panel {
+  display: grid;
+  gap: 9px;
+}
+.payment-channel-panel[hidden] { display: none !important; }
+.payment-channel-panel > p {
+  margin: 0;
+  color: var(--tech-ink, var(--perfume-ink, #243148));
+  font-size: 12px;
+  font-weight: 800;
+}
+.payment-channel-button {
+  border-color: var(--tech-line, var(--perfume-border, #d5dce8));
+  background: var(--tech-card, var(--perfume-paper, #fff));
+}
+.perfume-payment-choice-panel { margin: 12px 0 0; }
+.perfume-dialog-actions .contact-channel-button {
+  min-height: 50px;
+  padding: 11px 10px;
+  font-size: 12px;
+  white-space: normal;
+}
+html[data-theme="dark"] .contact-channel-button--jb,
+html[data-theme="dark"] .payment-channel-button--jb,
+html[data-theme="dark"] .payment-choice-panel {
+  border-color: var(--tech-line, var(--perfume-border, #3d4658));
+}
+@media (max-width: 560px) {
+  .product-contact-channel-actions,
+  .payment-channel-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .contact-channel-button,
+  .payment-channel-button {
+    min-height: 48px;
+    padding: 9px 7px;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .contact-channel-svg { width: 20px; height: 20px; flex-basis: 20px; }
+  .payment-choice-panel { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .contact-channel-button,
+  .payment-channel-button { transition: none; }
+}
