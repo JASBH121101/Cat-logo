@@ -164,15 +164,9 @@
           <span>Ver catálogo</span>
         </a>
 
-        <button id="remember-user-toggle" class="admin-sidebar-remember" type="button" aria-pressed="false">
-          <span aria-hidden="true">◉</span>
-          <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span>
-        </button>
+        
 
-        <button id="logout-button" class="admin-sidebar-logout" type="button">
-          <span aria-hidden="true">↪</span>
-          <span>Cerrar sesión</span>
-        </button>
+        
 
 
         <div class="admin-sidebar-footer">
@@ -740,10 +734,11 @@
 
       <section id="admin-section-updates" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="updates">
         <header class="provider-page-heading">
-          <div><p class="eyebrow">ACTUALIZACIONES SEGURAS</p><h2>Importar cambios del proveedor</h2>
+          <div><p class="eyebrow">AJUSTES</p><h2>Ajustes y herramientas</h2><p>Administrá tu sesión y accedé a la importación JSON cuando sea necesario.</p><h3>Importar cambios del proveedor</h3>
             <p>Compará un archivo JSON o CSV con tus productos existentes. Primero verás una vista previa; no se crea ni publica ningún producto automáticamente.</p></div>
           <button type="button" id="provider-import-download-template" class="button button-outline">Descargar plantilla JSON</button>
         </header>
+        <section class="admin-card provider-settings-card"><h3>Sesión y dispositivo</h3><div class="provider-settings-actions"><button id="remember-user-toggle" class="button button-outline" type="button" aria-pressed="false"><span aria-hidden="true">◉</span> <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span></button><button id="logout-button" class="button button-quiet" type="button"><span aria-hidden="true">↪</span> Cerrar sesión</button></div></section>
         <section class="admin-card provider-import-card">
           <div class="provider-import-explainer">
             <h3>¿Cómo funcionará?</h3>
