@@ -46,3 +46,13 @@ test("AI recommendation cards disclose stock and format numeric-string prices", 
   assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-public-customer-flows2/);
   assert.match(homeHtml, /ai-assistant\.js\?v=20261028-public-customer-flows2/);
 });
+
+
+test("configuration availability affects public variant choices, status, and WhatsApp text", () => {
+  assert.match(app, /configuration_availability: normalizeVariantAvailability\(item\.configuration_availability\)/);
+  assert.match(app, /function effectiveVariantAvailability\(variant\)/);
+  assert.match(app, /colorStatusLabel\(effectiveVariantAvailability\(selected\)\)/);
+  assert.match(app, /Disponibilidad de esta variante:.*effectiveVariantAvailability\(variant\)/);
+  assert.match(app, /variant-choice-status status-/);
+  assert.match(techHtml, /app\.js\?v=20261028-variant-availability1/);
+});
