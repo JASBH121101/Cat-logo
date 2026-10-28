@@ -120,6 +120,17 @@
     scrollMessages();
     return bubble;
   }
+  function availabilityPresentation(value) {
+    const normalized = String(value || "").trim().toLocaleLowerCase("es");
+    if (["on_order", "order", "por pedido"].includes(normalized)) {
+      return { label: "Por pedido", state: "order" };
+    }
+    if (["out_of_stock", "unavailable", "agotado", "no disponible", "agotado temporalmente"].includes(normalized)) {
+      return { label: "Agotado", state: "unavailable" };
+    }
+    return { label: "Disponible", state: "available" };
+  }
+
   function addRecommendations(items) {
     if (!Array.isArray(items) || !items.length) return;
     const group = document.createElement("div");
@@ -187,14 +198,23 @@
       card.appendChild(top);
 
       const prices = [];
-      if (Number.isFinite(product.price_usd)) prices.push("US$" + product.price_usd.toFixed(2));
-      if (Number.isFinite(product.price_nio)) prices.push("C$" + product.price_nio.toLocaleString("es-NI", { maximumFractionDigits: 2 }));
+      const priceUsd = product.price_usd === null || product.price_usd === undefined || product.price_usd === "" ? NaN : Number(product.price_usd);
+      const priceNio = product.price_nio === null || product.price_nio === undefined || product.price_nio === "" ? NaN : Number(product.price_nio);
+      if (Number.isFinite(priceUsd)) prices.push("US$" + priceUsd.toFixed(2));
+      if (Number.isFinite(priceNio)) prices.push("C$" + priceNio.toLocaleString("es-NI", { maximumFractionDigits: 2 }));
       if (prices.length) {
         const price = document.createElement("span");
         price.className = "jb-ai-product-price";
         price.textContent = prices.join(" · ");
         card.appendChild(price);
       }
+
+      const availability = availabilityPresentation(product.availability);
+      const availabilityBadge = document.createElement("span");
+      availabilityBadge.className = "jb-ai-product-availability jb-ai-product-availability--" + availability.state;
+      availabilityBadge.textContent = availability.label;
+      availabilityBadge.setAttribute("aria-label", "Disponibilidad: " + availability.label);
+      card.appendChild(availabilityBadge);
 
       if (product.summary) {
         const summary = document.createElement("p");

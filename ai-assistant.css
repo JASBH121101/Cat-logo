@@ -637,3 +637,32 @@ body.perfume-page .jb-ai-compare-ai {
   .jb-ai-compare-table td { padding: 7px 6px; }
   .jb-ai-compare-actions > * { flex: 1 1 120px; }
 }
+
+
+/* Availability on advisor recommendations must match the published catalogue. */
+.jb-ai-product-availability {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1px solid var(--jb-ai-border);
+  border-radius: 999px;
+  color: var(--jb-ai-text);
+  background: var(--jb-ai-panel-bg);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.jb-ai-product-availability--available {
+  border-color: color-mix(in srgb, #2f9d6a 35%, var(--jb-ai-border));
+  background: color-mix(in srgb, #2f9d6a 12%, var(--jb-ai-panel-bg));
+}
+.jb-ai-product-availability--order {
+  border-color: color-mix(in srgb, #c38b2c 42%, var(--jb-ai-border));
+  background: color-mix(in srgb, #c38b2c 13%, var(--jb-ai-panel-bg));
+}
+.jb-ai-product-availability--unavailable {
+  border-color: color-mix(in srgb, #d34d5c 42%, var(--jb-ai-border));
+  background: color-mix(in srgb, #d34d5c 12%, var(--jb-ai-panel-bg));
+}

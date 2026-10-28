@@ -531,7 +531,7 @@ function imageMarkup(product) {
 }
 
 // Sustituir imágenes de catálogo rotas por un estado visible, no por un hueco vacío.
-document.querySelectorAll("#product-grid, #featured-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
   const container = img.closest(".product-image");
@@ -568,38 +568,33 @@ function productShareLink(product, variant = null, fallbackColor = null) {
 }
 
 function buildProductWhatsAppMessage(product, variant = null, fallbackColor = null) {
-  const parts = [`Hola, estoy seguro de mi elección y quiero comprar este producto: ${product.name}.`];
+  const rawAvailability = variant?.availability ?? fallbackColor?.type ?? product.availability;
+  const availability = normalizeVariantAvailability(rawAvailability);
+  const opening = availability === "order"
+    ? "Hola, quisiera consultar cómo pedir este producto"
+    : availability === "out_of_stock"
+      ? "Hola, quisiera consultar si habrá reposición de este producto"
+      : "Hola, quiero consultar para comprar este producto";
+  const parts = [`${opening}: ${product.name}.`];
 
   if (variant) {
-    const configuration = [
-      variant.storage,
-      variant.ram,
-      variant.color
-    ].filter(Boolean).join(" · ");
-
-    if (configuration) {
-      parts.push(`Configuración seleccionada: ${configuration}.`);
-    }
-
+    const configuration = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
+    if (configuration) parts.push(`Configuración seleccionada: ${configuration}.`);
     parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
-
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
-
     parts.push(`Estado de la variante: ${colorStatusLabel(variant.availability)}.`);
   } else {
     parts.push(`Precio de referencia: ${formatUSD(product.price_usd)}.`);
-
     if (fallbackColor) {
-      parts.push(
-        `Color de interés: ${fallbackColor.name} (${colorStatusLabel(fallbackColor.type)}).`
-      );
+      parts.push(`Color de interés: ${fallbackColor.name} (${colorStatusLabel(fallbackColor.type)}).`);
+    } else {
+      parts.push(`Disponibilidad: ${colorStatusLabel(product.availability)}.`);
     }
   }
 
   parts.push(`Enlace del artículo: ${productShareLink(product, variant, fallbackColor)}.`);
-  parts.push("Quisiera confirmar la disponibilidad final, la forma de pago y el costo de entrega para realizar la compra.");
-
+  parts.push("Quisiera confirmar disponibilidad final, forma de pago y costo de entrega antes de decidir.");
   return parts.join(" ");
 }
 
@@ -636,9 +631,21 @@ function buildFinancingWhatsAppMessage(product, variant = null) {
 
 function updateProductContactLinks(product, variant = null, fallbackColor = null) {
   const buyLink = $("#dialog-buy-link");
+  const buyLabel = $("#dialog-buy-label");
+  const buyIcon = $("#dialog-buy-icon");
   const financingChoice = $("#dialog-financing-choice");
   const creditCardChoice = $("#dialog-credit-card-choice");
+  const rawAvailability = variant?.availability ?? fallbackColor?.type ?? product.availability;
+  const availability = normalizeVariantAvailability(rawAvailability);
   if (buyLink) buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
+  if (buyLabel) {
+    buyLabel.textContent = availability === "order"
+      ? "Consultar por pedido"
+      : availability === "out_of_stock"
+        ? "Consultar disponibilidad"
+        : "Quiero comprar este producto";
+  }
+  if (buyIcon) buyIcon.textContent = availability === "available" ? "✓" : "↗";
   if (financingChoice) financingChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "financing"));
   if (creditCardChoice) creditCardChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "credit_card"));
 }
@@ -884,9 +891,9 @@ function visibleProducts() {
 
   return products.filter(product => {
     if (!validRange) return false;
-    const productCategory = String(product.category || "");
+    const normalizedCategory = canonicalCatalogCategory(product);
     const categoryMatches = selectedCategory === "all" ||
-      productCategory.toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
+      normalizedCategory.toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
     const variants = getProductVariants(product);
     const searchableFields = [
       product.name, product.brand, product.model, product.category, product.description,
@@ -1048,7 +1055,9 @@ function renderProducts() {
       : `${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}${featured.length ? ` · ${featured.length} destacado${featured.length === 1 ? "" : "s"} en su sección` : ""}`
     : "Todavía no hay productos publicados.";
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
-    button.classList.toggle("active", button.dataset.category === selectedCategory);
+    const isSelected = button.dataset.category === selectedCategory;
+    button.classList.toggle("active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
   });
 }
 function uniqueValues(variants, field) {
@@ -1690,7 +1699,7 @@ function openProduct(product, requestedVariant = null) {
         <p class="dialog-product-description">${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
 
         <div class="product-contact-actions">
-          <a id="dialog-buy-link" class="button button-primary dialog-buy-button" href="#" target="_blank" rel="noopener"><span aria-hidden="true">✓</span> Quiero comprar este producto</a>
+          <a id="dialog-buy-link" class="button button-primary dialog-buy-button" href="#" target="_blank" rel="noopener"><span id="dialog-buy-icon" aria-hidden="true">✓</span> <span id="dialog-buy-label">Quiero comprar este producto</span></a>
           <button id="dialog-payment-options-toggle" class="button button-secondary dialog-payment-toggle" type="button" aria-expanded="false" aria-controls="dialog-payment-choice-panel">Consultar opciones de pago <span aria-hidden="true">⌄</span></button>
         </div>
         <div id="dialog-payment-choice-panel" class="payment-choice-panel" hidden>
@@ -1722,7 +1731,7 @@ function openProduct(product, requestedVariant = null) {
     </div>
   `;
 
-  updateProductContactLinks(product);
+  updateProductContactLinks(product, null, requestedColor);
 
   if (variants.length) {
     const requestedVariantPresent = Boolean(
@@ -1784,7 +1793,7 @@ function openProduct(product, requestedVariant = null) {
   if (canonical) canonical.href = productLink(product);
 }
 
-document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   const link = target?.closest("a[data-details]");
   if (!link) return;
