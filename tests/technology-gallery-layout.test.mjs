@@ -54,7 +54,7 @@ test("compacts mobile product configuration controls without stretching variant 
   assert.ok(css.includes("Mobile compact pass: reduce empty space throughout the technology product detail"));
   assert.ok(css.includes("flex-wrap: wrap !important"));
   assert.ok(css.includes("Final mobile pass: compact configuration chips and unmistakable stock states"));
-  assert.match(css, /status-order[\\s\\S]*?background: #fff0c2 !important/);
+  assert.match(css, /status-order[\s\S]*?background: #fff0c2 !important/);
   assert.ok(css.includes("width: auto !important"));
   assert.ok(css.includes("height: clamp(230px, 31svh, 285px) !important"));
 });
