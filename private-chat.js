@@ -20,6 +20,29 @@ const input = $("#private-chat-input");
 const sendButton = $("#private-chat-send");
 const statusLine = $("#private-chat-status");
 
+const themeToggleButton = $("#private-chat-theme-toggle");
+function applyPrivateChatTheme(theme) {
+  const normalized = theme === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = normalized;
+  try { localStorage.setItem("ct-catalog-theme", normalized); } catch {}
+  if (themeToggleButton) {
+    const nextTheme = normalized === "dark" ? "light" : "dark";
+    themeToggleButton.textContent = normalized === "dark" ? "☀" : "☾";
+    themeToggleButton.setAttribute("aria-label", normalized === "dark" ? "Cambiar al tema claro" : "Cambiar al tema oscuro");
+    themeToggleButton.setAttribute("title", normalized === "dark" ? "Cambiar al tema claro" : "Cambiar al tema oscuro");
+    themeToggleButton.dataset.nextTheme = nextTheme;
+  }
+}
+function initializePrivateChatTheme() {
+  let savedTheme = "dark";
+  try {
+    const saved = localStorage.getItem("ct-catalog-theme");
+    if (saved === "light" || saved === "dark") savedTheme = saved;
+  } catch {}
+  applyPrivateChatTheme(savedTheme);
+  themeToggleButton?.addEventListener("click", () => applyPrivateChatTheme(themeToggleButton.dataset.nextTheme));
+}
+
 let sessionToken = "";
 let conversation = null;
 let lastMessagesSignature = "";
@@ -136,7 +159,7 @@ function renderConversationState() {
   choicePanel.hidden = !routeNotChosen;
   consentPanel.hidden = !isWaitingConsent;
   declinePanel.hidden = !isDeclined;
-  threadPanel.hidden = routeNotChosen;
+  // Mientras el cliente decide sobre la compra, el panel ya contiene el aviso completo.\n  // Ocultar el historial evita repetir el mismo aviso como otro mensaje.\n  threadPanel.hidden = routeNotChosen || isWaitingConsent;
   composer.hidden = !canSend;
   if (countdownTimer && !isDeclined) {
     clearInterval(countdownTimer);
@@ -262,7 +285,7 @@ $("#private-chat-support-choice").addEventListener("click", () => void submitRou
 $("#private-chat-buy-choice").addEventListener("click", () => void submitRoute("buy"));
 $("#private-chat-consent-yes").addEventListener("click", () => void submitConsent("yes"));
 $("#private-chat-consent-no").addEventListener("click", () => void submitConsent("no"));
-$("#private-chat-change-mind").addEventListener("click", () => void submitConsent("yes"));
+$("#private-chat-change-mind").addEventListener("click", () => void submitConsent("yes"));\ninitializePrivateChatTheme();
 composer.addEventListener("submit", event => void submitMessage(event));
 input.addEventListener("input", () => {
   input.style.height = "auto";
