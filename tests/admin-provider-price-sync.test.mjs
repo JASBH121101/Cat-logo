@@ -69,3 +69,35 @@ test("admin settings are located in the dashboard sidebar and hidden during logi
   assert.match(html, /admin-provider\.css\?v=20261028-provider-validation4/);
   assert.match(html, /admin\.js\?v=20261028-validation-differences4/);
 });
+
+
+test("reviewed products are separated from products awaiting their first manual review", () => {
+  assert.match(html, /data-admin-section="provider"[\s\S]*?Por revisar/);
+  assert.match(html, /data-admin-section="reviewed"[\s\S]*?Revisados[\s\S]*?id="reviewed-nav-count"/);
+  assert.match(html, /id="admin-section-reviewed"[^>]*data-admin-panel="reviewed"/);
+  assert.match(html, /id="provider-reviewed-list"/);
+  assert.match(html, /id="provider-reviewed-filter"/);
+  assert.match(html, /data-admin-section="updates"/);
+  assert.match(html, /id="provider-import-file"/);
+  assert.match(provider, /function renderReviewedList\(\)/);
+  assert.match(provider, /state\.code === "missing"/);
+  assert.match(provider, /state\.code !== "missing"/);
+  assert.match(provider, /setText\("reviewed-nav-count", reviewed\.length\)/);
+  assert.match(provider, /\["#provider-product-list", "#provider-reviewed-list"\]/);
+});
+
+test("first saved review moves a product into reviewed list and history stays attached", () => {
+  const pendingStart = provider.indexOf("function renderProviderList()");
+  const reviewedStart = provider.indexOf("function renderReviewedList()", pendingStart);
+  const refreshStart = provider.indexOf("async function refresh()", reviewedStart);
+  assert.ok(pendingStart >= 0 && reviewedStart > pendingStart && refreshStart > reviewedStart);
+  const pending = provider.slice(pendingStart, reviewedStart);
+  const reviewed = provider.slice(reviewedStart, refreshStart);
+  assert.match(pending, /state\.code === "missing"/);
+  assert.match(reviewed, /state\.code !== "missing"/);
+  assert.match(provider, /async function saveReview\(event\)/);
+  assert.match(provider, /await refresh\(\)/);
+  assert.match(provider, /data-provider-history=/);
+  assert.match(provider, /async function openHistory\(productId\)/);
+  assert.match(provider, /product_provider_review_history/);
+});
