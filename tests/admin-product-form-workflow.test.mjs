@@ -112,3 +112,15 @@ test("photo color analysis forwards the base64 data URL in the format documented
   assert.match(colorApi, /image:\s*imageDataUrl/);
   assert.doesNotMatch(colorApi, /image:\s*Array\.from\(atob/);
 });
+
+
+test("configuration availability is independent from each color's availability", () => {
+  assert.match(admin, /data-group-availability/);
+  assert.match(admin, /configuration_availability: normalizeVariantAvailability\(read\("\[data-group-availability\]"\)\)/);
+  assert.match(admin, /configuration_availability: config\.configuration_availability/);
+  assert.match(admin, /availability: color\.availability/);
+  assert.match(admin, /availability:g\.querySelector\('\[data-group-availability\]'\)/);
+  assert.match(html, /Disponibilidad de la variante/);
+  assert.match(html, /Bajo pedido/);
+  assert.match(html, /Agotado/);
+});
