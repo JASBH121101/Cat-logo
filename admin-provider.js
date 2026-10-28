@@ -613,6 +613,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
           ram: String(variant.ram || "").trim(),
           catalog_availability: normalizeAvailability(variant.configuration_availability, false) || "unknown",
           provider_availability: normalizeAvailability(savedGroup.provider_availability, false) || "unknown",
+          catalog_price_usd: variant.price_usd ?? null,
+          catalog_price_nio: variant.price_nio ?? null,
+          provider_price_usd: savedGroup.provider_price_usd ?? "",
+          provider_price_nio: savedGroup.provider_price_nio ?? "",
           colors: [],
           catalog_status_conflict: false
         });
@@ -659,6 +663,13 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       const configConflict = group.catalog_status_conflict
         ? '<p class="provider-variant-warning">Los colores de esta configuración tienen estados diferentes en el catálogo. Compará cada color individualmente antes de confirmar.</p>'
         : "";
+      const catalogPriceSummary = "Catálogo actual: " + money(group.catalog_price_usd, "USD") + " · " + money(group.catalog_price_nio, "NIO");
+      const configPriceFields = '<div class="provider-variant-price-block">' +
+        '<p class="provider-variant-catalog-price">' + escapeHTML(catalogPriceSummary) + '</p>' +
+        '<div class="provider-variant-config-prices">' +
+          '<label><span>GoPartner · US$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-provider-config-price-usd aria-label="Precio GoPartner en dólares para ' + escapeHTML(label) + '" value="' + escapeHTML(group.provider_price_usd ?? "") + '"></label>' +
+          '<label><span>GoPartner · C$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-provider-config-price-nio aria-label="Precio GoPartner en córdobas para ' + escapeHTML(label) + '" value="' + escapeHTML(group.provider_price_nio ?? "") + '"></label>' +
+        '</div><small>Si dejás un campo vacío, se conserva el precio actual de esa moneda para esta configuración.</small></div>';
       const colors = group.colors.length
         ? '<div class="provider-variant-colors">' + group.colors.map(color =>
           '<div class="provider-variant-color-row" data-provider-color-row data-color-key="' + escapeHTML(color.key) +
@@ -675,11 +686,14 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       return '<article class="provider-variant-review-config" data-provider-variant-config-row data-config-key="' +
         escapeHTML(group.config_key) + '" data-config-label="' + escapeHTML(label) +
         '" data-storage="' + escapeHTML(group.storage) + '" data-ram="' + escapeHTML(group.ram) +
+        '" data-catalog-price-usd="' + escapeHTML(group.catalog_price_usd ?? "") +
+        '" data-catalog-price-nio="' + escapeHTML(group.catalog_price_nio ?? "") +
         '" data-catalog-availability="' + escapeHTML(group.catalog_availability) + '">' +
         '<header class="provider-variant-config-header"><div><strong>' + escapeHTML(label) +
           '</strong><small>Configuración en catálogo: ' + escapeHTML(availabilityLabel(group.catalog_availability)) +
           '</small></div><span class="provider-variant-current-state">' + (group.catalog_status_conflict ? "Revisar diferencias" : "Proveedor por verificar") + '</span></header>' +
         configConflict +
+        configPriceFields +
         '<label class="provider-variant-config-select"><span>Disponibilidad de esta configuración en GoPartner</span>' +
           '<select data-provider-config-availability aria-label="Disponibilidad de ' + escapeHTML(label) + ' en GoPartner">' +
           availabilityOptions(group.provider_availability) + '</select></label>' +
@@ -695,11 +709,24 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   function collectProviderVariantSnapshot() {
     const container = $("#provider-review-variants");
     if (!container) return [];
+    const optionalPrice = (row, selector, label) => {
+      const raw = String(row.querySelector(selector)?.value ?? "").trim();
+      if (!raw) return null;
+      const amount = Number(raw);
+      if (!Number.isFinite(amount) || amount < 0) {
+        throw new Error("El precio de GoPartner para " + label + " debe ser un número igual o mayor que cero.");
+      }
+      return amount;
+    };
     return Array.from(container.querySelectorAll("[data-provider-variant-config-row]")).map(row => ({
       config_key: row.dataset.configKey || "",
       configuration: row.dataset.configLabel || "",
       storage: row.dataset.storage || "",
       ram: row.dataset.ram || "",
+      catalog_price_usd: row.dataset.catalogPriceUsd === "" ? null : Number(row.dataset.catalogPriceUsd),
+      catalog_price_nio: row.dataset.catalogPriceNio === "" ? null : Number(row.dataset.catalogPriceNio),
+      provider_price_usd: optionalPrice(row, "[data-provider-config-price-usd]", row.dataset.configLabel || "la configuración"),
+      provider_price_nio: optionalPrice(row, "[data-provider-config-price-nio]", row.dataset.configLabel || "la configuración"),
       catalog_availability: row.dataset.catalogAvailability || "unknown",
       provider_availability: row.querySelector("[data-provider-config-availability]")?.value || "unknown",
       colors: Array.from(row.querySelectorAll("[data-provider-color-row]")).map(color => ({
@@ -826,7 +853,13 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
 
     const previous = providerStatuses.get(String(product.id)) || {};
     const overallAvailability = normalizeAvailability($("#provider-review-availability").value, false) || "unknown";
-    const variantSnapshot = collectProviderVariantSnapshot();
+    let variantSnapshot;
+    try {
+      variantSnapshot = collectProviderVariantSnapshot();
+    } catch (error) {
+      say(reviewMessage, error.message || "Revisá los precios por configuración.", "error");
+      return;
+    }
     const unconfirmedVariantStatus = variantSnapshot.some(group =>
       (normalizeAvailability(group.provider_availability, false) || "unknown") === "unknown" ||
       group.colors.some(color => (normalizeAvailability(color.provider_availability, false) || "unknown") === "unknown")
@@ -870,8 +903,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       }
 
       const catalogPriceMessage = syncCatalogAvailability
-        ? " La disponibilidad general, de las configuraciones y de los colores se sincronizó con el catálogo. Los precios, fotos y estado de publicación no cambiaron."
-        : " Se guardó el historial privado; la disponibilidad pública no se modificó.";
+        ? " Se sincronizaron disponibilidad general, configuraciones y colores. Los precios GoPartner ingresados por configuración se aplicaron; los campos de precio vacíos conservaron el precio actual. Las fotos y el estado de publicación no cambiaron."
+        : " Se guardó el historial privado; ni la disponibilidad ni los precios públicos se modificaron.";
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
       const successMessage = "Revisión confirmada. Se añadió una entrada al historial privado." + catalogPriceMessage;
       say(statusMessage, successMessage, "success");
