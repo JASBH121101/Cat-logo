@@ -2,7 +2,7 @@ const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
 const TEXT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
-const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://localhost", "http://localhost"]);
+const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://jasbh121101.github.io", "https://localhost", "http://localhost"]);
 const MAX_IMAGE_DATA_URL = 5600000;
 const rateBuckets = new Map();
 

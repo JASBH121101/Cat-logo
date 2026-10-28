@@ -10816,3 +10816,20 @@ body.admin-body .variant-config-group .variant-color-list > .variants-empty-hint
   min-height: 64px !important;
   height: auto !important;
 }
+
+
+/* Force the per-configuration color control to remain visible on mobile and desktop. */
+body.admin-body #base-color-manager .variant-base-group .variant-color-section > button[data-add-group-color],
+body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-section > button[data-add-group-color] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 5 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 96px !important;
+  min-height: 42px !important;
+  margin: 12px 0 4px !important;
+  pointer-events: auto !important;
+}
