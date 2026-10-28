@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { initProviderTools } from "./admin-provider.js?v=20261028-provider-review-submit-fix1";
+import { initProviderTools } from "./admin-provider.js?v=20261028-provider-review-fields-removed1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
