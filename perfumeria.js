@@ -505,6 +505,46 @@ function normalizedPerfumeProductTags(product) {
     .filter(tag => Boolean(tag) && tag !== "recommended"))];
 }
 
+
+function renderCommercialDescription(value, fallbackText) {
+  const source = String(value || "").replace(/\r\n?/g, "\n").trim();
+  if (!source) return '<p class="commercial-copy-empty">' + escapeHtml(fallbackText || "Consultá más información en la tienda.") + '</p>';
+
+  const lines = source.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const blocks = [];
+  let bullets = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    blocks.push('<ul class="commercial-copy-list">' + bullets.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>');
+    bullets = [];
+  };
+
+  for (const rawLine of lines) {
+    const parts = rawLine.split(/\s+[•●▪]\s+/).map(part => part.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      flushBullets();
+      if (!/^(?:[-*•●▪]|\d+[.)])\s+/.test(parts[0])) blocks.push('<p>' + escapeHtml(parts.shift()) + '</p>');
+      for (const part of parts) bullets.push(part.replace(/^(?:[-*•●▪]|\d+[.)])\s+/, ""));
+      continue;
+    }
+    const bulletMatch = rawLine.match(/^(?:[-*•●▪]|\d+[.)])\s+(.+)$/);
+    if (bulletMatch) {
+      bullets.push(bulletMatch[1]);
+      continue;
+    }
+    flushBullets();
+    const sentences = rawLine.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡0-9])/u).filter(Boolean);
+    if (sentences.length > 1 && rawLine.length > 150) {
+      sentences.forEach(sentence => blocks.push('<p>' + escapeHtml(sentence.trim()) + '</p>'));
+    } else {
+      blocks.push('<p>' + escapeHtml(rawLine) + '</p>');
+    }
+  }
+  flushBullets();
+  if (blocks.length && blocks[0].startsWith("<p>")) blocks[0] = blocks[0].replace("<p>", '<p class="commercial-copy-lead">');
+  return '<div class="commercial-copy-blocks">' + blocks.join("") + '</div>';
+}
+
 function renderCard(product) {
   const detail = product.perfume_details || {};
   const concentration = String(detail.concentration || "").trim();
@@ -782,7 +822,7 @@ function openPerfume(product) {
         '<p class="perfume-kicker">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
         '<h2>' + escapeHtml(product.name || "Fragancia") + '</h2>' +
         (product.brand ? '<p class="perfume-dialog-brand">' + escapeHtml(product.brand) + '</p>' : '') +
-        '<p class="perfume-dialog-description">' + escapeHtml(product.description || "Consultá por las notas y características de esta fragancia.") + '</p>' +
+        '<div class="perfume-dialog-description">' + renderCommercialDescription(product.description, "Consultá por las notas y características de esta fragancia.") + '</div>' +
         '<dl class="perfume-dialog-facts">' +
           (concentration ? '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration) + '</dd></div>' : '') +
           (detail.volume_ml ? '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' : '') +
