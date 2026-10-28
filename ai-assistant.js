@@ -547,9 +547,7 @@
           catalogType,
           productId: null,
           productName: contextLabel,
-          productUrl: window.location.origin === "https://jasbh121101.github.io" || window.location.origin === "https://jb-collections.pages.dev"
-            ? window.location.href.split("#")[0].slice(0, 450)
-            : baseUrl + "/",
+          productUrl: baseUrl + "/",
           paymentTopic: topic
         })
       });
