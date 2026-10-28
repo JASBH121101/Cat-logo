@@ -503,3 +503,30 @@ html[data-theme="dark"] .provider-variant-config-prices input{background:#0b172b
   .provider-variant-config-prices{grid-template-columns:minmax(0,1fr)}
   .provider-review-sync-option{padding:9px}
 }
+
+
+/* Provider review: keep each variant/color row compact and readable on phones. */
+.provider-variant-review-config { min-width:0; }
+.provider-variant-color-row {
+  grid-template-columns:20px minmax(0,1fr) minmax(0,.9fr);
+  align-items:center;
+}
+.provider-variant-color-copy { overflow-wrap:anywhere; }
+.provider-variant-color-copy small { display:block; }
+.provider-variant-select select { min-width:0; }
+.provider-product-variant-summary { overflow-wrap:anywhere; }
+@media(max-width:560px) {
+  .provider-review-variants-section { padding:9px; gap:8px; }
+  .provider-variant-review-config { padding:9px; gap:8px; }
+  .provider-variant-color-row {
+    grid-template-columns:18px minmax(0,1fr)!important;
+    gap:7px!important;
+    padding:8px!important;
+  }
+  .provider-review-color-dot { width:16px; height:16px; }
+  .provider-variant-color-row .provider-variant-select {
+    grid-column:2;
+    width:100%;
+  }
+  .provider-variant-color-row .provider-variant-select select { min-height:36px; }
+}
