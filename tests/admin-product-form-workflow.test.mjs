@@ -57,7 +57,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261028-provider-review-submit-fix1/);
+  assert.match(html, /admin\.js\?v=20261028-provider-review-fields-removed1/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
 
