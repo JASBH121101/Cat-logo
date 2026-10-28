@@ -34,11 +34,11 @@ jobs:
           # on the maintained APK branch. Save the main workflow, switch to that
           # branch to collect mobile/signing support, then return to latest main.
           cp .github/workflows/build-jb-manager-android.yml "$SUPPORT_DIR/build-jb-manager-android.yml"
-          cp responsive-layout.css "$SUPPORT_DIR/responsive-layout.css"
           git fetch origin feature/jb-manager-android-apk
           git checkout -B android-support origin/feature/jb-manager-android-apk
           cp -a mobile "$SUPPORT_DIR/mobile"
           cp .github/android-signing-key-persisted "$SUPPORT_DIR/android-signing-key-persisted"
+          cp responsive-layout.css "$SUPPORT_DIR/responsive-layout.css"
 
           git fetch origin main
           git checkout -B android-source origin/main
