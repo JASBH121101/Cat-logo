@@ -266,66 +266,111 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     return { code: "current", label: "Al día", age, review };
   }
 
+  function renderProviderProductRow(product) {
+    const state = reviewState(product);
+    const review = state.review || {};
+    const type = importCatalogType(product.catalog_type, "technology");
+    const catalogLabel = type === "perfumery" ? "JB Parfums" : "JB TECH";
+    const lastChecked = review.last_reviewed_at ? displayDate(review.last_reviewed_at) : "Nunca revisado";
+    const checkedPrice = review.provider_price_usd != null ? money(review.provider_price_usd, "USD")
+      : review.provider_price_nio != null ? money(review.provider_price_nio, "NIO") : "Precio sin registrar";
+    const availability = availabilityLabel(review.provider_availability || "unknown");
+    return `<article class="provider-product-row">
+      <div class="provider-product-main">
+        <div class="provider-product-title-line"><strong>${escapeHTML(product.name || "Producto sin nombre")}</strong><span class="provider-catalog-tag">${catalogLabel}</span></div>
+        <p>${escapeHTML([product.brand, product.model].filter(Boolean).join(" · ") || product.category || "Sin marca o modelo")}</p>
+        <div class="provider-product-facts"><span>Última revisión: <b>${escapeHTML(lastChecked)}</b></span><span>Precio proveedor: <b>${escapeHTML(checkedPrice)}</b></span><span>Estado proveedor: <b>${escapeHTML(availability)}</b></span></div>
+        ${review.provider_url ? '<a class="provider-source-link" href="' + escapeHTML(review.provider_url) + '" target="_blank" rel="noopener noreferrer">Abrir ficha del proveedor ↗</a>' : ""}
+      </div>
+      <div class="provider-product-actions"><span class="provider-review-state ${state.code}">${state.label}</span>
+        <button type="button" class="button button-outline provider-action" data-provider-review="${escapeHTML(product.id)}">${state.code === "missing" ? "Registrar revisión" : "Actualizar revisión"}</button>
+        ${review.last_reviewed_at ? '<button type="button" class="button button-quiet provider-history-action" data-provider-history="' + escapeHTML(product.id) + '">Historial</button>' : ""}
+      </div>
+    </article>`;
+  }
+
+  function setText(id, value) {
+    const node = $("#" + id);
+    if (node) node.textContent = String(value);
+  }
+
   function renderProviderList() {
     const list = $("#provider-product-list");
     if (!list) return;
     const products = activeProducts();
     const typeFilter = $("#provider-catalog-filter")?.value || "all";
-    const stateFilter = $("#provider-review-filter")?.value || "all";
     const query = normalizedText($("#provider-search")?.value || "");
-    const rows = products.filter(product => {
-      const type = importCatalogType(product.catalog_type, "technology");
-      const state = reviewState(product);
-      const blob = normalizedText([product.name, product.brand, product.model, product.category].join(" "));
-      return (typeFilter === "all" || type === typeFilter) &&
-        (stateFilter === "all" || state.code === stateFilter) &&
-        (!query || blob.includes(query));
-    }).sort((a, b) => {
-      const order = { missing: 0, overdue: 1, current: 2 };
-      return order[reviewState(a).code] - order[reviewState(b).code] ||
-        String(a.name || "").localeCompare(String(b.name || ""), "es");
-    });
-
     const all = products.map(reviewState);
     const missing = all.filter(state => state.code === "missing").length;
     const overdue = all.filter(state => state.code === "overdue").length;
     const current = all.filter(state => state.code === "current").length;
-    const setText = (id, value) => { const node = $("#" + id); if (node) node.textContent = String(value); };
     setText("provider-count-missing", missing);
     setText("provider-count-overdue", overdue);
     setText("provider-count-current", current);
-    setText("provider-nav-count", missing + overdue);
+    setText("provider-nav-count", missing);
 
     if (lastRefreshError) {
       list.innerHTML = '<p class="provider-empty-state is-error">' + escapeHTML(lastRefreshError) + '</p>';
       return;
     }
+    const rows = products.filter(product => {
+      const type = importCatalogType(product.catalog_type, "technology");
+      const state = reviewState(product);
+      const blob = normalizedText([product.name, product.brand, product.model, product.category].join(" "));
+      return state.code === "missing" &&
+        (typeFilter === "all" || type === typeFilter) &&
+        (!query || blob.includes(query));
+    }).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es"));
+
     if (!rows.length) {
-      list.innerHTML = '<p class="provider-empty-state">No hay productos que coincidan con estos filtros.</p>';
+      list.innerHTML = '<p class="provider-empty-state">No hay productos pendientes de una primera revisión con estos filtros. Los productos ya revisados están en la sección Revisados.</p>';
       return;
     }
-    list.innerHTML = rows.map(product => {
-      const state = reviewState(product);
-      const review = state.review || {};
+    list.innerHTML = rows.map(renderProviderProductRow).join("");
+  }
+
+  function renderReviewedList() {
+    const list = $("#provider-reviewed-list");
+    if (!list) return;
+    const products = activeProducts();
+    const typeFilter = $("#provider-reviewed-catalog-filter")?.value || "all";
+    const stateFilter = $("#provider-reviewed-filter")?.value || "all";
+    const query = normalizedText($("#provider-reviewed-search")?.value || "");
+    const rows = products.filter(product => {
       const type = importCatalogType(product.catalog_type, "technology");
-      const catalogLabel = type === "perfumery" ? "JB Parfums" : "JB TECH";
-      const lastChecked = review.last_reviewed_at ? displayDate(review.last_reviewed_at) : "Nunca revisado";
-      const checkedPrice = review.provider_price_usd != null ? money(review.provider_price_usd, "USD")
-        : review.provider_price_nio != null ? money(review.provider_price_nio, "NIO") : "Precio sin registrar";
-      const availability = availabilityLabel(review.provider_availability || "unknown");
-      return `<article class="provider-product-row">
-        <div class="provider-product-main">
-          <div class="provider-product-title-line"><strong>${escapeHTML(product.name || "Producto sin nombre")}</strong><span class="provider-catalog-tag">${catalogLabel}</span></div>
-          <p>${escapeHTML([product.brand, product.model].filter(Boolean).join(" · ") || product.category || "Sin marca o modelo")}</p>
-          <div class="provider-product-facts"><span>Última revisión: <b>${escapeHTML(lastChecked)}</b></span><span>Precio proveedor: <b>${escapeHTML(checkedPrice)}</b></span><span>Estado proveedor: <b>${escapeHTML(availability)}</b></span></div>
-          ${review.provider_url ? '<a class="provider-source-link" href="' + escapeHTML(review.provider_url) + '" target="_blank" rel="noopener noreferrer">Abrir ficha del proveedor ↗</a>' : ""}
-        </div>
-        <div class="provider-product-actions"><span class="provider-review-state ${state.code}">${state.label}</span>
-          <button type="button" class="button button-outline provider-action" data-provider-review="${escapeHTML(product.id)}">${state.code === "missing" ? "Registrar revisión" : "Actualizar revisión"}</button>
-          ${review.last_reviewed_at ? '<button type="button" class="button button-quiet provider-history-action" data-provider-history="' + escapeHTML(product.id) + '">Historial</button>' : ""}
-        </div>
-      </article>`;
-    }).join("");
+      const state = reviewState(product);
+      const blob = normalizedText([product.name, product.brand, product.model, product.category].join(" "));
+      return state.code !== "missing" &&
+        (typeFilter === "all" || type === typeFilter) &&
+        (stateFilter === "all" || state.code === stateFilter) &&
+        (!query || blob.includes(query));
+    }).sort((a, b) => {
+      const order = { overdue: 0, current: 1 };
+      return order[reviewState(a).code] - order[reviewState(b).code] ||
+        String(a.name || "").localeCompare(String(b.name || ""), "es");
+    });
+
+    const reviewed = products.map(reviewState).filter(state => state.code !== "missing");
+    const overdue = reviewed.filter(state => state.code === "overdue").length;
+    const current = reviewed.filter(state => state.code === "current").length;
+    setText("provider-reviewed-count", reviewed.length);
+    setText("provider-reviewed-overdue", overdue);
+    setText("provider-reviewed-current", current);
+    setText("reviewed-nav-count", reviewed.length);
+
+    if (lastRefreshError) {
+      list.innerHTML = '<p class="provider-empty-state is-error">' + escapeHTML(lastRefreshError) + '</p>';
+      const message = $("#provider-reviewed-status-message");
+      if (message) message.textContent = lastRefreshError;
+      return;
+    }
+    const message = $("#provider-reviewed-status-message");
+    if (message) message.textContent = "";
+    if (!rows.length) {
+      list.innerHTML = '<p class="provider-empty-state">Todavía no hay productos revisados que coincidan con estos filtros. Al guardar la primera revisión, cada producto aparecerá aquí con acceso a su historial.</p>';
+      return;
+    }
+    list.innerHTML = rows.map(renderProviderProductRow).join("");
   }
 
   async function refresh() {
