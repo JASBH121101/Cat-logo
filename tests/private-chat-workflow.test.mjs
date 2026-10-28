@@ -129,7 +129,7 @@ test("admin-only private chat RPCs revoke anonymous execution but retain authent
     "private_chat_admin_extend_after_purchase(uuid)",
     "private_chat_admin_send(uuid, text)"
   ]) {
-    assert.match(adminRpcPermissions, new RegExp("REVOKE EXECUTE ON FUNCTION public\\\\." + signature.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + " FROM PUBLIC, anon", "i"));
-    assert.match(adminRpcPermissions, new RegExp("GRANT EXECUTE ON FUNCTION public\\\\." + signature.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + " TO authenticated", "i"));
+    assert.ok(adminRpcPermissions.includes("REVOKE EXECUTE ON FUNCTION public." + signature + " FROM PUBLIC, anon;"));
+    assert.ok(adminRpcPermissions.includes("GRANT EXECUTE ON FUNCTION public." + signature + " TO authenticated;"));
   }
 });
