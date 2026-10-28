@@ -27,6 +27,7 @@ let refreshInProgress = false;
 let sending = false;
 let expired = false;
 let countdownTimer = null;
+let activeCountdownExpiry = 0;
 
 function showFatal(message) {
   expired = true;
@@ -91,8 +92,10 @@ function renderMessages(items) {
   if (wasNearBottom || list.length <= 1) thread.scrollTop = thread.scrollHeight;
 }
 function startDeleteCountdown(value) {
-  if (countdownTimer) clearInterval(countdownTimer);
   const endTime = new Date(value || Date.now() + 10 * 60_000).getTime();
+  if (countdownTimer && activeCountdownExpiry === endTime) return;
+  if (countdownTimer) clearInterval(countdownTimer);
+  activeCountdownExpiry = endTime;
   const tick = () => {
     const seconds = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
     const minutesLeft = Math.floor(seconds / 60);
@@ -102,6 +105,8 @@ function startDeleteCountdown(value) {
       : "El plazo para cambiar de opinión terminó. Esta sesión ya no está disponible.";
     if (seconds <= 0) {
       clearInterval(countdownTimer);
+      countdownTimer = null;
+      activeCountdownExpiry = 0;
       sessionStorage.removeItem(SESSION_KEY);
       expired = true;
       $("#private-chat-change-mind").disabled = true;
@@ -136,6 +141,7 @@ function renderConversationState() {
   if (countdownTimer && !isDeclined) {
     clearInterval(countdownTimer);
     countdownTimer = null;
+    activeCountdownExpiry = 0;
   }
   if (isDeclined) startDeleteCountdown(conversation.delete_after);
   if (isClosed) {
