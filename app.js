@@ -302,6 +302,14 @@ function normalizeVariantAvailability(value) {
   return "available";
 }
 
+function effectiveVariantAvailability(variant) {
+  const colorStatus = normalizeVariantAvailability(variant?.availability);
+  const configurationStatus = normalizeVariantAvailability(variant?.configuration_availability);
+  if (colorStatus === "out_of_stock" || configurationStatus === "out_of_stock") return "out_of_stock";
+  if (colorStatus === "order" || configurationStatus === "order") return "order";
+  return "available";
+}
+
 function getProductVariants(product) {
   const raw = parseJSON(product?.variants, []);
   if (!Array.isArray(raw)) return [];
@@ -325,6 +333,7 @@ function getProductVariants(product) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
       availability: normalizeVariantAvailability(item.availability),
+      configuration_availability: normalizeVariantAvailability(item.configuration_availability),
       images: (() => {
         const legacyImage = String(item.image_url || item.imageUrl || "").trim();
         const storedImages = Array.isArray(item.images)
@@ -385,14 +394,15 @@ function getProductColors(product, configuration = null) {
       if (!previous) {
         map.set(key, {
           name: variant.color,
-          type: variant.availability,
+          type: effectiveVariantAvailability(variant),
           image_url: variant.image_url,
           color_hex: variant.color_hex
         });
       } else {
-        if (variant.availability === "available") {
+        const currentStatus = effectiveVariantAvailability(variant);
+        if (currentStatus === "available") {
           previous.type = "available";
-        } else if (variant.availability === "order" && previous.type !== "available") {
+        } else if (currentStatus === "order" && previous.type !== "available") {
           previous.type = "order";
         }
         if (!previous.image_url && variant.image_url) {
@@ -568,7 +578,7 @@ function productShareLink(product, variant = null, fallbackColor = null) {
 }
 
 function buildProductWhatsAppMessage(product, variant = null, fallbackColor = null) {
-  const rawAvailability = variant?.availability ?? fallbackColor?.type ?? product.availability;
+  const rawAvailability = variant ? effectiveVariantAvailability(variant) : (fallbackColor?.type ?? product.availability);
   const availability = normalizeVariantAvailability(rawAvailability);
   const opening = availability === "order"
     ? "Hola, quisiera consultar cómo pedir este producto"
@@ -583,7 +593,7 @@ function buildProductWhatsAppMessage(product, variant = null, fallbackColor = nu
     parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
-    parts.push(`Estado de la variante: ${colorStatusLabel(variant.availability)}.`);
+    parts.push(`Estado de la variante: ${colorStatusLabel(effectiveVariantAvailability(variant))}.`);
   } else {
     parts.push(`Precio de referencia: ${formatUSD(product.price_usd)}.`);
     if (fallbackColor) {
@@ -611,7 +621,7 @@ function buildPaymentWhatsAppMessage(product, variant = null, paymentType = "fin
     if (variant.price_usd !== null && variant.price_usd !== undefined) parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
-    parts.push(`Disponibilidad de esta variante: ${colorStatusLabel(variant.availability)}.`);
+    parts.push(`Disponibilidad de esta variante: ${colorStatusLabel(effectiveVariantAvailability(variant))}.`);
   } else {
     const usdPrice = startingPrice(product, "price_usd");
     if (usdPrice !== null && usdPrice !== undefined) parts.push(`Precio de referencia: ${formatUSD(usdPrice)}.`);
@@ -661,7 +671,7 @@ function startingPrice(product, field = "price_usd") {
 
   /* Priorizar precios de variantes disponibles. */
   const availableVariants = pricedVariants.filter(
-    variant => variant.availability === "available"
+    variant => effectiveVariantAvailability(variant) === "available"
   );
   if (availableVariants.length) {
     return Math.min(...availableVariants.map(variant => Number(variant[field])));
@@ -670,7 +680,7 @@ function startingPrice(product, field = "price_usd") {
   /* Si hay variantes disponibles pero no tienen precio, no anunciar el precio
      de una variante agotada o solo por pedido como si fuera la opción disponible. */
   const hasAvailableUnpricedVariant = variants.some(
-    variant => variant.availability === "available"
+    variant => effectiveVariantAvailability(variant) === "available"
   );
   if (hasAvailableUnpricedVariant) return product[field];
 
@@ -749,12 +759,12 @@ function renderCard(product) {
   const cardConfiguration =
     variants
       .filter(variant =>
-        variant.availability === "available" &&
+        effectiveVariantAvailability(variant) === "available" &&
         variant.price_usd !== null &&
         Number.isFinite(variant.price_usd)
       )
       .sort((left, right) => left.price_usd - right.price_usd)[0] ||
-    variants.find(variant => variant.availability === "available") ||
+    variants.find(variant => effectiveVariantAvailability(variant) === "available") ||
     variants[0] ||
     null;
   const cardRam = String(cardConfiguration?.ram || "").trim();
@@ -1143,11 +1153,19 @@ function renderVariantButtonGroup(variants, selected, field, title) {
       const ram = String(variant.ram || "").trim();
       const label = storage && ram ? `${storage} / ${ram}` : storage || ram || "Estándar";
       const key = `${storage.toLocaleLowerCase("es")}| ${ram.toLocaleLowerCase("es")}`;
-      if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram}); }
+      const matching = variants.filter(candidate =>
+        String(candidate.storage || "").trim() === storage &&
+        String(candidate.ram || "").trim() === ram
+      );
+      const status = matching.some(candidate => effectiveVariantAvailability(candidate) === "available")
+        ? "available"
+        : matching.some(candidate => effectiveVariantAvailability(candidate) === "order") ? "order" : "out_of_stock";
+      if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram, status}); }
     });
     const buttons = values.map(item => {
       const isSelected = selected.storage === item.storage && selected.ram === item.ram;
-      return `<button type="button" class="variant-choice ${isSelected ? "selected" : ""}" data-variant-dimension="configuration" data-variant-storage="${escapeHtml(item.storage)}" data-variant-ram="${escapeHtml(item.ram)}" aria-pressed="${isSelected ? "true" : "false"}">${escapeHtml(item.label)}</button>`;
+      const statusLabel = colorStatusLabel(item.status);
+      return `<button type="button" class="variant-choice ${isSelected ? "selected" : ""}" data-variant-dimension="configuration" data-variant-storage="${escapeHtml(item.storage)}" data-variant-ram="${escapeHtml(item.ram)}" aria-pressed="${isSelected ? "true" : "false"}" aria-label="${escapeHtml(item.label + ": " + statusLabel)}" title="${escapeHtml(item.label + " · " + statusLabel)}"><span>${escapeHtml(item.label)}</span><small class="variant-choice-status status-${item.status}">${escapeHtml(statusLabel)}</small></button>`;
     }).join("");
     return `<section class="variant-option-group"><h3>${title}</h3><div class="variant-choice-list">${buttons}</div></section>`;
   }
@@ -1160,7 +1178,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
       const candidate = chooseVariant(variants, selected, field, value);
       const isSelected = selected.color === value;
       const swatch = validHex(candidate?.color_hex);
-      const status = colorStatusLabel(candidate?.availability);
+      const status = colorStatusLabel(effectiveVariantAvailability(candidate));
 
       return `
         <button type="button"
@@ -1259,9 +1277,10 @@ function renderVariantControls(product, variants, selected) {
 
   const usd = formatUSD(selected.price_usd);
   const nio = formatNIO(selected.price_nio);
-  const status = colorStatusLabel(selected.availability);
-  const isOrder = selected.availability === "order";
-  const isUnavailable = selected.availability === "out_of_stock";
+  const selectedAvailability = effectiveVariantAvailability(selected);
+  const status = colorStatusLabel(selectedAvailability);
+  const isOrder = selectedAvailability === "order";
+  const isUnavailable = selectedAvailability === "out_of_stock";
 
   area.innerHTML = `
     <div class="variant-selector">
@@ -1748,7 +1767,7 @@ function openProduct(product, requestedVariant = null) {
       : null;
     let selectedVariant =
       routeVariant ||
-      variants.find(variant => variant.availability === "available") ||
+      variants.find(variant => effectiveVariantAvailability(variant) === "available") ||
       variants[0];
 
     const variantArea = $("#variant-options-area");
@@ -1764,8 +1783,8 @@ function openProduct(product, requestedVariant = null) {
           variant.storage === (button.dataset.variantStorage || "") &&
           variant.ram === (button.dataset.variantRam || "")
         );
-        selectedVariant = matching.find(variant => variant.color === selectedVariant.color && variant.availability === "available")
-          || matching.find(variant => variant.availability === "available")
+        selectedVariant = matching.find(variant => variant.color === selectedVariant.color && effectiveVariantAvailability(variant) === "available")
+          || matching.find(variant => effectiveVariantAvailability(variant) === "available")
           || matching.find(variant => variant.color === selectedVariant.color)
           || matching[0]
           || selectedVariant;
