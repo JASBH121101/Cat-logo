@@ -911,7 +911,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       }
 
       const catalogPriceMessage = syncCatalogAvailability
-        ? " Se sincronizaron disponibilidad general, configuraciones y colores. Los precios GoPartner ingresados por configuración se aplicaron; los campos de precio vacíos conservaron el precio actual. Las fotos y el estado de publicación no cambiaron."
+        ? " Se sincronizaron disponibilidad general, configuraciones y colores. Los precios GoPartner ingresados por configuración se aplicaron; los campos vacíos conservaron el precio actual. En productos sin variantes se aplicó el precio general ingresado. Las fotos y el estado de publicación no cambiaron."
         : " Se guardó el historial privado; ni la disponibilidad ni los precios públicos se modificaron.";
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
       const successMessage = "Revisión confirmada. Se añadió una entrada al historial privado." + catalogPriceMessage;
