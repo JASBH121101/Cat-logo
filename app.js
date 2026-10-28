@@ -718,7 +718,7 @@ function formatCustomProductTag(value) {
 }
 
 const PRODUCT_TAG_LABELS = {
-  limited_edition: "🏅 EDICIÓN LIMITADA",
+  limited_edition: "▦ EDICIÓN LIMITADA",
   high_performance: "⚡ ALTO RENDIMIENTO",
   quality_price: "💎 CALIDAD-PRECIO",
   top_gaming: "🎮 TOP GAMING",
