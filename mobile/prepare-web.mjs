@@ -858,8 +858,8 @@ const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
-if (!builtAdminHtml.includes('admin.js?v=20261028-smart-duplicate-detector1')) {
-  throw new Error("The APK must load the cache-busted admin script containing the smart duplicate detector.");
+if (!builtAdminHtml.includes('admin.js?v=20261028-limited-edition-sections1')) {
+  throw new Error("The APK must load the current admin script containing smart duplicate detection and shared collection labels.");
 }
 if (!builtAdminHtml.includes('admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1')) {
   throw new Error("The APK must load the smart duplicate detector's responsive stylesheet.");
@@ -868,8 +868,13 @@ if (!builtAdminScript.includes("function renderProductDuplicateSuggestions()")
   || !builtAdminScript.includes("normalizeDuplicateText(product.brand) !== brandKey")) {
   throw new Error("The APK admin script is missing brand-scoped smart duplicate detection.");
 }
-if (!builtAdminHtml.includes('theme-ui.css?v=20261028-mobile-drawer-overlay2')) {
-  throw new Error("The APK admin page is missing the latest mobile sidebar stability styles.");
+if (!builtAdminHtml.includes('id="product-tag-limited-edition"')
+  || !builtAdminScript.includes('"limited_edition"')
+  || !builtAdminScript.includes("tags: selectedProductTags()")) {
+  throw new Error("The APK admin panel is missing a persistent limited-edition label for both catalogs.");
+}
+if (!builtAdminHtml.includes('theme-ui.css?v=20261028-limited-edition-sections1')) {
+  throw new Error("The APK admin page is missing the latest mobile sidebar and collection-tag styles.");
 }
 if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
   throw new Error("The APK stylesheet is missing the Android mobile-sidebar stability patch.");
@@ -920,6 +925,21 @@ new Function(updaterScript[1]);
 
 const builtCatalogHtml = await readFile(join(webDir, "tecnologia", "index.html"), "utf8");
 const perfumeCatalogHtml = await readFile(join(webDir, "perfumeria", "index.html"), "utf8");
+if (!builtCatalogHtml.includes('id="limited-edition-section"')) {
+  throw new Error("Technology catalog is missing the limited-edition collection section.");
+}
+if (!perfumeCatalogHtml.includes('id="perfume-exclusive-section"')
+  || !perfumeCatalogHtml.includes('id="perfume-limited-edition-section"')
+  || !perfumeCatalogHtml.includes('perfumeria.js?v=20261028-limited-edition-sections1')) {
+  throw new Error("JB Parfums is missing the exclusive and limited-edition showcase sections.");
+}
+const builtTechnologyStyles = await readFile(join(webDir, "technology-visual-refresh.css"), "utf8");
+const builtPerfumeStyles = await readFile(join(webDir, "perfumeria.css"), "utf8");
+if (!builtTechnologyStyles.includes("limited-edition-section")
+  || !builtPerfumeStyles.includes("perfume-featured-section--limited-edition")) {
+  throw new Error("Limited-edition collection styles are missing from the Android bundle.");
+}
+
 const builtAiAssistant = await readFile(join(webDir, "ai-assistant.js"), "utf8");
 new Function(builtAiAssistant);
 if (!builtAiAssistant.includes("/api/assistant")
