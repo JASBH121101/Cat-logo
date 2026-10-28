@@ -26,7 +26,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(css, /section-accessible-title/);
   assert.match(css, /top-gaming-heading \.section-subtitle\s*\{[^}]*font-family:\s*"Space Grotesk"/s);
   assert.match(css, /quality-price-heading \.section-subtitle\s*\{[^}]*font-family:\s*"DM Sans"/s);
-  assert.match(css, /high-performance-heading \.section-subtitle\s*\{[^}]*font-family:\s*"Space Grotesk"/s);
+  assert.match(css, /high-performance-heading \.section-subtitle\s*\{[^}]*font-family:\s*Manrope/s);
   assert.match(css, /featured-section-heading \.section-subtitle\s*\{[^}]*font-family:\s*Manrope/s);
   assert.match(css, /section-tag-badge > svg/);
   assert.match(app, /product-card-tag-exclusive/);
@@ -43,10 +43,10 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
-  assert.match(css, /body\\.technology-catalog \\.top-gaming-heading \\.section-subtitle\\s*\\{[^}]*font-family:\\s*"Space Grotesk"[^}]*font-weight:\\s*600/s);
-  assert.match(css, /body\\.technology-catalog \\.quality-price-heading \\.section-subtitle\\s*\\{[^}]*font-family:\\s*"DM Sans"/s);
-  assert.match(css, /body\\.technology-catalog \\.high-performance-heading \\.section-subtitle\\s*\\{[^}]*font-family:\\s*Manrope[^}]*font-weight:\\s*600/s);
-  assert.match(css, /body\\.technology-catalog \\.featured-section-heading \\.section-subtitle\\s*\\{[^}]*font-weight:\\s*500[^}]*letter-spacing:\\s*\\.012em/s);
+  assert.match(css, /body\.technology-catalog \.top-gaming-heading \.section-subtitle\s*\{[^}]*font-family:\s*"Space Grotesk"[^}]*font-weight:\s*600/s);
+  assert.match(css, /body\.technology-catalog \.quality-price-heading \.section-subtitle\s*\{[^}]*font-family:\s*"DM Sans"/s);
+  assert.match(css, /body\.technology-catalog \.high-performance-heading \.section-subtitle\s*\{[^}]*font-family:\s*Manrope[^}]*font-weight:\s*600/s);
+  assert.match(css, /body\.technology-catalog \.featured-section-heading \.section-subtitle\s*\{[^}]*font-weight:\s*500[^}]*letter-spacing:\s*\.012em/s);
 });
 
 test("keeps the product-detail header, back arrow, and theme toggle visible while the body is locked", () => {
