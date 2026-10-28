@@ -160,7 +160,7 @@ test("provider review identifies perfume details and compares current published 
 
 test("provider review syncs both catalog prices only when both supplier prices are provided", () => {
   assert.match(provider, /const hasBothProviderPrices = priceUSD !== null && priceNIO !== null/);
-  assert.match(provider, /from\("products"\)\.update\(\{ price_usd: priceUSD, price_nio: priceNIO \}\)/);
+  assert.match(provider, /from\("products"\)[\s\S]*?\.update\(\{ price_usd: priceUSD, price_nio: priceNIO \}\)/);
   assert.match(provider, /\.eq\("id", product\.id\)/);
   assert.match(provider, /\.eq\("catalog_type", product\.catalog_type\)/);
   assert.match(provider, /el catálogo no se modificó/);
