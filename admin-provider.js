@@ -379,25 +379,28 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (!supabase || !user) {
       lastRefreshError = "";
       renderProviderList();
+      renderReviewedList();
       return false;
     }
-    const button = $("#provider-refresh");
-    if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+    const buttons = [$("#provider-refresh"), $("#provider-refresh-reviewed")].filter(Boolean);
+    buttons.forEach(button => { button.disabled = true; button.setAttribute("aria-busy", "true"); });
     lastRefreshError = "";
     try {
       const { data, error } = await supabase.from("product_provider_status").select("*").order("last_reviewed_at", { ascending: false }).limit(5000);
       if (error) throw error;
       providerStatuses = new Map((data || []).map(row => [String(row.product_id), row]));
       renderProviderList();
+      renderReviewedList();
       refreshImportPlanIfPresent();
       return true;
     } catch (error) {
       lastRefreshError = "No se pudo cargar el seguimiento del proveedor: " + (error?.message || "error desconocido");
       renderProviderList();
+      renderReviewedList();
       say(statusMessage, lastRefreshError, "error");
       return false;
     } finally {
-      if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }
+      buttons.forEach(button => { button.disabled = false; button.removeAttribute("aria-busy"); });
     }
   }
 
@@ -995,16 +998,21 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     }
   }
 
-  $("#provider-refresh")?.addEventListener("click", () => { void refresh(); });
-  ["#provider-catalog-filter", "#provider-review-filter", "#provider-search"].forEach(selector =>
+  ["#provider-refresh", "#provider-refresh-reviewed"].forEach(selector =>
+    $(selector)?.addEventListener("click", () => { void refresh(); })
+  );
+  ["#provider-catalog-filter", "#provider-search"].forEach(selector =>
     $(selector)?.addEventListener(selector === "#provider-search" ? "input" : "change", renderProviderList)
   );
-  $("#provider-product-list")?.addEventListener("click", event => {
+  ["#provider-reviewed-catalog-filter", "#provider-reviewed-filter", "#provider-reviewed-search"].forEach(selector =>
+    $(selector)?.addEventListener(selector === "#provider-reviewed-search" ? "input" : "change", renderReviewedList)
+  );
+  ["#provider-product-list", "#provider-reviewed-list"].forEach(selector => $(selector)?.addEventListener("click", event => {
     const review = event.target.closest("[data-provider-review]");
     const history = event.target.closest("[data-provider-history]");
     if (review) openReview(review.dataset.providerReview);
     else if (history) void openHistory(history.dataset.providerHistory);
-  });
+  }));
   const reviewForm = $("#provider-review-form");
   const reviewSaveButton = $("#provider-review-save");
   ["#provider-review-price-usd", "#provider-review-price-nio", "#provider-review-availability"].forEach(selector =>
@@ -1077,9 +1085,11 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   );
 
   renderProviderList();
+  renderReviewedList();
   return {
     refresh,
     render: renderProviderList,
+    renderReviewed: renderReviewedList,
     getStatus(productId) { return providerStatuses.get(String(productId)) || null; }
   };
 }
