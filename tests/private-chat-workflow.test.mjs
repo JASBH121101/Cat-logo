@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
-const migration = readFileSync(new URL("../supabase/migrations/20261028210000_private_chat_secure_workflow.sql", import.meta.url), "utf8");
-const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213100_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
-const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028213000_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../supabase/migrations/20261028204826_private_chat_secure_workflow_20261028.sql", import.meta.url), "utf8");
+const privacyFix = readFileSync(new URL("../supabase/migrations/20261028205513_tighten_private_chat_sensitive_data_20261028.sql", import.meta.url), "utf8");
+const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028212147_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
+const duplicateNoticeRemoval = readFileSync(new URL("../supabase/migrations/20261028212309_remove_duplicate_private_chat_consent.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
@@ -64,6 +65,9 @@ test("identity detection fix requires a digit for cédula/passport-like values",
 test("purchase consent is displayed only in the consent panel, not duplicated as a chat message", () => {
   assert.match(singleNoticeFix, /set contact_route='buy', consent_notice_version='2026-10-28-v2'/);
   assert.doesNotMatch(singleNoticeFix, /v_notice|values \(v_row\.id, 'assistant', v_notice\)/);
+  assert.match(duplicateNoticeRemoval, /consent_notice_version='2026-10-28-v1'/);
+  assert.doesNotMatch(duplicateNoticeRemoval, /values \(v_row\.id, 'assistant', v_notice\)/);
+  assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-28-v1"/);
   assert.match(customerJs, /Before older conversations may still contain a duplicated database message|Older conversations may still contain a duplicated database message/);
   assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
   assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
