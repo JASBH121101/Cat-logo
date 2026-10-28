@@ -19,10 +19,10 @@
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
-  <link rel="stylesheet" href="admin-private-chat.css?v=20261028-inbox-no-blank-space5">
+  <link rel="stylesheet" href="admin-private-chat.css?v=20261028-inbox-no-blank-space6">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-inbox-no-blank-space5"></script>
+  <script type="module" src="admin.js?v=20261028-inbox-no-blank-space6"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -840,11 +840,6 @@
             </div>
           </aside>
           <section id="private-chat-admin-thread" class="private-chat-admin-thread" aria-label="Conversación seleccionada" hidden>
-            <div id="private-chat-admin-empty" class="private-chat-admin-empty">
-              <span aria-hidden="true">✉</span>
-              <h3>Seleccioná una conversación</h3>
-              <p>Podés revisar el contexto, tomar la solicitud y responder desde aquí.</p>
-            </div>
             <div id="private-chat-admin-selected" class="private-chat-admin-selected" hidden>
               <header class="private-chat-admin-thread-header">
                 <button id="private-chat-admin-back" class="private-chat-admin-back" type="button">← Bandeja</button>
@@ -856,9 +851,9 @@
                 <a id="private-chat-admin-product-link" class="private-chat-admin-product-link" href="https://jb-collections.pages.dev/" target="_blank" rel="noopener noreferrer">Ver producto ↗</a>
               </header>
               <div id="private-chat-admin-actions" class="private-chat-admin-actions">
-                <button id="private-chat-admin-claim" class="button button-primary" type="button">Tomar conversación</button>
+                <button id="private-chat-admin-claim" class="button button-primary" type="button" hidden>Tomar conversación</button>
                 <button id="private-chat-admin-purchase" class="button button-secondary" type="button" hidden>Compra confirmada · 30 min más</button>
-                <button id="private-chat-admin-close" class="button button-outline" type="button">Cerrar chat</button>
+                <button id="private-chat-admin-close" class="button button-outline" type="button" hidden>Cerrar chat</button>
               </div>
               <div id="private-chat-admin-messages" class="private-chat-admin-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
               <form id="private-chat-admin-reply-form" class="private-chat-admin-reply-form" hidden>
