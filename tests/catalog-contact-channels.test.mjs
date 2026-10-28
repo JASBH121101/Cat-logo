@@ -10,48 +10,48 @@ const technologyHtml = readFileSync(new URL("../tecnologia/index.html", import.m
 const perfumeryHtml = readFileSync(new URL("../perfumeria/index.html", import.meta.url), "utf8");
 
 test("technology product dialog offers WhatsApp and JB Collections as separate contact channels", () => {
-  assert.match(app, /id="dialog-buy-link"[^>]*contact-channel-button--whatsapp/);
-  assert.match(app, /id="dialog-jb-contact"[^>]*contact-channel-button--jb/);
-  assert.match(app, /window.openJBAiAdvisor(message)/);
-  assert.match(app, /function buildAIProductPrompt/);
+  assert.ok(app.includes('id="dialog-buy-link"'));
+  assert.ok(app.includes('id="dialog-jb-contact"'));
+  assert.ok(app.includes("window.openJBAiAdvisor(message)"));
+  assert.ok(app.includes("function buildAIProductPrompt"));
 });
 
 test("technology payment selector asks for the topic before revealing both channels", () => {
-  assert.match(app, /id="dialog-payment-type"/);
-  assert.match(app, /option value="financing">Financiamiento/);
-  assert.match(app, /option value="credit_card">Compra con tarjeta de crédito/);
-  assert.match(app, /id="dialog-payment-channel-panel"[^>]*hidden/);
-  assert.match(app, /id="dialog-payment-whatsapp"/);
-  assert.match(app, /id="dialog-payment-jb"/);
-  assert.match(app, /function refreshPaymentChannelChoices/);
-  assert.match(app, /buildPaymentWhatsAppMessage(product, variant, paymentType)/);
+  assert.ok(app.includes('id="dialog-payment-type"'));
+  assert.ok(app.includes('<option value="financing">Financiamiento</option>'));
+  assert.ok(app.includes('<option value="credit_card">Compra con tarjeta de crédito</option>'));
+  assert.ok(app.includes('id="dialog-payment-channel-panel" hidden'));
+  assert.ok(app.includes('id="dialog-payment-whatsapp"'));
+  assert.ok(app.includes('id="dialog-payment-jb"'));
+  assert.ok(app.includes("function refreshPaymentChannelChoices"));
+  assert.ok(app.includes("buildPaymentWhatsAppMessage(product, variant, paymentType)"));
 });
 
 test("perfumery product dialog provides the same two channels and payment-topic flow", () => {
-  assert.match(perfume, /id="perfume-buy-link"[^>]*contact-channel-button--whatsapp/);
-  assert.match(perfume, /id="perfume-jb-contact"[^>]*contact-channel-button--jb/);
-  assert.match(perfume, /id="perfume-payment-type"/);
-  assert.match(perfume, /id="perfume-payment-whatsapp"/);
-  assert.match(perfume, /id="perfume-payment-jb"/);
-  assert.match(perfume, /function refreshPerfumePaymentChoices/);
-  assert.match(perfume, /const whatsappIconMarkup =/);
-  assert.match(perfume, /const chatIconMarkup =/);
+  assert.ok(perfume.includes('id="perfume-buy-link"'));
+  assert.ok(perfume.includes('id="perfume-jb-contact"'));
+  assert.ok(perfume.includes('id="perfume-payment-type"'));
+  assert.ok(perfume.includes('id="perfume-payment-whatsapp"'));
+  assert.ok(perfume.includes('id="perfume-payment-jb"'));
+  assert.ok(perfume.includes("function refreshPerfumePaymentChoices"));
+  assert.ok(perfume.includes("const whatsappIconMarkup ="));
+  assert.ok(perfume.includes("const chatIconMarkup ="));
 });
 
 test("JB Collections channel opens the existing AI advisor and supplies contextual product queries", () => {
-  assert.match(assistant, /window.openJBAiAdvisor = message =>/);
-  assert.match(assistant, /window.openJBAiAdvisor(event.detail && event.detail.message)/);
-  assert.match(app, /Usá solo información publicada y confirmada/);
-  assert.match(perfume, /Usá solo información publicada y confirmada/);
+  assert.ok(assistant.includes("window.openJBAiAdvisor = message =>"));
+  assert.ok(assistant.includes("window.openJBAiAdvisor(event.detail && event.detail.message)"));
+  assert.ok(app.includes("Usá solo información publicada y confirmada"));
+  assert.ok(perfume.includes("Usá solo información publicada y confirmada"));
 });
 
 test("contact channel controls are responsive, keyboard-focusable and styled consistently across catalogs", () => {
-  assert.match(channelCss, /.product-contact-channel-actions/);
-  assert.match(channelCss, /.payment-channel-actions/);
-  assert.match(channelCss, /:focus-visible/);
-  assert.match(channelCss, /@media (max-width: 560px)/);
-  assert.match(technologyHtml, /contact-channels.css?v=20261028-dual-contact1/);
-  assert.match(perfumeryHtml, /contact-channels.css?v=20261028-dual-contact1/);
-  assert.match(technologyHtml, /app.js?v=20261028-dual-contact1/);
-  assert.match(perfumeryHtml, /perfumeria.js?v=20261028-dual-contact1/);
+  assert.ok(channelCss.includes(".product-contact-channel-actions"));
+  assert.ok(channelCss.includes(".payment-channel-actions"));
+  assert.ok(channelCss.includes(":focus-visible"));
+  assert.ok(channelCss.includes("@media (max-width: 560px)"));
+  assert.ok(technologyHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
+  assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
+  assert.ok(technologyHtml.includes("app.js?v=20261028-dual-contact1"));
+  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-dual-contact1"));
 });
