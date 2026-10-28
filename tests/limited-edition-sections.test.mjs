@@ -15,7 +15,9 @@ const perfumeCss = readFileSync(new URL("../perfumeria.css", import.meta.url), "
 test("limited edition is a shared manual label in technology and perfume forms", () => {
   assert.match(adminHtml, /id="product-tag-limited-edition"/);
   assert.match(adminHtml, /data-product-tag value="limited_edition"/);
-  assert.match(adminHtml, /🏅<\/span> Edición limitada/);
+  assert.match(adminHtml, /product-tag-option-icon--tech/);
+  assert.match(adminHtml, /product-tag-option-icon--perfume/);
+  assert.match(themeCss, /admin-catalog-perfumery \.product-tag-option-icon--perfume/);
   assert.match(adminHtml, /product-collection-tag-options/);
   assert.match(adminHtml, /product-tech-tag-options/);
   assert.match(adminJs, /"limited_edition"/);
@@ -35,7 +37,8 @@ test("technology limited editions have a dedicated section immediately after Exc
   assert.ok(technologyHtml.indexOf('id="limited-edition-section"') < technologyHtml.indexOf('id="high-performance-section"'));
   assert.match(technologyHtml, /app\.js\?v=20261028-limited-edition-sections1/);
   assert.match(technologyHtml, /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
-  assert.match(technologyJs, /limited_edition:\s*"🏅 EDICIÓN LIMITADA"/);
+  assert.match(technologyJs, /limited_edition:\s*"▦ EDICIÓN LIMITADA"/);
+  assert.match(technologyHtml, /<rect x="6\.5" y="6\.5" width="11" height="11" rx="2"\/>/);
   assert.match(technologyJs, /normalizedProductTags\(product\)\.includes\("limited_edition"\)/);
   assert.match(technologyJs, /limitedEditionSection\.classList\.toggle\("hidden", limitedEdition\.length === 0\)/);
   assert.match(technologyJs, /!tags\.includes\("limited_edition"\)/);
