@@ -325,6 +325,8 @@
       }
       return;
     }
+    const hasNewProductContext = query.has("catalog_type") || query.has("product_name") || query.has("payment_topic");
+    if (hasNewProductContext) clearSession();
     if (sessionToken && conversationId) {
       const result = await api("read").catch(() => null);
       if (result?.conversation) {
