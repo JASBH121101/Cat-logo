@@ -2118,3 +2118,12 @@ html[data-theme="dark"] body.technology-catalog .variant-choice-status { backgro
 html[data-theme="dark"] body.technology-catalog .variant-choice-status.status-order { background:#4b3518; color:#ffdda1; }
 html[data-theme="dark"] body.technology-catalog .variant-choice-status.status-out_of_stock { background:#4a202a; color:#ffc2ca; }
 @media (max-width:760px) { body.technology-catalog .variant-choice-status { margin-left:3px; padding:2px 4px; font-size:9px; } }
+
+
+/* Dynamic subcategory filter — follows the existing light/dark control system. */
+body.technology-catalog .subcategory-filter-bar { display:flex; justify-content:flex-start; margin:-3px 0 17px; }
+body.technology-catalog .subcategory-filter-field { width:min(100%,360px); }
+body.technology-catalog .subcategory-filter-field select { width:100%; min-height:44px; padding:10px 38px 10px 13px; border:1px solid var(--tech-line); border-radius:11px; color:var(--tech-ink); background:var(--tech-card-soft); font:inherit; font-size:14px; }
+body.technology-catalog .subcategory-filter-field select:disabled { cursor:not-allowed; opacity:.62; }
+body.technology-catalog .subcategory-filter-field select:focus-visible { outline:2px solid var(--tech-blue); outline-offset:2px; }
+@media (max-width:600px) { body.technology-catalog .subcategory-filter-bar { margin:0 0 14px; } body.technology-catalog .subcategory-filter-field { width:100%; } }
