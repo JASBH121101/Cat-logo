@@ -20,6 +20,30 @@ const input = $("#private-chat-input");
 const sendButton = $("#private-chat-send");
 const statusLine = $("#private-chat-status");
 
+const themeToggle = $("#private-chat-theme-toggle");
+function applyPrivateChatTheme(theme) {
+  const selected = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = selected;
+  if (themeToggle) {
+    const nextTheme = selected === "dark" ? "light" : "dark";
+    themeToggle.textContent = selected === "dark" ? "☀" : "☾";
+    themeToggle.setAttribute("aria-label", selected === "dark" ? "Cambiar al tema claro" : "Cambiar al tema oscuro");
+    themeToggle.setAttribute("title", selected === "dark" ? "Cambiar al tema claro" : "Cambiar al tema oscuro");
+    themeToggle.setAttribute("aria-pressed", String(selected === "dark"));
+    themeToggle.dataset.nextTheme = nextTheme;
+  }
+  try { localStorage.setItem("ct-catalog-theme", selected); } catch {}
+}
+function initializePrivateChatTheme() {
+  let selected = "light";
+  try {
+    const saved = localStorage.getItem("ct-catalog-theme");
+    if (saved === "light" || saved === "dark") selected = saved;
+  } catch {}
+  applyPrivateChatTheme(selected);
+  themeToggle?.addEventListener("click", () => applyPrivateChatTheme(themeToggle.dataset.nextTheme));
+}
+
 let sessionToken = "";
 let conversation = null;
 let lastMessagesSignature = "";
@@ -272,5 +296,5 @@ input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = Math.min(input.scrollHeight, 112) + "px";
 });
-void initialize();
+initializePrivateChatTheme();\nvoid initialize();
 setInterval(() => { if (sessionToken && !expired) void refreshConversation(); }, 6500);
