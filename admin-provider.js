@@ -130,6 +130,90 @@ function stableVariantKey(variant) {
   return [part(variant.ram), part(variant.storage || variant.capacity), part(variant.color)].join("|");
 }
 
+function providerVariantConfigKey(variant) {
+  const part = value => normalizedText(value).replace(/\\s+/g, "");
+  const storage = variant?.storage ?? variant?.capacity ??
+    (variant?.storage_value != null ? String(variant.storage_value) + " " + String(variant.storage_unit || "GB") : "");
+  return [part(variant?.ram), part(storage)].join("|");
+}
+
+function providerConfigLabel(group) {
+  const storage = String(group?.storage || "").trim();
+  const ramValue = String(group?.ram || "").trim().replace(/\\s*GB\\s*/i, "");
+  const ram = ramValue ? (ramValue + " GB RAM") : "";
+  return [storage, ram].filter(Boolean).join(" · ") || "Configuración principal";
+}
+
+function providerVariantSnapshotSummary(value) {
+  const snapshot = parseMaybeJSON(value, []);
+  if (!Array.isArray(snapshot) || !snapshot.length) return "";
+  const groups = snapshot.length;
+  const colors = snapshot.reduce((sum, group) => sum + (Array.isArray(group.colors) ? group.colors.length : 0), 0);
+  const statuses = { available: 0, on_order: 0, out_of_stock: 0, unknown: 0 };
+  snapshot.forEach(group => (Array.isArray(group.colors) ? group.colors : []).forEach(color => {
+    const status = normalizeAvailability(color.provider_availability, false) || "unknown";
+    statuses[status] += 1;
+  }));
+  const colorState = [
+    statuses.available ? statuses.available + " disponibles" : "",
+    statuses.on_order ? statuses.on_order + " por pedido" : "",
+    statuses.out_of_stock ? statuses.out_of_stock + " agotados" : "",
+    statuses.unknown ? statuses.unknown + " sin confirmar" : ""
+  ].filter(Boolean).join(", ");
+  return groups + " configuración(es) · " + colors + " color(es)" + (colorState ? " · " + colorState : "");
+}
+
+function catalogVariantSummary(product) {
+  const variants = parseMaybeJSON(product?.variants, []);
+  if (!Array.isArray(variants) || !variants.length) return "";
+  const groups = new Map();
+  for (const variant of variants) {
+    if (!variant || typeof variant !== "object") continue;
+    const key = providerVariantConfigKey(variant);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        label: providerConfigLabel(variant),
+        availability: normalizeAvailability(variant.configuration_availability, false) || "unknown",
+        colors: []
+      });
+    }
+    const group = groups.get(key);
+    const color = String(variant.color || "").trim();
+    if (color && !group.colors.some(item => normalizedText(item.name) === normalizedText(color))) {
+      group.colors.push({
+        name: color,
+        availability: normalizeAvailability(variant.availability, false) || "unknown"
+      });
+    }
+  }
+  return [...groups.values()].slice(0, 3).map(group => {
+    const colorSummary = group.colors.length
+      ? " · " + group.colors.length + " color(es): " + group.colors.slice(0, 3).map(color =>
+          color.name + " (" + availabilityLabel(color.availability) + ")"
+        ).join(", ") + (group.colors.length > 3 ? "…" : "")
+      : "";
+    return group.label + ": " + availabilityLabel(group.availability) + colorSummary;
+  }).join(" | ") + (groups.size > 3 ? " | …" : "");
+}
+
+function providerVariantSnapshotHistoryHTML(value) {
+  const snapshot = parseMaybeJSON(value, []);
+  if (!Array.isArray(snapshot) || !snapshot.length) return "";
+  const groups = snapshot.map(group => {
+    const colors = (Array.isArray(group.colors) ? group.colors : []).map(color =>
+      '<li><span class="provider-history-variant-color"><i style="--provider-review-swatch:' +
+      escapeHTML(color.color_hex || "#68758d") + '"></i><strong>' + escapeHTML(color.color || "Color sin nombre") +
+      '</strong></span><span>Catálogo: ' + escapeHTML(availabilityLabel(color.catalog_availability)) +
+      ' → GoPartner: <b>' + escapeHTML(availabilityLabel(color.provider_availability)) + '</b></span></li>'
+    ).join("");
+    return '<article class="provider-history-variant-group"><strong>' + escapeHTML(providerConfigLabel(group)) +
+      '</strong><p>Configuración · Catálogo: ' + escapeHTML(availabilityLabel(group.catalog_availability)) +
+      ' → GoPartner: <b>' + escapeHTML(availabilityLabel(group.provider_availability)) + '</b></p>' +
+      (colors ? '<ul>' + colors + '</ul>' : '<p>Sin colores registrados.</p>') + '</article>';
+  }).join("");
+  return '<details class="provider-history-variants"><summary>Ver disponibilidad por variante y color</summary><div>' + groups + '</div></details>';
+}
+
 function mergeVariantImages(incomingValue, currentValue) {
   const incoming = parseMaybeJSON(incomingValue, []);
   if (!Array.isArray(incoming)) throw new Error("La lista de variantes debe ser un arreglo JSON.");
@@ -276,11 +360,19 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const checkedPrice = review.provider_price_usd != null ? money(review.provider_price_usd, "USD")
       : review.provider_price_nio != null ? money(review.provider_price_nio, "NIO") : "Precio sin registrar";
     const availability = availabilityLabel(review.provider_availability || "unknown");
+    const variantReviewSummary = providerVariantSnapshotSummary(review.provider_variant_snapshot);
+    const currentVariantSummary = catalogVariantSummary(product);
+    const variantSummary = variantReviewSummary
+      ? '<p class="provider-variant-summary"><strong>Última revisión del proveedor:</strong> ' + escapeHTML(variantReviewSummary) + '</p>'
+      : currentVariantSummary
+        ? '<p class="provider-variant-summary"><strong>Estados actuales del catálogo:</strong> ' + escapeHTML(currentVariantSummary) + '</p>'
+        : "";
     return `<article class="provider-product-row">
       <div class="provider-product-main">
         <div class="provider-product-title-line"><strong>${escapeHTML(product.name || "Producto sin nombre")}</strong><span class="provider-catalog-tag">${catalogLabel}</span></div>
         <p>${escapeHTML([product.brand, product.model].filter(Boolean).join(" · ") || product.category || "Sin marca o modelo")}</p>
         <div class="provider-product-facts"><span>Última revisión: <b>${escapeHTML(lastChecked)}</b></span><span>Precio proveedor: <b>${escapeHTML(checkedPrice)}</b></span><span>Estado proveedor: <b>${escapeHTML(availability)}</b></span></div>
+        ${variantSummary}
         ${review.provider_url ? '<a class="provider-source-link" href="' + escapeHTML(review.provider_url) + '" target="_blank" rel="noopener noreferrer">Abrir ficha del proveedor ↗</a>' : ""}
       </div>
       <div class="provider-product-actions"><span class="provider-review-state ${state.code}">${state.label}</span>
@@ -483,6 +575,164 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
         escapeHTML(nioDiff) + '</span></div>';
   }
 
+  function availabilityOptions(selected) {
+    const value = normalizeAvailability(selected, false) || "unknown";
+    return [
+      ["unknown", "Sin confirmar"],
+      ["available", "Disponible"],
+      ["on_order", "Por pedido"],
+      ["out_of_stock", "Agotado / no disponible"]
+    ].map(([key, label]) => '<option value="' + key + '"' + (value === key ? " selected" : "") + '>' + label + '</option>').join("");
+  }
+
+  function providerVariantReviewGroups(product, savedSnapshot) {
+    const variants = parseMaybeJSON(product?.variants, []);
+    if (!Array.isArray(variants) || !variants.length) return [];
+    const saved = Array.isArray(parseMaybeJSON(savedSnapshot, [])) ? parseMaybeJSON(savedSnapshot, []) : [];
+    const savedByConfig = new Map(saved.map(group => [String(group.config_key || providerVariantConfigKey(group)), group]));
+    const groups = new Map();
+    for (const variant of variants) {
+      if (!variant || typeof variant !== "object") continue;
+      const configKey = providerVariantConfigKey(variant);
+      if (!groups.has(configKey)) {
+        const savedGroup = savedByConfig.get(configKey) || {};
+        groups.set(configKey, {
+          config_key: configKey,
+          storage: String(variant.storage || variant.capacity || "").trim(),
+          ram: String(variant.ram || "").trim(),
+          catalog_availability: normalizeAvailability(variant.configuration_availability, false) || "unknown",
+          provider_availability: normalizeAvailability(savedGroup.provider_availability, false) || "unknown",
+          colors: [],
+          catalog_status_conflict: false
+        });
+      }
+      const group = groups.get(configKey);
+      const configStatus = normalizeAvailability(variant.configuration_availability, false) || "unknown";
+      if (group.catalog_availability !== configStatus && configStatus !== "unknown") group.catalog_status_conflict = true;
+
+      const colorName = String(variant.color || "").trim();
+      if (!colorName) continue;
+      const colorKey = normalizedText(colorName);
+      let color = group.colors.find(item => item.key === colorKey);
+      const savedGroup = savedByConfig.get(configKey) || {};
+      const savedColors = Array.isArray(savedGroup.colors) ? savedGroup.colors : [];
+      const savedColor = savedColors.find(item =>
+        String(item.key || normalizedText(item.color || "")) === colorKey
+      );
+      if (!color) {
+        group.colors.push({
+          key: colorKey,
+          color: colorName,
+          color_hex: String(variant.color_hex || variant.hex || "#68758d"),
+          catalog_availability: normalizeAvailability(variant.availability, false) || "unknown",
+          provider_availability: normalizeAvailability(savedColor?.provider_availability, false) || "unknown"
+        });
+      }
+    }
+    return [...groups.values()];
+  }
+
+  function renderProviderVariantReview(product, savedSnapshot = []) {
+    const section = $("#provider-review-variants-section");
+    const container = $("#provider-review-variants");
+    if (!section || !container) return;
+    const groups = providerVariantReviewGroups(product, savedSnapshot);
+    container.replaceChildren();
+    section.hidden = groups.length === 0;
+    if (!groups.length) {
+      updateProviderVariantReviewReadiness();
+      return;
+    }
+    container.innerHTML = groups.map(group => {
+      const label = providerConfigLabel(group);
+      const configConflict = group.catalog_status_conflict
+        ? '<p class="provider-variant-warning">Los colores de esta configuración tienen estados diferentes en el catálogo. Compará cada color individualmente antes de confirmar.</p>'
+        : "";
+      const colors = group.colors.length
+        ? '<div class="provider-variant-colors">' + group.colors.map(color =>
+          '<div class="provider-variant-color-row" data-provider-color-row data-color-key="' + escapeHTML(color.key) +
+          '" data-color-name="' + escapeHTML(color.color) + '" data-color-hex="' + escapeHTML(color.color_hex) +
+          '" data-catalog-availability="' + escapeHTML(color.catalog_availability) + '">' +
+            '<span class="provider-review-color-dot" style="--provider-review-swatch:' + escapeHTML(color.color_hex) + '" aria-hidden="true"></span>' +
+            '<span class="provider-variant-color-copy"><strong>' + escapeHTML(color.color) + '</strong><small>Catálogo: ' +
+              escapeHTML(availabilityLabel(color.catalog_availability)) + '</small></span>' +
+            '<label class="provider-variant-select"><span>GoPartner</span><select data-provider-color-availability aria-label="Disponibilidad de ' +
+              escapeHTML(color.color) + ' en GoPartner">' + availabilityOptions(color.provider_availability) + '</select></label>' +
+          '</div>'
+        ).join("") + '</div>'
+        : '<p class="provider-variant-warning">Esta configuración no tiene colores registrados. Confirmá su disponibilidad general en GoPartner.</p>';
+      return '<article class="provider-variant-review-config" data-provider-variant-config-row data-config-key="' +
+        escapeHTML(group.config_key) + '" data-config-label="' + escapeHTML(label) +
+        '" data-storage="' + escapeHTML(group.storage) + '" data-ram="' + escapeHTML(group.ram) +
+        '" data-catalog-availability="' + escapeHTML(group.catalog_availability) + '">' +
+        '<header class="provider-variant-config-header"><div><strong>' + escapeHTML(label) +
+          '</strong><small>Configuración en catálogo: ' + escapeHTML(availabilityLabel(group.catalog_availability)) +
+          '</small></div><span class="provider-variant-current-state">' + (group.catalog_status_conflict ? "Revisar diferencias" : "Proveedor por verificar") + '</span></header>' +
+        configConflict +
+        '<label class="provider-variant-config-select"><span>Disponibilidad de esta configuración en GoPartner</span>' +
+          '<select data-provider-config-availability aria-label="Disponibilidad de ' + escapeHTML(label) + ' en GoPartner">' +
+          availabilityOptions(group.provider_availability) + '</select></label>' +
+        colors +
+      '</article>';
+    }).join("");
+    container.querySelectorAll("select").forEach(select => {
+      select.addEventListener("change", updateProviderVariantReviewReadiness);
+    });
+    updateProviderVariantReviewReadiness();
+  }
+
+  function collectProviderVariantSnapshot() {
+    const container = $("#provider-review-variants");
+    if (!container) return [];
+    return Array.from(container.querySelectorAll("[data-provider-variant-config-row]")).map(row => ({
+      config_key: row.dataset.configKey || "",
+      configuration: row.dataset.configLabel || "",
+      storage: row.dataset.storage || "",
+      ram: row.dataset.ram || "",
+      catalog_availability: row.dataset.catalogAvailability || "unknown",
+      provider_availability: row.querySelector("[data-provider-config-availability]")?.value || "unknown",
+      colors: Array.from(row.querySelectorAll("[data-provider-color-row]")).map(color => ({
+        key: color.dataset.colorKey || "",
+        color: color.dataset.colorName || "",
+        color_hex: color.dataset.colorHex || "#68758d",
+        catalog_availability: color.dataset.catalogAvailability || "unknown",
+        provider_availability: color.querySelector("[data-provider-color-availability]")?.value || "unknown"
+      }))
+    }));
+  }
+
+  function updateProviderVariantReviewReadiness() {
+    const overall = normalizeAvailability($("#provider-review-availability")?.value, false) || "unknown";
+    const selects = Array.from($("#provider-review-variants")?.querySelectorAll("[data-provider-config-availability], [data-provider-color-availability]") || []);
+    const missing = selects.filter(select => (normalizeAvailability(select.value, false) || "unknown") === "unknown").length +
+      (overall === "unknown" ? 1 : 0);
+    const mismatches = selects.filter(select => {
+      const row = select.closest("[data-provider-variant-config-row], [data-provider-color-row]");
+      const catalog = row?.dataset.catalogAvailability || "unknown";
+      const incoming = normalizeAvailability(select.value, false) || "unknown";
+      return incoming !== "unknown" && catalog !== "unknown" && incoming !== catalog;
+    }).length;
+    const button = $("#provider-review-save");
+    if (button) {
+      button.disabled = savingReview || missing > 0;
+      button.textContent = savingReview ? "Guardando…" : "Confirmar revisión";
+      button.title = missing
+        ? "Confirmá la disponibilidad general, cada configuración y cada color antes de guardar."
+        : mismatches
+          ? "Hay " + mismatches + " diferencia(s) respecto al catálogo; revisalas antes de confirmar."
+          : "Todas las disponibilidades están confirmadas.";
+    }
+    const status = $("#provider-review-variant-validation");
+    if (status) {
+      status.className = "provider-variant-validation " + (missing ? "is-pending" : mismatches ? "is-warning" : "is-ready");
+      status.textContent = missing
+        ? "Faltan " + missing + " estado(s) por confirmar (incluida la disponibilidad general). No se puede confirmar la revisión todavía."
+        : mismatches
+          ? "Revisión completa: " + mismatches + " diferencia(s) frente al catálogo. Verificá que cada cambio coincida con GoPartner antes de guardar."
+          : "Revisión completa: disponibilidad general, configuraciones y colores confirmados.";
+    }
+  }
+
   function renderReviewAvailabilityComparison(product, providerAvailability) {
     const container = $("#provider-review-validation-summary");
     if (!container) return;
@@ -523,6 +773,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       provider_price_nio: priceNIO
     });
     renderReviewAvailabilityComparison(product, $("#provider-review-availability")?.value || "unknown");
+    updateProviderVariantReviewReadiness();
   }
 
   function openReview(productId) {
@@ -538,6 +789,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
     $("#provider-review-availability").value = review.provider_availability || "unknown";
     $("#provider-review-notes").value = review.review_notes || "";
+    renderProviderVariantReview(product, review.provider_variant_snapshot || []);
     updateReviewComparison();
     say(reviewMessage, "");
     if (typeof reviewDialog.showModal === "function") reviewDialog.showModal();
@@ -562,6 +814,17 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     } catch (error) { say(reviewMessage, error.message, "error"); return; }
 
     const previous = providerStatuses.get(String(product.id)) || {};
+    const overallAvailability = normalizeAvailability($("#provider-review-availability").value, false) || "unknown";
+    const variantSnapshot = collectProviderVariantSnapshot();
+    const unconfirmedVariantStatus = variantSnapshot.some(group =>
+      (normalizeAvailability(group.provider_availability, false) || "unknown") === "unknown" ||
+      group.colors.some(color => (normalizeAvailability(color.provider_availability, false) || "unknown") === "unknown")
+    );
+    if (overallAvailability === "unknown" || unconfirmedVariantStatus) {
+      updateProviderVariantReviewReadiness();
+      say(reviewMessage, "Antes de confirmar, seleccioná una disponibilidad comprobada para el producto, cada configuración y cada color.", "error");
+      return;
+    }
     const payload = {
       product_id: product.id,
       provider_name: providerName,
@@ -570,7 +833,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       // Blank fields mean "not provided this time"; retain the latest known supplier values.
       provider_price_usd: priceUSD ?? previous.provider_price_usd ?? null,
       provider_price_nio: priceNIO ?? previous.provider_price_nio ?? null,
-      provider_availability: $("#provider-review-availability").value || "unknown",
+      provider_availability: overallAvailability,
+      provider_variant_snapshot: variantSnapshot,
       review_notes: $("#provider-review-notes").value.trim() || null,
       last_reviewed_at: new Date().toISOString(),
       reviewed_by: user.id,
@@ -597,7 +861,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       say(reviewedStatusMessage, errorMessage, "error");
     } finally {
       savingReview = false;
-      if (button) { button.disabled = false; button.textContent = "Guardar revisión"; }
+      if (button) { button.disabled = false; button.textContent = "Confirmar revisión"; }
+      updateProviderVariantReviewReadiness();
     }
   }
 
@@ -615,7 +880,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       const pageSize = 500;
       for (let offset = 0; ; offset += pageSize) {
         const { data, error } = await supabase.from("product_provider_review_history")
-          .select("provider_name,provider_product_id,provider_url,provider_price_usd,provider_price_nio,provider_availability,review_notes,reviewed_at")
+          .select("provider_name,provider_product_id,provider_url,provider_price_usd,provider_price_nio,provider_availability,review_notes,provider_variant_snapshot,reviewed_at")
           .eq("product_id", product.id).order("reviewed_at", { ascending: false })
           .range(offset, offset + pageSize - 1);
         if (error) throw error;
@@ -632,6 +897,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
         <p>Disponibilidad: ${escapeHTML(availabilityLabel(row.provider_availability))}</p>
         ${row.provider_product_id ? "<p>ID proveedor: " + escapeHTML(row.provider_product_id) + "</p>" : ""}
         ${row.review_notes ? "<p>" + escapeHTML(row.review_notes) + "</p>" : ""}
+        ${providerVariantSnapshotHistoryHTML(row.provider_variant_snapshot)}
         ${row.provider_url ? '<a href="' + escapeHTML(row.provider_url) + '" target="_blank" rel="noopener noreferrer">Abrir ficha del proveedor ↗</a>' : ""}
       </article>`).join("");
     } catch (error) {
@@ -1023,7 +1289,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   ["#provider-review-price-usd", "#provider-review-price-nio", "#provider-review-availability"].forEach(selector =>
     $(selector)?.addEventListener("input", updateReviewComparison)
   );
-  $("#provider-review-availability")?.addEventListener("change", updateReviewComparison);
+  $("#provider-review-availability")?.addEventListener("change", () => {
+    updateReviewComparison();
+    updateProviderVariantReviewReadiness();
+  });
   // Explicit click handling is reliable in desktop browsers and Android WebView.
   // Keep the button out of native submit dispatch to avoid duplicate writes.
   reviewSaveButton?.addEventListener("click", () => { void saveReview(); });
