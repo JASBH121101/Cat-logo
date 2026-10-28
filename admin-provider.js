@@ -277,7 +277,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       const type = importCatalogType(product.catalog_type, "technology");
       const state = reviewState(product);
       const blob = normalizedText([product.name, product.brand, product.model, product.category].join(" "));
-      return (typeFilter === "all" || type === typeFilter) &&
+      const inWorkflow = providerWorkflowView === "reviewed" ? state.code === "current" : state.code !== "current";
+      return inWorkflow &&
+        (typeFilter === "all" || type === typeFilter) &&
         (stateFilter === "all" || state.code === stateFilter) &&
         (!query || blob.includes(query));
     }).sort((a, b) => {
@@ -295,6 +297,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     setText("provider-count-overdue", overdue);
     setText("provider-count-current", current);
     setText("provider-nav-count", missing + overdue);
+    setText("provider-pending-count", missing + overdue);
+    setText("provider-reviewed-count", current);
+    const workflowHint = $("#provider-workflow-hint");
+    if (workflowHint) workflowHint.textContent = providerWorkflowView === "reviewed" ? "Revisiones completadas recientemente. El historial de cada producto está disponible aquí." : "Productos que necesitan una primera revisión o cuya revisión ya venció.";
 
     if (lastRefreshError) {
       list.innerHTML = '<p class="provider-empty-state is-error">' + escapeHTML(lastRefreshError) + '</p>';
@@ -424,6 +430,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }
 
   let savingReview = false;
+  let providerWorkflowView = "pending";
   async function saveReview(event) {
     event?.preventDefault?.();
     if (savingReview) return;
@@ -812,6 +819,17 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     }
   }
 
+  $("[data-provider-workflow]").forEach(button => button.addEventListener("click", () => {
+    providerWorkflowView = button.dataset.providerWorkflow === "reviewed" ? "reviewed" : "pending";
+    $("[data-provider-workflow]").forEach(item => {
+      const active = item === button;
+      item.classList.toggle("is-active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+    const filter = $("#provider-review-filter");
+    if (filter) filter.value = providerWorkflowView === "reviewed" ? "current" : "all";
+    renderProviderList();
+  }));
   $("#provider-refresh")?.addEventListener("click", () => { void refresh(); });
   ["#provider-catalog-filter", "#provider-review-filter", "#provider-search"].forEach(selector =>
     $(selector)?.addEventListener(selector === "#provider-search" ? "input" : "change", renderProviderList)
