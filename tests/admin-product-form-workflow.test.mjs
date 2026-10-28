@@ -133,7 +133,7 @@ test("configuration color action stays visible and the empty color hint cannot c
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-section > \.variant-add-color \{[\s\S]*?display: inline-flex !important/);
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list \{[\s\S]*?grid-auto-rows: auto !important/);
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list > \.variants-empty-hint \{[\s\S]*?grid-row: auto !important/);
-  assert.match(html, /theme-ui\.css\?v=20261028-color-ai-cors-button2/);
+  assert.match(html, /theme-ui\.css\?v=20261028-mobile-drawer-overlay2/);
 });
 
 
@@ -142,7 +142,7 @@ test("GitHub Pages admin origin is allowed for the color AI endpoint and add-col
   const css = readFileSync("theme-ui.css", "utf8");
   assert.match(colorApi, /https:\/\/jasbh121101\.github\.io/);
   assert.match(css, /body\.admin-body #base-color-manager \.variant-base-group \.variant-color-section > button\[data-add-group-color\][\s\S]*?display: inline-flex !important/);
-  assert.match(html, /theme-ui\.css\?v=20261028-color-ai-cors-button2/);
+  assert.match(html, /theme-ui\.css\?v=20261028-mobile-drawer-overlay2/);
 });
 
 
