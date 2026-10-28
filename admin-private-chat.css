@@ -75,3 +75,104 @@
  .private-chat-admin-reply-form{grid-template-columns:minmax(0,1fr);padding:9px}
  .private-chat-admin-reply-form .button{width:100%}
 }
+
+
+/* Keep visibility states authoritative: admin button styles must never defeat [hidden]. */
+body.admin-body #admin-section-messages [hidden]{display:none!important}
+
+/* Inbox palette is scoped locally instead of borrowing public-catalog --surface. */
+body.admin-body #admin-section-messages{
+ --chat-admin-panel:#ffffff;
+ --chat-admin-surface:#f5f7fc;
+ --chat-admin-text:#23314a;
+ --chat-admin-muted:#68768e;
+ --chat-admin-line:#d9e1ef;
+ --chat-admin-item-hover:#edf1ff;
+}
+html[data-theme="dark"] body.admin-body #admin-section-messages{
+ --chat-admin-panel:#101b30;
+ --chat-admin-surface:#0b1527;
+ --chat-admin-text:#e8eeff;
+ --chat-admin-muted:#9aabc5;
+ --chat-admin-line:#31415d;
+ --chat-admin-item-hover:#172641;
+}
+body.admin-body #admin-section-messages .private-chat-admin-inbox,
+body.admin-body #admin-section-messages .private-chat-admin-thread{
+ background:var(--chat-admin-panel);
+ border-color:var(--chat-admin-line);
+ color:var(--chat-admin-text);
+}
+body.admin-body #admin-section-messages .private-chat-admin-inbox-heading,
+body.admin-body #admin-section-messages .private-chat-admin-thread-header,
+body.admin-body #admin-section-messages .private-chat-admin-messages{
+ background:var(--chat-admin-surface);
+ border-color:var(--chat-admin-line);
+}
+body.admin-body #admin-section-messages .private-chat-admin-inbox-heading strong,
+body.admin-body #admin-section-messages .private-chat-admin-thread-header h3{
+ color:var(--chat-admin-text);
+}
+body.admin-body #admin-section-messages .private-chat-admin-inbox-heading small,
+body.admin-body #admin-section-messages .private-chat-admin-thread-header p:not(.eyebrow),
+body.admin-body #admin-section-messages .private-chat-admin-item-time,
+body.admin-body #admin-section-messages .private-chat-admin-item-preview,
+body.admin-body #admin-section-messages .private-chat-admin-empty p,
+body.admin-body #admin-section-messages .private-chat-admin-security-note{
+ color:var(--chat-admin-muted);
+}
+body.admin-body #admin-section-messages .private-chat-admin-item{color:var(--chat-admin-text);border-color:var(--chat-admin-line)}
+body.admin-body #admin-section-messages .private-chat-admin-item:hover{background:var(--chat-admin-item-hover)}
+body.admin-body #admin-section-messages .private-chat-admin-actions,
+body.admin-body #admin-section-messages .private-chat-admin-reply-form{
+ background:var(--chat-admin-panel);
+ border-color:var(--chat-admin-line);
+}
+body.admin-body #admin-section-messages .private-chat-admin-message{
+ background:var(--chat-admin-panel);
+ border-color:var(--chat-admin-line);
+}
+body.admin-body #admin-section-messages .private-chat-admin-message p{color:var(--chat-admin-text)}
+body.admin-body #admin-section-messages .private-chat-admin-message time{color:var(--chat-admin-muted)}
+body.admin-body #admin-section-messages .private-chat-admin-message.is-customer{
+ background:#edf2ff;border-color:#c5d2f5;
+}
+body.admin-body #admin-section-messages .private-chat-admin-message.is-assistant{
+ background:#f0edff;border-color:#d3c9ff;
+}
+body.admin-body #admin-section-messages .private-chat-admin-message.is-advisor{
+ background:#e7f7ef;border-color:#bde6d0;
+}
+body.admin-body #admin-section-messages .private-chat-admin-reply-form textarea{
+ background:var(--chat-admin-surface);color:var(--chat-admin-text);border-color:var(--chat-admin-line);
+}
+body.admin-body #admin-section-messages .private-chat-admin-reply-form textarea::placeholder{color:var(--chat-admin-muted)}
+html[data-theme="dark"] body.admin-body #admin-section-messages .private-chat-admin-message.is-customer{
+ background:#122747;border-color:#4b6391;
+}
+html[data-theme="dark"] body.admin-body #admin-section-messages .private-chat-admin-message.is-assistant{
+ background:#292947;border-color:#4d4b89;
+}
+html[data-theme="dark"] body.admin-body #admin-section-messages .private-chat-admin-message.is-advisor{
+ background:#282f68;border-color:#4356bd;
+}
+html[data-theme="light"] body.admin-body #admin-section-messages .private-chat-admin-count{background:#4f5de4}
+html[data-theme="dark"] body.admin-body #admin-section-messages .private-chat-admin-count{background:#5964e8}
+body.admin-body #admin-section-messages .private-chat-admin-selected,
+body.admin-body #admin-section-messages .private-chat-admin-empty{min-width:0}
+body.admin-body #admin-section-messages .private-chat-admin-thread-header,
+body.admin-body #admin-section-messages .private-chat-admin-actions,
+body.admin-body #admin-section-messages .private-chat-admin-reply-form,
+body.admin-body #admin-section-messages .private-chat-admin-security-note{position:relative;z-index:auto}
+@media(max-width:560px){
+ body.admin-body #admin-section-messages .private-chat-admin-thread{min-height:0;max-height:none}
+ body.admin-body #admin-section-messages .private-chat-admin-selected{min-height:0}
+ body.admin-body #admin-section-messages .private-chat-admin-thread-header{flex-wrap:wrap;align-items:flex-start}
+ body.admin-body #admin-section-messages .private-chat-admin-product-link{margin-left:auto}
+ body.admin-body #admin-section-messages .private-chat-admin-actions{align-items:stretch}
+ body.admin-body #admin-section-messages .private-chat-admin-actions .button{min-width:0;white-space:normal;line-height:1.25}
+ body.admin-body #admin-section-messages .private-chat-admin-messages{
+   flex:0 1 auto;height:clamp(180px,48svh,390px);min-height:180px;max-height:390px;overflow:auto;
+ }
+ body.admin-body #admin-section-messages .private-chat-admin-message{max-width:100%}
+}
