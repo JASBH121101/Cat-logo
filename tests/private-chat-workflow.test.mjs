@@ -144,6 +144,9 @@ test("private chat lifecycle migration aligns claim expiry, secure replies and f
   assert.match(lifecycleMigration, /El acceso a este chat se cerrará en 10 minutos/);
   assert.match(lifecycleMigration, /historial puede conservarse por un máximo de 7 días/);
   assert.doesNotMatch(lifecycleMigration, /se cerrará y se eliminará en 10 minutos/);
+  assert.match(lifecycleMigration, /create or replace function public\\.cleanup_private_chats/);
+  assert.match(lifecycleMigration, /c\\.status = 'declined_pending_delete'[\\s\\S]*?c\\.delete_after <= now\\(\\)[\\s\\S]*?status = 'closed'/);
+  assert.match(lifecycleMigration, /delete from public\\.private_chat_conversations[\\s\\S]*?created_at <= now\\(\\) - interval '7 days'/);
 });
 
 
