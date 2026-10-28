@@ -57,12 +57,12 @@ jobs:
           grep -Fq '/api/color-assistant' admin.js
           grep -Fq '.jb-color-ai-overlay' theme-ui.css
           grep -Fq 'jb-manager-mobile-sidebar-stability' theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261028-limited-edition-sections1' admin.html
+          grep -Fq 'theme-ui.css?v=20261028-limited-edition-icons1' admin.html
           grep -Fq 'admin-sidebar-scroll-locked' admin.js
           grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
-          grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
+          grep -Fq 'admin.js?v=20261028-limited-edition-icons1' admin.html
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
@@ -271,7 +271,7 @@ jobs:
           grep -Fq 'from("color_library")' admin.js
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
-          grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
+          grep -Fq 'admin.js?v=20261028-limited-edition-icons1' admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
           grep -Fq 'id="product-tag-limited-edition"' admin.html
           grep -Fq 'product-tag-option-icon--tech' admin.html
@@ -295,9 +295,9 @@ jobs:
 
           # The product detail must package the same final gallery fix as the public source.
           grep -Fq 'technology-visual-refresh.css?v=20261028-limited-edition1' mobile/www/tecnologia/index.html
-          grep -Fq 'app.js?v=20261028-limited-edition-sections1' mobile/www/tecnologia/index.html
-          grep -Fq 'perfumeria.css?v=20261028-limited-edition-sections1' mobile/www/perfumeria/index.html
-          grep -Fq 'perfumeria.js?v=20261028-limited-edition-sections1' mobile/www/perfumeria/index.html
+          grep -Fq 'app.js?v=20261028-limited-edition-icons1' mobile/www/tecnologia/index.html
+          grep -Fq 'perfumeria.css?v=20261028-limited-edition-icons1' mobile/www/perfumeria/index.html
+          grep -Fq 'perfumeria.js?v=20261028-limited-edition-icons1' mobile/www/perfumeria/index.html
           ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
           ! grep -Fq 'Explorar perfumería' mobile/www/perfumeria/index.html
           grep -Fq 'Hero cleanup: remove the redundant scroll CTA' mobile/www/technology-visual-refresh.css
@@ -319,7 +319,7 @@ jobs:
           done
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261028-limited-edition-sections1' mobile/www/admin.html
+          grep -Fq 'theme-ui.css?v=20261028-limited-edition-icons1' mobile/www/admin.html
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' mobile/www/admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
           grep -Fq 'id="product-tag-limited-edition"' mobile/www/admin.html
@@ -614,7 +614,7 @@ jobs:
             echo "::error::APK does not include the provider dialog contrast fix."
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-limited-edition-sections1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-limited-edition-icons1' || {
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
