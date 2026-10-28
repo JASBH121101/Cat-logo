@@ -70,7 +70,13 @@ function safeProductUrl(value: unknown): string {
     const url = new URL(String(value || fallback));
     if (!["https:", "http:"].includes(url.protocol)) return fallback;
     if (!["jb-collections.pages.dev", "jasbh121101.github.io", "localhost"].includes(url.hostname)) return fallback;
-    return url.href.slice(0, 500);
+    const allowedParams = new Set(["catalog", "id", "slug", "product", "productid", "fragancia", "category"]);
+    for (const key of [...url.searchParams.keys()]) {
+      if (!allowedParams.has(key.toLowerCase())) url.searchParams.delete(key);
+    }
+    url.hash = "";
+    const safeUrl = url.href.slice(0, 500);
+    return piiDetected(safeUrl) ? fallback : safeUrl;
   } catch {
     return fallback;
   }
@@ -243,6 +249,9 @@ async function handler(request: Request): Promise<Response> {
   }
   try {
     if (action === "start") {
+      if (piiDetected(body.product_name) || piiDetected(body.product_url)) {
+        return json(400, { error: "personal_data_not_needed", message: "No incluyás datos personales en el contexto del producto." }, origin);
+      }
       const payload = await createConversation({
         catalog_type: body.catalog_type,
         product_id: body.product_id,
@@ -267,6 +276,9 @@ async function handler(request: Request): Promise<Response> {
     if (action === "create_invite") {
       const admin = await verifyAdmin(request);
       if (!admin) return json(403, { error: "admin_only", message: "Solo un administrador autorizado puede crear un enlace." }, origin);
+      if (piiDetected(body.product_name) || piiDetected(body.product_url)) {
+        return json(400, { error: "personal_data_not_needed", message: "No uses datos personales para describir el producto de una invitación." }, origin);
+      }
       const payload = await createConversation(body, "https://jb-collections.pages.dev", true);
       return json(201, payload, origin);
     }
@@ -304,6 +316,9 @@ async function handler(request: Request): Promise<Response> {
     }
 
     if (action === "decline_start") {
+      if (piiDetected(body.product_name) || piiDetected(body.product_url)) {
+        return json(400, { error: "personal_data_not_needed", message: "No incluyás datos personales en el contexto del producto." }, origin);
+      }
       const now = new Date();
       const payload = await createConversation({
         catalog_type: body.catalog_type,
