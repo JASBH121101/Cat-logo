@@ -1834,13 +1834,22 @@ function variantGroupMarkup(v = {}, isBase = false) {
     </div>`;
 
   if (isBase) {
-    return `<section class="variant-config-group variant-base-group" data-variant-group data-base-group="true">
-      <div class="variant-config-group-heading">
-        <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>Definí RAM, almacenamiento, precio y colores de la configuración principal.</small></div>
+    return `<details class="variant-config-group variant-config-collapse variant-base-group" data-variant-group data-base-group="true">
+      <summary class="variant-config-summary">
+        <span class="variant-config-summary-copy">
+          <strong data-variant-group-title>${escapeHtml(title)}</strong>
+          <small data-variant-group-summary>Configuración principal · expandí para editar precio, disponibilidad y colores</small>
+        </span>
+        <span class="variant-config-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="variant-config-body">
+        <div class="variant-config-group-heading">
+          <small>Configuración principal del producto</small>
+        </div>
+        ${fields}
+        ${colorControls}
       </div>
-      ${fields}
-      ${colorControls}
-    </section>`;
+    </details>`;
   }
 
   return `<details class="variant-config-group variant-config-collapse" data-variant-group data-base-group="false">
