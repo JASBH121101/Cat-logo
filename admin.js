@@ -1301,6 +1301,7 @@ function normalizeVariants(value) {
       availability: normalizeVariantAvailability(
         item.availability
       ),
+      configuration_availability: normalizeVariantAvailability(item.configuration_availability),
 
       images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
       image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
@@ -1330,6 +1331,7 @@ function legacyVariants(product) {
     price_usd: product?.price_usd ?? null,
     price_nio: product?.price_nio ?? null,
     availability: color.type,
+    configuration_availability: "available",
     image_url: color.image_url,
     images: color.image_url ? [color.image_url] : []
   }));
@@ -1501,6 +1503,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const storage = parsedStorage.amount;
   const storageUnit = parsedStorage.unit;
   const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
+  const configurationAvailability = normalizeVariantAvailability(v.configuration_availability);
   const title = isBase
     ? "Configuración principal"
     : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
@@ -1520,6 +1523,13 @@ function variantGroupMarkup(v = {}, isBase = false) {
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
       <label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_usd ?? "")}"></span></label>
       <label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_nio ?? "")}"></span></label>
+      <label class="variant-configuration-availability-field">Disponibilidad de la variante
+        <select data-group-availability aria-label="Disponibilidad de esta configuración">
+          <option value="available" ${configurationAvailability === "available" ? "selected" : ""}>Disponible</option>
+          <option value="order" ${configurationAvailability === "order" ? "selected" : ""}>Bajo pedido</option>
+          <option value="out_of_stock" ${configurationAvailability === "out_of_stock" ? "selected" : ""}>Agotado</option>
+        </select>
+      </label>
     </div>
     ${colorControls}
   </section>`;
@@ -3286,7 +3296,11 @@ function previewOpenProduct(product) {
             variant.image_url
           ]);
           const swatch = validHex(variant.color_hex);
-          const status = previewAvailability(variant.availability);
+          const colorAvailability = normalizeVariantAvailability(variant.availability);
+          const configurationAvailability = normalizeVariantAvailability(variant.configuration_availability);
+          const status = previewAvailability(colorAvailability === "out_of_stock" || configurationAvailability === "out_of_stock"
+            ? "out_of_stock"
+            : colorAvailability === "order" || configurationAvailability === "order" ? "on_order" : "available");
           const statusClass = status === "Disponible" ? "available" : status === "Por pedido" ? "order" : "unavailable";
           const priceUSD = previewMoney(variant.price_usd ?? product.price_usd, "USD");
           const priceNIO = previewMoney(variant.price_nio ?? product.price_nio, "NIO");
@@ -3550,7 +3564,7 @@ let editorIsDirty = false;
 function getEditorSnapshot(){
  if(!form)return "";
  const fields=Array.from(form.elements).map(f=>{if(!f||(!f.name&&!f.id&&!f.matches?.("[data-variant-row],[data-variant-group]")))return null;if(f.type==="file")return [f.id||f.getAttribute("data-variant-image")||"file",Array.from(f.files||[]).map(x=>[x.name,x.size,x.lastModified])];if(f.type==="checkbox"||f.type==="radio")return [f.id||f.name,f.checked];return [f.id||f.name||f.getAttribute("data-variant-color")||f.getAttribute("data-group-storage")||f.getAttribute("data-group-ram")||f.getAttribute("data-group-price-usd")||f.getAttribute("data-group-price-nio")||f.getAttribute("data-variant-availability")||f.getAttribute("data-variant-image-url")||f.tagName,f.value];}).filter(Boolean);
- const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({base:g.dataset.baseGroup==="true",storage:g.querySelector("[data-group-storage]")?.value||"",unit:g.querySelector("[data-group-storage-unit]")?.value||"GB",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||"",images:(r._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}))}));
+ const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({base:g.dataset.baseGroup==="true",storage:g.querySelector("[data-group-storage]")?.value||"",unit:g.querySelector("[data-group-storage-unit]")?.value||"GB",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",availability:g.querySelector("[data-group-availability]")?.value||"available",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||"",images:(r._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}))}));
  const mainGallery=mainImageItems.map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}));
  const variantGalleries=Array.from(form.querySelectorAll("[data-variant-row]")).map(row=>({color:row.querySelector("[data-variant-color]")?.value||"",images:(row._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}));
  return JSON.stringify({fields,variants,mainGallery,variantGalleries});
@@ -3602,7 +3616,7 @@ async function recoveryAction(mode, action) {
   }
 }
 function recoveryItem(i) { return {id:i.id,kind:i.kind,url:i.url||'',name:i.file?.name||'',type:i.file?.type||'',lastModified:i.file?.lastModified||0,blob:i.kind==='new'&&i.file?i.file:null,uploadError:i.uploadError||''}; }
-function recoveryVariantState() { return Array.from(form.querySelectorAll('[data-variant-group]')).map(g=>({base:g.dataset.baseGroup==='true',storage:g.querySelector('[data-group-storage]')?.value||'',unit:g.querySelector('[data-group-storage-unit]')?.value||'GB',ram:g.querySelector('[data-group-ram]')?.value||'',usd:g.querySelector('[data-group-price-usd]')?.value||'',nio:g.querySelector('[data-group-price-nio]')?.value||'',colors:Array.from(g.querySelectorAll('[data-variant-row]')).map(r=>({color:r.querySelector('[data-variant-color]')?.value||'',hex:r.querySelector('[data-variant-hex]')?.value||'',availability:r.querySelector('[data-variant-availability]')?.value||'available',images:(r._variantImageItems||[]).map(recoveryItem)}))})); }
+function recoveryVariantState() { return Array.from(form.querySelectorAll('[data-variant-group]')).map(g=>({base:g.dataset.baseGroup==='true',storage:g.querySelector('[data-group-storage]')?.value||'',unit:g.querySelector('[data-group-storage-unit]')?.value||'GB',ram:g.querySelector('[data-group-ram]')?.value||'',usd:g.querySelector('[data-group-price-usd]')?.value||'',nio:g.querySelector('[data-group-price-nio]')?.value||'',availability:g.querySelector('[data-group-availability]')?.value||'available',colors:Array.from(g.querySelectorAll('[data-variant-row]')).map(r=>({color:r.querySelector('[data-variant-color]')?.value||'',hex:r.querySelector('[data-variant-hex]')?.value||'',availability:r.querySelector('[data-variant-availability]')?.value||'available',images:(r._variantImageItems||[]).map(recoveryItem)}))})); }
 async function saveLocalRecoveryDraft() { if(restoringRecovery||!form||!dashboard||dashboard.classList.contains('hidden'))return; const hasData=Boolean(editorIsDirty||$('#product-id')?.value||$('#product-name')?.value.trim()||mainImageItems.length||Array.from(form.querySelectorAll('[data-variant-row]')).some(r=>r.querySelector('[data-variant-color]')?.value.trim())); if(!hasData)return; const fields=Array.from(form.elements).filter(f=>f&&f.id&&f.type!=='file'&&!['password','submit','button','reset'].includes(f.type)).map(f=>({id:f.id,value:(f.type==='checkbox'||f.type==='radio')?null:f.value,checked:(f.type==='checkbox'||f.type==='radio')?f.checked:null})); const draft={key:RECOVERY_KEY,savedAt:new Date().toISOString(),fields,variants:recoveryVariantState(),mainGallery:mainImageItems.map(recoveryItem)}; try{await recoveryAction('readwrite',s=>s.put(draft));const st=$('#local-recovery-status');if(st)st.textContent='Borrador local guardado automáticamente: '+new Date(draft.savedAt).toLocaleString();const rb=$('#restore-local-draft');if(rb)rb.hidden=false;const db=$('#delete-local-draft');if(db)db.hidden=false;}catch(e){console.warn('No se pudo guardar el borrador local.',e);const st=$('#local-recovery-status');if(st)st.textContent='No se pudo guardar el borrador local. Revisá el almacenamiento del navegador.';} }
 function scheduleLocalRecoverySave(delay = 120) {
   if (restoringRecovery) return;
@@ -3612,7 +3626,7 @@ function scheduleLocalRecoverySave(delay = 120) {
   }, Math.max(0, delay));
 }
 async function recoveryRestoreItem(i){if(i.kind!=='new'||!i.blob)return{id:i.id||imageId(),kind:'existing',url:i.url||''};const file=new File([i.blob],i.name||'imagen-pendiente',{type:i.type||i.blob.type||'application/octet-stream',lastModified:i.lastModified||Date.now()});return{id:i.id||imageId(),kind:'new',file,previewUrl:URL.createObjectURL(file),uploadError:i.uploadError||''};}
-async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').setAttribute('aria-label',$('#product-id').value?'Guardar cambios':'Guardar producto sin publicar');$('#save-product-button').title=$('#product-id').value?'Guardar cambios sin publicar':'Guardar producto sin publicar';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
+async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,configuration_availability:g.availability||'available',images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').setAttribute('aria-label',$('#product-id').value?'Guardar cambios':'Guardar producto sin publicar');$('#save-product-button').title=$('#product-id').value?'Guardar cambios sin publicar':'Guardar producto sin publicar';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
 async function deleteLocalRecoveryDraft(){if(!confirm('¿Eliminar el borrador local? Esto no elimina productos guardados en la base de datos.'))return;try{await recoveryAction('readwrite',s=>s.delete(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';$('#restore-local-draft').hidden=true;$('#delete-local-draft').hidden=true;}catch(e){const st=$('#local-recovery-status');if(st)st.textContent=e.message||'No se pudo eliminar el borrador.';}}
 async function checkLocalRecoveryDraft(){try{const d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent=d?'Borrador local disponible desde '+new Date(d.savedAt).toLocaleString()+'.':'No hay borrador local guardado.';if($('#restore-local-draft'))$('#restore-local-draft').hidden=!d;if($('#delete-local-draft'))$('#delete-local-draft').hidden=!d;}catch(e){console.warn('No se pudo comprobar el borrador local.',e);}}
 
@@ -4534,6 +4548,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       storage, ram,
       price_usd: toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex + 1}`),
       price_nio: toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex + 1}`),
+      configuration_availability: normalizeVariantAvailability(read("[data-group-availability]")),
       colors, isBase
     });
   }
@@ -4549,6 +4564,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     color_hex: color.color_hex,
     price_usd: config.price_usd,
     price_nio: config.price_nio,
+    configuration_availability: config.configuration_availability,
     availability: color.availability,
     images: color.images,
     image_url: color.image_url
