@@ -951,8 +951,17 @@ const builtAiAssistant = await readFile(join(webDir, "ai-assistant.js"), "utf8")
 new Function(builtAiAssistant);
 if (!builtAiAssistant.includes("/api/assistant")
   || !builtAiAssistant.includes("data.recommendations")
-  || !builtAiAssistant.includes("Continuar por WhatsApp")) {
-  throw new Error("The AI sales advisor bundle is incomplete.");
+  || !builtAiAssistant.includes("Continuar por WhatsApp")
+  || !builtAiAssistant.includes("containsPersonalInformation")
+  || !builtAiAssistant.includes("No enviaré este mensaje")
+  || !builtAiAssistant.includes("No compartás datos personales")) {
+  throw new Error("The AI sales advisor bundle is incomplete or missing its local privacy guard.");
+}
+const builtAssistantApi = await readFile(join(repoRoot, "functions/api/assistant.js"), "utf8");
+if (!builtAssistantApi.includes("AUTONOMÍA ACOTADA")
+  || !builtAssistantApi.includes("personal_data_not_needed")
+  || !builtAssistantApi.includes("containsPersonalInformation")) {
+  throw new Error("The AI sales advisor API is missing bounded-autonomy or server-side privacy safeguards.");
 }
 for (const [catalogPath, html] of [
   ["tecnologia/index.html", builtCatalogHtml],
