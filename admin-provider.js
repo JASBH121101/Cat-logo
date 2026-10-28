@@ -776,12 +776,11 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (status) {
       status.className = "provider-variant-validation " + (missing ? "is-pending" : mismatches ? "is-warning" : "is-ready");
       status.textContent = missing
-        ? "Faltan " + missing + " estado(s) por confirmar (incluida la disponibilidad general). No se puede confirmar la revisión todavía."
+        ? "Faltan " + missing + " estado(s) por confirmar."
         : mismatches
-          ? "Revisión completa: " + mismatches + " diferencia(s) frente al catálogo. " + mismatchLabels.slice(0, 5).join("; ") +
-            (mismatches > 5 ? "; y " + (mismatches - 5) + " diferencia(s) más" : "") +
-            ". Verificá que cada cambio coincida con GoPartner antes de guardar."
-          : "Revisión completa: disponibilidad general, configuraciones y colores confirmados.";
+          ? mismatchLabels.slice(0, 5).join("; ") +
+            (mismatches > 5 ? "; +" + (mismatches - 5) + " más" : "")
+          : "Todo confirmado.";
     }
   }
 
@@ -792,16 +791,16 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const incoming = normalizeAvailability(providerAvailability, false);
     let availabilityHTML;
     if (!incoming || incoming === "unknown") {
-      availabilityHTML = '<p class="provider-validation-line is-pending"><strong>Disponibilidad:</strong> seleccioná un estado confirmado del proveedor para compararlo.</p>';
+      availabilityHTML = '<p class="provider-validation-line is-pending">Confirmá disponibilidad.</p>';
     } else if (!current || current === "unknown") {
-      availabilityHTML = '<p class="provider-validation-line is-pending"><strong>Disponibilidad:</strong> el catálogo no tiene un estado comparable; proveedor: ' +
-        escapeHTML(availabilityLabel(incoming)) + '.</p>';
+      availabilityHTML = '<p class="provider-validation-line is-pending">Catálogo sin estado · proveedor: ' +
+        escapeHTML(availabilityLabel(incoming)) + '</p>';
     } else if (current === incoming) {
-      availabilityHTML = '<p class="provider-validation-line is-match"><strong>Disponibilidad:</strong> coincide (' +
-        escapeHTML(availabilityLabel(current)) + ').</p>';
+      availabilityHTML = '<p class="provider-validation-line is-match">Disponibilidad: ' +
+        escapeHTML(availabilityLabel(current)) + ' ✓</p>';
     } else {
-      availabilityHTML = '<p class="provider-validation-line is-different"><strong>Diferencia de disponibilidad:</strong> catálogo: ' +
-        escapeHTML(availabilityLabel(current)) + ' · proveedor: ' + escapeHTML(availabilityLabel(incoming)) + '.</p>';
+      availabilityHTML = '<p class="provider-validation-line is-different">' +
+        escapeHTML(availabilityLabel(current)) + ' → ' + escapeHTML(availabilityLabel(incoming)) + '</p>';
     }
     container.innerHTML = availabilityHTML;
   }
