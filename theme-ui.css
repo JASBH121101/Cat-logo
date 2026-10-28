@@ -10787,3 +10787,32 @@ html[data-theme="dark"] .product-tag-badge.tag-high_performance {
   .quality-price-heading { align-items:flex-start; flex-direction:column; }
   .quality-price-section .featured-grid { grid-template-columns:minmax(0,1fr); }
 }
+
+
+/* Mobile fix: keep the per-configuration color action visible and remove phantom grid rows. */
+body.admin-body .variant-config-group .variant-color-section > .variant-add-color {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 2 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 96px !important;
+  min-height: 42px !important;
+  margin: 12px 0 4px !important;
+  padding: 9px 16px !important;
+  pointer-events: auto !important;
+}
+body.admin-body .variant-config-group .variant-color-list {
+  grid-auto-rows: auto !important;
+  grid-auto-flow: row !important;
+  grid-row: auto !important;
+  min-height: 0 !important;
+}
+body.admin-body .variant-config-group .variant-color-list > .variants-empty-hint {
+  grid-row: auto !important;
+  min-height: 64px !important;
+  height: auto !important;
+}

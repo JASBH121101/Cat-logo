@@ -124,3 +124,12 @@ test("configuration availability is independent from each color's availability",
   assert.match(admin, /Bajo pedido/);
   assert.match(admin, /Agotado/);
 });
+
+
+test("configuration color action stays visible and the empty color hint cannot consume phantom grid rows", () => {
+  const css = readFileSync("theme-ui.css", "utf8");
+  assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-section > \.variant-add-color \{[\s\S]*?display: inline-flex !important/);
+  assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list \{[\s\S]*?grid-auto-rows: auto !important/);
+  assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list > \.variants-empty-hint \{[\s\S]*?grid-row: auto !important/);
+  assert.match(html, /theme-ui\.css\?v=20261028-variant-colors-visible1/);
+});
