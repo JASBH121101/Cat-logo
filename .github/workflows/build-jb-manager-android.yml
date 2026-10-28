@@ -278,6 +278,9 @@ jobs:
           grep -Fq 'product-tag-option-icon--perfume' admin.html
           grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' theme-ui.css
           grep -Fq 'function normalizedPerfumeProductTags(product)' perfumeria.js
+          grep -Fq 'AUTONOMÍA ACOTADA' functions/api/assistant.js
+          grep -Fq 'personal_data_not_needed' functions/api/assistant.js
+          grep -Fq 'containsPersonalInformation' ai-assistant.js
           grep -Fq 'id="limited-edition-section"' tecnologia/index.html
           grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' tecnologia/index.html
           grep -Fq 'id="perfume-limited-edition-section"' perfumeria/index.html
@@ -560,6 +563,14 @@ jobs:
           done
           unzip -p "$APK" assets/public/ai-assistant.js | grep -q '/api/assistant' || {
             echo "APK is missing the AI assistant endpoint client." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/ai-assistant.js | grep -q 'containsPersonalInformation' || {
+            echo "APK is missing the local personal-data guard." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/ai-assistant.js | grep -q 'No enviaré este mensaje' || {
+            echo "APK is missing the privacy warning before sending user messages." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/theme-ui.css | grep -q 'admin-sidebar-remember' || {
