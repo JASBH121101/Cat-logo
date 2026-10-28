@@ -2091,3 +2091,16 @@ html[data-theme="dark"] body.technology-catalog #quality-price-grid > .product-c
   body.technology-catalog .product-card h3 { font-size: 12px; }
   body.technology-catalog .product-price { font-size: 16px; }
 }
+
+
+/* Detail route: the body is scroll-locked, so a sticky header would scroll out of view.
+   Pin it to the viewport so the back arrow and light/dark toggle remain accessible. */
+body.technology-catalog.product-detail-active .site-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  z-index: 1200 !important;
+}

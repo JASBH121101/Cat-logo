@@ -666,3 +666,29 @@ body.perfume-page .jb-ai-compare-ai {
   border-color: color-mix(in srgb, #d34d5c 42%, var(--jb-ai-border));
   background: color-mix(in srgb, #d34d5c 12%, var(--jb-ai-panel-bg));
 }
+
+
+/* Mobile resilience: keep assistant content inside the viewport in both themes. */
+.jb-ai-panel,
+.jb-ai-messages,
+.jb-ai-message,
+.jb-ai-form,
+.jb-ai-footer {
+  min-width: 0;
+  max-width: 100%;
+}
+.jb-ai-messages { overflow-x: hidden; }
+.jb-ai-message { overflow-wrap: anywhere; }
+.jb-ai-quick-prompts {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.jb-ai-quick-prompts::-webkit-scrollbar { display: none; }
+@media (max-width: 520px) {
+  .jb-ai-panel {
+    right: max(8px, env(safe-area-inset-right, 0px));
+    width: min(420px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+  }
+}

@@ -26,6 +26,11 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
 });
 
+test("keeps the product-detail header, back arrow, and theme toggle visible while the body is locked", () => {
+  assert.match(css, /body\.technology-catalog\.product-detail-active \.site-header\s*\{[\s\S]*?position:\s*fixed\s*!important/);
+  assert.match(css, /product-detail-active \.site-header[\s\S]*?z-index:\s*1200\s*!important/);
+});
+
 test("detail gallery styles target the real product-detail-page DOM", () => {
   assert.match(css, /body\.technology-catalog\.product-detail-active #product-detail-page #dialog-image/);
   assert.match(css, /body\.technology-catalog\.product-detail-active #product-detail-page:not\(\.hidden\) \.dialog-layout/);

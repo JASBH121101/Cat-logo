@@ -46,7 +46,19 @@ test("rejects non-POST methods", async () => {
   assert.equal((await response.json()).error, "method_not_allowed");
 });
 
-test("rejects origins outside the official site and native app", async () => {
+test("allows the GitHub Pages catalog to reach the Cloudflare AI endpoint", async () => {
+  const origin = "https://jasbh121101.github.io";
+  const response = await onRequest({
+    request: makeRequest({}, {method:"OPTIONS", origin}),
+    env:{}
+  });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), origin);
+  assert.equal(response.headers.get("Access-Control-Allow-Methods"), "POST, OPTIONS");
+  assert.equal(response.headers.get("Access-Control-Allow-Headers"), "Content-Type");
+});
+
+test("rejects origins outside the configured catalog origins", async () => {
   for (const origin of ["https://attacker.example", "https://feature-jb-ai-sales-assistant.jb-collections.pages.dev", null]) {
     const options = origin === null ? {origin:""} : {origin};
     const response = await onRequest({

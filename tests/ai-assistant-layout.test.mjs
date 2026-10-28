@@ -88,3 +88,12 @@ test("payment-options CTA keeps readable contrast in light and dark themes", () 
   assert.match(techVisual, /color:\s*#e8f2ff;/);
   assert.match(techVisual, /:focus-visible\s*\{/);
 });
+
+
+test("advisor handles cross-origin static hosting and mobile overflow", () => {
+  const functionSource = readFileSync(new URL("../functions/api/assistant.js", import.meta.url), "utf8");
+  assert.match(functionSource, /https:\/\/jasbh121101\.github\.io/);
+  assert.match(assistant, /No pude conectar con el asesor IA en este momento/);
+  assert.match(assistantCss, /\.jb-ai-messages\s*\{\s*overflow-x:\s*hidden\s*;?\s*\}/);
+  assert.match(assistantCss, /\.jb-ai-quick-prompts::-webkit-scrollbar\s*\{\s*display:\s*none\s*;?\s*\}/);
+});

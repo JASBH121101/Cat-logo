@@ -467,9 +467,18 @@
       persistSessionHistory();
       addRecommendations(data.recommendations);
     } catch (error) {
-      loading.textContent = error && error.message
-        ? error.message
-        : "El asesor no está disponible en este momento.";
+      const errorMessage = String(error && error.message || "");
+      const isNetworkFailure = /failed to fetch|networkerror|network request failed|load failed/i.test(errorMessage);
+      if (isNetworkFailure) {
+        console.error("[JB Collections] No se pudo conectar con el asesor IA.", {
+          endpoint,
+          pageOrigin: window.location.origin,
+          error
+        });
+        loading.textContent = "No pude conectar con el asesor IA en este momento. Probá de nuevo o continuá por WhatsApp.";
+      } else {
+        loading.textContent = errorMessage || "El asesor no está disponible ahora. Probá de nuevo o consultá por WhatsApp.";
+      }
       history.push({ role: "assistant", content: loading.textContent });
       trimSessionHistory();
       persistSessionHistory();
