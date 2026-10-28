@@ -212,56 +212,12 @@ BEGIN
     IF jsonb_array_length(v_updated_variants) > 0 THEN
       SELECT
         min(CASE
-          WHEN coalesce(v.element->>'price_usd', '') ~ '^[0-9]+(\.[0-9]+)?
-  END IF;
-
-  RETURN jsonb_build_object(
-    'ok', true,
-    'review_saved', true,
-    'catalog_availability_synced', v_sync,
-    'product_availability', v_provider_availability,
-    'variant_count', v_variant_count,
-    'color_count', v_color_count
-  );
-END;
-$function$;
-
-REVOKE ALL ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) TO authenticated;
-
-COMMENT ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) IS
-  'Stores a private GoPartner review snapshot and atomically synchronizes confirmed product/configuration/color availability when requested.';
-
-NOTIFY pgrst, 'reload schema';
-COMMIT;
-
+          WHEN coalesce(v.element->>'price_usd', '') ~ '^[0-9]+(\.[0-9]+)?$'
           THEN (v.element->>'price_usd')::numeric
           ELSE NULL
         END),
         min(CASE
-          WHEN coalesce(v.element->>'price_nio', '') ~ '^[0-9]+(\.[0-9]+)?
-  END IF;
-
-  RETURN jsonb_build_object(
-    'ok', true,
-    'review_saved', true,
-    'catalog_availability_synced', v_sync,
-    'product_availability', v_provider_availability,
-    'variant_count', v_variant_count,
-    'color_count', v_color_count
-  );
-END;
-$function$;
-
-REVOKE ALL ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) TO authenticated;
-
-COMMENT ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) IS
-  'Stores a private GoPartner review snapshot and atomically synchronizes confirmed product/configuration/color availability when requested.';
-
-NOTIFY pgrst, 'reload schema';
-COMMIT;
-
+          WHEN coalesce(v.element->>'price_nio', '') ~ '^[0-9]+(\.[0-9]+)?$'
           THEN (v.element->>'price_nio')::numeric
           ELSE NULL
         END)
@@ -302,7 +258,7 @@ REVOKE ALL ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boole
 GRANT EXECUTE ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) TO authenticated;
 
 COMMENT ON FUNCTION public.confirm_provider_product_review(uuid, jsonb, boolean) IS
-  'Stores a private GoPartner review snapshot and atomically synchronizes confirmed product/configuration/color availability when requested.';
+  'Stores a private GoPartner review snapshot and atomically synchronizes confirmed prices and availability for the product, each configuration, and each color when requested.';
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
