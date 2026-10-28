@@ -35,8 +35,8 @@ test("provider review form omits unused supplier SKU and URL fields", () => {
   assert.doesNotMatch(adminHtml, /id="provider-review-(?:id|url)"/);
   assert.doesNotMatch(adminHtml, /ID o SKU del proveedor|Enlace del producto en el proveedor/);
   assert.doesNotMatch(providerJs, /\$\("#provider-review-(?:id|url)"\)/);
-  assert.match(providerJs, /provider_product_id: null/);
-  assert.match(providerJs, /provider_url: null/);
+  assert.match(providerJs, /provider_product_id: previous\.provider_product_id \?\? null/);
+  assert.match(providerJs, /provider_url: previous\.provider_url \?\? null/);
 });
 
 
