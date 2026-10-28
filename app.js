@@ -688,46 +688,87 @@ function buildAIProductPrompt(product, variant = null, fallbackColor = null, pay
   const normalizedType = paymentType === "credit_card" || paymentType === "financing" ? paymentType : "";
   const displayName = [product.brand, product.model].filter(Boolean).join(" ").trim() || String(product.name || "este producto");
   const intent = normalizedType === "credit_card"
-    ? "Quiero consultar sobre pagar con tarjeta de crédito"
+    ? "Quiero consultar el pago con tarjeta de crédito."
     : normalizedType === "financing"
-      ? "Quiero consultar las opciones de financiamiento"
-      : "Quiero consultar para comprar este producto";
-  const parts = [intent + ".", "Producto: " + displayName + "."];
+      ? "Quiero consultar las opciones de financiamiento."
+      : "Quiero consultar este producto.";
+  const parts = [intent, "Producto: " + displayName + "."];
   if (variant) {
-    const configuration = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
+    const configuration = [variant.storage, variant.ram].filter(Boolean).join(" / ");
     if (configuration) parts.push("Configuración: " + configuration + ".");
+    const colorName = String(variant.color || fallbackColor?.name || "").trim();
+    if (colorName) parts.push("Color: " + colorName + ".");
     if (variant.price_usd !== null && variant.price_usd !== undefined) parts.push("Precio publicado: " + formatUSD(variant.price_usd) + ".");
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push("Precio en córdobas: " + nio + ".");
   } else {
+    if (fallbackColor?.name) parts.push("Color: " + fallbackColor.name + ".");
     const usd = startingPrice(product, "price_usd");
     const nio = formatNIO(startingPrice(product, "price_nio"));
-    if (usd !== null && usd !== undefined) parts.push("Precio de referencia publicado: " + formatUSD(usd) + ".");
+    if (usd !== null && usd !== undefined) parts.push("Precio publicado: " + formatUSD(usd) + ".");
     if (nio) parts.push("Precio en córdobas: " + nio + ".");
   }
-  if (fallbackColor) parts.push("Color de interés: " + fallbackColor.name + ".");
-  parts.push("Enlace del producto: " + productShareLink(product, variant, fallbackColor) + ".");
-  parts.push("Usá solo información publicada y confirmada. No inventes tasas, recargos, cuotas, requisitos ni aprobaciones. Si faltan condiciones de pago confirmadas, aclaralo y recomendá consultarlas con un asesor.");
-  return parts.join(" ").slice(0, 590);
+  return parts.join(" ").slice(0, 360);
 }
 
-function openAIAdvisorForContact(message) {
-  if (typeof window.openJBAiAdvisor === "function") {
-    window.openJBAiAdvisor(message);
+async function openAIAdvisorForContact(message, paymentTopic = "product") {
+  const context = activeContactContext;
+  if (!context?.product) {
+    window.alert("No pudimos identificar el producto. Cerrá esta ventana y volvé a abrir la ficha.");
     return;
   }
-  const launcher = document.querySelector(".jb-ai-launcher");
-  const input = document.querySelector("#jb-ai-input");
-  const form = document.querySelector(".jb-ai-form");
-  if (launcher && input && form) {
-    const panel = document.querySelector("#jb-ai-panel");
-    if (panel?.hidden) launcher.click();
-    input.value = message;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-    return;
+  const { product, variant, fallbackColor } = context;
+  const baseUrl = String(window.CATALOG_CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
+  const configuration = variant
+    ? [variant.storage, variant.ram].filter(Boolean).join(" / ")
+    : "";
+  const colorName = String(variant?.color || fallbackColor?.name || "").trim();
+  const priceUsd = variant?.price_usd !== null && variant?.price_usd !== undefined
+    ? variant.price_usd
+    : startingPrice(product, "price_usd");
+  const priceNio = variant?.price_nio !== null && variant?.price_nio !== undefined
+    ? variant.price_nio
+    : startingPrice(product, "price_nio");
+  const contextName = [
+    String(product.name || [product.brand, product.model].filter(Boolean).join(" ") || "Producto"),
+    configuration,
+    colorName,
+    priceUsd !== null && priceUsd !== undefined ? formatUSD(priceUsd) : ""
+  ].filter(Boolean).join(" · ").slice(0, 160);
+  const selectedVariant = variant || null;
+  const productUrl = productShareLink(product, selectedVariant, fallbackColor);
+  const contactButton = document.querySelector("#dialog-jb-contact, #dialog-payment-jb");
+  if (contactButton) {
+    contactButton.disabled = true;
+    contactButton.setAttribute("aria-busy", "true");
   }
-  window.alert("El asesor IA no está disponible en este momento. Podés continuar por WhatsApp.");
+  try {
+    const response = await fetch(baseUrl + "/api/private-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      credentials: "omit",
+      body: JSON.stringify({
+        action: "start",
+        catalogType: "technology",
+        productId: product.id,
+        productName: contextName,
+        productUrl,
+        paymentTopic: ["financing", "credit_card", "other", "product"].includes(paymentTopic) ? paymentTopic : "product"
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok || !data.inviteUrl) {
+      throw new Error(data.message || "No se pudo abrir la mensajería privada. Intentá de nuevo o elegí WhatsApp.");
+    }
+    window.location.assign(data.inviteUrl);
+  } catch (error) {
+    window.alert(error.message || "No se pudo abrir la mensajería privada. Intentá de nuevo o elegí WhatsApp.");
+    if (contactButton) {
+      contactButton.disabled = false;
+      contactButton.removeAttribute("aria-busy");
+    }
+  }
 }
 
 let activeContactContext = null;
@@ -748,10 +789,10 @@ function refreshPaymentChannelChoices() {
       : "Consultar financiamiento por WhatsApp");
   }
   if (aiChoice) {
-    aiChoice.dataset.aiPrompt = buildAIProductPrompt(product, variant, fallbackColor, paymentType);
+    aiChoice.dataset.paymentType = paymentType;
     aiChoice.setAttribute("aria-label", paymentType === "credit_card"
-      ? "Consultar tarjeta de crédito con el asesor IA de JB Collections"
-      : "Consultar financiamiento con el asesor IA de JB Collections");
+      ? "Abrir mensajería privada de JB Collections para consultar tarjeta de crédito"
+      : "Abrir mensajería privada de JB Collections para consultar financiamiento");
   }
 }
 
@@ -1712,7 +1753,10 @@ dialogContent.addEventListener("click", event => {
   const aiContactButton = target?.closest("#dialog-jb-contact, #dialog-payment-jb");
   if (aiContactButton) {
     event.preventDefault();
-    openAIAdvisorForContact(aiContactButton.dataset.aiPrompt || "Quiero consultar un producto de JB Collections.", "");
+    const paymentTopic = aiContactButton.id === "dialog-payment-jb"
+      ? ($("#dialog-payment-type")?.value || "product")
+      : "product";
+    void openAIAdvisorForContact("", paymentTopic);
     return;
   }
   const galleryStep = target?.closest("[data-gallery-step]");
@@ -1917,7 +1961,7 @@ function openProduct(product, requestedVariant = null) {
             <p>¿Por cuál canal querés continuar?</p>
             <div class="payment-channel-actions">
               <a id="dialog-payment-whatsapp" class="payment-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener"><svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg><span>WhatsApp</span></a>
-              <button id="dialog-payment-jb" class="payment-channel-button contact-channel-button--jb" type="button"><svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>JB Collections · IA</span></button>
+              <button id="dialog-payment-jb" class="payment-channel-button contact-channel-button--jb" type="button"><svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>JB Collections</span></button>
             </div>
           </div>
         </section>
