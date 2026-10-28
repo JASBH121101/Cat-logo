@@ -83,6 +83,26 @@ const androidSafeAreaStyle = `
       padding-top: calc(8px + var(--jb-manager-safe-top, 0px)) !important;
     }
   }
+
+  /* jb-manager-android-fullscreen-drawer
+     In Android WebView the root overflow lock can stop the sticky header from
+     sticking after a scroll. The drawer must cover the viewport instead of
+     leaving a dead strip of the scrolled dashboard above it. */
+  @media (max-width: 760px) {
+    body.admin-body.admin-dashboard-active.admin-sidebar-open .admin-sidebar {
+      top: 0 !important;
+      bottom: 0 !important;
+      padding-top: calc(var(--jb-manager-safe-top, 0px) + 14px) !important;
+      z-index: 1301 !important;
+    }
+    body.admin-body.admin-dashboard-active.admin-sidebar-open .admin-sidebar-backdrop:not([hidden]) {
+      inset: 0 !important;
+      z-index: 1300 !important;
+    }
+    body.admin-body.admin-dashboard-active.admin-sidebar-open .site-header.admin-header {
+      z-index: 1290 !important;
+    }
+  }
 </style>
 `;
 // Android WebView can leave stale composited frames when the soft keyboard resizes
@@ -966,6 +986,11 @@ if (!builtAdminHtml.includes('id="jb-manager-android-safe-area"')
   || !builtAdminHtml.includes("--jb-manager-safe-top")
   || builtAdminHtml.includes("padding-top: max(24px")) {
   throw new Error("The Android header must consume the safe-area inset without adding blank padding above the whole panel.");
+}
+if (!builtAdminHtml.includes("jb-manager-android-fullscreen-drawer")
+  || !builtAdminHtml.includes("admin-sidebar-open .admin-sidebar-backdrop:not([hidden])")
+  || !builtAdminHtml.includes("z-index: 1301")) {
+  throw new Error("The Android mobile drawer must cover the viewport and stay above the backdrop.");
 }
 if (!builtAdminHtml.includes("jb-manager-check-updates")) {
   throw new Error("The APK update button is missing from the admin panel.");
