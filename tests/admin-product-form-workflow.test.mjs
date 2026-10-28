@@ -59,7 +59,8 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261028-single-consent-layout3/);
+  assert.match(html, /admin\.js\?v=20261028-inbox-no-blank-space5/);
+  assert.match(html, /admin-private-chat\.css\?v=20261028-inbox-no-blank-space5/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
 
@@ -182,7 +183,10 @@ test("provider review identifies perfume details and compares current published 
 
 test("provider review validates differences while preserving the public catalog price", () => {
   assert.match(html, /id="provider-review-validation-summary"/);
-  assert.match(provider, /function priceDifferenceText\(currentValue, providerValue, currency\)/);
+  assert.match(provider, /function numericPriceDifference\(currentValue, providerValue\)/);
+  assert.match(provider, /function renderReviewPriceComparison\(product, review = \{\}\)/);
+  assert.match(provider, /diffDisplay/);
+  assert.match(provider, /"En revisión"/);
   assert.match(provider, /function updateReviewComparison\(\)/);
   assert.match(provider, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
   assert.match(provider, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
@@ -192,6 +196,7 @@ test("provider review validates differences while preserving the public catalog 
   assert.ok(start >= 0 && end > start);
   assert.doesNotMatch(provider.slice(start, end), /from\("products"\)[\s\S]*?\.update\(/);
   assert.match(providerCss, /provider-review-current-card/);
+  assert.match(providerCss, /provider-review-sync-details/);
   assert.match(providerCss, /provider-price-difference\.is-different/);
   assert.match(providerCss, /@media\(max-width:480px\)/);
 });
