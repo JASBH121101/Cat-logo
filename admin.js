@@ -3186,7 +3186,7 @@ function privateChatRenderSelected() {
     return;
   }
   privateChatSelectedPanel.hidden = false;
-  privateChatSelectedPanel.style.display = "block";
+  privateChatSelectedPanel.style.display = "";
   privateChatSelectedPanel.style.flex = "0 0 auto";
   privateChatSelectedPanel.style.minHeight = "0";
   privateChatSelectedPanel.style.height = "auto";
@@ -3196,7 +3196,7 @@ function privateChatRenderSelected() {
   }
   if (privateChatThreadEl) {
     privateChatThreadEl.hidden = false;
-    privateChatThreadEl.style.display = "block";
+    privateChatThreadEl.style.display = "";
     privateChatThreadEl.style.height = "auto";
     privateChatThreadEl.style.minHeight = "0";
     privateChatThreadEl.style.maxHeight = "none";
