@@ -207,3 +207,28 @@ jobs:
               sys.exit(1)
           print(f"Checked {len(css_files)} CSS files: braces and quoted strings are balanced.")
           PY
+
+      - name: Check unique Supabase migration versions
+        shell: bash
+        run: |
+          python - <<'PY'
+          from collections import defaultdict
+          from pathlib import Path
+          import re
+          import sys
+
+          versions = defaultdict(list)
+          for path in sorted(Path("supabase/migrations").glob("*.sql")):
+              match = re.match(r"^(\\d{14})_", path.name)
+              if not match:
+                  print(f"{path}: migration filename must start with a 14-digit version")
+                  sys.exit(1)
+              versions[match.group(1)].append(path.name)
+
+          duplicates = {version: names for version, names in versions.items() if len(names) > 1}
+          if duplicates:
+              for version, names in duplicates.items():
+                  print(f"Duplicate migration version {version}: {', '.join(names)}")
+              sys.exit(1)
+          print(f"Checked {sum(map(len, versions.values()))} migrations: all version identifiers are unique.")
+          PY
