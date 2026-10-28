@@ -504,7 +504,8 @@ test("still blocks a real payment-card number", async () => {
   assert.equal((await response.json()).error,"personal_data_not_needed");
   assert.equal(aiCalls,0);
 });
-\ntest("filters personal contact data from session history before forwarding context to AI", async () => {
+
+test("filters personal contact data from session history before forwarding context to AI", async () => {
   const previousFetch = globalThis.fetch;
   let receivedMessages = [];
   globalThis.fetch = async url => {
