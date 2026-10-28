@@ -24,6 +24,10 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /Modelos que destacan por el equilibrio entre su precio/);
   assert.match(html, /Los monstruos del gaming: equipos con procesadores potentes/);
   assert.match(css, /section-accessible-title/);
+  assert.match(css, /top-gaming-heading \.section-subtitle\s*\{[^}]*font-family:\s*"Space Grotesk"/s);
+  assert.match(css, /quality-price-heading \.section-subtitle\s*\{[^}]*font-family:\s*"DM Sans"/s);
+  assert.match(css, /high-performance-heading \.section-subtitle\s*\{[^}]*font-family:\s*"Space Grotesk"/s);
+  assert.match(css, /featured-section-heading \.section-subtitle\s*\{[^}]*font-family:\s*Manrope/s);
   assert.match(css, /section-tag-badge > svg/);
   assert.match(app, /product-card-tag-exclusive/);
   assert.ok(app.includes('"product-card-tag-" + tag'));
