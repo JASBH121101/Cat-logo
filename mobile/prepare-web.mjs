@@ -869,15 +869,21 @@ if (!builtAdminScript.includes("function renderProductDuplicateSuggestions()")
   throw new Error("The APK admin script is missing brand-scoped smart duplicate detection.");
 }
 if (!builtAdminHtml.includes('id="product-tag-limited-edition"')
+  || !builtAdminHtml.includes("product-tag-option-icon--tech")
+  || !builtAdminHtml.includes("product-tag-option-icon--perfume")
   || !builtAdminScript.includes('"limited_edition"')
   || !builtAdminScript.includes("tags: selectedProductTags()")) {
-  throw new Error("The APK admin panel is missing a persistent limited-edition label for both catalogs.");
+  throw new Error("The APK admin panel is missing catalog-specific limited-edition icons or persistent labels.");
 }
 if (!builtAdminHtml.includes('theme-ui.css?v=20261028-limited-edition-sections1')) {
   throw new Error("The APK admin page is missing the latest mobile sidebar and collection-tag styles.");
 }
 if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
   throw new Error("The APK stylesheet is missing the Android mobile-sidebar stability patch.");
+}
+if (!builtThemeCss.includes("admin-catalog-perfumery .product-tag-option-icon--perfume")
+  || !builtThemeCss.includes("product-tag-option-icon--tech")) {
+  throw new Error("The APK stylesheet is missing the distinct technology and perfume collection-label icon styles.");
 }
 for (const [label, source, fragments] of [
   ["admin.js", builtAdminScript, [
@@ -925,8 +931,9 @@ new Function(updaterScript[1]);
 
 const builtCatalogHtml = await readFile(join(webDir, "tecnologia", "index.html"), "utf8");
 const perfumeCatalogHtml = await readFile(join(webDir, "perfumeria", "index.html"), "utf8");
-if (!builtCatalogHtml.includes('id="limited-edition-section"')) {
-  throw new Error("Technology catalog is missing the limited-edition collection section.");
+if (!builtCatalogHtml.includes('id="limited-edition-section"')
+  || !builtCatalogHtml.includes('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>')) {
+  throw new Error("Technology catalog is missing the microchip-labeled limited-edition collection section.");
 }
 if (!perfumeCatalogHtml.includes('id="perfume-exclusive-section"')
   || !perfumeCatalogHtml.includes('id="perfume-limited-edition-section"')
