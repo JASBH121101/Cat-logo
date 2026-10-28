@@ -13,16 +13,16 @@
 
   <link rel="stylesheet" href="styles.css?v=20261028-provider-review-variant1">
   <link rel="stylesheet" href="theme-ui.css?v=20261028-limited-edition-icons1">
-  <link rel="stylesheet" href="admin-workflow.css?v=20261028-variant-cards-compact3">
+  <link rel="stylesheet" href="admin-workflow.css?v=20261028-variant-hint-removed4">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="admin-provider.css?v=20261028-variant-review-colors2">
+  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-contrast-compact3">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
-  <link rel="stylesheet" href="admin-private-chat.css?v=20261028-duplicate-theme-layout2">
+  <link rel="stylesheet" href="admin-private-chat.css?v=20261028-inbox-tabs-compact3">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-variant-cards-compact3"></script>
+  <script type="module" src="admin.js?v=20261028-provider-review-minimal4"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -827,14 +827,19 @@
         <div class="private-chat-admin-layout">
           <aside class="private-chat-admin-inbox" aria-label="Lista de conversaciones">
             <div class="private-chat-admin-inbox-heading">
-              <div><strong>Conversaciones</strong><small>Las solicitudes nuevas aparecen arriba.</small></div>
+              <strong>Conversaciones</strong>
               <span id="private-chat-admin-inbox-count" class="private-chat-admin-count">0</span>
+            </div>
+            <div class="private-chat-admin-filters" role="group" aria-label="Filtrar conversaciones">
+              <button type="button" class="private-chat-admin-filter is-active" data-private-chat-filter="pending" aria-pressed="true"><span>Pendientes</span><b data-private-chat-filter-count="pending">0</b></button>
+              <button type="button" class="private-chat-admin-filter" data-private-chat-filter="active" aria-pressed="false"><span>Atendiendo</span><b data-private-chat-filter-count="active">0</b></button>
+              <button type="button" class="private-chat-admin-filter" data-private-chat-filter="closed" aria-pressed="false"><span>Finalizados</span><b data-private-chat-filter-count="closed">0</b></button>
             </div>
             <div id="private-chat-conversation-list" class="private-chat-conversation-list" aria-live="polite">
               <p class="provider-empty-state">Cargando conversaciones…</p>
             </div>
           </aside>
-          <section class="private-chat-admin-thread" aria-label="Conversación seleccionada">
+          <section id="private-chat-admin-thread" class="private-chat-admin-thread" aria-label="Conversación seleccionada" hidden>
             <div id="private-chat-admin-empty" class="private-chat-admin-empty">
               <span aria-hidden="true">✉</span>
               <h3>Seleccioná una conversación</h3>
@@ -842,6 +847,7 @@
             </div>
             <div id="private-chat-admin-selected" class="private-chat-admin-selected" hidden>
               <header class="private-chat-admin-thread-header">
+                <button id="private-chat-admin-back" class="private-chat-admin-back" type="button">← Bandeja</button>
                 <div>
                   <p id="private-chat-admin-thread-kicker" class="eyebrow">CONVERSACIÓN</p>
                   <h3 id="private-chat-admin-thread-title">Cliente</h3>
@@ -919,11 +925,16 @@
           <div id="provider-review-variants" class="provider-review-variants"></div>
         </section>
         <p id="provider-review-variant-validation" class="provider-variant-validation is-pending" role="status" aria-live="polite">Confirmá la disponibilidad general y, si el producto tiene variantes, el estado de cada configuración y color.</p>
-        <label class="provider-review-sync-option">
-          <input id="provider-review-sync-catalog-availability" type="checkbox" checked>
-          <span><strong>Aplicar precios y disponibilidad al catálogo al confirmar</strong><small>Sincroniza estado general, configuraciones y colores. En productos con variantes, actualiza los precios por configuración que ingresés; un campo vacío conserva el precio actual. En productos sin variantes usa el precio general. No cambia fotos ni publicación.</small></span>
-        </label>
-        <p class="provider-review-sync-note">La revisión también guarda una fotografía privada del estado del proveedor y la añade al historial.</p>
+        <details class="provider-review-sync-details">
+          <summary>Aplicar precios y disponibilidad al catálogo al confirmar <span aria-hidden="true">⌄</span></summary>
+          <div class="provider-review-sync-details-body">
+            <label class="provider-review-sync-option">
+              <input id="provider-review-sync-catalog-availability" type="checkbox" checked>
+              <span><small>Sincroniza el estado general, cada configuración, cada color y los precios ingresados. Si un precio de variante queda vacío, conserva el actual. No modifica fotos ni publicación.</small></span>
+            </label>
+            <p class="provider-review-sync-note">La revisión guarda una instantánea privada del estado del proveedor en el historial.</p>
+          </div>
+        </details>
       </section>
       <div class="provider-dialog-fields">
         <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
