@@ -297,24 +297,35 @@ function matchProduct(row, products, statuses, fallbackType) {
   const internalId = firstValue(row, ["product_uuid", "local_product_id"]);
   const catalogKey = firstValue(row, ["catalog_key", "local_key", "clave_catalogo"]);
   const providerId = firstValue(row, ["provider_product_id", "supplier_product_id", "gopartner_id", "external_id", "sku_proveedor", "provider_sku"]);
-  let matches = [];
+  const resolve = (matches, method) => ({
+    product: matches.length === 1 ? matches[0] : null,
+    ambiguous: matches.length > 1,
+    rowType,
+    matchMethod: matches.length === 1 ? method : matches.length > 1 ? method + " · ambiguo" : method + " · sin coincidencia"
+  });
 
-  if (internalId) matches = candidates.filter(product => String(product.id) === String(internalId));
-  if (!matches.length && catalogKey) matches = candidates.filter(product => String(product.catalog_key || "") === String(catalogKey));
-  if (!matches.length && providerId) matches = candidates.filter(product => String(statuses.get(String(product.id))?.provider_product_id || "") === String(providerId));
-  if (!matches.length) {
-    const model = normalizedText(firstValue(row, ["model", "modelo", "product_model"]));
-    const brand = normalizedText(firstValue(row, ["brand", "marca", "product_brand"]));
-    if (model && brand) matches = candidates.filter(product => normalizedText(product.model) === model && normalizedText(product.brand) === brand);
+  // An explicit identifier must never silently fall back to a different product.
+  if (internalId) return resolve(candidates.filter(product => String(product.id) === String(internalId)), "ID interno exacto");
+  if (catalogKey) return resolve(candidates.filter(product => String(product.catalog_key || "") === String(catalogKey)), "Clave de catálogo exacta");
+  if (providerId) return resolve(candidates.filter(product =>
+    String(statuses.get(String(product.id))?.provider_product_id || "") === String(providerId)
+  ), "ID de proveedor exacto");
+
+  const model = normalizedText(firstValue(row, ["model", "modelo", "product_model"]));
+  const brand = normalizedText(firstValue(row, ["brand", "marca", "product_brand"]));
+  if (model && brand) {
+    return resolve(candidates.filter(product =>
+      normalizedText(product.model) === model && normalizedText(product.brand) === brand
+    ), "Marca + modelo exactos");
   }
-  if (!matches.length) {
-    const name = normalizedText(firstValue(row, ["name", "product_name", "nombre", "product", "producto"]));
-    const brand = normalizedText(firstValue(row, ["brand", "marca", "product_brand"]));
-    if (name) matches = candidates.filter(product =>
+
+  const name = normalizedText(firstValue(row, ["name", "product_name", "nombre", "product", "producto"]));
+  if (name) {
+    return resolve(candidates.filter(product =>
       normalizedText(product.name) === name && (!brand || normalizedText(product.brand) === brand)
-    );
+    ), brand ? "Nombre + marca exactos" : "Nombre exacto");
   }
-  return { product: matches.length === 1 ? matches[0] : null, ambiguous: matches.length > 1, rowType };
+  return { product: null, ambiguous: false, rowType, matchMethod: "Sin identificador verificable" };
 }
 
 export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) {
@@ -929,14 +940,14 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       const match = matchProduct(row, products, providerStatuses, importCatalog);
       if (!match.product) {
         plan.push({
-          index: index + 1, row, product: null, ambiguous: match.ambiguous,
-          error: match.ambiguous ? "Coincidencia ambigua; no se actualizará automáticamente." : "No coincide con un producto existente."
+          index: index + 1, row, product: null, ambiguous: match.ambiguous, matchMethod: match.matchMethod,
+          error: match.ambiguous ? "Coincidencia ambigua; no se actualizará automáticamente." : "No coincide con un producto existente. Verificá identificadores, marca y modelo."
         });
         return;
       }
       const id = String(match.product.id);
       if (seen.has(id)) {
-        plan.push({ index: index + 1, row, product: match.product, error: "Duplicado dentro del archivo; se omite para evitar sobrescritura." });
+        plan.push({ index: index + 1, row, product: match.product, matchMethod: match.matchMethod, error: "Duplicado dentro del archivo; se omite para evitar sobrescritura." });
         return;
       }
       seen.add(id);
@@ -946,14 +957,14 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
         provider = getProviderFields(row);
         catalogFields = getImportedCatalogFields(row);
       } catch (error) {
-        plan.push({ index: index + 1, row, product: match.product, error: error.message || "Datos de importación inválidos." });
+        plan.push({ index: index + 1, row, product: match.product, matchMethod: match.matchMethod, error: error.message || "Datos de importación inválidos." });
         return;
       }
       const hasProviderData = Boolean(provider.provider_product_id || provider.provider_url ||
         provider.provider_price_usd !== null || provider.provider_price_nio !== null ||
         provider.provider_availability !== null || provider.review_notes !== null ||
         firstValue(row, ["provider_name", "supplier_name", "proveedor"]) !== null);
-      plan.push({ index: index + 1, row, product: match.product, provider, catalogFields, hasProviderData, rowType: match.rowType });
+      plan.push({ index: index + 1, row, product: match.product, provider, catalogFields, hasProviderData, rowType: match.rowType, matchMethod: match.matchMethod });
     });
     return plan;
   }
@@ -1026,23 +1037,59 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
         lines.push("Variantes: el campo importado no es un arreglo JSON válido");
       } else {
         const currentVariants = Array.isArray(product.variants) ? product.variants : parseMaybeJSON(product.variants, []);
-        const currentMap = new Map((Array.isArray(currentVariants) ? currentVariants : []).map(variant => [stableVariantKey(variant), variant]));
-        let variantDifferences = 0;
+        const current = Array.isArray(currentVariants) ? currentVariants : [];
+        const currentMap = new Map(current.map(variant => [stableVariantKey(variant), variant]));
+        const incomingKeys = new Set();
+        const detailLines = [];
         for (const variant of fields.variants) {
-          if (!variant || typeof variant !== "object") { variantDifferences++; continue; }
-          const old = currentMap.get(stableVariantKey(variant));
-          if (!old) { variantDifferences++; continue; }
-          for (const key of ["ram", "storage", "color", "price_usd", "price_nio", "availability", "configuration_availability"]) {
-            if (Object.prototype.hasOwnProperty.call(variant, key) && String(variant[key] ?? "") !== String(old[key] ?? "")) variantDifferences++;
+          if (!variant || typeof variant !== "object") {
+            detailLines.push("Hay una variante no válida en el archivo.");
+            continue;
+          }
+          const key = stableVariantKey(variant);
+          incomingKeys.add(key);
+          const old = currentMap.get(key);
+          const config = [String(variant.storage || variant.capacity || "").trim(),
+            String(variant.ram || "").trim() ? String(variant.ram).trim() + " RAM" : ""].filter(Boolean).join(" · ") || "Configuración principal";
+          const color = String(variant.color || "").trim();
+          const label = config + (color ? " · " + color : "");
+          if (!old) {
+            detailLines.push("No existe en el catálogo: " + label + " (requiere verificación; no se puede confirmar automáticamente).");
+            continue;
+          }
+          for (const field of ["ram", "storage", "color", "price_usd", "price_nio"]) {
+            if (Object.prototype.hasOwnProperty.call(variant, field) &&
+                String(variant[field] ?? "") !== String(old[field] ?? "")) {
+              detailLines.push(label + " · " + field + ": " + String(old[field] ?? "sin dato") + " → " + String(variant[field] ?? "sin dato"));
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(variant, "configuration_availability")) {
+            addAvailabilityDifference(label + " · disponibilidad de configuración",
+              old.configuration_availability, variant.configuration_availability);
+          }
+          if (Object.prototype.hasOwnProperty.call(variant, "availability")) {
+            addAvailabilityDifference(label + " · disponibilidad de color", old.availability, variant.availability);
           }
         }
-        if (fields.variants.length !== (Array.isArray(currentVariants) ? currentVariants.length : 0)) variantDifferences++;
-        lines.push(variantDifferences
-          ? "Variantes: " + variantDifferences + " diferencia(s) de configuración o precio; las fotos existentes se preservan"
-          : "Variantes: sin diferencias detectadas en los campos comparables");
+        const omitted = current.filter(variant => !incomingKeys.has(stableVariantKey(variant)));
+        omitted.forEach(variant => {
+          const label = [String(variant.storage || variant.capacity || "").trim(),
+            String(variant.ram || "").trim() ? String(variant.ram).trim() + " RAM" : "",
+            String(variant.color || "").trim()].filter(Boolean).join(" · ") || "Variante sin nombre";
+          detailLines.push("No aparece en el archivo: " + label + ". No la retires automáticamente; comprobá si sigue disponible, está por pedido o se agotó.");
+        });
+        if (fields.variants.length !== current.length) {
+          detailLines.push("Cantidad de entradas: catálogo " + current.length + " · archivo " + fields.variants.length + ".");
+        }
+        if (!detailLines.length) detailLines.push("No se detectaron diferencias en configuración, precio o disponibilidad incluida.");
+        lines.push(...detailLines.slice(0, 24));
+        if (detailLines.length > 24) lines.push("Hay " + (detailLines.length - 24) + " diferencia(s) adicionales; revisá el archivo completo antes de aplicar.");
       }
     }
     return lines;
+  }
+
+  function renderImportPreview    return lines;
   }
 
   function renderImportPreview() {
@@ -1069,7 +1116,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
           ? '<ul class="provider-diff-list">' + differences.map(line => '<li>' + escapeHTML(line) + '</li>').join("") + '</ul>'
           : '<small class="provider-diff-empty">' + (item.error ? "No se puede comparar esta fila." : "El archivo no incluye campos comparables.") + '</small>';
         const result = item.error || (item.product ? "Listo para aplicar" : "Omitido");
-        return `<tr><td>${item.index}</td><td>${escapeHTML(name)}<small>${item.product ? escapeHTML(item.product.catalog_type === "perfumery" ? "JB Parfums" : "JB TECH") : ""}</small></td><td>${escapeHTML(sourcePrice)}<small>${escapeHTML(sourceAvailability)}</small></td><td>${differenceMarkup}</td><td><span class="${item.error ? "provider-import-error" : "provider-import-ready"}">${escapeHTML(result)}</span></td></tr>`;
+        return `<tr><td>${item.index}</td><td>${escapeHTML(name)}<small>${item.product ? escapeHTML(item.product.catalog_type === "perfumery" ? "JB Parfums" : "JB TECH") : ""}${item.matchMethod ? " · " + escapeHTML(item.matchMethod) : ""}</small></td><td>${escapeHTML(sourcePrice)}<small>${escapeHTML(sourceAvailability)}</small></td><td>${differenceMarkup}</td><td><span class="${item.error ? "provider-import-error" : "provider-import-ready"}">${escapeHTML(result)}</span></td></tr>`;
       }).join("")}</tbody></table></div>`;
     if (importButton) importButton.disabled = matched === 0;
   }
