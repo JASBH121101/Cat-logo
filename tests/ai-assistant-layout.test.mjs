@@ -51,8 +51,8 @@ test("AI privacy guard does not interpret a payment topic as card or identity da
   const guardStart = aiJs.indexOf("function containsPersonalInformation");
   const guardEnd = aiJs.indexOf("function restoreSessionHistory", guardStart);
   const guard = aiJs.slice(guardStart, guardEnd);
-  assert.match(guard, /tarjeta de cr[eé]dito/);
-  assert.match(guard, /n[uú]mero de tarjeta/);
+  assert.ok(guard.includes("tarjeta de cr[eé]dito"));
+  assert.ok(guard.includes("n[uú]mero de tarjeta"));
   assert.ok(guard.includes("(?:\\d[ -]?){12,19}"));
   assert.match(aiJs, /lastMessage\?\.textContent !== privacyWarning/);
   assert.match(assistantApi, /function containsPersonalInformation/);
