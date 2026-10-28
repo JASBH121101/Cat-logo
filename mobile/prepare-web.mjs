@@ -858,7 +858,7 @@ const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
-if (!builtAdminHtml.includes('admin.js?v=20261028-limited-edition-sections1')) {
+if (!builtAdminHtml.includes('admin.js?v=20261028-limited-edition-icons1')) {
   throw new Error("The APK must load the current admin script containing smart duplicate detection and shared collection labels.");
 }
 if (!builtAdminHtml.includes('admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1')) {
@@ -875,7 +875,7 @@ if (!builtAdminHtml.includes('id="product-tag-limited-edition"')
   || !builtAdminScript.includes("tags: selectedProductTags()")) {
   throw new Error("The APK admin panel is missing catalog-specific limited-edition icons or persistent labels.");
 }
-if (!builtAdminHtml.includes('theme-ui.css?v=20261028-limited-edition-sections1')) {
+if (!builtAdminHtml.includes('theme-ui.css?v=20261028-limited-edition-icons1')) {
   throw new Error("The APK admin page is missing the latest mobile sidebar and collection-tag styles.");
 }
 if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
@@ -937,7 +937,7 @@ if (!builtCatalogHtml.includes('id="limited-edition-section"')
 }
 if (!perfumeCatalogHtml.includes('id="perfume-exclusive-section"')
   || !perfumeCatalogHtml.includes('id="perfume-limited-edition-section"')
-  || !perfumeCatalogHtml.includes('perfumeria.js?v=20261028-limited-edition-sections1')) {
+  || !perfumeCatalogHtml.includes('perfumeria.js?v=20261028-limited-edition-icons1')) {
   throw new Error("JB Parfums is missing the exclusive and limited-edition showcase sections.");
 }
 const builtTechnologyStyles = await readFile(join(webDir, "technology-visual-refresh.css"), "utf8");
