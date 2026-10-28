@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#081529">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Mensajería privada · JB Collections</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="mensajes.css?v=20261028-private-chat1">
+  <script src="../config.js?v=20261027-audit-cascade1"></script>
+  <script src="mensajes.js?v=20261028-private-chat1" defer></script>
+</head>
+<body class="private-chat-page">
+  <header class="chat-topbar">
+    <a class="chat-brand" href="../" aria-label="Volver a JB Collections">
+      <span class="chat-brand-symbol" aria-hidden="true">JB</span>
+      <span><strong>JB Collections</strong><small>Mensajería privada</small></span>
+    </a>
+    <a class="chat-back-link" id="chat-back-link" href="../">Volver al catálogo</a>
+  </header>
+  <main class="chat-page-shell">
+    <section class="chat-product-context" id="chat-product-context" hidden>
+      <span class="chat-eyebrow">TU CONSULTA</span>
+      <strong id="chat-product-name">Producto seleccionado</strong>
+      <span id="chat-payment-topic"></span>
+    </section>
+
+    <section class="chat-panel" aria-labelledby="chat-title">
+      <header class="chat-panel-heading">
+        <span class="chat-heading-icon" aria-hidden="true">✦</span>
+        <div>
+          <p class="chat-eyebrow">ATENCIÓN PERSONAL</p>
+          <h1 id="chat-title">Hablemos con JB Collections</h1>
+          <p id="chat-subtitle">Antes de empezar, te explicamos cómo funciona este espacio.</p>
+        </div>
+      </header>
+
+      <div id="chat-status" class="chat-status" role="status" aria-live="polite" hidden></div>
+
+      <section id="chat-consent-screen" class="chat-consent-screen">
+        <div class="chat-notice-section">
+          <h2>Qué necesitás saber</h2>
+          <p>Este chat sirve para aclarar dudas sobre productos y opciones de pago. Un asesor humano podrá responder personalmente; no es una compra ni una aprobación de financiamiento.</p>
+          <ul>
+            <li><strong>Historial:</strong> la conversación se conserva durante un máximo de 7 días y después se elimina automáticamente.</li>
+            <li><strong>Datos personales:</strong> no escribás tu cédula, teléfono, correo, dirección, contraseñas ni números de tarjeta aquí.</li>
+            <li><strong>Go Partners:</strong> si luego decidís avanzar con una compra, te explicaremos por separado que el registro comercial del proveedor puede solicitar nombre completo, móvil y cédula. Ese paso requiere una explicación y autorización aparte; aceptar este chat no autoriza a compartir esos datos.</li>
+            <li><strong>Tu elección:</strong> podés rechazar y salir sin obligación de comprar. Si rechazás, este espacio se cerrará y eliminará en 10 minutos; durante ese periodo podés cambiar de opinión.</li>
+          </ul>
+          <p class="chat-privacy-note">No se solicita ni se almacena información de identidad para iniciar este chat. La IA de compras y esta conversación privada son herramientas distintas.</p>
+        </div>
+        <div class="chat-consent-actions">
+          <button id="chat-accept-button" type="button" class="chat-primary-button">Sí, deseo continuar</button>
+          <button id="chat-decline-button" type="button" class="chat-secondary-button">No deseo continuar</button>
+        </div>
+        <p class="chat-legal-footnote">Aviso de privacidad: JB Collections · versión 28-10-2026. Tu respuesta quedará registrada solo como elección de continuar o no.</p>
+      </section>
+
+      <section id="chat-declined-screen" class="chat-declined-screen" hidden>
+        <span class="chat-decline-icon" aria-hidden="true">✓</span>
+        <h2>Gracias por revisar el aviso</h2>
+        <p>Tu conversación se cerrará y eliminará en:</p>
+        <strong id="chat-countdown" class="chat-countdown">10:00</strong>
+        <p>No te enviaremos recordatorios comerciales. Podés cambiar de opinión durante este periodo.</p>
+        <button id="chat-change-mind-button" type="button" class="chat-primary-button">Cambiar de opinión</button>
+        <a class="chat-back-link" href="../">Volver al catálogo</a>
+      </section>
+
+      <section id="chat-conversation-screen" class="chat-conversation-screen" hidden>
+        <div class="chat-conversation-banner" id="chat-conversation-banner">
+          <span class="chat-live-dot" aria-hidden="true"></span>
+          <span id="chat-conversation-state">Esperando que un asesor tome tu conversación.</span>
+        </div>
+        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+        <form id="chat-message-form" class="chat-message-form">
+          <label class="sr-only" for="chat-message-input">Escribí tu mensaje</label>
+          <textarea id="chat-message-input" name="message" maxlength="1200" rows="2" placeholder="Escribí tu consulta…" required></textarea>
+          <button id="chat-send-button" type="submit" aria-label="Enviar mensaje">↑</button>
+        </form>
+        <p class="chat-input-footnote">No enviés datos personales ni de pago. El historial se elimina automáticamente en un máximo de 7 días.</p>
+      </section>
+    </section>
+    <p class="chat-page-footer">JB Collections · JB TECH · JB Parfums</p>
+  </main>
+</body>
+</html>
