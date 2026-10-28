@@ -364,8 +364,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-product-title").textContent = product.name || "Producto sin nombre";
     $("#provider-review-product-subtitle").textContent = importCatalogType(product.catalog_type, "technology") === "perfumery" ? "JB Parfums" : "JB TECH";
     $("#provider-review-name").value = review.provider_name || "GoPartner";
-    $("#provider-review-id").value = review.provider_product_id || "";
-    $("#provider-review-url").value = review.provider_url || "";
     $("#provider-review-price-usd").value = review.provider_price_usd ?? "";
     $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
     $("#provider-review-availability").value = review.provider_availability || "unknown";
@@ -384,12 +382,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (!supabase || !user || !product) { say(reviewMessage, "Tu sesión venció o el producto ya no está disponible.", "error"); return; }
 
     const providerName = $("#provider-review-name").value.trim() || "GoPartner";
-    const providerURL = $("#provider-review-url").value.trim();
-    if (providerURL) {
-      let parsed;
-      try { parsed = new URL(providerURL); } catch { say(reviewMessage, "La dirección del proveedor no es válida.", "error"); return; }
-      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") { say(reviewMessage, "El enlace del proveedor debe comenzar con http:// o https://.", "error"); return; }
-    }
     let priceUSD, priceNIO;
     try {
       priceUSD = cleanPrice($("#provider-review-price-usd").value);
@@ -400,8 +392,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const payload = {
       product_id: product.id,
       provider_name: providerName,
-      provider_product_id: $("#provider-review-id").value.trim() || null,
-      provider_url: providerURL || null,
+      provider_product_id: null,
+      provider_url: null,
       provider_price_usd: priceUSD,
       provider_price_nio: priceNIO,
       provider_availability: $("#provider-review-availability").value || "unknown",
@@ -756,24 +748,20 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       products: [
         {
           catalog_type: "technology",
-          provider_product_id: "ID-DEL-PROVEEDOR",
           name: "Nombre del producto tal como aparece en el proveedor",
           brand: "Marca",
           model: "Modelo",
           provider_price_usd: 199.99,
           provider_availability: "available",
-          provider_url: "https://example.com/producto",
           catalog_price_usd: 219.99,
           catalog_availability: "available"
         },
         {
           catalog_type: "perfumery",
-          provider_product_id: "ID-PERFUME-PROVEEDOR",
           name: "Nombre de la fragancia",
           brand: "Marca",
           provider_price_usd: 39.99,
           provider_availability: "on_order",
-          provider_url: "https://example.com/fragancia",
           catalog_price_usd: 44.99,
           catalog_availability: "on_order",
           family: "arabes",
