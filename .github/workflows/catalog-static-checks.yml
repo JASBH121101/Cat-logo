@@ -56,6 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           node --test tests/cache-key-change-guard.test.mjs
+          node --test tests/migration-history-hygiene.test.mjs
           node --test tests/private-chat-mobile-layout.test.mjs
           node --test tests/ai-assistant-layout.test.mjs
           node --test tests/public-commercial-readiness.test.mjs
