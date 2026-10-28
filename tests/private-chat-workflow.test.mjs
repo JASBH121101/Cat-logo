@@ -7,6 +7,7 @@ const migration = readFileSync(new URL("../supabase/migrations/20261028204826_pr
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028205513_tighten_private_chat_sensitive_data_20261028.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028212147_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
 const adminRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028230836_revoke_anon_execute_from_private_chat_admin_rpcs.sql", import.meta.url), "utf8");
+const chatRlsOptimization = readFileSync(new URL("../supabase/migrations/20261028230934_optimize_private_chat_rls_and_foreign_key_indexes.sql", import.meta.url), "utf8");
 const duplicateNoticeRemoval = readFileSync(new URL("../supabase/migrations/20261028212309_remove_duplicate_private_chat_consent.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
@@ -132,4 +133,12 @@ test("admin-only private chat RPCs revoke anonymous execution but retain authent
     assert.ok(adminRpcPermissions.includes("REVOKE EXECUTE ON FUNCTION public." + signature + " FROM PUBLIC, anon;"));
     assert.ok(adminRpcPermissions.includes("GRANT EXECUTE ON FUNCTION public." + signature + " TO authenticated;"));
   }
+});
+
+test("private-chat RLS uses statement-level auth lookup and foreign-key indexes", () => {
+  assert.match(chatRlsOptimization, /private_chat_conversations_product_id_idx/);
+  assert.match(chatRlsOptimization, /private_chat_conversations_claimed_by_idx/);
+  assert.match(chatRlsOptimization, /WHERE au\.user_id = \(SELECT auth\.uid\(\)\)/);
+  assert.match(chatRlsOptimization, /CREATE POLICY "Admins can read private chat conversations"/);
+  assert.match(chatRlsOptimization, /CREATE POLICY "Admins can read private chat messages"/);
 });
