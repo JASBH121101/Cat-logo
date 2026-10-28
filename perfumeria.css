@@ -2465,7 +2465,9 @@ body.perfume-page .perfume-hero-notes {
 }
 
 
-/* JB PARFUMS · uniform card rhythm, shared baselines and equal CTAs */
+/* JB PARFUMS · uniform card rhythm, shared baselines and equal CTAs
+   El selector incluye body.perfume-page para igualar la especificidad de las reglas
+   públicas genéricas de theme-ui.css y evitar que estas anulen el margen automático. */
 .perfume-page .perfume-product-grid { align-items: stretch; }
 .perfume-page .perfume-product-card { height: 100%; min-height: 0; }
 .perfume-page .perfume-product-card-content {
@@ -2475,8 +2477,8 @@ body.perfume-page .perfume-hero-notes {
   align-items: stretch;
   box-sizing: border-box;
 }
-.perfume-page .perfume-product-card h3 { min-height: 2.4em; }
-.perfume-page .perfume-product-card .product-actions {
+body.perfume-page .perfume-product-card h3 { min-height: 2.7em; }
+body.perfume-page .perfume-product-card .product-actions {
   width: 100%;
   margin-top: auto;
   padding-top: 8px;
@@ -2496,7 +2498,7 @@ body.perfume-page .perfume-hero-notes {
   flex: 0 0 40px;
 }
 @media (max-width: 640px) {
-  .perfume-page .perfume-product-card h3 { min-height: 2.32em; }
+  body.perfume-page .perfume-product-card h3 { min-height: 2.7em; }
   .perfume-page .perfume-product-card .perfume-view-button {
     height: 36px;
     min-height: 36px;
