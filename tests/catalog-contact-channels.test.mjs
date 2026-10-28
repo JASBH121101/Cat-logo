@@ -61,6 +61,6 @@ test("contact channel controls are responsive, keyboard-focusable and styled con
   assert.ok(channelCss.includes("@media (max-width: 560px)"));
   assert.ok(technologyHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
   assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
-  assert.ok(technologyHtml.includes("app.js?v=20261028-dual-contact1"));
-  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-dual-contact1"));
+  assert.ok(technologyHtml.includes("app.js?v=20261028-private-chat1"));
+  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-private-chat1"));
 });
