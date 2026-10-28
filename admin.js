@@ -6048,6 +6048,7 @@ resetCommissionForm();
   let notificationEnabled = false;
   let notificationPrimed = false;
   let previousLastMessageAt = new Map();
+  let previousStatusById = new Map();
   let pollHandle = null;
 
   function setStatus(message = "", error = false) {
@@ -6212,14 +6213,19 @@ resetCommissionForm();
       const rows=Array.isArray(data.conversations)?data.conversations:[];
       if(notificationPrimed){
         for(const row of rows){
-          const previous=previousLastMessageAt.get(String(row.id));
+          const id=String(row.id);
+          const previous=previousLastMessageAt.get(id);
+          const previousStatus=previousStatusById.get(id);
           const notReadingThread = document.visibilityState==="hidden" || panel.classList.contains("hidden");
-          if((previous===undefined || (row.last_message_at && previous!==row.last_message_at)) && notificationEnabled && notReadingThread){
-            void notifyIfCustomerMessage(row);
+          const newSupportRequest = row.status==="pending_advisor" && previousStatus!=="pending_advisor" && previousStatus!=="advisor_active";
+          const changedMessage = previous!==undefined && row.last_message_at && previous!==row.last_message_at;
+          if((newSupportRequest || changedMessage) && notificationEnabled && notReadingThread){
+            void notifyIfCustomerMessage(row,newSupportRequest);
           }
         }
       }else notificationPrimed=true;
       previousLastMessageAt=new Map(rows.map(row=>[String(row.id),String(row.last_message_at||"")]));
+      previousStatusById=new Map(rows.map(row=>[String(row.id),String(row.status||"")]));
       conversations=rows;
       renderConversationList();
       if(selectedConversationId){
@@ -6236,11 +6242,21 @@ resetCommissionForm();
     }catch(error){if(!silent)setStatus(error.message||"No se pudieron cargar las conversaciones.",true);}
     finally{listLoading=false;}
   }
-  async function notifyIfCustomerMessage(row) {
+  async function notifyIfCustomerMessage(row,newSupportRequest=false) {
     try{
       const data=await callPrivateChat("admin_read",{conversation_id:row.id});
       const latest=(data.messages||[]).at(-1);
-      if(!latest || latest.sender_type!=="customer")return;
+      if(!latest)return;
+      if(newSupportRequest && row.status==="pending_advisor"){
+        const notification=new Notification("Nueva solicitud · JB Collections",{
+          body:(row.product_name||"Consulta general")+" · "+getTopicLabel(row.payment_topic)+" · Un cliente aceptó el aviso y solicita atención personal.",
+          tag:"jb-chat-request-"+row.id
+        });
+        notification.onclick=()=>{window.focus();showAdminSection("messages");void openConversation(String(row.id));notification.close();};
+        if(typeof navigator.vibrate==="function")navigator.vibrate([80,40,80]);
+        return;
+      }
+      if(latest.sender_type!=="customer")return;
       if("Notification" in window && Notification.permission==="granted"){
         const notification=new Notification("Nuevo mensaje · JB Collections",{body:(row.product_name||"Consulta general")+": "+String(latest.content||"").slice(0,110),tag:"jb-chat-"+row.id});
         notification.onclick=()=>{window.focus();showAdminSection("messages");void openConversation(String(row.id));notification.close();};
