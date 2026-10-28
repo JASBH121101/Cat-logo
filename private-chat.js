@@ -296,5 +296,6 @@ input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = Math.min(input.scrollHeight, 112) + "px";
 });
-initializePrivateChatTheme();\nvoid initialize();
+initializePrivateChatTheme();
+void initialize();
 setInterval(() => { if (sessionToken && !expired) void refreshConversation(); }, 6500);
