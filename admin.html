@@ -15,12 +15,12 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261028-color-ai-cors-button2">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-dialog-theme1">
+  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-price-sync1">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-variant-availability1"></script>
+  <script type="module" src="admin.js?v=20261028-provider-price-sync1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -773,6 +773,13 @@
   <dialog id="provider-review-dialog" class="provider-dialog" aria-labelledby="provider-review-title">
     <form id="provider-review-form" class="provider-dialog-shell">
       <header class="provider-dialog-header"><div><p class="eyebrow">COMPROBACIÓN MANUAL</p><h2 id="provider-review-title">Registrar revisión</h2><p id="provider-review-product-title" class="provider-dialog-product-title"></p><p id="provider-review-product-subtitle" class="provider-dialog-product-subtitle"></p></div><button class="admin-product-preview-close" type="button" data-provider-dialog-close aria-label="Cerrar">×</button></header>
+      <section class="provider-review-current-card" aria-label="Datos actuales del producto">
+        <h3>Producto registrado en JB Collections</h3>
+        <div id="provider-review-product-details" class="provider-review-product-details"></div>
+        <h3>Comparación de precios</h3>
+        <div id="provider-review-price-comparison" class="provider-review-price-comparison"></div>
+        <p class="provider-review-sync-note">Al guardar, si registrás los dos precios de GoPartner (US$ y C$), ambos se copiarán exactamente al producto publicado cuando sean diferentes. No se calcula una tasa de cambio ni se modifica el precio si falta uno de los dos.</p>
+      </section>
       <div class="provider-dialog-fields">
         <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
         <label><span>Precio indicado por proveedor (US$)</span><input id="provider-review-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></label>
