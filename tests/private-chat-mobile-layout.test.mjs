@@ -125,6 +125,9 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
       await page.evaluate(value => {
         document.documentElement.setAttribute("data-theme", value);
         const messages = document.getElementById("private-chat-admin-messages");
+        // The production stylesheet enables smooth scrolling; disable animation in
+        // this geometry assertion so scrollTop is measurable synchronously.
+        messages.style.scrollBehavior = "auto";
         messages.scrollTop = messages.scrollHeight;
       }, theme);
 
@@ -157,7 +160,7 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
       assert.ok(layout.messagesScrollHeight > layout.messagesClientHeight,
         theme + ": long history must overflow inside its message list");
       assert.ok(layout.messagesScrollTop > 0,
-        theme + ": message list should actually scroll independently");
+        theme + ": message list should actually scroll independently: " + JSON.stringify(layout));
     }
   } finally {
     await browser.close();
