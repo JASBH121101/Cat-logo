@@ -9,6 +9,7 @@ const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.ur
 const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
 const snapshotMigration = readFileSync(new URL("../supabase/migrations/20261028221500_provider_variant_review_snapshot.sql", import.meta.url), "utf8");
 const confirmMigration = readFileSync(new URL("../supabase/migrations/20261028223000_confirm_provider_product_review.sql", import.meta.url), "utf8");
+const hardenMigration = readFileSync(new URL("../supabase/migrations/20261028223500_harden_provider_review_confirm.sql", import.meta.url), "utf8");
 
 test("supplier review collects provider availability for every configuration and color", () => {
   assert.match(html, /id="provider-review-variants-section"/);
@@ -70,4 +71,12 @@ test("confirm review atomically records supplier state and optionally syncs publ
   assert.match(confirmMigration, /admin_only/);
   assert.match(confirmMigration, /GRANT EXECUTE ON FUNCTION public\.confirm_provider_product_review/);
   assert.doesNotMatch(confirmMigration, /SET price_usd\s*=/i);
+});
+
+
+test("provider review RPC uses authenticated admin RLS rather than a security-definer bypass", () => {
+  assert.match(confirmMigration, /NOT EXISTS \([\s\S]*?FROM public\.admin_users au WHERE au\.user_id = v_uid/i);
+  assert.match(hardenMigration, /SECURITY INVOKER/);
+  assert.match(hardenMigration, /REVOKE ALL ON FUNCTION public\.confirm_provider_product_review/);
+  assert.match(hardenMigration, /GRANT EXECUTE ON FUNCTION public\.confirm_provider_product_review/);
 });
