@@ -47,6 +47,7 @@ jobs:
           node --test tests/product-tag-formatting.test.mjs
           node --test tests/asset-cache-contract.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
+          node --test tests/technology-subcategory-filter.test.mjs
 
       - name: Check canonical URLs and public share origin
         shell: bash
