@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-provider-review-fields-removed1"></script>
+  <script type="module" src="admin.js?v=20261028-provider-review-button-fix1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -782,7 +782,7 @@
       </div>
       <p id="provider-review-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
       <p class="provider-private-note"><span aria-hidden="true">🔒</span> Estos datos se guardan en tablas privadas de administración. No se publican en las fichas del catálogo ni calculan automáticamente tu comisión.</p>
-      <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cancelar</button><button type="submit" id="provider-review-save" class="button button-primary">Guardar revisión</button></footer>
+      <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cancelar</button><button type="button" id="provider-review-save" class="button button-primary">Guardar revisión</button></footer>
       <input id="provider-review-product-id" type="hidden">
     </form>
   </dialog>
