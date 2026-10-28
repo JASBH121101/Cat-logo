@@ -27,7 +27,7 @@ test("supplier review history persists each snapshot without automatically chang
   assert.match(snapshotMigration, /NEW\.provider_variant_snapshot/);
   assert.match(provider, /select\("provider_name,provider_product_id,provider_url,provider_price_usd,provider_price_nio,provider_availability,review_notes,provider_variant_snapshot,reviewed_at"\)/);
   assert.match(provider, /providerVariantSnapshotHistoryHTML\(row\.provider_variant_snapshot\)/);
-  assert.match(provider, /Los precios públicos se conservaron sin cambios/);
+  assert.match(provider, /Los precios, fotos y estado de publicación no cambiaron/);
 });
 
 test("supplier import uses strict exact identifiers and blocks omitted variants", () => {
@@ -62,7 +62,7 @@ test("confirm review atomically records supplier state and optionally syncs publ
   assert.match(html, /id="provider-review-sync-catalog-availability" type="checkbox" checked/);
   assert.match(provider, /supabase\.rpc\("confirm_provider_product_review"/);
   assert.match(provider, /p_sync_catalog_availability: syncCatalogAvailability/);
-  assert.match(confirmMigration, /function public\.confirm_provider_product_review/);
+  assert.match(confirmMigration, /function public\.confirm_provider_product_review/i);
   assert.match(confirmMigration, /IF v_sync THEN/);
   assert.match(confirmMigration, /configuration_availability/);
   assert.match(confirmMigration, /'availability'/);
