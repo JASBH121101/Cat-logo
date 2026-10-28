@@ -21,7 +21,9 @@ test("provider review form uses JavaScript-controlled submission instead of dial
   const providerJs = readFileSync(new URL("../admin-provider.js", import.meta.url), "utf8");
   assert.match(adminHtml, /<form id="provider-review-form" class="provider-dialog-shell">/);
   assert.doesNotMatch(adminHtml, /<form id="provider-review-form" method="dialog"/);
-  assert.match(providerJs, /\$\("#provider-review-form"\)\?\.addEventListener\("submit", saveReview\)/);
+  assert.match(providerJs, /reviewSaveButton\?\.addEventListener\("click", \(\) => \{ void saveReview\(\); \}\)/);
+  assert.match(providerJs, /reviewForm\?\.addEventListener\("submit", event => \{\s*event\.preventDefault\(\);\s*void saveReview\(event\);\s*\}\)/);
+  assert.match(adminHtml, /type="button" id="provider-review-save"/);
   assert.match(providerJs, /event\.preventDefault\(\);[\s\S]*?supabase\.from\("product_provider_status"\)\.upsert/);
 });
 
