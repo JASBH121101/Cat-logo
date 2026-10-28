@@ -91,6 +91,10 @@ test("JB Manager includes a private inbox with claim, manual reply, close and pu
   assert.match(adminHtml, /dashboard-private-chat-shortcut-count/);
   assert.match(adminJs, /dashboard-private-chat-shortcut-count/);
   assert.match(adminHtml, /data-admin-panel="messages"/);
+  assert.doesNotMatch(adminHtml, /id="private-chat-admin-empty"/);
+  assert.match(adminHtml, /id="private-chat-admin-claim"[^>]*hidden/);
+  assert.match(adminHtml, /id="private-chat-admin-close"[^>]*hidden/);
+  assert.match(adminCss, /private-chat-admin-messages \{ flex:0 1 auto!important; min-height:0!important/);
   assert.match(adminHtml, /id="private-chat-admin-claim"/);
   assert.match(adminHtml, /id="private-chat-admin-reply-form"/);
   assert.match(adminHtml, /id="private-chat-admin-purchase"/);
