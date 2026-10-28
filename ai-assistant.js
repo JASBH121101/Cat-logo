@@ -17,6 +17,17 @@
   const sessionStorageKey = "jb-ai-conversation-v2";
   const history = restoreSessionHistory();
 
+  function containsPersonalInformation(value) {
+    const text = String(value == null ? "" : value);
+    const patterns = [
+      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
+      /(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}/,
+      /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|tarjeta de cr[eé]dito|cuenta bancaria|contrase[nñ]a)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*[A-Z0-9][A-Z0-9\s-]{4,}/i,
+      /\b(?:mi direcci[oó]n|mi domicilio|ubicaci[oó]n exacta|vivo en|mi casa queda)\b\s*(?:es|:)?\s*[^,.!?]{4,}/i
+    ];
+    return patterns.some(pattern => pattern.test(text));
+  }
+
   function restoreSessionHistory() {
     try {
       const stored = JSON.parse(window.sessionStorage.getItem(sessionStorageKey) || "[]");
@@ -24,6 +35,7 @@
       return stored.filter(item =>
         item && (item.role === "user" || item.role === "assistant")
         && typeof item.content === "string" && item.content.trim()
+        && !containsPersonalInformation(item.content)
       ).map(item => ({
         role: item.role,
         content: item.content.trim().slice(0, 1500)
@@ -41,6 +53,9 @@
     if (history.length > maxHistory * 2) history.splice(0, history.length - maxHistory * 2);
   }
 
+  // Rewrite any old session cache after removing messages that look like personal data.
+  persistSessionHistory();
+
   const root = document.createElement("div");
   root.className = "jb-ai-advisor";
   root.innerHTML =
@@ -55,7 +70,7 @@
         '<button type="button" class="jb-ai-reset" aria-label="Nueva conversación" title="Nueva conversación">↻</button>' +
       '<button type="button" class="jb-ai-close" aria-label="Cerrar asesor IA">×</button>' +
       '</header>' +
-      '<div class="jb-ai-trust">Recomendaciones basadas en productos publicados. Confirmá disponibilidad con la tienda.</div>' +
+      '<div class="jb-ai-trust">Recomendaciones basadas en productos publicados. No compartás datos personales; la memoria dura solo en esta sesión. Confirmá disponibilidad con la tienda.</div>' +
       '<div class="jb-ai-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>' +
       '<div class="jb-ai-quick-prompts">' +
         (catalogType === "perfumery"
@@ -434,7 +449,13 @@
   async function sendMessage(text, options = {}) {
     const cleanMessage = String(text || "").trim();
     if (!cleanMessage || pending) return;
-    const previousHistory = history.slice(-maxHistory).map(item => ({
+    if (containsPersonalInformation(cleanMessage)) {
+      input.value = "";
+      input.style.height = "auto";
+      addMessage("assistant", "Por privacidad, no necesito tu teléfono, correo, dirección, número de identidad ni datos de pago. No enviaré este mensaje; escribí de nuevo tu consulta sin esos datos.");
+      return;
+    }
+    const previousHistory = history.slice(-maxHistory).filter(item => !containsPersonalInformation(item.content)).map(item => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: String(item.content || "").slice(0, 450)
     }));
