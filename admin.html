@@ -919,7 +919,11 @@
           <div id="provider-review-variants" class="provider-review-variants"></div>
         </section>
         <p id="provider-review-variant-validation" class="provider-variant-validation is-pending" role="status" aria-live="polite">Confirmá la disponibilidad general y, si el producto tiene variantes, el estado de cada configuración y color.</p>
-        <p class="provider-review-sync-note">La revisión guarda una fotografía privada del estado del proveedor y su historial. No cambia automáticamente los precios, colores, disponibilidad ni fotografías publicados en el catálogo.</p>
+        <label class="provider-review-sync-option">
+          <input id="provider-review-sync-catalog-availability" type="checkbox" checked>
+          <span><strong>Actualizar disponibilidad del catálogo al confirmar</strong><small>Sincroniza el estado general, cada configuración y cada color. No cambia precios, fotografías ni estado de publicación.</small></span>
+        </label>
+        <p class="provider-review-sync-note">La revisión también guarda una fotografía privada del estado del proveedor y la añade al historial.</p>
       </section>
       <div class="provider-dialog-fields">
         <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
