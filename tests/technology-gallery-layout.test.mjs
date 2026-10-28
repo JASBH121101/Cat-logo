@@ -19,7 +19,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /section-tag-badge--performance/);
   assert.match(html, /section-tag-badge--quality-price/);
   assert.match(html, /section-tag-badge--gaming/);
-  assert.match(html, /Se consideran exclusivos por su marca, materiales de construcción/);
+  assert.match(html, /Valoramos la marca, los materiales de construcción, los componentes.*precio frente a equipos comparables/);
   assert.match(html, /Modelos capaces de competir con la gama alta/);
   assert.match(html, /Modelos que destacan por el equilibrio entre su precio/);
   assert.match(html, /Los monstruos del gaming: equipos con procesadores potentes/);
@@ -87,7 +87,7 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
 test("perfume hero caption gradient stays subtle and title remains readable", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const perfumeCss = readFileSync("perfumeria.css", "utf8");
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261027-audit-cascade1/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-symmetric-ctas1/);
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);
