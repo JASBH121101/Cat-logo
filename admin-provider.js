@@ -200,21 +200,29 @@ function providerVariantSnapshotHistoryHTML(value) {
   const snapshot = parseMaybeJSON(value, []);
   if (!Array.isArray(snapshot) || !snapshot.length) return "";
   const groups = snapshot.map(group => {
-    const colors = (Array.isArray(group.colors) ? group.colors : []).map(color =>
-      '<li><span class="provider-history-variant-color"><i style="--provider-review-swatch:' +
-      escapeHTML(color.color_hex || "#68758d") + '"></i><strong>' + escapeHTML(color.color || "Color sin nombre") +
-      '</strong></span><span>Catálogo: ' + escapeHTML(availabilityLabel(color.catalog_availability)) +
-      ' → GoPartner: <b>' + escapeHTML(availabilityLabel(color.provider_availability)) + '</b></span></li>'
-    ).join("");
+    const colors = (Array.isArray(group.colors) ? group.colors : []).map(color => {
+      const swatch = /^#[0-9a-f]{6}$/i.test(String(color.color_hex || "")) ? color.color_hex : "#68758d";
+      return '<li><span class="provider-history-variant-color"><i style="--provider-review-swatch:' +
+        escapeHTML(swatch) + '"></i><strong>' + escapeHTML(color.color || "Color sin nombre") +
+        '</strong></span><span>Catálogo: ' + escapeHTML(availabilityLabel(color.catalog_availability)) +
+        ' → GoPartner: <b>' + escapeHTML(availabilityLabel(color.provider_availability)) + '</b></span></li>';
+    }).join("");
+    const catalogPrice = [
+      group.catalog_price_usd != null && group.catalog_price_usd !== "" ? money(group.catalog_price_usd, "USD") : "",
+      group.catalog_price_nio != null && group.catalog_price_nio !== "" ? money(group.catalog_price_nio, "NIO") : ""
+    ].filter(Boolean).join(" · ") || "Sin registrar";
+    const providerPrice = [
+      group.provider_price_usd != null && group.provider_price_usd !== "" ? money(group.provider_price_usd, "USD") : "",
+      group.provider_price_nio != null && group.provider_price_nio !== "" ? money(group.provider_price_nio, "NIO") : ""
+    ].filter(Boolean).join(" · ") || "Sin registrar";
     return '<article class="provider-history-variant-group"><strong>' + escapeHTML(providerConfigLabel(group)) +
-      '</strong><p>Configuración · Catálogo: ' + escapeHTML(availabilityLabel(group.catalog_availability)) +
+      '</strong><p>Disponibilidad · Catálogo: ' + escapeHTML(availabilityLabel(group.catalog_availability)) +
       ' → GoPartner: <b>' + escapeHTML(availabilityLabel(group.provider_availability)) + '</b></p>' +
+      '<p>Precio catálogo: ' + escapeHTML(catalogPrice) + ' · Precio GoPartner: ' + escapeHTML(providerPrice) + '</p>' +
       (colors ? '<ul>' + colors + '</ul>' : '<p>Sin colores registrados.</p>') + '</article>';
   }).join("");
-  return '<details class="provider-history-variants"><summary>Ver disponibilidad por variante y color</summary><div>' + groups + '</div></details>';
-}
-
-function mergeVariantImages(incomingValue, currentValue) {
+  return '<details class="provider-history-variants"><summary>Ver precios y disponibilidad por variante y color</summary><div>' + groups + '</div></details>';
+}function mergeVariantImages(incomingValue, currentValue) {
   const incoming = parseMaybeJSON(incomingValue, []);
   if (!Array.isArray(incoming)) throw new Error("La lista de variantes debe ser un arreglo JSON.");
   const current = Array.isArray(currentValue) ? currentValue : parseMaybeJSON(currentValue, []);
