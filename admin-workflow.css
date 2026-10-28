@@ -534,3 +534,44 @@ html[data-theme="light"] body.admin-body form#product-form .inline-color-card-su
   html body.admin-body form#product-form .inline-color-card-body{padding:7px!important}
   html body.admin-body form#product-form .inline-color-card-body>.inline-color-main{grid-template-columns:minmax(0,1fr) 38px!important;gap:6px!important}
 }
+
+
+/* Mobile fix: each color is its own stacked card; never let grid auto-placement
+   overlap multiple color editors when one configuration contains several colors. */
+html body.admin-body form#product-form .variant-color-section {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-color-list {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-auto-flow:row!important;
+  grid-auto-rows:max-content!important;
+  gap:8px!important;
+  align-items:start!important;
+  justify-items:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-color-list > details[data-variant-row] {
+  display:block!important;
+  position:relative!important;
+  grid-column:1/-1!important;
+  grid-row:auto!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  align-self:start!important;
+  margin:0!important;
+}
+html body.admin-body form#product-form .variant-color-list > details[data-variant-row] > .inline-color-card-body {
+  position:relative!important;
+  width:100%!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-config-collapse > .variant-config-body[hidden] {
+  display:none!important;
+}
