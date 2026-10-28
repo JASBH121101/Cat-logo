@@ -97,3 +97,13 @@ test("advisor handles cross-origin static hosting and mobile overflow", () => {
   assert.match(aiCss, /\.jb-ai-messages\s*\{\s*overflow-x:\s*hidden\s*;?\s*\}/);
   assert.match(aiCss, /\.jb-ai-quick-prompts::-webkit-scrollbar\s*\{\s*display:\s*none\s*;?\s*\}/);
 });
+
+
+test("AI assistant blocks personal data locally and discloses session-only memory", () => {
+  assert.match(aiJs, /function containsPersonalInformation\(value\)/);
+  assert.match(aiJs, /No enviaré este mensaje/);
+  assert.match(aiJs, /No compartás datos personales/);
+  assert.match(aiJs, /sessionStorage\.setItem/);
+  assert.match(assistantApi, /AUTONOMÍA ACOTADA/);
+  assert.match(assistantApi, /nunca solicités ni necesités nombres completos/);
+});

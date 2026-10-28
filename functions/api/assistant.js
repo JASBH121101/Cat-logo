@@ -7,7 +7,9 @@ const MAX_PRODUCTS = 60;
 const MAX_CONTEXT_PRODUCTS = 16;
 const rateBuckets = new Map();
 const SYSTEM_PROMPT = "Sos el asesor de compras de JB Collections, una tienda nicaragüense con JB TECH (tecnología) y JB Parfums (perfumería). Respondé en español natural, cálido y conciso; podés usar «vos». Tu objetivo es entender la necesidad real, recomendar con criterio y ayudar al cliente a dar el siguiente paso sin presionarlo.\n" +
-  "MEMORIA: usá el historial de esta sesión para recordar presupuesto, uso, preferencias, destinatario y productos ya considerados. No preguntés de nuevo algo que ya te dijeron. Si cambia el presupuesto o la preferencia, priorizá el dato más reciente.\n" +
+  "MEMORIA TEMPORAL: usá únicamente el historial de esta conversación para recordar presupuesto, uso, preferencias y productos considerados. La memoria dura solo en esta sesión; no infieras ni creés perfiles personales. Si cambia una preferencia, priorizá el dato más reciente.\n" +
+  "PRIVACIDAD: nunca solicités ni necesités nombres completos, teléfonos, correos, direcciones, cédulas, ubicación exacta, contraseñas, datos bancarios o datos de pago. No repitás datos personales que el usuario comparta. Explicá brevemente que no hacen falta para recomendar productos. No uses la conversación para identificar o perfilar personas.\n" +
+  "AUTONOMÍA ACOTADA: razoná de forma proactiva: identificá la necesidad real, restricciones, ventajas y desventajas, datos faltantes y posibles alternativas. Si detectás una opción claramente mejor ajustada, explicá por qué aunque no la hayan nombrado. Hacé como máximo una pregunta concreta cuando un dato esencial falte; si podés ayudar con lo disponible, avanzá. Proponé el siguiente paso útil sin presión. No realicés acciones externas ni cambios en sistemas, no hagás compras, reservas, publicaciones o modificaciones; solo recomendá y explicá.\n" +
   "VERACIDAD: solo uses los productos proporcionados en el catálogo publicado. No inventés precios, inventario, especificaciones, notas olfativas, garantía, descuentos, envíos o políticas. Si falta un dato, aclaralo y ofrecé confirmarlo con la tienda. price_usd está en dólares y price_nio en córdobas; no hagás conversiones. La disponibilidad siempre debe confirmarse.\n" +
   "RECOMENDACIÓN: elegí de cero a tres productos realmente relacionados con la consulta y ordenalos por ajuste a necesidad y presupuesto. Si el usuario compara opciones, diferenciá ventajas solo cuando consten en los datos. Si hay presupuesto explícito, no prioricés un producto que lo excede cuando existan opciones publicadas dentro del presupuesto. No rellenés la lista con opciones irrelevantes. Cada reason debe explicar brevemente el ajuste usando únicamente datos del producto y preferencias conocidas; no afirmés características ausentes. Si falta información esencial, hacé una sola pregunta concreta en reply y podés dejar recomendaciones vacías. Para convertir, incluí un siguiente paso natural (ver producto o consultar disponibilidad) sin presión ni falsa urgencia.\n" +
   "COMPARACIÓN DE EQUIPOS: cuando recibás dos IDs seleccionados para comparar, analizá exclusivamente esos dos equipos publicados. Compará precio, RAM, almacenamiento, procesador, batería, pantalla, cámaras, garantía y otras especificaciones solo si aparecen en el catálogo. Indicá ventajas y limitaciones de cada uno, respetá el presupuesto y terminá con una recomendación condicionada al uso del cliente. Si faltan datos, decilo; no asumas que una especificación ausente es inferior ni inventés cifras.\n" +
@@ -55,6 +57,16 @@ function json(status, data, origin) {
 }
 function clean(value, max) {
   return String(value == null ? "" : value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g," ").replace(/\s+/g," ").trim().slice(0,max || 500);
+}
+function containsPersonalInformation(value) {
+  const text = String(value == null ? "" : value);
+  const patterns = [
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
+    /(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}/,
+    /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|tarjeta de cr[eé]dito|cuenta bancaria|contrase[nñ]a)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*[A-Z0-9][A-Z0-9\s-]{4,}/i,
+    /\b(?:mi direcci[oó]n|mi domicilio|ubicaci[oó]n exacta|vivo en|mi casa queda)\b\s*(?:es|:)?\s*[^,.!?]{4,}/i
+  ];
+  return patterns.some(pattern => pattern.test(text));
 }
 function safeId(value) {
   const id = String(value == null ? "" : value);
@@ -347,7 +359,7 @@ function historyMessages(history) {
   return history.slice(-8).map(item => ({
     role:item && item.role === "assistant" ? "assistant" : "user",
     content:clean(item && item.content,450)
-  })).filter(item => item.content);
+  })).filter(item => item.content && !containsPersonalInformation(item.content));
 }
 export async function onRequest(context) {
   const request = context.request;
@@ -373,6 +385,9 @@ export async function onRequest(context) {
   if (rawMessage.length > MAX_MESSAGE) return json(413,{error:"message_too_long",message:"Tu mensaje es demasiado largo; resumilo en 600 caracteres o menos."},origin);
   const message = clean(rawMessage,MAX_MESSAGE);
   if (!message) return json(400,{error:"empty_message",message:"Escribí tu consulta para poder ayudarte."},origin);
+  if (containsPersonalInformation(message)) {
+    return json(400,{error:"personal_data_not_needed",message:"Por privacidad, no compartás teléfonos, correos, direcciones, números de identidad ni datos de pago. No los necesito para recomendarte productos; enviá tu consulta sin esos datos."},origin);
+  }
   const rawComparisonIds = body && Array.isArray(body.comparisonIds) ? body.comparisonIds : [];
   const comparisonIds = [...new Set(rawComparisonIds.map(safeId).filter(Boolean))];
   const isComparisonRequest = rawComparisonIds.length > 0;

@@ -453,3 +453,53 @@ test("rejects comparison requests unless exactly two distinct technology IDs are
   assert.equal(response.status,400);
   assert.equal((await response.json()).error,"invalid_comparison");
 });
+
+
+test("blocks personal contact and identity data before invoking the model", async () => {
+  const previousFetch = globalThis.fetch;
+  let aiCalls = 0;
+  globalThis.fetch = async () => new Response("[]",{status:200,headers:{"Content-Type":"application/json"}});
+  try {
+    const response = await onRequest({
+      request:makeRequest({catalogType:"technology",message:"Recomendame un celular, mi correo es jared@example.com"}),
+      env:{AI:{run:async()=>{aiCalls++;return {response:"{}"};}}}
+    });
+    assert.equal(response.status,400);
+    assert.equal((await response.json()).error,"personal_data_not_needed");
+    assert.equal(aiCalls,0);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("filters personal contact data from session history before forwarding context to AI", async () => {
+  const previousFetch = globalThis.fetch;
+  let receivedMessages = [];
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    if (parsed.pathname === "/rest/v1/products") {
+      return new Response(JSON.stringify([productRow()]),{status:200,headers:{"Content-Type":"application/json"}});
+    }
+    return new Response("[]",{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  try {
+    const response = await onRequest({
+      request:makeRequest({
+        catalogType:"technology",
+        message:"Busco un celular para juegos",
+        history:[
+          {role:"user",content:"Mi correo es jared@example.com"},
+          {role:"assistant",content:"Claro, te ayudo."},
+          {role:"user",content:"Mi presupuesto es 250 dólares"}
+        ]
+      },{ip:"192.0.2.188"}),
+      env:{AI:{run:async(_model,options)=>{receivedMessages=options.messages;return {response:{reply:"Te ayudo a elegir.",recommendations:[]}};}}}
+    });
+    assert.equal(response.status,200);
+    const serialized = JSON.stringify(receivedMessages);
+    assert.equal(serialized.includes("jared@example.com"),false);
+    assert.equal(serialized.includes("250 dólares"),true);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
