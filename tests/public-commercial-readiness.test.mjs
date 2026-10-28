@@ -18,7 +18,8 @@ test("all JB TECH product grids use the same detail and broken-image handlers", 
 });
 
 test("category filters match normalized public categories and announce selected state accessibly", () => {
-  assert.match(app, /const normalizedCategory = canonicalCatalogCategory\(product\);[\s\S]*?normalizedCategory\.toLocaleLowerCase\("es"\)/);
+  assert.match(app, /function matchesSelectedCatalogCategory\(product, category = selectedCategory\)[\s\S]*?normalizeCatalogSearch\(canonicalCatalogCategory\(product\)\) === selected/);
+  assert.match(app, /const categoryMatches = matchesSelectedCatalogCategory\(product\)/);
   assert.match(app, /button\.setAttribute\("aria-pressed", String\(isSelected\)\)/);
   const categoryButtons = [...techHtml.matchAll(/<button[^>]*data-category="[^"]+"[^>]*>/g)].map(m => m[0]);
   assert.ok(categoryButtons.length > 1);
