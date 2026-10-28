@@ -18,7 +18,7 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-validation-summary"[^>]*aria-live="polite"/);
   assert.match(css, /provider-price-difference.is-different/);
   assert.match(css, /provider-validation-line.is-match/);
-  assert.match(admin, /admin-provider\.js\?v=20261028-provider-validation2/);
+  assert.match(admin, /admin-provider\.js\?v=20261028-reviewed-sections1/);
 });
 
 test("manual provider reviews preserve public prices and existing provider references", () => {
@@ -66,8 +66,8 @@ test("admin settings are located in the dashboard sidebar and hidden during logi
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) #dashboard\.hidden[\s\S]*?display:none!important/);
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) \.admin-main\{padding-top:0!important\}/);
   assert.match(css, /\.admin-sidebar \.admin-settings-menu\{position:static/);
-  assert.match(html, /admin-provider\.css\?v=20261028-provider-validation4/);
-  assert.match(html, /admin\.js\?v=20261028-validation-differences4/);
+  assert.match(html, /admin-provider\.css\?v=20261028-reviewed-sections1/);
+  assert.match(html, /admin\.js\?v=20261028-reviewed-sections1/);
 });
 
 
