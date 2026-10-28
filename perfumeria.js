@@ -319,6 +319,31 @@ async function startPerfumePrivateChat(product, paymentType = "product", button 
   }
 }
 
+
+function refreshPerfumePaymentChoices() {
+  const product = perfumes.find(item => String(item.id) === String(dialogContent.dataset.productId));
+  const typeSelect = dialogContent.querySelector("#perfume-payment-type");
+  const channelPanel = dialogContent.querySelector("#perfume-payment-channel-panel");
+  const whatsappChoice = dialogContent.querySelector("#perfume-payment-whatsapp");
+  const privateChoice = dialogContent.querySelector("#perfume-payment-jb");
+  const paymentType = typeSelect?.value || "";
+  if (channelPanel) channelPanel.hidden = !paymentType;
+  if (!product || !paymentType) return;
+
+  if (whatsappChoice) {
+    const intent = paymentType === "credit_card"
+      ? "quisiera información sobre pagar con tarjeta de crédito para esta fragancia."
+      : "quisiera información sobre las opciones de financiamiento para esta fragancia.";
+    whatsappChoice.href = whatsappLink(buildWhatsAppMessage(product, intent));
+  }
+  if (privateChoice) {
+    privateChoice.dataset.paymentType = paymentType;
+    privateChoice.setAttribute("aria-label", paymentType === "credit_card"
+      ? "Abrir mensajería privada de JB Collections para consultar tarjeta de crédito"
+      : "Abrir mensajería privada de JB Collections para consultar financiamiento");
+  }
+}
+
 function buildWhatsAppMessage(product, intent) {
   const detail = product.perfume_details || {};
   const family = familyLabel(detail.family);
