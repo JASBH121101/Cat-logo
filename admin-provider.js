@@ -239,6 +239,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   let rawImportRows = [];
   let lastRefreshError = "";
   const statusMessage = $("#provider-status-message");
+  const reviewedStatusMessage = $("#provider-reviewed-status-message");
   const reviewMessage = $("#provider-review-message");
   const importMessage = $("#provider-import-message");
   const reviewDialog = $("#provider-review-dialog");
@@ -586,10 +587,14 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
 
       const catalogPriceMessage = " Los precios públicos se conservaron sin cambios; las diferencias quedan como referencia para que decidás si querés modificarlos desde el catálogo.";
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
-      say(statusMessage, "Revisión guardada. Se añadió una entrada al historial privado." + catalogPriceMessage, "success");
+      const successMessage = "Revisión guardada. Se añadió una entrada al historial privado." + catalogPriceMessage;
+      say(statusMessage, successMessage, "success");
       await refresh();
+      say(reviewedStatusMessage, successMessage, "success");
     } catch (error) {
-      say(reviewMessage, "No se pudo guardar la revisión: " + (error?.message || "error desconocido"), "error");
+      const errorMessage = "No se pudo guardar la revisión: " + (error?.message || "error desconocido");
+      say(reviewMessage, errorMessage, "error");
+      say(reviewedStatusMessage, errorMessage, "error");
     } finally {
       savingReview = false;
       if (button) { button.disabled = false; button.textContent = "Guardar revisión"; }
