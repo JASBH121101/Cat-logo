@@ -272,6 +272,50 @@ function whatsappLink(message) {
   return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
 }
 
+function buildPerfumeAIPrompt(product, paymentType = "") {
+  const normalizedType = paymentType === "credit_card" || paymentType === "financing" ? paymentType : "";
+  const intent = normalizedType === "credit_card"
+    ? "Quiero consultar sobre pagar con tarjeta de crédito"
+    : normalizedType === "financing"
+      ? "Quiero consultar opciones de financiamiento"
+      : "Quiero consultar para comprar";
+  const parts = [intent + " en JB Parfums: " + String(product.name || "esta fragancia") + "."];
+  if (product.price_usd != null) parts.push("Precio publicado: " + formatUSD(product.price_usd) + ".");
+  const nio = formatNIO(product.price_nio);
+  if (nio) parts.push("Precio en córdobas: " + nio + ".");
+  parts.push("Enlace del producto: " + productLink(product) + ".");
+  parts.push("Usá solo información publicada y confirmada. No inventes tasas, recargos, cuotas, requisitos ni aprobaciones. Si faltan condiciones de pago confirmadas, aclaralo y recomendá consultarlas con un asesor.");
+  return parts.join(" ").slice(0, 590);
+}
+
+function openPerfumeAIContact(message) {
+  if (typeof window.openJBAiAdvisor === "function") {
+    window.openJBAiAdvisor(message);
+    return;
+  }
+  const launcher = document.querySelector(".jb-ai-launcher");
+  if (launcher) launcher.click();
+  else window.alert("El asesor IA no está disponible en este momento. Podés elegir WhatsApp.");
+}
+
+function refreshPerfumePaymentChoices() {
+  const product = perfumes.find(item => String(item.id) === String(dialogContent.dataset.productId));
+  const typeSelect = dialogContent.querySelector("#perfume-payment-type");
+  const channelPanel = dialogContent.querySelector("#perfume-payment-channel-panel");
+  const whatsappChoice = dialogContent.querySelector("#perfume-payment-whatsapp");
+  const aiChoice = dialogContent.querySelector("#perfume-payment-jb");
+  const paymentType = typeSelect?.value || "";
+  if (channelPanel) channelPanel.hidden = !paymentType;
+  if (!product || !paymentType) return;
+  if (whatsappChoice) {
+    const intent = paymentType === "credit_card"
+      ? "quisiera información sobre pagar con tarjeta de crédito para esta fragancia."
+      : "quisiera información sobre las opciones de financiamiento para esta fragancia.";
+    whatsappChoice.href = whatsappLink(buildWhatsAppMessage(product, intent));
+  }
+  if (aiChoice) aiChoice.dataset.aiPrompt = buildPerfumeAIPrompt(product, paymentType);
+}
+
 function buildWhatsAppMessage(product, intent) {
   const detail = product.perfume_details || {};
   const family = familyLabel(detail.family);
@@ -736,10 +780,21 @@ function openPerfume(product) {
           (detail.scent_family ? '<div><dt>Familia olfativa</dt><dd>' + escapeHtml(detail.scent_family) + '</dd></div>' : '') +
         '</dl>' +
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
-        '<div class="perfume-dialog-actions">' +
-          '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar por este set de perfumes." : "quisiera consultar por esta fragancia."))) + '" target="_blank" rel="noopener">' + (product.product_type === "set" ? "Consultar por este set" : "Consultar por WhatsApp") + ' <span aria-hidden="true">↗</span></a>' +
-          '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar opciones de pago para este set de perfumes." : "quisiera consultar las opciones de financiamiento o pago con tarjeta de crédito para esta fragancia."))) + '" target="_blank" rel="noopener">Consultar pago o financiamiento</a>' +
+        '<div class="perfume-dialog-actions perfume-dialog-actions--channels">' +
+          '<a id="perfume-buy-link" class="perfume-primary-link contact-channel-button contact-channel-button--whatsapp" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar por este set de perfumes." : "quisiera consultar por esta fragancia."))) + '" target="_blank" rel="noopener"><span class="contact-channel-icon" aria-hidden="true">' + whatsappIconMarkup + '</span><span>WhatsApp</span></a>' +
+          '<button type="button" id="perfume-jb-contact" class="perfume-outline-link contact-channel-button contact-channel-button--jb"><span class="contact-channel-icon" aria-hidden="true">' + chatIconMarkup + '</span><span>Contactar JB Collections</span></button>' +
         '</div>' +
+        '<section class="payment-choice-panel perfume-payment-choice-panel" aria-label="Opciones de pago">' +
+          '<div class="payment-choice-heading"><label for="perfume-payment-type">¿Qué querés consultar?</label><p>Elegí el tema y después el canal por el que preferís continuar.</p></div>' +
+          '<select id="perfume-payment-type" class="payment-choice-select"><option value="">Seleccioná una opción</option><option value="financing">Financiamiento</option><option value="credit_card">Compra con tarjeta de crédito</option></select>' +
+          '<div id="perfume-payment-channel-panel" class="payment-channel-panel" hidden>' +
+            '<p>¿Por cuál canal querés continuar?</p>' +
+            '<div class="payment-channel-actions">' +
+              '<a id="perfume-payment-whatsapp" class="payment-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener">' + whatsappIconMarkup + '<span>WhatsApp</span></a>' +
+              '<button type="button" id="perfume-payment-jb" class="payment-channel-button contact-channel-button--jb">' + chatIconMarkup + '<span>JB Collections · IA</span></button>' +
+            '</div>' +
+          '</div>' +
+        '</section>' +
       '</section>' +
     '</div>' +
     (hasOlfactoryNotes
@@ -749,6 +804,9 @@ function openPerfume(product) {
         notesSection("Notas de fondo", detail.base_notes) +
         '</div>'
       : '');
+  const perfumeContact = dialogContent.querySelector("#perfume-jb-contact");
+  if (perfumeContact) perfumeContact.dataset.aiPrompt = buildPerfumeAIPrompt(product);
+  refreshPerfumePaymentChoices();
   setCatalogDetailOverlayOffset();
   lockCatalogScrollPosition();
   perfumeDetailPage?.classList.remove("hidden");
@@ -962,8 +1020,23 @@ dialogContent.addEventListener("touchend", event => {
   movePerfumeGallery(deltaX < 0 ? 1 : -1);
 }, { passive: true });
 
+dialogContent.addEventListener("change", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.matches("#perfume-payment-type")) refreshPerfumePaymentChoices();
+});
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const aiContactButton = target?.closest("#perfume-jb-contact, #perfume-payment-jb");
+  if (aiContactButton) {
+    event.preventDefault();
+    const product = perfumes.find(item => String(item.id) === String(dialogContent.dataset.productId));
+    const paymentType = aiContactButton.id === "perfume-payment-jb"
+      ? (dialogContent.querySelector("#perfume-payment-type")?.value || "")
+      : "";
+    if (product) openPerfumeAIContact(buildPerfumeAIPrompt(product, paymentType));
+    return;
+  }
   const galleryStep = target?.closest("[data-gallery-step]");
   if (galleryStep) {
     event.preventDefault();
