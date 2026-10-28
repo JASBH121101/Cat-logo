@@ -9,9 +9,10 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
-  assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
-  assert.match(html, /app\.js\?v=20261028-dual-contact1/);
+  assert.match(styles.at(-3), /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
+  assert.match(styles.at(-2), /contact-channels\.css\?v=20261028-dual-contact1/);
+  assert.match(styles.at(-1), /technology-detail-compact\.css\?v=20261028-private-chat1/);
+  assert.match(html, /app\.js\?v=20261028-private-chat1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -63,6 +64,15 @@ test("detail gallery styles target the real product-detail-page DOM", () => {
 test("single-image products do not reserve a row for absent thumbnails or empty arrow rails", () => {
   assert.match(css, /#dialog-image:not\(:has\(\.dialog-gallery-thumbs\)\)\s*\{\s*grid-template-rows:minmax\(0,1fr\)/);
   assert.match(css, /\.dialog-gallery-main:not\(:has\(\.dialog-gallery-nav\)\)\s*\{\s*grid-template-columns:minmax\(0,1fr\)/);
+});
+
+test("mobile detail styling compacts configuration controls, gallery and price summary", () => {
+  const compactCss = readFileSync("technology-detail-compact.css", "utf8");
+  assert.match(compactCss, /height: clamp\(220px, 31svh, 300px\) !important/);
+  assert.match(compactCss, /\.variant-choice\[data-variant-dimension="configuration"\]/);
+  assert.match(compactCss, /min-height: 33px !important/);
+  assert.match(compactCss, /grid-template-columns: minmax\(0,1fr\) minmax\(0,\.95fr\) !important/);
+  assert.match(compactCss, /content: "Disp\."/);
 });
 
 test("gallery images fit within the frame without cropping and respond on mobile", () => {
