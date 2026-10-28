@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, normalize, join } from "node:path";
 import test from "node:test";
 
-const pages = ["index.html", "tecnologia/index.html", "perfumeria/index.html", "admin.html", "perfumeria.html"];
+const pages = ["index.html", "tecnologia/index.html", "perfumeria/index.html", "admin.html", "perfumeria.html", "mensajes/index.html"];
 
 function localAssets(htmlPath) {
   const html = readFileSync(htmlPath, "utf8");
@@ -38,12 +38,13 @@ test("all local CSS/JS references are versioned and shared assets use one cache 
   }
 });
 
-test("shared contact-channel styles load after catalog-specific styles", () => {
+test("compact technology styles load after the shared channel styles", () => {
   const techHtml = readFileSync("tecnologia/index.html", "utf8");
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const styleLinks = html => [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
-  assert.match(styleLinks(techHtml).at(-1) || "", /contact-channels\.css\?v=20261028-dual-contact1/);
+  assert.match(styleLinks(techHtml).at(-1) || "", /technology-detail-compact\.css\?v=20261028-private-chat1/);
+  assert.match(styleLinks(techHtml).at(-2) || "", /contact-channels\.css\?v=20261028-dual-contact1/);
+  assert.match(styleLinks(techHtml).at(-3) || "", /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
   assert.match(styleLinks(perfumeHtml).at(-1) || "", /contact-channels\.css\?v=20261028-dual-contact1/);
-  assert.match(styleLinks(techHtml).at(-2) || "", /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
   assert.match(styleLinks(perfumeHtml).at(-2) || "", /perfumeria\.css\?v=20261028-limited-edition-icons1/);
 });
