@@ -645,6 +645,87 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     renderImportPreview();
   }
 
+  function importDifferenceSummary(item) {
+    const product = item.product;
+    if (!product) return [];
+    const provider = item.provider || {};
+    const fields = item.catalogFields || {};
+    const lines = [];
+    const addPriceDifference = (label, current, incoming, currency) => {
+      if (incoming === null || incoming === undefined || incoming === "") return;
+      if (current === null || current === undefined || current === "" || !Number.isFinite(Number(current))) {
+        lines.push(label + ": sin valor actual; nuevo " + money(incoming, currency));
+        return;
+      }
+      const difference = Math.round((Number(incoming) - Number(current) + Number.EPSILON) * 100) / 100;
+      if (difference === 0) {
+        lines.push(label + ": coincide (" + money(incoming, currency) + ")");
+        return;
+      }
+      const sign = difference > 0 ? "+" : "−";
+      const percentage = Number(current) === 0 ? "" : " (" + sign +
+        Math.abs((difference / Number(current)) * 100).toLocaleString("es-NI", { maximumFractionDigits: 2 }) + "%)";
+      lines.push(label + ": diferencia " + sign + money(Math.abs(difference), currency) + percentage);
+    };
+    const addAvailabilityDifference = (label, currentValue, incomingValue) => {
+      const current = normalizeAvailability(currentValue, false);
+      const incoming = normalizeAvailability(incomingValue, false);
+      if (!incoming || incoming === "unknown") return;
+      if (!current || current === "unknown") {
+        lines.push(label + ": sin estado actual comparable; nuevo " + availabilityLabel(incoming));
+      } else if (current === incoming) {
+        lines.push(label + ": coincide (" + availabilityLabel(incoming) + ")");
+      } else {
+        lines.push(label + ": " + availabilityLabel(current) + " → " + availabilityLabel(incoming));
+      }
+    };
+    addPriceDifference("Proveedor US$ vs precio público", product.price_usd, provider.provider_price_usd, "USD");
+    addPriceDifference("Proveedor C$ vs precio público", product.price_nio, provider.provider_price_nio, "NIO");
+    if (Object.prototype.hasOwnProperty.call(fields, "price_usd")) {
+      addPriceDifference("Nuevo precio público US$", product.price_usd, fields.price_usd, "USD");
+    }
+    if (Object.prototype.hasOwnProperty.call(fields, "price_nio")) {
+      addPriceDifference("Nuevo precio público C$", product.price_nio, fields.price_nio, "NIO");
+    }
+    addAvailabilityDifference("Disponibilidad del proveedor", product.availability, provider.provider_availability);
+    if (Object.prototype.hasOwnProperty.call(fields, "availability")) {
+      addAvailabilityDifference("Disponibilidad importada", product.availability, fields.availability);
+    }
+    for (const field of ["name", "brand", "model", "category", "description"]) {
+      if (!Object.prototype.hasOwnProperty.call(fields, field)) continue;
+      const current = String(product[field] ?? "").trim();
+      const incoming = String(fields[field] ?? "").trim();
+      if (current !== incoming) {
+        const label = ({name:"Nombre",brand:"Marca",model:"Modelo",category:"Categoría",description:"Descripción"})[field];
+        lines.push(label + ": " + (current || "sin dato") + " → " + (incoming || "sin dato"));
+      } else {
+        lines.push(({name:"Nombre",brand:"Marca",model:"Modelo",category:"Categoría",description:"Descripción"})[field] + ": coincide");
+      }
+    }
+    if (fields.variants !== undefined) {
+      if (!Array.isArray(fields.variants)) {
+        lines.push("Variantes: el campo importado no es un arreglo JSON válido");
+      } else {
+        const currentVariants = Array.isArray(product.variants) ? product.variants : parseMaybeJSON(product.variants, []);
+        const currentMap = new Map((Array.isArray(currentVariants) ? currentVariants : []).map(variant => [stableVariantKey(variant), variant]));
+        let variantDifferences = 0;
+        for (const variant of fields.variants) {
+          if (!variant || typeof variant !== "object") { variantDifferences++; continue; }
+          const old = currentMap.get(stableVariantKey(variant));
+          if (!old) { variantDifferences++; continue; }
+          for (const key of ["ram", "storage", "color", "price_usd", "price_nio", "availability", "configuration_availability"]) {
+            if (Object.prototype.hasOwnProperty.call(variant, key) && String(variant[key] ?? "") !== String(old[key] ?? "")) variantDifferences++;
+          }
+        }
+        if (fields.variants.length !== (Array.isArray(currentVariants) ? currentVariants.length : 0)) variantDifferences++;
+        lines.push(variantDifferences
+          ? "Variantes: " + variantDifferences + " diferencia(s) de configuración o precio; las fotos existentes se preservan"
+          : "Variantes: sin diferencias detectadas en los campos comparables");
+      }
+    }
+    return lines;
+  }
+
   function renderImportPreview() {
     if (!importPreview) return;
     const matched = importPlan.filter(item => item.product && !item.error).length;
@@ -657,15 +738,19 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       return;
     }
     importPreview.innerHTML = `<div class="provider-import-table-wrap"><table class="provider-import-table">
-      <thead><tr><th>Fila</th><th>Producto reconocido</th><th>Datos del proveedor</th><th>Resultado</th></tr></thead>
+      <thead><tr><th>Fila</th><th>Producto reconocido</th><th>Datos del proveedor</th><th>Diferencias detectadas</th><th>Resultado</th></tr></thead>
       <tbody>${importPlan.map(item => {
         const name = item.product?.name || firstValue(item.row || {}, ["name", "product_name", "nombre", "product", "producto"]) || "Producto no identificado";
         const provider = item.provider || {};
         const sourcePrice = provider.provider_price_usd != null ? money(provider.provider_price_usd, "USD")
           : provider.provider_price_nio != null ? money(provider.provider_price_nio, "NIO") : "Sin precio";
         const sourceAvailability = provider.provider_availability ? availabilityLabel(provider.provider_availability) : "Sin estado";
+        const differences = importDifferenceSummary(item);
+        const differenceMarkup = differences.length
+          ? '<ul class="provider-diff-list">' + differences.map(line => '<li>' + escapeHTML(line) + '</li>').join("") + '</ul>'
+          : '<small class="provider-diff-empty">' + (item.error ? "No se puede comparar esta fila." : "El archivo no incluye campos comparables.") + '</small>';
         const result = item.error || (item.product ? "Listo para aplicar" : "Omitido");
-        return `<tr><td>${item.index}</td><td>${escapeHTML(name)}<small>${item.product ? escapeHTML(item.product.catalog_type === "perfumery" ? "JB Parfums" : "JB TECH") : ""}</small></td><td>${escapeHTML(sourcePrice)}<small>${escapeHTML(sourceAvailability)}</small></td><td><span class="${item.error ? "provider-import-error" : "provider-import-ready"}">${escapeHTML(result)}</span></td></tr>`;
+        return `<tr><td>${item.index}</td><td>${escapeHTML(name)}<small>${item.product ? escapeHTML(item.product.catalog_type === "perfumery" ? "JB Parfums" : "JB TECH") : ""}</small></td><td>${escapeHTML(sourcePrice)}<small>${escapeHTML(sourceAvailability)}</small></td><td>${differenceMarkup}</td><td><span class="${item.error ? "provider-import-error" : "provider-import-ready"}">${escapeHTML(result)}</span></td></tr>`;
       }).join("")}</tbody></table></div>`;
     if (importButton) importButton.disabled = matched === 0;
   }
