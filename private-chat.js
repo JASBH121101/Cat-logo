@@ -285,7 +285,8 @@ $("#private-chat-support-choice").addEventListener("click", () => void submitRou
 $("#private-chat-buy-choice").addEventListener("click", () => void submitRoute("buy"));
 $("#private-chat-consent-yes").addEventListener("click", () => void submitConsent("yes"));
 $("#private-chat-consent-no").addEventListener("click", () => void submitConsent("no"));
-$("#private-chat-change-mind").addEventListener("click", () => void submitConsent("yes"));\ninitializePrivateChatTheme();
+$("#private-chat-change-mind").addEventListener("click", () => void submitConsent("yes"));
+initializePrivateChatTheme();
 composer.addEventListener("submit", event => void submitMessage(event));
 input.addEventListener("input", () => {
   input.style.height = "auto";
