@@ -194,3 +194,56 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
 .private-chat-admin-reply-form[hidden]{
   display:none!important;
 }
+
+
+/* Ajuste definitivo: el historial no debe estirar el panel ni dejar un lienzo vacío. */
+.private-chat-admin-actions .button[hidden],
+.private-chat-admin-thread[hidden],
+.private-chat-admin-selected[hidden],
+.private-chat-admin-empty[hidden],
+.private-chat-admin-reply-form[hidden] { display:none!important; }
+
+.private-chat-admin-layout.has-selection { align-items:start; }
+.private-chat-admin-layout.has-selection .private-chat-admin-thread {
+  align-self:start;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+.private-chat-admin-layout.has-selection .private-chat-admin-selected {
+  flex:0 0 auto;
+  min-height:0;
+}
+.private-chat-admin-layout.has-selection .private-chat-admin-messages {
+  flex:0 1 auto;
+  height:auto;
+  min-height:0;
+  max-height:320px;
+  overflow-y:auto;
+}
+@media(max-width:900px) {
+  .private-chat-admin-layout.has-selection { align-items:start; }
+  .private-chat-admin-layout.has-selection .private-chat-admin-thread {
+    display:flex;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+  .private-chat-admin-layout.has-selection .private-chat-admin-messages {
+    flex:0 1 auto;
+    max-height:300px;
+  }
+}
+@media(max-width:560px) {
+  .private-chat-admin-layout.has-selection .private-chat-admin-thread {
+    min-height:0!important;
+  }
+  .private-chat-admin-layout.has-selection .private-chat-admin-messages {
+    min-height:0!important;
+    max-height:260px;
+    padding:9px;
+  }
+  .private-chat-admin-layout.has-selection .private-chat-admin-message {
+    max-width:100%;
+  }
+}
