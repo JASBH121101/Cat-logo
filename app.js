@@ -645,7 +645,7 @@ function updateProductContactLinks(product, variant = null, fallbackColor = null
   const buyIcon = $("#dialog-buy-icon");
   const financingChoice = $("#dialog-financing-choice");
   const creditCardChoice = $("#dialog-credit-card-choice");
-  const rawAvailability = variant?.availability ?? fallbackColor?.type ?? product.availability;
+  const rawAvailability = variant ? effectiveVariantAvailability(variant) : (fallbackColor?.type ?? product.availability);
   const availability = normalizeVariantAvailability(rawAvailability);
   if (buyLink) buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
   if (buyLabel) {
