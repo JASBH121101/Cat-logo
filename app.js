@@ -671,23 +671,23 @@ function buildAIProductPrompt(product, variant = null, fallbackColor = null, pay
   return parts.join(" ").slice(0, 590);
 }
 
-function openAIAdvisorForContact(message, fallbackMessage = "") {
+function openAIAdvisorForContact(message) {
   if (typeof window.openJBAiAdvisor === "function") {
     window.openJBAiAdvisor(message);
     return;
   }
   const launcher = document.querySelector(".jb-ai-launcher");
-  if (launcher) {
-    launcher.click();
-    const input = document.querySelector("#jb-ai-input");
-    if (input) {
-      input.value = message;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.focus();
-    }
+  const input = document.querySelector("#jb-ai-input");
+  const form = document.querySelector(".jb-ai-form");
+  if (launcher && input && form) {
+    const panel = document.querySelector("#jb-ai-panel");
+    if (panel?.hidden) launcher.click();
+    input.value = message;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     return;
   }
-  window.alert("El asesor IA no está disponible en este momento. Podés cerrar este aviso y elegir WhatsApp.");
+  window.alert("El asesor IA no está disponible en este momento. Podés continuar por WhatsApp.");
 }
 
 let activeContactContext = null;
