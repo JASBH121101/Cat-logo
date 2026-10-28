@@ -112,3 +112,23 @@ test("technology and perfume catalog buttons launch temporary chat rather than r
   assert.match(perfumery, /catalogType: "perfumery"/);
   assert.match(perfumery, /window\.location\.assign\(data\.inviteUrl\)/);
 });
+
+
+test("admin inbox has Pendientes, Tomados and Finalizados filters with a mobile back action", () => {
+  assert.match(adminHtml, /data-private-chat-filter="pending"/);
+  assert.match(adminHtml, /data-private-chat-filter="taken"/);
+  assert.match(adminHtml, /data-private-chat-filter="finalized"/);
+  assert.match(adminHtml, /id="private-chat-admin-back"/);
+  assert.match(adminJs, /function privateChatConversationBucket\(item, now = Date\.now\(\)\)/);
+  assert.match(adminJs, /privateChatActiveFilter = "pending"/);
+  assert.match(adminJs, /private_chat_admin_finalize_expired/);
+  assert.match(adminCss, /\.private-chat-admin-panel \[hidden\].*display:none!important/s);
+  assert.match(adminCss, /has-selected \.private-chat-admin-inbox/);
+});
+
+test("advisor expiry is tracked from claim and timed-out threads become read-only history", () => {
+  assert.match(adminJs, /const fullClaimWindow = claimedAt \? claimedAt \+ 30 \* 60_000 : 0/);
+  assert.match(adminJs, /El historial se conserva como máximo 7 días/);
+  assert.match(adminJs, /if \(action === "claim"\) privateChatActiveFilter = "taken"/);
+  assert.match(adminJs, /if \(action === "close"\) privateChatActiveFilter = "finalized"/);
+});
