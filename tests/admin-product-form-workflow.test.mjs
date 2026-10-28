@@ -8,6 +8,8 @@ const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261027141445_allow_incomplete_unpublished_products.sql", import.meta.url), "utf8");
 const colorApi = readFileSync(new URL("../functions/api/color-assistant.js", import.meta.url), "utf8");
 const theme = readFileSync(new URL("../theme-ui.css", import.meta.url), "utf8");
+const provider = readFileSync(new URL("../admin-provider.js", import.meta.url), "utf8");
+const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.url), "utf8");
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
   assert.match(admin, /if \(!name\) throw new Error\("Escribí el nombre del producto\."\);/);
@@ -141,4 +143,29 @@ test("GitHub Pages admin origin is allowed for the color AI endpoint and add-col
   assert.match(colorApi, /https:\/\/jasbh121101\.github\.io/);
   assert.match(css, /body\.admin-body #base-color-manager \.variant-base-group \.variant-color-section > button\[data-add-group-color\][\s\S]*?display: inline-flex !important/);
   assert.match(html, /theme-ui\.css\?v=20261028-color-ai-cors-button2/);
+});
+
+
+test("provider review identifies perfume details and compares current published prices", () => {
+  assert.match(html, /id="provider-review-product-details"/);
+  assert.match(html, /id="provider-review-price-comparison"/);
+  assert.match(provider, /function renderReviewProductDetails\(product\)/);
+  assert.match(provider, /detail\.audience/);
+  assert.match(provider, /detail\.concentration/);
+  assert.match(provider, /detail\.volume_ml/);
+  assert.match(provider, /detail\.family/);
+  assert.match(provider, /product\.price_usd/);
+  assert.match(provider, /product\.price_nio/);
+});
+
+test("provider review syncs both catalog prices only when both supplier prices are provided", () => {
+  assert.match(provider, /const hasBothProviderPrices = priceUSD !== null && priceNIO !== null/);
+  assert.match(provider, /from\("products"\)\.update\(\{ price_usd: priceUSD, price_nio: priceNIO \}\)/);
+  assert.match(provider, /\.eq\("id", product\.id\)/);
+  assert.match(provider, /\.eq\("catalog_type", product\.catalog_type\)/);
+  assert.match(provider, /el catálogo no se modificó/);
+  assert.match(provider, /coincide con el publicado; no fue necesario modificarlo/);
+  assert.match(provider, /jb-catalog-provider-updated/);
+  assert.match(providerCss, /provider-review-current-card/);
+  assert.match(providerCss, /@media\(max-width:480px\)/);
 });
