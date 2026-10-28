@@ -9,7 +9,7 @@ const categoryDefinitions = [
   { key: "disenador", section: $("#category-disenador"), grid: $("#product-grid-disenador"), count: $("#category-disenador-count"), empty: $("#empty-category-disenador") },
   { key: "otras", section: $("#category-otras"), grid: $("#product-grid-otras"), count: $("#category-otras-count"), empty: null, optional: true }
 ];
-const productGrids = categoryDefinitions.map(category => category.grid).filter(Boolean);
+const productGrids = [...categoryDefinitions.map(category => category.grid), $("#perfume-exclusive-grid"), $("#perfume-limited-edition-grid")].filter(Boolean);
 const statusNode = $("#catalog-status");
 const emptyNode = $("#empty-results");
 const searchInput = $("#perfume-search-input");
@@ -912,7 +912,7 @@ clearAllFiltersButton?.addEventListener("click", () => {
   renderProducts();
 });
 
-document.querySelectorAll(".perfume-category-grid").forEach(productGrid => {
+document.querySelectorAll(".perfume-category-grid, .perfume-highlight-grid").forEach(productGrid => {
   productGrid.addEventListener("click", event => {
     const target = event.target instanceof Element ? event.target : null;
     const link = target?.closest("a[data-details]");
