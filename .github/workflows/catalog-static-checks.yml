@@ -29,6 +29,8 @@ jobs:
           node --input-type=module --check < functions/api/download/apk.js
           node --input-type=module --check < functions/api/assistant.js
           node --input-type=module --check < functions/api/color-assistant.js
+          node --input-type=module --check < functions/api/private-chat.js
+          node --input-type=module --check < functions/api/catalog-location.js
       - name: Test Cloudflare Pages share endpoint
         shell: bash
         run: |
@@ -37,6 +39,7 @@ jobs:
           node --test tests/public-commercial-readiness.test.mjs
           node --test tests/admin-save-regression.test.mjs
           node --test tests/admin-product-form-workflow.test.mjs
+          node --test tests/limited-edition-sections.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-download.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-assistant.test.mjs
@@ -44,6 +47,7 @@ jobs:
           node --test tests/admin-color-assistant.test.mjs
           node --test tests/admin-mobile-menu-stability.test.mjs
           node --test tests/admin-provider-price-sync.test.mjs
+          node --test tests/provider-review-variants.test.mjs
           node --test tests/perfume-card-layout.test.mjs
           node --test tests/commercial-description-layout.test.mjs
           node --test tests/catalog-contact-channels.test.mjs
