@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -31,6 +33,17 @@ jobs:
           node --input-type=module --check < functions/api/color-assistant.js
           node --input-type=module --check < functions/api/private-chat.js
           node --input-type=module --check < functions/api/catalog-location.js
+      - name: Guard cache keys when browser assets change
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_SHA:-}" ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+          python tests/cache-key-change-guard.py "$BASE_SHA" "$GITHUB_SHA"
+
       - name: Test Cloudflare Pages share endpoint
         shell: bash
         run: |
