@@ -29,6 +29,14 @@ test("subcategory is combined with the existing catalog filters", () => {
   assert.match(app, /selectedSubcategory = ""/);
 });
 
+test("Consolas filter includes products kept in Gaming with Consolas as their subcategory", () => {
+  assert.match(app, /function matchesSelectedCatalogCategory\(product, category = selectedCategory\)/);
+  assert.match(app, /return selected === "consolas" && normalizeCatalogSearch\(product\?\.subcategory\) === selected/);
+  assert.match(app, /products\.filter\(product => matchesSelectedCatalogCategory\(product\)\)/);
+  assert.match(app, /const categoryMatches = matchesSelectedCatalogCategory\(product\)/);
+  assert.match(app, /const CATALOG_CATEGORY_ORDER = \[[\s\S]*?"Gaming",[\s\S]*?"Consolas"/);
+});
+
 test("subcategory selector has responsive styles and uses theme variables", () => {
   assert.match(css, /body\.technology-catalog \.subcategory-filter-bar/);
   assert.match(css, /var\(--tech-card-soft\)/);
