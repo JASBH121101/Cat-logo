@@ -10833,3 +10833,35 @@ body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-se
   margin: 12px 0 4px !important;
   pointer-events: auto !important;
 }
+
+
+/* FIX 2026-10-28: el drawer móvil debe cubrir TODO el viewport.
+   No dejar la navegación superior visible detrás cuando el usuario abre el menú. */
+@media (max-width: 760px) {
+  body.admin-body.admin-dashboard-active .admin-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    z-index: 1301 !important;
+    padding-top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.admin-body.admin-dashboard-active .admin-sidebar-backdrop:not([hidden]) {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 1300 !important;
+  }
+
+  body.admin-body.admin-dashboard-active .site-header.admin-header {
+    z-index: 1200 !important;
+  }
+}
