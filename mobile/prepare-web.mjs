@@ -858,8 +858,15 @@ const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
-if (!builtAdminHtml.includes('admin.js?v=20261028-reviewed-sections1')) {
-  throw new Error("The APK must load the cache-busted admin script containing the current color-knowledge updates.");
+if (!builtAdminHtml.includes('admin.js?v=20261028-smart-duplicate-detector1')) {
+  throw new Error("The APK must load the cache-busted admin script containing the smart duplicate detector.");
+}
+if (!builtAdminHtml.includes('admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1')) {
+  throw new Error("The APK must load the smart duplicate detector's responsive stylesheet.");
+}
+if (!builtAdminScript.includes("function renderProductDuplicateSuggestions()")
+  || !builtAdminScript.includes("normalizeDuplicateText(product.brand) !== brandKey")) {
+  throw new Error("The APK admin script is missing brand-scoped smart duplicate detection.");
 }
 if (!builtAdminHtml.includes('theme-ui.css?v=20261028-mobile-drawer-overlay2')) {
   throw new Error("The APK admin page is missing the latest mobile sidebar stability styles.");
