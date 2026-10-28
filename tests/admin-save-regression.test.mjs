@@ -24,7 +24,8 @@ test("provider review form uses JavaScript-controlled submission instead of dial
   assert.match(providerJs, /reviewSaveButton\?\.addEventListener\("click", \(\) => \{ void saveReview\(\); \}\)/);
   assert.match(providerJs, /reviewForm\?\.addEventListener\("submit", event => \{\s*event\.preventDefault\(\);\s*void saveReview\(event\);\s*\}\)/);
   assert.match(adminHtml, /type="button" id="provider-review-save"/);
-  assert.match(providerJs, /event\.preventDefault\(\);[\s\S]*?supabase\.from\("product_provider_status"\)\.upsert/);
+  assert.match(providerJs, /async function saveReview\(event\)[\s\S]*?event\?\.preventDefault\?\.\(\)/);
+  assert.match(providerJs, /supabase\.from\("product_provider_status"\)\.upsert/);
 });
 
 
