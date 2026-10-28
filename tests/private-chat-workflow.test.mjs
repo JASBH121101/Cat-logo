@@ -47,15 +47,15 @@ test("database workflow restricts direct table access and protects admin actions
 });
 
 test("purchase consent is shown once and private chat supports the selected light/dark theme", () => {
-  assert.match(duplicateNoticeFix, /delete from public\\.private_chat_messages/i);
-  assert.match(duplicateNoticeFix, /create or replace function public\\.private_chat_choose_route/i);
-  assert.doesNotMatch(duplicateNoticeFix, /insert into public\\.private_chat_messages \\(conversation_id, sender_type, content\\)\\s*values \\(v_row\\.id, 'assistant', v_notice\\)/i);
-  assert.match(customerJs, /threadPanel\\.hidden = routeNotChosen \\|\\| isWaitingConsent/);
+  assert.match(duplicateNoticeFix, /delete from public\.private_chat_messages/i);
+  assert.match(duplicateNoticeFix, /create or replace function public\.private_chat_choose_route/i);
+  assert.doesNotMatch(duplicateNoticeFix, /insert into public\.private_chat_messages \(conversation_id, sender_type, content\)\s*values \(v_row\.id, 'assistant', v_notice\)/i);
+  assert.match(customerJs, /threadPanel\.hidden = routeNotChosen \|\| isWaitingConsent/);
   assert.match(customerHtml, /id="private-chat-theme-toggle"/);
   assert.match(customerJs, /ct-catalog-theme/);
-  assert.match(readFileSync(new URL("../private-chat.css", import.meta.url), "utf8"), /:root\\[data-theme="dark"\\]/);
-  assert.match(adminCss, /#admin-section-messages \\[hidden\\]\\{display:none!important\\}/);
-  assert.match(adminCss, /html\\[data-theme="dark"\\] body\\.admin-body #admin-section-messages/);
+  assert.match(readFileSync(new URL("../private-chat.css", import.meta.url), "utf8"), /:root\[data-theme="dark"\]/);
+  assert.match(adminCss, /#admin-section-messages \[hidden\]\{display:none!important\}/);
+  assert.match(adminCss, /html\[data-theme="dark"\] body\.admin-body #admin-section-messages/);
 });
 
 test("identity detection fix requires a digit for cédula/passport-like values", () => {
