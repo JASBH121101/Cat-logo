@@ -106,7 +106,7 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
 test("perfume hero caption gradient stays subtle and title remains readable", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const perfumeCss = readFileSync("perfumeria.css", "utf8");
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-limited-edition-icons1/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-compact-detail1/);
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);
