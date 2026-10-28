@@ -289,6 +289,69 @@ begin
 end;
 $function$;
 
+
+-- Preserve the existing 30-minute window for conversations already claimed
+-- before this migration, while allowing a later confirmed purchase extension.
+update public.private_chat_conversations
+   set session_expires_at = greatest(
+         coalesce(session_expires_at, '-infinity'::timestamptz),
+         claimed_at + interval '30 minutes'
+       ),
+       updated_at = now()
+ where status = 'advisor_active'
+   and claimed_at is not null
+   and (session_expires_at is null or session_expires_at < claimed_at + interval '30 minutes');
+
+-- The customer-facing 10-minute window revokes access; it does not erase the
+-- conversation immediately. The existing policy retains history up to 7 days.
+-- The cron job calls this function once per minute.
+create or replace function public.cleanup_private_chats()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $function$
+declare
+  finalized_count integer := 0;
+  deleted_count integer := 0;
+begin
+  update public.private_chat_conversations c
+     set status = 'closed',
+         session_token_hash = null,
+         invite_token_hash = null,
+         session_expires_at = case
+           when c.session_expires_at is null or c.session_expires_at > now() then now()
+           else c.session_expires_at
+         end,
+         delete_after = null,
+         updated_at = now(),
+         last_message_at = now()
+   where (
+       c.status = 'declined_pending_delete'
+       and c.delete_after is not null
+       and c.delete_after <= now()
+     )
+     or (
+       c.status = 'advisor_active'
+       and greatest(
+         coalesce(c.session_expires_at, '-infinity'::timestamptz),
+         coalesce(c.claimed_at + interval '30 minutes', '-infinity'::timestamptz)
+       ) <= now()
+     )
+     or (
+       c.status in ('pending_consent', 'pending_advisor')
+       and coalesce(c.session_expires_at, c.invite_expires_at) <= now()
+     );
+  get diagnostics finalized_count = row_count;
+
+  delete from public.private_chat_conversations
+  where created_at <= now() - interval '7 days';
+  get diagnostics deleted_count = row_count;
+
+  return finalized_count + deleted_count;
+end;
+$function$;
+
 revoke all on function public.private_chat_admin_finalize_expired() from public, anon;
 grant execute on function public.private_chat_admin_finalize_expired() to authenticated;
 
