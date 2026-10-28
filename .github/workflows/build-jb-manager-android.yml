@@ -283,8 +283,8 @@ jobs:
           echo "Shared AI color knowledge, manufacturer aliases, exact lookups, and photo endpoint are present."
 
           # The product detail must package the same final gallery fix as the public source.
-          grep -Fq 'technology-visual-refresh.css?v=20261027-audit-cascade1' mobile/www/tecnologia/index.html
-          grep -Fq 'app.js?v=20261027-audit-cascade1' mobile/www/tecnologia/index.html
+          grep -Fq 'technology-visual-refresh.css?v=20261028-product-detail-header1' mobile/www/tecnologia/index.html
+          grep -Fq 'app.js?v=20261028-public-customer-flows1' mobile/www/tecnologia/index.html
           grep -Fq 'perfumeria.css?v=20261027-audit-cascade1' mobile/www/perfumeria/index.html
           ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
           ! grep -Fq 'Explorar perfumería' mobile/www/perfumeria/index.html
