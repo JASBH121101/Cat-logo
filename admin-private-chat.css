@@ -121,3 +121,12 @@ html[data-theme="dark"] .private-chat-admin-message.is-assistant { border-color:
  .private-chat-admin-actions { position:static!important; flex-wrap:wrap; }
  .private-chat-admin-messages { min-height:200px; max-height:42vh; overflow-y:auto; }
 }
+
+html[data-theme="light"] .private-chat-admin-thread h3,
+html[data-theme="light"] .private-chat-admin-thread strong,
+html[data-theme="light"] .private-chat-admin-thread .private-chat-admin-product-link,
+html[data-theme="light"] .private-chat-admin-thread .eyebrow { color:#17213a; }
+html[data-theme="light"] .private-chat-admin-thread .eyebrow { color:#4b56bb; }
+html[data-theme="light"] .private-chat-admin-actions { background:#ffffff; border-color:#dbe3f0; }
+html[data-theme="dark"] .private-chat-admin-thread h3,
+html[data-theme="dark"] .private-chat-admin-thread strong { color:#e8eeff; }
