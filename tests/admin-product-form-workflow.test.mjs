@@ -59,7 +59,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261028-smart-duplicate-detector1/);
+  assert.match(html, /admin\.js\?v=20261028-limited-edition-sections1/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
 
@@ -80,7 +80,7 @@ test("smart duplicate suggestions compare only the same brand and catalog, and r
   assert.match(admin, /scheduleProductDuplicateCheck\(\{ immediate: true \}\)/);
   assert.match(html, /id="product-duplicate-panel"/);
   assert.match(html, /id="product-duplicate-results"/);
-  assert.match(html, /admin-duplicate-detector\.css\?v=20261028-smart-duplicate-detector1/);
+  assert.match(html, /admin-duplicate-detector\.css\?v=20261028-limited-edition-sections1/);
   assert.match(duplicateCss, /@media \(max-width: 560px\)/);
   assert.match(duplicateCss, /\.product-duplicate-result/);
 });
@@ -155,7 +155,7 @@ test("configuration color action stays visible and the empty color hint cannot c
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-section > \.variant-add-color \{[\s\S]*?display: inline-flex !important/);
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list \{[\s\S]*?grid-auto-rows: auto !important/);
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list > \.variants-empty-hint \{[\s\S]*?grid-row: auto !important/);
-  assert.match(html, /theme-ui\.css\?v=20261028-mobile-drawer-overlay2/);
+  assert.match(html, /theme-ui\.css\?v=20261028-limited-edition-sections1/);
 });
 
 
@@ -164,7 +164,7 @@ test("GitHub Pages admin origin is allowed for the color AI endpoint and add-col
   const css = readFileSync("theme-ui.css", "utf8");
   assert.match(colorApi, /https:\/\/jasbh121101\.github\.io/);
   assert.match(css, /body\.admin-body #base-color-manager \.variant-base-group \.variant-color-section > button\[data-add-group-color\][\s\S]*?display: inline-flex !important/);
-  assert.match(html, /theme-ui\.css\?v=20261028-mobile-drawer-overlay2/);
+  assert.match(html, /theme-ui\.css\?v=20261028-limited-edition-sections1/);
 });
 
 
