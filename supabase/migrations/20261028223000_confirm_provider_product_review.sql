@@ -50,7 +50,7 @@ BEGIN
   END IF;
 
   v_provider_availability := p_review_payload->>'provider_availability';
-  IF v_provider_availability NOT IN ('available', 'on_order', 'out_of_stock') THEN
+  IF v_provider_availability IS NULL OR v_provider_availability NOT IN ('available', 'on_order', 'out_of_stock') THEN
     RAISE EXCEPTION USING errcode='22023', message='provider_availability_must_be_confirmed';
   END IF;
 
@@ -70,10 +70,19 @@ BEGIN
   IF EXISTS (
     SELECT 1
       FROM jsonb_array_elements(v_snapshot) AS g(element)
-     WHERE coalesce(g.element->>'provider_availability', 'unknown')
-       NOT IN ('available', 'on_order', 'out_of_stock')
+     WHERE nullif(g.element->>'config_key', '') IS NULL
+        OR coalesce(g.element->>'provider_availability', 'unknown')
+          NOT IN ('available', 'on_order', 'out_of_stock')
   ) THEN
     RAISE EXCEPTION USING errcode='22023', message='provider_configuration_availability_must_be_confirmed';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+      FROM jsonb_array_elements(v_snapshot) AS g(element)
+     WHERE g.element ? 'colors'
+       AND jsonb_typeof(g.element->'colors') <> 'array'
+  ) THEN
+    RAISE EXCEPTION USING errcode='22023', message='provider_configuration_colors_must_be_array';
   END IF;
   IF EXISTS (
     SELECT 1
@@ -81,6 +90,7 @@ BEGIN
       CROSS JOIN LATERAL jsonb_array_elements(coalesce(g.element->'colors', '[]'::jsonb)) AS c(element)
      WHERE coalesce(c.element->>'provider_availability', 'unknown')
        NOT IN ('available', 'on_order', 'out_of_stock')
+        OR nullif(c.element->>'color', '') IS NULL
   ) THEN
     RAISE EXCEPTION USING errcode='22023', message='provider_color_availability_must_be_confirmed';
   END IF;
@@ -134,7 +144,10 @@ BEGIN
       v_config_key :=
         regexp_replace(lower(coalesce(v_variant->>'ram', '')), '[^a-z0-9]+', '', 'g')
         || '|' ||
-        regexp_replace(lower(coalesce(v_variant->>'storage', v_variant->>'capacity', '')), '[^a-z0-9]+', '', 'g');
+        regexp_replace(lower(coalesce(v_variant->>'storage', v_variant->>'capacity',
+          CASE WHEN v_variant ? 'storage_value'
+            THEN coalesce(v_variant->>'storage_value', '') || ' ' || coalesce(v_variant->>'storage_unit', 'GB')
+            ELSE '' END, '')), '[^a-z0-9]+', '', 'g');
 
       SELECT element INTO v_group
         FROM jsonb_array_elements(v_snapshot) AS g(element)
