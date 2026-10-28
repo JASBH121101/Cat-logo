@@ -19,8 +19,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /section-tag-badge--performance/);
   assert.match(html, /section-tag-badge--quality-price/);
   assert.match(html, /section-tag-badge--gaming/);
-  assert.match(html, /Evaluamos el conjunto: materiales y construcción, procesador y rendimiento, RAM, almacenamiento, cámaras y otras prestaciones, además de la marca y el precio frente a equipos comparables/);
-  assert.match(html, /Un precio alto no basta; buscamos que la calidad y las características justifiquen su posicionamiento/);
+  assert.match(html, /Se consideran exclusivos por su marca, precio, materiales de construcción y componentes, como el procesador, la RAM, el almacenamiento y las cámaras/);
   assert.match(html, /Modelos capaces de competir con la gama alta/);
   assert.match(html, /Modelos que destacan por el equilibrio entre su precio/);
   assert.match(html, /Los monstruos del gaming: equipos con procesadores potentes/);
