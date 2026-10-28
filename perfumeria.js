@@ -291,6 +291,18 @@ function buildPerfumeAIPrompt(product, paymentType = "") {
   return parts.join(" ").slice(0, 590);
 }
 
+function openPerfumePrivateChat(product, paymentType = "product") {
+  const config = window.CATALOG_CONFIG || {};
+  const base = String(config.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
+  const url = new URL(base + "/mensajes/");
+  url.searchParams.set("catalog_type", "perfumery");
+  url.searchParams.set("product_name", String(product.name || "Consulta general").slice(0, 160));
+  url.searchParams.set("product_url", productLink(product));
+  url.searchParams.set("payment_topic", paymentType || "product");
+  if (product.id) url.searchParams.set("product_id", String(product.id));
+  window.location.assign(url.href);
+}
+
 function openPerfumeAIContact(message) {
   if (typeof window.openJBAiAdvisor === "function") {
     window.openJBAiAdvisor(message);
@@ -1039,14 +1051,15 @@ dialogContent.addEventListener("change", event => {
 
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
-  const aiContactButton = target?.closest("#perfume-jb-contact, #perfume-payment-jb");
-  if (aiContactButton) {
+  const privateChatButton = target?.closest("#perfume-jb-contact, #perfume-payment-jb");
+  if (privateChatButton) {
     event.preventDefault();
     const product = perfumes.find(item => String(item.id) === String(dialogContent.dataset.productId));
-    const paymentType = aiContactButton.id === "perfume-payment-jb"
-      ? (dialogContent.querySelector("#perfume-payment-type")?.value || "")
-      : "";
-    if (product) openPerfumeAIContact(buildPerfumeAIPrompt(product, paymentType));
+    const paymentType = privateChatButton.id === "perfume-payment-jb"
+      ? (dialogContent.querySelector("#perfume-payment-type")?.value || "product")
+      : "product";
+    if (product) openPerfumePrivateChat(product, paymentType);
+    else window.alert("No se pudo identificar la fragancia. Cerrá esta ficha e intentá de nuevo.");
     return;
   }
   const galleryStep = target?.closest("[data-gallery-step]");

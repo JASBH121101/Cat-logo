@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in admin.js admin-provider.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js; do
+          for file in admin.js admin-provider.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js mensajes/mensajes.js; do
             echo "Checking $file"
             node --check "$file"
           done
@@ -29,6 +29,34 @@ jobs:
           node --input-type=module --check < functions/api/download/apk.js
           node --input-type=module --check < functions/api/assistant.js
           node --input-type=module --check < functions/api/color-assistant.js
+          node --input-type=module --check < functions/api/private-chat.js
+      - name: Smoke-test deployed private chat Edge Function
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+
+          const config = readFileSync("config.js", "utf8");
+          const key = config.match(/supabaseAnonKey:\s*"([^"]+)"/)?.[1];
+          assert.ok(key, "public Supabase key must exist in config.js");
+          const endpoint = "https://uwqnoadelnnplcvqqlyz.supabase.co/functions/v1/private-chat";
+          const origin = "https://jb-collections.pages.dev";
+          async function request(body) {
+            return fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Origin": origin, "apikey": key },
+              body: JSON.stringify(body)
+            });
+          }
+          const unknown = await request({ action: "ci_invalid_action" });
+          assert.equal(unknown.status, 400, "unknown action should be rejected without creating a record");
+          assert.equal(unknown.headers.get("access-control-allow-origin"), origin);
+          const admin = await request({ action: "admin_list" });
+          assert.equal(admin.status, 403, "admin inbox must reject anonymous callers");
+          console.log("Private chat endpoint responded, enforced CORS, and rejected anonymous admin access.");
+          NODE
       - name: Test Cloudflare Pages share endpoint
         shell: bash
         run: |
@@ -46,6 +74,7 @@ jobs:
           node --test tests/admin-provider-price-sync.test.mjs
           node --test tests/perfume-card-layout.test.mjs
           node --test tests/catalog-contact-channels.test.mjs
+          node --test tests/private-chat-workflow.test.mjs
           node --test tests/product-tag-formatting.test.mjs
           node --test tests/asset-cache-contract.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs

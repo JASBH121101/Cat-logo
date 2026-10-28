@@ -6021,3 +6021,392 @@ resetCommissionForm();
     if (event.key === "Escape" && !menu.hidden) { closeMenu(); toggle.focus(); }
   });
 })();
+
+
+/* JB Collections private customer messaging: manual responses, token-scoped threads. */
+(() => {
+  const get = (selector) => document.querySelector(selector);
+  const panel = get("#admin-section-messages");
+  if (!panel) return;
+  const apiBase = String(CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
+  const apiUrl = apiBase + "/api/private-chat";
+  const listNode = get("#private-chat-admin-list");
+  const threadEmpty = get("#private-chat-thread-empty");
+  const threadView = get("#private-chat-thread-view");
+  const messagesNode = get("#private-chat-thread-messages");
+  const statusNode = get("#private-chat-admin-status");
+  const countNode = get("#private-chat-nav-count");
+  const notificationButton = get("#private-chat-notifications");
+  const sendButton = get("#private-chat-send");
+  const replyInput = get("#private-chat-reply");
+  let conversations = [];
+  let selectedConversationId = "";
+  let selectedConversation = null;
+  let selectedMessages = [];
+  let listLoading = false;
+  let threadLoading = false;
+  let notificationEnabled = false;
+  let notificationPrimed = false;
+  let previousLastMessageAt = new Map();
+  let previousStatusById = new Map();
+  let pollHandle = null;
+
+  function setStatus(message = "", error = false) {
+    if (!statusNode) return;
+    statusNode.textContent = message;
+    statusNode.dataset.state = error ? "error" : "info";
+  }
+  function getTopicLabel(topic) {
+    return ({ product:"Consulta de producto", financing:"Financiamiento", credit_card:"Tarjeta de crédito", other:"Otra consulta" })[topic] || "Consulta general";
+  }
+  function getStatusLabel(row) {
+    if (row.status === "pending_consent") return "Pendiente de consentimiento";
+    if (row.status === "pending_advisor") return "Pendiente de asesor";
+    if (row.status === "advisor_active") return "En atención";
+    if (row.status === "declined_pending_delete") return "Rechazada · borrado programado";
+    if (row.status === "closed") return "Cerrada";
+    return "Consulta";
+  }
+  function timeLabel(value) {
+    try { return value ? new Date(value).toLocaleString("es-NI",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}) : ""; }
+    catch { return ""; }
+  }
+  async function callPrivateChat(action, payload = {}) {
+    if (!supabase || !currentUser) throw new Error("Iniciá sesión como administrador para usar la mensajería.");
+    const sessionResult = await supabase.auth.getSession();
+    const token = sessionResult?.data?.session?.access_token || "";
+    if (!token) throw new Error("La sesión administrativa venció. Volvé a iniciar sesión.");
+    const response = await fetch(apiUrl,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      cache:"no-store",
+      body:JSON.stringify({action,...payload})
+    });
+    const data=await response.json().catch(()=>({}));
+    if (!response.ok) throw new Error(data.message || "No se pudo completar la acción de mensajería.");
+    return data;
+  }
+  function filteredConversations() {
+    const filter=get("#private-chat-filter")?.value || "active";
+    return conversations.filter(row=>{
+      if(filter==="pending") return row.status==="pending_advisor";
+      if(filter==="claimed") return row.status==="advisor_active";
+      if(filter==="consent") return row.status==="pending_consent";
+      if(filter==="active") return ["pending_advisor","advisor_active"].includes(row.status);
+      return true;
+    });
+  }
+  function renderConversationList() {
+    if(!listNode)return;
+    listNode.replaceChildren();
+    const rows=filteredConversations();
+    if(!rows.length){
+      const empty=document.createElement("p");
+      empty.className="admin-empty-state";
+      empty.textContent="No hay conversaciones en este filtro.";
+      listNode.appendChild(empty);
+    }
+    for(const row of rows){
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="private-chat-list-item"+(String(row.id)===selectedConversationId?" is-selected":"");
+      button.setAttribute("aria-pressed",String(String(row.id)===selectedConversationId));
+      const name=document.createElement("span");
+      name.className="private-chat-list-title";
+      name.textContent=row.product_name||"Consulta general";
+      const stamp=document.createElement("span");
+      stamp.className="private-chat-list-time";
+      stamp.textContent=timeLabel(row.last_message_at||row.created_at);
+      const preview=document.createElement("span");
+      preview.className="private-chat-list-preview";
+      preview.textContent=getTopicLabel(row.payment_topic)+" · "+(row.catalog_type==="perfumery"?"JB Parfums":row.catalog_type==="technology"?"JB TECH":"JB Collections");
+      const meta=document.createElement("span");
+      meta.className="private-chat-list-meta";
+      const pill=document.createElement("span");
+      pill.className="private-chat-state-pill"+(row.status==="advisor_active"?" is-active":row.status==="declined_pending_delete"?" is-declined":"");
+      pill.textContent=getStatusLabel(row);
+      meta.appendChild(pill);
+      if(row.status==="advisor_active" && row.claimed_by && String(row.claimed_by)!==String(currentUser?.id)){
+        const assigned=document.createElement("span");
+        assigned.className="private-chat-state-pill";
+        assigned.textContent="Otro asesor";
+        meta.appendChild(assigned);
+      }
+      button.append(name,stamp,preview,meta);
+      button.addEventListener("click",()=>void openConversation(String(row.id)));
+      listNode.appendChild(button);
+    }
+    if(countNode){
+      const count=conversations.filter(row=>row.status==="pending_advisor").length;
+      countNode.textContent=String(count);
+      countNode.hidden=count===0;
+    }
+    const subtitle=get("#private-chat-list-subtitle");
+    if(subtitle)subtitle.textContent=conversations.length+" conversación(es) visible(s)";
+  }
+  function renderThreadMessages(rows) {
+    if(!messagesNode)return;
+    messagesNode.replaceChildren();
+    for(const row of rows||[]){
+      const bubble=document.createElement("div");
+      bubble.className="private-chat-admin-message "+(row.sender_type==="customer"?"is-customer":row.sender_type==="advisor"?"is-advisor":"is-assistant");
+      const text=document.createElement("span");
+      text.textContent=String(row.content||"");
+      bubble.appendChild(text);
+      const time=document.createElement("time");
+      time.textContent=timeLabel(row.created_at);
+      bubble.appendChild(time);
+      messagesNode.appendChild(bubble);
+    }
+    messagesNode.scrollTop=messagesNode.scrollHeight;
+  }
+  function updateThreadActions() {
+    const row=selectedConversation;
+    const claim=get("#private-chat-claim");
+    const close=get("#private-chat-close");
+    const sendAllowed=Boolean(row && row.status==="advisor_active" && String(row.claimed_by||"")===String(currentUser?.id||""));
+    if(claim){
+      claim.hidden=Boolean(!row || row.status==="closed" || row.status==="declined_pending_delete");
+      claim.disabled=Boolean(row && row.status==="advisor_active" && String(row.claimed_by||"")!==String(currentUser?.id||""));
+      claim.textContent= row?.status==="advisor_active" && String(row.claimed_by||"")!==String(currentUser?.id||"") ? "Tomada por otro asesor" : row?.status==="advisor_active" ? "Conversación tomada" : "Tomar conversación";
+    }
+    if(close)close.hidden=!row || !["pending_advisor","advisor_active","pending_consent"].includes(row.status);
+    if(replyInput)replyInput.disabled=!sendAllowed;
+    if(sendButton)sendButton.disabled=!sendAllowed;
+    const draft=get("#private-chat-ai-draft");
+    if(draft)draft.disabled=!row || !["pending_advisor","advisor_active"].includes(row.status);
+    const state=get("#private-chat-thread-state");
+    if(state){
+      state.textContent=row?getStatusLabel(row):"Sin selección";
+      state.className="private-chat-state-pill"+(row?.status==="advisor_active"?" is-active":row?.status==="declined_pending_delete"?" is-declined":"");
+    }
+  }
+  async function openConversation(id) {
+    if(threadLoading)return;
+    threadLoading=true;
+    selectedConversationId=id;
+    renderConversationList();
+    try{
+      const data=await callPrivateChat("admin_read",{conversation_id:id});
+      selectedConversation=data.conversation;
+      selectedMessages=Array.isArray(data.messages)?data.messages:[];
+      threadEmpty.hidden=true;
+      threadView.hidden=false;
+      get("#private-chat-thread-catalog").textContent=selectedConversation.catalog_type==="perfumery"?"JB PARFUMS":selectedConversation.catalog_type==="technology"?"JB TECH":"JB COLLECTIONS";
+      get("#private-chat-thread-title").textContent=selectedConversation.product_name||"Consulta general";
+      get("#private-chat-thread-topic").textContent=getTopicLabel(selectedConversation.payment_topic);
+      get("#private-chat-thread-created").textContent="Iniciada "+timeLabel(selectedConversation.created_at);
+      const productLink=get("#private-chat-thread-product-link");
+      productLink.href=selectedConversation.product_url||apiBase+"/";
+      productLink.hidden=!selectedConversation.product_url;
+      renderThreadMessages(selectedMessages);
+      updateThreadActions();
+      setStatus("");
+    }catch(error){setStatus(error.message||"No se pudo abrir la conversación.",true);}
+    finally{threadLoading=false;}
+  }
+  async function loadConversations(silent=false) {
+    if(listLoading || !currentUser)return;
+    listLoading=true;
+    try{
+      const data=await callPrivateChat("admin_list");
+      const rows=Array.isArray(data.conversations)?data.conversations:[];
+      if(notificationPrimed){
+        for(const row of rows){
+          const id=String(row.id);
+          const previous=previousLastMessageAt.get(id);
+          const previousStatus=previousStatusById.get(id);
+          const notReadingThread = document.visibilityState==="hidden" || panel.classList.contains("hidden");
+          const newSupportRequest = row.status==="pending_advisor" && previousStatus!=="pending_advisor" && previousStatus!=="advisor_active";
+          const changedMessage = previous!==undefined && row.last_message_at && previous!==row.last_message_at;
+          if((newSupportRequest || changedMessage) && notificationEnabled && notReadingThread){
+            void notifyIfCustomerMessage(row,newSupportRequest);
+          }
+        }
+      }else notificationPrimed=true;
+      previousLastMessageAt=new Map(rows.map(row=>[String(row.id),String(row.last_message_at||"")]));
+      previousStatusById=new Map(rows.map(row=>[String(row.id),String(row.status||"")]));
+      conversations=rows;
+      renderConversationList();
+      if(selectedConversationId){
+        const stillThere=rows.some(row=>String(row.id)===selectedConversationId);
+        if(stillThere)await openConversation(selectedConversationId);
+        else{
+          selectedConversationId="";
+          selectedConversation=null;
+          threadEmpty.hidden=false;
+          threadView.hidden=true;
+        }
+      }
+      if(!silent)setStatus("");
+    }catch(error){if(!silent)setStatus(error.message||"No se pudieron cargar las conversaciones.",true);}
+    finally{listLoading=false;}
+  }
+  async function notifyIfCustomerMessage(row,newSupportRequest=false) {
+    try{
+      const data=await callPrivateChat("admin_read",{conversation_id:row.id});
+      const latest=(data.messages||[]).at(-1);
+      if(!latest)return;
+      if(newSupportRequest && row.status==="pending_advisor"){
+        const notification=new Notification("Nueva solicitud · JB Collections",{
+          body:(row.product_name||"Consulta general")+" · "+getTopicLabel(row.payment_topic)+" · Un cliente aceptó el aviso y solicita atención personal.",
+          tag:"jb-chat-request-"+row.id
+        });
+        notification.onclick=()=>{window.focus();showAdminSection("messages");void openConversation(String(row.id));notification.close();};
+        if(typeof navigator.vibrate==="function")navigator.vibrate([80,40,80]);
+        return;
+      }
+      if(latest.sender_type!=="customer")return;
+      if("Notification" in window && Notification.permission==="granted"){
+        const notification=new Notification("Nuevo mensaje · JB Collections",{body:(row.product_name||"Consulta general")+": "+String(latest.content||"").slice(0,110),tag:"jb-chat-"+row.id});
+        notification.onclick=()=>{window.focus();showAdminSection("messages");void openConversation(String(row.id));notification.close();};
+      }
+      if(typeof navigator.vibrate==="function")navigator.vibrate([80,40,80]);
+    }catch(error){console.info("No se pudo preparar la notificación de mensajería.",error?.message||"");}
+  }
+  async function enableNotifications() {
+    if(!("Notification" in window)){
+      setStatus("Este navegador no admite notificaciones web. La bandeja seguirá actualizándose mientras JB Manager esté abierto.",true);
+      return;
+    }
+    const permission=Notification.permission==="granted"? "granted" : await Notification.requestPermission();
+    notificationEnabled=permission==="granted";
+    notificationButton.textContent=notificationEnabled?"Avisos activados":"Activar avisos";
+    if(notificationEnabled){
+      setStatus("Avisos activados. Se recibirán mientras JB Manager permanezca abierto en este navegador.");
+      await loadConversations(true);
+    }else setStatus("No se concedió permiso para notificaciones. Podés cambiarlo desde los ajustes del navegador.",true);
+  }
+  async function createInvite(event) {
+    event.preventDefault();
+    const button=get("#private-chat-create-invite");
+    button.disabled=true;
+    try{
+      const catalog=get("#private-chat-invite-catalog").value;
+      const productName=String(get("#private-chat-invite-product").value||"").trim()||"Consulta general";
+      const productUrl=catalog==="technology"?apiBase+"/tecnologia/":catalog==="perfumery"?apiBase+"/perfumeria/":apiBase+"/";
+      const data=await callPrivateChat("create_invite",{
+        catalog_type:catalog,
+        product_name:productName,
+        product_url:productUrl,
+        payment_topic:get("#private-chat-invite-topic").value
+      });
+      const result=get("#private-chat-invite-result");
+      const link=get("#private-chat-invite-url");
+      link.value=data.invite_url||"";
+      result.hidden=false;
+      get("#private-chat-invite-expiry").textContent="Vence "+timeLabel(data.conversation?.invite_expires_at)+" y solo se puede abrir una vez.";
+      setStatus("Enlace temporal creado. Compartilo de forma privada con el cliente.");
+      if(conversations.some(row=>String(row.id)===String(data.conversation?.id))===false){
+        conversations.unshift(data.conversation);
+        renderConversationList();
+      }
+      get("#private-chat-invite-form").reset();
+    }catch(error){setStatus(error.message||"No se pudo crear el enlace temporal.",true);}
+    finally{button.disabled=false;}
+  }
+  async function copyInvite() {
+    const input=get("#private-chat-invite-url");
+    if(!input?.value)return;
+    try{
+      if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(input.value);
+      else{input.focus();input.select();document.execCommand("copy");}
+      const button=get("#private-chat-copy-invite");
+      const previous=button.textContent;
+      button.textContent="Copiado";
+      setStatus("Enlace copiado. Recordá que vence en 30 minutos y solo admite un uso.");
+      window.setTimeout(()=>button.textContent=previous,1800);
+    }catch{input.focus();input.select();setStatus("Seleccioná y copiá el enlace manualmente.");}
+  }
+  async function claimConversation() {
+    if(!selectedConversationId)return;
+    const button=get("#private-chat-claim");
+    button.disabled=true;
+    try{
+      const data=await callPrivateChat("claim",{conversation_id:selectedConversationId});
+      selectedConversation=data.conversation;
+      selectedMessages=data.messages||[];
+      renderThreadMessages(selectedMessages);
+      updateThreadActions();
+      await loadConversations(true);
+      setStatus("Conversación tomada. Las respuestas se enviarán manualmente.");
+    }catch(error){setStatus(error.message||"No se pudo tomar la conversación.",true);}
+    finally{button.disabled=false;updateThreadActions();}
+  }
+  async function closeConversation() {
+    if(!selectedConversationId || !window.confirm("¿Cerrar esta conversación? El cliente ya no podrá enviar más mensajes; el historial se eliminará según la política de retención."))return;
+    const button=get("#private-chat-close");
+    button.disabled=true;
+    try{
+      await callPrivateChat("close",{conversation_id:selectedConversationId});
+      await openConversation(selectedConversationId);
+      await loadConversations(true);
+      setStatus("Conversación cerrada.");
+    }catch(error){setStatus(error.message||"No se pudo cerrar la conversación.",true);}
+    finally{button.disabled=false;}
+  }
+  async function sendReply(event) {
+    event.preventDefault();
+    if(!selectedConversationId)return;
+    const content=String(replyInput.value||"").trim();
+    if(!content)return;
+    if(/(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(content)){
+      setStatus("No enviés números de teléfono, correos ni datos personales por este chat.",true);
+      return;
+    }
+    sendButton.disabled=true;
+    try{
+      const data=await callPrivateChat("admin_send",{conversation_id:selectedConversationId,content});
+      selectedConversation=data.conversation;
+      selectedMessages=data.messages||[];
+      replyInput.value="";
+      renderThreadMessages(selectedMessages);
+      updateThreadActions();
+      await loadConversations(true);
+      setStatus("Respuesta enviada.");
+    }catch(error){setStatus(error.message||"No se pudo enviar la respuesta.",true);}
+    finally{sendButton.disabled=false;updateThreadActions();}
+  }
+  async function draftWithAI() {
+    if(!selectedConversationId || !selectedMessages.length)return;
+    const button=get("#private-chat-ai-draft");
+    const customerMessages=selectedMessages.filter(row=>row.sender_type==="customer");
+    const latest=customerMessages.at(-1);
+    if(!latest){setStatus("Todavía no hay una consulta del cliente para redactar.",true);return;}
+    button.disabled=true;
+    const previous=button.textContent;button.textContent="Preparando borrador…";
+    try{
+      const sessionResult=await supabase.auth.getSession();
+      const token=sessionResult?.data?.session?.access_token||"";
+      const reply=String(latest.content||"").slice(0,450);
+      const history=selectedMessages.slice(0,-1).filter(row=>!/(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(String(row.content||""))).slice(-8).map(row=>({role:row.sender_type==="customer"?"user":"assistant",content:String(row.content||"").slice(0,450)}));
+      const response=await fetch(apiBase+"/api/assistant",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        cache:"no-store",
+        body:JSON.stringify({
+          catalogType:selectedConversation.catalog_type||"collections",
+          message:"Redactá un borrador breve, claro y amable para que un asesor humano lo revise y envíe manualmente. No lo envíes. Usá solo datos del catálogo publicado; no inventés precios finales, tasas, cuotas, costos de entrega ni requisitos no confirmados. Consulta más reciente del cliente: "+reply,
+          history
+        })
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.message||"No se pudo generar un borrador.");
+      replyInput.value=String(data.reply||"").slice(0,1200);
+      replyInput.focus();
+      setStatus("Borrador listo. Revisalo antes de presionar «Enviar respuesta»; la IA no lo envió.");
+    }catch(error){setStatus(error.message||"No se pudo generar el borrador de IA.",true);}
+    finally{button.disabled=false;button.textContent=previous;updateThreadActions();}
+  }
+  get("#private-chat-refresh")?.addEventListener("click",()=>void loadConversations(false));
+  get("#private-chat-filter")?.addEventListener("change",renderConversationList);
+  get("#private-chat-invite-form")?.addEventListener("submit",createInvite);
+  get("#private-chat-copy-invite")?.addEventListener("click",()=>void copyInvite());
+  notificationButton?.addEventListener("click",()=>void enableNotifications());
+  get("#private-chat-claim")?.addEventListener("click",()=>void claimConversation());
+  get("#private-chat-close")?.addEventListener("click",()=>void closeConversation());
+  get("#private-chat-reply-form")?.addEventListener("submit",sendReply);
+  get("#private-chat-ai-draft")?.addEventListener("click",()=>void draftWithAI());
+  document.querySelector('[data-admin-section="messages"]')?.addEventListener("click",()=>void loadConversations(true));
+  if(!pollHandle)pollHandle=window.setInterval(()=>{if(currentUser)void loadConversations(true);},15000);
+})();

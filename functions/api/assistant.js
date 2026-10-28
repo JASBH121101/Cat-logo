@@ -61,11 +61,15 @@ function clean(value, max) {
 function containsPersonalInformation(value) {
   const text = String(value == null ? "" : value);
   const patterns = [
-    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
-    /(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}/,
-    /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|tarjeta de cr[eé]dito|cuenta bancaria|contrase[nñ]a)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*[A-Z0-9][A-Z0-9\s-]{4,}/i,
-    /\b(?:mi direcci[oó]n|mi domicilio|ubicaci[oó]n exacta|vivo en|mi casa queda)\b\s*(?:es|:)?\s*[^,.!?]{4,}/i
-  ];
+      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
+      /(?<!\d)(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8}(?!\d)/,
+      /\b(?:c[eé]dula(?:\s+de\s+identidad)?|n[uú]mero de identidad|pasaporte)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?(?::|=)?\s*[A-Z]?\d[\d -]{5,}\b/i,
+      /\b(?:tarjeta de cr[eé]dito|n[uú]mero de tarjeta|datos de tarjeta)\b.{0,20}(?:\d[ -]?){12,19}/i,
+      /\b(?:cuenta bancaria|n[uú]mero de cuenta|cuenta)\b.{0,20}(?:\d[ -]?){7,20}/i,
+      /\b(?:cvv|c[oó]digo de seguridad)\b\s*(?::|=)?\s*\d{3,4}\b/i,
+      /\bcontrase[nñ]a\b\s*(?::|=)\s*\S{4,}/i,
+      /\b(?:mi direcci[oó]n|mi domicilio|ubicaci[oó]n exacta|vivo en|mi casa queda)\b\s*(?:es|:)?\s*[^,.!?]{4,}/i
+    ];
   return patterns.some(pattern => pattern.test(text));
 }
 function safeId(value) {

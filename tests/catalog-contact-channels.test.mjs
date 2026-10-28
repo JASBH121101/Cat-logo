@@ -38,11 +38,14 @@ test("perfumery product dialog provides the same two channels and payment-topic 
   assert.ok(perfume.includes("const chatIconMarkup ="));
 });
 
-test("JB Collections channel opens the existing AI advisor and supplies contextual product queries", () => {
-  assert.ok(assistant.includes("window.openJBAiAdvisor = message =>"));
-  assert.ok(assistant.includes("window.openJBAiAdvisor(event.detail && event.detail.message)"));
-  assert.ok(app.includes("Usá solo información publicada y confirmada"));
-  assert.ok(perfume.includes("Usá solo información publicada y confirmada"));
+test("JB Collections channel opens the private consent flow with product context", () => {
+  assert.ok(app.includes("function openPrivateChatForProduct"));
+  assert.ok(app.includes('url.searchParams.set("catalog_type", catalogType)'));
+  assert.ok(app.includes('url.searchParams.set("payment_topic", paymentType || "product")'));
+  assert.ok(perfume.includes("function openPerfumePrivateChat"));
+  assert.ok(perfume.includes('url.searchParams.set("catalog_type", "perfumery")'));
+  assert.ok(perfume.includes('url.searchParams.set("payment_topic", paymentType || "product")'));
+  assert.ok(assistant.includes("function containsPersonalInformation"));
 });
 
 test("contact channel controls are responsive, keyboard-focusable and styled consistently across catalogs", () => {
@@ -50,8 +53,11 @@ test("contact channel controls are responsive, keyboard-focusable and styled con
   assert.ok(channelCss.includes(".payment-channel-actions"));
   assert.ok(channelCss.includes(":focus-visible"));
   assert.ok(channelCss.includes("@media (max-width: 560px)"));
+  assert.ok(technologyHtml.includes("ai-assistant.js?v=20261028-private-chat1"));
+  assert.ok(perfumeryHtml.includes("ai-assistant.js?v=20261028-private-chat1"));
   assert.ok(technologyHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
   assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
-  assert.ok(technologyHtml.includes("app.js?v=20261028-dual-contact1"));
-  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-dual-contact1"));
+  assert.ok(technologyHtml.includes("app.js?v=20261028-private-chat1"));
+  assert.ok(technologyHtml.includes("technology-detail-compact.css?v=20261028-private-chat1"));
+  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-private-chat1"));
 });
