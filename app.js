@@ -711,7 +711,7 @@ function buildAIProductPrompt(product, variant = null, fallbackColor = null, pay
   return parts.join(" ").slice(0, 360);
 }
 
-async function openAIAdvisorForContact(message, paymentTopic = "product") {
+async function startPrivateChatFromTechnology(paymentTopic = "product", sourceButton = null) {
   const context = activeContactContext;
   if (!context?.product) {
     window.alert("No pudimos identificar el producto. Cerrá esta ventana y volvé a abrir la ficha.");
@@ -726,9 +726,6 @@ async function openAIAdvisorForContact(message, paymentTopic = "product") {
   const priceUsd = variant?.price_usd !== null && variant?.price_usd !== undefined
     ? variant.price_usd
     : startingPrice(product, "price_usd");
-  const priceNio = variant?.price_nio !== null && variant?.price_nio !== undefined
-    ? variant.price_nio
-    : startingPrice(product, "price_nio");
   const contextName = [
     String(product.name || [product.brand, product.model].filter(Boolean).join(" ") || "Producto"),
     configuration,
@@ -737,7 +734,7 @@ async function openAIAdvisorForContact(message, paymentTopic = "product") {
   ].filter(Boolean).join(" · ").slice(0, 160);
   const selectedVariant = variant || null;
   const productUrl = productShareLink(product, selectedVariant, fallbackColor);
-  const contactButton = document.querySelector("#dialog-jb-contact, #dialog-payment-jb");
+  const contactButton = sourceButton || document.querySelector("#dialog-jb-contact, #dialog-payment-jb");
   if (contactButton) {
     contactButton.disabled = true;
     contactButton.setAttribute("aria-busy", "true");
@@ -1756,7 +1753,7 @@ dialogContent.addEventListener("click", event => {
     const paymentTopic = aiContactButton.id === "dialog-payment-jb"
       ? ($("#dialog-payment-type")?.value || "product")
       : "product";
-    void openAIAdvisorForContact("", paymentTopic);
+    void startPrivateChatFromTechnology(paymentTopic, aiContactButton);
     return;
   }
   const galleryStep = target?.closest("[data-gallery-step]");
