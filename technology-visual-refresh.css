@@ -2743,3 +2743,84 @@ body.technology-catalog.product-detail-active #product-detail-page .variant-choi
     font-size: 7.5px !important;
   }
 }
+
+
+/* Final mobile pass: compact configuration chips and unmistakable stock states. */
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+  padding: 6px !important;
+  margin-bottom: 5px !important;
+  border-radius: 8px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group h3 {
+  margin-bottom: 5px !important;
+  font-size: 12px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list {
+  gap: 4px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+  width: max-content !important;
+  max-width: 100% !important;
+  min-height: 27px !important;
+  gap: 4px !important;
+  padding: 4px 6px !important;
+  border-radius: 7px !important;
+  font-size: 9.5px !important;
+  font-weight: 750 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+  gap: 4px !important;
+  padding: 2px 4px !important;
+  border-radius: 999px !important;
+  font-size: 7px !important;
+  letter-spacing: -.01em !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-available {
+  color: #075d46 !important;
+  background: #d8f6e8 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-order {
+  color: #7c4a03 !important;
+  background: #fff0c2 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-out_of_stock {
+  color: #4b5563 !important;
+  background: #e5e7eb !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-available {
+  color: #b9f7d9 !important;
+  background: #155443 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-order {
+  color: #ffe2a0 !important;
+  background: #5a4017 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-out_of_stock {
+  color: #d1d5db !important;
+  background: #374151 !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+    padding: 6px !important;
+    margin-bottom: 5px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+    min-height: 26px !important;
+    padding: 3px 5px !important;
+    gap: 3px !important;
+    font-size: 9px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+    padding: 2px 3px !important;
+    font-size: 6.8px !important;
+  }
+}
