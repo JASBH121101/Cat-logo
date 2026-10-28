@@ -382,3 +382,84 @@ html[data-theme="dark"] body.admin-body .product-perfume-notes-fields textarea {
     padding: 11px 14px;
   }
 }
+
+ 
+/* Stable, compact variant editor: native grid sizing instead of calculated masonry spans. */
+html body.admin-body form#product-form .variant-color-list{
+  grid-auto-rows:auto!important;
+  grid-auto-flow:row!important;
+  align-items:start!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-color-list>[data-variant-row]{
+  grid-row:auto!important;
+  grid-row-end:auto!important;
+  align-self:start!important;
+  min-height:0!important;
+}
+html body.admin-body form#product-form .variant-color-list>.variants-empty-hint{grid-column:1/-1!important}
+html body.admin-body form#product-form details.variant-config-collapse{
+  display:block!important;
+  padding:0!important;
+  overflow:hidden;
+  border:1px solid rgba(119,143,220,.34);
+  border-radius:13px;
+  background:rgba(89,112,194,.055);
+  min-width:0;
+}
+html[data-theme="light"] body.admin-body form#product-form details.variant-config-collapse{
+  background:#fff;border-color:#d7deeb;
+}
+html[data-theme="dark"] body.admin-body form#product-form details.variant-config-collapse{
+  background:rgba(17,30,53,.72);border-color:#344968;
+}
+html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-width:0;
+  padding:12px 13px;
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+  border-radius:inherit;
+}
+html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary::-webkit-details-marker{display:none}
+html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary::marker{content:""}
+html body.admin-body form#product-form .variant-config-summary-copy{display:grid;gap:4px;min-width:0}
+html body.admin-body form#product-form .variant-config-summary-copy strong{
+  color:var(--ink,#dbe6fb);font-size:14px;line-height:1.3;overflow-wrap:anywhere;
+}
+html body.admin-body form#product-form .variant-config-summary-copy small{
+  color:var(--muted,#96a9cb);font-size:11px;line-height:1.4;overflow-wrap:anywhere;
+}
+html body.admin-body form#product-form .variant-config-chevron{
+  display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;
+  border:1px solid rgba(119,143,220,.35);border-radius:8px;
+  color:var(--ink,#dbe6fb);font-size:17px;line-height:1;
+  transition:transform .16s ease;
+}
+html body.admin-body form#product-form details.variant-config-collapse[open]>.variant-config-summary{
+  border-bottom:1px solid rgba(119,143,220,.22);border-radius:0;
+}
+html body.admin-body form#product-form details.variant-config-collapse[open]>.variant-config-summary .variant-config-chevron{transform:rotate(180deg)}
+html body.admin-body form#product-form .variant-config-body{padding:10px 12px 12px;min-width:0}
+html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading{
+  align-items:center;margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid rgba(119,143,220,.2);
+}
+html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading small{
+  color:var(--muted,#96a9cb);font-size:11px;line-height:1.4;
+}
+html body.admin-body form#product-form .variant-config-body>.variant-config-fields{margin:0 0 12px}
+html body.admin-body form#product-form .variant-config-body>.variant-color-section{margin-top:0;padding-top:8px}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-summary-copy strong{color:#263653}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-summary-copy small{color:#64748b}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-chevron{color:#263653;background:#f8faff;border-color:#d7deeb}
+@media(max-width:560px){
+  html body.admin-body form#product-form details.variant-config-collapse{margin-bottom:9px}
+  html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary{padding:10px;gap:8px}
+  html body.admin-body form#product-form .variant-config-body{padding:9px}
+  html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading{align-items:flex-start;flex-direction:row}
+  html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading .admin-mini-button{width:auto;max-width:45%;white-space:normal}
+}
