@@ -189,10 +189,10 @@ function escapeHtml(value = "") {
 
 
 function renderCommercialDescription(value, fallbackText) {
-  const source = String(value || "").replace(/\\r\\n?/g, "\\n").trim();
+  const source = String(value || "").replace(/\r\n?/g, "\n").trim();
   if (!source) return '<p class="commercial-copy-empty">' + escapeHtml(fallbackText || "Consultá más información en la tienda.") + '</p>';
 
-  const lines = source.split(/\\n+/).map(line => line.trim()).filter(Boolean);
+  const lines = source.split(/\n+/).map(line => line.trim()).filter(Boolean);
   const blocks = [];
   let bullets = [];
   const flushBullets = () => {
@@ -202,20 +202,20 @@ function renderCommercialDescription(value, fallbackText) {
   };
 
   for (const rawLine of lines) {
-    const parts = rawLine.split(/\\s+[•●▪]\\s+/).map(part => part.trim()).filter(Boolean);
+    const parts = rawLine.split(/\s+[•●▪]\s+/).map(part => part.trim()).filter(Boolean);
     if (parts.length > 1) {
       flushBullets();
-      if (!/^(?:[-*•●▪]|\\d+[.)])\\s+/.test(parts[0])) blocks.push('<p>' + escapeHtml(parts.shift()) + '</p>');
-      for (const part of parts) bullets.push(part.replace(/^(?:[-*•●▪]|\\d+[.)])\\s+/, ""));
+      if (!/^(?:[-*•●▪]|\d+[.)])\s+/.test(parts[0])) blocks.push('<p>' + escapeHtml(parts.shift()) + '</p>');
+      for (const part of parts) bullets.push(part.replace(/^(?:[-*•●▪]|\d+[.)])\s+/, ""));
       continue;
     }
-    const bulletMatch = rawLine.match(/^(?:[-*•●▪]|\\d+[.)])\\s+(.+)$/);
+    const bulletMatch = rawLine.match(/^(?:[-*•●▪]|\d+[.)])\s+(.+)$/);
     if (bulletMatch) {
       bullets.push(bulletMatch[1]);
       continue;
     }
     flushBullets();
-    const sentences = rawLine.split(/(?<=[.!?])\\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡0-9])/u).filter(Boolean);
+    const sentences = rawLine.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡0-9])/u).filter(Boolean);
     if (sentences.length > 1 && rawLine.length > 150) {
       sentences.forEach(sentence => blocks.push('<p>' + escapeHtml(sentence.trim()) + '</p>'));
     } else {
