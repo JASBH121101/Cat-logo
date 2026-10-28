@@ -8,6 +8,7 @@ const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.url), "utf8");
 const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
 const snapshotMigration = readFileSync(new URL("../supabase/migrations/20261028221500_provider_variant_review_snapshot.sql", import.meta.url), "utf8");
+const confirmMigration = readFileSync(new URL("../supabase/migrations/20261028223000_confirm_provider_product_review.sql", import.meta.url), "utf8");
 
 test("supplier review collects provider availability for every configuration and color", () => {
   assert.match(html, /id="provider-review-variants-section"/);
@@ -54,4 +55,19 @@ test("variant editor summaries show current status and do not lose focus for new
   assert.match(admin, /availabilitySummary\.textContent/);
   assert.match(admin, /event\.preventDefault\(\);\s*const group = remove\.closest\("\[data-variant-group\]"\)/);
   assert.match(providerCss, /\.provider-product-variant-summary/);
+});
+
+
+test("confirm review atomically records supplier state and optionally syncs public availability", () => {
+  assert.match(html, /id="provider-review-sync-catalog-availability" type="checkbox" checked/);
+  assert.match(provider, /supabase\.rpc\("confirm_provider_product_review"/);
+  assert.match(provider, /p_sync_catalog_availability: syncCatalogAvailability/);
+  assert.match(confirmMigration, /function public\.confirm_provider_product_review/);
+  assert.match(confirmMigration, /IF v_sync THEN/);
+  assert.match(confirmMigration, /configuration_availability/);
+  assert.match(confirmMigration, /'availability'/);
+  assert.match(confirmMigration, /catalog_availability_synced/);
+  assert.match(confirmMigration, /admin_only/);
+  assert.match(confirmMigration, /GRANT EXECUTE ON FUNCTION public\.confirm_provider_product_review/);
+  assert.doesNotMatch(confirmMigration, /SET price_usd\s*=/i);
 });
