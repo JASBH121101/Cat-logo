@@ -1946,7 +1946,9 @@ function addVariantRow(variant = {}, targetGroup = null, options = {}) {
   if (!list) return;
   list.querySelector(".variants-empty-hint")?.remove();
   list.insertAdjacentHTML("beforeend", variantRowMarkup(variant));
-  renderVariantImagePreview(list.lastElementChild);
+  const newColorRow = list.lastElementChild;
+  if (newColorRow?.matches("details.inline-color-card-collapse")) newColorRow.open = true;
+  renderVariantImagePreview(newColorRow);
   updateVariantRowHeadings();
   const rows = list.querySelectorAll("[data-variant-row]");
   if (options.focus !== false) rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
