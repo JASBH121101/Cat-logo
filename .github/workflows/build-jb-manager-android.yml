@@ -274,8 +274,12 @@ jobs:
           grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
           grep -Fq 'id="product-tag-limited-edition"' admin.html
+          grep -Fq 'product-tag-option-icon--tech' admin.html
+          grep -Fq 'product-tag-option-icon--perfume' admin.html
+          grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' theme-ui.css
           grep -Fq 'function normalizedPerfumeProductTags(product)' perfumeria.js
           grep -Fq 'id="limited-edition-section"' tecnologia/index.html
+          grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' tecnologia/index.html
           grep -Fq 'id="perfume-limited-edition-section"' perfumeria/index.html
           grep -Fq 'function renderProductDuplicateSuggestions()' admin.js
           grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' admin.js
@@ -319,7 +323,11 @@ jobs:
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' mobile/www/admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
           grep -Fq 'id="product-tag-limited-edition"' mobile/www/admin.html
+          grep -Fq 'product-tag-option-icon--tech' mobile/www/admin.html
+          grep -Fq 'product-tag-option-icon--perfume' mobile/www/admin.html
+          grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' mobile/www/theme-ui.css
           grep -Fq 'id="limited-edition-section"' mobile/www/tecnologia/index.html
+          grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' mobile/www/tecnologia/index.html
           grep -Fq 'id="perfume-limited-edition-section"' mobile/www/perfumeria/index.html
           grep -Fq 'function normalizedPerfumeProductTags(product)' mobile/www/perfumeria.js
           grep -Fq 'function renderProductDuplicateSuggestions()' mobile/www/admin.js
@@ -624,6 +632,22 @@ jobs:
           }
           unzip -p "$APK" assets/public/admin.html | grep -Fq 'id="product-tag-limited-edition"' || {
             echo "APK admin form is missing the limited-edition checkbox." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'product-tag-option-icon--tech' || {
+            echo "APK admin form is missing the JB TECH microchip icon." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'product-tag-option-icon--perfume' || {
+            echo "APK admin form is missing the JB Parfums crown icon." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/tecnologia/index.html | grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' || {
+            echo "APK technology limited-edition section is missing its microchip icon." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' || {
+            echo "APK is missing perfume-specific crown styling." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.js | grep -Fq 'tags: selectedProductTags()' || {
