@@ -131,7 +131,7 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
       window.privateChatTopicLabel = topic => topic || "Consulta";
       window.privateChatDate = () => "12:00";
     });
-    await page.addScriptTag({ content: selectedConversationSource + "\\n" + renderSelectedSource });
+    await page.addScriptTag({ content: selectedConversationSource + "\n" + renderSelectedSource });
     await page.evaluate(() => window.privateChatRenderSelected());
 
     const emptyThread = await page.locator("#private-chat-admin-thread").evaluate(element => ({
