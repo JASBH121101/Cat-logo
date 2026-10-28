@@ -53,7 +53,7 @@ test("AI privacy guard does not interpret a payment topic as card or identity da
   const guard = aiJs.slice(guardStart, guardEnd);
   assert.match(guard, /tarjeta de cr[eé]dito/);
   assert.match(guard, /n[uú]mero de tarjeta/);
-  assert.match(guard, /(?:\\d\[ -\]\?\)\{12,19\}|\\d\[ -\]\?\)\{12,19\})/);
+  assert.ok(guard.includes("(?:\\d[ -]?){12,19}"));
   assert.match(aiJs, /lastMessage\?\.textContent !== privacyWarning/);
   assert.match(assistantApi, /function containsPersonalInformation/);
 });
