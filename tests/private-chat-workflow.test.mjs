@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261028210000_private_chat_secure_workflow.sql", import.meta.url), "utf8");
-const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213000_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
+const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213100_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028213000_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
