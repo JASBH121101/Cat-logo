@@ -17,9 +17,9 @@
   <link rel="stylesheet" href="../brand-refresh.css?v=20261027-audit-cascade1">
   <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261027-audit-cascade1">
   <link rel="stylesheet" href="../catalog-performance.css?v=20261027-audit-cascade1">
-  <link rel="stylesheet" href="../perfumeria.css?v=20261028-card-cascade-fix1">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261028-limited-edition-sections1">
   <script src="../config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="../perfumeria.js?v=20261027-audit-cascade1"></script>
+  <script type="module" src="../perfumeria.js?v=20261028-limited-edition-sections1"></script>
   <script src="../ui.js?v=20261027-audit-cascade1" defer></script>
   <script src="../ai-assistant.js?v=20261028-public-customer-flows2" defer></script>
 </head>
@@ -164,6 +164,30 @@
         <div><p class="perfume-kicker" id="catalog-results-eyebrow">DESCUBRÍ</p><h2 id="catalog-results-title">Toda la colección</h2></div>
         <span id="catalog-status" role="status" aria-live="polite">Cargando fragancias…</span>
       </div>
+
+      <section id="perfume-exclusive-section" class="perfume-featured-section perfume-featured-section--exclusive hidden" aria-labelledby="perfume-exclusive-title">
+        <div class="perfume-featured-heading">
+          <div>
+            <p class="perfume-kicker"><span aria-hidden="true">♛</span> SELECCIÓN DE COLECCIÓN</p>
+            <h2 id="perfume-exclusive-title">Exclusivos</h2>
+            <p class="perfume-featured-description">Fragancias y sets seleccionados por su presentación, identidad y carácter especial.</p>
+          </div>
+          <span id="perfume-exclusive-count" class="perfume-featured-count"></span>
+        </div>
+        <div id="perfume-exclusive-grid" class="featured-grid perfume-product-grid perfume-highlight-grid"></div>
+      </section>
+
+      <section id="perfume-limited-edition-section" class="perfume-featured-section perfume-featured-section--limited-edition hidden" aria-labelledby="perfume-limited-edition-title">
+        <div class="perfume-featured-heading">
+          <div>
+            <p class="perfume-kicker"><span aria-hidden="true">♛</span> PIEZAS DE COLECCIÓN</p>
+            <h2 id="perfume-limited-edition-title">Ediciones limitadas</h2>
+            <p class="perfume-featured-description">Presentaciones especiales y lanzamientos de colección que destacan por su carácter distintivo.</p>
+          </div>
+          <span id="perfume-limited-edition-count" class="perfume-featured-count"></span>
+        </div>
+        <div id="perfume-limited-edition-grid" class="featured-grid perfume-product-grid perfume-highlight-grid"></div>
+      </section>
 
       <section class="perfume-category-section" id="category-nicho" data-category-section="nicho" aria-labelledby="category-nicho-title">
         <div class="perfume-category-heading">
