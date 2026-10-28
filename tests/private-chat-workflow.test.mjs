@@ -46,6 +46,16 @@ test("database workflow restricts direct table access and protects admin actions
   assert.match(migration, /interval '7 days'/);
 });
 
+test("customer private chat exposes a working light/dark theme toggle", () => {
+  assert.match(customerHtml, /id="private-chat-theme-toggle"/);
+  assert.match(customerHtml, /private-chat\.css\?v=20261028-chat-theme3/);
+  assert.match(customerHtml, /private-chat\.js\?v=20261028-chat-theme3/);
+  assert.match(customerJs, /function applyPrivateChatTheme\(theme\)/);
+  assert.match(customerJs, /themeToggle\?\.addEventListener\("click"/);
+  assert.match(customerJs, /localStorage\.setItem\("ct-catalog-theme"/);
+  assert.match(readFileSync(new URL("../private-chat.css", import.meta.url), "utf8"), /:root\[data-theme="dark"\]/);
+});
+
 test("identity detection fix requires a digit for cédula/passport-like values", () => {
   assert.match(privacyFix, /\[A-Z0-9-\]\{0,15\}\[0-9\]\[A-Z0-9-\]\{4,\}/);
   assert.doesNotMatch(privacyFix, /\(c\[eé\]dula\|pasaporte\)\[\[:space:\]:#-\]\+\[A-Z0-9-\]\{6,\}/);
