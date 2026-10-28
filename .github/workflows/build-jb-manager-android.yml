@@ -30,10 +30,15 @@ jobs:
           set -euo pipefail
           SUPPORT_DIR="$RUNNER_TEMP/jb-manager-build-support"
           mkdir -p "$SUPPORT_DIR"
-          cp -a mobile "$SUPPORT_DIR/mobile"
+          # The public web project lives on main; native Android build support lives
+          # on the maintained APK branch. Save the main workflow, switch to that
+          # branch to collect mobile/signing support, then return to latest main.
           cp .github/workflows/build-jb-manager-android.yml "$SUPPORT_DIR/build-jb-manager-android.yml"
-          cp .github/android-signing-key-persisted "$SUPPORT_DIR/android-signing-key-persisted"
           cp responsive-layout.css "$SUPPORT_DIR/responsive-layout.css"
+          git fetch origin feature/jb-manager-android-apk
+          git checkout -B android-support origin/feature/jb-manager-android-apk
+          cp -a mobile "$SUPPORT_DIR/mobile"
+          cp .github/android-signing-key-persisted "$SUPPORT_DIR/android-signing-key-persisted"
 
           git fetch origin main
           git checkout -B android-source origin/main
@@ -62,8 +67,8 @@ jobs:
           grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
-          grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' admin.html
-          grep -Fq 'admin-provider.css?v=20261028-limited-edition-sections1' admin.html
+          grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
+          grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
@@ -271,7 +276,7 @@ jobs:
           grep -Fq 'from("color_library")' admin.js
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
-          grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
           grep -Fq 'id="product-tag-limited-edition"' admin.html
           grep -Fq 'function normalizedPerfumeProductTags(product)' perfumeria.js
@@ -316,7 +321,7 @@ jobs:
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
           grep -Fq 'theme-ui.css?v=20261028-limited-edition-sections1' mobile/www/admin.html
-          grep -Fq 'admin-provider.css?v=20261028-limited-edition-sections1' mobile/www/admin.html
+          grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' mobile/www/admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
           grep -Fq 'id="product-tag-limited-edition"' mobile/www/admin.html
           grep -Fq 'id="limited-edition-section"' mobile/www/tecnologia/index.html
@@ -602,11 +607,11 @@ jobs:
             echo "APK is missing the light/dark AI color dialog styles." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-provider.css?v=20261028-limited-edition-sections1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' || {
             echo "::error::APK does not include the provider dialog contrast fix."
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-limited-edition-sections1' || {
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
