@@ -8,6 +8,7 @@ base revision, so shared files must be cache-busted everywhere they are loaded.
 """
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
+import posixpath
 from urllib.parse import parse_qs, unquote, urlsplit
 import subprocess
 import sys
@@ -53,11 +54,11 @@ class AssetParser(HTMLParser):
             if not pathname.lower().endswith((".css", ".js")):
                 continue
             if pathname.startswith("/"):
-                resolved = PurePosixPath(pathname.lstrip("/"))
+                normalized = posixpath.normpath(pathname.lstrip("/"))
             else:
-                resolved = PurePosixPath(self.page).parent / pathname
-            resolved = PurePosixPath(resolved)
-            normalized = str(resolved)
+                normalized = posixpath.normpath(
+                    posixpath.join(str(PurePosixPath(self.page).parent), pathname)
+                )
             if normalized == "." or normalized.startswith("../"):
                 continue
             version = parse_qs(parsed.query, keep_blank_values=True).get("v", [""])[0]
