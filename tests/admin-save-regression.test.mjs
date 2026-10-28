@@ -14,3 +14,13 @@ test("admin save and image-upload handlers use the declared preview guard", () =
   assert.match(adminJs, /form\?\.addEventListener\("submit", async event => \{\s*event\.preventDefault\(\);\s*if \(IS_READ_ONLY_PREVIEW\)/);
   assert.ok((adminJs.match(/IS_READ_ONLY_PREVIEW/g) || []).length >= 5);
 });
+
+
+test("provider review form uses JavaScript-controlled submission instead of dialog auto-close", () => {
+  const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const providerJs = readFileSync(new URL("../admin-provider.js", import.meta.url), "utf8");
+  assert.match(adminHtml, /<form id="provider-review-form" class="provider-dialog-shell">/);
+  assert.doesNotMatch(adminHtml, /<form id="provider-review-form" method="dialog"/);
+  assert.match(providerJs, /\$\("#provider-review-form"\)\?\.addEventListener\("submit", saveReview\)/);
+  assert.match(providerJs, /event\.preventDefault\(\);[\s\S]*?supabase\.from\("product_provider_status"\)\.upsert/);
+});
