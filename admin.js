@@ -201,6 +201,299 @@ function getDashboardProducts() {
   return products.filter(product => normalizeCatalogType(product.catalog_type) === dashboardCatalogScope);
 }
 
+
+/* =========================================================
+   DETECTOR INTELIGENTE DE COINCIDENCIAS
+   Solo compara la misma marca y el mismo catálogo. Es una
+   ayuda de revisión: nunca bloquea ni guarda por su cuenta.
+   ========================================================= */
+let productDuplicateCheckTimer = 0;
+
+function normalizeDuplicateText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/\+/g, " plus ")
+    .replace(/\bproplus\b/g, "pro plus")
+    .replace(/\bpro\s+plus\b/g, "pro plus")
+    .replace(/\b(?:incorporated|corporation|electronics|technology|technologies|company|limited|ltd|inc|llc|s\.a\.|sa)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function duplicateTokens(value) {
+  return new Set(normalizeDuplicateText(value).split(" ").filter(token => token.length > 1));
+}
+
+function duplicateTokenSimilarity(left, right) {
+  const a = duplicateTokens(left), b = duplicateTokens(right);
+  if (!a.size || !b.size) return 0;
+  let overlap = 0;
+  a.forEach(token => { if (b.has(token)) overlap += 1; });
+  return overlap / (a.size + b.size - overlap);
+}
+
+function duplicateBigramSimilarity(left, right) {
+  const toBigrams = value => {
+    const normalized = " " + normalizeDuplicateText(value) + " ";
+    const result = new Set();
+    for (let i = 0; i < normalized.length - 1; i += 1) result.add(normalized.slice(i, i + 2));
+    return result;
+  };
+  const a = toBigrams(left), b = toBigrams(right);
+  if (!a.size || !b.size) return 0;
+  let overlap = 0;
+  a.forEach(pair => { if (b.has(pair)) overlap += 1; });
+  return (2 * overlap) / (a.size + b.size);
+}
+
+function duplicateTextSimilarity(left, right) {
+  const a = normalizeDuplicateText(left), b = normalizeDuplicateText(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  const containment = longer.includes(shorter) ? shorter.length / longer.length : 0;
+  const overlap = duplicateTokenSimilarity(a, b);
+  const bigrams = duplicateBigramSimilarity(a, b);
+  const blended = overlap * 0.58 + bigrams * 0.42;
+  return Math.max(blended, containment >= 0.48 ? 0.68 + containment * 0.24 : 0);
+}
+
+function getDuplicateVariantProfilesFromForm() {
+  return Array.from(form?.querySelectorAll("[data-variant-group]") || [])
+    .map(group => ({
+      ram: String(group.querySelector("[data-group-ram]")?.value || "").trim(),
+      storage: String(group.querySelector("[data-group-storage]")?.value || "").trim(),
+      unit: String(group.querySelector("[data-group-storage-unit]")?.value || "GB").trim()
+    }))
+    .filter(item => item.ram || item.storage);
+}
+
+function getDuplicateVariantProfiles(product) {
+  return normalizeVariants(product?.variants).map(variant => ({
+    ram: String(variant.ram || "").trim(),
+    storage: String(variant.storage || "").trim()
+  })).filter(item => item.ram || item.storage);
+}
+
+function duplicateVariantLabel(variant) {
+  const parts = [];
+  if (variant.ram) parts.push(variant.ram + " RAM");
+  if (variant.storage) {
+    const storage = String(variant.storage).trim();
+    parts.push(/\b(?:gb|tb)\b/i.test(storage) ? storage : storage + " " + (variant.unit || "GB"));
+  }
+  return parts.join(" · ");
+}
+
+function scoreProductDuplicate(candidate, query) {
+  const candidateName = String(candidate.name || "");
+  const candidateModel = String(candidate.model || "");
+  const nameSimilarity = duplicateTextSimilarity(query.name, candidateName);
+  const modelSimilarity = duplicateTextSimilarity(query.model, candidateModel);
+  const queryModelAgainstName = query.model ? duplicateTextSimilarity(query.model, candidateName) : 0;
+  const queryNameAgainstModel = candidateModel ? duplicateTextSimilarity(query.name, candidateModel) : 0;
+  const primary = Math.max(
+    nameSimilarity,
+    modelSimilarity,
+    queryModelAgainstName * 0.96,
+    queryNameAgainstModel * 0.92
+  );
+  const tokenScore = Math.max(
+    duplicateTokenSimilarity(query.name, candidateName),
+    query.model && candidateModel ? duplicateTokenSimilarity(query.model, candidateModel) : 0,
+    query.model ? duplicateTokenSimilarity(query.model, candidateName) * 0.95 : 0
+  );
+  const exactName = normalizeDuplicateText(query.name) === normalizeDuplicateText(candidateName);
+  const exactModel = Boolean(query.model && candidateModel &&
+    normalizeDuplicateText(query.model) === normalizeDuplicateText(candidateModel));
+  const queryCategory = normalizeDuplicateText(query.category);
+  const candidateCategory = normalizeDuplicateText(candidate.category);
+  const categoryMatch = Boolean(queryCategory && candidateCategory && queryCategory === candidateCategory);
+  const categoryConflict = Boolean(queryCategory && candidateCategory && queryCategory !== candidateCategory);
+  const queryProfiles = query.profiles || [];
+  const candidateProfiles = getDuplicateVariantProfiles(candidate);
+  const matchingProfile = queryProfiles.some(current => candidateProfiles.some(existing =>
+    (!current.ram || !existing.ram || normalizeDuplicateText(current.ram) === normalizeDuplicateText(existing.ram)) &&
+    (!current.storage || !existing.storage || normalizeDuplicateText(current.storage) === normalizeDuplicateText(existing.storage))
+  ));
+  const isPerfume = query.catalogType === "perfumery";
+  const currentPerfume = query.perfumeDetails || {};
+  const savedPerfume = candidate.perfume_details || {};
+  const sameVolume = isPerfume && currentPerfume.volume &&
+    savedPerfume.volume_ml != null && Number(currentPerfume.volume) === Number(savedPerfume.volume_ml);
+  const sameConcentration = isPerfume && currentPerfume.concentration && savedPerfume.concentration &&
+    normalizeDuplicateText(currentPerfume.concentration) === normalizeDuplicateText(savedPerfume.concentration);
+
+  let score = primary * 0.66 + tokenScore * 0.20;
+  if (categoryMatch) score += 0.055;
+  if (exactName) score += 0.08;
+  if (exactModel) score += 0.09;
+  if (matchingProfile) score += 0.025;
+  if (sameVolume) score += 0.025;
+  if (sameConcentration) score += 0.025;
+  if (categoryConflict) score -= 0.045;
+  return Math.max(0, Math.min(1, score));
+}
+
+function getProductDuplicateStatusLabel(product) {
+  const status = getWorkflowStatus(product);
+  return status === "published" ? "Publicado"
+    : status === "draft" ? "Borrador"
+    : status === "trash" ? "En papelera"
+    : status === "deleting" ? "En eliminación"
+    : "No publicado";
+}
+
+function getProductDuplicateDetails(product, query) {
+  const details = [];
+  const savedModel = String(product.model || "").trim();
+  if (savedModel) details.push("Modelo: " + savedModel);
+  if (product.category) details.push("Categoría: " + product.category);
+  if (product.catalog_type === "perfumery") {
+    const perfume = product.perfume_details || {};
+    if (perfume.concentration) details.push(perfume.concentration);
+    if (perfume.volume_ml) details.push(perfume.volume_ml + " ml");
+    if (perfume.family) details.push(perfumeFamilyLabel(perfume.family));
+  } else {
+    const profiles = getDuplicateVariantProfiles(product);
+    if (profiles.length) {
+      const visible = profiles.slice(0, 3).map(duplicateVariantLabel).filter(Boolean);
+      details.push(profiles.length + " configuración" + (profiles.length === 1 ? "" : "es") +
+        (visible.length ? ": " + visible.join(" / ") : "") +
+        (profiles.length > visible.length ? " / …" : ""));
+    }
+  }
+  const currentModel = normalizeDuplicateText(query.model);
+  if (currentModel && savedModel && currentModel === normalizeDuplicateText(savedModel)) {
+    details.push("El modelo coincide");
+  } else if (query.model && savedModel) {
+    details.push("Compará el modelo");
+  }
+  return details;
+}
+
+function renderProductDuplicateSuggestions() {
+  const panel = $("#product-duplicate-panel");
+  const results = $("#product-duplicate-results");
+  const summary = $("#product-duplicate-summary");
+  const count = $("#product-duplicate-count");
+  if (!panel || !results || !summary || !count) return;
+
+  const name = String($("#product-name")?.value || "").trim();
+  const brand = String($("#product-brand")?.value || "").trim();
+  if (name.length < 3 || normalizeDuplicateText(brand).length < 2) {
+    panel.hidden = true;
+    results.replaceChildren();
+    return;
+  }
+
+  const query = {
+    name: name,
+    brand: brand,
+    model: String($("#product-model")?.value || "").trim(),
+    category: activeCatalogType === "perfumery" ? "Perfumería" : String($("#product-category")?.value || "").trim(),
+    catalogType: normalizeCatalogType(activeCatalogType),
+    profiles: getDuplicateVariantProfilesFromForm(),
+    perfumeDetails: {
+      volume: String($("#product-perfume-volume")?.value || "").trim(),
+      concentration: String($("#product-perfume-concentration")?.value || "").trim()
+    }
+  };
+  const brandKey = normalizeDuplicateText(brand);
+  const currentId = String($("#product-id")?.value || "").trim();
+
+  const matches = products
+    .filter(product => {
+      if (currentId && String(product.id) === currentId) return false;
+      if (normalizeCatalogType(product.catalog_type) !== query.catalogType) return false;
+      if (normalizeDuplicateText(product.brand) !== brandKey) return false;
+      if (!String(product.name || "").trim()) return false;
+      if (["trash", "deleting"].includes(getWorkflowStatus(product))) return false;
+      return true;
+    })
+    .map(product => ({ product: product, score: scoreProductDuplicate(product, query) }))
+    .filter(match => match.score >= 0.39)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+
+  panel.hidden = false;
+  summary.textContent = "Buscando dentro de " + brand + " y comparando nombre, modelo, categoría" +
+    (query.catalogType === "perfumery" ? ", concentración y ml" : ", RAM, almacenamiento y variantes") + ".";
+  count.hidden = matches.length === 0;
+  count.textContent = matches.length + " posible" + (matches.length === 1 ? "" : "s");
+
+  if (!matches.length) {
+    results.innerHTML = '<p class="product-duplicate-empty">No encontramos coincidencias probables para <strong>' +
+      escapeHtml(name) + "</strong> en la marca " + escapeHtml(brand) +
+      ". La búsqueda incluye productos publicados, no publicados y borradores.</p>";
+    return;
+  }
+
+  results.innerHTML = matches.map(({ product, score }) => {
+    const percent = Math.round(score * 100);
+    const label = percent >= 78 ? "Coincidencia alta" : percent >= 58 ? "Coincidencia probable" : "Nombre parecido";
+    const tagClass = percent >= 78 ? "is-high" : "is-medium";
+    const details = getProductDuplicateDetails(product, query);
+    const status = getProductDuplicateStatusLabel(product);
+    return '<article class="product-duplicate-result">' +
+      '<div class="product-duplicate-main">' +
+        '<p class="product-duplicate-name">' + escapeHtml(product.name || "Producto sin nombre") + '</p>' +
+        '<p class="product-duplicate-meta">' + escapeHtml(product.brand || brand) +
+          (product.model ? " · " + escapeHtml(product.model) : "") + " · " + escapeHtml(status) + '</p>' +
+        '<div class="product-duplicate-tags">' +
+          '<span class="product-duplicate-tag ' + tagClass + '">' + label + '</span>' +
+          details.map(detail => '<span class="product-duplicate-tag">' + escapeHtml(detail) + '</span>').join("") +
+        '</div>' +
+      '</div>' +
+      '<button class="product-duplicate-open" type="button" data-duplicate-edit="' + escapeHtml(product.id) +
+        '" aria-label="Abrir producto existente ' + escapeHtml(product.name || "") + '">Ver existente ↗</button>' +
+    '</article>';
+  }).join("");
+}
+
+function scheduleProductDuplicateCheck(options = {}) {
+  window.clearTimeout(productDuplicateCheckTimer);
+  if (options.immediate) {
+    renderProductDuplicateSuggestions();
+    return;
+  }
+  productDuplicateCheckTimer = window.setTimeout(renderProductDuplicateSuggestions, 180);
+}
+
+form?.addEventListener("input", event => {
+  if (event.target.matches(
+    "#product-name, #product-brand, #product-model, #product-category, #product-subcategory, #product-perfume-concentration, #product-perfume-volume, [data-group-storage], [data-group-ram], [data-group-storage-unit]"
+  )) scheduleProductDuplicateCheck();
+});
+form?.addEventListener("change", event => {
+  if (event.target.matches(
+    "#product-name, #product-brand, #product-model, #product-category, #product-subcategory, #product-perfume-concentration, #product-perfume-volume, [data-group-storage], [data-group-ram], [data-group-storage-unit]"
+  )) scheduleProductDuplicateCheck({ immediate: true });
+});
+$("#product-duplicate-results")?.addEventListener("click", event => {
+  const button = event.target.closest("[data-duplicate-edit]");
+  if (!button) return;
+  const product = products.find(item => String(item.id) === String(button.dataset.duplicateEdit));
+  if (!product) {
+    message("#product-form-status", "Ese producto ya no está disponible en la lista. Actualizá el inventario y volvé a intentarlo.", "error");
+    return;
+  }
+  const currentId = String($("#product-id")?.value || "").trim();
+  const hasUnsavedEntry = Boolean(
+    String($("#product-name")?.value || "").trim() ||
+    String($("#product-brand")?.value || "").trim()
+  );
+  if (hasUnsavedEntry && currentId !== String(product.id) &&
+      !window.confirm('Vas a abrir "' + product.name + '". Los datos que estás escribiendo no se guardarán. ¿Querés continuar?')) return;
+  showAdminSection("add");
+  fillEditor(product);
+  scheduleProductDuplicateCheck({ immediate: true });
+});
+
 function updateDashboardScopeLabels() {
   const isAll = dashboardCatalogScope === "all";
   const isPerfume = dashboardCatalogScope === "perfumery";
@@ -3759,6 +4052,7 @@ function clearEditor() {
   syncProductFormSectionAvailability();
   setProductFormStep(1, { scroll: false });
   markEditorClean();
+  scheduleProductDuplicateCheck({ immediate: true });
 }
 
 const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
@@ -4003,6 +4297,7 @@ function fillEditor(product) {
 
   window.scrollTo({ top: 0, behavior: "smooth" });
   markEditorClean();
+  scheduleProductDuplicateCheck({ immediate: true });
 }
 async function discardEditorChanges() {
   if (editorIsDirty && !window.confirm("¿Descartar los cambios sin guardar? No se guardará ningún producto.")) return;
