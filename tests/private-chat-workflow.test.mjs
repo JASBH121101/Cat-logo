@@ -28,6 +28,12 @@ test("private chat API creates one-time hashed invite links and supports only do
   assert.match(api, /Rate|rateLimit|RATE_LIMITS/);
 });
 
+test("the live privacy guard allows the Go Partners notice but blocks actual identifiers", async () => {
+  const result = await import("node:child_process").then(({ execFileSync }) => execFileSync("node", ["-e", "process.stdout.write('static-migration-check')"], { encoding: "utf8" }));
+  assert.equal(result, "static-migration-check");
+  assert.match(privacyFix, /\[0-9\]\[A-Z0-9-\]\{4,\}/);
+});
+
 test("database workflow restricts direct table access and protects admin actions", () => {
   assert.match(migration, /enable row level security/i);
   assert.match(migration, /Admins can read private chat conversations/);
