@@ -671,6 +671,19 @@ function buildAIProductPrompt(product, variant = null, fallbackColor = null, pay
   return parts.join(" ").slice(0, 590);
 }
 
+function openPrivateChatForProduct(product, variant = null, fallbackColor = null, paymentType = "product", catalogType = "technology") {
+  const config = window.CATALOG_CONFIG || {};
+  const base = String(config.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
+  const displayName = [product?.brand, product?.model].filter(Boolean).join(" ").trim() || String(product?.name || "Consulta general");
+  const url = new URL(base + "/mensajes/");
+  url.searchParams.set("catalog_type", catalogType);
+  url.searchParams.set("product_name", displayName.slice(0, 160));
+  url.searchParams.set("product_url", productShareLink(product, variant, fallbackColor));
+  url.searchParams.set("payment_topic", paymentType || "product");
+  if (product?.id) url.searchParams.set("product_id", String(product.id));
+  window.location.assign(url.href);
+}
+
 function openAIAdvisorForContact(message) {
   if (typeof window.openJBAiAdvisor === "function") {
     window.openJBAiAdvisor(message);
@@ -1669,10 +1682,23 @@ dialogContent.addEventListener("change", event => {
 
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
-  const aiContactButton = target?.closest("#dialog-jb-contact, #dialog-payment-jb");
-  if (aiContactButton) {
+  const privateChatButton = target?.closest("#dialog-jb-contact, #dialog-payment-jb");
+  if (privateChatButton) {
     event.preventDefault();
-    openAIAdvisorForContact(aiContactButton.dataset.aiPrompt || "Quiero consultar un producto de JB Collections.", "");
+    if (!activeContactContext?.product) {
+      window.alert("No se pudo identificar el producto. Cerrá esta ficha e intentá de nuevo.");
+      return;
+    }
+    const paymentType = privateChatButton.id === "dialog-payment-jb"
+      ? ($("#dialog-payment-type")?.value || "product")
+      : "product";
+    openPrivateChatForProduct(
+      activeContactContext.product,
+      activeContactContext.variant,
+      activeContactContext.fallbackColor,
+      paymentType,
+      "technology"
+    );
     return;
   }
   const galleryStep = target?.closest("[data-gallery-step]");
