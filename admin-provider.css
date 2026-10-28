@@ -328,3 +328,26 @@ html[data-theme="light"] .provider-dialog .provider-dialog-product-subtitle {
 .provider-price-compare-card>small{color:var(--muted,#64748b);font-size:.78rem}
 .provider-review-sync-note{margin:0;color:var(--muted,#64748b);font-size:.75rem;line-height:1.55}
 @media(max-width:480px){.provider-review-current-card{padding:11px}.provider-review-product-details{grid-template-columns:58px minmax(0,1fr);gap:9px}.provider-review-product-image{width:58px;height:72px}.provider-review-detail-grid{gap:8px}.provider-review-detail-grid dd{font-size:.76rem}.provider-review-price-comparison{gap:7px}.provider-price-compare-card{padding:9px}.provider-price-compare-card>strong{font-size:.9rem}}
+
+/* Barra superior compacta y menú de ajustes de JB Manager. */
+.admin-header{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:clamp(10px,2vw,22px);margin:0!important;padding-block:0;}
+.admin-header-context{margin-left:auto;min-width:0;}
+.admin-settings-wrap{position:relative;display:flex;align-items:center;flex:0 0 auto;}
+.admin-settings-toggle{display:grid;place-items:center;width:44px;height:44px;flex:0 0 44px;border:1px solid rgba(99,115,160,.3);border-radius:13px;background:linear-gradient(145deg,#ffffff,#edf2ff);color:#293b69;box-shadow:0 3px 0 rgba(44,62,112,.16),0 7px 14px rgba(40,61,112,.09);font-size:22px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.admin-settings-toggle:hover,.admin-settings-toggle[aria-expanded=true]{transform:translateY(-1px);border-color:#6c7df3;box-shadow:0 3px 0 rgba(44,62,112,.16),0 0 0 3px rgba(94,113,235,.13);}
+.admin-settings-menu{position:absolute;top:calc(100% + 12px);right:0;z-index:100;display:grid;gap:5px;width:min(340px,calc(100vw - 24px));padding:12px;border:1px solid rgba(115,135,183,.28);border-radius:17px;background:var(--surface,#fff);color:var(--text,#18243b);box-shadow:0 18px 44px rgba(15,27,54,.22),0 3px 8px rgba(15,27,54,.08);}
+.admin-settings-menu[hidden]{display:none!important;}
+.admin-settings-menu-title{margin:2px 6px 7px;font-size:12px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--muted,#71809d);}
+.admin-settings-item{display:flex;align-items:center;gap:11px;width:100%;min-width:0;padding:11px 10px;border:1px solid transparent;border-radius:11px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer;}
+.admin-settings-item:hover,.admin-settings-item:focus-visible{border-color:rgba(95,117,227,.28);background:rgba(100,119,230,.09);outline:none;}
+.admin-settings-item>span:last-child{display:grid;gap:3px;min-width:0;}
+.admin-settings-item strong{font-size:13px;line-height:1.35;overflow-wrap:anywhere;}
+.admin-settings-item small{font-size:11px;line-height:1.4;color:var(--muted,#71809d);}
+.admin-settings-item-icon{display:grid;place-items:center;width:35px;height:35px;flex:0 0 35px;border-radius:10px;background:rgba(94,112,220,.12);color:#596fdb;font-size:18px;}
+.admin-settings-item.is-danger .admin-settings-item-icon{background:rgba(208,58,75,.10);color:#c53e52;}
+.admin-settings-item.is-danger:hover{background:rgba(208,58,75,.06);}
+.admin-settings-divider{height:1px;margin:5px 3px;background:var(--line,rgba(120,137,169,.2));}
+/* Corrige la franja vacía entre el encabezado y el primer contenido. */
+.admin-main{padding-top:14px!important;}
+@media(max-width:650px){.admin-header{height:62px;gap:8px;padding-inline:12px!important;}.admin-header-context{display:none;}.admin-settings-toggle{width:40px;height:40px;flex-basis:40px;border-radius:11px;font-size:20px;}.admin-main{padding-top:8px!important;}.admin-settings-menu{top:calc(100% + 8px);}}
+@media(prefers-reduced-motion:reduce){.admin-settings-toggle{transition:none;}}
