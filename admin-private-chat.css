@@ -181,3 +181,7 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
   .private-chat-admin-messages{min-height:180px}
   .private-chat-admin-actions .button{font-size:10px}
 }
+
+
+/* Si no hay conversación elegida, la lista aprovecha todo el ancho. */
+.private-chat-admin-layout:not(.has-selection){grid-template-columns:minmax(0,1fr)}
