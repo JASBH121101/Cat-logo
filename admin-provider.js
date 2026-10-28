@@ -356,6 +356,54 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     }
   }
 
+  function reviewDetailLabel(value) {
+    const key = normalizedText(value);
+    const labels = {
+      arabes: "Árabe", arabe: "Árabe", nicho: "Nicho", disenador: "Diseñador", designer: "Diseñador",
+      hombre: "Hombre", men: "Hombre", masculino: "Hombre", mujer: "Mujer", women: "Mujer", femenino: "Mujer",
+      unisex: "Unisex", edt: "EDT", edp: "EDP", parfum: "Parfum", extrait: "Extrait de parfum",
+      perfume: "Perfume", set: "Set"
+    };
+    return labels[key] || String(value || "").trim();
+  }
+
+  function renderReviewProductDetails(product) {
+    const container = $("#provider-review-product-details");
+    if (!container) return;
+    const detail = product.perfume_details || {};
+    const isPerfume = importCatalogType(product.catalog_type, "technology") === "perfumery";
+    const image = product.image_url
+      ? '<img class="provider-review-product-image" src="' + escapeHTML(product.image_url) + '" alt="" loading="lazy">'
+      : "";
+    const fields = isPerfume ? [
+      ["Marca / casa", product.brand],
+      ["Público", detail.audience ? reviewDetailLabel(detail.audience) : ""],
+      ["Concentración", detail.concentration ? reviewDetailLabel(detail.concentration) : ""],
+      ["Contenido", detail.volume_ml !== null && detail.volume_ml !== undefined && detail.volume_ml !== "" ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : ""],
+      ["Tipo de fragancia", detail.family ? reviewDetailLabel(detail.family) : ""],
+      ["Tipo de producto", product.product_type ? reviewDetailLabel(product.product_type) : ""],
+      ["Modelo / presentación", product.model]
+    ] : [
+      ["Marca", product.brand], ["Modelo", product.model], ["Categoría", product.category]
+    ];
+    container.innerHTML = image + '<dl class="provider-review-detail-grid">' + fields.map(([label, value]) =>
+      '<div><dt>' + escapeHTML(label) + '</dt><dd>' + escapeHTML(value || "Sin registrar") + '</dd></div>'
+    ).join("") + '</dl>';
+    container.dataset.catalogType = isPerfume ? "perfumery" : "technology";
+  }
+
+  function renderReviewPriceComparison(product, review = {}) {
+    const container = $("#provider-review-price-comparison");
+    if (!container) return;
+    const format = (value, currency) => value === null || value === undefined || value === ""
+      ? "Sin registrar" : money(value, currency);
+    container.innerHTML = '<div class="provider-price-compare-card"><span>Precio publicado actual</span><strong>' +
+      escapeHTML(format(product.price_usd, "USD")) + '</strong><small>' + escapeHTML(format(product.price_nio, "NIO")) +
+      '</small></div><div class="provider-price-compare-card"><span>Último precio registrado de GoPartner</span><strong>' +
+      escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' +
+      escapeHTML(format(review.provider_price_nio, "NIO")) + '</small></div>';
+  }
+
   function openReview(productId) {
     const product = activeProducts().find(item => String(item.id) === String(productId));
     if (!product || !reviewDialog) return;
@@ -363,6 +411,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-product-id").value = product.id;
     $("#provider-review-product-title").textContent = product.name || "Producto sin nombre";
     $("#provider-review-product-subtitle").textContent = importCatalogType(product.catalog_type, "technology") === "perfumery" ? "JB Parfums" : "JB TECH";
+    renderReviewProductDetails(product);
+    renderReviewPriceComparison(product, review);
     $("#provider-review-name").value = review.provider_name || "GoPartner";
     $("#provider-review-price-usd").value = review.provider_price_usd ?? "";
     $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
@@ -391,6 +441,15 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     } catch (error) { say(reviewMessage, error.message, "error"); return; }
 
     const previous = providerStatuses.get(String(product.id)) || {};
+    const publishedUSD = product.price_usd === null || product.price_usd === undefined || product.price_usd === "" ? null : Number(product.price_usd);
+    const publishedNIO = product.price_nio === null || product.price_nio === undefined || product.price_nio === "" ? null : Number(product.price_nio);
+    const priceChanged = (priceUSD !== null && Number.isFinite(publishedUSD) && priceUSD !== publishedUSD) ||
+      (priceNIO !== null && Number.isFinite(publishedNIO) && priceNIO !== publishedNIO);
+    const hasBothProviderPrices = priceUSD !== null && priceNIO !== null;
+    const priceSyncNeeded = hasBothProviderPrices && (
+      !Number.isFinite(publishedUSD) || !Number.isFinite(publishedNIO) ||
+      priceUSD !== publishedUSD || priceNIO !== publishedNIO
+    );
     const payload = {
       product_id: product.id,
       provider_name: providerName,
@@ -412,8 +471,31 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       const { error } = await supabase.from("product_provider_status").upsert(payload, { onConflict: "product_id" });
       if (error) throw error;
       providerStatuses.set(String(product.id), payload);
+
+      let catalogPriceMessage = "";
+      if (priceSyncNeeded) {
+        const { error: priceError } = await supabase.from("products")
+          .update({ price_usd: priceUSD, price_nio: priceNIO })
+          .eq("id", product.id)
+          .eq("catalog_type", product.catalog_type);
+        if (priceError) {
+          catalogPriceMessage = " La revisión quedó guardada, pero no se pudo actualizar el precio publicado: " + (priceError.message || "error desconocido") + ".";
+        } else {
+          product.price_usd = priceUSD;
+          product.price_nio = priceNIO;
+          if (typeof window.dispatchEvent === "function") window.dispatchEvent(new CustomEvent("jb-catalog-provider-updated"));
+          catalogPriceMessage = " El precio publicado se actualizó automáticamente a " + money(priceUSD, "USD") + " y " + money(priceNIO, "NIO") + ".";
+        }
+      } else if ((priceUSD === null || priceNIO === null) && priceChanged) {
+        catalogPriceMessage = " La revisión quedó guardada, pero para sincronizar el precio publicado se necesitan ambos precios de GoPartner (US$ y C$); el catálogo no se modificó.";
+      } else if (hasBothProviderPrices && !priceSyncNeeded) {
+        catalogPriceMessage = " El precio de GoPartner coincide con el publicado; no fue necesario modificarlo.";
+      } else if (!hasBothProviderPrices) {
+        catalogPriceMessage = " No se modificó el precio publicado porque faltan uno o ambos precios del proveedor.";
+      }
+
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
-      say(statusMessage, "Revisión guardada. Se añadió una entrada al historial privado.", "success");
+      say(statusMessage, "Revisión guardada. Se añadió una entrada al historial privado." + catalogPriceMessage, catalogPriceMessage.includes("no se pudo") ? "error" : "success");
       await refresh();
     } catch (error) {
       say(reviewMessage, "No se pudo guardar la revisión: " + (error?.message || "error desconocido"), "error");
