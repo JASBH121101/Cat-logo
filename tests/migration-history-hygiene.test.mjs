@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -38,7 +38,7 @@ test("no new migration files duplicate the exact SQL of another migration", () =
 
   const duplicateGroups = [...byDigest.values()].filter(group => group.length > 1);
   assert.deepEqual(
-    duplicateGroups.map(group => group.map(basename).sort()).sort((a, b) => a.join("|").localeCompare(b.join("|"))),
+    duplicateGroups.map(group => [...group].sort()).sort((a, b) => a.join("|").localeCompare(b.join("|"))),
     [knownAppliedDuplicate],
     "duplicate SQL migrations found; do not delete or rewrite already-applied history. Reconcile the new duplicate before merging."
   );
