@@ -10936,3 +10936,19 @@ body.admin-body.admin-catalog-perfumery .product-collection-tag-options .product
   color:#f4e3ba!important;
   background:linear-gradient(115deg,#2a2114,#3a2a17)!important;
 }
+
+body.admin-body .product-tag-option-label { display:inline-flex; align-items:center; gap:8px; min-width:0; }
+body.admin-body .product-tag-option-icon {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  font-size:19px;
+  line-height:1;
+}
+body.admin-body .product-tag-option-icon--tech { color:#65b7ff; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+body.admin-body .product-tag-option-icon--perfume { display:none; color:#dfc17d; font-family:Georgia,serif; font-size:21px; }
+body.admin-body.admin-catalog-perfumery .product-tag-option-icon--tech { display:none; }
+body.admin-body.admin-catalog-perfumery .product-tag-option-icon--perfume { display:inline-flex; }
