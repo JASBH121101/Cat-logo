@@ -221,7 +221,16 @@ async function createConversation(input: Record<string, unknown>, publicBase: st
 async function handler(request: Request): Promise<Response> {
   const origin = request.headers.get("Origin") || "";
   if (!PUBLIC_HOSTS.has(origin)) return json(403, { error: "origin_not_allowed", message: "Origen no permitido." }, origin);
-  if (request.method === "OPTIONS") return json(204, {}, origin);
+  if (request.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-JB-Client-IP",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+    }
+  });
   if (request.method !== "POST") return json(405, { error: "method_not_allowed" }, origin);
   const rawLength = Number(request.headers.get("Content-Length") || "0");
   if (rawLength > 12_000) return json(413, { error: "request_too_large" }, origin);
@@ -316,7 +325,7 @@ async function handler(request: Request): Promise<Response> {
         session_expires_at: deleteAfter,
         updated_at: declinedAt,
       }, "return=representation");
-      return json(201, { conversation: safeConversation(updated[0]), delete_after: deleteAfter }, origin);
+      return json(201, { session_token: payload.session_token, conversation: safeConversation(updated[0]), delete_after: deleteAfter }, origin);
     }
 
     const sessionToken = clean(body.session_token, 256);
@@ -442,8 +451,8 @@ async function handler(request: Request): Promise<Response> {
         const closed = await rest("private_chat_conversations", { id: "eq." + id }, "PATCH", {
           status: "closed",
           invite_token_hash: null,
-          session_token_hash: null,
-          session_expires_at: now,
+          invite_expires_at: null,
+          session_expires_at: addMinutes(new Date(now), 7 * 24 * 60),
           updated_at: now,
           last_message_at: now,
         }, "return=representation");
