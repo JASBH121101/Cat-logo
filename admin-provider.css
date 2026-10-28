@@ -378,3 +378,31 @@ html[data-theme="dark"] body.admin-body .admin-sidebar .admin-settings-toggle{bo
 html[data-theme="dark"] body.admin-body .admin-sidebar .admin-settings-toggle:hover,html[data-theme="dark"] body.admin-body .admin-sidebar .admin-settings-toggle[aria-expanded="true"]{border-color:rgba(118,140,255,.32);background:rgba(90,115,230,.14);}
 html[data-theme="dark"] body.admin-body .admin-sidebar .admin-settings-menu{border-color:rgba(112,139,208,.25);background:rgba(8,17,32,.28);color:#edf3ff;}
 @media(prefers-reduced-motion:reduce){.admin-sidebar .admin-settings-toggle,.admin-settings-toggle-chevron{transition:none;}}
+
+
+/* Validación explícita de diferencias: las revisiones informan, no cambian los precios públicos. */
+.provider-price-difference{display:grid;align-content:start;gap:5px;min-width:0;padding:10px 11px;border:1px solid var(--border,#dbe3f1);border-radius:10px;background:var(--surface,#fff);font-size:.78rem;line-height:1.5;overflow-wrap:anywhere}
+.provider-price-difference>strong{font-size:.76rem;color:var(--text,#1f2937)}
+.provider-price-difference.is-match,.provider-validation-line.is-match{border-color:rgba(22,141,92,.25);background:rgba(22,163,104,.07);color:#187347}
+.provider-price-difference.is-different,.provider-validation-line.is-different{border-color:rgba(205,133,37,.38);background:rgba(245,158,11,.08);color:#9a5b08}
+.provider-price-difference.is-pending,.provider-validation-line.is-pending{border-color:var(--border,#dbe3f1);background:var(--surface-muted,#f8fafc);color:var(--muted,#64748b)}
+.provider-review-validation-summary{display:grid;gap:7px;min-width:0}
+.provider-validation-line{margin:0;padding:10px 11px;border:1px solid var(--border,#dbe3f1);border-radius:10px;font-size:.8rem;line-height:1.5;overflow-wrap:anywhere}
+.provider-diff-list{min-width:220px;margin:0;padding-left:18px;font-size:.76rem;line-height:1.5}
+.provider-diff-list li+li{margin-top:3px}
+.provider-diff-empty{color:var(--muted,#64748b)}
+html[data-theme="dark"] .provider-price-difference{background:#101b30;border-color:#304466;color:#c1cde2}
+html[data-theme="dark"] .provider-price-difference>strong{color:#e8efff}
+html[data-theme="dark"] .provider-price-difference.is-match,html[data-theme="dark"] .provider-validation-line.is-match{background:rgba(22,141,92,.14);border-color:rgba(63,190,133,.3);color:#9ee6b8}
+html[data-theme="dark"] .provider-price-difference.is-different,html[data-theme="dark"] .provider-validation-line.is-different{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.32);color:#ffd18a}
+html[data-theme="dark"] .provider-price-difference.is-pending,html[data-theme="dark"] .provider-validation-line.is-pending{background:#142038;border-color:#304466;color:#b1bfd8}
+.provider-import-table td{overflow-wrap:anywhere}
+@media(max-width:480px){.provider-price-difference{padding:8px;font-size:.74rem}.provider-diff-list{min-width:190px}}
+
+/* Repara la superposición de la barra lateral durante el inicio de sesión y reduce el hueco superior. */
+body.admin-body:not(.admin-dashboard-active) #dashboard.hidden,
+body.admin-body:not(.admin-dashboard-active) #admin-sidebar,
+body.admin-body:not(.admin-dashboard-active) #admin-sidebar-backdrop{display:none!important}
+body.admin-body:not(.admin-dashboard-active) .admin-main{padding-top:0!important}
+body.admin-body:not(.admin-dashboard-active) .login-panel{margin-top:8px!important}
+@media(max-width:650px){body.admin-body:not(.admin-dashboard-active) .admin-main{padding-top:0!important}body.admin-body:not(.admin-dashboard-active) .login-panel{margin-top:4px!important}}
