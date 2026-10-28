@@ -10865,3 +10865,74 @@ body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-se
     z-index: 1200 !important;
   }
 }
+
+
+/* JB Manager · shared collection labels, with catalog-specific identity. */
+body.admin-body .product-collection-tag-options {
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:9px!important;
+  margin-bottom:12px;
+}
+body.admin-body .product-collection-tag-options > .product-tag-option {
+  display:inline-flex!important;
+  flex:0 1 auto!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:44px!important;
+  margin:0!important;
+  padding:9px 14px!important;
+  gap:8px!important;
+  border-radius:999px!important;
+  border:1px solid var(--admin-taxonomy-border,#d9e2f7)!important;
+  color:var(--admin-taxonomy-text,#17264c)!important;
+  background:var(--admin-taxonomy-control,#fff)!important;
+  font-size:.9rem!important;
+  line-height:1.3!important;
+}
+body.admin-body .product-collection-tag-options .product-tag-option--limited-edition {
+  border-color:#487bc8!important;
+  color:#d8ebff!important;
+  background:linear-gradient(115deg,#122c53,#132d48)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 4px 12px rgba(18,72,142,.12);
+}
+body.admin-body .product-collection-tag-options .product-tag-option--limited-edition:has(input:checked) {
+  border-color:#58a8ff!important;
+  color:#f1f8ff!important;
+  background:linear-gradient(115deg,#174e9c,#155d79)!important;
+  box-shadow:0 0 0 2px rgba(61,137,232,.15),0 7px 17px rgba(23,78,156,.18);
+}
+body.admin-body .product-collection-tag-options .product-tag-option--limited-edition input {
+  accent-color:#62b5ff!important;
+  flex:0 0 auto;
+}
+body.admin-body .product-collection-tag-options .product-tag-option--exclusive:has(input:checked) {
+  border-color:#7384e8!important;
+  background:var(--admin-taxonomy-chip-bg,#eaf0ff)!important;
+}
+body.admin-body .product-tech-tag-options.hidden { display:none!important; }
+body.admin-body.admin-catalog-perfumery .product-collection-tag-options .product-tag-option--limited-edition {
+  border-color:#a7864a!important;
+  color:#f0dfb4!important;
+  background:linear-gradient(115deg,#1a1712,#302519)!important;
+  box-shadow:inset 0 1px 0 rgba(255,230,172,.055),0 5px 14px rgba(110,77,28,.13);
+}
+body.admin-body.admin-catalog-perfumery .product-collection-tag-options .product-tag-option--limited-edition:has(input:checked) {
+  border-color:#e2c27d!important;
+  color:#fff2cc!important;
+  background:linear-gradient(115deg,#493719,#6b5128)!important;
+  box-shadow:0 0 0 2px rgba(190,151,74,.17),0 7px 17px rgba(100,72,29,.18);
+}
+body.admin-body.admin-catalog-perfumery .product-collection-tag-options .product-tag-option--limited-edition input {
+  accent-color:#d1ae67!important;
+}
+body.admin-body.admin-catalog-perfumery .product-collection-tag-options .product-tag-option--exclusive:has(input:checked) {
+  border-color:#bf9a54!important;
+  color:#f4e3ba!important;
+  background:linear-gradient(115deg,#2a2114,#3a2a17)!important;
+}
