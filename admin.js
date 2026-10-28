@@ -6213,7 +6213,8 @@ resetCommissionForm();
       if(notificationPrimed){
         for(const row of rows){
           const previous=previousLastMessageAt.get(String(row.id));
-          if(previous && row.last_message_at && previous!==row.last_message_at && notificationEnabled && document.visibilityState==="hidden"){
+          const notReadingThread = document.visibilityState==="hidden" || panel.classList.contains("hidden");
+          if((previous===undefined || (row.last_message_at && previous!==row.last_message_at)) && notificationEnabled && notReadingThread){
             void notifyIfCustomerMessage(row);
           }
         }
