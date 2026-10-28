@@ -752,12 +752,25 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const selects = Array.from($("#provider-review-variants")?.querySelectorAll("[data-provider-config-availability], [data-provider-color-availability]") || []);
     const missing = selects.filter(select => (normalizeAvailability(select.value, false) || "unknown") === "unknown").length +
       (overall === "unknown" ? 1 : 0);
-    const mismatches = selects.filter(select => {
+    const mismatchLabels = selects.filter(select => {
       const row = select.closest("[data-provider-variant-config-row], [data-provider-color-row]");
       const catalog = row?.dataset.catalogAvailability || "unknown";
       const incoming = normalizeAvailability(select.value, false) || "unknown";
       return incoming !== "unknown" && catalog !== "unknown" && incoming !== catalog;
-    }).length;
+    }).map(select => {
+      const row = select.closest("[data-provider-color-row]");
+      if (row) {
+        const group = row.closest("[data-provider-variant-config-row]");
+        return (group?.dataset.configLabel ? group.dataset.configLabel + " · " : "") +
+          (row.dataset.colorName || "Color") + ": " + availabilityLabel(row.dataset.catalogAvailability) +
+          " → " + availabilityLabel(normalizeAvailability(select.value, false) || "unknown");
+      }
+      const config = select.closest("[data-provider-variant-config-row]");
+      return (config?.dataset.configLabel || "Configuración") + ": " +
+        availabilityLabel(config?.dataset.catalogAvailability || "unknown") + " → " +
+        availabilityLabel(normalizeAvailability(select.value, false) || "unknown");
+    });
+    const mismatches = mismatchLabels.length;
     const button = $("#provider-review-save");
     if (button) {
       button.disabled = savingReview || missing > 0;
@@ -774,7 +787,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       status.textContent = missing
         ? "Faltan " + missing + " estado(s) por confirmar (incluida la disponibilidad general). No se puede confirmar la revisión todavía."
         : mismatches
-          ? "Revisión completa: " + mismatches + " diferencia(s) frente al catálogo. Verificá que cada cambio coincida con GoPartner antes de guardar."
+          ? "Revisión completa: " + mismatches + " diferencia(s) frente al catálogo. " + mismatchLabels.slice(0, 5).join("; ") +
+            (mismatches > 5 ? "; y " + (mismatches - 5) + " diferencia(s) más" : "") +
+            ". Verificá que cada cambio coincida con GoPartner antes de guardar."
           : "Revisión completa: disponibilidad general, configuraciones y colores confirmados.";
     }
   }
