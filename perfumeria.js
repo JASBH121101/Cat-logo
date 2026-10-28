@@ -25,6 +25,12 @@ const productTypeFilters = $("#product-type-filters");
 const clearAllFiltersButton = $("#clear-all-filters");
 const filterSummary = $("#perfume-filter-summary");
 const resultsHeading = $("#catalog-results-heading");
+const perfumeExclusiveSection = $("#perfume-exclusive-section");
+const perfumeExclusiveGrid = $("#perfume-exclusive-grid");
+const perfumeExclusiveCount = $("#perfume-exclusive-count");
+const perfumeLimitedEditionSection = $("#perfume-limited-edition-section");
+const perfumeLimitedEditionGrid = $("#perfume-limited-edition-grid");
+const perfumeLimitedEditionCount = $("#perfume-limited-edition-count");
 const resultsEyebrow = $("#catalog-results-eyebrow");
 const resultsTitle = $("#catalog-results-title");
 const minPriceInput = $("#price-min-input");
@@ -437,20 +443,32 @@ function imageMarkup(product) {
     : '<div class="perfume-photo-placeholder"><span aria-hidden="true">✦</span><small>Foto por agregar</small></div>';
 }
 
+function normalizedPerfumeProductTags(product) {
+  return [...new Set((Array.isArray(product?.tags) ? product.tags : [])
+    .map(tag => String(tag || "").trim().toLocaleLowerCase("es"))
+    .filter(tag => Boolean(tag) && tag !== "recommended"))];
+}
+
 function renderCard(product) {
   const detail = product.perfume_details || {};
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
   const image = imageMarkup(product);
   const tightPhotoFrame = /9\s*pm\s*elixir|sauvage\s+elixir/i.test(String(product.name || ""));
-  const badge = product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
+  const tags = normalizedPerfumeProductTags(product);
+  const exclusive = tags.includes("exclusive");
+  const limitedEdition = tags.includes("limited_edition");
+  const badge = exclusive
+    ? '<span class="perfume-featured-badge">♛ EXCLUSIVO</span>'
+    : (product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "");
+  const limitedBadge = limitedEdition ? '<span class="perfume-limited-edition-badge">♛ EDICIÓN LIMITADA</span>' : "";
   const state = statusLabel(product.availability);
   const stateBadge = state === "Disponible" ? "" : '<span class="perfume-state-badge">' + escapeHtml(state) + '</span>';
   const nio = formatNIO(product.price_nio);
   const productMeta = [concentration, volume].filter(Boolean).map(escapeHtml).join('<span aria-hidden="true">·</span>');
 
-  const badges = badge || stateBadge
-    ? '<div class="perfume-product-badges">' + badge + stateBadge + '</div>'
+  const badges = badge || limitedBadge || stateBadge
+    ? '<div class="perfume-product-badges">' + badge + limitedBadge + stateBadge + '</div>'
     : "";
 
   return '<article class="product-card perfume-product-card' + (product.featured ? ' featured-product-card' : '') + '">' +
@@ -525,20 +543,44 @@ function renderProducts() {
   const filtering = hasContentFilters();
   const catalogEmpty = perfumes.length === 0;
   const hasMatchedProducts = matched.length > 0;
+  const exclusiveProducts = filtering ? [] : matched.filter(product => normalizedPerfumeProductTags(product).includes("exclusive"));
+  const limitedEditionProducts = filtering ? [] : matched.filter(product => normalizedPerfumeProductTags(product).includes("limited_edition"));
+  const highlightedIds = new Set([...exclusiveProducts, ...limitedEditionProducts].map(product => String(product.id)));
+  const categorizedProducts = filtering
+    ? matched
+    : matched.filter(product => !highlightedIds.has(String(product.id)));
 
   resultsHeading.classList.toggle("hidden", catalogEmpty);
   resultsEyebrow.textContent = filtering ? "RESULTADOS" : "DESCUBRÍ";
   resultsTitle.textContent = filtering ? "Resultados de tu búsqueda" : "Toda la colección";
 
+  if (perfumeExclusiveSection && perfumeExclusiveGrid) {
+    perfumeExclusiveSection.classList.toggle("hidden", exclusiveProducts.length === 0);
+    perfumeExclusiveGrid.innerHTML = exclusiveProducts.map(renderCard).join("");
+  }
+  if (perfumeExclusiveCount) perfumeExclusiveCount.textContent = exclusiveProducts.length
+    ? exclusiveProducts.length + (exclusiveProducts.length === 1 ? " fragancia exclusiva" : " fragancias exclusivas")
+    : "";
+  if (perfumeLimitedEditionSection && perfumeLimitedEditionGrid) {
+    perfumeLimitedEditionSection.classList.toggle("hidden", limitedEditionProducts.length === 0);
+    perfumeLimitedEditionGrid.innerHTML = limitedEditionProducts.map(renderCard).join("");
+  }
+  if (perfumeLimitedEditionCount) perfumeLimitedEditionCount.textContent = limitedEditionProducts.length
+    ? limitedEditionProducts.length + (limitedEditionProducts.length === 1 ? " edición" : " ediciones")
+    : "";
+
   categoryDefinitions.forEach(category => {
-    const categoryProducts = matched.filter(product => canonicalFamily(product.perfume_details?.family) === category.key);
+    const categoryProducts = categorizedProducts.filter(product => canonicalFamily(product.perfume_details?.family) === category.key);
     const hasCategoryProducts = categoryProducts.length > 0;
 
     if (category.optional) {
       category.section.classList.toggle("hidden", !hasCategoryProducts);
+    } else if (!filtering) {
+      category.section.classList.toggle("hidden", !hasCategoryProducts);
+      category.empty?.classList.add("hidden");
     } else {
-      category.section.classList.toggle("hidden", filtering && !hasCategoryProducts);
-      category.empty.classList.toggle("hidden", hasCategoryProducts || filtering);
+      category.section.classList.toggle("hidden", !hasCategoryProducts);
+      category.empty?.classList.add("hidden");
     }
 
     category.grid.innerHTML = categoryProducts.map(renderCard).join("");
