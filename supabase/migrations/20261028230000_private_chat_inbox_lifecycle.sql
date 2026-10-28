@@ -352,6 +352,7 @@ begin
 end;
 $function$;
 
+revoke all on function public.cleanup_private_chats() from public, anon, authenticated;
 revoke all on function public.private_chat_admin_finalize_expired() from public, anon;
 grant execute on function public.private_chat_admin_finalize_expired() to authenticated;
 
