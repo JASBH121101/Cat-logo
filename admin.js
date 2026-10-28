@@ -542,6 +542,7 @@ function splitPerfumeNotes(value) {
 
 function updateProductFormMode() {
   const isPerfume = activeCatalogType === "perfumery";
+  document.body.classList.toggle("admin-catalog-perfumery", isPerfume);
   const category = $("#product-category");
   if (category) {
     const previous = isPerfume ? category.value : normalizeTechnologyCategory(category.value);
@@ -593,8 +594,15 @@ function updateProductFormMode() {
   $("#technology-variants-section")?.classList.toggle("hidden", isPerfume);
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
-  $("#product-taxonomy-fields")?.classList.toggle("hidden", isPerfume);
+  $("#product-taxonomy-fields")?.classList.remove("hidden");
+  $("#product-tech-tag-options")?.classList.toggle("hidden", isPerfume);
   $("#product-subcategory-field")?.classList.toggle("hidden", isPerfume);
+  const tagTitle = $("#product-tags-title");
+  const tagDescription = $("#product-tags-description");
+  if (tagTitle) tagTitle.textContent = isPerfume ? "Colección y edición especial" : "Etiquetas manuales";
+  if (tagDescription) tagDescription.textContent = isPerfume
+    ? "Destacá fragancias o sets que sean realmente exclusivos o de edición limitada."
+    : "Elegí solo las etiquetas que correspondan; no se asignan automáticamente por marca.";
   if (isPerfume) {
     $("#product-subcategory").value = "";
     $("#product-subcategory-custom").value = "";
@@ -602,7 +610,6 @@ function updateProductFormMode() {
     $("#product-custom-tags").value = "";
     customProductTags = [];
     renderCustomProductTagChips();
-    document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = false; });
   }
 
   // Exclusivity/featured is a technology-only control. Keep it out of JB Parfums.
@@ -4121,7 +4128,7 @@ function getSelectedProductSubcategory() {
   return String(select.value || "").trim();
 }
 
-const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "high_performance", "quality_price", "top_gaming", "best_seller", "new_arrival", "offer"]);
+const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "limited_edition", "high_performance", "quality_price", "top_gaming", "best_seller", "new_arrival", "offer"]);
 
 function parseCustomProductTagTokens(value) {
   return String(value || "")
@@ -4243,7 +4250,7 @@ function fillEditor(product) {
   $("#product-model").value = product.model || "";
   $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : normalizeTechnologyCategory(product.category || "Otros");
   updateProductSubcategorySuggestions(activeCatalogType === "perfumery" ? "" : (product.subcategory || ""));
-  setProductTags(activeCatalogType === "perfumery" ? [] : (product.tags || []));
+  setProductTags(product.tags || []);
   $("#product-description").value = product.description || "";
   $("#product-availability").value = normalizeProductAvailability(product.availability);
   $("#product-price-usd").value = product.price_usd ?? "";
@@ -4988,7 +4995,7 @@ async function buildPublishReview() {
   const isPerfume = activeCatalogType === "perfumery";
   const family = isPerfume ? perfumeFamilyLabel($("#product-perfume-family")?.value) : ($("#product-category")?.value || "Sin categoría");
   const subcategory = isPerfume ? "" : getSelectedProductSubcategory();
-  const tags = isPerfume ? [] : selectedProductTags();
+  const tags = selectedProductTags();
   const warnings = [], missingPhotos = [], candidates = [], variantSummary = [];
   const priceSamples = { usd: [], nio: [] };
   mainImageItems.forEach((item, index) => {
@@ -5079,15 +5086,15 @@ function renderPublishReview(review) {
       '</div></div>'
     : "";
   const reviewTagLabels = {
-    exclusive: "Exclusivo", high_performance: "Alto rendimiento", quality_price: "Calidad-precio",
+    exclusive: "Exclusivo", limited_edition: "Edición limitada", high_performance: "Alto rendimiento", quality_price: "Calidad-precio",
     top_gaming: "Top Gaming", best_seller: "Más vendido", new_arrival: "Nuevo ingreso", offer: "Oferta"
   };
   const tagSummary = (Array.isArray(review.tags) ? review.tags : [])
     .map(tag => reviewTagLabels[String(tag || "").toLowerCase()] || String(tag || "").trim())
     .filter(Boolean).join(" · ") || "Sin etiquetas manuales";
-  const taxonomyReviewMarkup = review.isPerfume ? "" :
-    '<div class="publish-review-row"><span>Subcategoría</span><strong>' + escapeHtml(review.subcategory || "Sin subcategoría") + '</strong></div>' +
-    '<div class="publish-review-row"><span>Etiquetas manuales</span><strong>' + escapeHtml(tagSummary) + '</strong></div>';
+  const taxonomyReviewMarkup = (review.isPerfume ? "" :
+    '<div class="publish-review-row"><span>Subcategoría</span><strong>' + escapeHtml(review.subcategory || "Sin subcategoría") + '</strong></div>') +
+    '<div class="publish-review-row"><span>' + (review.isPerfume ? "Colección" : "Etiquetas manuales") + '</span><strong>' + escapeHtml(tagSummary) + '</strong></div>';
   $("#publish-review-summary").innerHTML =
     '<div class="publish-review-row"><span>Producto</span><strong>' + escapeHtml(review.name || "Sin nombre") + '</strong></div>' +
     '<div class="publish-review-row"><span>Marca</span><strong>' + escapeHtml(review.brand || "Sin marca indicada") + '</strong></div>' +
@@ -5500,7 +5507,7 @@ form?.addEventListener("submit", async event => {
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
       category: isPerfume ? "Perfumería" : ($("#product-category").value.trim() || null),
       subcategory: isPerfume ? (existingProduct?.subcategory ?? null) : (getSelectedProductSubcategory() || null),
-      tags: isPerfume ? (existingProduct?.tags ?? []) : selectedProductTags(),
+      tags: selectedProductTags(),
       availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
       price_nio: priceNIO,
