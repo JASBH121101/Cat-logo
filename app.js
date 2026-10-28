@@ -26,6 +26,9 @@ const subcategoryFilter = document.querySelector("#subcategory-filter");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
 const featuredCount = document.querySelector("#featured-count");
+const limitedEditionSection = document.querySelector("#limited-edition-section");
+const limitedEditionGrid = document.querySelector("#limited-edition-grid");
+const limitedEditionCount = document.querySelector("#limited-edition-count");
 const highPerformanceSection = document.querySelector("#high-performance-section");
 const highPerformanceGrid = document.querySelector("#high-performance-grid");
 const highPerformanceCount = document.querySelector("#high-performance-count");
@@ -715,6 +718,7 @@ function formatCustomProductTag(value) {
 }
 
 const PRODUCT_TAG_LABELS = {
+  limited_edition: "🏅 EDICIÓN LIMITADA",
   high_performance: "⚡ ALTO RENDIMIENTO",
   quality_price: "💎 CALIDAD-PRECIO",
   top_gaming: "🎮 TOP GAMING",
@@ -1052,6 +1056,7 @@ function renderProducts() {
     product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")
   );
   const featured = hasFilters ? [] : list.filter(isExclusiveProduct);
+  const limitedEdition = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("limited_edition"));
   const highPerformance = hasFilters ? [] : list.filter(product => {
     const tags = normalizedProductTags(product);
     return tags.includes("high_performance") && !isExclusiveProduct(product);
@@ -1061,6 +1066,7 @@ function renderProducts() {
   const regularProducts = hasFilters ? list : list.filter(product => {
     const tags = normalizedProductTags(product);
     return !isExclusiveProduct(product) &&
+      !tags.includes("limited_edition") &&
       !tags.includes("high_performance") &&
       !tags.includes("quality_price") &&
       !tags.includes("top_gaming");
@@ -1091,6 +1097,13 @@ function renderProducts() {
     featuredGrid.innerHTML = featured.map(renderCard).join("");
   }
   if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} exclusivo${featured.length === 1 ? "" : "s"}` : "";
+  if (limitedEditionSection && limitedEditionGrid) {
+    limitedEditionSection.classList.toggle("hidden", limitedEdition.length === 0);
+    limitedEditionGrid.innerHTML = limitedEdition.map(renderCard).join("");
+  }
+  if (limitedEditionCount) limitedEditionCount.textContent = limitedEdition.length
+    ? limitedEdition.length + " edición" + (limitedEdition.length === 1 ? "" : "es")
+    : "";
   if (resultsEyebrow) resultsEyebrow.textContent = hasFilters ? "TU BÚSQUEDA" : "CATÁLOGO COMPLETO";
   if (resultsTitle) resultsTitle.textContent = hasFilters ? "Resultados" : "Explorá todo el catálogo";
   if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
