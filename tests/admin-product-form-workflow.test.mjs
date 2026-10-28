@@ -16,14 +16,17 @@ test("product draft and unpublished saves require a name but defer publish-only 
   assert.match(admin, /category: isPerfume \? "Perfumería" : \(\$\("#product-category"\)\.value\.trim\(\) \|\| null\)/);
 });
 
-test("RAM and storage controls are limited to phones, tablets, and laptops", () => {
+test("RAM and storage fields stay available but are optional when a product does not use them", () => {
   assert.match(admin, /function categoryUsesRamStorage[\s\S]*?\["Celulares", "Tablets", "Laptops"\]/);
-  assert.match(admin, /group\.querySelectorAll\("\.variant-storage-label, \[data-group-ram\]"\)[\s\S]*?classList\.toggle\("hidden", !usesRamStorage\)/);
+  assert.match(admin, /group\.querySelectorAll\("\.variant-storage-label, \[data-group-ram\]"\)[\s\S]*?wrapper\?\.classList\.remove\("hidden"\)/);
+  assert.match(admin, /const ramRaw = read\("\[data-group-ram\]"\);[\s\S]*?const ram = ramRaw \?/);
+  assert.doesNotMatch(admin, /requiresConfiguration && !options\.allowIncomplete && !ramRaw/);
 });
 
 test("variant add control is available for every technology category and fields adapt immediately", () => {
   assert.match(admin, /addVariantButton\?\.classList\.remove\("hidden"\)/);
-  assert.match(admin, /addVariantButton\.title = usesRamStorage[\s\S]*?Agregar otra variante de precio y color/);
+  assert.match(admin, /addVariantButton\.title = "Agregar otra variante de capacidad, RAM, precio y color"/);
+  assert.match(admin, /wrapper\?\.classList\.remove\("hidden"\)/);
   assert.match(admin, /updateCategoryVariantVisibility\(\);[\s\S]*?const focusSelector = categoryUsesRamStorage\(\) \?[\s\S]*?data-group-price-usd/);
   assert.match(html, /id="base-color-manager" class="base-color-manager primary-config-slot"/);
 });
@@ -39,7 +42,8 @@ test("variant editor restores the add button and exposes the primary RAM/storage
 
 test("published phone/tablet/laptop products require complete configurations and at least one variant", () => {
   assert.match(admin, /requiresConfiguration && !options\.allowIncomplete && !storageRaw/);
-  assert.match(admin, /RAM es opcional si el fabricante no la especifica/);
+  assert.match(admin, /const ramRaw = read\("\[data-group-ram\]"\);[\s\S]*?const ram = ramRaw \?/);
+  assert.doesNotMatch(admin, /requiresConfiguration && !options\.allowIncomplete && !ramRaw/);
   assert.match(admin, /categoryUsesRamStorage\(\$\("#product-category"\)\?\.value \|\| ""\) && !options\.allowIncomplete && !configs\.length/);
   assert.match(admin, /Agregá al menos una variante con almacenamiento y color antes de publicar/);
 });
@@ -53,7 +57,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261027-variant-editor-add1/);
+  assert.match(html, /admin\.js\?v=20261027-variant-editor-fields2/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
 
