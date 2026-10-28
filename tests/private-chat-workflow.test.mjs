@@ -137,11 +137,22 @@ test("advisor expiry is tracked from claim and timed-out threads become read-onl
 
 test("private chat lifecycle migration aligns claim expiry, secure replies and finalization", () => {
   assert.match(lifecycleMigration, /session_expires_at = v_expiry/);
-  assert.match(lifecycleMigration, /function public\\.private_chat_admin_finalize_expired/);
+  assert.match(lifecycleMigration, /function public\.private_chat_admin_finalize_expired/);
   assert.match(lifecycleMigration, /interval '30 minutes'/);
-  assert.match(lifecycleMigration, /c\\.delete_after <= now\\(\\)/);
-  assert.match(lifecycleMigration, /c\\.session_expires_at > now\\(\\)/);
+  assert.match(lifecycleMigration, /c\.delete_after <= now\(\)/);
+  assert.match(lifecycleMigration, /c\.session_expires_at > now\(\)/);
   assert.match(lifecycleMigration, /El acceso a este chat se cerrará en 10 minutos/);
   assert.match(lifecycleMigration, /historial puede conservarse por un máximo de 7 días/);
   assert.doesNotMatch(lifecycleMigration, /se cerrará y se eliminará en 10 minutos/);
+});
+
+
+test("customer still gets privacy, registration and seven-day retention context without duplicated purchase notice", () => {
+  assert.match(customerHtml, /private-chat-privacy/);
+  assert.match(customerHtml, /private-chat-consent-panel/);
+  assert.match(customerHtml, /Go Partners solicita tu nombre completo, número de celular y cédula/);
+  assert.match(customerHtml, /El historial se conserva un máximo de 7 días/);
+  assert.match(customerJs, /Older conversations may still contain a duplicated database message/);
+  assert.match(lifecycleMigration, /El registro de compra se completa mediante el procedimiento correspondiente de Go Partners/);
+  assert.doesNotMatch(lifecycleMigration, /values \(v_row\.id, 'assistant', v_notice\)/);
 });
