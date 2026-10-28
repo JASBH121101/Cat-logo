@@ -15,8 +15,8 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /quality_price: "CALIDAD-PRECIO"/);
   assert.match(app, /const PRODUCT_TAG_ICONS = \{/);
   assert.match(app, /class="product-badge-icon"/);
-  assert.match(css, /product-card-badges \\{ justify-content: center/);
-  assert.match(css, /product-badge-icon svg \\{/);
+  assert.match(css, /product-card-badges \{ justify-content: center/);
+  assert.match(css, /product-badge-icon svg \{/);
   assert.match(app, /product-card-tag-exclusive/);
   assert.ok(app.includes('"product-card-tag-" + tag'));
   assert.doesNotMatch(app, /product-card-color-slot/);
