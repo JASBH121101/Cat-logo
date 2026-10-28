@@ -1695,9 +1695,18 @@ function variantRowMarkup(variant = {}) {
   const libraryFavorite = isColorFavorite({ name: v.color, hex: v.color_hex });
 
   return `
-    <article class="variant-admin-row inline-color-card" data-variant-row>
-      <div class="inline-color-main">
+    <details class="variant-admin-row inline-color-card inline-color-card-collapse" data-variant-row>
+      <summary class="inline-color-card-summary">
         <span class="inline-color-dot" data-variant-color-dot style="--inline-color:${v.color_hex}" aria-hidden="true"></span>
+        <span class="inline-color-card-summary-copy">
+          <strong data-variant-color-summary>${escapeHtml(v.color || "Color sin nombre")}</strong>
+          <small data-variant-summary-availability>Estado: ${v.availability === "available" ? "Disponible" : v.availability === "order" ? "Por pedido" : "Agotado"}</small>
+        </span>
+        <button class="admin-mini-button danger inline-color-remove" type="button" data-remove-variant aria-label="Quitar color" title="Quitar color">×</button>
+        <span class="inline-color-card-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="inline-color-card-body">
+      <div class="inline-color-main">
         <label class="inline-color-name-field">
           <span>Nombre del color</span>
           <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color" placeholder="Ej. Gris titanio">
@@ -1706,7 +1715,6 @@ function variantRowMarkup(variant = {}) {
           <span>Tono</span>
           <input data-variant-hex type="color" value="${v.color_hex}" aria-label="Personalizar el tono del color">
         </label>
-        <button class="admin-mini-button danger inline-color-remove" type="button" data-remove-variant aria-label="Quitar color" title="Quitar color">×</button>
       </div>
       <details class="inline-color-details">
         <summary>Disponibilidad y fotografías</summary>
@@ -1739,7 +1747,8 @@ function variantRowMarkup(variant = {}) {
         <input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
         <p class="color-row-status" data-variant-status role="status"></p>
       </details>
-    </article>`;
+      </div>
+    </details>`;
 }
 
 function variantGroupKey(variant) {
@@ -1767,7 +1776,7 @@ function scheduleVariantColorLayout() {
   });
 }
 form?.addEventListener("toggle", event => {
-  if (event.target.matches?.(".inline-color-details, .variant-config-collapse")) scheduleVariantColorLayout();
+  if (event.target.matches?.(".inline-color-details, .variant-config-collapse, .inline-color-card-collapse")) scheduleVariantColorLayout();
 }, true);
 window.addEventListener("resize", scheduleVariantColorLayout);
 if (form && "MutationObserver" in window) {
@@ -1964,6 +1973,15 @@ function updateVariantRowHeadings() {
       const colorName = row.querySelector("[data-variant-color]")?.value.trim();
       const rowHeading = row.querySelector("[data-variant-row-heading]");
       if (rowHeading) rowHeading.textContent = colorName || "Color " + (index + 1);
+      const cardSummary = row.querySelector("[data-variant-color-summary]");
+      if (cardSummary) cardSummary.textContent = colorName || "Color " + (index + 1);
+      const colorAvailability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value || "");
+      const availabilitySummary = row.querySelector("[data-variant-summary-availability]");
+      if (availabilitySummary) availabilitySummary.textContent = "Estado: " + (
+        colorAvailability === "available" ? "Disponible"
+        : colorAvailability === "order" || colorAvailability === "on_order" ? "Por pedido"
+        : colorAvailability === "out_of_stock" ? "Agotado" : "Sin confirmar"
+      );
       const hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const dot = row.querySelector("[data-variant-color-dot]");
       if (dot) dot.style.setProperty("--inline-color", hex);
@@ -2557,6 +2575,7 @@ form?.addEventListener("click", async event => {
 
   const remove = event.target.closest("[data-remove-variant]");
   if (!remove) return;
+  event.preventDefault();
   const group = remove.closest("[data-variant-group]");
   const isBaseGroup = group?.dataset.baseGroup === "true";
   remove.closest("[data-variant-row]")?.remove();
