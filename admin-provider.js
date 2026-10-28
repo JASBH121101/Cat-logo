@@ -552,46 +552,37 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     container.dataset.catalogType = isPerfume ? "perfumery" : "technology";
   }
 
-  function priceDifferenceText(currentValue, providerValue, currency) {
-    if (providerValue === null || providerValue === undefined || providerValue === "") {
-      return "Ingresá el precio del proveedor para calcular la diferencia.";
-    }
-    const providerAmount = Number(providerValue);
-    if (!Number.isFinite(providerAmount)) return "El precio indicado no es válido.";
-    if (currentValue === null || currentValue === undefined || currentValue === "" || !Number.isFinite(Number(currentValue))) {
-      return "No hay precio público registrado para comparar.";
-    }
+  function numericPriceDifference(currentValue, providerValue) {
+    if (currentValue === null || currentValue === undefined || currentValue === "" ||
+        providerValue === null || providerValue === undefined || providerValue === "") return null;
     const currentAmount = Number(currentValue);
-    const difference = Math.round((providerAmount - currentAmount + Number.EPSILON) * 100) / 100;
-    if (difference === 0) return "Sin diferencias: ambos precios coinciden.";
-    const sign = difference > 0 ? "+" : "−";
-    const percent = currentAmount === 0 ? "" : " (" + sign +
-      Math.abs((difference / currentAmount) * 100).toLocaleString("es-NI", { maximumFractionDigits: 2 }) + "%)";
-    const direction = difference > 0 ? "por encima" : "por debajo";
-    return "Diferencia: " + sign + money(Math.abs(difference), currency) + percent +
-      ". El proveedor está " + direction + " del precio público.";
+    const providerAmount = Number(providerValue);
+    if (!Number.isFinite(currentAmount) || !Number.isFinite(providerAmount)) return null;
+    return Math.round((providerAmount - currentAmount + Number.EPSILON) * 100) / 100;
   }
 
   function renderReviewPriceComparison(product, review = {}) {
     const container = $("#provider-review-price-comparison");
     if (!container) return;
     const format = (value, currency) => value === null || value === undefined || value === ""
-      ? "Sin registrar" : money(value, currency);
-    const usdDiff = priceDifferenceText(product.price_usd, review.provider_price_usd, "USD");
-    const nioDiff = priceDifferenceText(product.price_nio, review.provider_price_nio, "NIO");
-    const diffClass = value => value.startsWith("Sin diferencias") ? "is-match"
-      : value.startsWith("Diferencia:") ? "is-different" : "is-pending";
+      ? "—" : money(value, currency);
+    const usdDiff = numericPriceDifference(product.price_usd, review.provider_price_usd);
+    const nioDiff = numericPriceDifference(product.price_nio, review.provider_price_nio);
+    const diffClass = value => value === null ? "is-pending" : value === 0 ? "is-match" : "is-different";
+    const diffDisplay = (value, currency) => value === null ? "—"
+      : value === 0 ? money(0, currency)
+      : (value > 0 ? "+ " : "− ") + money(Math.abs(value), currency);
     container.innerHTML =
-      '<div class="provider-price-compare-card"><span>Precio publicado actual · US$</span><strong>' +
-        escapeHTML(format(product.price_usd, "USD")) + '</strong><small>Precio público en córdobas: ' +
+      '<div class="provider-price-compare-card"><span>Publicado</span><strong>' +
+        escapeHTML(format(product.price_usd, "USD")) + '</strong><small>' +
         escapeHTML(format(product.price_nio, "NIO")) + '</small></div>' +
-      '<div class="provider-price-compare-card"><span>Precio del proveedor introducido · US$</span><strong>' +
-        escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>Precio del proveedor en córdobas: ' +
+      '<div class="provider-price-compare-card is-provider"><span>En revisión</span><strong>' +
+        escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' +
         escapeHTML(format(review.provider_price_nio, "NIO")) + '</small></div>' +
-      '<div class="provider-price-difference ' + diffClass(usdDiff) + '"><strong>US$ · diferencia</strong><span>' +
-        escapeHTML(usdDiff) + '</span></div>' +
-      '<div class="provider-price-difference ' + diffClass(nioDiff) + '"><strong>C$ · diferencia</strong><span>' +
-        escapeHTML(nioDiff) + '</span></div>';
+      '<div class="provider-price-difference ' + diffClass(usdDiff) + '" aria-label="Diferencia en dólares"><span>' +
+        escapeHTML(diffDisplay(usdDiff, "USD")) + '</span></div>' +
+      '<div class="provider-price-difference ' + diffClass(nioDiff) + '" aria-label="Diferencia en córdobas"><span>' +
+        escapeHTML(diffDisplay(nioDiff, "NIO")) + '</span></div>';
   }
 
   function availabilityOptions(selected) {
