@@ -269,3 +269,44 @@ html[data-theme="light"] .provider-dialog-fields textarea {
 .provider-dialog .provider-dialog-product-subtitle {
   color: #617392 !important;
 }
+
+
+/* Provider review dialogs must follow the active JB Manager theme on web and Android WebView. */
+html[data-theme="dark"] .provider-dialog {
+  color: #e8efff !important;
+  background: #0e1930 !important;
+  border-color: #304466 !important;
+  color-scheme: dark;
+}
+html[data-theme="dark"] .provider-dialog .provider-dialog-header .eyebrow {
+  color: #9db4ff !important;
+}
+html[data-theme="dark"] .provider-dialog .provider-dialog-header h2,
+html[data-theme="dark"] .provider-dialog .provider-dialog-product-title,
+html[data-theme="dark"] .provider-dialog .provider-dialog-fields label > span {
+  color: #e8efff !important;
+}
+html[data-theme="dark"] .provider-dialog .provider-dialog-product-subtitle {
+  color: #a9b9d6 !important;
+}
+html[data-theme="dark"] .provider-dialog .provider-private-note {
+  color: #b6c5df !important;
+  background: #14233e !important;
+}
+html[data-theme="light"] .provider-dialog {
+  color: #25324a !important;
+  background: #ffffff !important;
+  border-color: #d7deeb !important;
+  color-scheme: light;
+}
+html[data-theme="light"] .provider-dialog .provider-dialog-header h2,
+html[data-theme="light"] .provider-dialog .provider-dialog-product-title,
+html[data-theme="light"] .provider-dialog .provider-dialog-fields label > span {
+  color: #25324a !important;
+}
+html[data-theme="light"] .provider-dialog .provider-dialog-header .eyebrow {
+  color: #536db4 !important;
+}
+html[data-theme="light"] .provider-dialog .provider-dialog-product-subtitle {
+  color: #617392 !important;
+}
