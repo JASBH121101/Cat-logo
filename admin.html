@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-smart-duplicate-detector1"></script>
+  <script type="module" src="admin.js?v=20261028-limited-edition-sections1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -536,24 +536,38 @@
               </label>
 
               <section id="product-taxonomy-fields" class="span-2 product-taxonomy-fields" aria-labelledby="product-tags-title">
-                <div class="product-taxonomy-heading"><h3 id="product-tags-title">Etiquetas manuales</h3><p>Elegí solo las que correspondan; no se asignan automáticamente por marca.</p></div>
-                <div class="product-tag-options">
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag value="exclusive" id="product-tag-exclusive"><span>✦ Exclusivo</span></label>
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-high-performance" value="high_performance"><span>⚡ Alto rendimiento</span></label>
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-quality-price" value="quality_price"><span>💎 Calidad-precio</span></label>
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-top-gaming" value="top_gaming"><span>🎮 Top Gaming</span></label>
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-best-seller" value="best_seller"><span>Más vendido</span></label>
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-new-arrival" value="new_arrival"><span>Nuevo ingreso</span></label>
-                  <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-offer" value="offer"><span>Oferta</span></label>
-                                  </div>
-                <label class="product-custom-tags-field">
-                  Etiquetas personalizadas
-                  <div class="product-custom-tags-entry">
-                    <div id="product-custom-tags-chips" class="product-custom-tags-chips" aria-live="polite" hidden></div>
-                    <input id="product-custom-tags" type="text" maxlength="300" autocomplete="off" enterkeyhint="done" placeholder="Escribí una etiqueta y presioná Enter" aria-describedby="product-custom-tags-help">
+                <div class="product-taxonomy-heading">
+                  <h3 id="product-tags-title">Etiquetas manuales</h3>
+                  <p id="product-tags-description">Elegí solo las que correspondan; no se asignan automáticamente por marca.</p>
+                </div>
+                <div class="product-collection-tag-options" aria-label="Etiquetas de colección">
+                  <label class="product-tag-option product-tag-option--exclusive">
+                    <input type="checkbox" data-product-tag value="exclusive" id="product-tag-exclusive">
+                    <span>✦ Exclusivo</span>
+                  </label>
+                  <label class="product-tag-option product-tag-option--limited-edition">
+                    <input type="checkbox" data-product-tag value="limited_edition" id="product-tag-limited-edition">
+                    <span><span class="product-tag-option-icon" aria-hidden="true">🏅</span> Edición limitada</span>
+                  </label>
+                </div>
+                <div class="product-tech-tag-options" id="product-tech-tag-options">
+                  <div class="product-tag-options">
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-high-performance" value="high_performance"><span>⚡ Alto rendimiento</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-quality-price" value="quality_price"><span>💎 Calidad-precio</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-top-gaming" value="top_gaming"><span>🎮 Top Gaming</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-best-seller" value="best_seller"><span>Más vendido</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-new-arrival" value="new_arrival"><span>Nuevo ingreso</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-offer" value="offer"><span>Oferta</span></label>
                   </div>
-                  <small id="product-custom-tags-help">Presioná Enter para guardar cada etiqueta por separado. También podés pegar varias separadas por comas o punto y coma.</small>
-                </label>
+                  <label class="product-custom-tags-field">
+                    Etiquetas personalizadas
+                    <div class="product-custom-tags-entry">
+                      <div id="product-custom-tags-chips" class="product-custom-tags-chips" aria-live="polite" hidden></div>
+                      <input id="product-custom-tags" type="text" maxlength="300" autocomplete="off" enterkeyhint="done" placeholder="Escribí una etiqueta y presioná Enter" aria-describedby="product-custom-tags-help">
+                    </div>
+                    <small id="product-custom-tags-help">Presioná Enter para guardar cada etiqueta por separado. También podés pegar varias separadas por comas o punto y coma.</small>
+                  </label>
+                </div>
               </section>
 <input id="product-featured" type="checkbox" hidden aria-hidden="true">
               <input id="product-active" type="checkbox" hidden aria-hidden="true">
