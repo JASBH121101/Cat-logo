@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in admin.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js; do
+          for file in admin.js admin-provider.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js; do
             echo "Checking $file"
             node --check "$file"
           done
