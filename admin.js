@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { initProviderTools } from "./admin-provider.js?v=20261028-variant-price-sync1";
+import { initProviderTools } from "./admin-provider.js?v=20261028-provider-review-minimal4";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -712,10 +712,6 @@ function updateCategoryVariantVisibility() {
       const wrapper = field.matches("label") ? field : field.closest("label");
       wrapper?.classList.remove("hidden");
     });
-    const hint = group.querySelector(".variant-config-group-heading small");
-    if (hint) hint.textContent = group.dataset.baseGroup === "true"
-      ? "Configuración opcional: agregá almacenamiento, RAM, precios y colores según corresponda."
-      : "Agregá almacenamiento, RAM, precios y colores para esta variante. Los campos que no apliquen pueden quedar vacíos.";
   });
   const title = $("#variants-editor-title");
   if (title) title.textContent = "Variantes, capacidades y precios";
@@ -1843,10 +1839,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
         <span class="variant-config-chevron" aria-hidden="true">⌄</span>
       </summary>
       <div class="variant-config-body">
-        <div class="variant-config-group-heading">
-          <small>Configuración principal del producto</small>
-        </div>
-        ${fields}
+${fields}
         ${colorControls}
       </div>
     </details>`;
@@ -1862,7 +1855,6 @@ function variantGroupMarkup(v = {}, isBase = false) {
     </summary>
     <div class="variant-config-body">
       <div class="variant-config-group-heading">
-        <small>Editá los datos de esta configuración</small>
         <button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>
       </div>
       ${fields}
@@ -3030,6 +3022,7 @@ document.querySelectorAll("[data-admin-section]").forEach(button => button.addEv
    ========================================================= */
 let privateChatConversations = [];
 let privateChatSelectedId = "";
+let privateChatActiveFilter = "pending";
 let privateChatBaselineReady = false;
 let privateChatPendingBaselineReady = false;
 let privateChatKnownLatestMessages = new Map();
@@ -3042,6 +3035,8 @@ const privateChatListEl = document.getElementById("private-chat-conversation-lis
 const privateChatMessagesEl = document.getElementById("private-chat-admin-messages");
 const privateChatSelectedPanel = document.getElementById("private-chat-admin-selected");
 const privateChatEmptyPanel = document.getElementById("private-chat-admin-empty");
+const privateChatThreadEl = document.getElementById("private-chat-admin-thread");
+const privateChatLayoutEl = document.querySelector(".private-chat-admin-layout");
 const privateChatReplyForm = document.getElementById("private-chat-admin-reply-form");
 const privateChatReplyInput = document.getElementById("private-chat-admin-reply");
 const privateChatNavCount = document.getElementById("private-chat-nav-count");
@@ -3090,29 +3085,49 @@ function privateChatShowNotification(title, body, conversationId) {
     new Notification(title, { body: String(body || "").slice(0, 180), tag: "jb-private-chat-" + String(conversationId || "inbox"), renotify: true });
   } catch {}
 }
+function privateChatBucket(item) {
+  const status = String(item?.status || "");
+  if (status === "advisor_active") return "active";
+  if (status === "closed" || status === "declined_pending_delete") return "closed";
+  return "pending";
+}
 function privateChatRenderInbox() {
   if (!privateChatListEl) return;
-  const selected = privateChatSelectedId;
-  if (!privateChatConversations.length) {
-    privateChatListEl.innerHTML = '<p class="provider-empty-state">Todavía no hay conversaciones. Cuando un cliente solicite atención aparecerá aquí.</p>';
+  const counts = {
+    pending: privateChatConversations.filter(item => privateChatBucket(item) === "pending").length,
+    active: privateChatConversations.filter(item => privateChatBucket(item) === "active").length,
+    closed: privateChatConversations.filter(item => privateChatBucket(item) === "closed").length
+  };
+  document.querySelectorAll("[data-private-chat-filter]").forEach(button => {
+    const key = String(button.dataset.privateChatFilter || "pending");
+    const active = key === privateChatActiveFilter;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+    const count = button.querySelector("[data-private-chat-filter-count]");
+    if (count) count.textContent = String(counts[key] || 0);
+  });
+  const items = privateChatConversations.filter(item => privateChatBucket(item) === privateChatActiveFilter);
+  if (privateChatSelectedId && !items.some(item => String(item.id) === String(privateChatSelectedId))) privateChatSelectedId = "";
+  const inboxCount = document.getElementById("private-chat-admin-inbox-count");
+  if (inboxCount) inboxCount.textContent = String(items.length);
+  if (!items.length) {
+    const emptyCopy = {pending:"No hay conversaciones pendientes.",active:"No hay conversaciones en atención.",closed:"Todavía no hay conversaciones finalizadas."}[privateChatActiveFilter] || "No hay conversaciones.";
+    privateChatListEl.innerHTML = '<p class="provider-empty-state private-chat-filter-empty">' + privateChatEscape(emptyCopy) + '</p>';
     return;
   }
-  privateChatListEl.innerHTML = privateChatConversations.map(item => {
+  const selected = privateChatSelectedId;
+  privateChatListEl.innerHTML = items.map(item => {
     const id = String(item.id || "");
     const isSelected = id === selected;
-    const latest = item._latestMessage;
-    const preview = latest?.content || "Conversación iniciada";
     const status = String(item.status || "");
-    const isPending = status === "pending_advisor";
-    const statusClass = status === "pending_advisor" ? "is-pending"
+    const statusClass = status === "pending_advisor" || status === "pending_consent" ? "is-pending"
       : status === "advisor_active" ? "is-active"
-      : status === "declined_pending_delete" ? "is-declined" : "";
+      : status === "declined_pending_delete" || status === "closed" ? "is-declined" : "";
     const route = privateChatRouteLabel(item.contact_route);
     const catalog = item.catalog_type === "perfumery" ? "JB Parfums" : item.catalog_type === "technology" ? "JB TECH" : "JB Collections";
     const title = item.product_name || "Consulta general";
     return '<button class="private-chat-admin-item' + (isSelected ? ' is-selected' : '') + '" type="button" data-private-chat-select="' + privateChatEscape(id) + '" aria-pressed="' + String(isSelected) + '">' +
       '<span class="private-chat-admin-item-top"><span class="private-chat-admin-item-title">' + privateChatEscape(title) + '</span><time class="private-chat-admin-item-time">' + privateChatEscape(privateChatDate(item.last_message_at || item.created_at)) + '</time></span>' +
-      '<span class="private-chat-admin-item-preview">' + privateChatEscape(preview) + '</span>' +
       '<span class="private-chat-admin-item-meta"><span class="private-chat-pill ' + statusClass + '">' + privateChatEscape(privateChatStatusLabel(status)) + '</span><span class="private-chat-pill">' + privateChatEscape(catalog) + '</span><span class="private-chat-pill">' + privateChatEscape(route) + '</span></span>' +
       '</button>';
   }).join("");
@@ -3154,13 +3169,17 @@ function privateChatRenderSelected() {
   const item = privateChatSelectedConversation();
   if (!item) {
     privateChatSelectedPanel.hidden = true;
-    privateChatEmptyPanel.hidden = false;
+    if (privateChatEmptyPanel) privateChatEmptyPanel.hidden = true;
+    if (privateChatThreadEl) privateChatThreadEl.hidden = true;
+    privateChatLayoutEl?.classList.remove("has-selection");
     privateChatReplyForm.hidden = true;
     privateChatRenderMessages([]);
     return;
   }
   privateChatSelectedPanel.hidden = false;
-  privateChatEmptyPanel.hidden = true;
+  if (privateChatEmptyPanel) privateChatEmptyPanel.hidden = true;
+  if (privateChatThreadEl) privateChatThreadEl.hidden = false;
+  privateChatLayoutEl?.classList.add("has-selection");
   const status = String(item.status || "");
   const canClaim = status === "pending_advisor" && !item.claimed_by;
   const ownActive = status === "advisor_active" && String(item.claimed_by || "") === String(currentUser?.id || "");
@@ -3242,7 +3261,7 @@ async function loadPrivateChatInbox(options = {}) {
       ...item,
       _latestMessage: latestByConversation.get(String(item.id)) || null
     }));
-    const pendingCount = privateChatConversations.filter(item => item.status === "pending_advisor").length;
+    const pendingCount = privateChatConversations.filter(item => privateChatBucket(item) === "pending").length;
     if (privateChatNavCount) privateChatNavCount.textContent = String(pendingCount);
     const dashboardChatCount = document.getElementById("dashboard-private-chat-shortcut-count");
     if (dashboardChatCount) dashboardChatCount.textContent = String(pendingCount);
@@ -3368,6 +3387,20 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
   } catch {
     privateChatSetStatus("No pudimos activar las notificaciones en este navegador.", "error");
   }
+});
+document.querySelectorAll("[data-private-chat-filter]").forEach(button => {
+  button.addEventListener("click", () => {
+    const next = String(button.dataset.privateChatFilter || "pending");
+    if (!["pending", "active", "closed"].includes(next)) return;
+    privateChatActiveFilter = next;
+    privateChatRenderInbox();
+    privateChatRenderSelected();
+  });
+});
+document.getElementById("private-chat-admin-back")?.addEventListener("click", () => {
+  privateChatSelectedId = "";
+  privateChatRenderInbox();
+  privateChatRenderSelected();
 });
 privateChatListEl?.addEventListener("click", event => {
   const button = event.target.closest("[data-private-chat-select]");
