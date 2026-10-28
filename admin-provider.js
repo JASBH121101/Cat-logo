@@ -131,7 +131,7 @@ function stableVariantKey(variant) {
 }
 
 function providerVariantConfigKey(variant) {
-  const part = value => normalizedText(value).replace(/\\s+/g, "");
+  const part = value => normalizedText(value).replace(/\s+/g, "");
   const storage = variant?.storage ?? variant?.capacity ??
     (variant?.storage_value != null ? String(variant.storage_value) + " " + String(variant.storage_unit || "GB") : "");
   return [part(variant?.ram), part(storage)].join("|");
@@ -139,7 +139,7 @@ function providerVariantConfigKey(variant) {
 
 function providerConfigLabel(group) {
   const storage = String(group?.storage || "").trim();
-  const ramValue = String(group?.ram || "").trim().replace(/\\s*GB\\s*/i, "");
+  const ramValue = String(group?.ram || "").trim().replace(/\s*GB\s*/i, "");
   const ram = ramValue ? (ramValue + " GB RAM") : "";
   return [storage, ram].filter(Boolean).join(" · ") || "Configuración principal";
 }
