@@ -5700,3 +5700,22 @@ commissionRecordsNode?.addEventListener("click", async event => {
   }
 });
 resetCommissionForm();
+
+// Header settings dropdown: reuses current controls without changing authentication or data behavior.
+(() => {
+  const toggle = document.getElementById("admin-settings-toggle");
+  const menu = document.getElementById("admin-settings-menu");
+  if (!toggle || !menu) return;
+  const closeMenu = () => { menu.hidden = true; toggle.setAttribute("aria-expanded", "false"); };
+  toggle.addEventListener("click", event => {
+    event.stopPropagation();
+    const willOpen = menu.hidden;
+    menu.hidden = !willOpen;
+    toggle.setAttribute("aria-expanded", String(willOpen));
+  });
+  menu.addEventListener("click", event => { if (event.target.closest("[data-admin-section]")) closeMenu(); });
+  document.addEventListener("click", event => { if (!event.target.closest(".admin-settings-wrap")) closeMenu(); });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !menu.hidden) { closeMenu(); toggle.focus(); }
+  });
+})();
