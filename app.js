@@ -887,7 +887,7 @@ function hasActiveCatalogFilters() {
 
 function updateSubcategoryFilter() {
   if (!subcategoryFilter) return;
-  const availableProducts = selectedCategory === "all" ? products : products.filter(product => canonicalCatalogCategory(product).toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es"));
+  const availableProducts = products.filter(product => matchesSelectedCatalogCategory(product));
   const seen = new Map();
   availableProducts.forEach(product => {
     const value = String(product?.subcategory || "").trim();
@@ -933,9 +933,7 @@ function visibleProducts() {
 
   return products.filter(product => {
     if (!validRange) return false;
-    const normalizedCategory = canonicalCatalogCategory(product);
-    const categoryMatches = selectedCategory === "all" ||
-      normalizedCategory.toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
+    const categoryMatches = matchesSelectedCatalogCategory(product);
     const rawSubcategory = String(product?.subcategory || "").trim();
     const subcategoryMatches = !selectedSubcategory || rawSubcategory.toLocaleLowerCase("es") === selectedSubcategory.toLocaleLowerCase("es");
     const variants = getProductVariants(product);
@@ -1005,6 +1003,15 @@ function canonicalCatalogCategory(product) {
     if (values.includes(normalized)) return label;
   }
   return raw ? "Otros" : "Otros";
+}
+
+// Consolas is a public navigation option for console products whose stored primary
+// category stays "Gaming" and whose subcategory stays "Consolas" (for example, PS5).
+function matchesSelectedCatalogCategory(product, category = selectedCategory) {
+  const selected = normalizeCatalogSearch(category);
+  if (!selected || selected === "all") return true;
+  if (normalizeCatalogSearch(canonicalCatalogCategory(product)) === selected) return true;
+  return selected === "consolas" && normalizeCatalogSearch(product?.subcategory) === selected;
 }
 
 function renderCategorizedProducts(productList) {
