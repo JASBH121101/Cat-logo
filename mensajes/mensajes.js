@@ -23,6 +23,7 @@
   let messages = [];
   let polling = false;
   let countdownHandle = null;
+  let countdownTarget = "";
   let lastRenderedMessageIds = new Set();
   let inFlight = false;
 
@@ -138,7 +139,10 @@
     }
   }
   function startCountdown(deleteAfter) {
+    if (!deleteAfter) return;
+    if (countdownTarget === deleteAfter && countdownHandle) return;
     if (countdownHandle) clearInterval(countdownHandle);
+    countdownTarget = deleteAfter;
     const tick = () => {
       const remaining = Math.max(0, new Date(deleteAfter).getTime() - Date.now());
       const minutes = Math.floor(remaining / 60000);
@@ -225,10 +229,10 @@
       } else {
         const result = await api("start", contextFromUrl());
         storeSession(result.session_token, result.conversation.id);
-        const confirmed = await api("read");
+        showContext(result.conversation);
         lastRenderedMessageIds.clear();
         messagesNode.replaceChildren();
-        renderState(confirmed.conversation, confirmed.messages);
+        renderState(result.conversation, result.messages || []);
         history.replaceState({}, "", window.location.pathname);
       }
     } catch (error) {
@@ -312,17 +316,24 @@
         const result = await api("redeem", { invite_token: invite });
         storeSession(result.session_token, result.conversation.id);
         conversation = result.conversation;
+        showContext(result.conversation);
         history.replaceState({}, "", window.location.pathname);
         showStatus("");
-        const readResult = await api("read");
-        renderState(readResult.conversation, readResult.messages);
+        renderState(result.conversation, result.messages || []);
       } catch (error) {
         showStatus(error.message || "Este enlace ya venció o fue utilizado. Solicitá uno nuevo.", true);
       }
       return;
     }
     if (sessionToken && conversationId) {
-      await refresh();
+      const result = await api("read").catch(() => null);
+      if (result?.conversation) {
+        showContext(result.conversation);
+        renderState(result.conversation, result.messages || []);
+      } else {
+        clearSession();
+        setScreen("consent");
+      }
       return;
     }
     setScreen("consent");
