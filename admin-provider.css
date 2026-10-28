@@ -250,3 +250,22 @@ html[data-theme="light"] .provider-dialog-fields textarea {
 .provider-import-options label > span { line-height: 1.55; }
 .provider-import-options strong { line-height: 1.5; }
 .provider-import-options small { line-height: 1.6; }
+
+
+/* Provider review dialog: keep labels readable when the native APK theme
+   renders the dialog surface light while the form controls remain dark. */
+.provider-dialog {
+  color: #25324a !important;
+  background: #ffffff !important;
+}
+.provider-dialog .provider-dialog-header .eyebrow {
+  color: #536db4 !important;
+}
+.provider-dialog .provider-dialog-header h2,
+.provider-dialog .provider-dialog-product-title,
+.provider-dialog .provider-dialog-fields label > span {
+  color: #25324a !important;
+}
+.provider-dialog .provider-dialog-product-subtitle {
+  color: #617392 !important;
+}
