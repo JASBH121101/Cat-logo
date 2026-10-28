@@ -24,7 +24,7 @@ test("mobile admin sidebar avoids hover motion and backdrop-filter repaints on t
 });
 
 test("admin page cache-busts the Android-safe sidebar stylesheet", () => {
-  assert.match(html, /theme-ui\.css\?v=20261028-color-ai-cors-button2/);
+  assert.match(html, /theme-ui\\.css\\?v=20261028-mobile-drawer-overlay2/);
 });
 
 
@@ -108,4 +108,12 @@ test("CSS prevents scroll chaining behind the drawer while preserving drawer scr
   assert.ok(css.includes("body.admin-body.admin-sidebar-scroll-locked .admin-main"));
   assert.ok(css.includes("touch-action: none !important"));
   assert.ok(css.includes("body.admin-body.admin-dashboard-active.admin-sidebar-open .admin-sidebar-backdrop:not([hidden])"));
+});
+
+test("mobile drawer covers the full viewport instead of leaving the dashboard top row visible", () => {
+  assert.match(css, /FIX 2026-10-28: el drawer móvil debe cubrir TODO el viewport/);
+  assert.match(css, /body\.admin-body\.admin-dashboard-active \.admin-sidebar\s*\{[^}]*inset:\s*0 auto 0 0 !important;[^}]*top:\s*0 !important;[^}]*height:\s*100dvh !important;[^}]*z-index:\s*1301 !important;/s);
+  assert.match(css, /body\.admin-body\.admin-dashboard-active \.admin-sidebar-backdrop:not\(\[hidden\]\)\s*\{[^}]*inset:\s*0 !important;[^}]*z-index:\s*1300 !important;/s);
+  assert.match(css, /body\.admin-body\.admin-dashboard-active \.site-header\.admin-header\s*\{[^}]*z-index:\s*1200 !important;/s);
+  assert.match(html, /theme-ui\.css\?v=20261028-mobile-drawer-overlay2/);
 });
