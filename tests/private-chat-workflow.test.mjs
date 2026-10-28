@@ -23,6 +23,8 @@ test("customer private chat explains consent, retention, data minimization, and 
   assert.ok(customerJs.includes("sessionStorage.setItem(sessionKey"));
   assert.ok(customerJs.includes('api("decline_start"'));
   assert.ok(customerJs.includes('api("change_mind"'));
+  assert.ok(customerJs.includes("hasNewProductContext"));
+  assert.ok(customerJs.includes("showContext(result.conversation)"));
   assert.ok(customerJs.includes("startCountdown"));
 });
 
