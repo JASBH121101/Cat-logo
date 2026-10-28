@@ -20,7 +20,7 @@ test("technology payment selector asks for the topic before revealing both chann
   assert.ok(app.includes('id="dialog-payment-type"'));
   assert.ok(app.includes('<option value="financing">Financiamiento</option>'));
   assert.ok(app.includes('<option value="credit_card">Compra con tarjeta de crédito</option>'));
-  assert.ok(app.includes('id="dialog-payment-channel-panel" hidden'));
+  assert.ok(app.includes('id="dialog-payment-channel-panel" class="payment-channel-panel" hidden'));
   assert.ok(app.includes('id="dialog-payment-whatsapp"'));
   assert.ok(app.includes('id="dialog-payment-jb"'));
   assert.ok(app.includes("function refreshPaymentChannelChoices"));
