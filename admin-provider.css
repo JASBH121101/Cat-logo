@@ -530,3 +530,56 @@ html[data-theme="dark"] .provider-variant-config-prices input{background:#0b172b
   }
   .provider-variant-color-row .provider-variant-select select { min-height:36px; }
 }
+
+
+/* Revisión de proveedor compacta, con contraste explícito en ambos temas. */
+.provider-review-price-comparison{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.provider-price-compare-card{gap:4px;padding:10px;border-radius:10px}
+.provider-price-compare-card>span{font-size:.76rem;font-weight:800;line-height:1.25;color:#586780}
+.provider-price-compare-card>strong{font-size:1rem;font-weight:850;color:#17243b}
+.provider-price-compare-card>small{font-size:.84rem;font-weight:700;color:#455671}
+.provider-price-compare-card.is-provider{border-color:#9eade0;background:#f4f6ff}
+.provider-price-difference{display:flex;align-items:center;justify-content:center;min-height:39px;padding:7px 9px;text-align:center}
+.provider-price-difference>span{font-size:.98rem;font-weight:850;line-height:1.25;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.provider-price-difference.is-match{background:#e8f7ee;border-color:#9ad6b4;color:#17643b}
+.provider-price-difference.is-different{background:#fff2d9;border-color:#e7bd6d;color:#854c00}
+.provider-price-difference.is-pending{background:#f1f4f9;border-color:#c7d1e1;color:#65738b}
+.provider-price-difference.is-match>span,.provider-price-difference.is-different>span,.provider-price-difference.is-pending>span{color:inherit}
+.provider-review-sync-details{margin:12px 0;border:1px solid var(--border,#cbd5e1);border-radius:11px;background:var(--surface-muted,#f8fafc);overflow:hidden}
+.provider-review-sync-details>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;color:var(--text,#1f2937);font-size:.82rem;font-weight:850;line-height:1.4;cursor:pointer;list-style:none}
+.provider-review-sync-details>summary::-webkit-details-marker{display:none}
+.provider-review-sync-details>summary span{flex:0 0 auto;color:var(--muted,#64748b);font-size:1rem;transition:transform .18s ease}
+.provider-review-sync-details[open]>summary span{transform:rotate(180deg)}
+.provider-review-sync-details-body{padding:0 11px 10px;border-top:1px solid var(--border,#cbd5e1)}
+.provider-review-sync-option{margin:9px 0 0;padding:5px 0;border:0;background:transparent}
+.provider-review-sync-option>span{gap:0}
+.provider-review-sync-option small{font-size:.76rem;line-height:1.5}
+.provider-review-sync-note{margin:7px 0 0;font-size:.72rem}
+html[data-theme="light"] .provider-price-compare-card{background:#fff;border-color:#cbd5e1}
+html[data-theme="light"] .provider-price-compare-card>span{color:#586780}
+html[data-theme="light"] .provider-price-compare-card>strong{color:#17243b}
+html[data-theme="light"] .provider-price-compare-card>small{color:#455671}
+html[data-theme="light"] .provider-price-compare-card.is-provider{background:#f4f6ff;border-color:#9eade0}
+html[data-theme="dark"] .provider-price-compare-card{background:#111e34;border-color:#51698e}
+html[data-theme="dark"] .provider-price-compare-card>span{color:#c1cfe7}
+html[data-theme="dark"] .provider-price-compare-card>strong{color:#f4f7ff}
+html[data-theme="dark"] .provider-price-compare-card>small{color:#d0dbed}
+html[data-theme="dark"] .provider-price-compare-card.is-provider{background:#1a2945;border-color:#7188ba}
+html[data-theme="dark"] .provider-price-difference.is-match{background:#123629;border-color:#31855d;color:#aaf0c8}
+html[data-theme="dark"] .provider-price-difference.is-different{background:#392a16;border-color:#92652c;color:#ffd18c}
+html[data-theme="dark"] .provider-price-difference.is-pending{background:#1a2941;border-color:#51698e;color:#d0dbed}
+html[data-theme="dark"] .provider-review-sync-details{background:#101d35;border-color:#405577}
+html[data-theme="dark"] .provider-review-sync-details>summary{color:#f0f4ff}
+html[data-theme="dark"] .provider-review-sync-details>summary span{color:#b7c7e3}
+html[data-theme="dark"] .provider-review-sync-details-body{border-color:#405577}
+html[data-theme="dark"] .provider-review-sync-option{background:transparent;border-color:transparent}
+html[data-theme="dark"] .provider-review-sync-option small{color:#b7c7e3}
+@media(max-width:480px){
+  .provider-review-price-comparison{gap:7px}
+  .provider-price-compare-card{padding:9px}
+  .provider-price-compare-card>strong{font-size:.92rem}
+  .provider-price-compare-card>small{font-size:.8rem}
+  .provider-price-difference{min-height:37px;padding:7px}
+  .provider-price-difference>span{font-size:.87rem}
+  .provider-review-sync-details>summary{padding:10px;font-size:.78rem}
+}
