@@ -10,6 +10,7 @@ const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.ur
 const snapshotMigration = readFileSync(new URL("../supabase/migrations/20261028220649_provider_variant_review_snapshot.sql", import.meta.url), "utf8");
 const confirmMigration = readFileSync(new URL("../supabase/migrations/20261028221351_confirm_provider_product_review.sql", import.meta.url), "utf8");
 const hardenMigration = readFileSync(new URL("../supabase/migrations/20261028221448_harden_provider_review_confirm.sql", import.meta.url), "utf8");
+const priceSyncMigration = readFileSync(new URL("../supabase/migrations/20261028221932_sync_provider_variant_prices.sql", import.meta.url), "utf8");
 
 test("supplier review collects provider availability for every configuration and color", () => {
   assert.match(html, /id="provider-review-variants-section"/);
@@ -23,12 +24,13 @@ test("supplier review collects provider availability for every configuration and
   assert.match(html, /Confirmar revisión/);
 });
 
-test("supplier review history persists each snapshot without automatically changing public products", () => {
+test("supplier review history persists each snapshot and makes catalog changes conditional on explicit sync", () => {
   assert.match(snapshotMigration, /provider_variant_snapshot jsonb NOT NULL DEFAULT '\[\]'::jsonb/);
   assert.match(snapshotMigration, /NEW\.provider_variant_snapshot/);
   assert.match(provider, /select\("provider_name,provider_product_id,provider_url,provider_price_usd,provider_price_nio,provider_availability,review_notes,provider_variant_snapshot,reviewed_at"\)/);
   assert.match(provider, /providerVariantSnapshotHistoryHTML\(row\.provider_variant_snapshot\)/);
-  assert.match(provider, /Los precios, fotos y estado de publicación no cambiaron/);
+  assert.match(provider, /Los precios GoPartner ingresados por configuración se aplicaron/);
+  assert.match(provider, /Las fotos y el estado de publicación no cambiaron/);
 });
 
 test("supplier import uses strict exact identifiers and blocks omitted variants", () => {
@@ -79,4 +81,18 @@ test("provider review RPC uses authenticated admin RLS rather than a security-de
   assert.match(hardenMigration, /SECURITY INVOKER/);
   assert.match(hardenMigration, /REVOKE ALL ON FUNCTION public\.confirm_provider_product_review/);
   assert.match(hardenMigration, /GRANT EXECUTE ON FUNCTION public\.confirm_provider_product_review/);
+});
+
+
+test("provider price sync applies confirmed prices per configuration and recalculates the catalog starting price", () => {
+  assert.match(provider, /data-provider-config-price-usd/);
+  assert.match(provider, /data-provider-config-price-nio/);
+  assert.match(provider, /catalog_price_usd: variant\.price_usd/);
+  assert.match(priceSyncMigration, /v_config_price_usd/);
+  assert.match(priceSyncMigration, /jsonb_build_object\('price_usd', v_config_price_usd\)/);
+  assert.match(priceSyncMigration, /price_usd = CASE/);
+  assert.match(priceSyncMigration, /price_nio = CASE/);
+  assert.match(priceSyncMigration, /min\(CASE/);
+  assert.match(priceSyncMigration, /SECURITY INVOKER/);
+  assert.doesNotMatch(priceSyncMigration, /price_usd = v_provider_price_usd/i);
 });
