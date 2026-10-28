@@ -652,7 +652,7 @@ function buildAIProductPrompt(product, variant = null, fallbackColor = null, pay
     : normalizedType === "financing"
       ? "Quiero consultar las opciones de financiamiento"
       : "Quiero consultar para comprar este producto";
-  const parts = [intent + ": " + displayName + "."];
+  const parts = [intent + ".", "Producto: " + displayName + "."];
   if (variant) {
     const configuration = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
     if (configuration) parts.push("Configuración: " + configuration + ".");
