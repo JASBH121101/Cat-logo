@@ -23,7 +23,7 @@ test("private chat API creates one-time hashed invite links and supports only do
   assert.match(api, /private_chat_create/);
   assert.match(api, /private_chat_redeem/);
   assert.ok(api.includes("/mensajes.html?invite="));
-  assert.match(api, /credentials: "omit"/);
+  assert.match(api, /"Cache-Control": "no-store"/);
   assert.doesNotMatch(api, /service_role|SUPABASE_SERVICE_ROLE_KEY/i);
   assert.match(api, /Rate|rateLimit|RATE_LIMITS/);
 });
