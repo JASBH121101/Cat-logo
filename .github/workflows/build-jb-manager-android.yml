@@ -57,7 +57,7 @@ jobs:
           grep -Fq '/api/color-assistant' admin.js
           grep -Fq '.jb-color-ai-overlay' theme-ui.css
           grep -Fq 'jb-manager-mobile-sidebar-stability' theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261028-variant-colors-visible1' admin.html
+          grep -Fq 'theme-ui.css?v=20261028-color-ai-cors-button2' admin.html
           grep -Fq 'admin-sidebar-scroll-locked' admin.js
           grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
@@ -307,7 +307,7 @@ jobs:
           done
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261027-audit-cascade1' mobile/www/admin.html
+          grep -Fq 'theme-ui.css?v=20261028-color-ai-cors-button2' mobile/www/admin.html
           grep -Fq 'admin-provider.css?v=20261028-provider-dialog-theme1' mobile/www/admin.html
           grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
           grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
