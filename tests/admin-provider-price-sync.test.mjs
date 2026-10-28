@@ -24,7 +24,7 @@ test("provider review displays live price differences and availability validatio
   assert.match(admin, /admin-provider\.js\?v=20261028-provider-review-minimal4/);
 });
 
-test("manual provider reviews preserve public prices and existing provider references", () => {
+test("provider review preserves references and uses guarded RPC for optional catalog synchronization", () => {
   const start = provider.indexOf("async function saveReview(event)");
   const end = provider.indexOf("async function openHistory(productId)", start);
   assert.ok(start >= 0 && end > start, "provider save handler has a clear boundary");
@@ -32,7 +32,9 @@ test("manual provider reviews preserve public prices and existing provider refer
   assert.match(save, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
   assert.match(save, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
   assert.match(save, /provider_product_id: previous\.provider_product_id \?\? null/);
-  assert.match(save, /Los precios públicos se conservaron sin cambios/);
+  assert.match(save, /confirm_provider_product_review/);
+  assert.match(save, /p_sync_catalog_availability: syncCatalogAvailability/);
+  assert.match(html, /id="provider-review-sync-catalog-availability" type="checkbox" checked/);
   assert.doesNotMatch(save, /from\("products"\)[\s\S]*?\.update\(/);
 });
 
