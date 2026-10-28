@@ -153,6 +153,6 @@ test("customer still gets privacy, registration and seven-day retention context 
   assert.match(customerHtml, /Go Partners solicita tu nombre completo, número de celular y cédula/);
   assert.match(customerHtml, /el historial se conserva (?:un máximo de|hasta) 7 días/i);
   assert.match(customerJs, /Older conversations may still contain a duplicated database message/);
-  assert.match(lifecycleMigration, /El registro de compra se completa mediante el procedimiento correspondiente de Go Partners/);
+  assert.match(lifecycleMigration, /El registro de compra se completará mediante el procedimiento correspondiente de Go Partners/);
   assert.doesNotMatch(lifecycleMigration, /values \(v_row\.id, 'assistant', v_notice\)/);
 });
