@@ -373,8 +373,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     else reviewDialog.setAttribute("open", "");
   }
 
+  let savingReview = false;
   async function saveReview(event) {
-    event.preventDefault();
+    event?.preventDefault?.();
+    if (savingReview) return;
     const supabase = getSupabase();
     const user = getCurrentUser();
     const productId = $("#provider-review-product-id").value;
@@ -404,6 +406,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       updated_at: new Date().toISOString()
     };
     const button = $("#provider-review-save");
+    savingReview = true;
     if (button) { button.disabled = true; button.textContent = "Guardando…"; }
     try {
       const { error } = await supabase.from("product_provider_status").upsert(payload, { onConflict: "product_id" });
@@ -415,6 +418,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     } catch (error) {
       say(reviewMessage, "No se pudo guardar la revisión: " + (error?.message || "error desconocido"), "error");
     } finally {
+      savingReview = false;
       if (button) { button.disabled = false; button.textContent = "Guardar revisión"; }
     }
   }
@@ -736,7 +740,15 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (review) openReview(review.dataset.providerReview);
     else if (history) void openHistory(history.dataset.providerHistory);
   });
-  $("#provider-review-form")?.addEventListener("submit", saveReview);
+  const reviewForm = $("#provider-review-form");
+  const reviewSaveButton = $("#provider-review-save");
+  // Explicit click handling is reliable in desktop browsers and Android WebView.
+  // Keep the button out of native submit dispatch to avoid duplicate writes.
+  reviewSaveButton?.addEventListener("click", () => { void saveReview(); });
+  reviewForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    void saveReview(event);
+  });
   $$("[data-provider-dialog-close]").forEach(button => button.addEventListener("click", () => {
     const dialog = button.closest("dialog");
     if (dialog?.close) dialog.close(); else dialog?.removeAttribute("open");
