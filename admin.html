@@ -15,12 +15,12 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261028-color-ai-cors-button2">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-price-sync1">
+  <link rel="stylesheet" href="admin-provider.css?v=20261028-topbar-settings1">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-provider-price-sync1"></script>
+  <script type="module" src="admin.js?v=20261028-topbar-settings1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -37,7 +37,29 @@
     </a>
     <div class="admin-header-context" aria-hidden="true">
       <strong>Panel de control</strong>
-      <small>TECNOLOGÍA · PERFUMERÍA</small>
+      <small>JB TECH · JB PARFUMS</small>
+    </div>
+    <div class="admin-settings-wrap">
+      <button id="admin-settings-toggle" class="admin-settings-toggle" type="button"
+              aria-label="Abrir ajustes" title="Ajustes" aria-controls="admin-settings-menu" aria-expanded="false">
+        <span aria-hidden="true">⚙</span>
+      </button>
+      <div id="admin-settings-menu" class="admin-settings-menu" role="menu" aria-label="Ajustes de administración" hidden>
+        <p class="admin-settings-menu-title">Ajustes</p>
+        <button type="button" class="admin-settings-item" data-admin-section="updates" role="menuitem">
+          <span class="admin-settings-item-icon" aria-hidden="true">⇄</span>
+          <span><strong>Actualizar catálogo</strong><small>Importar cambios mediante JSON o CSV</small></span>
+        </button>
+        <div class="admin-settings-divider"></div>
+        <button id="remember-user-toggle" class="admin-settings-item" type="button" role="menuitem" aria-pressed="false">
+          <span class="admin-settings-item-icon" aria-hidden="true">◉</span>
+          <span><strong id="remember-user-toggle-label">Recordar sesión en este dispositivo</strong><small>Preferencia de este dispositivo</small></span>
+        </button>
+        <button id="logout-button" class="admin-settings-item is-danger" type="button" role="menuitem">
+          <span class="admin-settings-item-icon" aria-hidden="true">↪</span>
+          <span><strong>Cerrar sesión</strong><small>Salir de JB Manager</small></span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -154,25 +176,12 @@
           <button type="button" class="admin-nav-button" data-admin-section="provider">
             <span class="admin-nav-icon" aria-hidden="true">↻</span><span class="admin-nav-label">Proveedor</span><span class="admin-nav-count" id="provider-nav-count">0</span>
           </button>
-          <button type="button" class="admin-nav-button" data-admin-section="updates">
-            <span class="admin-nav-icon" aria-hidden="true">⇄</span><span class="admin-nav-label">Actualizar catálogo</span>
-          </button>
         </nav>
 
         <a href="./" class="admin-sidebar-catalog-link">
           <span aria-hidden="true">↗</span>
           <span>Ver catálogo</span>
         </a>
-
-        <button id="remember-user-toggle" class="admin-sidebar-remember" type="button" aria-pressed="false">
-          <span aria-hidden="true">◉</span>
-          <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span>
-        </button>
-
-        <button id="logout-button" class="admin-sidebar-logout" type="button">
-          <span aria-hidden="true">↪</span>
-          <span>Cerrar sesión</span>
-        </button>
 
 
         <div class="admin-sidebar-footer">
