@@ -22,6 +22,7 @@ const dialogContent = document.querySelector("#dialog-content");
 const catalogDocumentTitle = document.title;
 const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
 const categoryFilters = document.querySelector("#category-filters");
+const subcategoryFilter = document.querySelector("#subcategory-filter");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
 const featuredCount = document.querySelector("#featured-count");
@@ -45,6 +46,7 @@ const priceFilterFeedback = document.querySelector("#budget-filter-feedback");
 let supabase = null;
 let products = [];
 let selectedCategory = "all";
+let selectedSubcategory = "";
 let selectedBrand = "";
 
 
@@ -875,10 +877,37 @@ function hasActiveCatalogFilters() {
   // Sorting changes order, not the result set. Keep category sections and the
   // featured-products area visible when the customer only changes sort order.
   return Boolean((searchInput?.value || "").trim() || selectedBrand ||
-    selectedCategory !== "all" || readPriceBound(minPriceInput) !== null ||
+    selectedCategory !== "all" || selectedSubcategory || readPriceBound(minPriceInput) !== null ||
     readPriceBound(maxPriceInput) !== null);
 }
 
+
+function updateSubcategoryFilter() {
+  if (!subcategoryFilter) return;
+  const availableProducts = selectedCategory === "all" ? products : products.filter(product => canonicalCatalogCategory(product).toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es"));
+  const seen = new Map();
+  availableProducts.forEach(product => {
+    const value = String(product?.subcategory || "").trim();
+    const key = value.toLocaleLowerCase("es");
+    if (value && !seen.has(key)) seen.set(key, value);
+  });
+  const options = [...seen.values()].sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }));
+  if (selectedSubcategory && !options.some(value => value.toLocaleLowerCase("es") === selectedSubcategory.toLocaleLowerCase("es"))) selectedSubcategory = "";
+  subcategoryFilter.replaceChildren();
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "Todas las subcategorías";
+  subcategoryFilter.append(allOption);
+  options.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    subcategoryFilter.append(option);
+  });
+  subcategoryFilter.value = selectedSubcategory;
+  subcategoryFilter.disabled = options.length === 0;
+  subcategoryFilter.setAttribute("aria-label", options.length ? "Filtrar por subcategoría" : "No hay subcategorías disponibles para esta categoría");
+}
 
 function visibleProducts() {
   const rawQuery = (searchInput?.value || "").trim();
@@ -904,6 +933,8 @@ function visibleProducts() {
     const normalizedCategory = canonicalCatalogCategory(product);
     const categoryMatches = selectedCategory === "all" ||
       normalizedCategory.toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
+    const rawSubcategory = String(product?.subcategory || "").trim();
+    const subcategoryMatches = !selectedSubcategory || rawSubcategory.toLocaleLowerCase("es") === selectedSubcategory.toLocaleLowerCase("es");
     const variants = getProductVariants(product);
     const searchableFields = [
       product.name, product.brand, product.model, product.category, product.description,
@@ -922,7 +953,7 @@ function visibleProducts() {
       const price = rawPrice === null || rawPrice === undefined || rawPrice === "" ? NaN : Number(rawPrice);
       priceMatches = Number.isFinite(price) && (minPrice === null || price >= minPrice) && (maxPrice === null || price <= maxPrice);
     }
-    return categoryMatches && queryMatches && brandMatches && priceMatches;
+    return categoryMatches && subcategoryMatches && queryMatches && brandMatches && priceMatches;
   }).sort((a, b) => {
     const sort = catalogSortSelect?.value || "recent";
     if (sort === "price-asc" || sort === "price-desc") {
@@ -1004,6 +1035,7 @@ function renderCategorizedProducts(productList) {
 }
 
 function renderProducts() {
+  updateSubcategoryFilter();
   const list = visibleProducts();
   const hasFilters = hasActiveCatalogFilters();
   const isExclusiveProduct = product => Boolean(
@@ -1834,6 +1866,7 @@ categoryFilters.addEventListener("click", event => {
   if (!button) return;
 
   selectedCategory = button.dataset.category;
+  updateSubcategoryFilter();
   renderProducts();
 });
 
@@ -1893,12 +1926,18 @@ brandFilterOptions?.addEventListener("click", event => {
 document.addEventListener("click", event => {
   if (!event.target.closest(".brand-filter-wrap")) closeBrandFilterMenu();
 });
+subcategoryFilter?.addEventListener("change", () => {
+  selectedSubcategory = subcategoryFilter.value || "";
+  renderProducts();
+});
 catalogSortSelect?.addEventListener("change", renderProducts);
 minPriceInput?.addEventListener("input", renderProducts);
 maxPriceInput?.addEventListener("input", renderProducts);
 clearPriceFilterButton?.addEventListener("click", () => {
   if (searchInput) searchInput.value = "";
   selectedBrand = "";
+  selectedSubcategory = "";
+  if (subcategoryFilter) subcategoryFilter.value = "";
   if (brandFilterSearch) brandFilterSearch.value = "";
   updateBrandFilterLabel();
   closeBrandFilterMenu();
