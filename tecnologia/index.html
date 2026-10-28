@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="../brand-refresh.css?v=20261027-audit-cascade1">
   <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261027-audit-cascade1">
   <link rel="stylesheet" href="../catalog-performance.css?v=20261027-audit-cascade1">
-  <link rel="stylesheet" href="../technology-visual-refresh.css?v=20261028-variant-availability1">
+  <link rel="stylesheet" href="../technology-visual-refresh.css?v=20261027-subcategory-filter1">
   <script src="../config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="../app.js?v=20261028-variant-availability1"></script>
+  <script type="module" src="../app.js?v=20261027-subcategory-filter1"></script>
   <script src="../ui.js?v=20261027-audit-cascade1" defer></script>
   <script src="../ai-assistant.js?v=20261028-public-customer-flows2" defer></script>
 </head>
@@ -153,6 +153,15 @@
         <button class="filter-chip" data-category="Audio" aria-pressed="false">Audio</button>
         <button class="filter-chip" data-category="Accesorios" aria-pressed="false">Accesorios</button>
         <button class="filter-chip" data-category="Otros" aria-pressed="false">Otros</button>
+      </div>
+
+      <div class="subcategory-filter-bar">
+        <label class="catalog-control-field subcategory-filter-field" for="subcategory-filter">
+          <span>Subcategoría</span>
+          <select id="subcategory-filter" aria-label="Filtrar por subcategoría" disabled>
+            <option value="">Todas las subcategorías</option>
+          </select>
+        </label>
       </div>
 
       <div class="catalog-extra-filters" aria-label="Filtrar marca y ordenar productos">
