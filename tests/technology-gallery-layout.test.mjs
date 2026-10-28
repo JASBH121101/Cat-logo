@@ -9,7 +9,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261028-label-typography1/);
+  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261028-label-typography2/);
   assert.match(html, /app\.js\?v=20261028-section-copy1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
@@ -40,6 +40,13 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /data-category="Consolas"[^>]*>Consolas<\/button>/);
   assert.match(app, /"Consolas"/);
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
+});
+
+test("featured descriptions use typography tailored to each section badge", () => {
+  assert.match(css, /body\\.technology-catalog \\.top-gaming-heading \\.section-subtitle\\s*\\{[^}]*font-family:\\s*"Space Grotesk"[^}]*font-weight:\\s*600/s);
+  assert.match(css, /body\\.technology-catalog \\.quality-price-heading \\.section-subtitle\\s*\\{[^}]*font-family:\\s*"DM Sans"/s);
+  assert.match(css, /body\\.technology-catalog \\.high-performance-heading \\.section-subtitle\\s*\\{[^}]*font-family:\\s*Manrope[^}]*font-weight:\\s*600/s);
+  assert.match(css, /body\\.technology-catalog \\.featured-section-heading \\.section-subtitle\\s*\\{[^}]*font-weight:\\s*500[^}]*letter-spacing:\\s*\\.012em/s);
 });
 
 test("keeps the product-detail header, back arrow, and theme toggle visible while the body is locked", () => {
