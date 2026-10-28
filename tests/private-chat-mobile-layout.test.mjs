@@ -1,12 +1,29 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { readFile } from "node:fs";
+import { readFile, readFileSync } from "node:fs";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import test, { after } from "node:test";
 
 const root = resolve(fileURLToPath(new URL("../", import.meta.url)));
+const adminSource = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
+
+function sourceBetween(startMarker, endMarker) {
+  const start = adminSource.indexOf(startMarker);
+  const end = adminSource.indexOf(endMarker, start);
+  assert.ok(start >= 0 && end > start, "expected admin.js source region: " + startMarker);
+  return adminSource.slice(start, end);
+}
+
+const selectedConversationSource = sourceBetween(
+  "function privateChatSelectedConversation()",
+  "function privateChatSetStatus(message"
+);
+const renderSelectedSource = sourceBetween(
+  "function privateChatRenderSelected()",
+  "async function loadPrivateChatMessages("
+);
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -96,6 +113,27 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
       if (section) section.hidden = false;
     });
 
+    // Run the actual selection renderer from admin.js with deterministic DOM
+    // state and mocked network helpers; this verifies the JavaScript/CSS contract.
+    await page.evaluate(() => {
+      window.privateChatConversations = [];
+      window.privateChatSelectedId = "";
+      window.currentUser = { id: "test-admin" };
+      window.privateChatSelectedPanel = document.getElementById("private-chat-admin-selected");
+      window.privateChatEmptyPanel = null;
+      window.privateChatThreadEl = document.getElementById("private-chat-admin-thread");
+      window.privateChatLayoutEl = document.querySelector(".private-chat-admin-layout");
+      window.privateChatReplyForm = document.getElementById("private-chat-admin-reply-form");
+      window.privateChatRenderMessages = () => {};
+      window.privateChatSetStatus = () => {};
+      window.privateChatStatusLabel = status => status;
+      window.privateChatRouteLabel = route => route || "Sin elegir";
+      window.privateChatTopicLabel = topic => topic || "Consulta";
+      window.privateChatDate = () => "12:00";
+    });
+    await page.addScriptTag({ content: selectedConversationSource + "\\n" + renderSelectedSource });
+    await page.evaluate(() => window.privateChatRenderSelected());
+
     const emptyThread = await page.locator("#private-chat-admin-thread").evaluate(element => ({
       hidden: element.hidden,
       display: getComputedStyle(element).display,
@@ -106,15 +144,24 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
     assert.equal(emptyThread.height, 0, "unselected thread must not reserve blank vertical space");
 
     await page.evaluate(() => {
-      const layout = document.querySelector(".private-chat-admin-layout");
-      const thread = document.getElementById("private-chat-admin-thread");
-      const selected = document.getElementById("private-chat-admin-selected");
-      const messages = document.getElementById("private-chat-admin-messages");
+      window.privateChatConversations = [{
+        id: "test-conversation",
+        status: "advisor_active",
+        claimed_by: "test-admin",
+        contact_route: "support",
+        consent_choice: "yes",
+        catalog_type: "technology",
+        payment_topic: "product",
+        created_at: "2026-10-28T12:00:00Z",
+        product_name: "Producto de prueba",
+        product_url: "https://jb-collections.pages.dev/",
+        product_id: null,
+        purchase_confirmed_at: null
+      }];
+      window.privateChatSelectedId = "test-conversation";
+      window.privateChatRenderSelected();
 
-      layout.classList.add("has-selection");
-      thread.hidden = false;
-      selected.hidden = false;
-      selected.style.display = "";
+      const messages = document.getElementById("private-chat-admin-messages");
       messages.innerHTML = Array.from({ length: 45 }, (_, index) =>
         '<article class="private-chat-admin-message is-customer"><p>Mensaje de prueba ' +
         (index + 1) + ': historial largo para comprobar desplazamiento interno.</p></article>'
