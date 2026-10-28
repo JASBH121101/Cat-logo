@@ -1089,9 +1089,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     return lines;
   }
 
-  function renderImportPreview    return lines;
-  }
-
   function renderImportPreview() {
     if (!importPreview) return;
     const matched = importPlan.filter(item => item.product && !item.error).length;
