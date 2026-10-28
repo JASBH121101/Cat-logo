@@ -131,7 +131,7 @@ test("configuration color action stays visible and the empty color hint cannot c
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-section > \.variant-add-color \{[\s\S]*?display: inline-flex !important/);
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list \{[\s\S]*?grid-auto-rows: auto !important/);
   assert.match(css, /body\.admin-body \.variant-config-group \.variant-color-list > \.variants-empty-hint \{[\s\S]*?grid-row: auto !important/);
-  assert.match(html, /theme-ui\.css\?v=20261028-variant-colors-visible1/);
+  assert.match(html, /theme-ui\.css\?v=20261028-color-ai-cors-button2/);
 });
 
 
