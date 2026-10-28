@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in admin.js admin-provider.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js; do
+          for file in admin.js admin-provider.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js mensajes/mensajes.js; do
             echo "Checking $file"
             node --check "$file"
           done
@@ -29,6 +29,7 @@ jobs:
           node --input-type=module --check < functions/api/download/apk.js
           node --input-type=module --check < functions/api/assistant.js
           node --input-type=module --check < functions/api/color-assistant.js
+          node --input-type=module --check < functions/api/private-chat.js
       - name: Test Cloudflare Pages share endpoint
         shell: bash
         run: |
@@ -46,6 +47,7 @@ jobs:
           node --test tests/admin-provider-price-sync.test.mjs
           node --test tests/perfume-card-layout.test.mjs
           node --test tests/catalog-contact-channels.test.mjs
+          node --test tests/private-chat-workflow.test.mjs
           node --test tests/product-tag-formatting.test.mjs
           node --test tests/asset-cache-contract.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
