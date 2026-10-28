@@ -67,6 +67,9 @@ test("customer page implements the two routes, separate purchase consent and opt
 
 test("JB Manager includes a private inbox with claim, manual reply, close and purchase extension", () => {
   assert.match(adminHtml, /data-admin-section="messages"/);
+  assert.match(adminHtml, /data-dashboard-action="messages"/);
+  assert.match(adminHtml, /dashboard-private-chat-shortcut-count/);
+  assert.match(adminJs, /dashboard-private-chat-shortcut-count/);
   assert.match(adminHtml, /data-admin-panel="messages"/);
   assert.match(adminHtml, /id="private-chat-admin-claim"/);
   assert.match(adminHtml, /id="private-chat-admin-reply-form"/);
