@@ -7,9 +7,9 @@ const admin = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
 const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.url), "utf8");
 const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
-const snapshotMigration = readFileSync(new URL("../supabase/migrations/20261028221500_provider_variant_review_snapshot.sql", import.meta.url), "utf8");
-const confirmMigration = readFileSync(new URL("../supabase/migrations/20261028223000_confirm_provider_product_review.sql", import.meta.url), "utf8");
-const hardenMigration = readFileSync(new URL("../supabase/migrations/20261028223500_harden_provider_review_confirm.sql", import.meta.url), "utf8");
+const snapshotMigration = readFileSync(new URL("../supabase/migrations/20261028220649_provider_variant_review_snapshot.sql", import.meta.url), "utf8");
+const confirmMigration = readFileSync(new URL("../supabase/migrations/20261028221351_confirm_provider_product_review.sql", import.meta.url), "utf8");
+const hardenMigration = readFileSync(new URL("../supabase/migrations/20261028221448_harden_provider_review_confirm.sql", import.meta.url), "utf8");
 
 test("supplier review collects provider availability for every configuration and color", () => {
   assert.match(html, /id="provider-review-variants-section"/);
