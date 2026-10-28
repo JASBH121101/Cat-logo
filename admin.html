@@ -15,12 +15,12 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261028-color-ai-cors-button2">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-review-workflow1">
+  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-price-sync1">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-provider-review-workflow1"></script>
+  <script type="module" src="admin.js?v=20261028-provider-price-sync1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -155,7 +155,7 @@
             <span class="admin-nav-icon" aria-hidden="true">↻</span><span class="admin-nav-label">Proveedor</span><span class="admin-nav-count" id="provider-nav-count">0</span>
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="updates">
-            <span class="admin-nav-icon" aria-hidden="true">⚙</span><span class="admin-nav-label">Ajustes e importación</span>
+            <span class="admin-nav-icon" aria-hidden="true">⇄</span><span class="admin-nav-label">Actualizar catálogo</span>
           </button>
         </nav>
 
@@ -164,9 +164,15 @@
           <span>Ver catálogo</span>
         </a>
 
-        
+        <button id="remember-user-toggle" class="admin-sidebar-remember" type="button" aria-pressed="false">
+          <span aria-hidden="true">◉</span>
+          <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span>
+        </button>
 
-        
+        <button id="logout-button" class="admin-sidebar-logout" type="button">
+          <span aria-hidden="true">↪</span>
+          <span>Cerrar sesión</span>
+        </button>
 
 
         <div class="admin-sidebar-footer">
@@ -714,7 +720,6 @@
             <p>Registrá cuándo revisaste GoPartner, los precios de referencia y la disponibilidad. Este historial es privado y no cambia el precio público por sí solo.</p></div>
           <button type="button" id="provider-refresh" class="button button-outline">Actualizar datos</button>
         </header>
-        <nav class="provider-workflow-tabs" aria-label="Estado del trabajo de revisión"><button type="button" class="provider-workflow-tab is-active" data-provider-workflow="pending" aria-pressed="true">Pendientes de revisión <strong id="provider-pending-count">0</strong></button><button type="button" class="provider-workflow-tab" data-provider-workflow="reviewed" aria-pressed="false">Revisados <strong id="provider-reviewed-count">0</strong></button></nav><p class="provider-workflow-hint" id="provider-workflow-hint">Productos que necesitan una primera revisión o cuya revisión ya venció.</p>
         <section class="provider-metrics" aria-label="Estado de revisiones">
           <article class="provider-metric"><span>Sin revisar</span><strong id="provider-count-missing">0</strong><small>Productos sin comprobación</small></article>
           <article class="provider-metric"><span>Necesitan revisión</span><strong id="provider-count-overdue">0</strong><small>Última comprobación hace 7 días o más</small></article>
@@ -734,11 +739,10 @@
 
       <section id="admin-section-updates" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="updates">
         <header class="provider-page-heading">
-          <div><p class="eyebrow">AJUSTES</p><h2>Ajustes y herramientas</h2><p>Administrá tu sesión y accedé a la importación JSON cuando sea necesario.</p><h3>Importar cambios del proveedor</h3>
+          <div><p class="eyebrow">ACTUALIZACIONES SEGURAS</p><h2>Importar cambios del proveedor</h2>
             <p>Compará un archivo JSON o CSV con tus productos existentes. Primero verás una vista previa; no se crea ni publica ningún producto automáticamente.</p></div>
           <button type="button" id="provider-import-download-template" class="button button-outline">Descargar plantilla JSON</button>
         </header>
-        <section class="admin-card provider-settings-card"><h3>Sesión y dispositivo</h3><div class="provider-settings-actions"><button id="remember-user-toggle" class="button button-outline" type="button" aria-pressed="false"><span aria-hidden="true">◉</span> <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span></button><button id="logout-button" class="button button-quiet" type="button"><span aria-hidden="true">↪</span> Cerrar sesión</button></div></section>
         <section class="admin-card provider-import-card">
           <div class="provider-import-explainer">
             <h3>¿Cómo funcionará?</h3>
