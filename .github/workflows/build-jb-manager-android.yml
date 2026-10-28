@@ -62,7 +62,7 @@ jobs:
           grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
-          grep -Fq 'admin.js?v=20261028-reviewed-sections1' admin.html
+          grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' admin.html
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
@@ -236,7 +236,7 @@ jobs:
           set -euo pipefail
           # The APK must package the same business logic, Supabase config, and styles
           # as the browser panel. Only the HTML shell/native bridges are platform-specific.
-          for file in admin.js admin-provider.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css responsive-layout.css; do
+          for file in admin.js admin-provider.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
             if ! cmp -s "$file" "mobile/www/$file"; then
               echo "Shared source and APK bundle differ: $file" >&2
               diff -u "$file" "mobile/www/$file" || true
@@ -271,7 +271,10 @@ jobs:
           grep -Fq 'from("color_library")' admin.js
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
-          grep -Fq 'admin.js?v=20261028-reviewed-sections1' admin.html
+          grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'function renderProductDuplicateSuggestions()' admin.js
+          grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' admin.js
           grep -Fq '20261027-audit-cascade1' admin.html
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
           grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
@@ -309,6 +312,8 @@ jobs:
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
           grep -Fq 'theme-ui.css?v=20261028-mobile-drawer-overlay2' mobile/www/admin.html
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' mobile/www/admin.html
+          grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
+          grep -Fq 'function renderProductDuplicateSuggestions()' mobile/www/admin.js
           grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
           grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
           grep -Fq 'updateButton.style.display = shouldHide ? "none" : "grid"' mobile/www/admin.html
@@ -477,6 +482,7 @@ jobs:
             assets/public/admin-provider.css \
             assets/public/admin-commission.css \
             assets/public/admin-desktop-typography.css \
+            assets/public/admin-duplicate-detector.css \
             assets/public/responsive-layout.css \
             assets/public/admin.js \
             assets/public/admin-provider.js \
@@ -591,8 +597,20 @@ jobs:
             echo "::error::APK does not include the provider dialog contrast fix."
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-reviewed-sections1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' || {
             echo "APK does not load the updated AI color-knowledge script." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' || {
+            echo "APK does not load the smart duplicate detector styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'function renderProductDuplicateSuggestions()' || {
+            echo "APK does not include smart duplicate detection logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' || {
+            echo "APK duplicate detector does not restrict matches to the same brand." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-audit-cascade1' || {
