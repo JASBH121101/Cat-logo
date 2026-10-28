@@ -185,3 +185,12 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
 
 /* Si no hay conversación elegida, la lista aprovecha todo el ancho. */
 .private-chat-admin-layout:not(.has-selection){grid-template-columns:minmax(0,1fr)}
+
+
+/* El atributo hidden debe prevalecer sobre los display:flex del panel vacío. */
+.private-chat-admin-empty[hidden],
+.private-chat-admin-selected[hidden],
+.private-chat-admin-thread[hidden],
+.private-chat-admin-reply-form[hidden]{
+  display:none!important;
+}
