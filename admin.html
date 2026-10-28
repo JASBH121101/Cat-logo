@@ -775,6 +775,8 @@
       <header class="provider-dialog-header"><div><p class="eyebrow">COMPROBACIÓN MANUAL</p><h2 id="provider-review-title">Registrar revisión</h2><p id="provider-review-product-title" class="provider-dialog-product-title"></p><p id="provider-review-product-subtitle" class="provider-dialog-product-subtitle"></p></div><button class="admin-product-preview-close" type="button" data-provider-dialog-close aria-label="Cerrar">×</button></header>
       <div class="provider-dialog-fields">
         <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
+        <label><span>ID o SKU del proveedor</span><input id="provider-review-id" type="text" maxlength="180" autocomplete="off" placeholder="Código del producto en GoPartner"></label>
+        <label class="provider-dialog-wide"><span>Enlace del producto en el proveedor</span><input id="provider-review-url" type="url" maxlength="2000" inputmode="url" autocomplete="url" placeholder="https://…"></label>
         <label><span>Precio indicado por proveedor (US$)</span><input id="provider-review-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label><span>Precio indicado por proveedor (C$)</span><input id="provider-review-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label class="provider-dialog-wide"><span>Disponibilidad confirmada en el proveedor</span><select id="provider-review-availability"><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
