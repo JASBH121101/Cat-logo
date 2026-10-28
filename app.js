@@ -415,7 +415,7 @@ function getProductVariants(product) {
 }
 
 function colorStatusLabel(value) {
-  return value === "order" || value === "on_order" ? "Por pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
+  return value === "order" || value === "on_order" ? "Bajo pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
 }
 
 function getProductColors(product, configuration = null) {
