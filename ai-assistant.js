@@ -22,7 +22,9 @@
     const patterns = [
       /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
       /(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}/,
-      /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|tarjeta de cr[eé]dito|cuenta bancaria|contrase[nñ]a)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*[A-Z0-9][A-Z0-9\s-]{4,}/i,
+      /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|cuenta bancaria)\b(?:\s+(?:n[uú]mero|no\.?|es))?\s*(?:[:=#]\s*)?(?=[A-Z0-9-]{6,}\b)(?=[A-Z0-9-]*\d)[A-Z0-9-]{6,}\b/i,
+      /contrase[nñ]a\s*(?:es|:|=)\s*\S{6,}/i,
+      /\b(?:mi tarjeta(?: bancaria)?|n[uú]mero de tarjeta|tarjeta (?:bancaria|de crédito|de débito))\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*(?:[0-9][ -]?){12,19}/i,
       /\b(?:mi direcci[oó]n|mi domicilio|ubicaci[oó]n exacta|vivo en|mi casa queda)\b\s*(?:es|:)?\s*[^,.!?]{4,}/i
     ];
     return patterns.some(pattern => pattern.test(text));

@@ -12,7 +12,9 @@ const perfumeryHtml = readFileSync(new URL("../perfumeria/index.html", import.me
 test("technology product dialog offers WhatsApp and JB Collections as separate contact channels", () => {
   assert.ok(app.includes('id="dialog-buy-link"'));
   assert.ok(app.includes('id="dialog-jb-contact"'));
-  assert.ok(app.includes("window.openJBAiAdvisor(message)"));
+  assert.ok(app.includes("function startPrivateChatFromTechnology"));
+  assert.ok(app.includes('action: "start"'));
+  assert.ok(app.includes('window.location.assign(data.inviteUrl)'));
   assert.ok(app.includes("function buildAIProductPrompt"));
 });
 
@@ -38,11 +40,18 @@ test("perfumery product dialog provides the same two channels and payment-topic 
   assert.ok(perfume.includes("const chatIconMarkup ="));
 });
 
-test("JB Collections channel opens the existing AI advisor and supplies contextual product queries", () => {
+test("JB Collections channel opens a real temporary chat and keeps AI context concise", () => {
+  assert.ok(app.includes("window.location.assign(data.inviteUrl)"));
+  assert.ok(app.includes("function buildAIProductPrompt"));
+  const promptStart = app.indexOf("function buildAIProductPrompt");
+  const promptEnd = app.indexOf("\n}", promptStart) + 2;
+  const prompt = app.slice(promptStart, promptEnd);
+  assert.doesNotMatch(prompt, /productShareLink|Enlace del producto|Usá solo información publicada|No inventes tasas/);
+  assert.ok(perfume.includes('action: "start"'));
+  assert.ok(perfume.includes('catalogType: "perfumery"'));
+  assert.ok(!perfume.includes("buildPerfumeAIPrompt"));
   assert.ok(assistant.includes("window.openJBAiAdvisor = message =>"));
   assert.ok(assistant.includes("window.openJBAiAdvisor(event.detail && event.detail.message)"));
-  assert.ok(app.includes("Usá solo información publicada y confirmada"));
-  assert.ok(perfume.includes("Usá solo información publicada y confirmada"));
 });
 
 test("contact channel controls are responsive, keyboard-focusable and styled consistently across catalogs", () => {
@@ -52,6 +61,6 @@ test("contact channel controls are responsive, keyboard-focusable and styled con
   assert.ok(channelCss.includes("@media (max-width: 560px)"));
   assert.ok(technologyHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
   assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
-  assert.ok(technologyHtml.includes("app.js?v=20261028-dual-contact1"));
-  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-dual-contact1"));
+  assert.ok(technologyHtml.includes("app.js?v=20261028-private-chat1"));
+  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-private-chat1"));
 });

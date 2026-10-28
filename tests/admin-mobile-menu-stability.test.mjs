@@ -29,7 +29,7 @@ test("admin page cache-busts the Android-safe sidebar stylesheet", () => {
 
 
 test("admin script uses fresh cache key for the scroll-lock repair", () => {
-  assert.ok(html.includes("admin.js?v=20261028-limited-edition-icons1"));
+  assert.ok(html.includes("admin.js?v=20261028-private-chat1"));
 });
 
 test("opening the drawer locks document scrolling and closing restores the saved position", () => {

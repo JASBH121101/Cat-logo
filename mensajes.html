@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Mensajería privada · JB Collections</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon-collections.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./private-chat.css?v=20261028-private-chat1">
+  <script src="./config.js?v=20261027-audit-cascade1"></script>
+  <script type="module" src="./private-chat.js?v=20261028-private-chat1"></script>
+</head>
+<body class="private-chat-body">
+  <header class="private-chat-header">
+    <a class="private-chat-brand" href="https://jb-collections.pages.dev/" aria-label="Volver a JB Collections">
+      <span class="private-chat-brand-mark" aria-hidden="true">JB</span>
+      <span><strong>JB Collections</strong><small>Mensajería privada</small></span>
+    </a>
+    <a class="private-chat-back" href="https://jb-collections.pages.dev/">Volver al catálogo</a>
+  </header>
+  <main class="private-chat-shell">
+    <section class="private-chat-card" aria-labelledby="private-chat-title">
+      <div class="private-chat-heading">
+        <span class="private-chat-kicker">CANAL PRIVADO</span>
+        <h1 id="private-chat-title">Hablemos</h1>
+        <p id="private-chat-product" class="private-chat-product">Atención de JB Collections</p>
+      </div>
+      <div id="private-chat-loading" class="private-chat-state" role="status">Verificando tu enlace seguro…</div>
+      <div id="private-chat-error" class="private-chat-state private-chat-error" role="alert" hidden></div>
+      <div id="private-chat-app" hidden>
+        <div class="private-chat-privacy">
+          <span class="private-chat-privacy-icon" aria-hidden="true">⌑</span>
+          <p>No escribás aquí cédula, teléfono, correo ni datos de pago. El enlace es temporal y el historial se conserva un máximo de 7 días. Podés cerrar el chat cuando querás.</p>
+        </div>
+        <div id="private-chat-choice-panel" class="private-chat-choice-panel" hidden>
+          <h2>¿Cómo podemos ayudarte?</h2>
+          <p>Elegí el motivo para dirigir tu solicitud correctamente.</p>
+          <div class="private-chat-choice-buttons">
+            <button id="private-chat-support-choice" class="private-chat-choice private-chat-choice--support" type="button">
+              <span class="private-chat-choice-icon" aria-hidden="true">♧</span>
+              <span><strong>Atención al cliente</strong><small>Hablar con un asesor</small></span>
+            </button>
+            <button id="private-chat-buy-choice" class="private-chat-choice" type="button">
+              <span class="private-chat-choice-icon" aria-hidden="true">↗</span>
+              <span><strong>Quiero comprar</strong><small>Conocer el proceso de compra</small></span>
+            </button>
+          </div>
+        </div>
+        <div id="private-chat-consent-panel" class="private-chat-consent-panel" hidden>
+          <h2>Antes de continuar con la compra</h2>
+          <p>Go Partners solicita tu nombre completo, número de celular y cédula para registrar al cliente y gestionar la operación. El celular puede servir para comunicaciones relacionadas con la compra y sus incidencias.</p>
+          <p>Estos datos se tramitan por el procedimiento de registro de Go Partners, no en este chat. La autorización para continuar la conversación no sustituye la autorización que corresponda al registrar esos datos. Conversar no te obliga a comprar.</p>
+          <p>¿Deseás continuar con la solicitud de compra?</p>
+          <div class="private-chat-consent-actions">
+            <button id="private-chat-consent-yes" class="private-chat-primary" type="button">Sí, deseo continuar</button>
+            <button id="private-chat-consent-no" class="private-chat-secondary" type="button">No deseo continuar</button>
+          </div>
+        </div>
+        <div id="private-chat-decline-panel" class="private-chat-decline-panel" hidden>
+          <p id="private-chat-delete-countdown" role="status">Esta conversación se cerrará en 10 minutos.</p>
+          <button id="private-chat-change-mind" class="private-chat-secondary" type="button">Cambiar de opinión</button>
+        </div>
+        <div id="private-chat-thread" class="private-chat-thread" role="log" aria-live="polite" aria-relevant="additions text" hidden>
+          <div id="private-chat-messages" class="private-chat-messages"></div>
+        </div>
+        <p id="private-chat-status" class="private-chat-status" role="status"></p>
+        <form id="private-chat-composer" class="private-chat-composer" hidden>
+          <label class="visually-hidden" for="private-chat-input">Escribí tu mensaje</label>
+          <textarea id="private-chat-input" name="message" rows="2" maxlength="1200" placeholder="Escribí tu mensaje…" autocomplete="off"></textarea>
+          <button id="private-chat-send" class="private-chat-primary private-chat-send" type="submit">Enviar</button>
+        </form>
+        <div class="private-chat-footer-note">
+          <span aria-hidden="true">⌁</span> Tu enlace no requiere una cuenta ni contraseña. No lo compartás con otras personas.
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="private-chat-footer">JB Collections · JB TECH · JB Parfums</footer>
+</body>
+</html>
