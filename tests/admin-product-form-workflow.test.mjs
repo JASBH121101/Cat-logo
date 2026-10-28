@@ -121,6 +121,6 @@ test("configuration availability is independent from each color's availability",
   assert.match(admin, /availability: color\.availability/);
   assert.match(admin, /availability:g\.querySelector\('\[data-group-availability\]'\)/);
   assert.match(html, /Disponibilidad de la variante/);
-  assert.match(html, /Bajo pedido/);
-  assert.match(html, /Agotado/);
+  assert.match(admin, /Bajo pedido/);
+  assert.match(admin, /Agotado/);
 });
