@@ -3184,6 +3184,8 @@ async function loadPrivateChatInbox(options = {}) {
     }));
     const pendingCount = privateChatConversations.filter(item => item.status === "pending_advisor").length;
     if (privateChatNavCount) privateChatNavCount.textContent = String(pendingCount);
+    const dashboardChatCount = document.getElementById("dashboard-private-chat-shortcut-count");
+    if (dashboardChatCount) dashboardChatCount.textContent = String(pendingCount);
     const inboxCount = document.getElementById("private-chat-admin-inbox-count");
     if (inboxCount) inboxCount.textContent = String(privateChatConversations.length);
 

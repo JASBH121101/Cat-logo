@@ -692,3 +692,42 @@ body.perfume-page .jb-ai-compare-ai {
     max-width: calc(100vw - 16px);
   }
 }
+
+
+/* Direct escalation from the buyer adviser into the secure private inbox. */
+.jb-ai-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.jb-ai-private-chat {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--jb-ai-accent) 45%, transparent);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--jb-ai-accent) 10%, transparent);
+  color: var(--jb-ai-accent-strong);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.jb-ai-private-chat:hover {
+  background: color-mix(in srgb, var(--jb-ai-accent) 17%, transparent);
+}
+.jb-ai-private-chat:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+.jb-ai-private-chat:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--jb-ai-accent) 50%, transparent);
+  outline-offset: 3px;
+}
+@media (max-width: 420px) {
+  .jb-ai-footer { gap: 6px; padding-inline: 10px; }
+  .jb-ai-footer-actions { gap: 7px; }
+  .jb-ai-private-chat, .jb-ai-whatsapp { font-size: 10px; }
+}

@@ -86,7 +86,7 @@
         '<textarea id="jb-ai-input" rows="1" maxlength="600" placeholder="¿Qué estás buscando?" required></textarea>' +
         '<button type="submit" class="jb-ai-send" aria-label="Enviar consulta"><span aria-hidden="true">↑</span></button>' +
       '</form>' +
-      '<div class="jb-ai-footer"><span>IA · JB Collections</span><a class="jb-ai-whatsapp" target="_blank" rel="noopener">Hablar por WhatsApp</a></div>' +
+      '<div class="jb-ai-footer"><span>IA · JB Collections</span><div class="jb-ai-footer-actions"><button type="button" class="jb-ai-private-chat">Chat privado</button><a class="jb-ai-whatsapp" target="_blank" rel="noopener">WhatsApp</a></div></div>' +
     '</section>';
   document.body.appendChild(root);
 
@@ -100,8 +100,10 @@
   const sendButton = root.querySelector(".jb-ai-send");
   const quickPrompts = root.querySelector(".jb-ai-quick-prompts");
   const whatsappLink = root.querySelector(".jb-ai-whatsapp");
+  const privateChatButton = root.querySelector(".jb-ai-private-chat");
   let pending = false;
   let welcomeShown = false;
+  let lastUserQuery = "";
 
   whatsappLink.href = whatsappNumber
     ? "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent("Hola, vengo del asesor IA de " + catalogName + " y necesito ayuda para elegir un producto.")
@@ -462,6 +464,7 @@
       content: String(item.content || "").slice(0, 450)
     }));
 
+    lastUserQuery = cleanMessage;
     addMessage("user", cleanMessage);
     history.push({ role: "user", content: cleanMessage });
     trimSessionHistory();
@@ -520,6 +523,46 @@
     }
   }
 
+  async function openPrivateChatFromAdvisor() {
+    if (privateChatButton.disabled) return;
+    privateChatButton.disabled = true;
+    privateChatButton.setAttribute("aria-busy", "true");
+    const safeQuery = containsPersonalInformation(lastUserQuery) ? "" : lastUserQuery;
+    const topic = /tarjeta de cr[eé]dito|pagar con tarjeta|cuotas con tarjeta/i.test(safeQuery)
+      ? "credit_card"
+      : /financiamiento|financiar|cr[eé]dito|cuotas|mensualidades|pago a plazo/i.test(safeQuery)
+        ? "financing"
+        : "other";
+    const contextLabel = safeQuery
+      ? ("Consulta IA · " + catalogName + " · " + safeQuery).slice(0, 150)
+      : ("Consulta desde asesor IA · " + catalogName);
+    try {
+      const response = await fetch(baseUrl + "/api/private-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        credentials: "omit",
+        body: JSON.stringify({
+          action: "start",
+          catalogType,
+          productId: null,
+          productName: contextLabel,
+          productUrl: baseUrl + "/",
+          paymentTopic: topic
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok || !data.inviteUrl) {
+        throw new Error(data.message || "No pudimos abrir el chat privado. Intentá de nuevo.");
+      }
+      window.location.assign(data.inviteUrl);
+    } catch (error) {
+      addMessage("assistant", String(error && error.message || "No pudimos abrir el chat privado. Podés intentarlo de nuevo o continuar por WhatsApp."));
+      privateChatButton.disabled = false;
+      privateChatButton.removeAttribute("aria-busy");
+    }
+  }
+
   function resetConversation() {
     history.length = 0;
     persistSessionHistory();
@@ -547,6 +590,7 @@
   launcher.addEventListener("click", () => panel.hidden ? openPanel() : closePanel());
   closeButton.addEventListener("click", closePanel);
   resetButton.addEventListener("click", resetConversation);
+  privateChatButton.addEventListener("click", () => void openPrivateChatFromAdvisor());
   form.addEventListener("submit", event => {
     event.preventDefault();
     void sendMessage(input.value);

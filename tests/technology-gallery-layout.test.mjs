@@ -9,9 +9,9 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-compact-detail2/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-compact-variants3/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
-  assert.match(html, /app\.js\?v=20261028-private-chat1/);
+  assert.match(html, /app\.js\?v=20261028-ai-chat-escalation2/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -53,6 +53,8 @@ test("featured descriptions use typography tailored to each section badge", () =
 test("compacts mobile product configuration controls without stretching variant buttons", () => {
   assert.ok(css.includes("Mobile compact pass: reduce empty space throughout the technology product detail"));
   assert.ok(css.includes("flex-wrap: wrap !important"));
+  assert.ok(css.includes("Final mobile pass: compact configuration chips and unmistakable stock states"));
+  assert.match(css, /status-order[\s\S]*?background: #fff0c2 !important/);
   assert.ok(css.includes("width: auto !important"));
   assert.ok(css.includes("height: clamp(230px, 31svh, 285px) !important"));
 });

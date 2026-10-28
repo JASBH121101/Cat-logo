@@ -54,6 +54,17 @@ test("JB Collections channel opens a real temporary chat and keeps AI context co
   assert.ok(assistant.includes("window.openJBAiAdvisor(event.detail && event.detail.message)"));
 });
 
+test("AI advisor can hand a customer off to the secure private inbox with a concise context label", () => {
+  assert.match(assistant, /jb-ai-private-chat/);
+  assert.match(assistant, /openPrivateChatFromAdvisor/);
+  assert.match(assistant, /action: "start"/);
+  assert.match(assistant, /window\.location\.assign\(data\.inviteUrl\)/);
+  assert.match(assistant, /Consulta IA · /);
+  assert.doesNotMatch(assistant, /productUrl: window\.location\.href/);
+  const assistantCss = readFileSync(new URL("../ai-assistant.css", import.meta.url), "utf8");
+  assert.match(assistantCss, /jb-ai-footer-actions/);
+});
+
 test("contact channel controls are responsive, keyboard-focusable and styled consistently across catalogs", () => {
   assert.ok(channelCss.includes(".product-contact-channel-actions"));
   assert.ok(channelCss.includes(".payment-channel-actions"));
@@ -61,6 +72,6 @@ test("contact channel controls are responsive, keyboard-focusable and styled con
   assert.ok(channelCss.includes("@media (max-width: 560px)"));
   assert.ok(technologyHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
   assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261028-dual-contact1"));
-  assert.ok(technologyHtml.includes("app.js?v=20261028-private-chat1"));
+  assert.ok(technologyHtml.includes("app.js?v=20261028-ai-chat-escalation2"));
   assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261028-private-chat1"));
 });
