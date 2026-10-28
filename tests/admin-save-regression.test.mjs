@@ -24,3 +24,14 @@ test("provider review form uses JavaScript-controlled submission instead of dial
   assert.match(providerJs, /\$\("#provider-review-form"\)\?\.addEventListener\("submit", saveReview\)/);
   assert.match(providerJs, /event\.preventDefault\(\);[\s\S]*?supabase\.from\("product_provider_status"\)\.upsert/);
 });
+
+
+test("provider review form omits unused supplier SKU and URL fields", () => {
+  const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const providerJs = readFileSync(new URL("../admin-provider.js", import.meta.url), "utf8");
+  assert.doesNotMatch(adminHtml, /id="provider-review-(?:id|url)"/);
+  assert.doesNotMatch(adminHtml, /ID o SKU del proveedor|Enlace del producto en el proveedor/);
+  assert.doesNotMatch(providerJs, /\$\("#provider-review-(?:id|url)"\)/);
+  assert.match(providerJs, /provider_product_id: null/);
+  assert.match(providerJs, /provider_url: null/);
+});
