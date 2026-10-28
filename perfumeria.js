@@ -297,8 +297,17 @@ function openPerfumeAIContact(message) {
     return;
   }
   const launcher = document.querySelector(".jb-ai-launcher");
-  if (launcher) launcher.click();
-  else window.alert("El asesor IA no está disponible en este momento. Podés elegir WhatsApp.");
+  const input = document.querySelector("#jb-ai-input");
+  const form = document.querySelector(".jb-ai-form");
+  if (launcher && input && form) {
+    const panel = document.querySelector("#jb-ai-panel");
+    if (panel?.hidden) launcher.click();
+    input.value = message;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    return;
+  }
+  window.alert("El asesor IA no está disponible en este momento. Podés continuar por WhatsApp.");
 }
 
 function refreshPerfumePaymentChoices() {
