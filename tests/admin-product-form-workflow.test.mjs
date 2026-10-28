@@ -101,7 +101,7 @@ test("public technology catalog renders manual badges and dedicated product sect
   const app = readFileSync(new URL("../app.js", import.meta.url), "utf8");
   const technologyHtml = readFileSync(new URL("../tecnologia/index.html", import.meta.url), "utf8");
   assert.match(app, /PRODUCT_TAG_LABELS/);
-  assert.match(app, /high_performance:\s*"⚡ ALTO RENDIMIENTO"/);
+  assert.match(app, /high_performance:\s*"ALTO RENDIMIENTO"/);
   assert.match(app, /tags\.includes\("high_performance"\)/);
   assert.match(app, /normalizedProductTags\(product\)\.includes\("top_gaming"\)/);
   assert.match(technologyHtml, /id="high-performance-section"/);
