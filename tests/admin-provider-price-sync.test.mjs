@@ -11,14 +11,17 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-product-details"/);
   assert.match(html, /id="provider-review-price-comparison"/);
   assert.match(html, /id="provider-review-validation-summary"/);
-  assert.match(provider, /function priceDifferenceText\(currentValue, providerValue, currency\)/);
+  assert.match(provider, /function numericPriceDifference\(currentValue, providerValue\)/);
+  assert.match(provider, /diffDisplay/);
+  assert.match(provider, /"En revisión"/);
   assert.match(provider, /function renderReviewAvailabilityComparison\(product, providerAvailability\)/);
   assert.match(provider, /function updateReviewComparison()/);
-  assert.match(provider, /Diferencia:/);
+  assert.match(provider, /aria-label="Diferencia en dólares"/);
+  assert.doesNotMatch(provider, /"El proveedor está " \+ direction/);
   assert.match(html, /id="provider-review-validation-summary"[^>]*aria-live="polite"/);
   assert.match(css, /provider-price-difference.is-different/);
   assert.match(css, /provider-validation-line.is-match/);
-  assert.match(admin, /admin-provider\.js\?v=20261028-reviewed-sections1/);
+  assert.match(admin, /admin-provider\.js\?v=20261028-provider-review-minimal4/);
 });
 
 test("manual provider reviews preserve public prices and existing provider references", () => {
@@ -66,7 +69,7 @@ test("admin settings are located in the dashboard sidebar and hidden during logi
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) #dashboard\.hidden[\s\S]*?display:none!important/);
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) \.admin-main\{padding-top:0!important\}/);
   assert.match(css, /\.admin-sidebar \.admin-settings-menu\{position:static/);
-  assert.match(html, /admin-provider\.css\?v=20261028-reviewed-sections1/);
+  assert.match(html, /admin-provider\.css\?v=20261028-provider-review-minimal4/);
   assert.match(html, /admin\.js\?v=20261028-single-consent-layout3/);
 });
 
