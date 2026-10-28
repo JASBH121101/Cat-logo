@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { initProviderTools } from "./admin-provider.js?v=20261028-reviewed-sections1";
+import { initProviderTools } from "./admin-provider.js?v=20261028-variant-review-state1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -1755,21 +1755,19 @@ function scheduleVariantColorLayout() {
   variantColorLayoutFrame = window.requestAnimationFrame(() => {
     variantColorLayoutFrame = 0;
     document.querySelectorAll("[data-variant-color-list]").forEach(list => {
-      const rowGap = parseFloat(getComputedStyle(list).rowGap) || 12;
-      const autoRow = 4;
-      const cards = Array.from(list.querySelectorAll("[data-variant-row]"));
-      /* Measure without the previous span so a collapsed card can shrink again. */
-      cards.forEach(card => { card.style.gridRowEnd = "auto"; });
-      const measured = cards.map(card => Math.max(1, card.scrollHeight + 2));
-      cards.forEach((card, index) => {
-        const span = Math.max(1, Math.ceil((measured[index] + rowGap) / (autoRow + rowGap)));
-        card.style.gridRowEnd = "span " + span;
+      // Native CSS grid sizing is stable as fonts, controls, and photo previews load.
+      // Never assign masonry row spans: delayed content reflow used to overlap color cards.
+      list.style.gridAutoRows = "auto";
+      list.style.gridAutoFlow = "row";
+      list.querySelectorAll("[data-variant-row]").forEach(card => {
+        card.style.gridRowEnd = "auto";
+        card.style.alignSelf = "start";
       });
     });
   });
 }
 form?.addEventListener("toggle", event => {
-  if (event.target.matches?.(".inline-color-details")) scheduleVariantColorLayout();
+  if (event.target.matches?.(".inline-color-details, .variant-config-collapse")) scheduleVariantColorLayout();
 }, true);
 window.addEventListener("resize", scheduleVariantColorLayout);
 if (form && "MutationObserver" in window) {
@@ -1812,13 +1810,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
     <div class="variant-color-list" data-variant-color-list></div>
     <button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color a esta configuración">+ Color</button>
   </div>`;
-
-  return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
-    <div class="variant-config-group-heading">
-      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Definí RAM, almacenamiento, precio y colores de la configuración principal." : "Definí el precio y los colores de esta configuración."}</small></div>
-      ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
-    </div>
-    <div class="variant-config-fields">
+  const fields = `<div class="variant-config-fields">
       <label class="variant-storage-label"><span class="variant-storage-label-row"><select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"><option value="GB" ${storageUnit === "GB" ? "selected" : ""}>GB</option><option value="TB" ${storageUnit === "TB" ? "selected" : ""}>TB</option></select><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
       <label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_usd ?? "")}"></span></label>
@@ -1830,9 +1822,35 @@ function variantGroupMarkup(v = {}, isBase = false) {
           <option value="out_of_stock" ${configurationAvailability === "out_of_stock" ? "selected" : ""}>Agotado</option>
         </select>
       </label>
+    </div>`;
+
+  if (isBase) {
+    return `<section class="variant-config-group variant-base-group" data-variant-group data-base-group="true">
+      <div class="variant-config-group-heading">
+        <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>Definí RAM, almacenamiento, precio y colores de la configuración principal.</small></div>
+      </div>
+      ${fields}
+      ${colorControls}
+    </section>`;
+  }
+
+  return `<details class="variant-config-group variant-config-collapse" data-variant-group data-base-group="false">
+    <summary class="variant-config-summary">
+      <span class="variant-config-summary-copy">
+        <strong data-variant-group-title>${escapeHtml(title)}</strong>
+        <small data-variant-group-summary>Configuración plegada · expandí para editar precio, disponibilidad y colores</small>
+      </span>
+      <span class="variant-config-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="variant-config-body">
+      <div class="variant-config-group-heading">
+        <small>Editá los datos de esta configuración</small>
+        <button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>
+      </div>
+      ${fields}
+      ${colorControls}
     </div>
-    ${colorControls}
-  </section>`;
+  </details>`;
 }
 
 function renderVariantRows(variants = []) {
@@ -1913,6 +1931,7 @@ function addVariantRow(variant = {}, targetGroup = null, options = {}) {
     container.querySelector(".variants-empty-hint")?.remove();
     container.insertAdjacentHTML("beforeend", variantGroupMarkup(variant, false));
     group = container.lastElementChild;
+    if (group?.matches("details.variant-config-collapse")) group.open = true;
   }
   const list = group.querySelector("[data-variant-color-list]");
   if (!list) return;
@@ -1932,6 +1951,15 @@ function updateVariantRowHeadings() {
     const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || (group.dataset.baseGroup === "true" ? "Configuración principal" : "Nueva configuración");
     const heading = group.querySelector("[data-variant-group-title]");
     if (heading) heading.textContent = title;
+    const summary = group.querySelector("[data-variant-group-summary]");
+    if (summary) {
+      const colors = group.querySelectorAll("[data-variant-row]").length;
+      const availability = normalizeVariantAvailability(group.querySelector("[data-group-availability]")?.value || "");
+      const availabilityLabel = availability === "available" ? "Disponible"
+        : availability === "order" || availability === "on_order" ? "Por pedido"
+        : availability === "out_of_stock" ? "Agotado" : "Disponibilidad pendiente";
+      summary.textContent = colors + " color(es) · " + availabilityLabel + " · tocá para desplegar";
+    }
     group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
       const colorName = row.querySelector("[data-variant-color]")?.value.trim();
       const rowHeading = row.querySelector("[data-variant-row-heading]");
