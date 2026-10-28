@@ -181,7 +181,7 @@ test("provider review identifies perfume details and compares current published 
   assert.match(provider, /product\.price_nio/);
 });
 
-test("provider review validates differences while preserving the public catalog price", () => {
+test("provider review compares prices and syncs catalog only through explicit confirmation", () => {
   assert.match(html, /id="provider-review-validation-summary"/);
   assert.match(provider, /function numericPriceDifference\(currentValue, providerValue\)/);
   assert.match(provider, /function renderReviewPriceComparison\(product, review = \{\}\)/);
@@ -190,7 +190,9 @@ test("provider review validates differences while preserving the public catalog 
   assert.match(provider, /function updateReviewComparison\(\)/);
   assert.match(provider, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
   assert.match(provider, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
-  assert.match(provider, /Los precios públicos se conservaron sin cambios/);
+  assert.match(html, /id="provider-review-sync-catalog-availability" type="checkbox" checked/);
+  assert.match(provider, /p_sync_catalog_availability: syncCatalogAvailability/);
+  assert.match(provider, /supabase\.rpc\("confirm_provider_product_review"/);
   const start = provider.indexOf("async function saveReview(event)");
   const end = provider.indexOf("async function openHistory(productId)", start);
   assert.ok(start >= 0 && end > start);
