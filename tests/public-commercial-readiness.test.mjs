@@ -43,9 +43,9 @@ test("AI recommendation cards disclose stock and format numeric-string prices", 
   assert.match(assistantCss, /\.jb-ai-product-availability--order/);
   assert.match(assistantCss, /\.jb-ai-product-availability--unavailable/);
   assert.match(assistantCss, /\.jb-ai-product-availability--available/);
-  assert.match(techHtml, /ai-assistant\.js\?v=20261028-public-customer-flows2/);
-  assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-public-customer-flows2/);
-  assert.match(homeHtml, /ai-assistant\.js\?v=20261028-public-customer-flows2/);
+  assert.match(techHtml, /ai-assistant\.js\?v=20261028-ai-privacy-autonomy1/);
+  assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-ai-privacy-autonomy1/);
+  assert.match(homeHtml, /ai-assistant\.js\?v=20261028-ai-privacy-autonomy1/);
 });
 
 
