@@ -9,9 +9,9 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-compact-detail1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-compact-detail2/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
-  assert.match(html, /app\.js\?v=20261028-dual-contact1/);
+  assert.match(html, /app\.js\?v=20261028-private-chat1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -106,7 +106,7 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
 test("perfume hero caption gradient stays subtle and title remains readable", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const perfumeCss = readFileSync("perfumeria.css", "utf8");
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-compact-detail1/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-compact-detail2/);
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);
