@@ -63,7 +63,7 @@ jobs:
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
           grep -Fq 'admin.js?v=20261028-provider-review-fields-removed1' admin.html
-          grep -Fq 'admin-provider.css?v=20261028-provider-dialog-contrast1' admin.html
+          grep -Fq 'admin-provider.css?v=20261028-provider-dialog-theme1' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
@@ -308,7 +308,7 @@ jobs:
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
           grep -Fq 'theme-ui.css?v=20261027-audit-cascade1' mobile/www/admin.html
-          grep -Fq 'admin-provider.css?v=20261028-provider-dialog-contrast1' mobile/www/admin.html
+          grep -Fq 'admin-provider.css?v=20261028-provider-dialog-theme1' mobile/www/admin.html
           grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
           grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
           grep -Fq 'updateButton.style.display = shouldHide ? "none" : "grid"' mobile/www/admin.html
@@ -587,7 +587,7 @@ jobs:
             echo "APK is missing the light/dark AI color dialog styles." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-provider.css?v=20261028-provider-dialog-contrast1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-provider.css?v=20261028-provider-dialog-theme1' || {
             echo "::error::APK does not include the provider dialog contrast fix."
             exit 1
           }
