@@ -18,9 +18,10 @@
   <link rel="stylesheet" href="admin-provider.css?v=20261028-reviewed-sections1">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
+  <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-reviewed-sections1"></script>
+  <script type="module" src="admin.js?v=20261028-smart-duplicate-detector1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -388,6 +389,20 @@
                 Modelo
                 <input id="product-model" maxlength="100">
               </label>
+
+              <section id="product-duplicate-panel" class="product-duplicate-panel" aria-labelledby="product-duplicate-title" aria-live="polite" hidden>
+                <div class="product-duplicate-heading">
+                  <span class="product-duplicate-heading-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5M8 10.8h5.6M10.8 8v5.6"></path></svg>
+                  </span>
+                  <div class="product-duplicate-heading-copy">
+                    <h3 id="product-duplicate-title">Posibles coincidencias de esta marca</h3>
+                    <p id="product-duplicate-summary">Comparando nombre, modelo y características con productos ya registrados.</p>
+                  </div>
+                  <span id="product-duplicate-count" class="product-duplicate-count" hidden></span>
+                </div>
+                <div id="product-duplicate-results" class="product-duplicate-results"></div>
+              </section>
 
               <label id="product-category-field">
                 Categoría <span class="required-mark" aria-hidden="true">*</span>

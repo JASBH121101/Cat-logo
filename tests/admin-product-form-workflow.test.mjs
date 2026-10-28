@@ -59,8 +59,30 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261028-reviewed-sections1/);
+  assert.match(html, /admin\.js\?v=20261028-smart-duplicate-detector1/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
+});
+
+test("smart duplicate suggestions compare only the same brand and catalog, and reuse existing product details", () => {
+  const duplicateCss = readFileSync(new URL("../admin-duplicate-detector.css", import.meta.url), "utf8");
+  assert.match(admin, /function normalizeDuplicateText\(value\)/);
+  assert.match(admin, /function duplicateTextSimilarity\(left, right\)/);
+  assert.match(admin, /function scoreProductDuplicate\(candidate, query\)/);
+  assert.match(admin, /normalizeDuplicateText\(product\.brand\) !== brandKey/);
+  assert.match(admin, /normalizeCatalogType\(product\.catalog_type\) !== query\.catalogType/);
+  assert.match(admin, /if \(currentId && String\(product\.id\) === currentId\) return false/);
+  assert.match(admin, /\["trash", "deleting"\]\.includes\(getWorkflowStatus\(product\)\)/);
+  assert.match(admin, /getDuplicateVariantProfiles\(candidate\)/);
+  assert.match(admin, /sameVolume/);
+  assert.match(admin, /sameConcentration/);
+  assert.match(admin, /\.filter\(match => match\.score >= 0\.39\)/);
+  assert.match(admin, /data-duplicate-edit/);
+  assert.match(admin, /scheduleProductDuplicateCheck\(\{ immediate: true \}\)/);
+  assert.match(html, /id="product-duplicate-panel"/);
+  assert.match(html, /id="product-duplicate-results"/);
+  assert.match(html, /admin-duplicate-detector\.css\?v=20261028-smart-duplicate-detector1/);
+  assert.match(duplicateCss, /@media \(max-width: 560px\)/);
+  assert.match(duplicateCss, /\.product-duplicate-result/);
 });
 
 test("technology products support editable subcategories and manually selected tags", () => {
