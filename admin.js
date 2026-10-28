@@ -3065,7 +3065,9 @@ function privateChatSetFilter(nextFilter, options = {}) {
     button.setAttribute("aria-selected", String(active));
     button.tabIndex = active ? 0 : -1;
   });
-}function privateChatTopicLabel(topic) {
+}
+
+function privateChatTopicLabel(topic) {
   return ({product:"Producto",financing:"Financiamiento",credit_card:"Tarjeta de crédito",other:"Consulta"})[topic] || "Consulta";
 }
 function privateChatRouteLabel(route) {
@@ -3145,7 +3147,8 @@ function privateChatRenderInbox() {
       '<span class="private-chat-admin-item-meta"><span class="private-chat-pill ' + statusClass + '">' + privateChatEscape(privateChatStatusLabel(status, item)) + '</span><span class="private-chat-pill">' + privateChatEscape(catalog) + '</span><span class="private-chat-pill">' + privateChatEscape(route) + '</span></span>' +
       '</button>';
   }).join("");
-}function privateChatRenderMessages(messages) {
+}
+function privateChatRenderMessages(messages) {
   if (!privateChatMessagesEl) return;
   const list = (Array.isArray(messages) ? messages : []).filter(item =>
     !(item.sender_type === "assistant" && /^Antes de continuar con una compra:/i.test(String(item.content || "")))
@@ -3312,7 +3315,12 @@ async function loadPrivateChatInbox(options = {}) {
         privateChatSelectedId = "";
       } else {
         const selectedBucket = privateChatConversationBucket(selectedItem);
-        if (selectedBucket !== privateChatActiveFilter) {
+        const selectedCreated = privateChatTimestamp(selectedItem.created_at);
+        const outsideHistoryWindow = selectedBucket === "finalized" && selectedCreated &&
+          selectedCreated < Date.now() - 7 * 24 * 60 * 60_000;
+        if (outsideHistoryWindow) {
+          privateChatSelectedId = "";
+        } else if (selectedBucket !== privateChatActiveFilter) {
           if (selectedBucket === "finalized" && privateChatActiveFilter === "taken") {
             privateChatActiveFilter = "finalized";
           } else {
