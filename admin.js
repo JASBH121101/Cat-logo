@@ -2973,6 +2973,7 @@ document.querySelectorAll("[data-admin-section]").forEach(button => button.addEv
 let privateChatConversations = [];
 let privateChatSelectedId = "";
 let privateChatBaselineReady = false;
+let privateChatPendingBaselineReady = false;
 let privateChatKnownLatestMessages = new Map();
 let privateChatInboxLoading = false;
 let privateChatMessagesLoading = false;
@@ -3208,11 +3209,12 @@ async function loadPrivateChatInbox(options = {}) {
     if (privateChatSelectedId) await loadPrivateChatMessages(true);
 
     const wasPending = Number(loadPrivateChatInbox._previousPending || 0);
-    if (privateChatBaselineReady && pendingCount > wasPending && privateChatBaselineReady) {
-      if (!silent && wasPending > 0) privateChatSetStatus("Hay nuevas solicitudes pendientes de atención.");
-      if (wasPending > 0) privateChatShowNotification("Nueva solicitud de atención", "Un cliente solicitó atención personal en JB Collections.", "pending-count");
+    if (privateChatPendingBaselineReady && pendingCount > wasPending) {
+      if (!silent) privateChatSetStatus("Hay nuevas solicitudes pendientes de atención.");
+      privateChatShowNotification("Nueva solicitud de atención", "Un cliente solicitó atención personal en JB Collections.", "pending-count");
     }
     loadPrivateChatInbox._previousPending = pendingCount;
+    privateChatPendingBaselineReady = true;
     if (!silent && !privateChatConversations.length) privateChatSetStatus("Todavía no hay conversaciones de clientes.");
     else if (!silent && privateChatStatusEl?.dataset.kind === "error") privateChatSetStatus("");
   } catch (error) {
