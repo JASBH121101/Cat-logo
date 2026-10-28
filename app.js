@@ -715,19 +715,15 @@ function formatCustomProductTag(value) {
 }
 
 const PRODUCT_TAG_LABELS = {
-  high_performance: "ALTO RENDIMIENTO",
-  quality_price: "CALIDAD-PRECIO",
-  top_gaming: "TOP GAMING",
+  high_performance: "⚡ ALTO RENDIMIENTO",
+  quality_price: "💎 CALIDAD-PRECIO",
+  top_gaming: "🎮 TOP GAMING",
   best_seller: "MÁS VENDIDO",
   new_arrival: "NUEVO INGRESO",
   offer: "OFERTA"
 };
 
-const PRODUCT_TAG_ICONS = {
-  high_performance: '<svg viewBox="0 0 24 24" focusable="false"><path d="M3 13a9 9 0 1 1 18 0"/><path d="M12 13l4-4"/><path d="M5 19h14"/><path d="M12 4v2"/></svg>',
-  quality_price: '<svg viewBox="0 0 24 24" focusable="false"><path d="M20 12V7a2 2 0 0 0-2-2h-5L3 15l6 6 11-11Z"/><path d="M15 8h.01"/><path d="M12.5 10.5c-.5-.5-1-.7-1.7-.7-1 0-1.8.6-1.8 1.5 0 2 3.6 1 3.6 3 0 .8-.7 1.4-1.8 1.4-.8 0-1.5-.3-2-.8"/><path d="M11 9v7"/></svg>',
-  top_gaming: '<svg viewBox="0 0 24 24" focusable="false"><path d="M7.5 7h9a5.5 5.5 0 0 1 5.2 7.3l-1.4 4.2a2 2 0 0 1-3.3.8l-2.3-2.3H9.3L7 19.3a2 2 0 0 1-3.3-.8l-1.4-4.2A5.5 5.5 0 0 1 7.5 7Z"/><path d="M6 11h4M8 9v4M15.5 12h.01M18 10h.01"/></svg>'
-};
+
 
 function renderCard(product) {
   const image = imageMarkup(product);
@@ -745,17 +741,14 @@ function renderCard(product) {
     ...tags.filter(tag => ["high_performance", "top_gaming", "quality_price"].includes(tag)).map(tag => "product-card-tag-" + tag)
   ].join(" ");
   const badge = [
-    ...(isExclusive ? ['<span class="product-badge featured-badge"><span class="product-badge-icon" aria-hidden="true">✦</span><span class="product-badge-label">EXCLUSIVO</span></span>'] : []),
+    ...(isExclusive ? ['<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'] : []),
     ...tags.filter(tag => tag !== "exclusive").map(tag => {
       const label = PRODUCT_TAG_LABELS[tag] || formatCustomProductTag(rawTagLabels.get(tag) || tag);
       const badgeClass = PRODUCT_TAG_LABELS[tag] ? tag.replace(/[^a-z0-9_-]/g, "") : "custom";
-      const icon = PRODUCT_TAG_ICONS[tag];
-      const content = icon
-        ? '<span class="product-badge-icon" aria-hidden="true">' + icon + '</span><span class="product-badge-label">' + escapeHtml(label) + '</span>'
-        : escapeHtml(label);
-      return '<span class="product-badge product-tag-badge tag-' + badgeClass + '">' + content + '</span>';
+      return '<span class="product-badge product-tag-badge tag-' + badgeClass + '">' + escapeHtml(label) + '</span>';
     })
   ].join("");
+  
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
     productStatus === "out_of_stock"

@@ -2129,99 +2129,98 @@ body.technology-catalog .subcategory-filter-field select:focus-visible { outline
 @media (max-width:600px) { body.technology-catalog .subcategory-filter-bar { margin:0 0 14px; } body.technology-catalog .subcategory-filter-field { width:100%; } }
 
 
-/* Center the four curated product labels, with each icon above its short caption. */
-body.technology-catalog .product-card-badges {
-  justify-content: center;
-  align-items: center;
-  gap: 7px;
-}
-body.technology-catalog .product-badge.featured-badge,
-body.technology-catalog .product-badge.product-tag-badge.tag-high_performance,
-body.technology-catalog .product-badge.product-tag-badge.tag-quality_price,
-body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
+
+/* Section-level badges: icons belong to each curated section, not individual product cards. */
+body.technology-catalog .section-tag-badge {
   position: relative;
   top: auto;
+  right: auto;
   left: auto;
-  display: flex;
-  flex: 0 1 auto;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-width: 76px;
-  min-height: 53px;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
   box-sizing: border-box;
-  padding: 7px 9px;
-  text-align: center;
-  white-space: normal;
+  margin: 0 0 18px;
+  padding: 7px 11px;
+  border: 1px solid var(--section-badge-border, rgba(148,163,184,.45));
+  border-radius: 999px;
+  color: var(--section-badge-ink, #334155);
+  background: var(--section-badge-bg, rgba(248,250,252,.94));
+  box-shadow: 0 4px 11px rgba(15,23,42,.08);
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: .09em;
 }
-body.technology-catalog .product-badge-icon {
-  display: grid;
-  place-items: center;
-  min-height: 20px;
-  font-size: 20px;
-  line-height: 1;
-}
-body.technology-catalog .product-badge-icon svg {
+body.technology-catalog .section-tag-badge > svg {
   display: block;
-  width: 20px;
-  height: 20px;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-body.technology-catalog .product-badge-label {
-  display: block;
-  max-width: 100%;
-  font-size: 8.5px;
-  line-height: 1.2;
-  letter-spacing: .045em;
-  text-align: center;
+body.technology-catalog .section-tag-badge--exclusive {
+  --section-badge-border: #dbc68e;
+  --section-badge-ink: #6b521d;
+  --section-badge-bg: linear-gradient(110deg,#fff4ce,#e8d29a);
 }
-body.technology-catalog .product-badge.product-tag-badge.tag-high_performance {
-  color: #1d4ed8;
-  border-color: rgba(37,99,235,.34);
-  background: rgba(219,234,254,.78);
+body.technology-catalog .section-tag-badge--performance {
+  --section-badge-border: rgba(37,99,235,.36);
+  --section-badge-ink: #1d4ed8;
+  --section-badge-bg: rgba(219,234,254,.9);
 }
-body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
-  color: #6d28d9;
-  border-color: rgba(124,58,237,.34);
-  background: rgba(237,233,254,.82);
+body.technology-catalog .section-tag-badge--quality-price {
+  --section-badge-border: rgba(5,150,105,.36);
+  --section-badge-ink: #047857;
+  --section-badge-bg: rgba(209,250,229,.9);
 }
-body.technology-catalog .product-badge.product-tag-badge.tag-quality_price {
-  color: #047857;
-  border-color: rgba(5,150,105,.34);
-  background: rgba(209,250,229,.82);
+body.technology-catalog .section-tag-badge--gaming {
+  --section-badge-border: rgba(124,58,237,.36);
+  --section-badge-ink: #6d28d9;
+  --section-badge-bg: rgba(237,233,254,.92);
 }
-html[data-theme="dark"] body.technology-catalog .product-badge.product-tag-badge.tag-high_performance {
-  color: #bfdbfe;
-  border-color: rgba(96,165,250,.48);
-  background: rgba(26,55,104,.85);
+html[data-theme="dark"] body.technology-catalog .section-tag-badge {
+  box-shadow: 0 4px 14px rgba(0,0,0,.2);
 }
-html[data-theme="dark"] body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
-  color: #ddd6fe;
-  border-color: rgba(167,139,250,.48);
-  background: rgba(66,35,117,.85);
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--exclusive {
+  --section-badge-border: rgba(222,193,127,.65);
+  --section-badge-ink: #f1d79a;
+  --section-badge-bg: rgba(34,28,27,.92);
 }
-html[data-theme="dark"] body.technology-catalog .product-badge.product-tag-badge.tag-quality_price {
-  color: #a7f3d0;
-  border-color: rgba(52,211,153,.46);
-  background: rgba(14,78,57,.85);
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--performance {
+  --section-badge-border: rgba(96,165,250,.48);
+  --section-badge-ink: #bfdbfe;
+  --section-badge-bg: rgba(26,55,104,.88);
 }
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--quality-price {
+  --section-badge-border: rgba(52,211,153,.46);
+  --section-badge-ink: #a7f3d0;
+  --section-badge-bg: rgba(14,78,57,.88);
+}
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--gaming {
+  --section-badge-border: rgba(167,139,250,.48);
+  --section-badge-ink: #ddd6fe;
+  --section-badge-bg: rgba(66,35,117,.88);
+}
+body.technology-catalog .featured-section .featured-exclusive-badge {
+  margin-bottom: 18px;
+}
+body.technology-catalog .featured-section-heading { padding-top: 0; }
 @media (max-width: 760px) {
-  body.technology-catalog .product-card-badges { gap: 4px; }
-  body.technology-catalog .product-badge.featured-badge,
-  body.technology-catalog .product-badge.product-tag-badge.tag-high_performance,
-  body.technology-catalog .product-badge.product-tag-badge.tag-quality_price,
-  body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
-    min-width: 64px;
-    min-height: 46px;
-    gap: 3px;
-    padding: 5px 5px;
+  body.technology-catalog .section-tag-badge {
+    gap: 5px;
+    margin-bottom: 13px;
+    padding: 6px 9px;
+    font-size: 9px;
   }
-  body.technology-catalog .product-badge-icon { min-height: 17px; font-size: 17px; }
-  body.technology-catalog .product-badge-icon svg { width: 17px; height: 17px; }
-  body.technology-catalog .product-badge-label { font-size: 7.25px; letter-spacing: .02em; }
+  body.technology-catalog .section-tag-badge > svg { width: 15px; height: 15px; }
+  body.technology-catalog .featured-section .featured-exclusive-badge { top: auto; right: auto; }
+  body.technology-catalog .featured-section-heading { padding-top: 0; }
 }
