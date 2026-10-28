@@ -42,6 +42,6 @@ test("catalog-specific stylesheets remain last in the cascade", () => {
   const techHtml = readFileSync("tecnologia/index.html", "utf8");
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const styleLinks = html => [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
-  assert.match(styleLinks(techHtml).at(-1) || "", /technology-visual-refresh\.css\?v=20261027-subcategory-filter1/);
+  assert.match(styleLinks(techHtml).at(-1) || "", /technology-visual-refresh\.css\?v=20261028-centered-tag-icons1/);
   assert.match(styleLinks(perfumeHtml).at(-1) || "", /perfumeria\.css\?v=20261027-audit-cascade1/);
 });
