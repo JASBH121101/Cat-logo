@@ -403,11 +403,19 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (!container) return;
     const format = (value, currency) => value === null || value === undefined || value === ""
       ? "Sin registrar" : money(value, currency);
+    const publicUSD = product.price_usd == null || product.price_usd === "" ? null : Number(product.price_usd);
+    const publicNIO = product.price_nio == null || product.price_nio === "" ? null : Number(product.price_nio);
+    const providerUSD = review.provider_price_usd == null || review.provider_price_usd === "" ? null : Number(review.provider_price_usd);
+    const providerNIO = review.provider_price_nio == null || review.provider_price_nio === "" ? null : Number(review.provider_price_nio);
+    const deltaUSD = publicUSD !== null && providerUSD !== null ? providerUSD - publicUSD : null;
+    const deltaNIO = publicNIO !== null && providerNIO !== null ? providerNIO - publicNIO : null;
+    const delta = (value, currency) => value === null ? "No disponible" : (value > 0 ? "+" : "") + money(value, currency);
     container.innerHTML = '<div class="provider-price-compare-card"><span>Precio publicado actual</span><strong>' +
       escapeHTML(format(product.price_usd, "USD")) + '</strong><small>' + escapeHTML(format(product.price_nio, "NIO")) +
-      '</small></div><div class="provider-price-compare-card"><span>Último precio registrado de GoPartner</span><strong>' +
-      escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' +
-      escapeHTML(format(review.provider_price_nio, "NIO")) + '</small></div>';
+      '</small></div><div class="provider-price-compare-card"><span>Precio actual GoPartner</span><strong>' +
+      escapeHTML(format(review.provider_price_usd, "USD")) + '</strong><small>' + escapeHTML(format(review.provider_price_nio, "NIO")) +
+      '</small></div><div class="provider-price-compare-card provider-price-difference"><span>Diferencia (GoPartner − publicado)</span><strong>' +
+      escapeHTML(delta(deltaUSD, "USD")) + '</strong><small>' + escapeHTML(delta(deltaNIO, "NIO")) + '</small></div>';
   }
 
   function openReview(productId) {
