@@ -256,7 +256,7 @@ begin
     values (
       v_row.id,
       'assistant',
-      'Gracias por confirmar. Ya avisamos al equipo de JB Collections y un asesor continuará contigo por este chat. El registro de compra se completa mediante el procedimiento correspondiente de Go Partners; no necesitás enviar datos personales ni de pago por aquí.'
+      'Gracias por confirmar. Ya avisamos al equipo de JB Collections y un asesor continuará contigo por este chat. El registro de compra se completará mediante el procedimiento correspondiente de Go Partners.'
     );
 
     return jsonb_build_object('ok', true, 'status', 'pending_advisor', 'choice', 'yes');
