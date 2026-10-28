@@ -7,6 +7,7 @@ const migration = readFileSync(new URL("../supabase/migrations/20261028204826_pr
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028205513_tighten_private_chat_sensitive_data_20261028.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028212147_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
 const adminRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028230836_revoke_anon_execute_from_private_chat_admin_rpcs.sql", import.meta.url), "utf8");
+const customerRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028231046_restrict_customer_chat_rpcs_to_anon.sql", import.meta.url), "utf8");
 const chatRlsOptimization = readFileSync(new URL("../supabase/migrations/20261028230934_optimize_private_chat_rls_and_foreign_key_indexes.sql", import.meta.url), "utf8");
 const duplicateNoticeRemoval = readFileSync(new URL("../supabase/migrations/20261028212309_remove_duplicate_private_chat_consent.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
@@ -141,4 +142,19 @@ test("private-chat RLS uses statement-level auth lookup and foreign-key indexes"
   assert.match(chatRlsOptimization, /WHERE au\.user_id = \(SELECT auth\.uid\(\)\)/);
   assert.match(chatRlsOptimization, /CREATE POLICY "Admins can read private chat conversations"/);
   assert.match(chatRlsOptimization, /CREATE POLICY "Admins can read private chat messages"/);
+});
+
+test("public customer-chat RPCs require the anonymous capability-token path, not an authenticated admin session", () => {
+  for (const signature of [
+    "private_chat_choose_route(text, text)",
+    "private_chat_create(text, uuid, text, text, text, text)",
+    "private_chat_public_messages(text)",
+    "private_chat_public_send(text, text)",
+    "private_chat_public_status(text)",
+    "private_chat_record_consent(text, text, text)",
+    "private_chat_redeem(text, text)"
+  ]) {
+    assert.ok(customerRpcPermissions.includes("REVOKE EXECUTE ON FUNCTION public." + signature + " FROM PUBLIC, authenticated;"));
+    assert.ok(customerRpcPermissions.includes("GRANT EXECUTE ON FUNCTION public." + signature + " TO anon;"));
+  }
 });
