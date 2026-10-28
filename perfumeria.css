@@ -2505,3 +2505,89 @@ body.perfume-page .perfume-product-card .product-actions {
     flex-basis: 36px;
   }
 }
+
+
+/* JB PARFUMS · exclusive and limited-edition collections use a restrained gold system. */
+.perfume-page .perfume-featured-section--exclusive {
+  border-top:2px solid var(--perfume-gold);
+  background:linear-gradient(145deg,rgba(185,148,84,.07),transparent 58%),var(--perfume-card);
+}
+.perfume-page .perfume-featured-section--exclusive .perfume-kicker { color:var(--perfume-gold); }
+.perfume-page .perfume-featured-section--limited-edition {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border-color:rgba(185,148,84,.55);
+  border-top:3px double var(--perfume-gold);
+  background:
+    radial-gradient(ellipse at 100% 0,rgba(185,148,84,.13),transparent 50%),
+    linear-gradient(145deg,#17130e,#20190f 58%,#15120e);
+  box-shadow:0 15px 38px rgba(10,8,4,.12),inset 0 1px 0 rgba(255,232,178,.045);
+}
+.perfume-page .perfume-featured-section--limited-edition.hidden { display:none!important; }
+.perfume-page .perfume-featured-section--limited-edition .perfume-kicker {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#d5b878;
+  letter-spacing:.17em;
+}
+.perfume-page .perfume-featured-section--limited-edition .perfume-kicker span {
+  color:#e4c987;
+  font-size:17px;
+}
+.perfume-page .perfume-featured-section--limited-edition h2 { color:#f2e2bd; }
+.perfume-page .perfume-featured-section--limited-edition .perfume-featured-description {
+  max-width:660px;
+  margin:8px 0 0;
+  color:#c5b89b;
+  font-size:12px;
+  line-height:1.75;
+}
+.perfume-page .perfume-featured-section--limited-edition .perfume-featured-count {
+  color:#dfc88f;
+}
+.perfume-page .perfume-highlight-grid { align-items:stretch; }
+.perfume-page .perfume-featured-section--limited-edition .product-card {
+  border-color:rgba(185,148,84,.35);
+  background:linear-gradient(145deg,#1c1913,#14120f);
+}
+.perfume-page .perfume-featured-section--limited-edition .product-card:hover { border-color:#c9a962; }
+.perfume-page .perfume-limited-edition-badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+  padding:5px 7px;
+  border:1px solid #a98748;
+  color:#f1dfb1;
+  background:linear-gradient(115deg,#302416,#4a361b);
+  font-size:8px;
+  font-weight:900;
+  line-height:1.2;
+  letter-spacing:.07em;
+  white-space:nowrap;
+}
+.perfume-page .perfume-product-badges { flex-wrap:wrap; justify-content:flex-start; }
+.perfume-page .perfume-product-badges .perfume-featured-badge,
+.perfume-page .perfume-product-badges .perfume-limited-edition-badge,
+.perfume-page .perfume-product-badges .perfume-state-badge {
+  flex:0 1 auto;
+  width:auto!important;
+  max-width:100%!important;
+}
+.perfume-page .perfume-product-badges .perfume-state-badge { margin-left:auto; }
+html[data-theme="light"] body.perfume-page .perfume-featured-section--limited-edition {
+  background:linear-gradient(145deg,rgba(185,148,84,.12),rgba(255,255,255,.94) 62%),#f8f4e9;
+}
+html[data-theme="light"] body.perfume-page .perfume-featured-section--limited-edition h2 { color:#2b2113; }
+html[data-theme="light"] body.perfume-page .perfume-featured-section--limited-edition .perfume-featured-description { color:#716247; }
+@media(max-width:600px) {
+  .perfume-page .perfume-featured-section--limited-edition { padding:14px; }
+  .perfume-page .perfume-featured-section--limited-edition .perfume-featured-heading { gap:8px; }
+  .perfume-page .perfume-featured-section--limited-edition .perfume-featured-description { font-size:11px; }
+  .perfume-page .perfume-product-badges { justify-content:flex-start; flex-wrap:wrap; }
+  .perfume-page .perfume-product-badges .perfume-state-badge { margin-left:auto; }
+}
