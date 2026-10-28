@@ -861,7 +861,7 @@ const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-
 if (!builtAdminHtml.includes('admin.js?v=20261028-variant-availability1')) {
   throw new Error("The APK must load the cache-busted admin script containing the current color-knowledge updates.");
 }
-if (!builtAdminHtml.includes('theme-ui.css?v=20261027-audit-cascade1')) {
+if (!builtAdminHtml.includes('theme-ui.css?v=20261028-variant-colors-visible1')) {
   throw new Error("The APK admin page is missing the latest mobile sidebar stability styles.");
 }
 if (!builtThemeCss.includes("jb-manager-mobile-sidebar-stability")) {
