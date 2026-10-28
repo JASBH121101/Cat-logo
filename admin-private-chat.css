@@ -247,3 +247,19 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
     max-width:100%;
   }
 }
+
+
+/* Último contrato del hilo: el contenido determina la altura; no mostrar un panel vacío. */
+.private-chat-admin-thread { min-height:0!important; max-height:none!important; height:auto!important; }
+.private-chat-admin-selected { flex:0 0 auto!important; min-height:0!important; height:auto!important; }
+.private-chat-admin-actions { position:static!important; flex:0 0 auto!important; inset:auto!important; }
+.private-chat-admin-actions .button[hidden] { display:none!important; }
+.private-chat-admin-messages { flex:0 1 auto!important; min-height:0!important; max-height:320px!important; height:auto!important; }
+@media(max-width:900px) {
+  .private-chat-admin-layout.has-selection .private-chat-admin-thread { min-height:0!important; height:auto!important; }
+  .private-chat-admin-layout.has-selection .private-chat-admin-messages { min-height:0!important; max-height:280px!important; }
+}
+@media(max-width:560px) {
+  .private-chat-admin-layout.has-selection .private-chat-admin-thread { min-height:0!important; }
+  .private-chat-admin-layout.has-selection .private-chat-admin-messages { min-height:0!important; max-height:240px!important; }
+}
