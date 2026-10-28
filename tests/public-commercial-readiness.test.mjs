@@ -43,8 +43,8 @@ test("AI recommendation cards disclose stock and format numeric-string prices", 
   assert.match(assistantCss, /\.jb-ai-product-availability--order/);
   assert.match(assistantCss, /\.jb-ai-product-availability--unavailable/);
   assert.match(assistantCss, /\.jb-ai-product-availability--available/);
-  assert.match(techHtml, /ai-assistant\.js\?v=20261028-(?:ai-privacy-autonomy1|dual-contact1)/);
-  assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-(?:ai-privacy-autonomy1|dual-contact1)/);
+  assert.match(techHtml, /ai-assistant\.js\?v=20261028-private-chat1/);
+  assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-private-chat1/);
   assert.match(homeHtml, /ai-assistant\.js\?v=20261028-private-chat1/);
 });
 
@@ -55,5 +55,5 @@ test("configuration availability affects public variant choices, status, and Wha
   assert.match(app, /const selectedAvailability = effectiveVariantAvailability\(selected\);[\s\S]*?colorStatusLabel\(selectedAvailability\)/);
   assert.match(app, /Disponibilidad de esta variante:.*effectiveVariantAvailability\(variant\)/);
   assert.match(app, /variant-choice-status status-/);
-  assert.match(techHtml, /app\.js\?v=20261028-(?:limited-edition-icons1|dual-contact1)/);
+  assert.match(techHtml, /app\.js\?v=20261028-private-chat1/);
 });
