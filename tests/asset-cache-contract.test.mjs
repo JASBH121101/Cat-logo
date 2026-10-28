@@ -43,5 +43,5 @@ test("catalog-specific stylesheets remain last in the cascade", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const styleLinks = html => [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.match(styleLinks(techHtml).at(-1) || "", /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
-  assert.match(styleLinks(perfumeHtml).at(-1) || "", /perfumeria\.css\?v=20261028-limited-edition-sections1/);
+  assert.match(styleLinks(perfumeHtml).at(-1) || "", /perfumeria\.css\?v=20261028-limited-edition-icons1/);
 });
