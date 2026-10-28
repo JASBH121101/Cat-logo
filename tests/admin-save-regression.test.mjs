@@ -35,3 +35,11 @@ test("provider review form omits unused supplier SKU and URL fields", () => {
   assert.match(providerJs, /provider_product_id: null/);
   assert.match(providerJs, /provider_url: null/);
 });
+
+
+test("provider review dialog follows light and dark theme colors on web and APK", () => {
+  const css = readFileSync(new URL("../admin-provider.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-theme="dark"\] \.provider-dialog\s*\{[\s\S]*?background:\s*#0e1930\s*!important/);
+  assert.match(css, /html\[data-theme="dark"\] \.provider-dialog \.provider-dialog-fields label > span\s*\{[\s\S]*?color:\s*#e8efff\s*!important/);
+  assert.match(css, /html\[data-theme="light"\] \.provider-dialog\s*\{[\s\S]*?background:\s*#ffffff\s*!important/);
+});
