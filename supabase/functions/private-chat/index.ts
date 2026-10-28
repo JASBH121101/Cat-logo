@@ -241,7 +241,18 @@ async function handler(request: Request): Promise<Response> {
         product_url: body.product_url,
         payment_topic: body.payment_topic,
       }, "https://jb-collections.pages.dev");
-      return json(201, payload, origin);
+      const createdConversation = payload.conversation as Record<string, unknown>;
+      const now = new Date().toISOString();
+      const accepted = await rest("private_chat_conversations", { id: "eq." + createdConversation.id }, "PATCH", {
+        status: "pending_advisor",
+        consent_choice: "yes",
+        consent_notice_version: NOTICE_VERSION,
+        consent_at: now,
+        updated_at: now,
+        last_message_at: now,
+      }, "return=representation");
+      await insertMessage(String(createdConversation.id), "assistant", "Gracias por aceptar el aviso de privacidad. Contanos qué necesitás y revisaremos tu consulta. Esta aceptación solo autoriza continuar este chat; no es una solicitud de compra ni autorización para compartir tus datos con Go Partners.");
+      return json(201, { ...payload, conversation: safeConversation(accepted[0]), messages: await readMessages(String(createdConversation.id)) }, origin);
     }
 
     if (action === "create_invite") {
@@ -280,7 +291,7 @@ async function handler(request: Request): Promise<Response> {
         updated_at: now.toISOString(),
       }, "return=representation");
       if (!Array.isArray(updated) || !updated[0]) return json(409, { error: "invite_already_used", message: "Este enlace ya fue utilizado. Solicitá uno nuevo." }, origin);
-      return json(200, { session_token: sessionToken, conversation: safeConversation(updated[0]) }, origin);
+      return json(200, { session_token: sessionToken, conversation: safeConversation(updated[0]), messages: await readMessages(String(updated[0].id)) }, origin);
     }
 
     if (action === "decline_start") {
