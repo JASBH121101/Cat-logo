@@ -80,7 +80,7 @@ test("smart duplicate suggestions compare only the same brand and catalog, and r
   assert.match(admin, /scheduleProductDuplicateCheck\(\{ immediate: true \}\)/);
   assert.match(html, /id="product-duplicate-panel"/);
   assert.match(html, /id="product-duplicate-results"/);
-  assert.match(html, /admin-duplicate-detector\.css\?v=20261028-limited-edition-sections1/);
+  assert.match(html, /admin-duplicate-detector\.css\?v=20261028-smart-duplicate-detector1/);
   assert.match(duplicateCss, /@media \(max-width: 560px\)/);
   assert.match(duplicateCss, /\.product-duplicate-result/);
 });
@@ -108,7 +108,7 @@ test("technology products support editable subcategories and manually selected t
   assert.match(html, /data-product-tag[^>]*value="top_gaming"/);
   assert.match(html, /data-product-tag[^>]*value="high_performance"/);
   assert.match(admin, /subcategory: isPerfume \? \(existingProduct\?\.subcategory \?\? null\) : \(getSelectedProductSubcategory\(\) \|\| null\)/);
-  assert.match(admin, /tags: isPerfume \? \(existingProduct\?\.tags \?\? \[\]\) : selectedProductTags\(\)/);
+  assert.match(admin, /tags: selectedProductTags\(\)/);
   assert.match(admin, /function setProductTags\(tags\)/);
   assert.match(admin, /function clearEditor\(\)[\s\S]*?customProductTags = \[\];[\s\S]*?renderCustomProductTagChips\(\)/);
   assert.match(admin, /function parseSpecs\(text\)[\s\S]*?return lines\.map\(line =>/);
