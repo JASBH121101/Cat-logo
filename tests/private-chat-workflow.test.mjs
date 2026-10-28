@@ -22,7 +22,7 @@ test("private chat API creates one-time hashed invite links and supports only do
   assert.match(api, /action === "send"/);
   assert.match(api, /private_chat_create/);
   assert.match(api, /private_chat_redeem/);
-  assert.match(api, //mensajes\.html\?invite=/);
+  assert.ok(api.includes("/mensajes.html?invite="));
   assert.match(api, /credentials: "omit"/);
   assert.doesNotMatch(api, /service_role|SUPABASE_SERVICE_ROLE_KEY/i);
   assert.match(api, /Rate|rateLimit|RATE_LIMITS/);
@@ -33,7 +33,7 @@ test("database workflow restricts direct table access and protects admin actions
   assert.match(migration, /enable row level security/i);
   assert.match(migration, /Admins can read private chat conversations/);
   assert.match(migration, /Admins can read private chat messages/);
-  assert.match(migration, /revoke all on public\.private_chat_conversations from anon/i);
+  assert.match(migration, /revoke all on public\.private_chat_conversations, public\.private_chat_messages from anon/i);
   assert.match(migration, /revoke insert, update, delete on public\.private_chat_conversations, public\.private_chat_messages from authenticated/i);
   assert.match(migration, /function public\.private_chat_admin_claim/);
   assert.match(migration, /function public\.private_chat_admin_send/);
