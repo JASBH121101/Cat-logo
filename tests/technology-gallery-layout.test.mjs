@@ -9,7 +9,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-compact-detail1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
   assert.match(html, /app\.js\?v=20261028-dual-contact1/);
   assert.match(html, /id="quality-price-section"/);
@@ -48,6 +48,13 @@ test("featured descriptions use typography tailored to each section badge", () =
   assert.match(css, /body\.technology-catalog \.quality-price-heading \.section-subtitle\s*\{[^}]*font-family:\s*"DM Sans"/s);
   assert.match(css, /body\.technology-catalog \.high-performance-heading \.section-subtitle\s*\{[^}]*font-family:\s*Manrope[^}]*font-weight:\s*600/s);
   assert.match(css, /body\.technology-catalog \.featured-section-heading \.section-subtitle\s*\{[^}]*font-weight:\s*500[^}]*letter-spacing:\s*\.012em/s);
+});
+
+test("compacts mobile product configuration controls without stretching variant buttons", () => {
+  assert.ok(css.includes("Mobile compact pass: reduce empty space throughout the technology product detail"));
+  assert.ok(css.includes("flex-wrap: wrap !important"));
+  assert.ok(css.includes("width: auto !important"));
+  assert.ok(css.includes("height: clamp(230px, 31svh, 285px) !important"));
 });
 
 test("keeps the product-detail header, back arrow, and theme toggle visible while the body is locked", () => {
@@ -99,7 +106,7 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
 test("perfume hero caption gradient stays subtle and title remains readable", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const perfumeCss = readFileSync("perfumeria.css", "utf8");
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-limited-edition-icons1/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261028-compact-detail1/);
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);

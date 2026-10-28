@@ -44,6 +44,6 @@ test("shared contact-channel styles load after catalog-specific styles", () => {
   const styleLinks = html => [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.match(styleLinks(techHtml).at(-1) || "", /contact-channels\.css\?v=20261028-dual-contact1/);
   assert.match(styleLinks(perfumeHtml).at(-1) || "", /contact-channels\.css\?v=20261028-dual-contact1/);
-  assert.match(styleLinks(techHtml).at(-2) || "", /technology-visual-refresh\.css\?v=20261028-limited-edition1/);
-  assert.match(styleLinks(perfumeHtml).at(-2) || "", /perfumeria\.css\?v=20261028-limited-edition-icons1/);
+  assert.match(styleLinks(techHtml).at(-2) || "", /technology-visual-refresh\.css\?v=20261028-compact-detail1/);
+  assert.match(styleLinks(perfumeHtml).at(-2) || "", /perfumeria\.css\?v=20261028-compact-detail1/);
 });

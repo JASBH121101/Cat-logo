@@ -63,7 +63,10 @@ function containsPersonalInformation(value) {
   const patterns = [
     /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
     /(?:\+?505[\s().-]?)?(?:\d[\s().-]?){8,}/,
-    /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|tarjeta de cr[eé]dito|cuenta bancaria|contrase[nñ]a)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*[A-Z0-9][A-Z0-9\s-]{4,}/i,
+    // Only treat these labels as sensitive when followed by an actual identifier-like value.
+    // A general payment question such as "tarjeta de crédito" is not personal data.
+    /\b(?:c[eé]dula|n[uú]mero de identidad|pasaporte|cuenta bancaria|contrase[nñ]a)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*[A-Z0-9][A-Z0-9\s-]{4,}/i,
+    /\b(?:mi tarjeta(?: bancaria)?|n[uú]mero de tarjeta|tarjeta bancaria)\b\s*(?:(?:es|n[uú]mero|no\.?|#)\s*)?[:=]?\s*(?:[0-9][ -]?){12,19}/i,
     /\b(?:mi direcci[oó]n|mi domicilio|ubicaci[oó]n exacta|vivo en|mi casa queda)\b\s*(?:es|:)?\s*[^,.!?]{4,}/i
   ];
   return patterns.some(pattern => pattern.test(text));

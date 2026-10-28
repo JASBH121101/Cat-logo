@@ -472,6 +472,39 @@ test("blocks personal contact and identity data before invoking the model", asyn
   }
 });
 
+
+test("allows ordinary financing and credit-card questions without treating them as personal data", async () => {
+  const previousFetch = globalThis.fetch;
+  let aiCalls = 0;
+  globalThis.fetch = async () => new Response(JSON.stringify([productRow({id:"tech-pay",name:"Galaxy S26 Ultra",price_usd:1390})]),{status:200,headers:{"Content-Type":"application/json"}});
+  try {
+    for (const message of [
+      "Quiero consultar las opciones de financiamiento para este producto.",
+      "Quiero consultar sobre pagar con tarjeta de crédito para este producto."
+    ]) {
+      const response = await onRequest({
+        request:makeRequest({catalogType:"technology",message},{ip:"192.0.2.180"}),
+        env:{AI:{run:async()=>{aiCalls++;return {response:JSON.stringify({reply:"Podés consultar las condiciones con la tienda.",recommendations:[]})};}}}
+      });
+      assert.equal(response.status,200, "ordinary payment question should be accepted: " + message);
+    }
+    assert.equal(aiCalls,2);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("still blocks a real payment-card number", async () => {
+  let aiCalls = 0;
+  const response = await onRequest({
+    request:makeRequest({catalogType:"technology",message:"Mi tarjeta bancaria es 4111 1111 1111 1111"}),
+    env:{AI:{run:async()=>{aiCalls++;return {response:"{}"};}}}
+  });
+  assert.equal(response.status,400);
+  assert.equal((await response.json()).error,"personal_data_not_needed");
+  assert.equal(aiCalls,0);
+});
+
 test("filters personal contact data from session history before forwarding context to AI", async () => {
   const previousFetch = globalThis.fetch;
   let receivedMessages = [];
