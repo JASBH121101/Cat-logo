@@ -57,12 +57,12 @@ jobs:
           grep -Fq '/api/color-assistant' admin.js
           grep -Fq '.jb-color-ai-overlay' theme-ui.css
           grep -Fq 'jb-manager-mobile-sidebar-stability' theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261028-mobile-drawer-overlay2' admin.html
+          grep -Fq 'theme-ui.css?v=20261028-limited-edition-sections1' admin.html
           grep -Fq 'admin-sidebar-scroll-locked' admin.js
           grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
-          grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
@@ -271,8 +271,12 @@ jobs:
           grep -Fq 'from("color_library")' admin.js
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
-          grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'admin.js?v=20261028-limited-edition-sections1' admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'id="product-tag-limited-edition"' admin.html
+          grep -Fq 'function normalizedPerfumeProductTags(product)' perfumeria.js
+          grep -Fq 'id="limited-edition-section"' tecnologia/index.html
+          grep -Fq 'id="perfume-limited-edition-section"' perfumeria/index.html
           grep -Fq 'function renderProductDuplicateSuggestions()' admin.js
           grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' admin.js
           grep -Fq '20261027-audit-cascade1' admin.html
@@ -286,9 +290,10 @@ jobs:
           echo "Shared AI color knowledge, manufacturer aliases, exact lookups, and photo endpoint are present."
 
           # The product detail must package the same final gallery fix as the public source.
-          grep -Fq 'technology-visual-refresh.css?v=20261028-label-typography2' mobile/www/tecnologia/index.html
-          grep -Fq 'app.js?v=20261028-consolas-filter1' mobile/www/tecnologia/index.html
-          grep -Fq 'perfumeria.css?v=20261028-card-cascade-fix1' mobile/www/perfumeria/index.html
+          grep -Fq 'technology-visual-refresh.css?v=20261028-limited-edition1' mobile/www/tecnologia/index.html
+          grep -Fq 'app.js?v=20261028-limited-edition-sections1' mobile/www/tecnologia/index.html
+          grep -Fq 'perfumeria.css?v=20261028-limited-edition-sections1' mobile/www/perfumeria/index.html
+          grep -Fq 'perfumeria.js?v=20261028-limited-edition-sections1' mobile/www/perfumeria/index.html
           ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
           ! grep -Fq 'Explorar perfumería' mobile/www/perfumeria/index.html
           grep -Fq 'Hero cleanup: remove the redundant scroll CTA' mobile/www/technology-visual-refresh.css
@@ -310,9 +315,13 @@ jobs:
           done
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
-          grep -Fq 'theme-ui.css?v=20261028-mobile-drawer-overlay2' mobile/www/admin.html
+          grep -Fq 'theme-ui.css?v=20261028-limited-edition-sections1' mobile/www/admin.html
           grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' mobile/www/admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
+          grep -Fq 'id="product-tag-limited-edition"' mobile/www/admin.html
+          grep -Fq 'id="limited-edition-section"' mobile/www/tecnologia/index.html
+          grep -Fq 'id="perfume-limited-edition-section"' mobile/www/perfumeria/index.html
+          grep -Fq 'function normalizedPerfumeProductTags(product)' mobile/www/perfumeria.js
           grep -Fq 'function renderProductDuplicateSuggestions()' mobile/www/admin.js
           grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
           grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
@@ -597,7 +606,7 @@ jobs:
             echo "::error::APK does not include the provider dialog contrast fix."
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-smart-duplicate-detector1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-limited-edition-sections1' || {
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
@@ -611,6 +620,30 @@ jobs:
           }
           unzip -p "$APK" assets/public/admin.js | grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' || {
             echo "APK duplicate detector does not restrict matches to the same brand." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'id="product-tag-limited-edition"' || {
+            echo "APK admin form is missing the limited-edition checkbox." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'tags: selectedProductTags()' || {
+            echo "APK does not persist collection labels for both catalogs." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/app.js | grep -Fq 'limitedEditionSection.classList.toggle' || {
+            echo "APK technology catalog is missing limited-edition section logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/perfumeria.js | grep -Fq 'perfumeLimitedEditionSection.classList.toggle' || {
+            echo "APK perfume catalog is missing limited-edition section logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/technology-visual-refresh.css | grep -Fq 'limited-edition-section' || {
+            echo "APK is missing JB TECH limited-edition visuals." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/perfumeria.css | grep -Fq 'perfume-featured-section--limited-edition' || {
+            echo "APK is missing luxury limited-edition visuals." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-audit-cascade1' || {
