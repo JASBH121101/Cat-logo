@@ -47,6 +47,7 @@ jobs:
           node --test tests/perfume-card-layout.test.mjs
           node --test tests/commercial-description-layout.test.mjs
           node --test tests/catalog-contact-channels.test.mjs
+          node --test tests/private-chat-workflow.test.mjs
           node --test tests/product-tag-formatting.test.mjs
           node --test tests/asset-cache-contract.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
