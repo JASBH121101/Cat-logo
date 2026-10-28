@@ -21,7 +21,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /renderLegacyColorOptions\(product, requestedColorName\)/);
   assert.match(css, /JB TECH · section-specific card palettes and compact product information/);
   assert.doesNotMatch(app, /recommended: "RECOMENDADO"/);
-  assert.match(html, /data-category="Consolas">Consolas<\/button>/);
+  assert.match(html, /data-category="Consolas"[^>]*>Consolas<\/button>/);
   assert.match(app, /"Consolas"/);
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
 });
