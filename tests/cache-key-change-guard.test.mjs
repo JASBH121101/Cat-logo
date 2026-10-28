@@ -22,9 +22,10 @@ test("cache-key guard rejects changed CSS/JS with stale keys and accepts bumped 
   const root = mkdtempSync(join(tmpdir(), "cache-key-guard-"));
   try {
     mkdirSync(join(root, "assets"), { recursive: true });
-    writeFileSync(join(root, "index.html"), [
-      '<link rel="stylesheet" href="assets/site.css?v=old1">',
-      '<script src="assets/site.js?v=old1"></script>',
+    mkdirSync(join(root, "tecnologia"), { recursive: true });
+    writeFileSync(join(root, "tecnologia/index.html"), [
+      '<link rel="stylesheet" href="../assets/site.css?v=old1">',
+      '<script src="../assets/site.js?v=old1"></script>',
     ].join("\n"));
     writeFileSync(join(root, "assets/site.css"), "body { color: black; }\n");
     writeFileSync(join(root, "assets/site.js"), "globalThis.example = 1;\n");
@@ -50,9 +51,9 @@ test("cache-key guard rejects changed CSS/JS with stale keys and accepts bumped 
     assert.match(staleResult.stdout, /site\.css/);
     assert.match(staleResult.stdout, /site\.js/);
 
-    writeFileSync(join(root, "index.html"), [
-      '<link rel="stylesheet" href="assets/site.css?v=new2">',
-      '<script src="assets/site.js?v=new2"></script>',
+    writeFileSync(join(root, "tecnologia/index.html"), [
+      '<link rel="stylesheet" href="../assets/site.css?v=new2">',
+      '<script src="../assets/site.js?v=new2"></script>',
     ].join("\n"));
     git(["add", "."], root);
     git(["commit", "-m", "bump browser asset cache keys"], root);
