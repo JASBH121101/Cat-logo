@@ -76,3 +76,43 @@ body.private-chat-body{margin:0;min-height:100vh;background:radial-gradient(elli
   .private-chat-message p{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Optional customer theme follows the catalog preference but can be changed here. */
+.private-chat-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.private-chat-theme-toggle{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border:1px solid var(--chat-line);border-radius:50%;background:var(--chat-soft);color:var(--chat-ink);font-size:18px;font-weight:800;cursor:pointer}
+.private-chat-theme-toggle:focus-visible{outline:3px solid #7183f48c;outline-offset:2px}
+:root[data-theme="dark"]{color-scheme:dark;--chat-ink:#eaf0ff;--chat-muted:#a5b4d0;--chat-line:#2b4063;--chat-panel:#101b30;--chat-soft:#162440;--chat-blue-soft:#202d53;--chat-blue:#7f8aff;--chat-blue-deep:#a9b8ff}
+:root[data-theme="dark"] body.private-chat-body{background:radial-gradient(ellipse at 14% 0%,rgba(81,102,230,.17),transparent 44%),#070d1b;color:var(--chat-ink)}
+:root[data-theme="dark"] .private-chat-header{background:rgba(8,16,31,.96);border-color:var(--chat-line)}
+:root[data-theme="dark"] .private-chat-back{color:#aebaff}
+:root[data-theme="dark"] .private-chat-theme-toggle{background:#182846;color:#dbe6ff;border-color:#3a5180}
+:root[data-theme="dark"] .private-chat-card{background:var(--chat-panel);border-color:var(--chat-line);box-shadow:0 14px 40px #0005}
+:root[data-theme="dark"] .private-chat-heading{background:linear-gradient(135deg,#101d34,#12152d);border-color:var(--chat-line)}
+:root[data-theme="dark"] .private-chat-kicker{color:#aebaff}
+:root[data-theme="dark"] .private-chat-error{color:#ffc2c9;background:#381c2b}
+:root[data-theme="dark"] .private-chat-privacy{background:#14233d;border-color:#2a426d}
+:root[data-theme="dark"] .private-chat-privacy p{color:#b9c8e2}
+:root[data-theme="dark"] .private-chat-privacy-icon{background:#23365a;color:#b9c5ff}
+:root[data-theme="dark"] .private-chat-choice-panel,:root[data-theme="dark"] .private-chat-consent-panel{background:#121f36;border-color:var(--chat-line)}
+:root[data-theme="dark"] .private-chat-choice{background:#16243d;color:var(--chat-ink);border-color:#344969}
+:root[data-theme="dark"] .private-chat-choice:hover{background:#1a2b4a;border-color:#7587ff}
+:root[data-theme="dark"] .private-chat-choice-icon{background:#25355b;color:#b7c3ff}
+:root[data-theme="dark"] .private-chat-choice small{color:#a6b6d2}
+:root[data-theme="dark"] .private-chat-secondary{background:#182640;color:#e4ebfb;border-color:#3b4e6d}
+:root[data-theme="dark"] .private-chat-secondary:hover{background:#213454}
+:root[data-theme="dark"] .private-chat-decline-panel{background:#321f2b;border-color:#72404a}
+:root[data-theme="dark"] .private-chat-decline-panel p{color:#ffd2d7}
+:root[data-theme="dark"] .private-chat-thread{scrollbar-color:#3b5076 #0b1426}
+:root[data-theme="dark"] .private-chat-message{background:#16243d;border-color:#344968}
+:root[data-theme="dark"] .private-chat-message.is-customer{background:#252e60;border-color:#4d5db0}
+:root[data-theme="dark"] .private-chat-message.is-advisor{background:#17382f;border-color:#28644f}
+:root[data-theme="dark"] .private-chat-message.is-assistant{background:#1d2540;border-color:#3a4770}
+:root[data-theme="dark"] .private-chat-message p{color:#e8efff}
+:root[data-theme="dark"] .private-chat-message time{color:#a9b8d3}
+:root[data-theme="dark"] .private-chat-composer textarea{background:#0c172b;color:#edf3ff;border-color:#344968}
+:root[data-theme="dark"] .private-chat-composer textarea::placeholder{color:#8394b3}
+:root[data-theme="dark"] .private-chat-footer-note{color:#9cacc7}
+:root[data-theme="dark"] .private-chat-footer-note span{color:#aab6ff}
+:root[data-theme="dark"] .private-chat-footer{color:#8495b3}
+@media(max-width:560px){.private-chat-header-actions{gap:7px}.private-chat-theme-toggle{width:32px;height:32px;flex-basis:32px}.private-chat-back{font-size:10px}}
