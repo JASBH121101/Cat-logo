@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, normalize, join } from "node:path";
 import test from "node:test";
 
-const pages = ["index.html", "tecnologia/index.html", "perfumeria/index.html", "admin.html", "perfumeria.html"];
+const pages = ["index.html", "tecnologia/index.html", "perfumeria/index.html", "admin.html", "perfumeria.html", "mensajes.html"];
 
 function localAssets(htmlPath) {
   const html = readFileSync(htmlPath, "utf8");
