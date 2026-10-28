@@ -219,7 +219,7 @@ jobs:
 
           versions = defaultdict(list)
           for path in sorted(Path("supabase/migrations").glob("*.sql")):
-              match = re.match(r"^(\\d{14})_", path.name)
+              match = re.match(r"^(\d{14})_", path.name)
               if not match:
                   print(f"{path}: migration filename must start with a 14-digit version")
                   sys.exit(1)
