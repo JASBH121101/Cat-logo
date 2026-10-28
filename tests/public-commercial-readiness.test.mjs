@@ -54,5 +54,5 @@ test("configuration availability affects public variant choices, status, and Wha
   assert.match(app, /const selectedAvailability = effectiveVariantAvailability\(selected\);[\s\S]*?colorStatusLabel\(selectedAvailability\)/);
   assert.match(app, /Disponibilidad de esta variante:.*effectiveVariantAvailability\(variant\)/);
   assert.match(app, /variant-choice-status status-/);
-  assert.match(techHtml, /app\.js\?v=20261028-section-badges1/);
+  assert.match(techHtml, /app\.js\?v=20261028-section-copy1/);
 });

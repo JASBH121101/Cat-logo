@@ -9,8 +9,8 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261028-section-badges1/);
-  assert.match(html, /app\.js\?v=20261028-section-badges1/);
+  assert.match(styles.at(-1), /technology-visual-refresh\.css\?v=20261028-section-copy1/);
+  assert.match(html, /app\.js\?v=20261028-section-copy1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -19,6 +19,11 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /section-tag-badge--performance/);
   assert.match(html, /section-tag-badge--quality-price/);
   assert.match(html, /section-tag-badge--gaming/);
+  assert.match(html, /Se consideran exclusivos por su marca, materiales de construcción/);
+  assert.match(html, /Modelos capaces de competir con la gama alta/);
+  assert.match(html, /Modelos que destacan por el equilibrio entre su precio/);
+  assert.match(html, /Los monstruos del gaming: equipos con procesadores potentes/);
+  assert.match(css, /section-accessible-title/);
   assert.match(css, /section-tag-badge > svg/);
   assert.match(app, /product-card-tag-exclusive/);
   assert.ok(app.includes('"product-card-tag-" + tag'));
