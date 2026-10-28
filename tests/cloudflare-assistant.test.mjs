@@ -472,6 +472,32 @@ test("blocks personal contact and identity data before invoking the model", asyn
   }
 });
 
+test("allows a credit-card payment question when no actual card or identity data is present", async () => {
+  const previousFetch = globalThis.fetch;
+  let aiCalls = 0;
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    if (parsed.pathname.endsWith("/products")) {
+      return new Response(JSON.stringify([productRow()]), {status:200,headers:{"Content-Type":"application/json"}});
+    }
+    return new Response("[]", {status:200,headers:{"Content-Type":"application/json"}});
+  };
+  try {
+    const response = await onRequest({
+      request: makeRequest({
+        catalogType:"technology",
+        message:"Quiero consultar sobre pagar con tarjeta de crédito. Producto: JB Phone One. Precio publicado: US$220."
+      }, {ip:"192.0.2.202"}),
+      env:{AI:{run:async()=>{aiCalls++;return {response:JSON.stringify({reply:"Un asesor puede confirmar las tarjetas aceptadas y los recargos aplicables.",recommended_ids:["tech-1"]})};}}}
+    });
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).reply,"Un asesor puede confirmar las tarjetas aceptadas y los recargos aplicables.");
+    assert.equal(aiCalls,1);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test("filters personal contact data from session history before forwarding context to AI", async () => {
   const previousFetch = globalThis.fetch;
   let receivedMessages = [];
