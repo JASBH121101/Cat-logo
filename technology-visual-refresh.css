@@ -2104,3 +2104,17 @@ body.technology-catalog.product-detail-active .site-header {
   box-sizing: border-box !important;
   z-index: 1200 !important;
 }
+
+
+/* Availability for each RAM/storage configuration, separate from its color status. */
+body.technology-catalog .variant-choice-status {
+  display:inline-flex; align-items:center; margin-left:5px; padding:3px 6px;
+  border-radius:999px; font-size:10px; line-height:1.2; font-weight:800; white-space:nowrap;
+  background:#e5edf9; color:#40516b;
+}
+body.technology-catalog .variant-choice-status.status-order { background:#fff1d6; color:#8b4d08; }
+body.technology-catalog .variant-choice-status.status-out_of_stock { background:#fee2e2; color:#991b1b; }
+html[data-theme="dark"] body.technology-catalog .variant-choice-status { background:#24334e; color:#cbd8ee; }
+html[data-theme="dark"] body.technology-catalog .variant-choice-status.status-order { background:#4b3518; color:#ffdda1; }
+html[data-theme="dark"] body.technology-catalog .variant-choice-status.status-out_of_stock { background:#4a202a; color:#ffc2ca; }
+@media (max-width:760px) { body.technology-catalog .variant-choice-status { margin-left:3px; padding:2px 4px; font-size:9px; } }
