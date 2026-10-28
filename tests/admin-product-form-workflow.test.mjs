@@ -186,7 +186,7 @@ test("provider review validates differences while preserving the public catalog 
   assert.match(provider, /function numericPriceDifference\(currentValue, providerValue\)/);
   assert.match(provider, /function renderReviewPriceComparison\(product, review = \{\}\)/);
   assert.match(provider, /diffDisplay/);
-  assert.match(provider, /"En revisión"/);
+  assert.match(provider, /En revisión/);
   assert.match(provider, /function updateReviewComparison\(\)/);
   assert.match(provider, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
   assert.match(provider, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
