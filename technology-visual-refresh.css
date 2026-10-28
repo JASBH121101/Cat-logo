@@ -2238,3 +2238,30 @@ body.technology-catalog .section-accessible-title {
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/* JB TECH · typography tailored to each featured-section identity.
+   Only the four circled descriptions are affected; card/product typography stays unchanged. */
+body.technology-catalog .top-gaming-heading .section-subtitle {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 500;
+  letter-spacing: .005em;
+  line-height: 1.7;
+}
+body.technology-catalog .quality-price-heading .section-subtitle {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.7;
+}
+body.technology-catalog .high-performance-heading .section-subtitle {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 500;
+  letter-spacing: .005em;
+  line-height: 1.7;
+}
+body.technology-catalog .featured-section-heading .section-subtitle {
+  font-family: Manrope, sans-serif;
+  font-weight: 600;
+  letter-spacing: -.012em;
+  line-height: 1.7;
+}
