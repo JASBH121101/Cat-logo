@@ -48,6 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --test tests/cache-key-change-guard.test.mjs
           node --test tests/ai-assistant-layout.test.mjs
           node --test tests/public-commercial-readiness.test.mjs
           node --test tests/admin-save-regression.test.mjs
