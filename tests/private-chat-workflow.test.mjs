@@ -6,6 +6,7 @@ const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta
 const migration = readFileSync(new URL("../supabase/migrations/20261028210000_private_chat_secure_workflow.sql", import.meta.url), "utf8");
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213000_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028213000_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
+const lifecycleMigration = readFileSync(new URL("../supabase/migrations/20261028230000_private_chat_inbox_lifecycle.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
@@ -131,4 +132,16 @@ test("advisor expiry is tracked from claim and timed-out threads become read-onl
   assert.match(adminJs, /El historial se conserva como máximo 7 días/);
   assert.match(adminJs, /if \(action === "claim"\) privateChatActiveFilter = "taken"/);
   assert.match(adminJs, /if \(action === "close"\) privateChatActiveFilter = "finalized"/);
+});
+
+
+test("private chat lifecycle migration aligns claim expiry, secure replies and finalization", () => {
+  assert.match(lifecycleMigration, /session_expires_at = v_expiry/);
+  assert.match(lifecycleMigration, /function public\\.private_chat_admin_finalize_expired/);
+  assert.match(lifecycleMigration, /interval '30 minutes'/);
+  assert.match(lifecycleMigration, /c\\.delete_after <= now\\(\\)/);
+  assert.match(lifecycleMigration, /c\\.session_expires_at > now\\(\\)/);
+  assert.match(lifecycleMigration, /El acceso a este chat se cerrará en 10 minutos/);
+  assert.match(lifecycleMigration, /historial puede conservarse por un máximo de 7 días/);
+  assert.doesNotMatch(lifecycleMigration, /se cerrará y se eliminará en 10 minutos/);
 });
