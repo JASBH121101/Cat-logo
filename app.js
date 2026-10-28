@@ -644,25 +644,99 @@ function buildFinancingWhatsAppMessage(product, variant = null) {
   return buildPaymentWhatsAppMessage(product, variant, "financing");
 }
 
+function buildAIProductPrompt(product, variant = null, fallbackColor = null, paymentType = "") {
+  const normalizedType = paymentType === "credit_card" || paymentType === "financing" ? paymentType : "";
+  const displayName = [product.brand, product.model].filter(Boolean).join(" ").trim() || String(product.name || "este producto");
+  const intent = normalizedType === "credit_card"
+    ? "Quiero consultar sobre pagar con tarjeta de crédito"
+    : normalizedType === "financing"
+      ? "Quiero consultar las opciones de financiamiento"
+      : "Quiero consultar para comprar este producto";
+  const parts = [intent + ".", "Producto: " + displayName + "."];
+  if (variant) {
+    const configuration = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
+    if (configuration) parts.push("Configuración: " + configuration + ".");
+    if (variant.price_usd !== null && variant.price_usd !== undefined) parts.push("Precio publicado: " + formatUSD(variant.price_usd) + ".");
+    const nio = formatNIO(variant.price_nio);
+    if (nio) parts.push("Precio en córdobas: " + nio + ".");
+  } else {
+    const usd = startingPrice(product, "price_usd");
+    const nio = formatNIO(startingPrice(product, "price_nio"));
+    if (usd !== null && usd !== undefined) parts.push("Precio de referencia publicado: " + formatUSD(usd) + ".");
+    if (nio) parts.push("Precio en córdobas: " + nio + ".");
+  }
+  if (fallbackColor) parts.push("Color de interés: " + fallbackColor.name + ".");
+  parts.push("Enlace del producto: " + productShareLink(product, variant, fallbackColor) + ".");
+  parts.push("Usá solo información publicada y confirmada. No inventes tasas, recargos, cuotas, requisitos ni aprobaciones. Si faltan condiciones de pago confirmadas, aclaralo y recomendá consultarlas con un asesor.");
+  return parts.join(" ").slice(0, 590);
+}
+
+function openAIAdvisorForContact(message) {
+  if (typeof window.openJBAiAdvisor === "function") {
+    window.openJBAiAdvisor(message);
+    return;
+  }
+  const launcher = document.querySelector(".jb-ai-launcher");
+  const input = document.querySelector("#jb-ai-input");
+  const form = document.querySelector(".jb-ai-form");
+  if (launcher && input && form) {
+    const panel = document.querySelector("#jb-ai-panel");
+    if (panel?.hidden) launcher.click();
+    input.value = message;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    return;
+  }
+  window.alert("El asesor IA no está disponible en este momento. Podés continuar por WhatsApp.");
+}
+
+let activeContactContext = null;
+
+function refreshPaymentChannelChoices() {
+  const paymentType = $("#dialog-payment-type")?.value || "";
+  const channelPanel = $("#dialog-payment-channel-panel");
+  const whatsappChoice = $("#dialog-payment-whatsapp");
+  const aiChoice = $("#dialog-payment-jb");
+  if (channelPanel) channelPanel.hidden = !paymentType;
+  if (!activeContactContext || !paymentType) return;
+
+  const { product, variant, fallbackColor } = activeContactContext;
+  if (whatsappChoice) {
+    whatsappChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, paymentType));
+    whatsappChoice.setAttribute("aria-label", paymentType === "credit_card"
+      ? "Consultar tarjeta de crédito por WhatsApp"
+      : "Consultar financiamiento por WhatsApp");
+  }
+  if (aiChoice) {
+    aiChoice.dataset.aiPrompt = buildAIProductPrompt(product, variant, fallbackColor, paymentType);
+    aiChoice.setAttribute("aria-label", paymentType === "credit_card"
+      ? "Consultar tarjeta de crédito con el asesor IA de JB Collections"
+      : "Consultar financiamiento con el asesor IA de JB Collections");
+  }
+}
+
 function updateProductContactLinks(product, variant = null, fallbackColor = null) {
+  activeContactContext = { product, variant, fallbackColor };
   const buyLink = $("#dialog-buy-link");
   const buyLabel = $("#dialog-buy-label");
-  const buyIcon = $("#dialog-buy-icon");
-  const financingChoice = $("#dialog-financing-choice");
-  const creditCardChoice = $("#dialog-credit-card-choice");
+  const jbContact = $("#dialog-jb-contact");
   const rawAvailability = variant ? effectiveVariantAvailability(variant) : (fallbackColor?.type ?? product.availability);
   const availability = normalizeVariantAvailability(rawAvailability);
-  if (buyLink) buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
-  if (buyLabel) {
-    buyLabel.textContent = availability === "order"
-      ? "Consultar por pedido"
+
+  if (buyLink) {
+    buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
+    buyLink.setAttribute("aria-label", availability === "order"
+      ? "Consultar pedido de este producto por WhatsApp"
       : availability === "out_of_stock"
-        ? "Consultar disponibilidad"
-        : "Quiero comprar este producto";
+        ? "Consultar disponibilidad de este producto por WhatsApp"
+        : "Consultar compra de este producto por WhatsApp");
   }
-  if (buyIcon) buyIcon.textContent = availability === "available" ? "✓" : "↗";
-  if (financingChoice) financingChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "financing"));
-  if (creditCardChoice) creditCardChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "credit_card"));
+  if (buyLabel) buyLabel.textContent = "WhatsApp";
+  if (jbContact) {
+    jbContact.dataset.aiPrompt = buildAIProductPrompt(product, variant, fallbackColor);
+    jbContact.setAttribute("aria-label", "Consultar este producto con el asesor IA de JB Collections");
+  }
+  refreshPaymentChannelChoices();
 }
 function startingPrice(product, field = "price_usd") {
   const variants = getProductVariants(product);
@@ -1588,8 +1662,19 @@ dialogContent.addEventListener("touchend", event => {
   moveTechnologyGallery(deltaX < 0 ? 1 : -1);
 }, { passive: true });
 
+dialogContent.addEventListener("change", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.matches("#dialog-payment-type")) refreshPaymentChannelChoices();
+});
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const aiContactButton = target?.closest("#dialog-jb-contact, #dialog-payment-jb");
+  if (aiContactButton) {
+    event.preventDefault();
+    openAIAdvisorForContact(aiContactButton.dataset.aiPrompt || "Quiero consultar un producto de JB Collections.", "");
+    return;
+  }
   const galleryStep = target?.closest("[data-gallery-step]");
   if (galleryStep) {
     event.preventDefault();
@@ -1773,16 +1858,29 @@ function openProduct(product, requestedVariant = null) {
         <p class="dialog-product-description">${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
 
         <div class="product-contact-actions">
-          <a id="dialog-buy-link" class="button button-primary dialog-buy-button" href="#" target="_blank" rel="noopener"><span id="dialog-buy-icon" aria-hidden="true">✓</span> <span id="dialog-buy-label">Quiero comprar este producto</span></a>
-          <button id="dialog-payment-options-toggle" class="button button-secondary dialog-payment-toggle" type="button" aria-expanded="false" aria-controls="dialog-payment-choice-panel">Consultar opciones de pago <span aria-hidden="true">⌄</span></button>
-        </div>
-        <div id="dialog-payment-choice-panel" class="payment-choice-panel" hidden>
-          <div><strong>¿Qué querés consultar?</strong><p>Elegí el tema y WhatsApp abrirá el mensaje con los datos de este producto.</p></div>
-          <div class="payment-choice-actions">
-            <a id="dialog-financing-choice" class="button button-secondary payment-choice-button" href="#" target="_blank" rel="noopener">Financiamiento</a>
-            <a id="dialog-credit-card-choice" class="button button-secondary payment-choice-button" href="#" target="_blank" rel="noopener">Compra con tarjeta de crédito</a>
+          <div class="product-contact-channel-actions">
+            <a id="dialog-buy-link" class="button button-primary contact-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener"><span class="contact-channel-icon" aria-hidden="true"><svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg></span><span id="dialog-buy-label">WhatsApp</span></a>
+            <button id="dialog-jb-contact" class="button button-secondary contact-channel-button contact-channel-button--jb" type="button"><span class="contact-channel-icon" aria-hidden="true"><svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Contactar JB Collections</span></button>
           </div>
         </div>
+        <section id="dialog-payment-choice-panel" class="payment-choice-panel" aria-label="Opciones de pago">
+          <div class="payment-choice-heading">
+            <label for="dialog-payment-type">¿Qué querés consultar?</label>
+            <p>Elegí el tema y después el canal por el que preferís continuar.</p>
+          </div>
+          <select id="dialog-payment-type" class="payment-choice-select">
+            <option value="">Seleccioná una opción</option>
+            <option value="financing">Financiamiento</option>
+            <option value="credit_card">Compra con tarjeta de crédito</option>
+          </select>
+          <div id="dialog-payment-channel-panel" class="payment-channel-panel" hidden>
+            <p>¿Por cuál canal querés continuar?</p>
+            <div class="payment-channel-actions">
+              <a id="dialog-payment-whatsapp" class="payment-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener"><svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg><span>WhatsApp</span></a>
+              <button id="dialog-payment-jb" class="payment-channel-button contact-channel-button--jb" type="button"><svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>JB Collections · IA</span></button>
+            </div>
+          </div>
+        </section>
 
         ${warranty}
 

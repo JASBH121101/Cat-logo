@@ -532,6 +532,16 @@
     input.focus();
   }
 
+  window.openJBAiAdvisor = message => {
+    openPanel();
+    const cleanMessage = String(message || "").trim().slice(0, 590);
+    if (cleanMessage) void sendMessage(cleanMessage);
+    else input.focus();
+  };
+  window.addEventListener("jb-ai-open", event => {
+    window.openJBAiAdvisor(event.detail && event.detail.message);
+  });
+
   launcher.addEventListener("click", () => panel.hidden ? openPanel() : closePanel());
   closeButton.addEventListener("click", closePanel);
   resetButton.addEventListener("click", resetConversation);

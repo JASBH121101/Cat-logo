@@ -45,6 +45,7 @@ jobs:
           node --test tests/admin-mobile-menu-stability.test.mjs
           node --test tests/admin-provider-price-sync.test.mjs
           node --test tests/perfume-card-layout.test.mjs
+          node --test tests/catalog-contact-channels.test.mjs
           node --test tests/product-tag-formatting.test.mjs
           node --test tests/asset-cache-contract.test.mjs
           node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs

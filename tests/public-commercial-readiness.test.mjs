@@ -26,10 +26,10 @@ test("category filters match normalized public categories and announce selected 
   for (const button of categoryButtons) assert.match(button, /aria-pressed="(?:true|false)"/);
 });
 
-test("the technology WhatsApp action follows actual variant/product availability", () => {
+test("the technology WhatsApp action preserves variant/product availability in its message and accessible label", () => {
   assert.match(app, /function buildProductWhatsAppMessage\(product, variant = null, fallbackColor = null\)[\s\S]*?quisiera consultar cómo pedir este producto[\s\S]*?quisiera consultar si habrá reposición de este producto/);
   assert.match(app, /id="dialog-buy-label"/);
-  assert.match(app, /buyLabel\.textContent = availability === "order"[\s\S]*?Consultar por pedido[\s\S]*?Consultar disponibilidad[\s\S]*?Quiero comprar este producto/);
+  assert.match(app, /buyLink\.setAttribute\("aria-label", availability === "order"[\s\S]*?Consultar pedido de este producto por WhatsApp[\s\S]*?Consultar disponibilidad de este producto por WhatsApp/);
   assert.match(app, /updateProductContactLinks\(product, null, requestedColor\)/);
 });
 
@@ -43,9 +43,9 @@ test("AI recommendation cards disclose stock and format numeric-string prices", 
   assert.match(assistantCss, /\.jb-ai-product-availability--order/);
   assert.match(assistantCss, /\.jb-ai-product-availability--unavailable/);
   assert.match(assistantCss, /\.jb-ai-product-availability--available/);
-  assert.match(techHtml, /ai-assistant\.js\?v=20261028-ai-privacy-autonomy1/);
-  assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-ai-privacy-autonomy1/);
-  assert.match(homeHtml, /ai-assistant\.js\?v=20261028-ai-privacy-autonomy1/);
+  assert.match(techHtml, /ai-assistant\.js\?v=20261028-(?:ai-privacy-autonomy1|dual-contact1)/);
+  assert.match(perfumeHtml, /ai-assistant\.js\?v=20261028-(?:ai-privacy-autonomy1|dual-contact1)/);
+  assert.match(homeHtml, /ai-assistant\.js\?v=20261028-dual-contact1/);
 });
 
 
@@ -55,5 +55,5 @@ test("configuration availability affects public variant choices, status, and Wha
   assert.match(app, /const selectedAvailability = effectiveVariantAvailability\(selected\);[\s\S]*?colorStatusLabel\(selectedAvailability\)/);
   assert.match(app, /Disponibilidad de esta variante:.*effectiveVariantAvailability\(variant\)/);
   assert.match(app, /variant-choice-status status-/);
-  assert.match(techHtml, /app\.js\?v=20261028-limited-edition-icons1/);
+  assert.match(techHtml, /app\.js\?v=20261028-(?:limited-edition-icons1|dual-contact1)/);
 });
