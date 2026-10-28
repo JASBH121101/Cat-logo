@@ -6,6 +6,7 @@ const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta
 const migration = readFileSync(new URL("../supabase/migrations/20261028204826_private_chat_secure_workflow_20261028.sql", import.meta.url), "utf8");
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028205513_tighten_private_chat_sensitive_data_20261028.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028212147_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
+const adminRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028230836_revoke_anon_execute_from_private_chat_admin_rpcs.sql", import.meta.url), "utf8");
 const duplicateNoticeRemoval = readFileSync(new URL("../supabase/migrations/20261028212309_remove_duplicate_private_chat_consent.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
@@ -119,4 +120,16 @@ test("technology and perfume catalog buttons launch temporary chat rather than r
   assert.match(perfumery, /action: "start"/);
   assert.match(perfumery, /catalogType: "perfumery"/);
   assert.match(perfumery, /window\.location\.assign\(data\.inviteUrl\)/);
+});
+
+test("admin-only private chat RPCs revoke anonymous execution but retain authenticated admin access", () => {
+  for (const signature of [
+    "private_chat_admin_claim(uuid)",
+    "private_chat_admin_close(uuid)",
+    "private_chat_admin_extend_after_purchase(uuid)",
+    "private_chat_admin_send(uuid, text)"
+  ]) {
+    assert.match(adminRpcPermissions, new RegExp("REVOKE EXECUTE ON FUNCTION public\\\\." + signature.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + " FROM PUBLIC, anon", "i"));
+    assert.match(adminRpcPermissions, new RegExp("GRANT EXECUTE ON FUNCTION public\\\\." + signature.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + " TO authenticated", "i"));
+  }
 });
