@@ -2127,3 +2127,101 @@ body.technology-catalog .subcategory-filter-field select { width:100%; min-heigh
 body.technology-catalog .subcategory-filter-field select:disabled { cursor:not-allowed; opacity:.62; }
 body.technology-catalog .subcategory-filter-field select:focus-visible { outline:2px solid var(--tech-blue); outline-offset:2px; }
 @media (max-width:600px) { body.technology-catalog .subcategory-filter-bar { margin:0 0 14px; } body.technology-catalog .subcategory-filter-field { width:100%; } }
+
+
+/* Center the four curated product labels, with each icon above its short caption. */
+body.technology-catalog .product-card-badges {
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+}
+body.technology-catalog .product-badge.featured-badge,
+body.technology-catalog .product-badge.product-tag-badge.tag-high_performance,
+body.technology-catalog .product-badge.product-tag-badge.tag-quality_price,
+body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
+  position: relative;
+  top: auto;
+  left: auto;
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 76px;
+  min-height: 53px;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  text-align: center;
+  white-space: normal;
+}
+body.technology-catalog .product-badge-icon {
+  display: grid;
+  place-items: center;
+  min-height: 20px;
+  font-size: 20px;
+  line-height: 1;
+}
+body.technology-catalog .product-badge-icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body.technology-catalog .product-badge-label {
+  display: block;
+  max-width: 100%;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: .045em;
+  text-align: center;
+}
+body.technology-catalog .product-badge.product-tag-badge.tag-high_performance {
+  color: #1d4ed8;
+  border-color: rgba(37,99,235,.34);
+  background: rgba(219,234,254,.78);
+}
+body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
+  color: #6d28d9;
+  border-color: rgba(124,58,237,.34);
+  background: rgba(237,233,254,.82);
+}
+body.technology-catalog .product-badge.product-tag-badge.tag-quality_price {
+  color: #047857;
+  border-color: rgba(5,150,105,.34);
+  background: rgba(209,250,229,.82);
+}
+html[data-theme="dark"] body.technology-catalog .product-badge.product-tag-badge.tag-high_performance {
+  color: #bfdbfe;
+  border-color: rgba(96,165,250,.48);
+  background: rgba(26,55,104,.85);
+}
+html[data-theme="dark"] body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
+  color: #ddd6fe;
+  border-color: rgba(167,139,250,.48);
+  background: rgba(66,35,117,.85);
+}
+html[data-theme="dark"] body.technology-catalog .product-badge.product-tag-badge.tag-quality_price {
+  color: #a7f3d0;
+  border-color: rgba(52,211,153,.46);
+  background: rgba(14,78,57,.85);
+}
+@media (max-width: 760px) {
+  body.technology-catalog .product-card-badges { gap: 4px; }
+  body.technology-catalog .product-badge.featured-badge,
+  body.technology-catalog .product-badge.product-tag-badge.tag-high_performance,
+  body.technology-catalog .product-badge.product-tag-badge.tag-quality_price,
+  body.technology-catalog .product-badge.product-tag-badge.tag-top_gaming {
+    min-width: 64px;
+    min-height: 46px;
+    gap: 3px;
+    padding: 5px 5px;
+  }
+  body.technology-catalog .product-badge-icon { min-height: 17px; font-size: 17px; }
+  body.technology-catalog .product-badge-icon svg { width: 17px; height: 17px; }
+  body.technology-catalog .product-badge-label { font-size: 7.25px; letter-spacing: .02em; }
+}
