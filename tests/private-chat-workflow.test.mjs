@@ -28,11 +28,6 @@ test("private chat API creates one-time hashed invite links and supports only do
   assert.match(api, /Rate|rateLimit|RATE_LIMITS/);
 });
 
-test("the live privacy guard allows the Go Partners notice but blocks actual identifiers", async () => {
-  const result = await import("node:child_process").then(({ execFileSync }) => execFileSync("node", ["-e", "process.stdout.write('static-migration-check')"], { encoding: "utf8" }));
-  assert.equal(result, "static-migration-check");
-  assert.match(privacyFix, /\[0-9\]\[A-Z0-9-\]\{4,\}/);
-});
 
 test("database workflow restricts direct table access and protects admin actions", () => {
   assert.match(migration, /enable row level security/i);
@@ -50,8 +45,8 @@ test("database workflow restricts direct table access and protects admin actions
   assert.match(migration, /interval '7 days'/);
 });
 
-test("identity detection fix only treats a cédula/passport token as sensitive when it has a number", () => {
-  assert.match(privacyFix, /\[0-9\]\[A-Z0-9-\]\{4,\}/);
+test("identity detection fix requires a digit for cédula/passport-like values", () => {
+  assert.match(privacyFix, /\[A-Z0-9-\]\{0,15\}\[0-9\]\[A-Z0-9-\]\{4,\}/);
   assert.doesNotMatch(privacyFix, /\(c\[eé\]dula\|pasaporte\)\[\[:space:\]:#-\]\+\[A-Z0-9-\]\{6,\}/);
 });
 
