@@ -11,7 +11,7 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-product-details"/);
   assert.match(html, /id="provider-review-price-comparison"/);
   assert.match(html, /id="provider-review-validation-summary"/);
-  assert.match(provider, /function priceDifferenceText(currentValue, providerValue, currency)/);
+  assert.match(provider, /function priceDifferenceText\(currentValue, providerValue, currency\)/);
   assert.match(provider, /function renderReviewAvailabilityComparison(product, providerAvailability)/);
   assert.match(provider, /function updateReviewComparison()/);
   assert.match(provider, /Diferencia:/);
