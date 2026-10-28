@@ -3061,7 +3061,9 @@ function privateChatRenderInbox() {
 }
 function privateChatRenderMessages(messages) {
   if (!privateChatMessagesEl) return;
-  const list = Array.isArray(messages) ? messages : [];
+  const list = (Array.isArray(messages) ? messages : []).filter(item =>
+    !(item.sender_type === "assistant" && /^Antes de continuar con una compra:/i.test(String(item.content || "")))
+  );
   const selected = privateChatSelectedConversation();
   const previous = privateChatMessagesEl.dataset.signature || "";
   const signature = list.map(item => String(item.id) + ":" + String(item.content)).join("|");

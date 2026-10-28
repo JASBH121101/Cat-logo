@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261028210000_private_chat_secure_workflow.sql", import.meta.url), "utf8");
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213000_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
+const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028213000_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
@@ -48,6 +49,15 @@ test("database workflow restricts direct table access and protects admin actions
 test("identity detection fix requires a digit for cédula/passport-like values", () => {
   assert.match(privacyFix, /\[A-Z0-9-\]\{0,15\}\[0-9\]\[A-Z0-9-\]\{4,\}/);
   assert.doesNotMatch(privacyFix, /\(c\[eé\]dula\|pasaporte\)\[\[:space:\]:#-\]\+\[A-Z0-9-\]\{6,\}/);
+});
+
+test("purchase consent is displayed only in the consent panel, not duplicated as a chat message", () => {
+  assert.match(singleNoticeFix, /set contact_route='buy', consent_notice_version='2026-10-28-v2'/);
+  assert.doesNotMatch(singleNoticeFix, /v_notice|values \(v_row\.id, 'assistant', v_notice\)/);
+  assert.match(customerJs, /Before older conversations may still contain a duplicated database message|Older conversations may still contain a duplicated database message/);
+  assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
+  assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
+  assert.match(adminCss, /position:static!important/);
 });
 
 test("customer page implements the two routes, separate purchase consent and optional 10-minute change of mind", () => {

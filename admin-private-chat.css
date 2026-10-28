@@ -75,3 +75,58 @@
  .private-chat-admin-reply-form{grid-template-columns:minmax(0,1fr);padding:9px}
  .private-chat-admin-reply-form .button{width:100%}
 }
+
+/* Explicit theme palettes for private inbox cards and conversation bubbles. */
+html[data-theme="light"] .private-chat-admin-inbox,
+html[data-theme="light"] .private-chat-admin-thread {
+  color:#17213a; border-color:#dbe3f0; background:#fff;
+}
+html[data-theme="light"] .private-chat-admin-inbox-heading,
+html[data-theme="light"] .private-chat-admin-thread-header,
+html[data-theme="light"] .private-chat-admin-messages {
+  border-color:#dbe3f0; background:#f5f7fc;
+}
+html[data-theme="light"] .private-chat-admin-item { color:#17213a; border-color:#dbe3f0; }
+html[data-theme="light"] .private-chat-admin-item-preview,
+html[data-theme="light"] .private-chat-admin-item-time,
+html[data-theme="light"] .private-chat-admin-inbox-heading small,
+html[data-theme="light"] .private-chat-admin-thread-header p:not(.eyebrow),
+html[data-theme="light"] .private-chat-admin-empty p,
+html[data-theme="light"] .private-chat-admin-security-note { color:#64718a; }
+html[data-theme="light"] .private-chat-admin-message { color:#17213a; border-color:#dbe3f0; background:#fff; }
+html[data-theme="light"] .private-chat-admin-message p { color:#17213a; }
+html[data-theme="light"] .private-chat-admin-message time { color:#64718a; }
+html[data-theme="light"] .private-chat-admin-message.is-customer { border-color:#c9d8f0; background:#edf4ff; }
+html[data-theme="light"] .private-chat-admin-message.is-advisor { border-color:#c9caff; background:#eeefff; }
+html[data-theme="light"] .private-chat-admin-message.is-assistant { border-color:#d9d8ee; background:#f5f4ff; }
+html[data-theme="light"] .private-chat-admin-reply-form { border-color:#dbe3f0; background:#fff; }
+html[data-theme="light"] .private-chat-admin-reply-form textarea { border-color:#cfd8e8; background:#fff; color:#17213a; }
+html[data-theme="dark"] .private-chat-admin-inbox,
+html[data-theme="dark"] .private-chat-admin-thread { color:#e8eeff; border-color:#31415d; background:#101b30; }
+html[data-theme="dark"] .private-chat-admin-inbox-heading,
+html[data-theme="dark"] .private-chat-admin-thread-header,
+html[data-theme="dark"] .private-chat-admin-messages { border-color:#31415d; background:#0b1527; }
+html[data-theme="dark"] .private-chat-admin-message.is-customer { border-color:#4b6391; background:#122747; }
+html[data-theme="dark"] .private-chat-admin-message.is-advisor { border-color:#4356bd; background:#282f68; }
+html[data-theme="dark"] .private-chat-admin-message.is-assistant { border-color:#4d4b89; background:#292947; }
+
+/* Keep action buttons in normal document flow on phones. */
+.private-chat-admin-thread,.private-chat-admin-selected { position:relative; min-height:0; }
+.private-chat-admin-actions { position:static!important; inset:auto!important; z-index:auto!important; flex:0 0 auto; }
+.private-chat-admin-messages { position:relative; flex:1 1 auto; min-height:180px; max-height:min(46vh,420px); overscroll-behavior:contain; }
+.private-chat-admin-reply-form,.private-chat-admin-security-note { position:relative; flex:0 0 auto; }
+@media(max-width:560px) {
+ .private-chat-admin-thread { min-height:0; max-height:none; overflow:visible; }
+ .private-chat-admin-selected { min-height:0; }
+ .private-chat-admin-actions { position:static!important; flex-wrap:wrap; }
+ .private-chat-admin-messages { min-height:200px; max-height:42vh; overflow-y:auto; }
+}
+
+html[data-theme="light"] .private-chat-admin-thread h3,
+html[data-theme="light"] .private-chat-admin-thread strong,
+html[data-theme="light"] .private-chat-admin-thread .private-chat-admin-product-link,
+html[data-theme="light"] .private-chat-admin-thread .eyebrow { color:#17213a; }
+html[data-theme="light"] .private-chat-admin-thread .eyebrow { color:#4b56bb; }
+html[data-theme="light"] .private-chat-admin-actions { background:#ffffff; border-color:#dbe3f0; }
+html[data-theme="dark"] .private-chat-admin-thread h3,
+html[data-theme="dark"] .private-chat-admin-thread strong { color:#e8eeff; }

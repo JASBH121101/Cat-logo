@@ -76,6 +76,10 @@ function renderMessages(items) {
   lastMessagesSignature = signature;
   messagesPanel.replaceChildren();
   for (const item of list) {
+    // The consent panel is the single source of the purchase notice.
+    // Older conversations may still contain a duplicated database message.
+    if (item.sender_type === "assistant" &&
+        /^Antes de continuar con una compra:/i.test(String(item.content || ""))) continue;
     const bubble = document.createElement("article");
     const sender = String(item.sender_type || "assistant");
     bubble.className = "private-chat-message " +
