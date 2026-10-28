@@ -29,5 +29,6 @@ test("perfume cards align action buttons to one baseline and use identical dimen
   assert.match(css, /body\.perfume-page \.perfume-product-card \.product-actions\s*\{[^}]*margin-top:\s*auto/s);
   assert.match(css, /\.perfume-page \.perfume-product-card \.perfume-view-button\s*\{[^}]*width:\s*100%[^}]*height:\s*40px/s);
   assert.match(css, /@media \(max-width:\s*640px\)[\s\S]{0,350}\.perfume-page \.perfume-product-card \.perfume-view-button[\s\S]{0,180}height:\s*36px/);
-  assert.match(css, /body\.perfume-page \.perfume-product-card h3\s*\{[^}]*min-height:\s*2\.7em/s);\n  assert.match(css, /-webkit-line-clamp:\s*2/);
+  assert.match(css, /body\.perfume-page \.perfume-product-card h3\s*\{[^}]*min-height:\s*2\.7em/s);
+  assert.match(css, /-webkit-line-clamp:\s*2/);
 });
