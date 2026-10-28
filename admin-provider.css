@@ -476,3 +476,30 @@ html[data-theme="dark"] .provider-variant-warning{background:#342a19;border-colo
   .provider-history-variant-group li{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}
   .provider-history-variant-group li>span:last-child{text-align:left}
 }
+
+
+/* Per-configuration GoPartner prices: compare catalog and supplier values side by side. */
+.provider-variant-price-block{display:grid;gap:7px;min-width:0;margin:0;padding:9px;border:1px solid var(--border,#dbe3f1);border-radius:9px;background:var(--surface-muted,#f8fafc)}
+.provider-variant-catalog-price{margin:0;color:var(--muted,#64748b);font-size:.74rem;font-weight:750;line-height:1.4;overflow-wrap:anywhere}
+.provider-variant-config-prices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.provider-variant-config-prices label{display:grid;gap:4px;min-width:0}
+.provider-variant-config-prices label>span{color:var(--text,#334155);font-size:.72rem;font-weight:800}
+.provider-variant-config-prices input{width:100%;min-width:0;min-height:38px;padding:7px 8px;border:1px solid var(--border,#cbd5e1);border-radius:8px;background:var(--surface,#fff);color:var(--text,#1f2937);font:inherit;font-size:.8rem}
+.provider-variant-price-block>small{color:var(--muted,#64748b);font-size:.69rem;line-height:1.4}
+.provider-review-sync-option{display:flex;align-items:flex-start;gap:9px;margin:12px 0;padding:10px;border:1px solid var(--border,#cbd5e1);border-radius:10px;background:var(--surface-muted,#f8fafc);cursor:pointer}
+.provider-review-sync-option>input{flex:0 0 17px;width:17px;height:17px;margin:3px 0 0;accent-color:#4f46e5}
+.provider-review-sync-option>span{display:grid;gap:4px;min-width:0}
+.provider-review-sync-option strong{color:var(--text,#1f2937);font-size:.78rem;line-height:1.4}
+.provider-review-sync-option small{color:var(--muted,#64748b);font-size:.72rem;line-height:1.45}
+html[data-theme="dark"] .provider-variant-price-block,
+html[data-theme="dark"] .provider-review-sync-option{background:#101d35;border-color:#344968}
+html[data-theme="dark"] .provider-variant-catalog-price,
+html[data-theme="dark"] .provider-variant-price-block>small,
+html[data-theme="dark"] .provider-review-sync-option small{color:#aabbd7}
+html[data-theme="dark"] .provider-variant-config-prices label>span,
+html[data-theme="dark"] .provider-review-sync-option strong{color:#e5edff}
+html[data-theme="dark"] .provider-variant-config-prices input{background:#0b172b;color:#e6edfc;border-color:#3a5074;color-scheme:dark}
+@media(max-width:520px){
+  .provider-variant-config-prices{grid-template-columns:minmax(0,1fr)}
+  .provider-review-sync-option{padding:9px}
+}
