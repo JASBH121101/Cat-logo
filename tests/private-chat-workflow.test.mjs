@@ -6,6 +6,7 @@ const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta
 const migration = readFileSync(new URL("../supabase/migrations/20261028210000_private_chat_secure_workflow.sql", import.meta.url), "utf8");
 const privacyFix = readFileSync(new URL("../supabase/migrations/20261028213000_tighten_private_chat_sensitive_data.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028213000_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
+const lifecycleMigration = readFileSync(new URL("../supabase/migrations/20261028230000_private_chat_inbox_lifecycle.sql", import.meta.url), "utf8");
 const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), "utf8");
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
@@ -111,4 +112,51 @@ test("technology and perfume catalog buttons launch temporary chat rather than r
   assert.match(perfumery, /action: "start"/);
   assert.match(perfumery, /catalogType: "perfumery"/);
   assert.match(perfumery, /window\.location\.assign\(data\.inviteUrl\)/);
+});
+
+
+test("admin inbox has Pendientes, Tomados and Finalizados filters with a mobile back action", () => {
+  assert.match(adminHtml, /data-private-chat-filter="pending"/);
+  assert.match(adminHtml, /data-private-chat-filter="taken"/);
+  assert.match(adminHtml, /data-private-chat-filter="finalized"/);
+  assert.match(adminHtml, /id="private-chat-admin-back"/);
+  assert.match(adminJs, /function privateChatConversationBucket\(item, now = Date\.now\(\)\)/);
+  assert.match(adminJs, /privateChatActiveFilter = "pending"/);
+  assert.match(adminJs, /private_chat_admin_finalize_expired/);
+  assert.match(adminCss, /\.private-chat-admin-panel \[hidden\].*display:none!important/s);
+  assert.match(adminCss, /has-selected \.private-chat-admin-inbox/);
+});
+
+test("advisor expiry is tracked from claim and timed-out threads become read-only history", () => {
+  assert.match(adminJs, /const fullClaimWindow = claimedAt \? claimedAt \+ 30 \* 60_000 : 0/);
+  assert.match(adminJs, /El historial se conserva como máximo 7 días/);
+  assert.match(adminJs, /if \(action === "claim"\) privateChatActiveFilter = "taken"/);
+  assert.match(adminJs, /if \(action === "close"\) privateChatActiveFilter = "finalized"/);
+});
+
+
+test("private chat lifecycle migration aligns claim expiry, secure replies and finalization", () => {
+  assert.match(lifecycleMigration, /session_expires_at = v_expiry/);
+  assert.match(lifecycleMigration, /function public\.private_chat_admin_finalize_expired/);
+  assert.match(lifecycleMigration, /interval '30 minutes'/);
+  assert.match(lifecycleMigration, /c\.delete_after <= now\(\)/);
+  assert.match(lifecycleMigration, /c\.session_expires_at > now\(\)/);
+  assert.match(lifecycleMigration, /El acceso a este chat se cerrará en 10 minutos/);
+  assert.match(lifecycleMigration, /historial puede conservarse por un máximo de 7 días/);
+  assert.doesNotMatch(lifecycleMigration, /se cerrará y se eliminará en 10 minutos/);
+  assert.match(lifecycleMigration, /create or replace function public\.cleanup_private_chats/);
+  assert.match(lifecycleMigration, /revoke all on function public\.cleanup_private_chats\(\) from public, anon, authenticated/);
+  assert.match(lifecycleMigration, /update public\.private_chat_conversations c[\s\S]*?set status = 'closed'[\s\S]*?c\.status = 'declined_pending_delete'[\s\S]*?c\.delete_after <= now\(\)/);
+  assert.match(lifecycleMigration, /delete from public\.private_chat_conversations[\s\S]*?created_at <= now\(\) - interval '7 days'/);
+});
+
+
+test("customer still gets privacy, registration and seven-day retention context without duplicated purchase notice", () => {
+  assert.match(customerHtml, /private-chat-privacy/);
+  assert.match(customerHtml, /private-chat-consent-panel/);
+  assert.match(customerHtml, /Go Partners solicita tu nombre completo, número de celular y cédula/);
+  assert.match(customerHtml, /el historial se conserva (?:un máximo de|hasta) 7 días/i);
+  assert.match(customerJs, /Older conversations may still contain a duplicated database message/);
+  assert.match(lifecycleMigration, /El registro de compra se completará mediante el procedimiento correspondiente de Go Partners/);
+  assert.doesNotMatch(lifecycleMigration, /values \(v_row\.id, 'assistant', v_notice\)/);
 });

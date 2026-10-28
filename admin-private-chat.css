@@ -130,3 +130,74 @@ html[data-theme="light"] .private-chat-admin-thread .eyebrow { color:#4b56bb; }
 html[data-theme="light"] .private-chat-admin-actions { background:#ffffff; border-color:#dbe3f0; }
 html[data-theme="dark"] .private-chat-admin-thread h3,
 html[data-theme="dark"] .private-chat-admin-thread strong { color:#e8eeff; }
+
+
+/* Private inbox tabs and strict hidden-state handling. */
+.private-chat-admin-panel [hidden],
+.private-chat-admin-thread [hidden],
+.private-chat-admin-filters [hidden] { display:none!important; }
+.private-chat-admin-filters {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px;
+  padding:8px; border-bottom:1px solid var(--line,#31415d);
+  background:var(--card,#101b30);
+}
+.private-chat-admin-filter {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  min-width:0; min-height:40px; padding:7px 5px;
+  border:1px solid var(--line,#31415d); border-radius:9px;
+  color:var(--muted,#a8b7d0); background:transparent;
+  font:inherit; font-size:11px; font-weight:800; line-height:1.2;
+  cursor:pointer;
+}
+.private-chat-admin-filter.is-active {
+  color:#fff; border-color:#5966e9;
+  background:linear-gradient(135deg,#315ee8,#6849d9);
+  box-shadow:0 3px 0 #233fa5;
+}
+.private-chat-admin-filter-count {
+  display:inline-grid; place-items:center; min-width:19px; height:19px;
+  padding:0 4px; border-radius:999px; background:rgba(127,140,255,.18);
+  color:inherit; font-size:10px; font-weight:900;
+}
+.private-chat-admin-filter.is-active .private-chat-admin-filter-count { background:#ffffff2e; }
+.private-chat-pill.is-finalized { border-color:#8d98aa; color:#c2c9d4; background:#69738620; }
+.private-chat-admin-back {
+  display:none; align-items:center; justify-content:center; gap:6px;
+  min-height:34px; width:max-content; max-width:100%; padding:7px 10px;
+  border:1px solid var(--line,#31415d); border-radius:9px;
+  color:var(--text,#e8eeff); background:var(--card,#101b30);
+  font:inherit; font-size:11px; font-weight:800; cursor:pointer;
+}
+.private-chat-admin-back:focus-visible,
+.private-chat-admin-filter:focus-visible { outline:3px solid #7e8bff; outline-offset:2px; }
+html[data-theme="light"] .private-chat-admin-filters { background:#fff; border-color:#dbe3f0; }
+html[data-theme="light"] .private-chat-admin-filter { color:#56627b; border-color:#dbe3f0; background:#f8faff; }
+html[data-theme="light"] .private-chat-admin-filter.is-active { color:#fff; border-color:#4659d7; background:linear-gradient(135deg,#315ee8,#6849d9); }
+html[data-theme="light"] .private-chat-admin-back { color:#17213a; border-color:#dbe3f0; background:#fff; }
+html[data-theme="dark"] .private-chat-admin-filters { background:#101b30; border-color:#31415d; }
+html[data-theme="dark"] .private-chat-admin-filter { color:#b7c4dd; border-color:#31415d; background:#0b1527; }
+html[data-theme="dark"] .private-chat-admin-filter.is-active { color:#fff; background:linear-gradient(135deg,#315ee8,#6849d9); }
+html[data-theme="dark"] .private-chat-admin-back { color:#e8eeff; border-color:#31415d; background:#101b30; }
+
+@media(max-width:560px) {
+  .private-chat-admin-layout.has-selected .private-chat-admin-inbox { display:none!important; }
+  .private-chat-admin-layout.has-selected .private-chat-admin-thread {
+    display:flex; width:100%; min-height:0; height:calc(100dvh - 190px);
+    max-height:none; overflow:hidden; border-radius:12px;
+  }
+  .private-chat-admin-layout.has-selected .private-chat-admin-selected {
+    display:flex; min-height:0; height:100%; overflow:hidden;
+  }
+  .private-chat-admin-thread-header { flex-wrap:wrap; align-items:center; gap:8px; }
+  .private-chat-admin-thread-header > div { flex:1 1 180px; min-width:0; }
+  .private-chat-admin-thread-header h3 { overflow-wrap:anywhere; word-break:normal; }
+  .private-chat-admin-back { display:inline-flex; flex:0 0 auto; }
+  .private-chat-admin-product-link { display:inline-flex; flex:0 1 auto; }
+  .private-chat-admin-actions { flex:0 0 auto; }
+  .private-chat-admin-actions .button { flex:1 1 135px; min-width:0; white-space:normal; line-height:1.25; }
+  .private-chat-admin-messages { flex:1 1 0; min-height:0; max-height:none; overscroll-behavior:contain; }
+  .private-chat-admin-reply-form { flex:0 0 auto; }
+  .private-chat-admin-reply-form textarea { min-height:44px; max-height:18dvh; }
+  .private-chat-admin-security-note { flex:0 0 auto; max-height:42px; overflow:auto; }
+  .private-chat-admin-layout:not(.has-selected) .private-chat-admin-thread { min-height:220px; }
+}
