@@ -374,9 +374,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const variantReviewSummary = providerVariantSnapshotSummary(review.provider_variant_snapshot);
     const currentVariantSummary = catalogVariantSummary(product);
     const variantSummary = variantReviewSummary
-      ? '<p class="provider-variant-summary"><strong>Última revisión del proveedor:</strong> ' + escapeHTML(variantReviewSummary) + '</p>'
+      ? '<p class="provider-product-variant-summary"><strong>Última revisión del proveedor:</strong> ' + escapeHTML(variantReviewSummary) + '</p>'
       : currentVariantSummary
-        ? '<p class="provider-variant-summary"><strong>Estados actuales del catálogo:</strong> ' + escapeHTML(currentVariantSummary) + '</p>'
+        ? '<p class="provider-product-variant-summary"><strong>Estados actuales del catálogo:</strong> ' + escapeHTML(currentVariantSummary) + '</p>'
         : "";
     return `<article class="provider-product-row">
       <div class="provider-product-main">
@@ -1166,6 +1166,24 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       });
       if (invalidVariantUpdate) {
         say(importMessage, "La fila " + invalidVariantUpdate.index + " no contiene una lista válida de variantes o intenta borrar todas las variantes. Corregí el archivo antes de aplicar cambios; esta protección evita perder configuraciones por accidente.", "error");
+        return;
+      }
+
+      const omittedVariantUpdate = matchedItems.find(item => {
+        const imported = item.catalogFields?.variants;
+        if (!Array.isArray(imported)) return false;
+        const current = Array.isArray(item.product.variants)
+          ? item.product.variants
+          : parseMaybeJSON(item.product.variants, []);
+        if (!Array.isArray(current) || !current.length) return false;
+        const incomingKeys = new Set(imported.map(stableVariantKey));
+        return current.some(variant => !incomingKeys.has(stableVariantKey(variant)));
+      });
+      if (omittedVariantUpdate) {
+        say(importMessage,
+          "La fila " + omittedVariantUpdate.index +
+          " omite una o más variantes o colores que existen en el catálogo. Por seguridad no se aplicó ninguna actualización de variantes. Revisá si siguen disponibles, están por pedido o se agotaron; incluilas en el archivo con su estado actualizado o desactivá «Actualizar variantes» si solo vas a registrar una revisión del proveedor.",
+          "error");
         return;
       }
     }
