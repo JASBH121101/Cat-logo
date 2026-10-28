@@ -282,7 +282,7 @@ function buildPerfumeAIPrompt(product, paymentType = "") {
     : normalizedType === "financing"
       ? "Quiero consultar opciones de financiamiento"
       : "Quiero consultar para comprar";
-  const parts = [intent + " en JB Parfums: " + String(product.name || "esta fragancia") + "."];
+  const parts = [intent + ".", "Producto de JB Parfums: " + String(product.name || "esta fragancia") + "."];
   if (product.price_usd != null) parts.push("Precio publicado: " + formatUSD(product.price_usd) + ".");
   const nio = formatNIO(product.price_nio);
   if (nio) parts.push("Precio en córdobas: " + nio + ".");
