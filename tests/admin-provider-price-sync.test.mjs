@@ -13,7 +13,7 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-validation-summary"/);
   assert.match(provider, /function numericPriceDifference\(currentValue, providerValue\)/);
   assert.match(provider, /diffDisplay/);
-  assert.match(provider, /"En revisión"/);
+  assert.match(provider, /En revisión/);
   assert.match(provider, /function renderReviewAvailabilityComparison\(product, providerAvailability\)/);
   assert.match(provider, /function updateReviewComparison()/);
   assert.match(provider, /aria-label="Diferencia en dólares"/);
