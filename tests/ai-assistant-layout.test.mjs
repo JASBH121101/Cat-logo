@@ -47,6 +47,17 @@ test("AI does not duplicate the current question inside the history sent to the 
   assert.match(aiJs, /content: String\(item\.content \|\| ""\)\.slice\(0, 450\)/);
 });
 
+test("AI privacy guard does not interpret a payment topic as card or identity data", () => {
+  const guardStart = aiJs.indexOf("function containsPersonalInformation");
+  const guardEnd = aiJs.indexOf("function restoreSessionHistory", guardStart);
+  const guard = aiJs.slice(guardStart, guardEnd);
+  assert.match(guard, /tarjeta de cr[eé]dito/);
+  assert.match(guard, /n[uú]mero de tarjeta/);
+  assert.match(guard, /(?:\\d\[ -\]\?\)\{12,19\}|\\d\[ -\]\?\)\{12,19\})/);
+  assert.match(aiJs, /lastMessage\?\.textContent !== privacyWarning/);
+  assert.match(assistantApi, /function containsPersonalInformation/);
+});
+
 test("AI response schema provides evidence-based reasons and only allows catalogue product IDs", () => {
   assert.match(assistantApi, /const RESPONSE_FORMAT = \{/);
   assert.match(assistantApi, /reason: \{ type: "string" \}/);
