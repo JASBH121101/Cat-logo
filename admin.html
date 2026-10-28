@@ -15,12 +15,12 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261028-color-ai-cors-button2">
   <link rel="stylesheet" href="admin-workflow.css?v=20261026-compact-perfume-review1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="admin-provider.css?v=20261028-sidebar-settings3">
+  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-validation4">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
 
   <script src="config.js?v=20261027-audit-cascade1"></script>
-  <script type="module" src="admin.js?v=20261028-sidebar-settings3"></script>
+  <script type="module" src="admin.js?v=20261028-validation-differences4"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -790,7 +790,11 @@
         <div id="provider-review-product-details" class="provider-review-product-details"></div>
         <h3>Comparación de precios</h3>
         <div id="provider-review-price-comparison" class="provider-review-price-comparison"></div>
-        <p class="provider-review-sync-note">Al guardar, si registrás los dos precios de GoPartner (US$ y C$), ambos se copiarán exactamente al producto publicado cuando sean diferentes. No se calcula una tasa de cambio ni se modifica el precio si falta uno de los dos.</p>
+        <h3>Validación de diferencias</h3>
+        <div id="provider-review-validation-summary" class="provider-review-validation-summary" aria-live="polite">
+          <p class="provider-validation-line is-pending">Introducí los datos del proveedor para comparar precios y disponibilidad.</p>
+        </div>
+        <p class="provider-review-sync-note">La revisión conserva los precios publicados. Aquí podés comprobar la diferencia con el precio del proveedor antes de decidir si modificás el catálogo por separado.</p>
       </section>
       <div class="provider-dialog-fields">
         <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
