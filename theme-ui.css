@@ -7078,7 +7078,8 @@ body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-se
   align-items:start !important;
   gap:12px !important;
 }
-body.admin-body .base-color-manager .variant-base-group .variant-color-section > .variant-add-color { display:none !important; }
+/* Keep the per-configuration color action visible on mobile and desktop. */
+body.admin-body .base-color-manager .variant-base-group .variant-color-section > .variant-add-color { display:inline-flex !important; visibility:visible !important; opacity:1 !important; }
 body.admin-body .base-color-manager .variant-base-group .variant-color-section .variant-color-list > .variants-empty-hint,
 body.admin-body .variant-config-group:not(.variant-base-group) .variant-color-section .variant-color-list > .variants-empty-hint {
   grid-column:1/-1 !important;
