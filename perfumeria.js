@@ -268,6 +268,9 @@ function productShareLink(product) {
   return share.href;
 }
 
+const whatsappIconMarkup = `<svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg>`;
+const chatIconMarkup = `<svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 function whatsappLink(message) {
   return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
 }
