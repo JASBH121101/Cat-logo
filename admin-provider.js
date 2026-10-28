@@ -856,13 +856,24 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     savingReview = true;
     if (button) { button.disabled = true; button.textContent = "Guardando…"; }
     try {
-      const { error } = await supabase.from("product_provider_status").upsert(payload, { onConflict: "product_id" });
+      const syncCatalogAvailability = $("#provider-review-sync-catalog-availability")?.checked === true;
+      const { data, error } = await supabase.rpc("confirm_provider_product_review", {
+        p_product_id: product.id,
+        p_review_payload: payload,
+        p_sync_catalog_availability: syncCatalogAvailability
+      });
       if (error) throw error;
+      if (data?.ok === false) throw new Error("No se pudo confirmar la revisión del proveedor.");
       providerStatuses.set(String(product.id), payload);
+      if (syncCatalogAvailability && typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new CustomEvent("jb-catalog-provider-updated"));
+      }
 
-      const catalogPriceMessage = " Los precios públicos se conservaron sin cambios; las diferencias quedan como referencia para que decidás si querés modificarlos desde el catálogo.";
+      const catalogPriceMessage = syncCatalogAvailability
+        ? " La disponibilidad general, de las configuraciones y de los colores se sincronizó con el catálogo. Los precios, fotos y estado de publicación no cambiaron."
+        : " Se guardó el historial privado; la disponibilidad pública no se modificó.";
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
-      const successMessage = "Revisión guardada. Se añadió una entrada al historial privado." + catalogPriceMessage;
+      const successMessage = "Revisión confirmada. Se añadió una entrada al historial privado." + catalogPriceMessage;
       say(statusMessage, successMessage, "success");
       await refresh();
       say(reviewedStatusMessage, successMessage, "success");
