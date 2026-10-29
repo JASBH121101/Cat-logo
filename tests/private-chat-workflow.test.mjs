@@ -77,7 +77,7 @@ test("Go Partners order data is allowed while unneeded contact and financial cre
   assert.doesNotMatch(customerHtml, /No escribás aquí cédula, teléfono/i);
   assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
   assert.match(api, /p_notice_version: "2026-10-29-v3"/);
-});;;
+});
 
 test("purchase consent is displayed only in the consent panel, not duplicated as a chat message", () => {
   assert.match(singleNoticeFix, /set contact_route='buy', consent_notice_version='2026-10-28-v2'/);
@@ -88,6 +88,9 @@ test("purchase consent is displayed only in the consent panel, not duplicated as
   assert.match(customerJs, /legacy database bubbles that still contradict it/);
   assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
   assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
+  assert.match(adminHtml, /Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular/);
+  assert.doesNotMatch(adminHtml, /No solicités ni envíes por aquí cédulas, teléfonos/);
+  assert.match(adminJs, /Podés recibir nombre completo, cédula y celular para registrar la operación de Go Partners/);
   assert.match(adminCss, /position:static!important/);
 });
 
