@@ -451,8 +451,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 marginBottom: style.marginBottom,
                 background: style.backgroundColor,
               };
-            })
-            .filter(region => region.height >= 80 && region.textLength >= 24);
+            });
+          // Keep small and textless visible sections as separators so whitespace checks
+          // never bridge over real banners, image bands, or compact navigation rows.
           const productCompositionLayouts = pageName === "technology-detail"
             ? [...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(layout => {
                 const frame = layout.querySelector("#dialog-image");
