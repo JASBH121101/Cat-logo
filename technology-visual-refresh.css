@@ -2960,3 +2960,13 @@ html[data-theme="light"] body.technology-catalog .catalog-results-heading .secti
 html[data-theme="light"] body.technology-catalog .catalog-status {
   color:#4b5d75!important;
 }
+
+
+/* JB TECH · single-product desktop alignment. A lone highlight should not hug one edge. */
+@media (min-width: 761px) {
+  body.technology-catalog .featured-grid:has(> .product-card:only-child),
+  body.technology-catalog .product-grid:has(> .product-card:only-child) {
+    grid-template-columns: minmax(0, min(100%, 560px));
+    justify-content: center;
+  }
+}
