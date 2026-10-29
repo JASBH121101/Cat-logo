@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
+import AxeBuilder from "@axe-core/playwright";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
@@ -49,13 +50,16 @@ test("complete admin panel audit validates navigation, accessibility signals and
     !button.inner.replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/gi, " ").trim()
   );
   const controls = [...html.matchAll(/<(input|select|textarea)\b([^>]*)>/gi)]
-    .map(match => ({ tag: match[1].toLowerCase(), attributes: match[2] }))
+    .map(match => ({ tag: match[1].toLowerCase(), attributes: match[2], position: match.index }))
     .filter(control => !/\btype\s*=\s*["']?hidden\b/i.test(control.attributes));
   const labelledFor = new Set([...html.matchAll(/<label\b[^>]*\bfor=["']([^"']+)["']/gi)].map(match => match[1]));
+  const labelRanges = [...html.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/gi)]
+    .map(match => [match.index, match.index + match[0].length]);
   const unlabeledControls = controls.filter(control => {
     const id = control.attributes.match(/\bid=["']([^"']+)["']/i)?.[1];
+    const wrappedByLabel = labelRanges.some(([start, end]) => control.position >= start && control.position < end);
     return !/\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=/.test(control.attributes) &&
-      !(id && labelledFor.has(id));
+      !(id && labelledFor.has(id)) && !wrappedByLabel;
   });
   const images = [...html.matchAll(/<img\b([^>]*)>/gi)].map(match => match[1]);
   const missingAlt = images.filter(attributes => !/\balt\s*=/.test(attributes));
@@ -66,6 +70,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
 
   const widths = [{ width: 360, label: "móvil 360 px" }, { width: 390, label: "móvil 390 px" }, { width: 430, label: "móvil 430 px" }, { width: 1280, label: "escritorio 1280 px" }];
   const measurements = [];
+  const axeFindings = [];
   const pageErrors = [];
   const browser = await chromium.launch({ headless: true });
   try {
@@ -86,6 +91,21 @@ test("complete admin panel audit validates navigation, accessibility signals and
           });
         }, panelName);
         await page.waitForTimeout(25);
+        if (viewport.width === 390) {
+          const accessibility = await new AxeBuilder({ page })
+            .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+            .analyze();
+          for (const violation of accessibility.violations) {
+            const impactRank = { critical: "alta", serious: "alta", moderate: "media", minor: "baja" };
+            axeFindings.push({
+              priority: impactRank[violation.impact] || "media",
+              page: panelName,
+              evidence: "Axe/" + violation.id + " — " + violation.help + " (" + violation.nodes.length + " elemento(s))",
+              recommendation: violation.description + " Más detalle: " + violation.helpUrl +
+                ". Ejemplo: " + String(violation.nodes[0]?.target?.join(" ") || "selector no disponible"),
+            });
+          }
+        }
         const measurement = await page.evaluate(() => {
           const panel = [...document.querySelectorAll("[data-admin-panel]")].find(item => !item.classList.contains("hidden"));
           const visible = element => {
@@ -134,6 +154,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
     }
   }
 
+  for (const finding of axeFindings) findings.push(finding);
+
   const rank = { alta: 3, media: 2, baja: 1 };
   findings.sort((a, b) => rank[b.priority] - rank[a.priority]);
   const reportLines = [
@@ -144,7 +166,9 @@ test("complete admin panel audit validates navigation, accessibility signals and
     "- Botones estáticos: " + buttons.length + "; campos: " + controls.length,
     "- Mediciones responsive: " + measurements.length,
     "- Viewports: 360, 390, 430 y 1280 px",
-    "- Errores de JS al cargar: " + pageErrors.length + (pageErrors.length ? " (pueden incluir restricciones de file:// al cargar módulos externos)" : ""), "",
+    "- Errores de JS al cargar: " + pageErrors.length + (pageErrors.length ? " (pueden incluir restricciones de file:// al cargar módulos externos)" : ""),
+    "- Auditoría Axe WCAG 2.1 A/AA + mejores prácticas: 10 paneles comprobados en móvil de 390 px",
+    "- Violaciones Axe observadas: " + axeFindings.length + " (impacto y evidencia incluidos en hallazgos)", "",
     "## Hallazgos priorizados", "",
     ...(findings.length ? findings.map((finding, index) =>
       (index + 1) + ". **[" + finding.priority.toUpperCase() + "] " + finding.page + "** — " + finding.evidence + "\n   - Recomendación: " + finding.recommendation
@@ -155,8 +179,9 @@ test("complete admin panel audit validates navigation, accessibility signals and
     ...measurements.map(m => "| " + m.panel + " | " + m.viewport + " | " + m.documentWidth + " px | " + m.horizontalOverflow + " px | " + m.visibleControls + " |"),
     "", "## Limitaciones", "",
     "- Los formularios autenticados y las mutaciones no se ejecutaron para proteger los datos reales.",
-    "- Las alertas dependen de permisos y soporte del navegador.",
-    "- Las notificaciones con el navegador y el panel cerrados requieren una infraestructura Web Push, no incluida en esta prueba.", ""
+    "- Los formularios autenticados y las mutaciones no se ejecutaron para proteger los datos reales.",
+    "- Las alertas dependen de permisos y soporte del navegador; Web Push requiere la configuración de servidor correspondiente.",
+    "- Axe identifica problemas automáticos WCAG, pero no sustituye pruebas con teclado, lector de pantalla ni una sesión real.", ""
   ];
   const report = reportLines.join("\n");
   await writeFile(new URL("../admin-quality-audit.md", import.meta.url), report, "utf8");
