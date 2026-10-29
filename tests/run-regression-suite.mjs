@@ -28,6 +28,7 @@ export const regressionGroups = [
     test("tests/catalog-contact-channels.test.mjs"), test("tests/private-chat-workflow.test.mjs"),
     test("tests/private-chat-resume.test.mjs"),
   ]},
+  { name: "cross-page-visual-audit", tests: [ test("tests/visual-audit.test.mjs") ] },
   { name: "cloudflare-and-browser", tests: [
     test("tests/cloudflare-share.test.mjs", true), test("tests/cloudflare-download.test.mjs", true),
     test("tests/cloudflare-private-chat-push.test.mjs", true), test("tests/web-push.test.mjs", true),
