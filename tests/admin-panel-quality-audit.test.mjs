@@ -54,10 +54,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
   const labelledFor = new Set([...html.matchAll(/<label\b[^>]*\bfor=["']([^"']+)["']/gi)].map(match => match[1]));
   const unlabeledControls = controls.filter(control => {
     const id = control.attributes.match(/\bid=["']([^"']+)["']/i)?.[1];
-    const escapedId = id ? id.replace(/[.*+?^$()|[\]\\]/g, "\\$&") : "";
-    const nestedLabel = id && new RegExp("<label\\b[^>]*>[\\s\\S]*?\\bid=[\\"']" + escapedId + "[\\"'][\\s\\S]*?<\\/label>", "i").test(html);
     return !/\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=/.test(control.attributes) &&
-      !(id && labelledFor.has(id)) && !nestedLabel;
+      !(id && labelledFor.has(id));
   });
   const images = [...html.matchAll(/<img\b([^>]*)>/gi)].map(match => match[1]);
   const missingAlt = images.filter(attributes => !/\balt\s*=/.test(attributes));
