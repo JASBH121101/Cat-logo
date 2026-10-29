@@ -93,7 +93,7 @@ async function openPage(browser, mode, token = "a".repeat(64)) {
       })
     });
   });
-  await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "domcontentloaded", timeout: 8000 });
+  await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "commit", timeout: 8000 });
   page.statusRequests = statusRequests;
   return page;
 }
