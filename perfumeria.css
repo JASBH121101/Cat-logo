@@ -2791,3 +2791,16 @@ html[data-theme="light"] body.perfume-page .perfume-results-heading .perfume-kic
 html[data-theme="light"] body.perfume-page .perfume-budget-filter .budget-price-input-wrap {
   color:#6f4f20!important;
 }
+
+
+/* JB PARFUMS · use the desktop hero space more efficiently and integrate studio-white product photos. */
+@media (min-width: 881px) {
+  body.perfume-page .perfume-hero {
+    padding-top: clamp(30px, 4vw, 56px);
+    padding-bottom: clamp(26px, 3.1vw, 42px);
+    gap: clamp(22px, 3.8vw, 54px);
+  }
+}
+html[data-theme="light"] body.perfume-page .perfume-hero-photo {
+  mix-blend-mode: multiply !important;
+}
