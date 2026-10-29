@@ -24,6 +24,15 @@ test("supplier review collects provider availability for every configuration and
   assert.match(html, /Confirmar revisión/);
 });
 
+test("variant products do not require duplicate general price or availability confirmation", () => {
+  assert.match(provider, /function productHasProviderVariants\(product\)/);
+  assert.match(provider, /!hasVariants && overall === "unknown"/);
+  assert.match(provider, /const overview = deriveProviderVariantOverview\(variantSnapshot\)/);
+  assert.match(provider, /overallAvailability = overview\.provider_availability/);
+  assert.match(provider, /setProviderReviewFormMode\(product\)/);
+  assert.match(html, /El precio general se toma de la primera configuración/);
+});
+
 test("supplier review history persists each snapshot and makes catalog changes conditional on explicit sync", () => {
   assert.match(snapshotMigration, /provider_variant_snapshot jsonb NOT NULL DEFAULT '\[\]'::jsonb/);
   assert.match(snapshotMigration, /NEW\.provider_variant_snapshot/);
