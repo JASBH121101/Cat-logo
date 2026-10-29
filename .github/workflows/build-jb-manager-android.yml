@@ -220,25 +220,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -Fq 'viewport-fit=cover' mobile/www/admin.html
-          grep -Fq 'id="jb-manager-android-safe-area"' mobile/www/admin.html
-          grep -Fq -- '--jb-manager-safe-top: var(--safe-area-inset-top' mobile/www/admin.html
-          ! grep -Fq 'padding-top: max(24px' mobile/www/admin.html
-          grep -Fq 'src="./jb-manager-system-bars.js"' mobile/www/admin.html
-          grep -Fq '"insetsHandling": "css"' mobile/capacitor.config.json
-          grep -Fq '"initialViewportFitValueHint": "cover"' mobile/capacitor.config.json
-          test -s mobile/www/jb-manager-system-bars.js
-          grep -Fq '"@capacitor/local-notifications": "8.3.1"' mobile/package.json
-          grep -Fq 'JBManagerNativeNotifications' mobile/native-notifications.js
-          grep -Fq 'src="./jb-manager-native-notifications.js"' mobile/www/admin.html
-          test -s mobile/www/jb-manager-native-notifications.js
-          grep -Fq 'jb-manager-private-chat' mobile/www/admin-notifications.mjs
-          grep -Fq 'admin-notifications.mjs?v=20261029-native-local-notifications1' mobile/www/admin.js
-          grep -Fq 'Para recibir avisos con la app cerrada hace falta configurar push nativo' mobile/www/admin.js
-          grep -Fq 'compareVersions(latest.version, currentVersion) > 0' mobile/prepare-web.mjs
-          grep -Fq 'state.installPrompted' mobile/prepare-web.mjs
-          grep -Fq 'Android installer is the confirmation UI' mobile/prepare-web.mjs
-          echo "Android safe area and updater recovery checks passed; completed install state will not recreate stale notices."
+          require_text() {
+            local needle="$1"
+            local file="$2"
+            if ! grep -Fq "$needle" "$file"; then
+              echo "Missing expected text in $file: $needle" >&2
+              exit 1
+            fi
+          }
+          if grep -Fq 'padding-top: max(24px' mobile/www/admin.html; then
+            echo "Obsolete hard-coded Android safe-area padding is still present." >&2
+            exit 1
+          fi
+          require_text 'viewport-fit=cover' mobile/www/admin.html
+          require_text 'id="jb-manager-android-safe-area"' mobile/www/admin.html
+          require_text '--jb-manager-safe-top: var(--safe-area-inset-top' mobile/www/admin.html
+          require_text 'src="./jb-manager-system-bars.js"' mobile/www/admin.html
+          require_text '"insetsHandling": "css"' mobile/capacitor.config.json
+          require_text '"initialViewportFitValueHint": "cover"' mobile/capacitor.config.json
+          test -s mobile/www/jb-manager-system-bars.js || { echo "Missing bundled system bars bridge." >&2; exit 1; }
+          require_text '"@capacitor/local-notifications": "8.3.1"' mobile/package.json
+          require_text 'JBManagerNativeNotifications' mobile/native-notifications.js
+          require_text 'src="./jb-manager-native-notifications.js"' mobile/www/admin.html
+          test -s mobile/www/jb-manager-native-notifications.js || { echo "Missing bundled native notifications bridge." >&2; exit 1; }
+          require_text 'jb-manager-private-chat' mobile/www/admin-notifications.mjs
+          require_text 'admin-notifications.mjs?v=20261029-native-local-notifications1' mobile/www/admin.js
+          require_text 'Para recibir avisos con la app cerrada hace falta configurar push nativo' mobile/www/admin.js
+          require_text 'compareVersions(latest.version, currentVersion) > 0' mobile/prepare-web.mjs
+          require_text 'state.installPrompted' mobile/prepare-web.mjs
+          require_text 'Android installer is the confirmation UI' mobile/prepare-web.mjs
+          echo "Android safe area, native notification bridge, shared logic, and updater recovery checks passed."
 
       - name: Verify shared web assets match the browser source
         shell: bash
