@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/api/private-chat.js";
+import { readFileSync } from "node:fs";
+
+const privateChatEdge = readFileSync(new URL("../supabase/functions/private-chat/index.ts", import.meta.url), "utf8");
+const pushSecurityMigration = readFileSync(new URL("../supabase/migrations/20261029123300_catalog_security_performance_hardening.sql", import.meta.url), "utf8");
 
 
 function base64url(bytes) {
@@ -50,21 +54,24 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
       calls.push({ kind: "consent", params: JSON.parse(options.body) });
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
     }
-    if (target.includes("/rest/v1/rpc/private_chat_claim_push_delivery")) {
-      calls.push({ kind: "claim", params: JSON.parse(options.body) });
-      return new Response(JSON.stringify({
-        ok: true,
-        sent: true,
-        conversation_id: "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a",
-        product_name: "Phone X",
-        contact_route: "buy",
-        subscriptions: [subscription],
-      }), { status: 200 });
-    }
-    if (target.includes("/rest/v1/rpc/private_chat_finish_push_delivery")) {
-      finishDelivered = JSON.parse(options.body).p_delivered;
-      calls.push({ kind: "finish", params: JSON.parse(options.body) });
-      return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
+    if (target.includes("/functions/v1/private-chat")) {
+      const params = JSON.parse(options.body);
+      if (params.action === "push_claim") {
+        calls.push({ kind: "claim", params });
+        return new Response(JSON.stringify({
+          ok: true,
+          sent: true,
+          conversation_id: "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a",
+          product_name: "Phone X",
+          contact_route: "buy",
+          subscriptions: [subscription],
+        }), { status: 200 });
+      }
+      if (params.action === "push_finish") {
+        finishDelivered = params.delivered;
+        calls.push({ kind: "finish", params });
+        return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
+      }
     }
     if (target.startsWith("https://push.example.test/")) {
       calls.push({ kind: "push", options });
@@ -82,12 +89,14 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
     assert.equal(response.status, 200);
     assert.equal(result.ok, true);
     assert.deepEqual(calls.map(call => call.kind), ["consent", "claim", "push", "finish"]);
-    assert.equal(calls[1].params.p_dispatch_secret, env.PUSH_DISPATCH_SECRET);
-    assert.equal(calls[1].params.p_session_token_hash.length, 64);
+    assert.equal(calls[1].params.dispatch_secret, env.PUSH_DISPATCH_SECRET);
+    assert.equal(calls[1].params.action, "push_claim");
+    assert.equal(calls[1].params.session_token_hash.length, 64);
     assert.equal(calls[2].options.headers["Content-Encoding"], "aes128gcm");
     assert.match(calls[2].options.headers.Authorization, /^vapid t=/);
     assert.equal(finishDelivered, true);
-    assert.equal(calls[3].params.p_conversation_id, "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a");
+    assert.equal(calls[3].params.conversation_id, "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a");
+    assert.equal(calls[3].params.action, "push_finish");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -102,16 +111,19 @@ test("push server failure does not block a customer's successful consent respons
     if (target.includes("/rest/v1/rpc/private_chat_record_consent")) {
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
     }
-    if (target.includes("/rest/v1/rpc/private_chat_claim_push_delivery")) {
-      return new Response(JSON.stringify({
-        ok: true, sent: true,
-        conversation_id: "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a",
-        product_name: "Phone X", contact_route: "buy", subscriptions: [subscription],
-      }), { status: 200 });
-    }
-    if (target.includes("/rest/v1/rpc/private_chat_finish_push_delivery")) {
-      finishDelivered = JSON.parse(options.body).p_delivered;
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    if (target.includes("/functions/v1/private-chat")) {
+      const params = JSON.parse(options.body);
+      if (params.action === "push_claim") {
+        return new Response(JSON.stringify({
+          ok: true, sent: true,
+          conversation_id: "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a",
+          product_name: "Phone X", contact_route: "buy", subscriptions: [subscription],
+        }), { status: 200 });
+      }
+      if (params.action === "push_finish") {
+        finishDelivered = params.delivered;
+        return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
+      }
     }
     if (target.startsWith("https://push.example.test/")) return new Response(null, { status: 410 });
     throw new Error("Unexpected network request: " + target);
@@ -151,4 +163,25 @@ test("push dispatch is skipped safely when production secrets are not configured
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+test("privileged push RPCs are hidden from anon and called through the Edge Function service key", () => {
+  assert.match(privateChatEdge, /const SERVICE_KEY = getKey\("SUPABASE_SECRET_KEYS", "SUPABASE_SERVICE_ROLE_KEY"\)/);
+  assert.match(privateChatEdge, /async function serviceRpc\(/);
+  assert.match(privateChatEdge, /action === "push_claim" \|\| action === "push_finish"/);
+  assert.match(privateChatEdge, /serviceRpc\("private_chat_claim_push_delivery"/);
+  assert.match(privateChatEdge, /serviceRpc\("private_chat_finish_push_delivery"/);
+  assert.match(pushSecurityMigration, /REVOKE EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text, text\) FROM PUBLIC, anon, authenticated/i);
+  assert.match(pushSecurityMigration, /REVOKE EXECUTE ON FUNCTION public\.private_chat_finish_push_delivery\(text, uuid, boolean\) FROM PUBLIC, anon, authenticated/i);
+  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text, text\) TO service_role/i);
+  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_finish_push_delivery\(text, uuid, boolean\) TO service_role/i);
+  for (const index of [
+    "admin_push_subscriptions_user_id_idx",
+    "color_library_updated_by_idx",
+    "commission_records_product_id_idx",
+    "product_provider_review_history_reviewed_by_idx",
+    "product_provider_status_reviewed_by_idx",
+    "products_updated_by_idx"
+  ]) assert.ok(pushSecurityMigration.includes(index), "Missing covering index: " + index);
 });
