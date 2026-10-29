@@ -1,4 +1,4 @@
-const WORKER_URL = "./jb-manager-sw.js?v=20261029-admin-notifications2";
+const WORKER_URL = "./jb-manager-sw.js?v=20261029-admin-webpush3";
 const registrationPromises = new WeakMap();
 
 function dependencies(overrides = {}) {
@@ -154,6 +154,8 @@ export async function enableAdminNotifications(overrides = {}) {
   }
   if (permission !== "granted") return { ok: false, reason: permission === "denied" ? "permission-denied" : "permission-not-granted" };
   if (!navigatorRef?.serviceWorker) return { ok: false, reason: "push-unsupported" };
+  if (!supabase || !currentUser?.id) return { ok: false, reason: "admin-session-required" };
+  if (!publicKey) return { ok: false, reason: "push-config-missing" };
 
   try {
     const registration = await getRegistration(windowRef, navigatorRef);
