@@ -7,6 +7,9 @@ import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
+import { analyzeVerticalRhythm } from "./visual-design-quality-policy.mjs";
+import { analyzeDialogQuality } from "./visual-state-quality-policy.mjs";
+import { analyzeProductComposition } from "./visual-composition-quality-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -21,6 +24,7 @@ const VIEWPORTS = [
 const THEMES = ["light", "dark"];
 const PAGES = [
   { name: "technology", path: "/tecnologia/", shell: ".site-header", title: ".hero h1, h1", fixture: "technology" },
+  { name: "technology-detail", path: "/tecnologia/", shell: ".site-header", title: "#product-detail-page h2", fixture: "technology-detail" },
   { name: "perfumery", path: "/perfumeria/", shell: ".site-header", title: "h1", fixture: "perfumery" },
   { name: "admin", path: "/admin.html", shell: ".admin-header", title: ".provider-page-heading h1, h1", fixture: "admin" },
   { name: "private-chat", path: "/mensajes.html", shell: ".private-chat-header", title: "#private-chat-title", fixture: "chat" },
@@ -59,7 +63,7 @@ function diagnose({ severity, page, theme, viewport, element, message, evidence 
       hypothesis: "Un hijo de grid/flex o un elemento con ancho mínimo fijo excede el ancho disponible.",
       confidence: 0.86,
       nextCheck: "Usar los selectores y límites del reporte para localizar el primer elemento cuyo rectángulo rebasa el viewport; inspeccionar min-width, width, padding y texto largo.",
-      likelyFiles: page === "technology" ? ["technology-visual-refresh.css", "styles.css"] :
+      likelyFiles: page === "technology" || page === "technology-detail" ? ["technology-visual-refresh.css", "styles.css"] :
         page === "perfumery" ? ["perfumeria.css", "styles.css"] :
         page === "admin" ? ["admin-private-chat.css", "admin-workflow.css", "styles.css"] : ["private-chat.css"],
     };
@@ -89,6 +93,19 @@ function diagnose({ severity, page, theme, viewport, element, message, evidence 
       confidence: 0.74,
       nextCheck: "Abrir el nodo exacto reportado; verificar nombre accesible, asociación label/control y contraste calculado antes de cambiar CSS.",
       likelyFiles: ["admin-accessibility.css", "admin-private-chat.css", "private-chat.css", "technology-visual-refresh.css", "perfumeria.css"],
+    };
+  }
+  if (/imagen principal aprovecha poco|poco peso visual|concentra contenido en una columna/.test(text)) {
+    const columnImbalance = /concentra contenido en una columna/.test(text);
+    return {
+      code: columnImbalance ? "PRODUCT_DETAIL_COLUMN_IMBALANCE" :
+        /poco peso visual/.test(text) ? "PRODUCT_GALLERY_LOW_VISUAL_WEIGHT" : "PRODUCT_IMAGE_UNDERUTILIZED",
+      hypothesis: columnImbalance
+        ? "La proporción geométrica de la galería y la columna informativa puede estar restando protagonismo al producto o haciendo que la ficha se perciba desequilibrada."
+        : "El marco de galería o el tamaño renderizado del elemento de imagen puede no estar aprovechando el espacio previsto; una fotografía también puede contener márgenes blancos internos que la medición DOM no detecta.",
+      confidence: columnImbalance ? 0.72 : 0.68,
+      nextCheck: "Comparar la captura con los rectángulos medidos; inspeccionar el ancho/alto del marco, las dimensiones renderizadas de la imagen, object-fit/object-position y el recorte real del archivo. Confirmar en escritorio, móvil y ambos temas antes de cambiar CSS.",
+      likelyFiles: ["technology-visual-refresh.css", "styles.css", "tests/visual-audit.test.mjs", "tests/visual-composition-quality-policy.mjs"],
     };
   }
   if (/error de javascript|runtime/.test(text)) {
@@ -143,6 +160,17 @@ function fixtureScript(pageName) {
   return `
     (() => {
       const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#d7deeb"/></svg>');
+      if (${JSON.stringify(pageName)} === "technology-detail") {
+        const detail = document.getElementById("product-detail-page");
+        const content = document.getElementById("dialog-content");
+        if (detail && content) {
+          detail.classList.remove("hidden");
+          document.body.classList.add("product-detail-active");
+          document.querySelector("main")?.classList.add("is-product-detail-view");
+          document.getElementById("product-detail-header-back")?.removeAttribute("hidden");
+          content.innerHTML = '<div class="dialog-layout"><div id="dialog-image"><div class="dialog-gallery-main"><button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía"><img class="dialog-main-image" alt="Samsung Galaxy S26+ · imagen sintética de auditoría" src="' + svg + '"></button></div><div class="dialog-gallery-thumbs"><button class="dialog-gallery-thumb active" type="button" aria-label="Foto 1"><img alt="" src="' + svg + '"></button><button class="dialog-gallery-thumb" type="button" aria-label="Foto 2"><img alt="" src="' + svg + '"></button></div></div><div class="dialog-detail"><h2>Samsung Galaxy S26+ 5G</h2><p class="dialog-product-description">Pantalla Dynamic AMOLED, cámara avanzada y batería de larga duración. Texto sintético para comprobar la proporción de la ficha.</p><div class="product-price">C$ 34,780.00</div><p>Precio aplica únicamente para efectivo o transferencias.</p><div class="product-contact-actions"><button type="button">WhatsApp</button><button type="button">Contactar JB Collections</button></div><div class="payment-choice-panel"><strong>¿Qué querés consultar?</strong><select aria-label="Tema de consulta"><option>Seleccioná una opción</option></select></div><h3>Especificaciones</h3><ul class="dialog-specs"><li>12 GB RAM</li><li>512 GB de almacenamiento</li><li>Cámara principal de 50 MP</li><li>Batería de 4,900 mAh</li><li>Pantalla hasta 120 Hz</li></ul></div></div>';
+        }
+      }
       if (${JSON.stringify(pageName)} === "technology") {
         const grid = document.querySelector("#product-grid");
         if (grid) grid.innerHTML = [
@@ -356,10 +384,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           const root = document.documentElement;
           const docWidth = Math.max(root.scrollWidth, document.body.scrollWidth);
           const viewportWidth = window.innerWidth;
-          const shellSelector = pageName === "technology" || pageName === "perfumery"
+          const shellSelector = pageName === "technology" || pageName === "technology-detail" || pageName === "perfumery"
             ? ".site-header" : pageName === "admin" ? ".admin-header" : ".private-chat-header";
           const shell = document.querySelector(shellSelector);
-          const title = document.querySelector(pageName === "technology" ? ".hero h1" : pageName === "admin" ? "#admin-section-messages h1, .dashboard-top h1, h1" : "h1");
+          const title = document.querySelector(pageName === "technology-detail" ? "#product-detail-page h2" : pageName === "technology" ? ".hero h1" : pageName === "admin" ? "#admin-section-messages h1, .dashboard-top h1, h1" : "h1");
           const visibleGrids = [...document.querySelectorAll(".product-grid, .featured-grid, .private-chat-admin-layout, .private-chat-card")].filter(isVisible);
           const products = [...document.querySelectorAll("#product-grid .product-card, #product-grid-nicho .product-card")].filter(isVisible);
           const trustCards = [...document.querySelectorAll(".hero-trust-item")].filter(isVisible).map(card => {
@@ -401,6 +429,79 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 };
               })
             : [];
+          const contentRegions = [...document.querySelectorAll("main > section, main > div, #dashboard > section, .admin-main > section, .admin-content > section")]
+            .filter(isVisible)
+            .map((element, index) => {
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              const text = (element.innerText || "").replace(/\s+/g, " ").trim();
+              return {
+                index,
+                selector: element.tagName.toLowerCase() + (element.id ? "#" + element.id : "") +
+                  (typeof element.className === "string" && element.className.trim()
+                    ? "." + element.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
+                top: Math.round(rect.top + window.scrollY),
+                bottom: Math.round(rect.bottom + window.scrollY),
+                height: Math.round(rect.height),
+                textLength: text.length,
+                childCount: element.children.length,
+                paddingTop: style.paddingTop,
+                paddingBottom: style.paddingBottom,
+                marginTop: style.marginTop,
+                marginBottom: style.marginBottom,
+                background: style.backgroundColor,
+              };
+            });
+          // Keep small and textless visible sections as separators so whitespace checks
+          // never bridge over real banners, image bands, or compact navigation rows.
+          const productCompositionLayouts = pageName === "technology-detail"
+            ? [...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(layout => {
+                const frame = layout.querySelector("#dialog-image");
+                const image = layout.querySelector(".dialog-main-image");
+                const detail = layout.querySelector(".dialog-detail");
+                if (!frame || !image || !detail || !isVisible(frame) || !isVisible(image) || !isVisible(detail)) return null;
+                const frameRect = frame.getBoundingClientRect();
+                const imageRect = image.getBoundingClientRect();
+                const leftRect = frame.getBoundingClientRect();
+                const rightRect = detail.getBoundingClientRect();
+                const rightArea = Math.max(1, rightRect.width * rightRect.height);
+                const contentArea = [...detail.children].filter(isVisible).reduce((sum, child) => {
+                  const rect = child.getBoundingClientRect();
+                  return sum + Math.max(0, rect.width * rect.height);
+                }, 0);
+                const frameArea = Math.max(1, frameRect.width * frameRect.height);
+                const imageArea = Math.max(0, imageRect.width * imageRect.height);
+                return {
+                  visible: true, selector: ".dialog-layout", productName: image.alt || "Producto",
+                  frameWidth: Math.round(frameRect.width), frameHeight: Math.round(frameRect.height),
+                  imageWidth: Math.round(imageRect.width), imageHeight: Math.round(imageRect.height),
+                  imageFrameRatio: Math.min(imageRect.width / Math.max(1, frameRect.width), imageRect.height / Math.max(1, frameRect.height)),
+                  imageAreaRatio: imageArea / frameArea,
+                  leftColumnWidth: Math.round(leftRect.width),
+                  rightColumnWidth: Math.round(rightRect.width),
+                  rightColumnDensity: Math.min(1, contentArea / rightArea),
+                  rightContentDensity: Math.min(1, contentArea / rightArea),
+                };
+              }).filter(Boolean)
+            : [];
+          const dialogLayouts = [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [aria-modal="true"]')]
+            .filter(isVisible)
+            .map((dialog, index) => {
+              const rect = dialog.getBoundingClientRect();
+              const controls = [...dialog.querySelectorAll('input, select, textarea, button, [role="button"]')].filter(isVisible);
+              const heights = controls.map(control => Math.round(control.getBoundingClientRect().height)).filter(height => height > 0);
+              const title = dialog.querySelector('h1, h2, h3, [aria-label]')?.innerText ||
+                dialog.getAttribute('aria-label') || dialog.getAttribute('aria-labelledby') || '';
+              const selector = dialog.id ? '#' + dialog.id :
+                dialog.tagName.toLowerCase() + (typeof dialog.className === 'string' && dialog.className.trim()
+                  ? '.' + dialog.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
+              return {
+                index, selector, title: String(title).replace(/\s+/g, ' ').trim().slice(0, 100),
+                visible: true, width: Math.round(rect.width), height: Math.round(rect.height),
+                controlCount: controls.length, minimumControlHeight: heights.length ? Math.min(...heights) : null,
+                scrollHeight: dialog.scrollHeight, clientHeight: dialog.clientHeight,
+              };
+            });
           const keyText = [...document.querySelectorAll("h1, h2, h3, .hero-trust-copy, .private-chat-privacy, .private-chat-footer-note, .private-chat-admin-security-note, button, .buy-button")]
             .filter(isVisible).slice(0, 70).map(el => ({
               selector: el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
@@ -417,11 +518,70 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             productCards: products.length,
             trustCards,
             showcaseLayouts,
+            contentRegions,
+            dialogLayouts,
+            productCompositionLayouts,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
 
         observations.push(snapshot);
+        const rhythmFindings = analyzeVerticalRhythm(snapshot.contentRegions, {
+          viewportWidth: snapshot.viewportWidth,
+          mobile: viewport.mobile,
+        });
+        for (const rhythm of rhythmFindings) {
+          addFinding({
+            severity: rhythm.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: rhythm.element,
+            message: rhythm.message,
+            evidence: rhythm.evidence,
+            recommendation: rhythm.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = rhythm.code;
+          findings[findings.length - 1].measuredGap = rhythm.measuredGap;
+        }
+        const compositionFindings = analyzeProductComposition(snapshot.productCompositionLayouts, {
+          viewportWidth: snapshot.viewportWidth,
+          mobile: viewport.mobile,
+        });
+        for (const composition of compositionFindings) {
+          addFinding({
+            severity: composition.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: composition.element,
+            message: composition.message,
+            evidence: composition.evidence,
+            recommendation: composition.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = composition.code;
+          if (Number.isFinite(composition.measuredRatio)) findings[findings.length - 1].measuredRatio = composition.measuredRatio;
+        }
+        const dialogFindings = analyzeDialogQuality(snapshot.dialogLayouts, {
+          viewportWidth: snapshot.viewportWidth,
+          viewportHeight: viewport.height,
+        });
+        for (const dialogFinding of dialogFindings) {
+          addFinding({
+            severity: dialogFinding.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: dialogFinding.element,
+            message: dialogFinding.message,
+            evidence: dialogFinding.evidence,
+            recommendation: dialogFinding.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = dialogFinding.code;
+        }
         for (const runtimeError of pageErrors) {
           const error = runtimeError.message || String(runtimeError);
           const classification = classifyRuntimeError(error, {
@@ -676,6 +836,101 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.equal(await backdrop.evaluate(el => el.hidden), true);
               return "El menú móvil sincroniza aria-expanded y bloqueo de scroll; Escape y un clic real fuera del cajón cierran el panel.";
             });
+
+            await runJourney(page, scenario, "admin-product-variant-and-color-ai-dialog", async () => {
+              // Este recorrido usa el HTML/JS del administrador, pero no inicia sesión ni guarda datos.
+              const addSection = page.locator('[data-admin-section="add"]').first();
+              assert.equal(await addSection.count(), 1, "navigation entry for product editor must exist");
+              await addSection.evaluate(el => el.click());
+              const form = page.locator("#product-form");
+              assert.equal(await form.isVisible(), true, "product editor must be reachable from admin navigation");
+
+              await page.locator('[data-product-form-step="2"]').click();
+              assert.equal(await page.locator('[data-product-form-panel="2"]').evaluate(el => el.classList.contains("hidden")), false,
+                "variant step must open from its tab");
+              assert.equal(await page.locator('[data-product-form-panel="1"]').evaluate(el => el.classList.contains("hidden")), true,
+                "opening variant step must hide the basic-data panel");
+
+              const addVariant = page.locator("#add-variant-button");
+              assert.equal(await addVariant.isVisible(), true, "variant action must be visible in the editor");
+
+              const configurations = [
+                { ram: "8", storage: "256", usd: "199", nio: "6999", color: "Graphite" },
+                { ram: "12", storage: "256", usd: "249", nio: "8749", color: "Titanium Blue" },
+                { ram: "12", storage: "512", usd: "289", nio: "10150", color: "Titanium Gray" },
+              ];
+              const groupsBefore = await page.locator("#product-variants-list [data-variant-group]").count();
+              const groups = page.locator("#product-variants-list [data-variant-group]");
+              let lastColorRow;
+              for (let index = 0; index < configurations.length; index += 1) {
+                const configuration = configurations[index];
+                await addVariant.click();
+                await page.waitForFunction(expectedCount =>
+                  document.querySelectorAll("#product-variants-list [data-variant-group]").length === expectedCount,
+                  groupsBefore + index + 1, { timeout: 3000 });
+                const group = groups.nth(groupsBefore + index);
+                await group.locator("summary").click();
+                for (const selector of ["[data-group-storage]", "[data-group-ram]", "[data-group-price-usd]", "[data-group-price-nio]"]) {
+                  assert.equal(await group.locator(selector).count(), 1,
+                    "each variant must expose its own RAM, storage and price fields: " + selector);
+                }
+                await group.locator("[data-group-storage]").fill(configuration.storage);
+                await group.locator("[data-group-ram]").fill(configuration.ram);
+                await group.locator("[data-group-price-usd]").fill(configuration.usd);
+                await group.locator("[data-group-price-nio]").fill(configuration.nio);
+                await group.locator("[data-add-group-color]").click();
+                lastColorRow = group.locator("[data-variant-row]").last();
+                await lastColorRow.waitFor({ state: "attached", timeout: 3000 });
+                if (!(await lastColorRow.evaluate(el => el.open))) {
+                  await lastColorRow.locator(":scope > summary").click();
+                }
+                await lastColorRow.locator("[data-variant-color]").fill(configuration.color);
+                assert.equal(await lastColorRow.locator("[data-variant-image]").count(), 1,
+                  "each color/variant row must have its own photo file input");
+                assert.equal(await lastColorRow.locator("[data-variant-images]").count(), 1,
+                  "each color/variant row must keep its own image metadata field");
+              }
+
+              assert.equal(await groups.count(), groupsBefore + configurations.length,
+                "adding three configurations must create exactly three independent groups");
+              for (let index = 0; index < configurations.length; index += 1) {
+                const expected = configurations[index];
+                const group = groups.nth(groupsBefore + index);
+                assert.equal(await group.locator("[data-group-storage]").inputValue(), expected.storage);
+                assert.equal(await group.locator("[data-group-ram]").inputValue(), expected.ram);
+                assert.equal(await group.locator("[data-group-price-usd]").inputValue(), expected.usd);
+                assert.equal(await group.locator("[data-group-price-nio]").inputValue(), expected.nio);
+                assert.equal(await group.locator("[data-variant-color]").inputValue(), expected.color,
+                  "a variant color must remain within its own configuration");
+              }
+
+              const nestedColorDetails = lastColorRow.locator(".inline-color-details");
+              if (!(await nestedColorDetails.evaluate(el => el.open))) {
+                await nestedColorDetails.locator(":scope > summary").click();
+              }
+              const colorAi = lastColorRow.locator("[data-ai-color-open]");
+              assert.equal(await colorAi.count(), 1, "each variant color row must expose the AI color helper");
+              await colorAi.click();
+
+              const overlay = page.locator("#jb-color-ai-overlay");
+              await overlay.waitFor({ state: "visible", timeout: 3000 });
+              assert.equal(await overlay.locator('[role="dialog"][aria-modal="true"]').count(), 1,
+                "color helper must open an accessible modal dialog");
+              assert.equal(await overlay.locator("[data-color-ai-query]").count(), 1);
+              assert.equal(await overlay.locator("[data-color-ai-image]").count(), 1);
+              // The dialog pre-fills the current color as a convenience; clear it to test empty-input validation.
+              await overlay.locator("[data-color-ai-query]").fill("");
+              await overlay.locator("[data-color-ai-analyze]").click();
+              assert.match(await overlay.locator("[data-color-ai-status]").innerText(),
+                /Escribí una referencia\/pregunta o adjuntá una foto/,
+                "empty input must show validation feedback without calling the remote AI endpoint");
+              assert.equal(await overlay.locator("[data-color-ai-result]").evaluate(el => el.hidden), true,
+                "invalid empty input must not fabricate an AI result");
+
+              await page.keyboard.press("Escape");
+              await overlay.waitFor({ state: "detached", timeout: 3000 });
+              return "El editor abre la sección de variantes, agrega una configuración independiente con campos RAM/almacenamiento/precios y abre/cierra el diálogo de color IA; la validación vacía no llama al endpoint ni guarda datos.";
+            });
           } else if (site.name === "private-chat") {
             await runJourney(page, scenario, "private-chat-theme-toggle", async () => {
               const toggle = page.locator("#private-chat-theme-toggle");
@@ -733,6 +988,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       axeViolations: axeFindings.length,
       axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
+      whitespaceRhythmFindings: findings.filter(finding => finding.code === "VISUAL_WHITESPACE_RHYTHM").length,
+      dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,
+      productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_")).length,
+      visibleDialogStates: observations.reduce((total, observation) => total + (observation.dialogLayouts?.length || 0), 0),
     },
     observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
@@ -740,6 +999,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
+      designQualityRule: "The client-eye audit measures unusually large blank gaps, product image/frame geometry, information-column balance, and visible dialog/control dimensions. These deterministic checks produce advisory findings with evidence; they do not interpret image pixels or replace human visual judgment. The product-detail layout uses synthetic content. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
       note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
@@ -770,6 +1030,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "- La confianza es una heurística basada en la evidencia, no una probabilidad estadística ni una reparación automática.",
     "- Los hallazgos de accesibilidad son señales de revisión; no se corrigen ni se ocultan automáticamente.",
     "", "## Geometría observada",
+    `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
+    `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,
+    `- Alertas de composición de ficha de producto: ${result.summary.productCompositionFindings}`,
+    `- Estados de diálogo visibles capturados: ${result.summary.visibleDialogStates}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
     "|---|---|---|---:|---:|---:|",
@@ -798,6 +1062,16 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     console.log(`[${finding.severity.toUpperCase()}] ${finding.page} / ${finding.theme} / ${finding.viewport} — ${finding.message} :: ${finding.evidence}`);
   }
   assert.equal(observations.length, PAGES.length * VIEWPORTS.length * THEMES.length, "each page must be measured in every viewport/theme combination");
+  const productDetailObservations = observations.filter(observation => observation.page === "technology-detail");
+  assert.equal(productDetailObservations.length, VIEWPORTS.length * THEMES.length,
+    "synthetic product detail must be measured at every viewport and theme");
+  assert.ok(productDetailObservations.every(observation =>
+    Array.isArray(observation.productCompositionLayouts) &&
+    observation.productCompositionLayouts.some(layout =>
+      layout.visible && layout.frameWidth > 0 && layout.frameHeight > 0 &&
+      layout.imageWidth > 0 && layout.imageHeight > 0 &&
+      layout.leftColumnWidth > 0 && layout.rightColumnWidth > 0
+    )), "every detail scenario must produce usable gallery and column measurements");
   assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
   assert.equal(result.summary.blockingAxeViolations, 0, "critical/serious Axe violations block CI; see visual-audit-report.md");
   assert.equal(blockingFindings.length, 0, "critical deterministic layout/runtime/resource regressions block CI; see visual-audit-report.md");

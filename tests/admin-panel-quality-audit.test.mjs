@@ -54,13 +54,29 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261029-contrast-audit2"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261029-variant-unit-arrow1"));
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /\.admin-body \.admin-input-unit > span\s*\{[^}]*color:\s*#455675\s*!important/);
   assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body \.admin-input-unit > span,[\s\S]*?\{[^}]*color:\s*#c9d5e9\s*!important/);
   assert.match(accessibilityStyles, /\.provider-metric > span/);
   assert.match(accessibilityStyles, /\.provider-empty-state/);
   assert.match(accessibilityStyles, /\.provider-import-explainer p strong/);
+  assert.match(accessibilityStyles, /html\[data-theme="light"\] body\.admin-body #product-form \.product-form-section-actions > span\s*\{[^}]*color:\s*#455675\s*!important;[^}]*font-size:\s*13px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.private-chat-admin-message p\s*\{[^}]*font-size:\s*13px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.private-chat-admin-filter\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html\[data-theme="light"\] body\.admin-body #admin-context-hint\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-eyebrow\s*\{[^}]*font-size:\s*11\.5px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body #private-chat-refresh,[\s\S]*?font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.admin-catalog-context label\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body footer\.site-footer span\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.commission-summary-grid span\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-updated,[\s\S]*?font-size:\s*12px\s*!important;/);
+  const storageArrowRule = accessibilityStyles.match(/html\[data-theme="dark"\] body\.admin-body select\.variant-storage-unit\s*\{[^}]*\}/)?.[0] || "";
+  assert.match(storageArrowRule, /appearance:\s*none\s*!important;/);
+  assert.match(storageArrowRule, /background-image:\s*url\("data:image\/svg\+xml,[\s\S]*?stroke='%23E1EAFF'/);
+  assert.match(storageArrowRule, /background-repeat:\s*no-repeat\s*!important;/);
+  assert.match(storageArrowRule, /padding:\s*4px 22px 4px 7px\s*!important;/);
+  assert.match(adminJs, /<select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(regressionRunner, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
@@ -109,6 +125,38 @@ test("complete admin panel audit validates navigation, accessibility signals and
       document.getElementById("dashboard")?.classList.remove("hidden");
     });
 
+    const storageArrowStyle = await page.evaluate(() => {
+      const root = document.documentElement;
+      const previousTheme = root.getAttribute("data-theme");
+      const probe = document.createElement("select");
+      probe.className = "variant-storage-unit";
+      probe.setAttribute("aria-label", "Unidad de almacenamiento de prueba");
+      probe.innerHTML = '<option value="GB">GB</option><option value="TB">TB</option>';
+      document.body.append(probe);
+      root.setAttribute("data-theme", "dark");
+      const darkStyle = getComputedStyle(probe);
+      const dark = {
+        backgroundImage: darkStyle.backgroundImage,
+        backgroundSize: darkStyle.backgroundSize,
+        width: darkStyle.width,
+        paddingRight: darkStyle.paddingRight,
+        appearance: darkStyle.appearance,
+      };
+      root.setAttribute("data-theme", "light");
+      const light = { backgroundImage: getComputedStyle(probe).backgroundImage };
+      probe.remove();
+      if (previousTheme === null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", previousTheme);
+      return { dark, light };
+    });
+    assert.match(storageArrowStyle.dark.backgroundImage, /data:image\/svg\+xml/,
+      "the GB/TB selector must render its explicit chevron in dark mode");
+    assert.equal(storageArrowStyle.dark.backgroundSize, "12px 8px");
+    assert.equal(storageArrowStyle.dark.width, "66px");
+    assert.equal(storageArrowStyle.dark.paddingRight, "22px");
+    assert.doesNotMatch(storageArrowStyle.light.backgroundImage, /data:image\/svg\+xml/,
+      "the custom chevron is dark-theme-only");
+
     for (const panelName of panels) {
       for (const viewport of widths) {
         await page.setViewportSize({ width: viewport.width, height: 844 });
@@ -150,6 +198,25 @@ test("complete admin panel audit validates navigation, accessibility signals and
               (typeof element.className === "string" && element.className.trim() ? "." + element.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
             right: Math.round(element.getBoundingClientRect().right),
           }));
+          const smallText = [...document.querySelectorAll(
+            "body.admin-body button, body.admin-body a, body.admin-body label, body.admin-body p, body.admin-body small, body.admin-body span, body.admin-body strong, body.admin-body em, body.admin-body li, body.admin-body summary, body.admin-body legend, body.admin-body h1, body.admin-body h2, body.admin-body h3, body.admin-body h4, body.admin-body th, body.admin-body td"
+          )].filter(visible).map(element => {
+            if (element.closest('[aria-hidden="true"]')) return null;
+            const directText = [...element.childNodes]
+              .filter(node => node.nodeType === Node.TEXT_NODE)
+              .map(node => node.textContent || "")
+              .join(" ")
+              .replace(/\s+/g, " ")
+              .trim();
+            if (directText.length < 3 || /^[\d\s.,:%+\-−/]+$/.test(directText)) return null;
+            const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
+            if (!Number.isFinite(fontSize) || fontSize >= 12) return null;
+            const selector = element.tagName.toLowerCase() +
+              (element.id ? "#" + element.id : "") +
+              (typeof element.className === "string" && element.className.trim()
+                ? "." + element.className.trim().split(/\s+/).slice(0, 2).join(".") : "");
+            return { selector, fontSize: Math.round(fontSize * 10) / 10, text: directText.slice(0, 72) };
+          }).filter(Boolean);
           return {
             viewportWidth,
             documentWidth: width,
@@ -157,6 +224,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
             panelVisible: Boolean(panel && visible(panel)),
             visibleControls: panel ? [...panel.querySelectorAll("button,a,input,select,textarea,[role=button]")].filter(visible).length : 0,
             offenders,
+            smallText,
           };
         });
         measurements.push({ panel: panelName, viewport: viewport.label, ...measurement });
@@ -181,6 +249,27 @@ test("complete admin panel audit validates navigation, accessibility signals and
     }
   }
 
+  const typographyAudit = new Map();
+  let smallTextSampleCount = 0;
+  for (const measurement of measurements.filter(item => item.viewport.startsWith("móvil"))) {
+    for (const sample of measurement.smallText || []) {
+      smallTextSampleCount += 1;
+      const key = sample.selector + " — " + sample.text;
+      const existing = typographyAudit.get(key) || {
+        selector: sample.selector,
+        text: sample.text,
+        fontSize: sample.fontSize,
+        occurrences: 0,
+      };
+      existing.fontSize = Math.min(existing.fontSize, sample.fontSize);
+      existing.occurrences += 1;
+      typographyAudit.set(key, existing);
+    }
+  }
+  const typographyRows = [...typographyAudit.values()]
+    .sort((a, b) => a.fontSize - b.fontSize || b.occurrences - a.occurrences)
+    .slice(0, 18);
+
   for (const finding of axeFindings) findings.push(finding);
 
   const rank = { alta: 3, media: 2, baja: 1 };
@@ -204,6 +293,16 @@ test("complete admin panel audit validates navigation, accessibility signals and
     "| Panel | Viewport | Ancho documento | Desbordamiento | Controles visibles |",
     "|---|---|---:|---:|---:|",
     ...measurements.map(m => "| " + m.panel + " | " + m.viewport + " | " + m.documentWidth + " px | " + m.horizontalOverflow + " px | " + m.visibleControls + " |"),
+    "", "## Auditoría tipográfica móvil", "",
+    "Criterio orientativo: textos visibles menores de 12 px se registran para revisión; los datos secundarios y las etiquetas decorativas pueden conservar un tamaño menor cuando no comprometa la lectura.",
+    "",
+    "- Muestras de texto visible bajo 12 px registradas en los tres anchos móviles: " + smallTextSampleCount,
+    "",
+    "| Tamaño mínimo | Texto | Selector | Muestras móviles |",
+    "|---:|---|---|---:|",
+    ...(typographyRows.length ? typographyRows.map(item =>
+      "| " + item.fontSize + " px | " + item.text.replace(/\|/g, "\\\\|") + " | " + item.selector.replace(/\|/g, "\\\\|") + " | " + item.occurrences
+    ) : ["| — | No se encontraron textos bajo 12 px | — | 0 |"]),
     "", "## Limitaciones", "",
     "- Los formularios autenticados y las mutaciones no se ejecutaron para proteger los datos reales.",
     "- Los formularios autenticados y las mutaciones no se ejecutaron para proteger los datos reales.",
