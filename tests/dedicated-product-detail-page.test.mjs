@@ -119,6 +119,7 @@ test("both dedicated product pages use natural document scrolling on desktop and
               bodyPosition:getComputedStyle(document.body).position,
               headerPosition:getComputedStyle(document.querySelector(header)).position,
               headerHeight:rect(header).height,
+              headerRect:rect(header),
               detailRect:rect(detail),
               contentRect:rect(content),
               columns:getComputedStyle(document.querySelector(layout)).gridTemplateColumns,
@@ -135,7 +136,7 @@ test("both dedicated product pages use natural document scrolling on desktop and
           assert.notEqual(before.bodyPosition,"fixed",item.name+" must not lock the document scroll");
           assert.equal(before.headerPosition,"sticky",item.name+" header remains sticky in page layout");
           assert.equal(before.siblingDisplay,"none",item.name+" catalog sections are hidden while the detail route is active");
-          assert.ok(before.detailRect.top>=before.headerHeight-2,item.name+" detail begins beneath its in-flow header");
+          assert.ok(before.detailRect.top>=before.headerHeight-2,item.name+" detail begins beneath its in-flow header (detailTop="+before.detailRect.top+", headerHeight="+before.headerHeight+", headerRect="+JSON.stringify(before.headerRect)+")");
           assert.ok(before.scrollHeight>viewport.height,item.name+" detail should use document scrolling");
           assert.ok(before.scrollWidth-before.clientWidth<=2,item.name+" must not overflow horizontally");
           assert.equal(before.columns.trim().split(/\s+/).length,viewport.mobile?1:2,item.name+" uses the correct responsive column count");
