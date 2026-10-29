@@ -24,6 +24,19 @@ test("provider review displays live price differences and availability validatio
   assert.match(admin, /admin-provider\.js\?v=20261028-provider-review-minimal4/);
 });
 
+test("variant product comparison uses first configuration prices instead of duplicate general fields", () => {
+  assert.match(provider, /function deriveProviderVariantOverview\(snapshot\)/);
+  assert.match(provider, /provider_price_usd: first\.provider_price_usd \?\? null/);
+  assert.match(provider, /provider_price_nio: first\.provider_price_nio \?\? null/);
+  assert.match(provider, /const overview = deriveProviderVariantOverview\(collectProviderVariantSnapshot\(\)\)/);
+  assert.match(html, /id="provider-review-price-usd-field"/);
+  assert.match(html, /id="provider-review-price-nio-field"/);
+  assert.match(html, /id="provider-review-availability-field"/);
+  assert.match(html, /id="provider-review-variant-overview-note"[^>]*hidden/);
+  assert.match(provider, /field\.hidden = hasVariants/);
+  assert.match(css, /\.provider-dialog-fields \\[hidden\\] \{\s*display:none !important/);
+});
+
 test("provider review preserves references and uses guarded RPC for optional catalog synchronization", () => {
   const start = provider.indexOf("async function saveReview(event)");
   const end = provider.indexOf("async function openHistory(productId)", start);
