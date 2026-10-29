@@ -34,3 +34,9 @@ html[data-theme="dark"] body.admin-body .private-chat-admin-inbox .provider-empt
 html[data-theme="dark"] body.admin-body .provider-import-explainer p strong {
   color: #e4ecfb !important;
 }
+
+
+/* Accessibility audit fix: context help must remain readable on the admin light surface. */
+html[data-theme="light"] body.admin-body #admin-context-hint {
+  color:#45536b!important;
+}
