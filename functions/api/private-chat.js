@@ -91,7 +91,30 @@ async function rpc(name, params) {
   }
   return data;
 }
-async function dispatchAdminPush(sessionHash, env = {}) {
+async function edgePushRpc(action, params, clientIp = "") {
+  const response = await fetch(SUPABASE_URL + "/functions/v1/private-chat", {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      "Origin": PUBLIC_CHAT_URL,
+      "X-JB-Client-IP": clean(clientIp || "server-push", 80),
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store"
+    },
+    body: JSON.stringify({ action, ...params })
+  });
+  let data = null;
+  try { data = await response.json(); } catch {}
+  if (!response.ok) {
+    const message = clean(data?.message || data?.error || "push_service_error", 180);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+async function dispatchAdminPush(sessionHash, env = {}, clientIp = "") {
   const dispatchSecret = String(env.PUSH_DISPATCH_SECRET || "");
   const vapidPrivateJwk = env.VAPID_PRIVATE_JWK;
   const vapidPublicKey = String(env.VAPID_PUBLIC_KEY || "");
@@ -99,10 +122,10 @@ async function dispatchAdminPush(sessionHash, env = {}) {
 
   let claim;
   try {
-    claim = await rpc("private_chat_claim_push_delivery", {
-      p_dispatch_secret: dispatchSecret,
-      p_session_token_hash: sessionHash
-    });
+    claim = await edgePushRpc("push_claim", {
+      dispatch_secret: dispatchSecret,
+      session_token_hash: sessionHash
+    }, clientIp);
   } catch (error) {
     console.warn("JB admin push claim failed:", clean(error?.message || "unknown error", 120));
     return;
@@ -140,18 +163,18 @@ async function dispatchAdminPush(sessionHash, env = {}) {
   const delivered = deliveries.some(result => result?.ok);
 
   try {
-    await rpc("private_chat_finish_push_delivery", {
-      p_dispatch_secret: dispatchSecret,
-      p_conversation_id: claim.conversation_id,
-      p_delivered: delivered
-    });
+    await edgePushRpc("push_finish", {
+      dispatch_secret: dispatchSecret,
+      conversation_id: claim.conversation_id,
+      delivered
+    }, clientIp);
   } catch (error) {
     console.warn("JB admin push completion failed:", clean(error?.message || "unknown error", 120));
   }
 }
 
-function scheduleAdminPush(context, sessionHash) {
-  const operation = dispatchAdminPush(sessionHash, context?.env || {});
+function scheduleAdminPush(context, sessionHash, clientIp = "") {
+  const operation = dispatchAdminPush(sessionHash, context?.env || {}, clientIp);
   if (typeof context?.waitUntil === "function") {
     context.waitUntil(operation);
     return Promise.resolve();
@@ -278,7 +301,7 @@ export async function onRequest(context) {
       const route = clean(body.route, 12).toLowerCase();
       if (!["support", "buy"].includes(route)) return json(400, { ok: false, error: "invalid_route" }, origin);
       const result = await rpc("private_chat_choose_route", { p_session_token_hash: sessionHash, p_route: route });
-      if (route === "support") await scheduleAdminPush(context, sessionHash);
+      if (route === "support") await scheduleAdminPush(context, sessionHash, request.headers.get("CF-Connecting-IP") || "");
       return json(200, { ok: true, result }, origin);
     }
     if (action === "consent") {
@@ -289,7 +312,7 @@ export async function onRequest(context) {
         p_choice: choice,
         p_notice_version: "2026-10-29-v3"
       });
-      if (choice === "yes") await scheduleAdminPush(context, sessionHash);
+      if (choice === "yes") await scheduleAdminPush(context, sessionHash, request.headers.get("CF-Connecting-IP") || "");
       return json(200, { ok: true, result }, origin);
     }
     if (action === "send") {
