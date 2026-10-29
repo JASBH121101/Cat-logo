@@ -117,6 +117,8 @@ try {
         page.on("pageerror", error => scenarioErrors.push({ type: "pageerror", message: error.message, stack: error.stack || "" }));
         page.on("requestfailed", request => {
           const failure = request.failure()?.errorText || "unknown";
+          // A write aborted by the read-only guard is expected, not an application failure.
+          if (/ERR_BLOCKED_BY_CLIENT/i.test(failure) && !["GET", "HEAD", "OPTIONS"].includes(request.method().toUpperCase())) return;
           if (!/ERR_ABORTED/i.test(failure)) scenarioErrors.push({ type: "requestfailed", url: request.url(), method: request.method(), message: failure });
         });
         await page.route("**/*", async route => {
