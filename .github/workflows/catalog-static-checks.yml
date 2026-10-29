@@ -90,6 +90,9 @@ jobs:
       - name: Verify regression runner inventory
         run: node --test tests/regression-runner-contract.test.mjs
 
+      - name: Test AI visual review parser and schema validation
+        run: node --test tests/ai-visual-review-utils.test.mjs
+
       - name: Run automated regression suite in parallel groups
         env:
           TEST_GROUP_CONCURRENCY: "4"
