@@ -94,7 +94,10 @@ async function openPage(browser, mode, token = "a".repeat(64)) {
     });
   });
   await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "commit", timeout: 8000 });
-  await page.waitForLoadState("domcontentloaded", { timeout: 8000 });
+  await page.setContent(`<!doctype html><html lang="es"><head><meta charset="utf-8">
+    <script>window.CATALOG_CONFIG = { publicCatalogUrl: location.origin };</script>
+    <style>body{font:16px system-ui}#jb-chat-resume-panel{position:fixed;right:10px;bottom:10px}</style>
+    </head><body><main><h1>Catálogo de prueba</h1></main></body></html>`, { waitUntil: "domcontentloaded", timeout: 8000 });
   await page.evaluate(({ key, savedToken }) => localStorage.setItem(key, savedToken), { key: SESSION_KEY, savedToken: token });
   await page.addScriptTag({ path: resolve(root, "chat-return.js") });
   page.statusRequests = statusRequests;
