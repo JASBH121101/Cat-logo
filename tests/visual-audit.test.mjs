@@ -881,7 +881,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 await group.locator("[data-add-group-color]").click();
                 lastColorRow = group.locator("[data-variant-row]").last();
                 await lastColorRow.waitFor({ state: "attached", timeout: 3000 });
-                await lastColorRow.locator("summary").click();
+                await lastColorRow.locator(":scope > summary").click();
                 await lastColorRow.locator("[data-variant-color]").fill(configuration.color);
               }
 
