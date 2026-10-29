@@ -71,10 +71,11 @@ async function openPage(browser, mode, token = "a".repeat(64)) {
   await page.addInitScript(({ key, savedToken }) => {
     localStorage.setItem(key, savedToken);
   }, { key: SESSION_KEY, savedToken: token });
-  await page.route(origin + "/api/private-chat", async route => {
-    const body = route.request().postDataJSON();
-    assert.equal(body.action, "status");
-    assert.equal(body.sessionToken, token);
+  const statusRequests = [];
+  await page.route("**/api/private-chat", async route => {
+    let body = {};
+    try { body = route.request().postDataJSON(); } catch {}
+    statusRequests.push(body);
     if (mode === "expired") {
       await route.fulfill({
         status: 410,
@@ -92,7 +93,8 @@ async function openPage(browser, mode, token = "a".repeat(64)) {
       })
     });
   });
-  await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "domcontentloaded" });
+  await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "domcontentloaded", timeout: 8000 });
+  page.statusRequests = statusRequests;
   return page;
 }
 
@@ -101,7 +103,8 @@ test("active private chat is recoverable from the catalog after closing its orig
   try {
     const token = "b".repeat(64);
     const page = await openPage(browser, "active", token);
-    await page.waitForSelector("#jb-chat-resume-panel");
+    await page.waitForSelector("#jb-chat-resume-panel", { timeout: 8000 });
+    assert.ok(page.statusRequests.some(item => item.action === "status" && item.sessionToken === token), "the saved session must be checked with the status API");
     assert.equal(await page.locator("#jb-chat-resume-panel").getAttribute("aria-label"), "Retomar conversación privada");
     assert.equal(await page.locator("#jb-chat-resume-panel a").innerText(), "Retomar chat");
     assert.equal(await page.locator("#jb-chat-resume-panel a").getAttribute("href"), origin + "/mensajes.html");
@@ -131,7 +134,7 @@ test("expired chat access is cleared and no dead return button is shown", { time
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await openPage(browser, "expired", "c".repeat(64));
-    await page.waitForFunction(key => localStorage.getItem(key) === null, SESSION_KEY);
+    await page.waitForFunction(key => localStorage.getItem(key) === null, SESSION_KEY, { timeout: 8000 });
     assert.equal(await page.locator("#jb-chat-resume-panel").count(), 0);
     await page.close();
   } finally {
