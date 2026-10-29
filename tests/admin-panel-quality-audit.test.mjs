@@ -54,7 +54,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261029-variant-unit-arrow1"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261029-mobile-variant-chevron-contrast1"));
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /\.admin-body \.admin-input-unit > span\s*\{[^}]*color:\s*#455675\s*!important/);
   assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body \.admin-input-unit > span,[\s\S]*?\{[^}]*color:\s*#c9d5e9\s*!important/);
@@ -76,6 +76,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(storageArrowRule, /background-image:\s*url\("data:image\/svg\+xml,[\s\S]*?stroke='%23E1EAFF'/);
   assert.match(storageArrowRule, /background-repeat:\s*no-repeat\s*!important;/);
   assert.match(storageArrowRule, /padding:\s*4px 22px 4px 7px\s*!important;/);
+  assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary \.variant-config-chevron/);
+  assert.match(accessibilityStyles, /html body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary:focus-visible/);
   assert.match(adminJs, /<select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(regressionRunner, /tests\/admin-panel-quality-audit\.test\.mjs/);
@@ -156,6 +158,55 @@ test("complete admin panel audit validates navigation, accessibility signals and
     assert.equal(storageArrowStyle.dark.paddingRight, "22px");
     assert.doesNotMatch(storageArrowStyle.light.backgroundImage, /data:image\/svg\+xml/,
       "the custom chevron is dark-theme-only");
+
+    const variantChevronStyle = await page.evaluate(() => {
+      const root = document.documentElement;
+      const form = document.getElementById("product-form");
+      const panel = document.getElementById("admin-section-add");
+      if (!form || !panel) return null;
+      const previousTheme = root.getAttribute("data-theme");
+      const panelWasHidden = panel.classList.contains("hidden");
+      panel.classList.remove("hidden");
+      const probe = document.createElement("details");
+      probe.className = "variant-config-group variant-config-collapse";
+      probe.innerHTML = '<summary class="variant-config-summary"><span class="variant-config-summary-copy"><strong>Configuración de prueba</strong><small>0 color(es) · Disponible · tocá para desplegar</small></span><span class="variant-config-chevron" aria-hidden="true">⌄</span></summary><div class="variant-config-body">Contenido sintético</div>';
+      form.append(probe);
+      const chevron = probe.querySelector(".variant-config-chevron");
+      const read = () => {
+        const style = getComputedStyle(chevron);
+        const rect = chevron.getBoundingClientRect();
+        return {
+          color: style.color,
+          backgroundColor: style.backgroundColor,
+          borderColor: style.borderTopColor,
+          fontSize: style.fontSize,
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        };
+      };
+      root.setAttribute("data-theme", "dark");
+      const dark = read();
+      root.setAttribute("data-theme", "light");
+      const light = read();
+      probe.remove();
+      if (panelWasHidden) panel.classList.add("hidden");
+      if (previousTheme === null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", previousTheme);
+      return { dark, light };
+    });
+    assert.ok(variantChevronStyle, "the product editor and a synthetic variant summary must exist");
+    assert.equal(variantChevronStyle.dark.color, "rgb(244, 247, 255)",
+      "the expand icon must be bright in dark mode");
+    assert.equal(variantChevronStyle.dark.backgroundColor, "rgb(44, 66, 104)",
+      "dark mode needs a visible filled chevron surface, not an empty-looking outline");
+    assert.equal(variantChevronStyle.dark.borderColor, "rgb(139, 167, 220)",
+      "the dark chevron border must remain visible");
+    assert.equal(variantChevronStyle.dark.fontSize, "21px");
+    assert.ok(variantChevronStyle.dark.width >= 28 && variantChevronStyle.dark.height >= 28,
+      "the chevron hit area must remain comfortably visible");
+    assert.equal(variantChevronStyle.light.color, "rgb(36, 59, 98)",
+      "the expand icon must remain legible in light mode");
+    assert.equal(variantChevronStyle.light.backgroundColor, "rgb(241, 245, 255)");
 
     for (const panelName of panels) {
       for (const viewport of widths) {
