@@ -45,6 +45,25 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
 });
 
+test("all technology showcases share the Exclusivos horizontal card layout on desktop", () => {
+  const start = css.indexOf("JB TECH · distribución uniforme de todas las vitrinas");
+  assert.ok(start >= 0, "shared showcase layout block should exist");
+  const sharedLayout = css.slice(start);
+  for (const id of [
+    "featured-grid",
+    "limited-edition-grid",
+    "high-performance-grid",
+    "quality-price-grid",
+    "top-gaming-grid",
+  ]) {
+    assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the common showcase grid");
+  }
+  assert.match(sharedLayout, /grid-template-columns:repeat\\(auto-fit,minmax\\(min\\(100%,430px\\),1fr\\)\\)!important/);
+  assert.match(sharedLayout, /grid-template-columns:minmax\\(0,\\.86fr\\) minmax\\(0,1\\.14fr\\)!important/);
+  assert.match(sharedLayout, /grid-column:1!important/);
+  assert.match(sharedLayout, /grid-column:2!important/);
+});
+
 test("featured descriptions use typography tailored to each section badge", () => {
   assert.match(css, /body\.technology-catalog \.top-gaming-heading \.section-subtitle\s*\{[^}]*font-family:\s*"Space Grotesk"[^}]*font-weight:\s*600/s);
   assert.match(css, /body\.technology-catalog \.quality-price-heading \.section-subtitle\s*\{[^}]*font-family:\s*"DM Sans"/s);
