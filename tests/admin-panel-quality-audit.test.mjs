@@ -12,6 +12,7 @@ const theme = await readFile(new URL("theme-ui.css", root), "utf8");
 const chatStyles = await readFile(new URL("admin-private-chat.css", root), "utf8");
 const editorWorkflow = await readFile(new URL("admin-workflow.css", root), "utf8");
 const workflow = await readFile(new URL(".github/workflows/catalog-static-checks.yml", root), "utf8");
+const regressionRunner = await readFile(new URL("tests/run-regression-suite.mjs", root), "utf8");
 
 function attrValues(source, attribute) {
   const values = [];
