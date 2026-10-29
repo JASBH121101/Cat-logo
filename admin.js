@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { initProviderTools } from "./admin-provider.js?v=20261029-variant-overview-compact1";
+import { initProviderTools } from "./admin-provider.js?v=20261029-variant-availability-validation1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-push-timeout1";
 
 /* =========================================================
