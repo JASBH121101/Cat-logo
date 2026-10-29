@@ -62,7 +62,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /\.provider-empty-state/);
   assert.match(accessibilityStyles, /\.provider-import-explainer p strong/);
   assert.match(styles + theme, /admin-sidebar/);
-  assert.match(workflow, /tests\/admin-panel-quality-audit\.test\.mjs/);
+  assert.match(regressionRunner, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
   const buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/gi)]
     .map(match => ({ attributes: match[1], inner: match[2] }));
