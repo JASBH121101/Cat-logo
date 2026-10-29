@@ -739,10 +739,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }
 
   function updateProviderVariantReviewReadiness() {
-    const overall = normalizeAvailability($("#provider-review-availability")?.value, false) || "unknown";
     const selects = Array.from($("#provider-review-variants")?.querySelectorAll("[data-provider-config-availability], [data-provider-color-availability]") || []);
-    const missing = selects.filter(select => (normalizeAvailability(select.value, false) || "unknown") === "unknown").length +
-      (overall === "unknown" ? 1 : 0);
+    const missing = selects.filter(select => (normalizeAvailability(select.value, false) || "unknown") === "unknown").length;
     const mismatchLabels = selects.filter(select => {
       const row = select.closest("[data-provider-variant-config-row], [data-provider-color-row]");
       const catalog = row?.dataset.catalogAvailability || "unknown";
@@ -767,7 +765,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       button.disabled = savingReview || missing > 0;
       button.textContent = savingReview ? "Guardando…" : "Confirmar revisión";
       button.title = missing
-        ? "Confirmá la disponibilidad general, cada configuración y cada color antes de guardar."
+        ? "Confirmá la disponibilidad de cada configuración y cada color antes de guardar."
         : mismatches
           ? "Hay " + mismatches + " diferencia(s) respecto al catálogo; revisalas antes de confirmar."
           : "Todas las disponibilidades están confirmadas.";
@@ -782,6 +780,20 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
             (mismatches > 5 ? "; +" + (mismatches - 5) + " más" : "")
           : "Todo confirmado.";
     }
+  }
+
+  function aggregateProviderAvailability(snapshot, fallback = "unknown") {
+    const statuses = (Array.isArray(snapshot) ? snapshot : []).flatMap(group => [
+      normalizeAvailability(group.provider_availability, false),
+      ...(Array.isArray(group.colors) ? group.colors.map(color => normalizeAvailability(color.provider_availability, false)) : [])
+    ]).filter(status => ["available", "on_order", "out_of_stock"].includes(status));
+    if (statuses.includes("available")) return "available";
+    if (statuses.includes("on_order")) return "on_order";
+    if (statuses.includes("out_of_stock")) return "out_of_stock";
+    const normalizedFallback = normalizeAvailability(fallback, false);
+    return ["available", "on_order", "out_of_stock"].includes(normalizedFallback)
+      ? normalizedFallback
+      : "out_of_stock";
   }
 
   function renderReviewAvailabilityComparison(product, providerAvailability) {
@@ -809,21 +821,13 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const productId = $("#provider-review-product-id")?.value;
     const product = activeProducts().find(item => String(item.id) === String(productId));
     if (!product) return;
-    let priceUSD = null, priceNIO = null;
-    try {
-      priceUSD = cleanPrice($("#provider-review-price-usd")?.value);
-      priceNIO = cleanPrice($("#provider-review-price-nio")?.value);
-    } catch (error) {
-      const container = $("#provider-review-validation-summary");
-      if (container) container.innerHTML = '<p class="provider-validation-line is-different">' +
-        escapeHTML(error.message || "Revisá los precios indicados.") + '</p>';
-      return;
-    }
-    renderReviewPriceComparison(product, {
-      provider_price_usd: priceUSD,
-      provider_price_nio: priceNIO
-    });
-    renderReviewAvailabilityComparison(product, $("#provider-review-availability")?.value || "unknown");
+    const previous = providerStatuses.get(String(product.id)) || {};
+    // General prices are intentionally omitted: supplier prices are reviewed per configuration.
+    renderReviewPriceComparison(product, previous);
+    renderReviewAvailabilityComparison(product, aggregateProviderAvailability(
+      collectProviderVariantSnapshot(),
+      previous.provider_availability || product.availability
+    ));
     updateProviderVariantReviewReadiness();
   }
 
@@ -836,9 +840,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-product-subtitle").textContent = importCatalogType(product.catalog_type, "technology") === "perfumery" ? "JB Parfums" : "JB TECH";
     renderReviewProductDetails(product);
     $("#provider-review-name").value = review.provider_name || "GoPartner";
-    $("#provider-review-price-usd").value = review.provider_price_usd ?? "";
-    $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
-    $("#provider-review-availability").value = review.provider_availability || "unknown";
     $("#provider-review-notes").value = review.review_notes || "";
     renderProviderVariantReview(product, review.provider_variant_snapshot || []);
     updateReviewComparison();
@@ -858,14 +859,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (!supabase || !user || !product) { say(reviewMessage, "Tu sesión venció o el producto ya no está disponible.", "error"); return; }
 
     const providerName = $("#provider-review-name").value.trim() || "GoPartner";
-    let priceUSD, priceNIO;
-    try {
-      priceUSD = cleanPrice($("#provider-review-price-usd").value);
-      priceNIO = cleanPrice($("#provider-review-price-nio").value);
-    } catch (error) { say(reviewMessage, error.message, "error"); return; }
-
     const previous = providerStatuses.get(String(product.id)) || {};
-    const overallAvailability = normalizeAvailability($("#provider-review-availability").value, false) || "unknown";
     let variantSnapshot;
     try {
       variantSnapshot = collectProviderVariantSnapshot();
@@ -877,19 +871,23 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       (normalizeAvailability(group.provider_availability, false) || "unknown") === "unknown" ||
       group.colors.some(color => (normalizeAvailability(color.provider_availability, false) || "unknown") === "unknown")
     );
-    if (overallAvailability === "unknown" || unconfirmedVariantStatus) {
+    if (unconfirmedVariantStatus) {
       updateProviderVariantReviewReadiness();
-      say(reviewMessage, "Antes de confirmar, seleccioná una disponibilidad comprobada para el producto, cada configuración y cada color.", "error");
+      say(reviewMessage, "Antes de confirmar, seleccioná una disponibilidad comprobada para cada configuración y cada color.", "error");
       return;
     }
+    const overallAvailability = aggregateProviderAvailability(
+      variantSnapshot,
+      previous.provider_availability || product.availability
+    );
     const payload = {
       product_id: product.id,
       provider_name: providerName,
       provider_product_id: previous.provider_product_id ?? null,
       provider_url: previous.provider_url ?? null,
       // Blank fields mean "not provided this time"; retain the latest known supplier values.
-      provider_price_usd: priceUSD ?? previous.provider_price_usd ?? null,
-      provider_price_nio: priceNIO ?? previous.provider_price_nio ?? null,
+      provider_price_usd: previous.provider_price_usd ?? null,
+      provider_price_nio: previous.provider_price_nio ?? null,
       provider_availability: overallAvailability,
       provider_variant_snapshot: variantSnapshot,
       review_notes: $("#provider-review-notes").value.trim() || null,
@@ -916,7 +914,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       }
 
       const catalogPriceMessage = syncCatalogAvailability
-        ? " Se sincronizaron disponibilidad general, configuraciones y colores. Los precios GoPartner ingresados por configuración se aplicaron; los campos vacíos conservaron el precio actual. En productos sin variantes se aplicó el precio general ingresado. Las fotos y el estado de publicación no cambiaron."
+        ? " Se sincronizaron la disponibilidad de cada configuración y color, y el estado general se calculó a partir de esos estados. Los precios GoPartner ingresados por configuración se aplicaron; los campos vacíos conservaron el precio actual. Las fotos y el estado de publicación no cambiaron."
         : " Se guardó el historial privado; ni la disponibilidad ni los precios públicos se modificaron.";
       if (typeof reviewDialog.close === "function") reviewDialog.close(); else reviewDialog.removeAttribute("open");
       const successMessage = "Revisión confirmada. Se añadió una entrada al historial privado." + catalogPriceMessage;
