@@ -156,6 +156,8 @@ function fixtureScript(pageName) {
         ].map(([name, meta, price]) => '<article class="product-card perfume-product-card"><div class="product-image perfume-product-image"><img alt="" src="' + svg + '"></div><div class="product-card-content perfume-product-card-content"><h3>' + name + '</h3><div class="perfume-product-meta">' + meta + '</div><div class="perfume-product-price">' + price + '</div><div class="product-actions"><a class="button perfume-view-button" href="#audit-fixture">Ver producto ↗</a></div></div></article>').join("");
       }
       if (${JSON.stringify(pageName)} === "admin") {
+        // Synthetic authenticated-shell state for layout testing only; no login/API call is performed.
+        document.body.classList.add("admin-dashboard-active");
         document.getElementById("login-panel")?.classList.add("hidden");
         document.getElementById("dashboard")?.classList.remove("hidden");
         document.querySelectorAll("[data-admin-panel]").forEach(panel => {
@@ -635,9 +637,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     },
     observations, findings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
-      remoteApisCalled: false,
+      remoteApisReached: false,
+      externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
-      note: "Local deterministic fixture. It does not authenticate to Supabase, mutate data, or prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
+      note: "Local deterministic fixture. External requests are intercepted by the browser route policy; no Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
@@ -676,7 +679,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "## Alcance y límites",
     "",
     "- Todas las páginas se sirven desde una copia estática local; la prueba inserta productos y mensajes sintéticos para revisar geometría representativa.",
-    "- No se llaman APIs externas, no se autentica a un usuario y no se modifica Supabase.",
+    "- Las solicitudes externas se interceptan y bloquean antes de salir del navegador de prueba; no se autentica a un usuario ni se modifica Supabase.",
     "- Axe se usa como detector WCAG. Las violaciones críticas/serias bloquean CI; las moderadas/menores permanecen como diagnósticos revisables. El mismo hallazgo por regla y selectores se agrupa entre temas, conservando sus ocurrencias.",
     "- Los recursos externos bloqueados deliberadamente por la política de aislamiento se separan de los fallos de recursos esenciales; los errores de red no convierten automáticamente una excepción JavaScript no controlada en un falso positivo.",
     "- La puerta de bloqueo se aplica a regresiones geométricas deterministas especificadas en este test. La validación real de compras y de notificaciones necesita pruebas de integración separadas.",
