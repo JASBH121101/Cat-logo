@@ -1,0 +1,368 @@
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { extname, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
+import { chromium } from "playwright";
+import AxeBuilder from "@axe-core/playwright";
+
+const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
+const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
+const REPORT_JSON = resolve(ROOT, "visual-audit-report.json");
+const REPORT_MD = resolve(ROOT, "visual-audit-report.md");
+const VIEWPORTS = [
+  { name: "mobile-390", width: 390, height: 844, mobile: true },
+  { name: "desktop-1365", width: 1365, height: 900, mobile: false },
+];
+const THEMES = ["light", "dark"];
+const PAGES = [
+  { name: "technology", path: "/tecnologia/", shell: ".site-header", title: ".hero h1, h1", fixture: "technology" },
+  { name: "perfumery", path: "/perfumeria/", shell: ".site-header", title: "h1", fixture: "perfumery" },
+  { name: "admin", path: "/admin.html", shell: ".admin-header", title: ".provider-page-heading h1, h1", fixture: "admin" },
+  { name: "private-chat", path: "/mensajes.html", shell: ".private-chat-header", title: "#private-chat-title", fixture: "chat" },
+];
+const CONTENT_TYPES = {
+  ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml",
+  ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp",
+  ".woff2": "font/woff2", ".woff": "font/woff",
+};
+
+let server;
+let origin;
+let browser;
+const observations = [];
+const findings = [];
+const runtimeErrors = [];
+const axeFindings = [];
+const screenshots = [];
+
+function severityForOverflow(px) {
+  if (px >= 24) return "critical";
+  if (px >= 8) return "high";
+  if (px > 2) return "medium";
+  return "info";
+}
+function addFinding({ severity, page, theme, viewport, element, message, evidence, recommendation, blocking = false }) {
+  findings.push({ severity, page, theme, viewport, element, message, evidence, recommendation, blocking });
+}
+function escMarkdown(value) {
+  return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+function fixtureScript(pageName) {
+  return `
+    (() => {
+      const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#d7deeb"/></svg>');
+      if (${JSON.stringify(pageName)} === "technology") {
+        const grid = document.querySelector("#product-grid");
+        if (grid) grid.innerHTML = [
+          ["Xiaomi Redmi Note 15 Pro Max 5G", "12 GB RAM / 512 GB", "$ 489"],
+          ["Samsung Galaxy Ultra Gaming Edition", "16 GB RAM / 1 TB", "$ 1,090"]
+        ].map(([name, capacity, price]) => '<article class="product-card"><div class="product-image"><img alt="" src="' + svg + '"></div><div class="product-card-content"><div class="product-card-badges"><span class="product-badge">DISPONIBLE</span></div><h3>' + name + '</h3><p class="product-card-capacity">' + capacity + '</p><div class="product-price-label">Precio</div><div class="product-price">' + price + '</div><div class="product-actions"><a class="buy-button product-view-button" href="#audit-fixture">Ver producto ↗</a></div></div></article>').join("");
+      }
+      if (${JSON.stringify(pageName)} === "perfumery") {
+        const grid = document.querySelector("#product-grid-nicho");
+        if (grid) grid.innerHTML = [
+          ["Arabian Oud Signature Elixir", "Eau de Parfum · 100 ml", "$ 89"],
+          ["Madrinas Cayo Odisea Collection", "Extrait de Parfum · 80 ml", "$ 112"]
+        ].map(([name, meta, price]) => '<article class="product-card perfume-product-card"><div class="product-image perfume-product-image"><img alt="" src="' + svg + '"></div><div class="product-card-content perfume-product-card-content"><h3>' + name + '</h3><div class="perfume-product-meta">' + meta + '</div><div class="perfume-product-price">' + price + '</div><div class="product-actions"><a class="button perfume-view-button" href="#audit-fixture">Ver producto ↗</a></div></div></article>').join("");
+      }
+      if (${JSON.stringify(pageName)} === "admin") {
+        document.getElementById("login-panel")?.classList.add("hidden");
+        document.getElementById("dashboard")?.classList.remove("hidden");
+        document.querySelectorAll("[data-admin-panel]").forEach(panel => {
+          panel.classList.toggle("hidden", panel.dataset.adminPanel !== "messages");
+        });
+        const thread = document.getElementById("private-chat-admin-thread");
+        const selected = document.getElementById("private-chat-admin-selected");
+        if (thread) thread.hidden = false;
+        if (selected) selected.hidden = false;
+        const messages = document.getElementById("private-chat-admin-messages");
+        if (messages) messages.innerHTML = '<article class="private-chat-admin-message is-customer"><p>Hola, necesito registrar mi pedido y confirmar la configuración del equipo.</p><small>Cliente · ejemplo de prueba</small></article><article class="private-chat-admin-message is-admin"><p>Claro, te ayudo a verificar el producto antes de registrar el pedido.</p><small>Asesor · ejemplo de prueba</small></article>';
+        const reply = document.getElementById("private-chat-admin-reply-form");
+        if (reply) reply.hidden = false;
+        const selectedCard = document.getElementById("private-chat-admin-selected");
+        if (selectedCard) selectedCard.hidden = false;
+        const title = document.getElementById("private-chat-admin-thread-title");
+        if (title) title.textContent = "Consulta de prueba · JB TECH";
+        const meta = document.getElementById("private-chat-admin-thread-meta");
+        if (meta) meta.textContent = "Datos sintéticos · simulación visual";
+        document.querySelectorAll(".private-chat-admin-security-note").forEach(el => el.hidden = false);
+      }
+      if (${JSON.stringify(pageName)} === "chat") {
+        const app = document.getElementById("private-chat-app");
+        if (app) app.hidden = false;
+        for (const id of ["private-chat-choice-panel", "private-chat-consent-panel", "private-chat-thread", "private-chat-composer"]) {
+          const element = document.getElementById(id);
+          if (element) element.hidden = false;
+        }
+        const messages = document.getElementById("private-chat-messages");
+        if (messages) messages.innerHTML = '<article class="private-chat-message is-assistant"><p>¡Hola! Este es un mensaje sintético para comprobar la lectura y el ajuste del chat.</p></article><article class="private-chat-message is-customer"><p>Quisiera confirmar el precio y la disponibilidad del producto.</p></article>';
+        const loading = document.getElementById("private-chat-loading");
+        if (loading) loading.hidden = true;
+      }
+    })();
+  `;
+}
+
+test("visual audit measures responsive layouts in both themes and emits diagnostic evidence", { timeout: 180000 }, async t => {
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  server = createServer(async (req, res) => {
+    try {
+      const requestPath = decodeURIComponent(new URL(req.url || "/", "http://localhost").pathname);
+      const relativePath = requestPath === "/" ? "index.html" : requestPath.replace(/^\/+/, "");
+      const filePath = resolve(ROOT, relativePath);
+      if (!(filePath === ROOT || filePath.startsWith(ROOT + sep))) {
+        res.writeHead(403).end("Forbidden");
+        return;
+      }
+      const info = await stat(filePath).catch(() => null);
+      const resolvedPath = info?.isDirectory() ? resolve(filePath, "index.html") : filePath;
+      const body = await readFile(resolvedPath);
+      res.writeHead(200, { "content-type": CONTENT_TYPES[extname(resolvedPath)] || "application/octet-stream", "cache-control": "no-store" });
+      res.end(body);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("Not found");
+    }
+  });
+  await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
+  const address = server.address();
+  origin = `http://127.0.0.1:${address.port}`;
+  browser = await chromium.launch({ headless: true });
+  t.after(async () => {
+    await browser?.close();
+    await new Promise(resolveClose => server?.close(resolveClose));
+  });
+
+  for (const site of PAGES) {
+    for (const viewport of VIEWPORTS) {
+      for (const theme of THEMES) {
+        const page = await browser.newPage({
+          viewport: { width: viewport.width, height: viewport.height },
+          deviceScaleFactor: 1,
+          isMobile: viewport.mobile,
+          reducedMotion: "reduce",
+        });
+        const pageErrors = [];
+        page.on("pageerror", error => pageErrors.push(error.message));
+        page.on("console", msg => {
+          if (msg.type() === "error" && /uncaught|syntaxerror|referenceerror|typeerror/i.test(msg.text())) pageErrors.push(msg.text());
+        });
+        // Keep the audit deterministic and read-only: local first-party assets are allowed,
+        // remote APIs and third-party requests are not invoked by this static visual suite.
+        await page.route("**/*", route => {
+          const url = new URL(route.request().url());
+          if (url.origin === origin || url.protocol === "data:" || url.protocol === "blob:") return route.continue();
+          return route.abort("blockedbyclient");
+        });
+        const gotoResponse = await page.goto(origin + site.path, { waitUntil: "domcontentloaded", timeout: 15000 });
+        assert.ok(gotoResponse?.ok(), `${site.path} must serve successfully in the local browser fixture`);
+        await page.evaluate(themeValue => {
+          document.documentElement.setAttribute("data-theme", themeValue);
+          document.body.dataset.visualAuditFixture = "true";
+        }, theme);
+        await page.addScriptTag({ content: fixtureScript(site.fixture) });
+        await page.waitForTimeout(120);
+
+        const snapshot = await page.evaluate(({ pageName, viewportName, themeName }) => {
+          const rectData = element => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              left: Math.round(rect.left), top: Math.round(rect.top),
+              right: Math.round(rect.right), bottom: Math.round(rect.bottom),
+              width: Math.round(rect.width), height: Math.round(rect.height),
+              display: style.display, visibility: style.visibility,
+              color: style.color, background: style.backgroundColor,
+              fontSize: style.fontSize, lineHeight: style.lineHeight,
+              overflowX: style.overflowX, overflowY: style.overflowY,
+              padding: style.padding, borderWidth: style.borderTopWidth, radius: style.borderTopLeftRadius,
+            };
+          };
+          const isVisible = el => {
+            const s = getComputedStyle(el), r = el.getBoundingClientRect();
+            return s.display !== "none" && s.visibility !== "hidden" && r.width > 0 && r.height > 0;
+          };
+          const root = document.documentElement;
+          const docWidth = Math.max(root.scrollWidth, document.body.scrollWidth);
+          const viewportWidth = window.innerWidth;
+          const shellSelector = pageName === "technology" || pageName === "perfumery"
+            ? ".site-header" : pageName === "admin" ? ".admin-header" : ".private-chat-header";
+          const shell = document.querySelector(shellSelector);
+          const title = document.querySelector(pageName === "technology" ? ".hero h1" : pageName === "admin" ? "#admin-section-messages h1, .dashboard-top h1, h1" : "h1");
+          const visibleGrids = [...document.querySelectorAll(".product-grid, .featured-grid, .private-chat-admin-layout, .private-chat-card")].filter(isVisible);
+          const products = [...document.querySelectorAll("#product-grid .product-card, #product-grid-nicho .product-card")].filter(isVisible);
+          const trustCards = [...document.querySelectorAll(".hero-trust-item")].filter(isVisible).map(card => {
+            const copy = card.querySelector(".hero-trust-copy");
+            return { card: rectData(card), copy: copy ? rectData(copy) : null, text: copy?.innerText || "" };
+          });
+          const keyText = [...document.querySelectorAll("h1, h2, h3, .hero-trust-copy, .private-chat-privacy, .private-chat-footer-note, .private-chat-admin-security-note, button, .buy-button")]
+            .filter(isVisible).slice(0, 70).map(el => ({
+              selector: el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
+              text: (el.innerText || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 100),
+              ...rectData(el),
+              clientWidth: el.clientWidth, scrollWidth: el.scrollWidth, clientHeight: el.clientHeight, scrollHeight: el.scrollHeight,
+            }));
+          return {
+            page: pageName, theme: themeName, viewport: viewportName, viewportWidth,
+            documentWidth: docWidth, horizontalOverflow: Math.max(0, docWidth - viewportWidth),
+            shell: shell && isVisible(shell) ? rectData(shell) : null,
+            title: title && isVisible(title) ? rectData(title) : null,
+            visibleMajorRegions: visibleGrids.length,
+            productCards: products.length,
+            trustCards,
+            keyText,
+          };
+        }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
+
+        observations.push(snapshot);
+        for (const error of pageErrors) {
+          runtimeErrors.push({ page: site.name, theme, viewport: viewport.name, error });
+          addFinding({
+            severity: "high", page: site.name, theme, viewport: viewport.name, element: "runtime",
+            message: "Error de JavaScript durante el renderizado estático", evidence: error,
+            recommendation: "Reproducir el error en un navegador, identificar el primer archivo y comprobar si depende de una API remota que esta simulación no activa.",
+          });
+        }
+        if (viewport.mobile && snapshot.horizontalOverflow >= 8) {
+          addFinding({
+            severity: severityForOverflow(snapshot.horizontalOverflow), page: site.name, theme, viewport: viewport.name, element: "document",
+            message: "Desbordamiento horizontal en móvil",
+            evidence: `Documento ${snapshot.documentWidth}px para viewport ${snapshot.viewportWidth}px; exceso ${snapshot.horizontalOverflow}px.`,
+            recommendation: "Inspeccionar los elementos que exceden el viewport; corregir anchuras mínimas, padding, grid/flex y texto largo. No ocultar el problema con overflow-x:hidden.",
+            blocking: snapshot.horizontalOverflow >= 24,
+          });
+        }
+        if (!snapshot.shell || snapshot.shell.height <= 0) {
+          addFinding({
+            severity: "critical", page: site.name, theme, viewport: viewport.name, element: "header",
+            message: "Encabezado principal no visible",
+            evidence: "El selector de encabezado esperado no produjo un rectángulo visible.",
+            recommendation: "Revisar la estructura HTML, la visibilidad condicional y las reglas de tema.",
+            blocking: true,
+          });
+        }
+        if (site.name === "technology" && viewport.mobile) {
+          for (const card of snapshot.trustCards) {
+            const copy = card.copy;
+            const outer = card.card;
+            if (!copy || copy.right > outer.right - 3 || copy.left < outer.left - 1 ||
+                copy.padding !== "0px" || copy.borderWidth !== "0px" ||
+                copy.radius !== "0px" || copy.background !== "rgba(0, 0, 0, 0)") {
+              addFinding({
+                severity: "critical", page: site.name, theme, viewport: viewport.name, element: ".hero-trust-copy",
+                message: "Texto interno de tarjeta de confianza no respeta la geometría de la tarjeta",
+                evidence: `Tarjeta derecha=${outer.right}px; texto derecha=${copy?.right ?? "ausente"}px; padding=${copy?.padding ?? "ausente"}; borde=${copy?.borderWidth ?? "ausente"}; radio=${copy?.radius ?? "ausente"}.`,
+                recommendation: "Limitar estilos de chip al selector hijo directo de la tarjeta y normalizar el wrapper de texto; revisar ambas paletas.",
+                blocking: true,
+              });
+            }
+          }
+          if (snapshot.trustCards.length !== 4) {
+            addFinding({
+              severity: "high", page: site.name, theme, viewport: viewport.name, element: ".hero-trust",
+              message: "La sección de confianza no contiene exactamente cuatro tarjetas visibles",
+              evidence: `Tarjetas detectadas: ${snapshot.trustCards.length}.`,
+              recommendation: "Comprobar estructura del hero y reglas responsive de la rejilla.",
+            });
+          }
+        }
+
+        // Axe is a diagnostic signal here, not a false pass/fail: report all violations
+        // and only gate layout/runtime regressions whose measurements are deterministic.
+        if (viewport.mobile) {
+          try {
+            const axe = await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+              .analyze();
+            for (const violation of axe.violations) {
+              axeFindings.push({
+                severity: violation.impact === "critical" || violation.impact === "serious" ? "high" :
+                  violation.impact === "moderate" ? "medium" : "low",
+                page: site.name, theme, viewport: viewport.name, rule: violation.id, impact: violation.impact,
+                message: violation.help, evidence: `${violation.nodes.length} nodo(s): ${String(violation.nodes[0]?.target?.join(" ") || "selector no disponible")}`,
+                recommendation: violation.description + " Referencia: " + violation.helpUrl,
+              });
+            }
+          } catch (error) {
+            addFinding({
+              severity: "medium", page: site.name, theme, viewport: viewport.name, element: "axe",
+              message: "Auditoría de accesibilidad no pudo finalizar", evidence: error.message,
+              recommendation: "Comprobar que el DOM estaba estable y revisar los errores de la herramienta antes de interpretar el resultado.",
+            });
+          }
+        }
+
+        const screenshotName = `${site.name}--${viewport.name}--${theme}.png`;
+        const screenshotPath = resolve(OUTPUT_DIR, screenshotName);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: "disabled" });
+        screenshots.push(screenshotName);
+        await page.close();
+      }
+    }
+  }
+
+  const rank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+  findings.sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0));
+  const blockingFindings = findings.filter(item => item.blocking);
+  const result = {
+    generatedAt: new Date().toISOString(),
+    matrix: { pages: PAGES.map(p => p.name), viewports: VIEWPORTS, themes: THEMES, combinations: observations.length },
+    summary: {
+      scenarios: observations.length, screenshotCount: screenshots.length,
+      blockingFindings: blockingFindings.length, findings: findings.length,
+      runtimeErrors: runtimeErrors.length, axeViolations: axeFindings.length,
+    },
+    observations, findings, axeFindings, runtimeErrors, screenshots,
+    policy: {
+      remoteApisCalled: false,
+      blockingRule: "Header missing or technology trust-card geometry regression blocks CI; horizontal overflow >=24px is recorded as blocking evidence.",
+      note: "Local deterministic fixture. It does not authenticate to Supabase, mutate data, or prove live production network behavior.",
+    },
+  };
+  await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
+  const md = [
+    "# JB Collections — informe de auditoría visual",
+    "",
+    `- Escenarios: ${result.summary.scenarios} (${PAGES.length} páginas × ${VIEWPORTS.length} tamaños × ${THEMES.length} temas)`,
+    `- Capturas generadas: ${screenshots.length}`,
+    `- Hallazgos bloqueantes: ${blockingFindings.length}`,
+    `- Hallazgos adicionales: ${findings.length}`,
+    `- Errores JS: ${runtimeErrors.length}`,
+    `- Violaciones Axe detectadas en móvil: ${axeFindings.length}`,
+    "",
+    "## Hallazgos ordenados por gravedad",
+    "",
+    ...(findings.length ? findings.map((f, i) => `${i + 1}. **[${f.severity.toUpperCase()}]` ${f.page} / ${f.theme} / ${f.viewport} — ${f.message}\n   - Evidencia: ${escMarkdown(f.evidence)}\n   - Reparación sugerida: ${escMarkdown(f.recommendation)}`) : ["No se activaron las reglas de diagnóstico configuradas. Esto no equivale a probar flujos de negocio autenticados."]),
+    "",
+    "## Geometría observada",
+    "",
+    "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
+    "|---|---|---|---:|---:|---:|",
+    ...observations.map(o => `| ${o.page} | ${o.theme} | ${o.viewport} | ${o.documentWidth}px | ${o.horizontalOverflow}px | ${o.productCards} |`),
+    "",
+    "## Capturas",
+    "",
+    ...screenshots.map(file => `- ` + file),
+    "",
+    "## Alcance y límites",
+    "",
+    "- Todas las páginas se sirven desde una copia estática local; la prueba inserta productos y mensajes sintéticos para revisar geometría representativa.",
+    "- No se llaman APIs externas, no se autentica a un usuario y no se modifica Supabase.",
+    "- Axe se usa como detector de posibles problemas WCAG y genera recomendaciones; sus hallazgos no bloquean por sí solos hasta que se clasifiquen y se establezca una línea base.",
+    "- La puerta de bloqueo se aplica a regresiones geométricas deterministas especificadas en este test. La validación real de compras y de notificaciones necesita pruebas de integración separadas.",
+    "",
+  ].join("\n");
+  await writeFile(REPORT_MD, md, "utf8");
+
+  console.log(`VISUAL AUDIT: ${result.summary.scenarios} escenarios, ${screenshots.length} capturas, ${blockingFindings.length} bloqueantes, ${findings.length} hallazgos, ${axeFindings.length} violaciones Axe.`);
+  console.log(`Informe: visual-audit-report.md; JSON: visual-audit-report.json; capturas: ${OUTPUT_DIR}`);
+  for (const finding of findings.slice(0, 35)) {
+    console.log(`[${finding.severity.toUpperCase()}] ${finding.page} / ${finding.theme} / ${finding.viewport} — ${finding.message} :: ${finding.evidence}`);
+  }
+  assert.equal(observations.length, PAGES.length * VIEWPORTS.length * THEMES.length, "each page must be measured in every viewport/theme combination");
+  assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
+  assert.equal(blockingFindings.length, 0, "critical deterministic layout regressions block CI; see visual-audit-report.md");
+});
