@@ -372,10 +372,15 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 const section = grid.closest("section") || grid.parentElement || grid;
                 const sectionRect = section.getBoundingClientRect();
                 const cards = [...grid.querySelectorAll(":scope > .product-card")].filter(isVisible);
-                const cardRect = cards.length === 1 ? cards[0].getBoundingClientRect() : null;
-                // Measure against the visible section, not just the grid: a left-pinned card can look centered in its own narrow track.
-                const sectionCenter = (sectionRect.left + sectionRect.right) / 2;
-                const cardCenter = cardRect ? (cardRect.left + cardRect.right) / 2 : null;
+                const sampleCard = cards[0] || null;
+                const cardRect = sampleCard ? sampleCard.getBoundingClientRect() : null;
+                const cardStyle = sampleCard ? getComputedStyle(sampleCard) : null;
+                const image = sampleCard?.querySelector(":scope > .product-image") || null;
+                const content = sampleCard?.querySelector(":scope > .product-card-content") || null;
+                const imageRect = image?.getBoundingClientRect() || null;
+                const contentRect = content?.getBoundingClientRect() || null;
+                const gridColumns = cardStyle?.gridTemplateColumns || "none";
+                // Desktop vitrines must use the same horizontal card structure as Exclusivos.
                 return {
                   id: grid.id, left: Math.round(gridRect.left), right: Math.round(gridRect.right),
                   width: Math.round(gridRect.width),
@@ -384,7 +389,15 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   cardLeft: cardRect ? Math.round(cardRect.left) : null,
                   cardRight: cardRect ? Math.round(cardRect.right) : null,
                   cardWidth: cardRect ? Math.round(cardRect.width) : null,
-                  centerOffset: cardCenter === null ? null : Math.round(Math.abs(cardCenter - sectionCenter))
+                  cardDisplay: cardStyle?.display || null,
+                  cardGridColumns: gridColumns,
+                  cardColumnCount: gridColumns === "none" ? 0 : gridColumns.trim().split(" ").length,
+                  imageLeft: imageRect ? Math.round(imageRect.left) : null,
+                  imageRight: imageRect ? Math.round(imageRect.right) : null,
+                  imageTop: imageRect ? Math.round(imageRect.top) : null,
+                  contentLeft: contentRect ? Math.round(contentRect.left) : null,
+                  contentTop: contentRect ? Math.round(contentRect.top) : null,
+                  contentWidth: contentRect ? Math.round(contentRect.width) : null
                 };
               })
             : [];
@@ -445,17 +458,31 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           });
         }
         if (site.name === "technology" && !viewport.mobile) {
-          for (const layout of snapshot.showcaseLayouts) {
-            if (layout.cardCount === 1 && (layout.centerOffset > 10 || layout.cardWidth > 680)) {
-              const tooWide = layout.cardWidth > 680;
+          const expectedGridIds = ["featured-grid", "limited-edition-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid"];
+          for (const gridId of expectedGridIds) {
+            const layout = snapshot.showcaseLayouts.find(item => item.id === gridId);
+            if (!layout || layout.cardCount === 0) {
+              addFinding({
+                severity: "critical", page: site.name, theme, viewport: viewport.name,
+                element: "#" + gridId,
+                message: "Falta una vitrina sintética para validar el diseño de tarjetas",
+                evidence: "La prueba no encontró una tarjeta visible en esta sección destacada.",
+                recommendation: "Asegurar que las cinco vitrinas tengan fixtures y que rendericen dentro del grid esperado.",
+                blocking: true,
+              });
+              continue;
+            }
+            const horizontalCard = layout.cardDisplay === "grid" && layout.cardColumnCount === 2 &&
+              layout.imageLeft < layout.contentLeft &&
+              layout.imageRight <= layout.contentLeft + 2 &&
+              Math.abs(layout.imageTop - layout.contentTop) <= 30;
+            if (!horizontalCard) {
               addFinding({
                 severity: "high", page: site.name, theme, viewport: viewport.name,
-                element: "#" + layout.id,
-                message: tooWide
-                  ? "Tarjeta única de sección destacada demasiado ancha en escritorio"
-                  : "Tarjeta única de sección destacada descentrada en escritorio",
-                evidence: `Ancho de tarjeta: ${layout.cardWidth}px; desplazamiento del centro: ${layout.centerOffset}px; ancho del grid: ${layout.width}px.`,
-                recommendation: "Limitar la tarjeta individual a un ancho de lectura equilibrado y centrarla; conservar el grid habitual cuando hay varias tarjetas.",
+                element: "#" + gridId,
+                message: "La tarjeta de la vitrina no comparte el diseño horizontal de Exclusivos",
+                evidence: `display=${layout.cardDisplay}; columnas=${layout.cardGridColumns}; imagen [${layout.imageLeft}, ${layout.imageRight}] y datos empiezan en ${layout.contentLeft}.`,
+                recommendation: "Aplicar la estructura común a las cinco vitrinas de tecnología: fotografía a la izquierda, información a la derecha y grid auto-fit con ancho mínimo compartido.",
                 blocking: true,
               });
             }

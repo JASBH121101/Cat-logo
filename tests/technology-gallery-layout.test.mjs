@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-desktop-wide-audit3/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-showcase-layout-unified1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -43,6 +43,25 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(html, /data-category="Consolas"[^>]*>Consolas<\/button>/);
   assert.match(app, /"Consolas"/);
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
+});
+
+test("all technology showcases share the Exclusivos horizontal card layout on desktop", () => {
+  const start = css.indexOf("JB TECH · distribución uniforme de todas las vitrinas");
+  assert.ok(start >= 0, "shared showcase layout block should exist");
+  const sharedLayout = css.slice(start);
+  for (const id of [
+    "featured-grid",
+    "limited-edition-grid",
+    "high-performance-grid",
+    "quality-price-grid",
+    "top-gaming-grid",
+  ]) {
+    assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the common showcase grid");
+  }
+  assert.ok(sharedLayout.includes("grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)) !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr) !important"));
+  assert.ok(sharedLayout.includes("grid-column:1 !important"));
+  assert.ok(sharedLayout.includes("grid-column:2 !important"));
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
