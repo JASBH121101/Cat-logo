@@ -13,6 +13,7 @@ function dependencies(overrides = {}) {
     nativeNotifications: overrides.nativeNotifications ?? (
       windowRef?.Capacitor?.isNativePlatform?.() ? windowRef?.JBManagerNativeNotifications : null
     ),
+  };
 }
 
 function isSecureWindow(windowRef) {
