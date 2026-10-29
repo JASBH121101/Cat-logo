@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      audit_production:
+        description: "Run a read-only audit against the deployed public catalog"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   validate:
@@ -59,6 +65,17 @@ jobs:
             count=$((count + 1))
           done < <(git ls-files -z '*.js')
           echo "JavaScript syntax check passed for $count tracked .js files."
+      - name: Check syntax of all tracked JavaScript module files
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            echo "Checking module $file"
+            node --check "$file"
+            count=$((count + 1))
+          done < <(git ls-files -z '*.mjs')
+          echo "JavaScript module syntax check passed for $count tracked .mjs files."
       - name: Guard cache keys when browser assets change
         shell: bash
         env:
@@ -291,3 +308,54 @@ jobs:
           compression-level: 6
           overwrite: false
           include-hidden-files: false
+
+  production-visual-audit:
+    name: Read-only production visual audit
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_production }}
+    runs-on: ubuntu-latest
+    env:
+      AI_REVIEW_ENABLED: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.64.1
+          npx playwright install --with-deps chromium
+      - name: Audit live public pages without writing data
+        env:
+          VISUAL_AUDIT_BASE_URL: https://jb-collections.pages.dev
+        run: node tests/production-readonly-visual-audit.mjs
+      - name: AI review of real product detail screenshots (optional)
+        if: ${{ env.AI_REVIEW_ENABLED == 'true' }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node tests/ai-visual-review.mjs
+      - name: Record that model review is not configured
+        if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/production-visual-audit
+          cat > artifacts/production-visual-audit/ai-visual-review-status.md <<'EOF'
+          # AI visual review
+          
+          Status: not run.
+          
+          To enable optional screenshot review, configure the repository variable `CLOUDFLARE_ACCOUNT_ID` and repository secret `CLOUDFLARE_API_TOKEN`. The static browser audit will still run without these credentials. No screenshot is sent to an AI service unless both values are configured.
+          EOF
+      - name: Upload production audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-visual-audit-evidence
+          path: artifacts/production-visual-audit/
+          if-no-files-found: warn
+          retention-days: 14
+          compression-level: 6

@@ -10,6 +10,7 @@ import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "
 import { analyzeVerticalRhythm } from "./visual-design-quality-policy.mjs";
 import { analyzeDialogQuality } from "./visual-state-quality-policy.mjs";
 import { analyzeProductComposition } from "./visual-composition-quality-policy.mjs";
+import { analyzeImageOccupancy } from "./visual-image-quality-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -95,6 +96,15 @@ function diagnose({ severity, page, theme, viewport, element, message, evidence 
       likelyFiles: ["admin-accessibility.css", "admin-private-chat.css", "private-chat.css", "technology-visual-refresh.css", "perfumeria.css"],
     };
   }
+  if (/objeto ocupa muy poca superficie|occupancy|subject underutilized/.test(text)) {
+    return {
+      code: "PRODUCT_SUBJECT_UNDERUTILIZED",
+      hypothesis: "El elemento de imagen puede tener buen tamaño CSS, pero el objeto ocupa una región pequeña de la fotografía original por márgenes internos o encuadre.",
+      confidence: 0.68,
+      nextCheck: "Abrir la URL de la imagen original, comparar el rectángulo estimado del objeto con la captura de la ficha y confirmar manualmente que el fondo de las esquinas represente el fondo real. No recortar ni deformar automáticamente.",
+      likelyFiles: ["technology-visual-refresh.css", "styles.css", "app.js", "perfumeria.css", "perfumeria.js", "tests/visual-image-quality-policy.mjs"],
+    };
+  }
   if (/imagen principal aprovecha poco|poco peso visual|concentra contenido en una columna/.test(text)) {
     const columnImbalance = /concentra contenido en una columna/.test(text);
     return {
@@ -159,7 +169,14 @@ function escMarkdown(value) {
 function fixtureScript(pageName) {
   return `
     (() => {
-      const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#d7deeb"/></svg>');
+      const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900"><rect width="600" height="900" fill="#ffffff"/><rect x="190" y="95" width="220" height="690" rx="30" fill="#20242a" stroke="#111820" stroke-width="14"/><rect x="210" y="135" width="180" height="590" rx="16" fill="#7188b7"/><circle cx="300" cy="752" r="8" fill="#111820"/></svg>');
+      const tinySubjectSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900"><rect width="600" height="900" fill="#ffffff"/><rect x="270" y="390" width="60" height="80" rx="8" fill="#20242a"/></svg>');
+      const calibrationImage = document.createElement("img");
+      calibrationImage.id = "visual-audit-tiny-subject-fixture";
+      calibrationImage.alt = "Hidden pixel-sampler calibration fixture";
+      calibrationImage.style.display = "none";
+      calibrationImage.src = tinySubjectSvg;
+      document.body.append(calibrationImage);
       if (${JSON.stringify(pageName)} === "technology-detail") {
         const detail = document.getElementById("product-detail-page");
         const content = document.getElementById("dialog-content");
@@ -345,6 +362,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           document.body.dataset.visualAuditFixture = "true";
         }, theme);
         await page.addScriptTag({ content: fixtureScript(site.fixture) });
+        await page.waitForFunction(() => { const image = document.getElementById("visual-audit-tiny-subject-fixture"); return image?.complete && image.naturalWidth > 0; }, null, { timeout: 3000 });
         await page.waitForTimeout(280);
         // Re-assert the intended theme after page scripts initialize from shared localStorage.
         // Keep toggle metadata in sync so a journey always changes to the opposite theme.
@@ -362,7 +380,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           }
         }, theme);
 
-        const snapshot = await page.evaluate(({ pageName, viewportName, themeName }) => {
+        const snapshot = await page.evaluate(async ({ pageName, viewportName, themeName }) => {
           const rectData = element => {
             const rect = element.getBoundingClientRect();
             const style = getComputedStyle(element);
@@ -380,6 +398,58 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           const isVisible = el => {
             const s = getComputedStyle(el), r = el.getBoundingClientRect();
             return s.display !== "none" && s.visibility !== "hidden" && r.width > 0 && r.height > 0;
+          };
+          // Estimate the object's visible footprint inside the source photo, not just the CSS img box.
+          // Advisory heuristic: compare pixels to the average corner color; no semantic AI model is assumed.
+          const inspectImageSubject = async image => {
+            if (!image || !image.complete || !(image.naturalWidth > 0) || !(image.naturalHeight > 0)) {
+              return { status: "unavailable", reason: "image-not-loaded" };
+            }
+            try {
+              if (typeof image.decode === "function") await image.decode();
+              const scale = Math.min(1, 240 / Math.max(image.naturalWidth, image.naturalHeight));
+              const width = Math.max(1, Math.round(image.naturalWidth * scale));
+              const height = Math.max(1, Math.round(image.naturalHeight * scale));
+              const canvas = document.createElement("canvas");
+              canvas.width = width; canvas.height = height;
+              const context = canvas.getContext("2d", { willReadFrequently: true });
+              if (!context) return { status: "unavailable", reason: "canvas-context-unavailable" };
+              context.drawImage(image, 0, 0, width, height);
+              const pixels = context.getImageData(0, 0, width, height).data;
+              const corners = [[1,1],[width-2,1],[1,height-2],[width-2,height-2]].map(([x,y]) => {
+                const i = (Math.max(0,y)*width+Math.max(0,x))*4;
+                return [pixels[i],pixels[i+1],pixels[i+2]];
+              });
+              const background = [0,1,2].map(c => corners.reduce((sum,p)=>sum+p[c],0)/corners.length);
+              const cornerSpread = Math.max(...corners.map(p =>
+                Math.sqrt(p.reduce((sum,v,c)=>sum+(v-background[c])**2,0))
+              ));
+              let minX=width,minY=height,maxX=-1,maxY=-1,foregroundPixels=0;
+              for(let y=0;y<height;y+=1) for(let x=0;x<width;x+=1) {
+                const i=(y*width+x)*4, alpha=pixels[i+3]/255;
+                const distance=Math.sqrt((pixels[i]-background[0])**2+(pixels[i+1]-background[1])**2+(pixels[i+2]-background[2])**2);
+                if(alpha>0.12 && distance>=48) {
+                  foregroundPixels+=1; minX=Math.min(minX,x); minY=Math.min(minY,y);
+                  maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
+                }
+              }
+              if(foregroundPixels<8 || maxX<minX || maxY<minY) {
+                return {status:"inconclusive",reason:"no-distinct-subject-detected",confidence:0.2,cornerSpread};
+              }
+              const boxWidth=maxX-minX+1, boxHeight=maxY-minY+1;
+              return {
+                status:"measured",
+                confidence:cornerSpread<=42?0.9:cornerSpread<=100?0.58:0.35,
+                imageWidth:image.naturalWidth,imageHeight:image.naturalHeight,
+                foregroundWidthRatio:boxWidth/width,foregroundHeightRatio:boxHeight/height,
+                foregroundAreaRatio:(boxWidth*boxHeight)/(width*height),
+                foregroundPixelRatio:foregroundPixels/(width*height),
+                cornerSpread:Math.round(cornerSpread),
+                method:"corner-background color-distance bounding-box heuristic"
+              };
+            } catch(error) {
+              return {status:"unavailable",reason:/taint|origin|cross-origin/i.test(error?.message||"")?"canvas-cross-origin":"canvas-read-failed"};
+            }
           };
           const root = document.documentElement;
           const docWidth = Math.max(root.scrollWidth, document.body.scrollWidth);
@@ -455,7 +525,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           // Keep small and textless visible sections as separators so whitespace checks
           // never bridge over real banners, image bands, or compact navigation rows.
           const productCompositionLayouts = pageName === "technology-detail"
-            ? [...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(layout => {
+            ? (await Promise.all([...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(async layout => {
                 const frame = layout.querySelector("#dialog-image");
                 const image = layout.querySelector(".dialog-main-image");
                 const detail = layout.querySelector(".dialog-detail");
@@ -471,19 +541,24 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 }, 0);
                 const frameArea = Math.max(1, frameRect.width * frameRect.height);
                 const imageArea = Math.max(0, imageRect.width * imageRect.height);
+                const imageOccupancy = await inspectImageSubject(image);
                 return {
                   visible: true, selector: ".dialog-layout", productName: image.alt || "Producto",
                   frameWidth: Math.round(frameRect.width), frameHeight: Math.round(frameRect.height),
                   imageWidth: Math.round(imageRect.width), imageHeight: Math.round(imageRect.height),
                   imageFrameRatio: Math.min(imageRect.width / Math.max(1, frameRect.width), imageRect.height / Math.max(1, frameRect.height)),
                   imageAreaRatio: imageArea / frameArea,
+                  imageOccupancy,
                   leftColumnWidth: Math.round(leftRect.width),
                   rightColumnWidth: Math.round(rightRect.width),
                   rightColumnDensity: Math.min(1, contentArea / rightArea),
                   rightContentDensity: Math.min(1, contentArea / rightArea),
                 };
-              }).filter(Boolean)
+              }))).filter(Boolean)
             : [];
+          const imageOccupancyCalibration = pageName === "technology-detail"
+            ? await inspectImageSubject(document.getElementById("visual-audit-tiny-subject-fixture"))
+            : null;
           const dialogLayouts = [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [aria-modal="true"]')]
             .filter(isVisible)
             .map((dialog, index) => {
@@ -521,6 +596,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             contentRegions,
             dialogLayouts,
             productCompositionLayouts,
+            imageOccupancyCalibration,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
@@ -563,6 +639,26 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           });
           findings[findings.length - 1].code = composition.code;
           if (Number.isFinite(composition.measuredRatio)) findings[findings.length - 1].measuredRatio = composition.measuredRatio;
+        }
+        const imageOccupancyFindings = analyzeImageOccupancy(snapshot.productCompositionLayouts, {
+          viewportWidth: snapshot.viewportWidth,
+          mobile: viewport.mobile,
+        });
+        for (const imageFinding of imageOccupancyFindings) {
+          addFinding({
+            severity: imageFinding.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: imageFinding.element,
+            message: imageFinding.message,
+            evidence: imageFinding.evidence,
+            recommendation: imageFinding.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = imageFinding.code;
+          findings[findings.length - 1].confidence = imageFinding.confidence;
+          findings[findings.length - 1].diagnosis.confidence = imageFinding.confidence;
         }
         const dialogFindings = analyzeDialogQuality(snapshot.dialogLayouts, {
           viewportWidth: snapshot.viewportWidth,
@@ -990,7 +1086,11 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
       whitespaceRhythmFindings: findings.filter(finding => finding.code === "VISUAL_WHITESPACE_RHYTHM").length,
       dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,
-      productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_")).length,
+      productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_") && finding.code !== "PRODUCT_SUBJECT_UNDERUTILIZED").length,
+      productImageOccupancyFindings: findings.filter(finding => finding.code === "PRODUCT_SUBJECT_UNDERUTILIZED").length,
+      imageOccupancyMeasured: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => layout.imageOccupancy?.status === "measured" && Number(layout.imageOccupancy?.confidence) >= 0.55).length, 0),
+      imageOccupancyLowConfidence: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => layout.imageOccupancy?.status === "measured" && Number(layout.imageOccupancy?.confidence) < 0.55).length, 0),
+      imageOccupancyUnavailable: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => ["unavailable", "inconclusive"].includes(layout.imageOccupancy?.status)).length, 0),
       visibleDialogStates: observations.reduce((total, observation) => total + (observation.dialogLayouts?.length || 0), 0),
     },
     observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
@@ -999,10 +1099,14 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
-      designQualityRule: "The client-eye audit measures unusually large blank gaps, product image/frame geometry, information-column balance, and visible dialog/control dimensions. These deterministic checks produce advisory findings with evidence; they do not interpret image pixels or replace human visual judgment. The product-detail layout uses synthetic content. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
+      designQualityRule: "The client-eye audit measures unusually large blank gaps, product image/frame geometry, approximate subject occupancy within readable image pixels, information-column balance, and visible dialog/control dimensions. Pixel occupancy is a low-cost color-distance heuristic, advisory only; complex backgrounds or cross-origin canvas restrictions may make it inconclusive. It does not replace human visual judgment. The product-detail layout uses synthetic content. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
       note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
+  assert.ok(Number.isInteger(result.summary.journeyFailures), "journey failure count must always be numeric");
+  assert.ok(Number.isInteger(result.summary.scenarios), "scenario count must always be numeric");
+  assert.equal(new Set(screenshots).size, screenshots.length, "every screenshot path must be unique");
+  assert.match(`- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`, /fallos: \d+$/, "report must not print an undefined journey failure count");
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
   const md = [
     "# JB Collections — informe de auditoría visual",
@@ -1032,7 +1136,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "", "## Geometría observada",
     `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
     `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,
-    `- Alertas de composición de ficha de producto: ${result.summary.productCompositionFindings}`,
+    `- Alertas geométricas de ficha: ${result.summary.productCompositionFindings}`,
+    `- Alertas de ocupación visual del objeto dentro de la foto: ${result.summary.productImageOccupancyFindings}`,
+    `- Imágenes medidas con confianza suficiente: ${result.summary.imageOccupancyMeasured}; medidas con confianza baja: ${result.summary.imageOccupancyLowConfidence}; no evaluables/inconclusas: ${result.summary.imageOccupancyUnavailable}`,
     `- Estados de diálogo visibles capturados: ${result.summary.visibleDialogStates}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
@@ -1066,12 +1172,26 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   assert.equal(productDetailObservations.length, VIEWPORTS.length * THEMES.length,
     "synthetic product detail must be measured at every viewport and theme");
   assert.ok(productDetailObservations.every(observation =>
+    observation.imageOccupancyCalibration?.status === "measured" &&
+    observation.imageOccupancyCalibration.foregroundAreaRatio < 0.025
+  ), "the pixel sampler must measure the deliberately tiny calibration object on every detail scenario");
+  const calibrationFinding = analyzeImageOccupancy([{
+    visible: true,
+    selector: "#visual-audit-tiny-subject-fixture",
+    productName: "Known tiny-object calibration",
+    imageOccupancy: productDetailObservations[0]?.imageOccupancyCalibration,
+  }], { viewportWidth: 1365, mobile: false });
+  assert.equal(calibrationFinding[0]?.code, "PRODUCT_SUBJECT_UNDERUTILIZED",
+    "the audit must detect a deliberately tiny object from pixel measurements, not only synthetic ratios");
+  assert.ok(productDetailObservations.every(observation =>
     Array.isArray(observation.productCompositionLayouts) &&
     observation.productCompositionLayouts.some(layout =>
       layout.visible && layout.frameWidth > 0 && layout.frameHeight > 0 &&
       layout.imageWidth > 0 && layout.imageHeight > 0 &&
-      layout.leftColumnWidth > 0 && layout.rightColumnWidth > 0
-    )), "every detail scenario must produce usable gallery and column measurements");
+      layout.leftColumnWidth > 0 && layout.rightColumnWidth > 0 &&
+      layout.imageOccupancy?.status === "measured" &&
+      Number.isFinite(layout.imageOccupancy.foregroundAreaRatio)
+    )), "every synthetic detail scenario must produce geometry and readable pixel-occupancy measurements");
   assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
   assert.equal(result.summary.blockingAxeViolations, 0, "critical/serious Axe violations block CI; see visual-audit-report.md");
   assert.equal(blockingFindings.length, 0, "critical deterministic layout/runtime/resource regressions block CI; see visual-audit-report.md");
