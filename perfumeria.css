@@ -2975,3 +2975,23 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     font-size: 22px !important;
   }
 }
+
+
+/* Fully neutralize legacy overlay offsets on the full-page fragrance route. */
+html body.perfume-page.perfume-detail-active > main.is-perfume-detail-view {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
+html body.perfume-page.perfume-detail-active #perfume-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
