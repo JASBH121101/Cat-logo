@@ -3386,7 +3386,7 @@ async function privateChatRunAdminAction(action) {
       // The inbox may be stale if another advisor or tab claimed this request.
       // Refresh authoritative state so the Claim action disappears instead of inviting retries.
       await loadPrivateChatInbox({ silent: true });
-      privateChatSetStatus("Esta solicitud ya no está pendiente o fue tomada por otro asesor. La bandeja se actualizó; seleccioná otra conversación pendiente.", "info");
+      privateChatSetStatus("Esta solicitud ya no está pendiente o fue tomada por otro asesor. Se intentó actualizar la bandeja; revisá el estado antes de continuar.", "info");
     } else {
       privateChatSetStatus(message, "error");
     }
