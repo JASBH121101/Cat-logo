@@ -40,3 +40,161 @@ html[data-theme="dark"] body.admin-body .provider-import-explainer p strong {
 html[data-theme="light"] body.admin-body #admin-context-hint {
   color:#45536b!important;
 }
+
+
+/* Ajustes tipográficos dirigidos tras la auditoría de legibilidad.
+   Se aumentan textos informativos pequeños; no se aplica un zoom global. */
+html[data-theme="light"] body.admin-body #product-form .product-form-section-actions > span {
+  color: #455675 !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+html[data-theme="dark"] body.admin-body #product-form .product-form-section-actions > span {
+  color: #c9d5e9 !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+html body.admin-body #product-form .admin-photo-progress-label,
+html body.admin-body #product-form .variant-config-summary-copy small,
+html body.admin-body #product-form .variant-config-group-heading small,
+html body.admin-body #product-form .inline-color-card-summary-copy small,
+html body.admin-body #product-form .admin-image-preview-card small {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+html body.admin-body #product-form .admin-mini-button {
+  font-size: 12px !important;
+}
+
+html[data-theme="light"] body.admin-body .admin-sidebar-section-label,
+html[data-theme="light"] body.admin-body .admin-sidebar-footer small,
+html[data-theme="light"] body.admin-body .admin-header-context small {
+  color: #52617c !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-sidebar-section-label,
+html[data-theme="dark"] body.admin-body .admin-sidebar-footer small,
+html[data-theme="dark"] body.admin-body .admin-header-context small {
+  color: #c2cfe5 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+/* Mensajería: se suben títulos, contenido, filtros y acciones que quedaban
+   entre 8 y 11px; hora y etiquetas secundarias siguen siendo discretas. */
+html body.admin-body .private-chat-admin-inbox-heading small,
+html body.admin-body .private-chat-admin-item-title,
+html body.admin-body .private-chat-admin-item-preview,
+html body.admin-body .private-chat-admin-thread-header p:not(.eyebrow),
+html body.admin-body .private-chat-admin-empty p,
+html body.admin-body .private-chat-admin-product-link,
+html body.admin-body .private-chat-admin-filter,
+html body.admin-body .private-chat-admin-message p,
+html body.admin-body .private-chat-admin-reply-form textarea {
+  font-size: 13px !important;
+}
+html body.admin-body .private-chat-admin-thread-header .eyebrow,
+html body.admin-body .private-chat-admin-item-time,
+html body.admin-body .private-chat-admin-message time,
+html body.admin-body .private-chat-admin-security-note {
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+}
+html body.admin-body .private-chat-pill,
+html body.admin-body .private-chat-admin-filter b {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+html body.admin-body .private-chat-admin-actions .button {
+  min-height: 38px !important;
+  padding: 7px 8px !important;
+  font-size: 12px !important;
+}
+html body.admin-body .private-chat-admin-filter {
+  min-height: 38px !important;
+  padding: 6px 3px !important;
+}
+html body.admin-body .private-chat-admin-reply-form textarea {
+  min-height: 44px !important;
+  line-height: 1.45 !important;
+}
+html body.admin-body .private-chat-admin-reply-form .button {
+  min-height: 40px !important;
+  font-size: 12px !important;
+}
+
+/* Datos importantes de las revisiones de proveedor: mantener legibles las
+   etiquetas de configuración/precios sin inflar encabezados ni tarjetas. */
+html body.admin-body .provider-variant-config-select > span,
+html body.admin-body .provider-variant-select > span,
+html body.admin-body .provider-variant-color-copy small,
+html body.admin-body .provider-variant-config-prices label > span,
+html body.admin-body .provider-variant-price-block > small,
+html body.admin-body .provider-price-compare-card > small,
+html body.admin-body .provider-review-sync-option small,
+html body.admin-body .provider-review-sync-note,
+html body.admin-body .provider-validation-line,
+html body.admin-body .provider-diff-empty {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* Compactación móvil: reducir espacios, no el tamaño táctil de los campos. */
+@media (max-width: 560px) {
+  html body.admin-body #product-form .product-form-section-nav {
+    gap: 5px !important;
+    margin-bottom: 10px !important;
+  }
+  html body.admin-body #product-form .product-form-section-tab {
+    min-height: 54px !important;
+    padding: 7px 3px !important;
+    font-size: .82rem !important;
+  }
+  html body.admin-body #product-form .product-form-section-heading {
+    margin-bottom: 10px !important;
+  }
+  html body.admin-body #product-form .product-form-section > .form-grid {
+    gap: 10px !important;
+  }
+  html body.admin-body #product-form .product-form-section-actions {
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+  html body.admin-body #product-form .product-form-section .form-grid input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  html body.admin-body #product-form .product-form-section .form-grid select,
+  html body.admin-body #product-form .product-form-section .form-grid textarea {
+    min-height: 44px !important;
+    padding: 9px 10px !important;
+    font-size: 14px !important;
+  }
+  html body.admin-body #product-form details.variant-config-collapse > .variant-config-summary {
+    min-height: 44px !important;
+    padding: 9px 10px !important;
+  }
+  html body.admin-body #product-form .variant-config-body {
+    padding: 8px !important;
+  }
+  html body.admin-body #product-form .inline-color-card-collapse > .inline-color-card-summary {
+    min-height: 44px !important;
+    padding: 8px 9px !important;
+    gap: 6px !important;
+  }
+  html body.admin-body #product-form .inline-color-card-body {
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+  html body.admin-body #product-form .inline-color-card-collapse {
+    margin-bottom: 7px !important;
+  }
+  html body.admin-body .private-chat-admin-filters {
+    gap: 4px !important;
+    padding: 6px !important;
+  }
+  html body.admin-body .private-chat-admin-filter {
+    min-height: 40px !important;
+    padding: 6px 2px !important;
+    font-size: 12px !important;
+  }
+}
