@@ -990,9 +990,13 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       (normalizeAvailability(group.provider_availability, false) || "unknown") === "unknown" ||
       group.colors.some(color => (normalizeAvailability(color.provider_availability, false) || "unknown") === "unknown")
     );
-    if (overallAvailability === "unknown" || unconfirmedVariantStatus) {
+    // Variant products derive overall availability exclusively from their confirmed
+    // configuration/color statuses; only products without variants require the general field.
+    if ((!hasVariants && overallAvailability === "unknown") || (hasVariants && unconfirmedVariantStatus)) {
       updateProviderVariantReviewReadiness();
-      say(reviewMessage, "Antes de confirmar, seleccioná una disponibilidad comprobada para el producto, cada configuración y cada color.", "error");
+      say(reviewMessage, hasVariants
+        ? "Antes de confirmar, seleccioná una disponibilidad comprobada para cada configuración y cada color."
+        : "Antes de confirmar, seleccioná una disponibilidad general comprobada.", "error");
       return;
     }
     const payload = {
