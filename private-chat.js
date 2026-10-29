@@ -68,7 +68,7 @@ function loadSessionToken() {
 }
 function clearSavedSessionToken() {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
-  try { clearSavedSessionToken(); } catch {}
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
 }
 
 function showFatal(message) {
