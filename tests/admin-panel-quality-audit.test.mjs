@@ -121,6 +121,38 @@ test("complete admin panel audit validates navigation, accessibility signals and
       document.getElementById("dashboard")?.classList.remove("hidden");
     });
 
+    const storageArrowStyle = await page.evaluate(() => {
+      const root = document.documentElement;
+      const previousTheme = root.getAttribute("data-theme");
+      const probe = document.createElement("select");
+      probe.className = "variant-storage-unit";
+      probe.setAttribute("aria-label", "Unidad de almacenamiento de prueba");
+      probe.innerHTML = '<option value="GB">GB</option><option value="TB">TB</option>';
+      document.body.append(probe);
+      root.setAttribute("data-theme", "dark");
+      const darkStyle = getComputedStyle(probe);
+      const dark = {
+        backgroundImage: darkStyle.backgroundImage,
+        backgroundSize: darkStyle.backgroundSize,
+        width: darkStyle.width,
+        paddingRight: darkStyle.paddingRight,
+        appearance: darkStyle.appearance,
+      };
+      root.setAttribute("data-theme", "light");
+      const light = { backgroundImage: getComputedStyle(probe).backgroundImage };
+      probe.remove();
+      if (previousTheme === null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", previousTheme);
+      return { dark, light };
+    });
+    assert.match(storageArrowStyle.dark.backgroundImage, /data:image\/svg\+xml/,
+      "the GB/TB selector must render its explicit chevron in dark mode");
+    assert.equal(storageArrowStyle.dark.backgroundSize, "12px 8px");
+    assert.equal(storageArrowStyle.dark.width, "66px");
+    assert.equal(storageArrowStyle.dark.paddingRight, "22px");
+    assert.doesNotMatch(storageArrowStyle.light.backgroundImage, /data:image\/svg\+xml/,
+      "the custom chevron is dark-theme-only");
+
     for (const panelName of panels) {
       for (const viewport of widths) {
         await page.setViewportSize({ width: viewport.width, height: 844 });
