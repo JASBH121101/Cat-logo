@@ -853,22 +853,51 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
 
               const addVariant = page.locator("#add-variant-button");
               assert.equal(await addVariant.isVisible(), true, "variant action must be visible in the editor");
+
+              const configurations = [
+                { ram: "8", storage: "256", usd: "199", nio: "6999", color: "Graphite" },
+                { ram: "12", storage: "256", usd: "249", nio: "8749", color: "Titanium Blue" },
+                { ram: "12", storage: "512", usd: "289", nio: "10150", color: "Titanium Gray" },
+              ];
               const groupsBefore = await page.locator("#product-variants-list [data-variant-group]").count();
-              await addVariant.click();
-              await page.waitForFunction(previous => document.querySelectorAll("#product-variants-list [data-variant-group]").length === previous + 1,
-                groupsBefore, { timeout: 3000 });
               const groups = page.locator("#product-variants-list [data-variant-group]");
-              assert.equal(await groups.count(), groupsBefore + 1, "adding a variant must create exactly one configuration");
-              const group = groups.last();
-              await group.locator("summary").click();
-              for (const selector of ["[data-group-storage]", "[data-group-ram]", "[data-group-price-usd]", "[data-group-price-nio]"]) {
-                assert.equal(await group.locator(selector).count(), 1, "each variant must expose its own RAM, storage and price fields: " + selector);
+              let lastColorRow;
+              for (let index = 0; index < configurations.length; index += 1) {
+                const configuration = configurations[index];
+                await addVariant.click();
+                await page.waitForFunction(expectedCount =>
+                  document.querySelectorAll("#product-variants-list [data-variant-group]").length === expectedCount,
+                  groupsBefore + index + 1, { timeout: 3000 });
+                const group = groups.nth(groupsBefore + index);
+                await group.locator("summary").click();
+                for (const selector of ["[data-group-storage]", "[data-group-ram]", "[data-group-price-usd]", "[data-group-price-nio]"]) {
+                  assert.equal(await group.locator(selector).count(), 1,
+                    "each variant must expose its own RAM, storage and price fields: " + selector);
+                }
+                await group.locator("[data-group-storage]").fill(configuration.storage);
+                await group.locator("[data-group-ram]").fill(configuration.ram);
+                await group.locator("[data-group-price-usd]").fill(configuration.usd);
+                await group.locator("[data-group-price-nio]").fill(configuration.nio);
+                await group.locator("[data-add-group-color]").click();
+                lastColorRow = group.locator("[data-variant-row]").last();
+                await lastColorRow.waitFor({ state: "attached", timeout: 3000 });
+                await lastColorRow.locator("[data-variant-color]").fill(configuration.color);
               }
 
-              await group.locator("[data-add-group-color]").click();
-              const colorRow = group.locator("[data-variant-row]").last();
-              await colorRow.waitFor({ state: "attached", timeout: 3000 });
-              const colorAi = colorRow.locator("[data-ai-color-open]");
+              assert.equal(await groups.count(), groupsBefore + configurations.length,
+                "adding three configurations must create exactly three independent groups");
+              for (let index = 0; index < configurations.length; index += 1) {
+                const expected = configurations[index];
+                const group = groups.nth(groupsBefore + index);
+                assert.equal(await group.locator("[data-group-storage]").inputValue(), expected.storage);
+                assert.equal(await group.locator("[data-group-ram]").inputValue(), expected.ram);
+                assert.equal(await group.locator("[data-group-price-usd]").inputValue(), expected.usd);
+                assert.equal(await group.locator("[data-group-price-nio]").inputValue(), expected.nio);
+                assert.equal(await group.locator("[data-variant-color]").inputValue(), expected.color,
+                  "a variant color must remain within its own configuration");
+              }
+
+              const colorAi = lastColorRow.locator("[data-ai-color-open]");
               assert.equal(await colorAi.count(), 1, "each variant color row must expose the AI color helper");
               await colorAi.click();
 
