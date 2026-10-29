@@ -9,6 +9,7 @@ routes them by path.
 from __future__ import annotations
 import argparse
 import json
+import os
 import re
 from collections import Counter, defaultdict
 from html.parser import HTMLParser
@@ -73,10 +74,19 @@ class HtmlAssetParser(HTMLParser):
                 self.references.append(href)
 
 def discover_files(root: Path) -> list[Path]:
-    return sorted(path for path in root.rglob("*")
-                  if path.is_file() and path.suffix.lower() in CODE_EXTS
-                  and not ignored(path.relative_to(root))
-                  and path.relative_to(root).parts[0] != "tests")
+    found = []
+    for directory, dirnames, filenames in os.walk(root):
+        dirnames[:] = [name for name in dirnames if name not in IGNORED_DIRS]
+        base = Path(directory)
+        for filename in filenames:
+            path = base / filename
+            if path.suffix.lower() not in CODE_EXTS:
+                continue
+            relative = path.relative_to(root)
+            if relative.parts[0] == "tests":
+                continue
+            found.append(path)
+    return sorted(found)
 
 def audit(root: Path) -> dict:
     root = root.resolve()
@@ -180,11 +190,13 @@ def audit(root: Path) -> dict:
                 if name:
                     declarations.append({"name": name, "file": rel[source], "line": line_no})
                     declaration_counts[name] += 1
+    identifier_counts = Counter(
+        re.findall(r"(?<![\w$])([A-Za-z_$][\w$]*)(?![\w$])", scan_text)
+    )
     dead_symbols = []
     for item in declarations:
         name = item["name"]
-        uses = len(re.findall(r"(?<![\w$])" + re.escape(name) + r"(?![\w$])", scan_text))
-        if uses <= declaration_counts[name]:
+        if identifier_counts[name] <= declaration_counts[name]:
             dead_symbols.append(item)
 
     return {
