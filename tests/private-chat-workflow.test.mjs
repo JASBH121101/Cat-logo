@@ -71,6 +71,7 @@ test("Go Partners order data is allowed while unneeded contact and financial cre
   assert.ok(!/c[eé]dula|pasaporte|n[uú]mero de identidad/i.test(validator),
     "cédula values are permitted for order registration");
   assert.ok(validator.includes("@[A-Z0-9.-]+"), "unrequested email addresses remain blocked");
+  assert.ok(validator.includes("@[A-Z0-9.-]+\\.[A-Z]{2,}"), "email matcher must escape the dot exactly once");
   assert.match(validator, /tarjeta/i, "full payment-card details remain blocked");
   assert.match(validator, /cuenta bancaria/i, "bank-account details remain blocked");
   assert.match(customerHtml, /podés compartir tu nombre completo, cédula y celular/i);
