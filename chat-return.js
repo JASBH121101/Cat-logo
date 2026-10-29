@@ -27,12 +27,15 @@
   }
 
   async function tokenStillActive(token) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4500);
     try {
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         credentials: "omit",
+        signal: controller.signal,
         body: JSON.stringify({ action: "status", sessionToken: token })
       });
       let data = {};
@@ -46,7 +49,10 @@
       // A temporary network/server error should not remove an otherwise usable access token.
       return true;
     } catch {
+      // Keep the recovery route usable during an outage; the chat page will show the real error.
       return true;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
