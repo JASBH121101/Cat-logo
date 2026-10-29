@@ -38,6 +38,7 @@ const findings = [];
 const runtimeErrors = [];
 const axeFindings = [];
 const screenshots = [];
+const journeyResults = [];
 
 function severityForOverflow(px) {
   if (px >= 24) return "critical";
@@ -111,6 +112,25 @@ function addFinding({ severity, page, theme, viewport, element, message, evidenc
   finding.diagnosis = diagnose(finding);
   findings.push(finding);
 }
+
+async function runJourney(page, scenario, name, action) {
+  try {
+    const evidence = await action();
+    journeyResults.push({ name, page: scenario.page, viewport: scenario.viewport, theme: scenario.theme, passed: true, evidence: evidence || "Acción completada" });
+    console.log(`[JOURNEY PASS] ${scenario.page} :: ${name}`);
+  } catch (error) {
+    const evidence = error?.message || String(error);
+    journeyResults.push({ name, page: scenario.page, viewport: scenario.viewport, theme: scenario.theme, passed: false, evidence });
+    addFinding({
+      severity: "critical", page: scenario.page, theme: scenario.theme, viewport: scenario.viewport,
+      element: name, message: "Recorrido de interfaz no completado",
+      evidence, recommendation: "Revisar que el control exista, tenga listener activo y mantenga el estado esperado; reproducirlo con el navegador y los errores de consola visibles.",
+      blocking: true,
+    });
+    console.error(`[JOURNEY FAIL] ${scenario.page} :: ${name} :: ${evidence}`);
+  }
+}
+
 function escMarkdown(value) {
   return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
 }
@@ -218,6 +238,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         await page.route("**/*", route => {
           const url = new URL(route.request().url());
           if (url.origin === origin || url.protocol === "data:" || url.protocol === "blob:") return route.continue();
+          // Load only the pinned/known CDN module needed to initialize the UI.
+          // Database/API hosts remain blocked so tests cannot mutate customer data.
+          if (url.hostname === "cdn.jsdelivr.net") return route.continue();
           return route.abort("blockedbyclient");
         });
         const gotoResponse = await page.goto(origin + site.path, { waitUntil: "domcontentloaded", timeout: 15000 });
@@ -227,7 +250,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           document.body.dataset.visualAuditFixture = "true";
         }, theme);
         await page.addScriptTag({ content: fixtureScript(site.fixture) });
-        await page.waitForTimeout(120);
+        await page.waitForTimeout(280);
 
         const snapshot = await page.evaluate(({ pageName, viewportName, themeName }) => {
           const rectData = element => {
@@ -365,6 +388,79 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         const screenshotPath = resolve(OUTPUT_DIR, screenshotName);
         await page.screenshot({ path: screenshotPath, fullPage: false, animations: "disabled" });
         screenshots.push(screenshotName);
+
+        // Smoke-test real UI events while the APIs are blocked/read-only.
+        // These tests exercise controls and state changes, not order creation in Supabase.
+        if (viewport.mobile && theme === "light") {
+          const scenario = { page: site.name, viewport: viewport.name, theme };
+          if (site.name === "technology") {
+            await runJourney(page, scenario, "technology-brand-filter-open-close", async () => {
+              const control = page.locator("#brand-filter-toggle");
+              assert.equal(await control.count(), 1, "technology brand-filter button must exist");
+              await control.click();
+              assert.equal(await control.getAttribute("aria-expanded"), "true");
+              assert.equal(await page.locator("#brand-filter-menu").evaluate(el => el.hidden), false);
+              await control.click();
+              assert.equal(await control.getAttribute("aria-expanded"), "false");
+              return "El filtro de marcas abre y cierra con aria-expanded sincronizado.";
+            });
+            await runJourney(page, scenario, "technology-theme-toggle", async () => {
+              const toggle = page.locator("[data-theme-toggle]");
+              await toggle.waitFor({ state: "visible", timeout: 3000 });
+              const before = await page.locator("html").getAttribute("data-theme");
+              await toggle.click();
+              await page.waitForFunction(previous => document.documentElement.getAttribute("data-theme") !== previous, before, { timeout: 3000 });
+              return "El control cambia el tema aplicado al documento.";
+            });
+          } else if (site.name === "perfumery") {
+            await runJourney(page, scenario, "perfumery-brand-filter-open-close", async () => {
+              const control = page.locator("#perfume-brand-filter-toggle");
+              assert.equal(await control.count(), 1, "perfume brand-filter button must exist");
+              await control.click();
+              assert.equal(await control.getAttribute("aria-expanded"), "true");
+              assert.equal(await page.locator("#perfume-brand-filter-menu").evaluate(el => el.hidden), false);
+              await control.click();
+              assert.equal(await control.getAttribute("aria-expanded"), "false");
+              return "El filtro de marcas de perfumería abre y cierra correctamente.";
+            });
+            await runJourney(page, scenario, "perfumery-theme-toggle", async () => {
+              const toggle = page.locator("[data-theme-toggle]");
+              await toggle.waitFor({ state: "visible", timeout: 3000 });
+              const before = await page.locator("html").getAttribute("data-theme");
+              await toggle.click();
+              await page.waitForFunction(previous => document.documentElement.getAttribute("data-theme") !== previous, before, { timeout: 3000 });
+              return "El control cambia el tema aplicado al documento.";
+            });
+          } else if (site.name === "admin") {
+            await runJourney(page, scenario, "admin-navigation-to-messages", async () => {
+              const control = page.locator('[data-admin-section="messages"]').first();
+              assert.equal(await control.count(), 1, "navigation entry for private messaging must exist");
+              await control.evaluate(el => el.click());
+              const panel = page.locator('#admin-section-messages');
+              assert.equal(await panel.evaluate(el => el.classList.contains("hidden")), false);
+              assert.equal(await page.locator("#dashboard").evaluate(el => el.classList.contains("admin-section-focused")), true);
+              return "La navegación muestra Mensajería y deja el panel en modo enfocado.";
+            });
+          } else if (site.name === "private-chat") {
+            await runJourney(page, scenario, "private-chat-theme-toggle", async () => {
+              const toggle = page.locator("#private-chat-theme-toggle");
+              assert.equal(await toggle.count(), 1, "chat theme control must exist");
+              const before = await page.locator("html").getAttribute("data-theme");
+              await toggle.click();
+              await page.waitForFunction(previous => document.documentElement.getAttribute("data-theme") !== previous, before, { timeout: 3000 });
+              assert.notEqual(await toggle.getAttribute("aria-pressed"), null);
+              return "El chat cambia de tema y mantiene el estado accesible aria-pressed.";
+            });
+            await runJourney(page, scenario, "private-chat-order-data-notice", async () => {
+              const text = await page.locator(".private-chat-privacy").innerText();
+              assert.match(text, /nombre completo/i);
+              assert.match(text, /cédula/i);
+              assert.match(text, /celular/i);
+              assert.match(text, /contraseñas|códigos de seguridad/i);
+              return "El aviso permite entender qué datos del pedido se pueden compartir y qué credenciales nunca se deben enviar.";
+            });
+          }
+        }
         await page.close();
       }
     }
@@ -381,7 +477,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       blockingFindings: blockingFindings.length, findings: findings.length,
       runtimeErrors: runtimeErrors.length, axeViolations: axeFindings.length,
     },
-    observations, findings, axeFindings, runtimeErrors, screenshots,
+    observations, findings, axeFindings, runtimeErrors, screenshots, journeyResults,
     policy: {
       remoteApisCalled: false,
       blockingRule: "Header missing or technology trust-card geometry regression blocks CI; horizontal overflow >=24px is recorded as blocking evidence.",
@@ -394,6 +490,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "",
     `- Escenarios: ${result.summary.scenarios} (${PAGES.length} páginas × ${VIEWPORTS.length} tamaños × ${THEMES.length} temas)`,
     `- Capturas generadas: ${screenshots.length}`,
+    `- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`,
     `- Hallazgos bloqueantes: ${blockingFindings.length}`,
     `- Hallazgos adicionales: ${findings.length}`,
     `- Errores JS: ${runtimeErrors.length}`,
@@ -413,7 +510,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "|---|---|---|---:|---:|---:|",
     ...observations.map(o => `| ${o.page} | ${o.theme} | ${o.viewport} | ${o.documentWidth}px | ${o.horizontalOverflow}px | ${o.productCards} |`),
     "",
-    "## Capturas",
+    "## Recorridos de interfaz", "",
+    ...(journeyResults.length ? journeyResults.map(j => `- ${j.passed ? "PASS" : "FAIL"} — ${j.page} / ${j.name}: ${escMarkdown(j.evidence)}`) : ["No se ejecutaron recorridos."]),
+    "", "## Capturas",
     "",
     ...screenshots.map(file => `- ` + file),
     "",
