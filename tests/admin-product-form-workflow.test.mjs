@@ -60,7 +60,7 @@ test("admin hides the floating back-to-top control and forces fresh script URLs"
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
   assert.match(html, /admin\.js\?v=20261029-admin-webpush3/);
-  assert.match(html, /admin-private-chat\.css\?v=20261028-inbox-no-blank-space7/);
+  assert.match(html, /admin-private-chat\.css\?v=20261029-compact-inbox1/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
 
