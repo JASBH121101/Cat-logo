@@ -9,6 +9,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
 import { analyzeVerticalRhythm } from "./visual-design-quality-policy.mjs";
 import { analyzeDialogQuality } from "./visual-state-quality-policy.mjs";
+import { analyzeProductComposition } from "./visual-composition-quality-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -427,6 +428,35 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               };
             })
             .filter(region => region.height >= 80 && region.textLength >= 24);
+          const productCompositionLayouts = pageName === "technology"
+            ? [...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(layout => {
+                const frame = layout.querySelector("#dialog-image");
+                const image = layout.querySelector(".dialog-main-image");
+                const detail = layout.querySelector(".dialog-detail");
+                if (!frame || !image || !detail || !isVisible(frame) || !isVisible(image) || !isVisible(detail)) return null;
+                const frameRect = frame.getBoundingClientRect();
+                const imageRect = image.getBoundingClientRect();
+                const leftRect = frame.getBoundingClientRect();
+                const rightRect = detail.getBoundingClientRect();
+                const rightArea = Math.max(1, rightRect.width * rightRect.height);
+                const contentArea = [...detail.children].filter(isVisible).reduce((sum, child) => {
+                  const rect = child.getBoundingClientRect();
+                  return sum + Math.max(0, rect.width * rect.height);
+                }, 0);
+                const frameArea = Math.max(1, frameRect.width * frameRect.height);
+                const imageArea = Math.max(0, imageRect.width * imageRect.height);
+                return {
+                  visible: true, selector: ".dialog-layout", productName: image.alt || "Producto",
+                  frameWidth: Math.round(frameRect.width), frameHeight: Math.round(frameRect.height),
+                  imageWidth: Math.round(imageRect.width), imageHeight: Math.round(imageRect.height),
+                  imageFrameRatio: Math.min(imageRect.width / Math.max(1, frameRect.width), imageRect.height / Math.max(1, frameRect.height)),
+                  imageAreaRatio: imageArea / frameArea,
+                  leftColumnRatio: leftRect.width / Math.max(1, rightRect.width),
+                  rightColumnDensity: Math.min(1, contentArea / rightArea),
+                  rightContentDensity: Math.min(1, contentArea / rightArea),
+                };
+              }).filter(Boolean)
+            : [];
           const dialogLayouts = [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [aria-modal="true"]')]
             .filter(isVisible)
             .map((dialog, index) => {
@@ -486,6 +516,25 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           });
           findings[findings.length - 1].code = rhythm.code;
           findings[findings.length - 1].measuredGap = rhythm.measuredGap;
+        }
+        const compositionFindings = analyzeProductComposition(snapshot.productCompositionLayouts, {
+          viewportWidth: snapshot.viewportWidth,
+          mobile: viewport.mobile,
+        });
+        for (const composition of compositionFindings) {
+          addFinding({
+            severity: composition.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: composition.element,
+            message: composition.message,
+            evidence: composition.evidence,
+            recommendation: composition.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = composition.code;
+          if (Number.isFinite(composition.measuredRatio)) findings[findings.length - 1].measuredRatio = composition.measuredRatio;
         }
         const dialogFindings = analyzeDialogQuality(snapshot.dialogLayouts, {
           viewportWidth: snapshot.viewportWidth,
@@ -817,7 +866,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
       whitespaceRhythmFindings: findings.filter(finding => finding.code === "VISUAL_WHITESPACE_RHYTHM").length,
-      dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,
+      dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,\n      productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_")).length,
       visibleDialogStates: observations.reduce((total, observation) => total + (observation.dialogLayouts?.length || 0), 0),
     },
     observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
@@ -858,7 +907,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "- Los hallazgos de accesibilidad son señales de revisión; no se corrigen ni se ocultan automáticamente.",
     "", "## Geometría observada",
     `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
-    `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,
+    `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,\n    `- Alertas de composición de ficha de producto: ${result.summary.productCompositionFindings}`,
     `- Estados de diálogo visibles capturados: ${result.summary.visibleDialogStates}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
