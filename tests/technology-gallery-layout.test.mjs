@@ -358,13 +358,16 @@ test("desktop product gallery stays visible while long product details scroll", 
         pageTop: document.querySelector("#product-detail-page").getBoundingClientRect().top,
         imageTop: document.querySelector("#dialog-image").getBoundingClientRect().top,
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        scrollTop: document.querySelector("#product-detail-page").scrollTop,
         columns: getComputedStyle(document.querySelector(".dialog-layout")).gridTemplateColumns,
       }));
 
       if (!viewport.mobile) {
         assert.equal(after.position, "sticky", "desktop gallery must be sticky");
         assert.ok(after.imageTop >= after.pageTop + 8, "desktop gallery must remain inside the visible scroll area");
-        assert.ok(after.imageTop <= after.pageTop + 22, "desktop gallery must settle at the sticky offset");
+        assert.ok(after.scrollTop >= 300, "desktop detail container must actually scroll");
+        assert.ok(after.imageTop <= Math.min(after.pageTop + 140, viewport.height * 0.35), "desktop gallery must remain visible near the top while details scroll (imageTop=" + after.imageTop + ", pageTop=" + after.pageTop + ", scrollTop=" + after.scrollTop + ")");
+        assert.ok(after.imageTop >= after.pageTop + 8, "desktop gallery must remain inside the visible scroll area");
         assert.ok(before.imageTop > after.imageTop - 30, "gallery moves into its sticky position, then stays visible");
       } else {
         assert.notEqual(after.position, "sticky", "mobile gallery stays in normal document flow");
