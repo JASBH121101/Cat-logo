@@ -3744,3 +3744,23 @@ body.technology-catalog.product-detail-active #product-detail-page .dialog-detai
 html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
   color: #d2dced !important;
 }
+
+
+/* Fully neutralize legacy overlay offsets on the full-page technology route. */
+html body.technology-catalog.product-detail-active > main.is-product-detail-view {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
+html body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
