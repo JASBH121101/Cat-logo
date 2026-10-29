@@ -8,15 +8,22 @@ const MOBILE_GAP_MIN = 112;
 export function analyzeVerticalRhythm(regions, { viewportWidth = 1365, mobile = viewportWidth < 600 } = {}) {
   if (!Array.isArray(regions) || regions.length < 2) return [];
   const threshold = mobile ? MOBILE_GAP_MIN : Math.max(DESKTOP_GAP_MIN, Math.round(viewportWidth * 0.105));
+
+  // Keep geometrically valid empty regions as separators. Filtering them out first
+  // would incorrectly join two content regions across a large empty/container block.
   const ordered = regions
     .filter(region => Number.isFinite(region.top) && Number.isFinite(region.bottom) &&
-      region.bottom > region.top && Number(region.textLength) >= 24 && Number(region.height) >= 80)
+      region.bottom > region.top && Number.isFinite(Number(region.height)) && Number(region.height) >= 1)
     .slice()
     .sort((a, b) => a.top - b.top);
   const findings = [];
   for (let index = 1; index < ordered.length; index += 1) {
     const previous = ordered[index - 1];
     const current = ordered[index];
+    const previousMeaningful = Number(previous.textLength) >= 24 && Number(previous.height) >= 80;
+    const currentMeaningful = Number(current.textLength) >= 24 && Number(current.height) >= 80;
+    if (!previousMeaningful || !currentMeaningful) continue;
+
     const gap = current.top - previous.bottom;
     if (gap < threshold) continue;
     const severity = gap >= threshold * 2 ? "high" : gap >= threshold * 1.45 ? "medium" : "low";
