@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-sticky-product-gallery1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-larger-product-gallery1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -357,6 +357,8 @@ test("desktop product gallery stays visible while long product details scroll", 
         position: getComputedStyle(document.querySelector("#dialog-image")).position,
         pageTop: document.querySelector("#product-detail-page").getBoundingClientRect().top,
         imageTop: document.querySelector("#dialog-image").getBoundingClientRect().top,
+        imageHeight: document.querySelector("#dialog-image").getBoundingClientRect().height,
+        mainImageFit: getComputedStyle(document.querySelector("#dialog-image .dialog-main-image")).objectFit,
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         scrollTop: document.querySelector("#product-detail-page").scrollTop,
         columns: getComputedStyle(document.querySelector(".dialog-layout")).gridTemplateColumns,
@@ -364,6 +366,8 @@ test("desktop product gallery stays visible while long product details scroll", 
 
       if (!viewport.mobile) {
         assert.equal(after.position, "sticky", "desktop gallery must be sticky");
+        assert.ok(after.imageHeight >= 560, "desktop image stage grows to at least 560px on a tall desktop viewport; got " + after.imageHeight);
+        assert.equal(after.mainImageFit, "contain", "larger product images must not be cropped or distorted");
         assert.ok(after.imageTop >= after.pageTop + 8, "desktop gallery must remain inside the visible scroll area");
         assert.ok(after.scrollTop >= 300, "desktop detail container must actually scroll");
         assert.ok(after.imageTop <= Math.min(after.pageTop + 140, viewport.height * 0.35), "desktop gallery must remain visible near the top while details scroll (imageTop=" + after.imageTop + ", pageTop=" + after.pageTop + ", scrollTop=" + after.scrollTop + ")");
@@ -376,6 +380,30 @@ test("desktop product gallery stays visible while long product details scroll", 
       }
       await page.close();
     }
+  } finally {
+    await browser.close();
+  }
+});
+
+
+test("temporary live product-image resolution probe", { timeout: 30000 }, async () => {
+  const sources = [
+    "https://uwqnoadelnnplcvqqlyz.supabase.co/storage/v1/object/public/product-images/46c35eed-d122-4161-8ccf-3bfaae9ce01c/variants/8e2dd168-0ef6-41a7-8935-2729be490204-257798.webp",
+    "https://uwqnoadelnnplcvqqlyz.supabase.co/storage/v1/object/public/product-images/46c35eed-d122-4161-8ccf-3bfaae9ce01c/variants/da488b55-27a8-4772-8f4b-c7ec90c0c943-257796.webp",
+    "https://uwqnoadelnnplcvqqlyz.supabase.co/storage/v1/object/public/product-images/46c35eed-d122-4161-8ccf-3bfaae9ce01c/variants/df2f66a4-5410-4ee0-9c6c-5fd3de7b6c00-257797.webp"
+  ];
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    const dimensions = await page.evaluate(async urls => Promise.all(urls.map(src => new Promise(resolve => {
+      const img = new Image();
+      const timer = setTimeout(() => resolve({src: src.split("/").pop(), loaded: false, reason: "timeout"}), 12000);
+      img.onload = () => { clearTimeout(timer); resolve({src: src.split("/").pop(), loaded: true, width: img.naturalWidth, height: img.naturalHeight}); };
+      img.onerror = () => { clearTimeout(timer); resolve({src: src.split("/").pop(), loaded: false, reason: "load-error"}); };
+      img.src = src;
+    }))), sources);
+    console.log("[PRODUCT_IMAGE_RESOLUTION_PROBE] " + JSON.stringify(dimensions));
+    await page.close();
   } finally {
     await browser.close();
   }
