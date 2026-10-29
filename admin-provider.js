@@ -663,9 +663,38 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     return "unknown";
   }
 
+  function configurationRamValue(value) {
+    const match = String(value ?? "").replace(/,/g, ".").match(/\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
+  }
+
+  function configurationStorageValue(value) {
+    const match = String(value ?? "").replace(/,/g, ".").match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB|KB)?/i);
+    if (!match) return Number.POSITIVE_INFINITY;
+    const amount = Number(match[1]);
+    const unit = String(match[2] || "GB").toUpperCase();
+    if (unit === "TB") return amount * 1024;
+    if (unit === "MB") return amount / 1024;
+    if (unit === "KB") return amount / (1024 * 1024);
+    return amount;
+  }
+
+  function compareProviderConfigurations(left, right) {
+    const ramDifference = configurationRamValue(left?.ram) - configurationRamValue(right?.ram);
+    if (Number.isFinite(ramDifference) && ramDifference !== 0) return ramDifference;
+    if (!Number.isFinite(configurationRamValue(left?.ram)) && Number.isFinite(configurationRamValue(right?.ram))) return 1;
+    if (Number.isFinite(configurationRamValue(left?.ram)) && !Number.isFinite(configurationRamValue(right?.ram))) return -1;
+    const storageDifference = configurationStorageValue(left?.storage) - configurationStorageValue(right?.storage);
+    if (Number.isFinite(storageDifference) && storageDifference !== 0) return storageDifference;
+    if (!Number.isFinite(configurationStorageValue(left?.storage)) && Number.isFinite(configurationStorageValue(right?.storage))) return 1;
+    if (Number.isFinite(configurationStorageValue(left?.storage)) && !Number.isFinite(configurationStorageValue(right?.storage))) return -1;
+    return 0;
+  }
+
   function deriveProviderVariantOverview(snapshot) {
     const groups = Array.isArray(snapshot) ? snapshot : [];
-    const first = groups[0] || {};
+    const ordered = groups.slice().sort(compareProviderConfigurations);
+    const lowest = ordered[0] || {};
     const configurationStatuses = groups.map(group => {
       const colors = Array.isArray(group.colors) ? group.colors : [];
       return colors.length
@@ -673,9 +702,12 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
         : normalizeAvailability(group.provider_availability, false) || "unknown";
     });
     return {
-      // The public product card uses the first configuration as its starting price.
-      provider_price_usd: first.provider_price_usd ?? null,
-      provider_price_nio: first.provider_price_nio ?? null,
+      // This is the lowest-RAM configuration; storage is the tie-breaker, independent of array order.
+      base_configuration: providerConfigLabel(lowest),
+      provider_price_usd: lowest.provider_price_usd ?? null,
+      provider_price_nio: lowest.provider_price_nio ?? null,
+      catalog_price_usd: lowest.catalog_price_usd ?? null,
+      catalog_price_nio: lowest.catalog_price_nio ?? null,
       // The general product state is derived from the confirmed configuration/color statuses.
       provider_availability: rollupProviderAvailability(configurationStatuses)
     };
@@ -867,6 +899,22 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
         priceUSD = overview.provider_price_usd;
         priceNIO = overview.provider_price_nio;
         providerAvailability = overview.provider_availability;
+        renderReviewPriceComparison({
+          ...product,
+          price_usd: overview.catalog_price_usd ?? product.price_usd,
+          price_nio: overview.catalog_price_nio ?? product.price_nio
+        }, {
+          provider_price_usd: priceUSD,
+          provider_price_nio: priceNIO
+        });
+        renderReviewAvailabilityComparison(product, providerAvailability);
+        updateProviderVariantReviewReadiness();
+        const note = $("#provider-review-variant-overview-note");
+        if (note && overview.base_configuration) {
+          note.textContent = "La referencia general usa " + overview.base_configuration +
+            " (menor RAM y, en empate, menor almacenamiento). Es la configuración base para comparar el precio desde. La disponibilidad general se calcula a partir de las configuraciones y colores.";
+        }
+        return;
       } else {
         priceUSD = cleanPrice($("#provider-review-price-usd")?.value);
         priceNIO = cleanPrice($("#provider-review-price-nio")?.value);
@@ -925,7 +973,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       variantSnapshot = collectProviderVariantSnapshot();
       if (hasVariants) {
         const overview = deriveProviderVariantOverview(variantSnapshot);
-        // General provider prices mirror the first catalog configuration; no duplicate manual fields.
+        // General provider prices mirror the lowest-RAM configuration, with storage as tie-breaker.
         priceUSD = cleanPrice(overview.provider_price_usd);
         priceNIO = cleanPrice(overview.provider_price_nio);
         overallAvailability = overview.provider_availability;
