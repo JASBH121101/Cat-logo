@@ -599,3 +599,46 @@ a { color: inherit; }
     letter-spacing: .17em;
   }
 }
+
+
+/* JB Collections conversion trust note — technology only, never attached to perfumery. */
+.world-trust-note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 390px);
+  margin: 13px auto 0;
+  color: rgba(224, 236, 255, .9);
+  font-size: clamp(10px, .78vw, 12px);
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: .012em;
+  text-wrap: pretty;
+}
+.world-trust-note__icon {
+  display: inline-flex;
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  border: 1px solid rgba(89, 225, 255, .55);
+  border-radius: 50%;
+  color: #6ce9ff;
+  font-size: 10px;
+  line-height: 1;
+}
+.world-trust-note--tech { text-shadow: 0 1px 8px rgba(0, 0, 0, .32); }
+@media (max-width: 760px) {
+  .world-trust-note {
+    width: min(100%, 340px);
+    margin-top: 10px;
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-trust-note { transition: none !important; }
+}
