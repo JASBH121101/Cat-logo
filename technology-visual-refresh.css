@@ -2962,7 +2962,7 @@ html[data-theme="light"] body.technology-catalog .catalog-status {
 }
 
 
-/* JB TECH · single-product desktop alignment and scale control. */
+/* JB TECH · single-product desktop alignment overrides legacy !important grids. */
 @media (min-width: 761px) {
   body.technology-catalog #featured-grid:has(> .product-card:only-child),
   body.technology-catalog #limited-edition-grid:has(> .product-card:only-child),
@@ -2970,7 +2970,8 @@ html[data-theme="light"] body.technology-catalog .catalog-status {
   body.technology-catalog #quality-price-grid:has(> .product-card:only-child),
   body.technology-catalog #top-gaming-grid:has(> .product-card:only-child),
   body.technology-catalog #product-grid:has(> .product-card:only-child) {
-    grid-template-columns: minmax(0, min(100%, 560px));
-    justify-content: center;
+    grid-template-columns: minmax(0, min(100%, 560px)) !important;
+    justify-content: center !important;
+    width: 100% !important;
   }
 }
