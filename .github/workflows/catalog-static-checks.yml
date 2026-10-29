@@ -33,7 +33,7 @@ jobs:
           while IFS= read -r -d '' file; do
             echo "Checking $file"
             case "$file" in
-              functions/api/*|api/share.js)
+              functions/api/*|functions/_shared/*|api/share.js)
                 node --input-type=module --check < "$file"
                 ;;
               *)
@@ -75,6 +75,8 @@ jobs:
           node --test tests/limited-edition-sections.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-download.test.mjs
+          node --experimental-default-type=module --test tests/cloudflare-private-chat-push.test.mjs
+          node --experimental-default-type=module --test tests/web-push.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-assistant.test.mjs
           node --experimental-default-type=module --test tests/cloudflare-color-assistant.test.mjs
           node --test tests/admin-color-assistant.test.mjs
@@ -272,6 +274,14 @@ jobs:
           print(f"Checked {sum(map(len, versions.values()))} migrations: all version identifiers are unique.")
           PY
 
+      - name: Upload admin quality audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-quality-audit
+          path: admin-quality-audit.md
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload dependency audit report
         if: always()
         uses: actions/upload-artifact@v4
