@@ -3563,3 +3563,19 @@ body.technology-catalog.product-detail-active #product-detail-page .payment-choi
     max-height: calc(100vh - 124px) !important;
   }
 }
+
+
+/* JB TECH · galería de producto más grande (prueba 2026-10-29).
+   Aumenta el espacio útil de la fotografía sin recortar ni deformar el archivo.
+   En móvil no modifica las alturas compactas ya definidas. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: min(clamp(560px, 70vh, 780px), calc(100vh - 124px)) !important;
+    max-height: calc(100vh - 124px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+    padding: clamp(4px, .65vw, 10px) !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+}
