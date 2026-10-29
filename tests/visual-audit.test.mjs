@@ -966,6 +966,16 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     console.log(`[${finding.severity.toUpperCase()}] ${finding.page} / ${finding.theme} / ${finding.viewport} — ${finding.message} :: ${finding.evidence}`);
   }
   assert.equal(observations.length, PAGES.length * VIEWPORTS.length * THEMES.length, "each page must be measured in every viewport/theme combination");
+  const productDetailObservations = observations.filter(observation => observation.page === "technology-detail");
+  assert.equal(productDetailObservations.length, VIEWPORTS.length * THEMES.length,
+    "synthetic product detail must be measured at every viewport and theme");
+  assert.ok(productDetailObservations.every(observation =>
+    Array.isArray(observation.productCompositionLayouts) &&
+    observation.productCompositionLayouts.some(layout =>
+      layout.visible && layout.frameWidth > 0 && layout.frameHeight > 0 &&
+      layout.imageWidth > 0 && layout.imageHeight > 0 &&
+      layout.leftColumnWidth > 0 && layout.rightColumnWidth > 0
+    )), "every detail scenario must produce usable gallery and column measurements");
   assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
   assert.equal(result.summary.blockingAxeViolations, 0, "critical/serious Axe violations block CI; see visual-audit-report.md");
   assert.equal(blockingFindings.length, 0, "critical deterministic layout/runtime/resource regressions block CI; see visual-audit-report.md");
