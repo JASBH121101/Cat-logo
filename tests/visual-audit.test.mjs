@@ -883,6 +883,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 await lastColorRow.waitFor({ state: "attached", timeout: 3000 });
                 await lastColorRow.locator(":scope > summary").click();
                 await lastColorRow.locator("[data-variant-color]").fill(configuration.color);
+                assert.equal(await lastColorRow.locator("[data-variant-image]").count(), 1,
+                  "each color/variant row must have its own photo file input");
+                assert.equal(await lastColorRow.locator("[data-variant-images]").count(), 1,
+                  "each color/variant row must keep its own image metadata field");
               }
 
               assert.equal(await groups.count(), groupsBefore + configurations.length,
