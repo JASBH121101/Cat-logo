@@ -1083,7 +1083,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   assert.ok(Number.isInteger(result.summary.journeyFailures), "journey failure count must always be numeric");
   assert.ok(Number.isInteger(result.summary.scenarios), "scenario count must always be numeric");
   assert.equal(new Set(screenshots).size, screenshots.length, "every screenshot path must be unique");
-  assert.match(`- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`, /fallos: \\d+$/, "report must not print an undefined journey failure count");
+  assert.match(`- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`, /fallos: \d+$/, "report must not print an undefined journey failure count");
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
   const md = [
     "# JB Collections — informe de auditoría visual",
