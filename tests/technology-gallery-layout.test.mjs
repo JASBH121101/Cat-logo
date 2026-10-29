@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 
 const html = readFileSync("tecnologia/index.html", "utf8");
 const css = readFileSync("technology-visual-refresh.css", "utf8");
+const contactCss = readFileSync("contact-channels.css", "utf8");
 const app = readFileSync("app.js", "utf8");
 
 test("technology page loads the gallery fix after legacy style sheets", () => {
@@ -166,6 +167,61 @@ test("mobile trust tiles keep the text inside one rectangular card instead of ne
         assert.equal(card.background, "rgba(0, 0, 0, 0)", theme + ": nested text wrapper must remain transparent");
       }
     }
+  } finally {
+    await browser.close();
+  }
+});
+
+
+test("payment contact buttons keep visible labels and readable contrast in both technology themes", { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
+    await page.setContent(`<!doctype html><html data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\n${contactCss}</style></head><body class="technology-catalog product-detail-active"><div id="product-detail-page"><section id="dialog-payment-channel-panel" class="payment-channel-panel"><div class="payment-channel-actions"><a id="dialog-payment-whatsapp" class="payment-channel-button contact-channel-button--whatsapp" href="#"><svg class="contact-channel-svg" viewBox="0 0 32 32"></svg><span>WhatsApp</span></a><button id="dialog-payment-jb" class="payment-channel-button contact-channel-button--jb" type="button"><svg class="contact-channel-svg" viewBox="0 0 24 24"></svg><span>JB Collections</span></button></div></section></div></body></html>`);
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+      const result = await page.evaluate(() => {
+        const read = id => {
+          const button = document.getElementById(id);
+          const label = button.querySelector("span");
+          const buttonStyle = getComputedStyle(button);
+          const labelStyle = getComputedStyle(label);
+          const color = labelStyle.color.match(/\d+/g)?.slice(0, 3).map(Number) || [];
+          const background = buttonStyle.backgroundColor.match(/\d+/g)?.slice(0, 3).map(Number) || [];
+          return {
+            text: label.textContent.trim(),
+            display: labelStyle.display,
+            visibility: labelStyle.visibility,
+            opacity: Number(labelStyle.opacity),
+            fontSize: parseFloat(labelStyle.fontSize),
+            color,
+            background,
+            buttonHeight: button.getBoundingClientRect().height,
+          };
+        };
+        return { whatsapp: read("dialog-payment-whatsapp"), jb: read("dialog-payment-jb") };
+      });
+      for (const [name, button] of Object.entries(result)) {
+        assert.ok(button.text.length > 0, theme + " " + name + ": label must exist");
+        assert.notEqual(button.display, "none", theme + " " + name + ": label must render");
+        assert.notEqual(button.visibility, "hidden", theme + " " + name + ": label must be visible");
+        assert.ok(button.opacity > 0, theme + " " + name + ": label must not be transparent");
+        assert.ok(button.fontSize >= 10, theme + " " + name + ": label must remain readable on mobile");
+        assert.ok(button.color.length === 3 && button.background.length === 3, theme + " " + name + ": foreground/background colors must resolve");
+        assert.notDeepEqual(button.color, button.background, theme + " " + name + ": foreground and background must differ");
+        assert.ok(button.buttonHeight >= 42, theme + " " + name + ": touch target must remain large enough");
+      }
+      assert.deepEqual(result.whatsapp.color, [255, 255, 255], theme + ": WhatsApp text must remain white on the green action");
+      assert.deepEqual(result.whatsapp.background, [18, 140, 126], theme + ": WhatsApp background must remain green");
+      if (theme === "dark") {
+        assert.deepEqual(result.jb.color, [241, 246, 255], "dark: JB Collections label must be light");
+        assert.deepEqual(result.jb.background, [16, 31, 54], "dark: JB Collections action must use a dark surface");
+      } else {
+        assert.deepEqual(result.jb.color, [20, 36, 61], "light: JB Collections label must be dark");
+        assert.deepEqual(result.jb.background, [255, 255, 255], "light: JB Collections action must use a light surface");
+      }
+    }
+    await page.close();
   } finally {
     await browser.close();
   }
