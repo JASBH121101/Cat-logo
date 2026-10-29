@@ -9,7 +9,7 @@ const css = readFileSync("technology-visual-refresh.css", "utf8");
 test("public technology catalog exposes an accessible subcategory selector", () => {
   assert.match(html, /id="subcategory-filter"/);
   assert.match(html, /class="subcategory-filter-bar"/);
-  assert.match(html, /technology-visual-refresh\.css\?v=20261029-a11y-contrast2/);
+  assert.match(html, /technology-visual-refresh\.css\?v=20261029-desktop-wide-audit3/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
 });
 
