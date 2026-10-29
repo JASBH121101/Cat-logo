@@ -41,6 +41,10 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(adminJs, /detectPrivateChatNotificationEvents/);
   assert.match(adminJs, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(chatStyles, /private-chat-admin-layout/);
+  assert.ok(html.includes("admin-private-chat.css?v=20261029-compact-inbox1"));
+  assert.ok(chatStyles.includes("max-height: 220px !important"));
+  assert.ok(chatStyles.includes("min-height: 38px"));
+  assert.ok(chatStyles.includes("padding: 7px 9px"));
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(workflow, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
