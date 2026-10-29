@@ -214,20 +214,27 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   const address = server.address();
   origin = `http://127.0.0.1:${address.port}`;
   browser = await chromium.launch({ headless: true });
+  const contexts = new Map();
   t.after(async () => {
+    await Promise.all([...contexts.values()].map(context => context.close().catch(() => {})));
     await browser?.close();
     await new Promise(resolveClose => server?.close(resolveClose));
   });
 
   for (const site of PAGES) {
     for (const viewport of VIEWPORTS) {
-      for (const theme of THEMES) {
-        const page = await browser.newPage({
+      let context = contexts.get(viewport.name);
+      if (!context) {
+        context = await browser.newContext({
           viewport: { width: viewport.width, height: viewport.height },
           deviceScaleFactor: 1,
           isMobile: viewport.mobile,
           reducedMotion: "reduce",
         });
+        contexts.set(viewport.name, context);
+      }
+      for (const theme of THEMES) {
+        const page = await context.newPage();
         const pageErrors = [];
         page.on("pageerror", error => pageErrors.push(error.message));
         page.on("console", msg => {
