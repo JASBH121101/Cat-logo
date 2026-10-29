@@ -19,6 +19,7 @@ export function classifyRuntimeError(value, context = {}) {
         category: "external_dependency_blocked_by_audit",
         severity: "info",
         blocking: false,
+        confidence: 0.99,
         rationale: "La solicitud externa fue bloqueada deliberadamente por la auditoría aislada; no se considera un fallo de la aplicación.",
       };
     }
@@ -28,6 +29,7 @@ export function classifyRuntimeError(value, context = {}) {
         category: "first_party_resource_failure",
         severity: "critical",
         blocking: true,
+        confidence: 0.95,
         rationale: "Falló una solicitud de un recurso del propio sitio. Revisar la ruta, el servidor local y la referencia del recurso antes de aprobar.",
       };
     }
@@ -37,6 +39,7 @@ export function classifyRuntimeError(value, context = {}) {
       category: essential ? "external_essential_resource_failure" : "external_dependency_or_network",
       severity: essential ? "high" : "medium",
       blocking: essential,
+      confidence: essential ? 0.86 : networkLike ? 0.72 : 0.58,
       rationale: essential
         ? "Falló un documento, script o stylesheet externo que puede cambiar el comportamiento o el aspecto del sitio. Repetir y verificar la dependencia antes de aprobar."
         : networkLike
@@ -53,6 +56,7 @@ export function classifyRuntimeError(value, context = {}) {
         category: "console_diagnostic",
         severity: "medium",
         blocking: false,
+        confidence: 0.58,
         rationale: "Es un mensaje de consola sin señal inequívoca de excepción no controlada; conservarlo como diagnóstico sin convertirlo automáticamente en fallo bloqueante.",
       };
     }
@@ -64,6 +68,7 @@ export function classifyRuntimeError(value, context = {}) {
     category: "uncaught_javascript_exception",
     severity: "critical",
     blocking: true,
+    confidence: 0.9,
     rationale: "Una excepción JavaScript no controlada puede interrumpir el montaje o una interacción; debe reproducirse y corregirse antes de aprobar.",
   };
 }
@@ -78,4 +83,61 @@ export function classifyAxeImpact(value) {
   if (impact === "moderate") return { severity: "medium", blocking: false };
   if (impact === "minor") return { severity: "low", blocking: false };
   return { severity: "medium", blocking: false };
+}
+
+
+// Stable grouping of repeated signals across themes/viewports without hiding
+// raw occurrence counts, the strongest severity, or a blocking classification.
+function normalizeFindingEvidence(value) {
+  return String(value ?? "").toLowerCase()
+    .replace(/https?:\/\/[^\s"'<>]+/g, "<url>")
+    .replace(/\b\d{2,}\b/g, "<n>")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function auditFindingFingerprint(finding) {
+  const identity = finding.rule || finding.code || finding.category || finding.message || "unknown";
+  const target = Array.isArray(finding.target)
+    ? finding.target.join(" ")
+    : finding.element || finding.evidence || finding.message || "";
+  return [finding.page || "", String(identity).toLowerCase(), normalizeFindingEvidence(target)].join("::");
+}
+
+function findingScenarios(finding) {
+  if (Array.isArray(finding.themes) && Array.isArray(finding.viewports)) {
+    return finding.themes.flatMap(theme => finding.viewports.map(viewport => theme + "/" + viewport));
+  }
+  const scenario = [finding.theme, finding.viewport].filter(Boolean).join("/");
+  return scenario ? [scenario] : [];
+}
+
+export function groupRepeatedFindings(findings) {
+  const grouped = new Map();
+  const ranks = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+  for (const finding of findings) {
+    const fingerprint = auditFindingFingerprint(finding);
+    const current = grouped.get(fingerprint);
+    const weight = Number.isFinite(Number(finding.occurrences)) && Number(finding.occurrences) > 0
+      ? Number(finding.occurrences) : 1;
+    const scenarios = findingScenarios(finding);
+    if (!current) {
+      grouped.set(fingerprint, {
+        ...finding,
+        fingerprint,
+        occurrences: weight,
+        scenarios: [...new Set(scenarios)].sort(),
+      });
+      continue;
+    }
+    current.occurrences += weight;
+    for (const scenario of scenarios) {
+      if (!current.scenarios.includes(scenario)) current.scenarios.push(scenario);
+    }
+    current.scenarios.sort();
+    if ((ranks[finding.severity] ?? 0) > (ranks[current.severity] ?? 0)) current.severity = finding.severity;
+    current.blocking = Boolean(current.blocking || finding.blocking);
+    current.confidence = Math.max(Number(current.confidence) || 0, Number(finding.confidence) || 0);
+  }
+  return [...grouped.values()];
 }
