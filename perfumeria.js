@@ -771,7 +771,7 @@ function openPerfume(product) {
       '<section class="perfume-dialog-gallery">' + gallery + '</section>' +
       '<section class="perfume-dialog-detail">' +
         '<p class="perfume-kicker">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
-        '<h2>' + escapeHtml(product.name || "Fragancia") + '</h2>' +
+        '<h1 class="perfume-dialog-title">' + escapeHtml(product.name || "Fragancia") + '</h1>' +
         (product.brand ? '<p class="perfume-dialog-brand">' + escapeHtml(product.brand) + '</p>' : '') +
         '<div class="perfume-dialog-description">' + renderCommercialDescription(product.description, "Consultá por las notas y características de esta fragancia.") + '</div>' +
         '<dl class="perfume-dialog-facts">' +
