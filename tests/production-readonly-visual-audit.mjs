@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
@@ -149,6 +148,7 @@ try {
           await page.locator(site.products).first().waitFor({ state: "visible", timeout: 7000 }).catch(() => {});
         }
         const actualTheme = await page.locator("html").getAttribute("data-theme");
+        if (actualTheme !== theme) errors.push({ severity: "high", page: site.name, viewport: viewport.name, theme, type: "theme-not-applied", message: "El tema solicitado no quedó aplicado al documento.", evidence: "esperado=" + theme + "; observado=" + String(actualTheme) });
         const snapshot = await page.evaluate(() => {
           const visible = el => {
             const style=getComputedStyle(el), rect=el.getBoundingClientRect();
