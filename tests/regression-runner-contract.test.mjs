@@ -17,7 +17,8 @@ const requiredTests = [
   "admin-provider-price-sync.test.mjs", "provider-review-variants.test.mjs", "perfume-card-layout.test.mjs",
   "commercial-description-layout.test.mjs", "catalog-contact-channels.test.mjs", "private-chat-workflow.test.mjs",
   "private-chat-resume.test.mjs", "product-tag-formatting.test.mjs", "asset-cache-contract.test.mjs",
-  "technology-gallery-layout.test.mjs", "technology-subcategory-filter.test.mjs", "visual-audit.test.mjs",
+  "technology-gallery-layout.test.mjs", "technology-subcategory-filter.test.mjs",
+  "visual-audit-policy.test.mjs", "visual-audit.test.mjs",
 ];
 
 test("parallel regression runner includes every existing CI test exactly once", () => {
