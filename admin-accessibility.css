@@ -1,0 +1,36 @@
+/* Accessibility contrast corrections for the administrative UI.
+   Defaults are readable on light surfaces; dark-theme overrides use light text. */
+.admin-body .admin-input-unit > span {
+  color: #455675 !important;
+}
+.provider-metric > span,
+.provider-metric > small,
+.provider-empty-state,
+.private-chat-admin-inbox .provider-empty-state {
+  color: #455675 !important;
+}
+.provider-import-explainer p strong {
+  color: #26364f !important;
+}
+
+html[data-theme="light"] body.admin-body .admin-input-unit > span,
+html[data-theme="light"] body.admin-body .provider-metric > span,
+html[data-theme="light"] body.admin-body .provider-metric > small,
+html[data-theme="light"] body.admin-body .provider-empty-state,
+html[data-theme="light"] body.admin-body .private-chat-admin-inbox .provider-empty-state {
+  color: #455675 !important;
+}
+html[data-theme="light"] body.admin-body .provider-import-explainer p strong {
+  color: #26364f !important;
+}
+
+html[data-theme="dark"] body.admin-body .admin-input-unit > span,
+html[data-theme="dark"] body.admin-body .provider-metric > span,
+html[data-theme="dark"] body.admin-body .provider-metric > small,
+html[data-theme="dark"] body.admin-body .provider-empty-state,
+html[data-theme="dark"] body.admin-body .private-chat-admin-inbox .provider-empty-state {
+  color: #c9d5e9 !important;
+}
+html[data-theme="dark"] body.admin-body .provider-import-explainer p strong {
+  color: #e4ecfb !important;
+}

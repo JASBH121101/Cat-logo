@@ -10,6 +10,8 @@ const colorApi = readFileSync(new URL("../functions/api/color-assistant.js", imp
 const theme = readFileSync(new URL("../theme-ui.css", import.meta.url), "utf8");
 const provider = readFileSync(new URL("../admin-provider.js", import.meta.url), "utf8");
 const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.url), "utf8");
+const publicApp = readFileSync(new URL("../app.js", import.meta.url), "utf8");
+const advisorCss = readFileSync(new URL("../ai-assistant.css", import.meta.url), "utf8");
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
   assert.match(admin, /if \(!name\) throw new Error\("Escribí el nombre del producto\."\);/);
@@ -60,7 +62,7 @@ test("admin hides the floating back-to-top control and forces fresh script URLs"
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
   assert.match(html, /admin\.js\?v=20261029-push-timeout1/);
-  assert.match(html, /admin-private-chat\.css\?v=20261028-inbox-no-blank-space7/);
+  assert.match(html, /admin-private-chat\.css\?v=20261029-compact-inbox1/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
 
@@ -201,4 +203,16 @@ test("provider review compares prices and syncs catalog only through explicit co
   assert.match(providerCss, /provider-review-sync-details/);
   assert.match(providerCss, /provider-price-difference\.is-different/);
   assert.match(providerCss, /@media\(max-width:480px\)/);
+});
+
+test("customer specification lists hide legacy sequence numbers and preserve their intended order", () => {
+  assert.match(publicApp, /line = line\.replace\(\/\^\\s\*\\d\+\\s\*\[\.\):\\-\]\\s\*\//);
+  assert.match(publicApp, /const numbered = lines\.filter\(line => \/\^\\s\*\\d\+\\s\*\[\.\):\\-\]\\s\*\//);
+  assert.match(publicApp, /\.sort\(\(left, right\) => left\.order - right\.order \|\| left\.index - right\.index\)/);
+});
+
+test("JB TECH mobile advisor launcher is compact and its label does not cover specifications", () => {
+  assert.match(advisorCss, /body\.technology-catalog \.jb-ai-launcher-label/);
+  assert.match(advisorCss, /width: 48px;[\s\S]*?height: 48px;[\s\S]*?border-radius: 50%/);
+  assert.match(advisorCss, /clip: rect\(0, 0, 0, 0\)/);
 });
