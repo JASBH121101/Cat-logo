@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
-import { classifyRuntimeError } from "./visual-audit-policy.mjs";
+import { classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -500,12 +500,14 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   const rank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
   findings.sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0));
   const blockingFindings = findings.filter(item => item.blocking);
+  const groupedFindings = groupRepeatedFindings(findings);
+  const uniqueBlockingFindings = groupedFindings.filter(item => item.blocking);
   const result = {
     generatedAt: new Date().toISOString(),
     matrix: { pages: PAGES.map(p => p.name), viewports: VIEWPORTS, themes: THEMES, combinations: observations.length },
     summary: {
       scenarios: observations.length, screenshotCount: screenshots.length,
-      blockingFindings: blockingFindings.length, findings: findings.length,
+      blockingFindings: blockingFindings.length, findings: findings.length,\n      uniqueFindings: groupedFindings.length, uniqueBlockingFindings: uniqueBlockingFindings.length,
       runtimeErrors: runtimeErrors.length,
       blockingRuntimeErrors: runtimeErrors.filter(error => error.blocking).length,
       journeyFailures: journeyResults.filter(journey => !journey.passed).length,
@@ -526,11 +528,11 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     `- Capturas generadas: ${screenshots.length}`,
     `- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`,
     `- Hallazgos bloqueantes: ${blockingFindings.length}`,
-    `- Hallazgos adicionales: ${findings.length}`,
+    `- Hallazgos adicionales (ocurrencias): ${findings.length}`,\n    `- Hallazgos únicos agrupados: ${groupedFindings.length}; bloqueantes únicos: ${uniqueBlockingFindings.length}`,
     `- Errores JS: ${runtimeErrors.length}; bloqueantes: ${result.summary.blockingRuntimeErrors}`,
     `- Violaciones Axe detectadas en móvil: ${axeFindings.length}`,
     "",
-    "## Hallazgos ordenados por gravedad",
+    "## Hallazgos agrupados por causa",\n    "",\n    ...(groupedFindings.length ? groupedFindings.map((f, i) => `${i + 1}. **[${f.severity.toUpperCase()}] ${f.page} / ${f.rule || f.code || f.element || "hallazgo"}** — ${f.message || f.evidence || "Sin descripción"}\\n   - Ocurrencias: ${f.occurrences}; escenarios: ${f.scenarios.join(", ") || "no especificados"}\\n   - Bloqueante: ${f.blocking ? "sí" : "no"}`) : ["No hay hallazgos agrupables."]),\n    "",\n    "## Hallazgos ordenados por gravedad",
     "",
 ...(findings.length ? findings.map((f, i) => `${i + 1}. **[${f.severity.toUpperCase()}] ${f.page} / ${f.theme} / ${f.viewport}** — ${f.message}\n   - Evidencia: ${escMarkdown(f.evidence)}\n   - Diagnóstico (${Math.round((f.diagnosis?.confidence || 0) * 100)}%): ${f.diagnosis?.hypothesis || "Sin hipótesis"}\n   - Siguiente verificación: ${f.diagnosis?.nextCheck || "Revisión manual"}\n   - Recomendación: ${escMarkdown(f.recommendation)}`) : ["No se activaron las reglas de diagnóstico configuradas. Esto no equivale a probar flujos de negocio autenticados."]),
     "",
