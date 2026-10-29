@@ -54,7 +54,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261029-contrast-typography6"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261029-variant-unit-arrow1"));
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /\.admin-body \.admin-input-unit > span\s*\{[^}]*color:\s*#455675\s*!important/);
   assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body \.admin-input-unit > span,[\s\S]*?\{[^}]*color:\s*#c9d5e9\s*!important/);
@@ -71,6 +71,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /html body\.admin-body footer\.site-footer span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.commission-summary-grid span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-updated,[\s\S]*?font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body select\.variant-storage-unit\s*\{[\s\S]*?appearance:\s*none\s*!important;[\s\S]*?background-image:\s*url\("data:image\/svg\+xml,[\s\S]*?stroke='%23E1EAFF'[\s\S]*?background-repeat:\s*no-repeat\s*!important;[\s\S]*?padding:\s*4px 22px 4px 7px\s*!important;/);
+  assert.match(html, /<select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(regressionRunner, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
