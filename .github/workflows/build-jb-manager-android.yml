@@ -228,6 +228,13 @@ jobs:
           grep -Fq '"insetsHandling": "css"' mobile/capacitor.config.json
           grep -Fq '"initialViewportFitValueHint": "cover"' mobile/capacitor.config.json
           test -s mobile/www/jb-manager-system-bars.js
+          grep -Fq '"@capacitor/local-notifications": "8.3.1"' mobile/package.json
+          grep -Fq 'JBManagerNativeNotifications' mobile/native-notifications.js
+          grep -Fq 'src="./jb-manager-native-notifications.js"' mobile/www/admin.html
+          test -s mobile/www/jb-manager-native-notifications.js
+          grep -Fq 'jb-manager-private-chat' mobile/www/jb-manager-native-notifications.js
+          grep -Fq 'admin-notifications.mjs?v=20261029-native-local-notifications1' mobile/www/admin.js
+          grep -Fq 'Para recibir avisos con la app cerrada hace falta configurar push nativo' mobile/www/admin.js
           grep -Fq 'compareVersions(savedVersion, installedVersion) > 0' mobile/native-android/ApkUpdaterPlugin.java
           grep -Fq 'state.installPrompted' mobile/prepare-web.mjs
           grep -Fq 'Android installer is the confirmation UI' mobile/prepare-web.mjs
@@ -239,7 +246,7 @@ jobs:
           set -euo pipefail
           # The APK must package the same business logic, Supabase config, and styles
           # as the browser panel. Only the HTML shell/native bridges are platform-specific.
-          for file in admin.js admin-provider.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
+          for file in admin.js admin-notifications.mjs admin-provider.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
             if ! cmp -s "$file" "mobile/www/$file"; then
               echo "Shared source and APK bundle differ: $file" >&2
               diff -u "$file" "mobile/www/$file" || true
@@ -508,6 +515,7 @@ jobs:
             assets/public/admin-duplicate-detector.css \
             assets/public/responsive-layout.css \
             assets/public/admin.js \
+            assets/public/admin-notifications.mjs \
             assets/public/admin-provider.js \
             assets/public/app.js \
             assets/public/perfumeria.js \
@@ -516,6 +524,7 @@ jobs:
             assets/public/jb-manager-back-navigation.js \
             assets/public/jb-manager-apk-updater.js \
             assets/public/jb-manager-system-bars.js \
+            assets/public/jb-manager-native-notifications.js \
             assets/public/img/hero-catalogo.png \
             assets/public/tecnologia/index.html \
             assets/public/perfumeria/index.html \
@@ -536,6 +545,14 @@ jobs:
           }
           unzip -p "$APK" assets/public/index.html | grep -q 'JB Manager está actualizado' || {
             echo "APK is missing update-status feedback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'src="./jb-manager-native-notifications.js"' || {
+            echo "APK admin shell is missing the Capacitor native notification bridge." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-notifications.mjs | grep -q 'native-local' || {
+            echo "APK admin module is missing the native local-notification path." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.html | grep -q 'id="login-remember-user"' || {

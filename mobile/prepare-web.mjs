@@ -223,6 +223,20 @@ await build({
   legalComments: "none"
 });
 
+// Bundle Capacitor's Local Notifications API for the APK only. The shared web
+// module detects this bridge at runtime and otherwise keeps using browser Web Push.
+const nativeNotificationsBundlePath = join(webDir, "jb-manager-native-notifications.js");
+await build({
+  entryPoints: [join(mobileDir, "native-notifications.js")],
+  outfile: nativeNotificationsBundlePath,
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  target: ["es2020"],
+  minify: true,
+  legalComments: "none"
+});
+
 const replacements = [
   [
     '<header class="site-header admin-header">',
@@ -262,6 +276,14 @@ if (!adminHtml.includes('src="./jb-manager-system-bars.js"')) {
   if (scriptBodyEnd < 0) throw new Error("Expected admin.html body end for native system-bars bridge.");
   adminHtml = adminHtml.slice(0, scriptBodyEnd)
     + '<script src="./jb-manager-system-bars.js" defer></script>\n'
+    + adminHtml.slice(scriptBodyEnd);
+}
+
+if (!adminHtml.includes('src="./jb-manager-native-notifications.js"')) {
+  const scriptBodyEnd = adminHtml.toLowerCase().lastIndexOf("</body>");
+  if (scriptBodyEnd < 0) throw new Error("Expected admin.html body end for native notifications bridge.");
+  adminHtml = adminHtml.slice(0, scriptBodyEnd)
+    + '<script src="./jb-manager-native-notifications.js"></script>\n'
     + adminHtml.slice(scriptBodyEnd);
 }
 // Add a persistent update button and check GitHub Releases for a newer APK.
