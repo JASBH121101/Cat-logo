@@ -24,10 +24,16 @@ test("provider review displays live price differences and availability validatio
   assert.match(admin, /admin-provider\.js\?v=20261029-variant-overview-compact1/);
 });
 
-test("variant product comparison uses first configuration prices instead of duplicate general fields", () => {
+test("variant product comparison uses the lowest RAM/storage configuration instead of duplicate general fields", () => {
   assert.match(provider, /function deriveProviderVariantOverview\(snapshot\)/);
-  assert.match(provider, /provider_price_usd: first\.provider_price_usd \?\? null/);
-  assert.match(provider, /provider_price_nio: first\.provider_price_nio \?\? null/);
+  assert.match(provider, /const ordered = groups\.slice\(\)\.sort\(compareProviderConfigurations\)/);
+  assert.match(provider, /const lowest = ordered\[0\] \|\| \{\}/);
+  assert.match(provider, /provider_price_usd: lowest\.provider_price_usd \?\? null/);
+  assert.match(provider, /provider_price_nio: lowest\.provider_price_nio \?\? null/);
+  assert.match(provider, /function configurationRamValue\(value\)/);
+  assert.match(provider, /function configurationStorageValue\(value\)/);
+  assert.match(provider, /if \(unit === "TB"\) return amount \* 1024/);
+  assert.match(provider, /if \(Number\.isFinite\(ramDifference\) && ramDifference !== 0\) return ramDifference/);
   assert.match(provider, /const overview = deriveProviderVariantOverview\(collectProviderVariantSnapshot\(\)\)/);
   assert.match(html, /id="provider-review-price-usd-field"/);
   assert.match(html, /id="provider-review-price-nio-field"/);
