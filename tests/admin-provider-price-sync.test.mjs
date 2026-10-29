@@ -48,8 +48,8 @@ test("provider review preserves references and uses guarded RPC for optional cat
   const end = provider.indexOf("async function openHistory(productId)", start);
   assert.ok(start >= 0 && end > start, "provider save handler has a clear boundary");
   const save = provider.slice(start, end);
-  assert.match(save, /provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null)/);
-  assert.match(save, /provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null)/);
+  assert.ok(save.includes("provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null)"));
+  assert.ok(save.includes("provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null)"));
   assert.match(save, /provider_product_id: previous\.provider_product_id \?\? null/);
   assert.match(save, /confirm_provider_product_review/);
   assert.match(save, /p_sync_catalog_availability: syncCatalogAvailability/);
