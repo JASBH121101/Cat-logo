@@ -3544,3 +3544,22 @@ body.technology-catalog.product-detail-active #product-detail-page .payment-choi
     font-size: 8.5px !important;
   }
 }
+
+
+/* JB TECH · galería persistente en escritorio (2026-10-29).
+   Evita que el área de imagen desaparezca al recorrer una descripción larga
+   y deje una columna izquierda vacía. En móvil la página sigue el flujo normal. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    align-items: start !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    position: sticky !important;
+    top: 14px !important;
+    align-self: start !important;
+    z-index: 2 !important;
+    height: min(clamp(430px, 52vh, 650px), calc(100vh - 124px)) !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 124px) !important;
+  }
+}
