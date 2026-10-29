@@ -2947,3 +2947,10 @@ body.technology-catalog .hero-trust-copy {
   align-self:stretch;
   overflow-wrap:anywhere;
 }
+
+
+/* Accessibility audit fix: body text must retain WCAG AA contrast on the light catalog surface. */
+html[data-theme="light"] body.technology-catalog .section-subtitle,
+html[data-theme="light"] body.technology-catalog .catalog-results-heading .section-subtitle {
+  color:#4b5d75!important;
+}
