@@ -87,7 +87,7 @@ jobs:
             if [ "$source" = "direct" ]; then url="$direct_url"; else url="$proxy_url"; fi
             headers="$RUNNER_TEMP/jb-apk-${source}.headers"
             body="$RUNNER_TEMP/jb-apk-${source}.apk"
-            status="$(curl --silent --show-error --location --max-time 120 \
+            status="$(curl --silent --show-error --location --max-time 120 --retry 4 --retry-all-errors --retry-delay 5 --retry-max-time 75 \
               --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
             size="$(wc -c < "$body" | tr -d ' ')"
             echo "$source download: HTTP $status, $size bytes"
