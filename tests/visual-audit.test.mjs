@@ -437,9 +437,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 dialog.getAttribute('aria-label') || dialog.getAttribute('aria-labelledby') || '';
               const selector = dialog.id ? '#' + dialog.id :
                 dialog.tagName.toLowerCase() + (typeof dialog.className === 'string' && dialog.className.trim()
-                  ? '.' + dialog.className.trim().split(/\\s+/).slice(0, 2).join('.') : '');
+                  ? '.' + dialog.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
               return {
-                index, selector, title: String(title).replace(/\\s+/g, ' ').trim().slice(0, 100),
+                index, selector, title: String(title).replace(/\s+/g, ' ').trim().slice(0, 100),
                 visible: true, width: Math.round(rect.width), height: Math.round(rect.height),
                 controlCount: controls.length, minimumControlHeight: heights.length ? Math.min(...heights) : null,
                 scrollHeight: dialog.scrollHeight, clientHeight: dialog.clientHeight,
