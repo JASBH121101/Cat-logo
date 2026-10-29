@@ -47,7 +47,7 @@ BEGIN
   VALUES (
     p_conversation_id,
     'assistant',
-    'Un asesor tomó la conversación. Ya podés responder en este chat.'
+    'Un asesor tomó la conversación. Ya podés continuar por este chat.'
   );
 
   RETURN jsonb_build_object('ok', true, 'status', 'advisor_active', 'claimed_by', v_uid);
