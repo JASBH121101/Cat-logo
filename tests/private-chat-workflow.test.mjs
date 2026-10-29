@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261028204826_private_chat_secure_workflow_20261028.sql", import.meta.url), "utf8");
 const orderDataMigration = readFileSync(new URL("../supabase/migrations/20261029034000_allow_order_contact_data_private_chat.sql", import.meta.url), "utf8");
-const claimConflictMigration = readFileSync(new URL("../supabase/migrations/20261029122000_private_chat_claim_conflict_return.sql", import.meta.url), "utf8");
+const claimConflictMigration = readFileSync(new URL("../supabase/migrations/20261029122342_private_chat_claim_conflict_return.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028212147_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
 const adminRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028230836_revoke_anon_execute_from_private_chat_admin_rpcs.sql", import.meta.url), "utf8");
 const customerRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028231046_restrict_customer_chat_rpcs_to_anon.sql", import.meta.url), "utf8");
