@@ -694,3 +694,22 @@ html[data-theme="light"] body.admin-body form#product-form .variant-config-body 
   border-color:#c6d1e3!important;
   color-scheme:light;
 }
+
+
+/* Mobile reliability: draw the variant collapse indicator with CSS rather than
+   a font glyph, which can render as an empty outlined square on some devices. */
+html body.admin-body form#product-form .variant-config-chevron {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: currentColor !important;
+}
+html body.admin-body form#product-form .variant-config-chevron::before {
+  content: "" !important;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 2px solid currentColor !important;
+  border-bottom: 2px solid currentColor !important;
+  transform: translateY(-2px) rotate(45deg) !important;
+  box-sizing: border-box !important;
+}
