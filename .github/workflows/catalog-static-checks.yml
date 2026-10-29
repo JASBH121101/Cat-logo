@@ -311,7 +311,8 @@ jobs:
 
   production-visual-audit:
     name: Read-only production visual audit
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_production }}
+    needs: validate
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.audit_production) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     env:
       AI_REVIEW_ENABLED: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}
