@@ -153,6 +153,7 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
       const form = document.getElementById("product-form");
       if (!form) return;
       const fixture = document.createElement("details");
+      fixture.id = "dark-theme-color-fixture";
       fixture.className = "variant-admin-row inline-color-card inline-color-card-collapse";
       fixture.innerHTML = `
         <summary class="inline-color-card-summary">
@@ -176,7 +177,7 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
     });
     await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
     const darkColorSurfaces = await page.evaluate(() => {
-      const card = document.querySelector("#product-form .inline-color-card-collapse");
+      const card = document.querySelector("#dark-theme-color-fixture");
       const inner = card?.querySelector(".inline-color-details");
       const fields = card?.querySelector(".variant-color-fields select");
       const library = card?.querySelector(".variant-color-library-tools");
