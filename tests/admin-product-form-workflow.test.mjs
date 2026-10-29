@@ -61,7 +61,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261029-claim-conflict-recovery2/);
+  assert.match(html, /admin\.js\?v=20261029-variant-overview-compact1/);
   assert.match(html, /admin-private-chat\.css\?v=20261029-chat-reply-theme3/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
@@ -190,8 +190,8 @@ test("provider review compares prices and syncs catalog only through explicit co
   assert.match(provider, /diffDisplay/);
   assert.match(provider, /En revisión/);
   assert.match(provider, /function updateReviewComparison\(\)/);
-  assert.match(provider, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
-  assert.match(provider, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
+  assert.ok(provider.includes("provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null)"));
+  assert.ok(provider.includes("provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null)"));
   assert.match(html, /id="provider-review-sync-catalog-availability" type="checkbox" checked/);
   assert.match(provider, /p_sync_catalog_availability: syncCatalogAvailability/);
   assert.match(provider, /supabase\.rpc\("confirm_provider_product_review"/);

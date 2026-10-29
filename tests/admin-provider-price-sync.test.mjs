@@ -21,7 +21,26 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-validation-summary"[^>]*aria-live="polite"/);
   assert.match(css, /provider-price-difference.is-different/);
   assert.match(css, /provider-validation-line.is-match/);
-  assert.match(admin, /admin-provider\.js\?v=20261028-provider-review-minimal4/);
+  assert.match(admin, /admin-provider\.js\?v=20261029-variant-overview-compact1/);
+});
+
+test("variant product comparison uses the lowest RAM/storage configuration instead of duplicate general fields", () => {
+  assert.match(provider, /function deriveProviderVariantOverview\(snapshot\)/);
+  assert.match(provider, /const ordered = groups\.slice\(\)\.sort\(compareProviderConfigurations\)/);
+  assert.match(provider, /const lowest = ordered\[0\] \|\| \{\}/);
+  assert.match(provider, /provider_price_usd: lowest\.provider_price_usd \?\? null/);
+  assert.match(provider, /provider_price_nio: lowest\.provider_price_nio \?\? null/);
+  assert.match(provider, /function configurationRamValue\(value\)/);
+  assert.match(provider, /function configurationStorageValue\(value\)/);
+  assert.match(provider, /if \(unit === "TB"\) return amount \* 1024/);
+  assert.match(provider, /if \(Number\.isFinite\(ramDifference\) && ramDifference !== 0\) return ramDifference/);
+  assert.match(provider, /const overview = deriveProviderVariantOverview\(collectProviderVariantSnapshot\(\)\)/);
+  assert.match(html, /id="provider-review-price-usd-field"/);
+  assert.match(html, /id="provider-review-price-nio-field"/);
+  assert.match(html, /id="provider-review-availability-field"/);
+  assert.match(html, /id="provider-review-variant-overview-note"[^>]*hidden/);
+  assert.match(provider, /field\.hidden = hasVariants/);
+  assert.match(css, /\.provider-dialog-fields \[hidden\]\s*\{\s*display:none !important/);
 });
 
 test("provider review preserves references and uses guarded RPC for optional catalog synchronization", () => {
@@ -29,8 +48,8 @@ test("provider review preserves references and uses guarded RPC for optional cat
   const end = provider.indexOf("async function openHistory(productId)", start);
   assert.ok(start >= 0 && end > start, "provider save handler has a clear boundary");
   const save = provider.slice(start, end);
-  assert.match(save, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
-  assert.match(save, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
+  assert.ok(save.includes("provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null)"));
+  assert.ok(save.includes("provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null)"));
   assert.match(save, /provider_product_id: previous\.provider_product_id \?\? null/);
   assert.match(save, /confirm_provider_product_review/);
   assert.match(save, /p_sync_catalog_availability: syncCatalogAvailability/);
@@ -71,8 +90,8 @@ test("admin settings are located in the dashboard sidebar and hidden during logi
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) #dashboard\.hidden[\s\S]*?display:none!important/);
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) \.admin-main\{padding-top:0!important\}/);
   assert.match(css, /\.admin-sidebar \.admin-settings-menu\{position:static/);
-  assert.match(html, /admin-provider\.css\?v=20261028-provider-contrast-compact3/);
-  assert.match(html, /admin\.js\?v=20261029-claim-conflict-recovery2/);
+  assert.match(html, /admin-provider\.css\?v=20261029-variant-overview-compact1/);
+  assert.match(html, /admin\.js\?v=20261029-variant-overview-compact1/);
 });
 
 

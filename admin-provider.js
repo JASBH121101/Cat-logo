@@ -646,6 +646,84 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     return [...groups.values()];
   }
 
+  function productHasProviderVariants(product) {
+    const variants = parseMaybeJSON(product?.variants, []);
+    return Array.isArray(variants) && variants.some(variant =>
+      variant && typeof variant === "object" && !Array.isArray(variant)
+    );
+  }
+
+  function rollupProviderAvailability(values) {
+    const statuses = (Array.isArray(values) ? values : [])
+      .map(value => normalizeAvailability(value, false))
+      .filter(value => ["available", "on_order", "out_of_stock"].includes(value));
+    if (statuses.includes("available")) return "available";
+    if (statuses.includes("on_order")) return "on_order";
+    if (statuses.length && statuses.every(value => value === "out_of_stock")) return "out_of_stock";
+    return "unknown";
+  }
+
+  function configurationRamValue(value) {
+    const match = String(value ?? "").replace(/,/g, ".").match(/\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
+  }
+
+  function configurationStorageValue(value) {
+    const match = String(value ?? "").replace(/,/g, ".").match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB|KB)?/i);
+    if (!match) return Number.POSITIVE_INFINITY;
+    const amount = Number(match[1]);
+    const unit = String(match[2] || "GB").toUpperCase();
+    if (unit === "TB") return amount * 1024;
+    if (unit === "MB") return amount / 1024;
+    if (unit === "KB") return amount / (1024 * 1024);
+    return amount;
+  }
+
+  function compareProviderConfigurations(left, right) {
+    const ramDifference = configurationRamValue(left?.ram) - configurationRamValue(right?.ram);
+    if (Number.isFinite(ramDifference) && ramDifference !== 0) return ramDifference;
+    if (!Number.isFinite(configurationRamValue(left?.ram)) && Number.isFinite(configurationRamValue(right?.ram))) return 1;
+    if (Number.isFinite(configurationRamValue(left?.ram)) && !Number.isFinite(configurationRamValue(right?.ram))) return -1;
+    const storageDifference = configurationStorageValue(left?.storage) - configurationStorageValue(right?.storage);
+    if (Number.isFinite(storageDifference) && storageDifference !== 0) return storageDifference;
+    if (!Number.isFinite(configurationStorageValue(left?.storage)) && Number.isFinite(configurationStorageValue(right?.storage))) return 1;
+    if (Number.isFinite(configurationStorageValue(left?.storage)) && !Number.isFinite(configurationStorageValue(right?.storage))) return -1;
+    return 0;
+  }
+
+  function deriveProviderVariantOverview(snapshot) {
+    const groups = Array.isArray(snapshot) ? snapshot : [];
+    const ordered = groups.slice().sort(compareProviderConfigurations);
+    const lowest = ordered[0] || {};
+    const configurationStatuses = groups.map(group => {
+      const colors = Array.isArray(group.colors) ? group.colors : [];
+      return colors.length
+        ? rollupProviderAvailability(colors.map(color => color.provider_availability))
+        : normalizeAvailability(group.provider_availability, false) || "unknown";
+    });
+    return {
+      // This is the lowest-RAM configuration; storage is the tie-breaker, independent of array order.
+      base_configuration: providerConfigLabel(lowest),
+      provider_price_usd: lowest.provider_price_usd ?? null,
+      provider_price_nio: lowest.provider_price_nio ?? null,
+      catalog_price_usd: lowest.catalog_price_usd ?? null,
+      catalog_price_nio: lowest.catalog_price_nio ?? null,
+      // The general product state is derived from the confirmed configuration/color statuses.
+      provider_availability: rollupProviderAvailability(configurationStatuses)
+    };
+  }
+
+  function setProviderReviewFormMode(product) {
+    const hasVariants = productHasProviderVariants(product);
+    ["provider-review-price-usd-field", "provider-review-price-nio-field", "provider-review-availability-field"]
+      .forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.hidden = hasVariants;
+      });
+    const note = $("#provider-review-variant-overview-note");
+    if (note) note.hidden = !hasVariants;
+  }
+
   function renderProviderVariantReview(product, savedSnapshot = []) {
     const section = $("#provider-review-variants-section");
     const container = $("#provider-review-variants");
@@ -739,10 +817,13 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }
 
   function updateProviderVariantReviewReadiness() {
+    const productId = $("#provider-review-product-id")?.value;
+    const product = activeProducts().find(item => String(item.id) === String(productId));
+    const hasVariants = productHasProviderVariants(product);
     const overall = normalizeAvailability($("#provider-review-availability")?.value, false) || "unknown";
     const selects = Array.from($("#provider-review-variants")?.querySelectorAll("[data-provider-config-availability], [data-provider-color-availability]") || []);
     const missing = selects.filter(select => (normalizeAvailability(select.value, false) || "unknown") === "unknown").length +
-      (overall === "unknown" ? 1 : 0);
+      (!hasVariants && overall === "unknown" ? 1 : 0);
     const mismatchLabels = selects.filter(select => {
       const row = select.closest("[data-provider-variant-config-row], [data-provider-color-row]");
       const catalog = row?.dataset.catalogAvailability || "unknown";
@@ -767,7 +848,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       button.disabled = savingReview || missing > 0;
       button.textContent = savingReview ? "Guardando…" : "Confirmar revisión";
       button.title = missing
-        ? "Confirmá la disponibilidad general, cada configuración y cada color antes de guardar."
+        ? (hasVariants
+          ? "Confirmá la disponibilidad de cada configuración y cada color antes de guardar."
+          : "Confirmá la disponibilidad general antes de guardar.")
         : mismatches
           ? "Hay " + mismatches + " diferencia(s) respecto al catálogo; revisalas antes de confirmar."
           : "Todas las disponibilidades están confirmadas.";
@@ -809,10 +892,34 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const productId = $("#provider-review-product-id")?.value;
     const product = activeProducts().find(item => String(item.id) === String(productId));
     if (!product) return;
-    let priceUSD = null, priceNIO = null;
+    let priceUSD = null, priceNIO = null, providerAvailability = "unknown";
     try {
-      priceUSD = cleanPrice($("#provider-review-price-usd")?.value);
-      priceNIO = cleanPrice($("#provider-review-price-nio")?.value);
+      if (productHasProviderVariants(product)) {
+        const overview = deriveProviderVariantOverview(collectProviderVariantSnapshot());
+        priceUSD = overview.provider_price_usd;
+        priceNIO = overview.provider_price_nio;
+        providerAvailability = overview.provider_availability;
+        renderReviewPriceComparison({
+          ...product,
+          price_usd: overview.catalog_price_usd ?? product.price_usd,
+          price_nio: overview.catalog_price_nio ?? product.price_nio
+        }, {
+          provider_price_usd: priceUSD,
+          provider_price_nio: priceNIO
+        });
+        renderReviewAvailabilityComparison(product, providerAvailability);
+        updateProviderVariantReviewReadiness();
+        const note = $("#provider-review-variant-overview-note");
+        if (note && overview.base_configuration) {
+          note.textContent = "La referencia general usa " + overview.base_configuration +
+            " (menor RAM y, en empate, menor almacenamiento). Es la configuración base para comparar el precio desde. La disponibilidad general se calcula a partir de las configuraciones y colores.";
+        }
+        return;
+      } else {
+        priceUSD = cleanPrice($("#provider-review-price-usd")?.value);
+        priceNIO = cleanPrice($("#provider-review-price-nio")?.value);
+        providerAvailability = $("#provider-review-availability")?.value || "unknown";
+      }
     } catch (error) {
       const container = $("#provider-review-validation-summary");
       if (container) container.innerHTML = '<p class="provider-validation-line is-different">' +
@@ -823,7 +930,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       provider_price_usd: priceUSD,
       provider_price_nio: priceNIO
     });
-    renderReviewAvailabilityComparison(product, $("#provider-review-availability")?.value || "unknown");
+    renderReviewAvailabilityComparison(product, providerAvailability);
     updateProviderVariantReviewReadiness();
   }
 
@@ -840,6 +947,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     $("#provider-review-price-nio").value = review.provider_price_nio ?? "";
     $("#provider-review-availability").value = review.provider_availability || "unknown";
     $("#provider-review-notes").value = review.review_notes || "";
+    setProviderReviewFormMode(product);
     renderProviderVariantReview(product, review.provider_variant_snapshot || []);
     updateReviewComparison();
     say(reviewMessage, "");
@@ -858,19 +966,24 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     if (!supabase || !user || !product) { say(reviewMessage, "Tu sesión venció o el producto ya no está disponible.", "error"); return; }
 
     const providerName = $("#provider-review-name").value.trim() || "GoPartner";
-    let priceUSD, priceNIO;
-    try {
-      priceUSD = cleanPrice($("#provider-review-price-usd").value);
-      priceNIO = cleanPrice($("#provider-review-price-nio").value);
-    } catch (error) { say(reviewMessage, error.message, "error"); return; }
-
     const previous = providerStatuses.get(String(product.id)) || {};
-    const overallAvailability = normalizeAvailability($("#provider-review-availability").value, false) || "unknown";
-    let variantSnapshot;
+    const hasVariants = productHasProviderVariants(product);
+    let priceUSD, priceNIO, overallAvailability, variantSnapshot;
     try {
       variantSnapshot = collectProviderVariantSnapshot();
+      if (hasVariants) {
+        const overview = deriveProviderVariantOverview(variantSnapshot);
+        // General provider prices mirror the lowest-RAM configuration, with storage as tie-breaker.
+        priceUSD = cleanPrice(overview.provider_price_usd);
+        priceNIO = cleanPrice(overview.provider_price_nio);
+        overallAvailability = overview.provider_availability;
+      } else {
+        priceUSD = cleanPrice($("#provider-review-price-usd").value);
+        priceNIO = cleanPrice($("#provider-review-price-nio").value);
+        overallAvailability = normalizeAvailability($("#provider-review-availability").value, false) || "unknown";
+      }
     } catch (error) {
-      say(reviewMessage, error.message || "Revisá los precios por configuración.", "error");
+      say(reviewMessage, error.message || "Revisá los precios y la disponibilidad del proveedor.", "error");
       return;
     }
     const unconfirmedVariantStatus = variantSnapshot.some(group =>
@@ -887,9 +1000,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       provider_name: providerName,
       provider_product_id: previous.provider_product_id ?? null,
       provider_url: previous.provider_url ?? null,
-      // Blank fields mean "not provided this time"; retain the latest known supplier values.
-      provider_price_usd: priceUSD ?? previous.provider_price_usd ?? null,
-      provider_price_nio: priceNIO ?? previous.provider_price_nio ?? null,
+      // Variant products store the base price from the lowest-spec configuration only.
+      // Products without variants retain the previous general supplier price when the field is blank.
+      provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null),
+      provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null),
       provider_availability: overallAvailability,
       provider_variant_snapshot: variantSnapshot,
       review_notes: $("#provider-review-notes").value.trim() || null,
@@ -1408,6 +1522,8 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   ["#provider-review-price-usd", "#provider-review-price-nio", "#provider-review-availability"].forEach(selector =>
     $(selector)?.addEventListener("input", updateReviewComparison)
   );
+  $("#provider-review-variants")?.addEventListener("input", updateReviewComparison);
+  $("#provider-review-variants")?.addEventListener("change", updateReviewComparison);
   $("#provider-review-availability")?.addEventListener("change", () => {
     updateReviewComparison();
     updateProviderVariantReviewReadiness();

@@ -583,3 +583,29 @@ html[data-theme="dark"] .provider-review-sync-option small{color:#b7c7e3}
   .provider-price-difference>span{font-size:.87rem}
   .provider-review-sync-details>summary{padding:10px;font-size:.78rem}
 }
+
+
+/* Provider review: variant products derive their general values from configurations. */
+.provider-dialog-fields [hidden] {
+  display:none !important;
+}
+.provider-review-variant-overview-note {
+  margin:0;
+  padding:10px 12px;
+  border:1px solid var(--border,#dbe3f1);
+  border-radius:10px;
+  color:var(--muted,#64748b);
+  background:var(--surface-muted,#f8fafc);
+  font-size:.8rem;
+  line-height:1.55;
+}
+html[data-theme="dark"] .provider-review-variant-overview-note {
+  color:#c0cfe8;
+  background:#14233e;
+  border-color:#304466;
+}
+html[data-theme="light"] .provider-review-variant-overview-note {
+  color:#52627b;
+  background:#f5f7fb;
+  border-color:#d7deeb;
+}

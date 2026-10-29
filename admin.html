@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="theme-ui.css?v=20261028-limited-edition-icons1">
   <link rel="stylesheet" href="admin-workflow.css?v=20261029-variant-theme-contrast2">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="admin-provider.css?v=20261028-provider-contrast-compact3">
+  <link rel="stylesheet" href="admin-provider.css?v=20261029-variant-overview-compact1">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="admin-accessibility.css?v=20261029-contrast-audit2">
 
   <script src="config.js?v=20261029-admin-webpush3"></script>
-  <script type="module" src="admin.js?v=20261029-claim-conflict-recovery2"></script>
+  <script type="module" src="admin.js?v=20261029-variant-overview-compact1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -934,9 +934,10 @@
       </section>
       <div class="provider-dialog-fields">
         <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
-        <label><span>Precio indicado por proveedor (US$)</span><input id="provider-review-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></label>
-        <label><span>Precio indicado por proveedor (C$)</span><input id="provider-review-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></label>
-        <label class="provider-dialog-wide"><span>Disponibilidad general confirmada en el proveedor</span><select id="provider-review-availability" required><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
+        <label id="provider-review-price-usd-field"><span>Precio indicado por proveedor (US$)</span><input id="provider-review-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label id="provider-review-price-nio-field"><span>Precio indicado por proveedor (C$)</span><input id="provider-review-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label id="provider-review-availability-field" class="provider-dialog-wide"><span>Disponibilidad general confirmada en el proveedor</span><select id="provider-review-availability"><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
+        <p id="provider-review-variant-overview-note" class="provider-review-variant-overview-note provider-dialog-wide" hidden>En este producto, el precio general se toma de la configuración con menor RAM y almacenamiento (la referencia más económica). La disponibilidad general se calcula a partir de las configuraciones y colores confirmados.</p>
         <label class="provider-dialog-wide"><span>Notas de la revisión</span><textarea id="provider-review-notes" rows="3" maxlength="2000" placeholder="Cambios detectados, condiciones, fecha estimada…"></textarea></label>
       </div>
       <p id="provider-review-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>

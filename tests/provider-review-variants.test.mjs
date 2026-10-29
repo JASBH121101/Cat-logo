@@ -24,6 +24,25 @@ test("supplier review collects provider availability for every configuration and
   assert.match(html, /Confirmar revisión/);
 });
 
+test("variant products do not require duplicate general price or availability confirmation", () => {
+  assert.match(provider, /function productHasProviderVariants\(product\)/);
+  assert.match(provider, /!hasVariants && overall === "unknown"/);
+  assert.match(provider, /const overview = deriveProviderVariantOverview\(variantSnapshot\)/);
+  assert.match(provider, /overallAvailability = overview\.provider_availability/);
+  assert.match(provider, /setProviderReviewFormMode\(product\)/);
+  assert.match(html, /el precio general se toma de la configuración con menor RAM y almacenamiento/);
+});
+
+test("base price selection is based on lowest RAM and then lowest storage, not JSON array order", () => {
+  assert.match(provider, /function compareProviderConfigurations\(left, right\)/);
+  assert.match(provider, /configurationRamValue\(left\?\.ram\) - configurationRamValue\(right\?\.ram\)/);
+  assert.match(provider, /configurationStorageValue\(left\?\.storage\) - configurationStorageValue\(right\?\.storage\)/);
+  assert.match(provider, /groups\.slice\(\)\.sort\(compareProviderConfigurations\)/);
+  assert.match(provider, /base_configuration: providerConfigLabel\(lowest\)/);
+  assert.match(provider, /catalog_price_usd: lowest\.catalog_price_usd \?\? null/);
+  assert.match(provider, /provider_price_usd: hasVariants \? priceUSD :/);
+});
+
 test("supplier review history persists each snapshot and makes catalog changes conditional on explicit sync", () => {
   assert.match(snapshotMigration, /provider_variant_snapshot jsonb NOT NULL DEFAULT '\[\]'::jsonb/);
   assert.match(snapshotMigration, /NEW\.provider_variant_snapshot/);
