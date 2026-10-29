@@ -407,12 +407,12 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             .map((element, index) => {
               const rect = element.getBoundingClientRect();
               const style = getComputedStyle(element);
-              const text = (element.innerText || "").replace(/\\s+/g, " ").trim();
+              const text = (element.innerText || "").replace(/\s+/g, " ").trim();
               return {
                 index,
                 selector: element.tagName.toLowerCase() + (element.id ? "#" + element.id : "") +
                   (typeof element.className === "string" && element.className.trim()
-                    ? "." + element.className.trim().split(/\\s+/).slice(0, 2).join(".") : ""),
+                    ? "." + element.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
                 top: Math.round(rect.top + window.scrollY),
                 bottom: Math.round(rect.bottom + window.scrollY),
                 height: Math.round(rect.height),
