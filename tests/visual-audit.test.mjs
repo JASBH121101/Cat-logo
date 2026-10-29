@@ -170,6 +170,13 @@ function fixtureScript(pageName) {
   return `
     (() => {
       const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900"><rect width="600" height="900" fill="#ffffff"/><rect x="190" y="95" width="220" height="690" rx="30" fill="#20242a" stroke="#111820" stroke-width="14"/><rect x="210" y="135" width="180" height="590" rx="16" fill="#7188b7"/><circle cx="300" cy="752" r="8" fill="#111820"/></svg>');
+      const tinySubjectSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900"><rect width="600" height="900" fill="#ffffff"/><rect x="270" y="390" width="60" height="80" rx="8" fill="#20242a"/></svg>');
+      const calibrationImage = document.createElement("img");
+      calibrationImage.id = "visual-audit-tiny-subject-fixture";
+      calibrationImage.alt = "Hidden pixel-sampler calibration fixture";
+      calibrationImage.style.display = "none";
+      calibrationImage.src = tinySubjectSvg;
+      document.body.append(calibrationImage);
       if (${JSON.stringify(pageName)} === "technology-detail") {
         const detail = document.getElementById("product-detail-page");
         const content = document.getElementById("dialog-content");
@@ -355,6 +362,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           document.body.dataset.visualAuditFixture = "true";
         }, theme);
         await page.addScriptTag({ content: fixtureScript(site.fixture) });
+        await page.waitForFunction(() => { const image = document.getElementById("visual-audit-tiny-subject-fixture"); return image?.complete && image.naturalWidth > 0; }, null, { timeout: 3000 });
         await page.waitForTimeout(280);
         // Re-assert the intended theme after page scripts initialize from shared localStorage.
         // Keep toggle metadata in sync so a journey always changes to the opposite theme.
@@ -548,6 +556,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 };
               }))).filter(Boolean)
             : [];
+          const imageOccupancyCalibration = pageName === "technology-detail"
+            ? await inspectImageSubject(document.getElementById("visual-audit-tiny-subject-fixture"))
+            : null;
           const dialogLayouts = [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [aria-modal="true"]')]
             .filter(isVisible)
             .map((dialog, index) => {
@@ -585,6 +596,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             contentRegions,
             dialogLayouts,
             productCompositionLayouts,
+            imageOccupancyCalibration,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
@@ -1159,6 +1171,18 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   const productDetailObservations = observations.filter(observation => observation.page === "technology-detail");
   assert.equal(productDetailObservations.length, VIEWPORTS.length * THEMES.length,
     "synthetic product detail must be measured at every viewport and theme");
+  assert.ok(productDetailObservations.every(observation =>
+    observation.imageOccupancyCalibration?.status === "measured" &&
+    observation.imageOccupancyCalibration.foregroundAreaRatio < 0.025
+  ), "the pixel sampler must measure the deliberately tiny calibration object on every detail scenario");
+  const calibrationFinding = analyzeImageOccupancy([{
+    visible: true,
+    selector: "#visual-audit-tiny-subject-fixture",
+    productName: "Known tiny-object calibration",
+    imageOccupancy: productDetailObservations[0]?.imageOccupancyCalibration,
+  }], { viewportWidth: 1365, mobile: false });
+  assert.equal(calibrationFinding[0]?.code, "PRODUCT_SUBJECT_UNDERUTILIZED",
+    "the audit must detect a deliberately tiny object from pixel measurements, not only synthetic ratios");
   assert.ok(productDetailObservations.every(observation =>
     Array.isArray(observation.productCompositionLayouts) &&
     observation.productCompositionLayouts.some(layout =>
