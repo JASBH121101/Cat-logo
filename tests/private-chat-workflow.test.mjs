@@ -54,8 +54,8 @@ test("database workflow restricts direct table access and protects admin actions
 
 test("customer private chat exposes a working light/dark theme toggle", () => {
   assert.match(customerHtml, /id="private-chat-theme-toggle"/);
-  assert.match(customerHtml, /private-chat\.css\?v=20261028-chat-theme3/);
-  assert.match(customerHtml, /private-chat\.js\?v=20261029-chat-resume1/);
+  assert.match(customerHtml, /private-chat\.css\?v=20261029-order-data-policy1/);
+  assert.match(customerHtml, /private-chat\.js\?v=20261029-order-data-policy1/);
   assert.match(customerJs, /function applyPrivateChatTheme\(theme\)/);
   assert.match(customerJs, /themeToggle\?\.addEventListener\("click"/);
   assert.match(customerJs, /localStorage\.setItem\("ct-catalog-theme"/);
@@ -63,10 +63,13 @@ test("customer private chat exposes a working light/dark theme toggle", () => {
 });
 
 test("Go Partners order data is allowed while unneeded contact and financial credentials remain blocked", () => {
-  const validator = orderDataMigration.match(/create or replace function public\\.private_chat_contains_sensitive[\\s\\S]*?\\$function\\$;/)?.[0] || "";
+  const validator = orderDataMigration
+    .split("create or replace function public.private_chat_contains_sensitive")[1]
+    ?.split("$function$;")[0] || "";
   assert.ok(validator.length > 0, "the private-chat validator is replaced by the new migration");
-  assert.doesNotMatch(validator, /\\+\\?505|c\\[eé\\]dula|n\\[uú\\]mero de identidad|pasaporte/i,
-    "phone numbers and cédula values are valid Go Partners registration data");
+  assert.ok(!validator.includes("505"), "phone numbers are permitted for order registration");
+  assert.ok(!/c[eé]dula|pasaporte|n[uú]mero de identidad/i.test(validator),
+    "cédula values are permitted for order registration");
   assert.match(validator, /@[A-Z0-9.-]+/i, "unrequested email addresses remain blocked");
   assert.match(validator, /tarjeta/i, "full payment-card details remain blocked");
   assert.match(validator, /cuenta bancaria/i, "bank-account details remain blocked");
@@ -74,7 +77,7 @@ test("Go Partners order data is allowed while unneeded contact and financial cre
   assert.doesNotMatch(customerHtml, /No escribás aquí cédula, teléfono/i);
   assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
   assert.match(api, /p_notice_version: "2026-10-29-v3"/);
-});;
+});;;
 
 test("purchase consent is displayed only in the consent panel, not duplicated as a chat message", () => {
   assert.match(singleNoticeFix, /set contact_route='buy', consent_notice_version='2026-10-28-v2'/);
@@ -82,7 +85,7 @@ test("purchase consent is displayed only in the consent panel, not duplicated as
   assert.match(duplicateNoticeRemoval, /consent_notice_version='2026-10-28-v1'/);
   assert.doesNotMatch(duplicateNoticeRemoval, /values \(v_row\.id, 'assistant', v_notice\)/);
   assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
-  assert.match(customerJs, /Before older conversations may still contain a duplicated database message|Older conversations may still contain a duplicated database message/);
+  assert.match(customerJs, /legacy database bubbles that still contradict it/);
   assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
   assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
   assert.match(adminCss, /position:static!important/);
