@@ -94,6 +94,7 @@ async function openPage(browser, mode, token = "a".repeat(64)) {
     });
   });
   await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "commit", timeout: 8000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 8000 });
   await page.evaluate(({ key, savedToken }) => localStorage.setItem(key, savedToken), { key: SESSION_KEY, savedToken: token });
   await page.addScriptTag({ path: resolve(root, "chat-return.js") });
   page.statusRequests = statusRequests;
