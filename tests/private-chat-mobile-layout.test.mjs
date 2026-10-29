@@ -11,9 +11,9 @@ const adminSource = readFileSync(new URL("../admin.js", import.meta.url), "utf8"
 const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
 
 test("variant editor defines readable field and label colors for both themes", () => {
-  assert.match(workflowCss, /html\\[data-theme="dark"\\].*variant-config-fields input/s);
-  assert.match(workflowCss, /html\\[data-theme="dark"\\].*variant-config-fields label/s);
-  assert.match(workflowCss, /html\\[data-theme="light"\\].*variant-config-fields input/s);
+  assert.ok(workflowCss.includes('html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields input'));
+  assert.ok(workflowCss.includes('html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields label'));
+  assert.ok(workflowCss.includes('html[data-theme="light"] body.admin-body form#product-form .variant-config-fields input'));
   assert.match(workflowCss, /color:#b5c6e5!important/);
   assert.match(workflowCss, /color:#f3f6ff!important/);
 });
