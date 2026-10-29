@@ -2954,3 +2954,9 @@ html[data-theme="light"] body.technology-catalog .section-subtitle,
 html[data-theme="light"] body.technology-catalog .catalog-results-heading .section-subtitle {
   color:#4b5d75!important;
 }
+
+
+/* Accessibility audit fix: loading/empty catalog status must meet WCAG AA on the light page. */
+html[data-theme="light"] body.technology-catalog .catalog-status {
+  color:#4b5d75!important;
+}
