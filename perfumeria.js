@@ -739,71 +739,6 @@ function notesSection(title, values) {
     '</section>';
 }
 
-let catalogScrollLockSnapshot = null;
-
-function lockCatalogScrollPosition() {
-  if (catalogScrollLockSnapshot) return;
-
-  const body = document.body;
-  const root = document.documentElement;
-  const scrollY = Math.max(0, window.scrollY || root.scrollTop || 0);
-  const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
-  const computedPaddingRight = Number.parseFloat(window.getComputedStyle(body).paddingRight) || 0;
-
-  catalogScrollLockSnapshot = {
-    scrollY,
-    bodyStyle: {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-      paddingRight: body.style.paddingRight
-    },
-    rootScrollBehavior: root.style.scrollBehavior
-  };
-
-  // Freeze the document at its current scroll offset while the detail overlay is open.
-  body.style.position = "fixed";
-  body.style.top = "-" + scrollY + "px";
-  body.style.left = "0";
-  body.style.right = "0";
-  body.style.width = "100%";
-  body.style.overflow = "hidden";
-  if (scrollbarWidth > 0) body.style.paddingRight = (computedPaddingRight + scrollbarWidth) + "px";
-}
-
-function restoreCatalogScrollPosition() {
-  const snapshot = catalogScrollLockSnapshot;
-  if (!snapshot) return;
-  catalogScrollLockSnapshot = null;
-
-  const body = document.body;
-  const root = document.documentElement;
-  // Override CSS scroll-behavior:smooth for this one restoration so it never animates
-  // from the top through the whole catalog.
-  root.style.scrollBehavior = "auto";
-  body.style.position = snapshot.bodyStyle.position;
-  body.style.top = snapshot.bodyStyle.top;
-  body.style.left = snapshot.bodyStyle.left;
-  body.style.right = snapshot.bodyStyle.right;
-  body.style.width = snapshot.bodyStyle.width;
-  body.style.overflow = snapshot.bodyStyle.overflow;
-  body.style.paddingRight = snapshot.bodyStyle.paddingRight;
-  window.scrollTo({ left: 0, top: snapshot.scrollY, behavior: "auto" });
-
-  window.requestAnimationFrame(() => {
-    root.style.scrollBehavior = snapshot.rootScrollBehavior;
-  });
-}
-
-function setCatalogDetailOverlayOffset() {
-  const header = document.querySelector(".site-header");
-  const headerHeight = Math.max(0, Math.ceil(header?.getBoundingClientRect().height || 76));
-  document.documentElement.style.setProperty("--catalog-detail-overlay-top", headerHeight + "px");
-}
-
 function openPerfume(product) {
   const detail = product.perfume_details || {};
   const images = getImages(product);
@@ -875,12 +810,11 @@ function openPerfume(product) {
   const perfumeContact = dialogContent.querySelector("#perfume-jb-contact");
   if (perfumeContact) perfumeContact.dataset.paymentType = "product";
   refreshPerfumePaymentChoices();
-  setCatalogDetailOverlayOffset();
-  lockCatalogScrollPosition();
   perfumeDetailPage?.classList.remove("hidden");
   if (perfumeHeaderBack) perfumeHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-perfume-detail-view");
   document.body.classList.add("perfume-detail-active");
+  window.scrollTo({ top: 0, behavior: "instant" });
   document.title = `${product.name || "Fragancia"} | JB Parfums`;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) canonical.href = productLink(product);
@@ -902,12 +836,10 @@ function showPerfumeCatalog() {
   if (perfumeHeaderBack) perfumeHeaderBack.hidden = true;
   document.querySelector("main")?.classList.remove("is-perfume-detail-view");
   document.body.classList.remove("perfume-detail-active");
-  document.documentElement.style.removeProperty("--catalog-detail-overlay-top");
   document.title = catalogDocumentTitle;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical && catalogCanonical) canonical.href = catalogCanonical;
   if (dialogContent) dialogContent.innerHTML = "";
-  restoreCatalogScrollPosition();
 }
 
 function loadDeepLink() {
@@ -1123,22 +1055,28 @@ dialogContent.addEventListener("click", event => {
 });
 
 
-/* Escape cierra la ficha sin mover el catálogo que queda detrás. */
+/* Escape behaves like the page Back action, preserving the catalog scroll state. */
 document.addEventListener("keydown", event => {
   if (event.key !== "Escape" || event.defaultPrevented) return;
   if (!document.body.classList.contains("perfume-detail-active")) return;
   if (document.querySelector("dialog[open]")) return;
 
   event.preventDefault();
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+
   const nextState = { ...(window.history.state || {}) };
   delete nextState.productDetailRoute;
   delete nextState.productId;
-
+  const catalogScrollY = Number(nextState.catalogScrollY) || 0;
   const url = new URL(window.location.href);
   url.searchParams.delete("fragancia");
   url.hash = "";
   window.history.replaceState(nextState, document.title, url.href);
   showPerfumeCatalog();
+  window.scrollTo({ top: catalogScrollY, behavior: "instant" });
 });
 
 perfumeHeaderBack?.addEventListener("click", () => {
@@ -1146,12 +1084,16 @@ perfumeHeaderBack?.addEventListener("click", () => {
     window.history.back();
     return;
   }
+  const nextState = { ...(window.history.state || {}) };
+  delete nextState.productDetailRoute;
+  delete nextState.productId;
+  const catalogScrollY = Number(nextState.catalogScrollY) || 0;
   const url = new URL(window.location.href);
   url.searchParams.delete("fragancia");
   url.hash = "";
-  window.history.replaceState(window.history.state, document.title, url.href);
+  window.history.replaceState(nextState, document.title, url.href);
   showPerfumeCatalog();
-  window.scrollTo({ top: 0, behavior: "auto" });
+  window.scrollTo({ top: catalogScrollY, behavior: "instant" });
 });
 window.addEventListener("popstate", loadDeepLink);
 window.addEventListener("hashchange", loadDeepLink);
