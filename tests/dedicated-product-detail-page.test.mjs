@@ -62,7 +62,7 @@ test("both dedicated product pages use natural document scrolling on desktop and
       '<div id="perfume-dialog-content"><div class="perfume-dialog-layout">' +
         '<section class="perfume-dialog-gallery"><div class="perfume-dialog-main-image" data-inline-gallery><img id="perfume-dialog-main-image" alt="Perfume" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'900\'%3E%3Crect width=\'600\' height=\'900\' fill=\'%23171410\'/%3E%3C/svg%3E"></div><div class="perfume-dialog-thumbnails"><button class="perfume-dialog-thumb">1</button></div></section>' +
         '<section class="perfume-dialog-detail"><p class="perfume-kicker">PERFUMERÍA ÁRABE</p><h2>Fragancia de prueba</h2><p class="perfume-dialog-brand">Casa de fragancias</p><div class="perfume-dialog-description">' +
-          Array.from({length:9},(_,i)=>'<p>Descripción olfativa '+(i+1)+': un perfil aromático con matices frescos, florales, amaderados y cálidos para una experiencia memorable.</p>').join("") +
+          Array.from({length:18},(_,i)=>'<p>Descripción olfativa '+(i+1)+': un perfil aromático con matices frescos, florales, amaderados y cálidos para una experiencia memorable.</p>').join("") +
         '</div><dl class="perfume-dialog-facts"><div><dt>Concentración</dt><dd>EDP</dd></div><div><dt>Contenido</dt><dd>100 ml</dd></div><div><dt>Disponibilidad</dt><dd>Disponible</dd></div></dl><div class="perfume-dialog-price"><span>Precio</span><strong>US$89</strong></div><div class="perfume-dialog-actions"><button>WhatsApp</button><button>Contactar</button></div><section class="payment-choice-panel"><label>¿Qué querés consultar?</label><select><option>Seleccioná una opción</option></select></section></section>' +
       '</div><div class="perfume-dialog-notes">' +
         Array.from({length:3},(_,i)=>'<section class="perfume-note-group"><h2 class="perfume-note-heading">Notas '+(i+1)+'</h2><ul><li>Bergamota</li><li>Vainilla</li><li>Madera</li></ul></section>').join("") +
@@ -165,9 +165,9 @@ test("both dedicated product pages use natural document scrolling on desktop and
           const after=await page.evaluate(({gallery,header})=>{
             const image=document.querySelector(gallery).getBoundingClientRect();
             const head=document.querySelector(header).getBoundingClientRect();
-            return {scrollY:window.scrollY,imageTop:image.top,headerBottom:head.bottom,position:getComputedStyle(document.querySelector(gallery)).position,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+            return {scrollY:window.scrollY,documentHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight,imageTop:image.top,headerBottom:head.bottom,position:getComputedStyle(document.querySelector(gallery)).position,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
           },item);
-          assert.ok(after.scrollY>=200,item.name+" page scroll must move normally");
+          assert.ok(after.scrollY>=200,item.name+" page scroll must move normally (scrollY="+after.scrollY+", documentHeight="+after.documentHeight+", viewportHeight="+viewport.height+")");
           assert.ok(after.overflow<=2,item.name+" stays within viewport after scrolling");
           if(!viewport.mobile){
             assert.ok(after.imageTop>=after.headerBottom-2,item.name+" sticky gallery must not slide under the header");
