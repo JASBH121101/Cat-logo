@@ -203,3 +203,48 @@ html body.admin-body .provider-diff-empty {
     font-size: 12px !important;
   }
 }
+
+
+/* Segunda pasada de lectura: corregir solo los textos pequeños que el escaneo
+   encontró visibles en los paneles móviles. */
+html[data-theme="light"] body.admin-body #admin-context-hint {
+  color: #45536b !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+html[data-theme="dark"] body.admin-body #admin-context-hint {
+  color: #c2cfe5 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+html body.admin-body .dashboard.admin-section-focused .admin-catalog-context label {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+html body.admin-body .dashboard.admin-section-focused .admin-catalog-context select {
+  font-size: 12px !important;
+}
+html body.admin-body .dashboard-eyebrow {
+  font-size: 11.5px !important;
+  letter-spacing: .1em !important;
+  line-height: 1.3 !important;
+}
+html body.admin-body .dashboard-interest-pill,
+html body.admin-body .team-preview-status {
+  font-size: 11.5px !important;
+  line-height: 1.3 !important;
+}
+html body.admin-body .provider-metric > small {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+html body.admin-body .dashboard.admin-section-focused #admin-section-messages .private-chat-admin-heading .eyebrow {
+  font-size: 11.5px !important;
+  line-height: 1.3 !important;
+  letter-spacing: .1em !important;
+}
+html body.admin-body .dashboard.admin-section-focused #admin-section-messages .private-chat-admin-header-actions .button {
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+  font-size: 12px !important;
+}
