@@ -258,6 +258,21 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         }, theme);
         await page.addScriptTag({ content: fixtureScript(site.fixture) });
         await page.waitForTimeout(280);
+        // Re-assert the intended theme after page scripts initialize from shared localStorage.
+        // Keep toggle metadata in sync so a journey always changes to the opposite theme.
+        await page.evaluate(themeValue => {
+          document.documentElement.setAttribute("data-theme", themeValue);
+          try { localStorage.setItem("ct-catalog-theme", themeValue); } catch {}
+          const toggle = document.getElementById("private-chat-theme-toggle");
+          if (toggle) {
+            const nextTheme = themeValue === "dark" ? "light" : "dark";
+            toggle.dataset.nextTheme = nextTheme;
+            toggle.setAttribute("aria-pressed", String(themeValue === "dark"));
+            toggle.setAttribute("aria-label", nextTheme === "dark" ? "Cambiar al tema oscuro" : "Cambiar al tema claro");
+            toggle.setAttribute("title", nextTheme === "dark" ? "Cambiar al tema oscuro" : "Cambiar al tema claro");
+            toggle.textContent = themeValue === "dark" ? "☀" : "☾";
+          }
+        }, theme);
 
         const snapshot = await page.evaluate(({ pageName, viewportName, themeName }) => {
           const rectData = element => {
