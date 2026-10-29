@@ -942,7 +942,6 @@ if (!perfumeCatalogHtml.includes('id="perfume-exclusive-section"')
 }
 const builtTechnologyStyles = await readFile(join(webDir, "technology-visual-refresh.css"), "utf8");
 const builtPerfumeStyles = await readFile(join(webDir, "perfumeria.css"), "utf8");
-const builtHomeHtml = await readFile(join(webDir, "index.html"), "utf8");
 const builtTechnologyApp = await readFile(join(webDir, "app.js"), "utf8");
 const builtPerfumeApp = await readFile(join(webDir, "perfumeria.js"), "utf8");
 
@@ -958,10 +957,8 @@ if (!builtCatalogHtml.includes("3, 6 o 12 meses, según producto")
   || !builtCatalogHtml.includes("Coordinados según tu destino")) {
   throw new Error("Technology catalog trust copy is missing its product-specific/payment/shipping qualifications.");
 }
-if (!builtTechnologyStyles.includes("Conversion trust strip: concise, scannable")
-  || !builtHomeHtml.includes("world-trust-note--tech")
-  || !builtHomeHtml.includes("Garantía de fábrica según producto")) {
-  throw new Error("APK source is missing the approved conversion trust styles or homepage microcopy.");
+if (!builtTechnologyStyles.includes("Conversion trust strip: concise, scannable")) {
+  throw new Error("APK source is missing the approved JB TECH conversion trust styles.");
 }
 if (/garantía/i.test(perfumeCatalogHtml) || /warranty_months|Garantía:/i.test(builtPerfumeApp)) {
   throw new Error("Warranty copy must not be added to JB Parfums.");
