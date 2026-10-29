@@ -1814,7 +1814,7 @@ dialogContent.addEventListener("click", event => {
   const mainImage = dialogContent.querySelector("#dialog-main-image");
   if (mainImage) {
     mainImage.src = thumbnail.dataset.galleryImage;
-    const productName = dialogContent.querySelector(".dialog-detail h2")?.textContent?.trim() || "Producto";
+    const productName = dialogContent.querySelector(".dialog-detail .dialog-product-title, .dialog-detail h2")?.textContent?.trim() || "Producto";
     const photoLabel = thumbnail.getAttribute("aria-label") || "";
     mainImage.alt = photoLabel ? `${productName} — ${photoLabel.toLocaleLowerCase("es")}` : productName;
     mainImage.style.visibility = "visible";
