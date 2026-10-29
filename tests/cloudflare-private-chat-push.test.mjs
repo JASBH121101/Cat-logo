@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
-import { webcrypto } from "node:crypto";
 import { onRequest } from "../functions/api/private-chat.js";
 
-globalThis.crypto = webcrypto;
 
 function base64url(bytes) {
   return Buffer.from(bytes).toString("base64url");
