@@ -278,3 +278,23 @@ html body.admin-body .admin-welcome-kicker {
   font-size: 11.5px !important;
   line-height: 1.3 !important;
 }
+
+
+/* Últimos textos de contexto importante identificados en la auditoría móvil. */
+html body.admin-body footer.site-footer span {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+html body.admin-body .commission-summary-grid span {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+html body.admin-body .dashboard-updated,
+html body.admin-body #dashboard-scope-source {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+html body.admin-body .private-chat-admin-inbox .provider-empty-state {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
