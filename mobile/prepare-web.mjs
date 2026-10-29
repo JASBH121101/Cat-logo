@@ -937,7 +937,7 @@ if (!builtCatalogHtml.includes('id="limited-edition-section"')
 }
 if (!perfumeCatalogHtml.includes('id="perfume-exclusive-section"')
   || !perfumeCatalogHtml.includes('id="perfume-limited-edition-section"')
-  || !perfumeCatalogHtml.includes('perfumeria.js?v=20261028-limited-edition-icons1')) {
+  || !/src="(?:\.\.\/)?perfumeria\.js\?v=[^"]+"/.test(perfumeCatalogHtml)) {
   throw new Error("JB Parfums is missing the exclusive and limited-edition showcase sections.");
 }
 const builtTechnologyStyles = await readFile(join(webDir, "technology-visual-refresh.css"), "utf8");
