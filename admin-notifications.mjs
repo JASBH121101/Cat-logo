@@ -10,7 +10,9 @@ function dependencies(overrides = {}) {
     supabase: overrides.supabase,
     currentUser: overrides.currentUser,
     publicKey: overrides.publicKey,
-  };
+    nativeNotifications: overrides.nativeNotifications ?? (
+      windowRef?.Capacitor?.isNativePlatform?.() ? windowRef?.JBManagerNativeNotifications : null
+    ),
 }
 
 function isSecureWindow(windowRef) {
@@ -124,10 +126,76 @@ async function registerPushSubscription({ registration, navigatorRef, windowRef,
   return { ok: true, subscription };
 }
 
+
+
+function isNativeCapacitorApp(windowRef) {
+  try {
+    return windowRef?.Capacitor?.isNativePlatform?.() === true;
+  } catch {
+    return false;
+  }
+}
+
+function nativeNotificationId(conversationId) {
+  const seed = String(conversationId || "inbox") + ":" + String(Date.now()) + ":" + String(Math.random());
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = Math.imul(hash ^ seed.charCodeAt(index), 16777619);
+  }
+  return (hash >>> 0) % 2147483646 + 1;
+}
+
+async function showNativeAdminNotification(nativeApi, windowRef, title, body, conversationId) {
+  if (!nativeApi || typeof nativeApi.schedule !== "function") {
+    return { ok: false, reason: "native-notifications-unavailable" };
+  }
+
+  try {
+    if (typeof nativeApi.checkPermissions === "function") {
+      const permission = await nativeApi.checkPermissions();
+      if (permission?.display !== "granted") {
+        return { ok: false, reason: permission?.display === "denied" ? "permission-denied" : "permission-not-granted" };
+      }
+    }
+
+    if (typeof nativeApi.createChannel === "function") {
+      await nativeApi.createChannel({
+        id: "jb-manager-private-chat",
+        name: "Mensajería de JB Manager",
+        description: "Nuevas solicitudes y mensajes de clientes",
+        importance: 4,
+        visibility: 1,
+        vibration: true,
+        sound: "default",
+      });
+    }
+
+    const targetUrl = new URL("./admin.html?open=messages", windowRef.location.href).href;
+    const id = nativeNotificationId(conversationId);
+    await nativeApi.schedule({
+      notifications: [{
+        id,
+        title: String(title || "JB Manager"),
+        body: String(body || "").slice(0, 180),
+        schedule: { at: new Date(Date.now() + 800) },
+        channelId: "jb-manager-private-chat",
+        extra: { url: targetUrl, conversationId: String(conversationId || "") },
+      }],
+    });
+    return { ok: true, mode: "native-local", notificationId: id };
+  } catch (error) {
+    return { ok: false, reason: "display-failed", message: String(error?.message || error || "Error desconocido") };
+  }
+}
+
 export async function showAdminNotification(title, body, conversationId, overrides = {}) {
-  const { windowRef, navigatorRef, NotificationApi } = dependencies(overrides);
-  if (!windowRef || !NotificationApi) return { ok: false, reason: "unsupported" };
+  const { windowRef, navigatorRef, NotificationApi, nativeNotifications } = dependencies(overrides);
+  if (!windowRef) return { ok: false, reason: "unsupported" };
   if (!isSecureWindow(windowRef)) return { ok: false, reason: "insecure-context" };
+  if (isNativeCapacitorApp(windowRef)) {
+    return showNativeAdminNotification(nativeNotifications, windowRef, title, body, conversationId);
+  }
+  if (!NotificationApi) return { ok: false, reason: "unsupported" };
   if (NotificationApi.permission !== "granted") return { ok: false, reason: "permission-not-granted" };
 
   const options = notificationOptions(windowRef, body, conversationId);
@@ -150,10 +218,38 @@ export async function showAdminNotification(title, body, conversationId, overrid
 }
 
 export async function enableAdminNotifications(overrides = {}) {
-  const { windowRef, navigatorRef, NotificationApi, supabase, currentUser, publicKey } = dependencies(overrides);
-  if (!windowRef || !NotificationApi) return { ok: false, reason: "unsupported" };
+  const { windowRef, navigatorRef, NotificationApi, supabase, currentUser, publicKey, nativeNotifications } = dependencies(overrides);
+  if (!windowRef) return { ok: false, reason: "unsupported" };
   if (!isSecureWindow(windowRef)) return { ok: false, reason: "insecure-context" };
 
+  // Android WebView lacks the browser PushManager path. Capacitor uses Android's
+  // notification runtime permission and local notification API instead.
+  if (isNativeCapacitorApp(windowRef)) {
+    if (!nativeNotifications?.checkPermissions || !nativeNotifications?.requestPermissions || !nativeNotifications?.schedule) {
+      return { ok: false, reason: "native-notifications-unavailable" };
+    }
+    try {
+      let nativePermission = await nativeNotifications.checkPermissions();
+      if (nativePermission?.display !== "granted") {
+        nativePermission = await nativeNotifications.requestPermissions();
+      }
+      if (nativePermission?.display !== "granted") {
+        return { ok: false, reason: nativePermission?.display === "denied" ? "permission-denied" : "permission-not-granted" };
+      }
+      const test = await showNativeAdminNotification(
+        nativeNotifications,
+        windowRef,
+        "JB Manager",
+        "Las notificaciones de la APK están activas mientras JB Manager esté abierto. Para recibir alertas con la app cerrada hace falta configurar push nativo.",
+        "native-notifications-enabled"
+      );
+      return test.ok ? { ok: true, mode: "native-local", notificationId: test.notificationId } : test;
+    } catch (error) {
+      return { ok: false, reason: "native-notification-setup-failed", message: String(error?.message || error || "Error desconocido") };
+    }
+  }
+
+  if (!NotificationApi) return { ok: false, reason: "unsupported" };
   let permission = NotificationApi.permission;
   if (permission === "default") {
     if (typeof NotificationApi.requestPermission !== "function") {
