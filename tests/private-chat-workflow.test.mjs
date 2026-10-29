@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const api = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20261028204826_private_chat_secure_workflow_20261028.sql", import.meta.url), "utf8");
-const privacyFix = readFileSync(new URL("../supabase/migrations/20261028205513_tighten_private_chat_sensitive_data_20261028.sql", import.meta.url), "utf8");
+const orderDataMigration = readFileSync(new URL("../supabase/migrations/20261029034000_allow_order_contact_data_private_chat.sql", import.meta.url), "utf8");
 const singleNoticeFix = readFileSync(new URL("../supabase/migrations/20261028212147_private_chat_single_consent_notice.sql", import.meta.url), "utf8");
 const adminRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028230836_revoke_anon_execute_from_private_chat_admin_rpcs.sql", import.meta.url), "utf8");
 const customerRpcPermissions = readFileSync(new URL("../supabase/migrations/20261028231046_restrict_customer_chat_rpcs_to_anon.sql", import.meta.url), "utf8");
@@ -54,17 +54,29 @@ test("database workflow restricts direct table access and protects admin actions
 
 test("customer private chat exposes a working light/dark theme toggle", () => {
   assert.match(customerHtml, /id="private-chat-theme-toggle"/);
-  assert.match(customerHtml, /private-chat\.css\?v=20261028-chat-theme3/);
-  assert.match(customerHtml, /private-chat\.js\?v=20261029-chat-resume1/);
+  assert.match(customerHtml, /private-chat\.css\?v=20261029-order-data-policy1/);
+  assert.match(customerHtml, /private-chat\.js\?v=20261029-order-data-policy1/);
   assert.match(customerJs, /function applyPrivateChatTheme\(theme\)/);
   assert.match(customerJs, /themeToggle\?\.addEventListener\("click"/);
   assert.match(customerJs, /localStorage\.setItem\("ct-catalog-theme"/);
   assert.match(readFileSync(new URL("../private-chat.css", import.meta.url), "utf8"), /:root\[data-theme="dark"\]/);
 });
 
-test("identity detection fix requires a digit for cédula/passport-like values", () => {
-  assert.match(privacyFix, /\[A-Z0-9-\]\{0,15\}\[0-9\]\[A-Z0-9-\]\{4,\}/);
-  assert.doesNotMatch(privacyFix, /\(c\[eé\]dula\|pasaporte\)\[\[:space:\]:#-\]\+\[A-Z0-9-\]\{6,\}/);
+test("Go Partners order data is allowed while unneeded contact and financial credentials remain blocked", () => {
+  const validator = orderDataMigration
+    .split("create or replace function public.private_chat_contains_sensitive")[1]
+    ?.split("$function$;")[0] || "";
+  assert.ok(validator.length > 0, "the private-chat validator is replaced by the new migration");
+  assert.ok(!validator.includes("505"), "phone numbers are permitted for order registration");
+  assert.ok(!/c[eé]dula|pasaporte|n[uú]mero de identidad/i.test(validator),
+    "cédula values are permitted for order registration");
+  assert.ok(validator.includes("@[A-Z0-9.-]+"), "unrequested email addresses remain blocked");
+  assert.match(validator, /tarjeta/i, "full payment-card details remain blocked");
+  assert.match(validator, /cuenta bancaria/i, "bank-account details remain blocked");
+  assert.match(customerHtml, /podés compartir tu nombre completo, cédula y celular/i);
+  assert.doesNotMatch(customerHtml, /No escribás aquí cédula, teléfono/i);
+  assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
+  assert.match(api, /p_notice_version: "2026-10-29-v3"/);
 });
 
 test("purchase consent is displayed only in the consent panel, not duplicated as a chat message", () => {
@@ -72,10 +84,14 @@ test("purchase consent is displayed only in the consent panel, not duplicated as
   assert.doesNotMatch(singleNoticeFix, /v_notice|values \(v_row\.id, 'assistant', v_notice\)/);
   assert.match(duplicateNoticeRemoval, /consent_notice_version='2026-10-28-v1'/);
   assert.doesNotMatch(duplicateNoticeRemoval, /values \(v_row\.id, 'assistant', v_notice\)/);
-  assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-28-v1"/);
-  assert.match(customerJs, /Before older conversations may still contain a duplicated database message|Older conversations may still contain a duplicated database message/);
+  assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
+  assert.ok(customerJs.includes("/^¡Hola! Este es el canal privado de JB Collections\\./i.test(messageContent)"));
+  assert.ok(customerJs.includes("/No compartás aquí cédula, teléfono, correo ni datos de pago/i.test(messageContent)"));
   assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
   assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
+  assert.match(adminHtml, /Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular/);
+  assert.doesNotMatch(adminHtml, /No solicités ni envíes por aquí cédulas, teléfonos/);
+  assert.match(adminJs, /Podés recibir nombre completo, cédula y celular para registrar la operación de Go Partners/);
   assert.match(adminCss, /position:static!important/);
 });
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { chromium } from "playwright";
 
 const html = readFileSync("tecnologia/index.html", "utf8");
 const css = readFileSync("technology-visual-refresh.css", "utf8");
@@ -9,7 +10,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-conversion-trust1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-conversion-trust2/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -114,4 +115,58 @@ test("perfume hero caption gradient stays subtle and title remains readable", ()
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);
+});
+
+
+test("mobile trust tiles keep the text inside one rectangular card instead of nested oval pills", { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true });
+    await page.setContent(`<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body class="technology-catalog"><section class="hero"><div class="hero-copy"><div class="hero-trust">
+      <div class="hero-trust-item"><svg class="hero-trust-icon" viewBox="0 0 24 24"><path d="M2 2"/></svg><span class="hero-trust-copy"><strong>Pago al recibir</strong><small>Cuando esté disponible para tu pedido</small></span></div>
+      <div class="hero-trust-item"><svg class="hero-trust-icon" viewBox="0 0 24 24"><path d="M2 2"/></svg><span class="hero-trust-copy"><strong>Envíos a departamentos</strong><small>Coordinados según tu destino</small></span></div>
+      <div class="hero-trust-item"><svg class="hero-trust-icon" viewBox="0 0 24 24"><path d="M2 2"/></svg><span class="hero-trust-copy"><strong>Atención por WhatsApp</strong><small>Consultá antes de comprar</small></span></div>
+      <div class="hero-trust-item"><svg class="hero-trust-icon" viewBox="0 0 24 24"><path d="M2 2"/></svg><span class="hero-trust-copy"><strong>Garantía de fábrica</strong><small>Según el producto</small></span></div>
+    </div></div></section></body></html>`);
+    for (const theme of ["dark", "light"]) {
+      await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+      const result = await page.evaluate(() => {
+        const trust = document.querySelector(".hero-trust");
+        const cards = [...document.querySelectorAll(".hero-trust-item")];
+        const copies = [...document.querySelectorAll(".hero-trust-copy")];
+        return {
+          viewportWidth: window.innerWidth,
+          columns: getComputedStyle(trust).gridTemplateColumns.trim().split(/\s+/).length,
+          cards: cards.map((card, index) => {
+            const rect = card.getBoundingClientRect();
+            const copy = copies[index];
+            const copyRect = copy.getBoundingClientRect();
+            const style = getComputedStyle(copy);
+            return {
+              left: rect.left, right: rect.right, width: rect.width, height: rect.height,
+              copyRight: copyRect.right, padding: style.padding,
+              borderWidth: style.borderTopWidth, radius: style.borderTopLeftRadius,
+              background: style.backgroundColor
+            };
+          })
+        };
+      });
+      assert.equal(result.columns, 2, theme + ": mobile trust cards should form two balanced columns");
+      assert.equal(result.cards.length, 4);
+      for (const card of result.cards) {
+        assert.ok(card.width > 120, theme + ": cards must retain readable width");
+        assert.ok(card.height > 45, theme + ": card height must contain title and description");
+        assert.ok(card.left >= 0 && card.right <= result.viewportWidth,
+          theme + ": card should fit within viewport without horizontal overflow");
+        assert.ok(card.copyRight <= card.right - 4,
+          theme + ": copy text must remain inside its card");
+        assert.equal(card.padding, "0px", theme + ": nested text wrapper must not inherit pill padding");
+        assert.equal(card.borderWidth, "0px", theme + ": nested text wrapper must not draw a second border");
+        assert.equal(card.radius, "0px", theme + ": nested text wrapper must not become an oval pill");
+        assert.equal(card.background, "rgba(0, 0, 0, 0)", theme + ": nested text wrapper must remain transparent");
+      }
+    }
+  } finally {
+    await browser.close();
+  }
 });

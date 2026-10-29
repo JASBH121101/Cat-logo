@@ -196,7 +196,7 @@ body.technology-catalog .hero-trust {
   color: #536985;
   font-size: 12px;
 }
-body.technology-catalog .hero-trust span {
+body.technology-catalog .hero-trust > span {
   padding: 8px 11px;
   border-color: #d3e0f2;
   border-radius: 999px;
@@ -248,7 +248,7 @@ html[data-theme="dark"] body.technology-catalog .hero h1 span {
   -webkit-text-fill-color: transparent;
 }
 html[data-theme="dark"] body.technology-catalog .hero-description { color: #b2c3dd; }
-html[data-theme="dark"] body.technology-catalog .hero-trust span {
+html[data-theme="dark"] body.technology-catalog .hero-trust > span {
   border-color: rgba(116,161,219,.27);
   color: #d9e8fa;
   background: rgba(10,24,44,.78);
@@ -1204,7 +1204,7 @@ body.technology-catalog :focus-visible {
   body.technology-catalog .hero h1 { max-width:580px; font-size:clamp(39px,9.8vw,56px); line-height:1.04; letter-spacing:-.055em; }
   body.technology-catalog .hero-description { font-size:15px; line-height:1.7; margin-bottom:20px; }
   body.technology-catalog .hero-trust { gap:7px; margin-top:18px; font-size:11px; }
-  body.technology-catalog .hero-trust span { padding:7px 9px; }
+  body.technology-catalog .hero-trust > span { padding:7px 9px; }
   body.technology-catalog .hero-art.hero-visual { min-height:clamp(250px,72vw,390px); }
   body.technology-catalog .hero-image-frame { inset:0; border-radius:19px; }
   body.technology-catalog .benefit-row {
@@ -2930,4 +2930,20 @@ html[data-theme="dark"] body.technology-catalog .hero-trust-copy small { color: 
 }
 @media (prefers-reduced-motion: reduce) {
   body.technology-catalog .hero-trust-item { transition: none !important; }
+}
+
+/* Legacy chip selectors must never turn the current trust-copy span into an oval pill. */
+body.technology-catalog .hero-trust-copy,
+body.technology-catalog .hero-trust-copy strong,
+body.technology-catalog .hero-trust-copy small {
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body.technology-catalog .hero-trust-copy {
+  flex:1 1 auto;
+  align-self:stretch;
+  overflow-wrap:anywhere;
 }

@@ -165,7 +165,7 @@ function errorResponse(error, origin) {
     return json(422, {
       ok: false,
       error: "personal_data_not_allowed",
-      message: "Por seguridad, no envíes teléfonos, correos, cédulas ni datos de pago en este chat. Si compartiste alguno por error, volvé a escribir tu consulta sin esos datos."
+      message: "Podés compartir nombre completo, cédula y celular cuando el asesor los solicite para registrar tu operación de Go Partners. Este mensaje contiene datos que no necesitamos aquí, como correos no solicitados, direcciones completas, contraseñas, PIN, códigos de seguridad o números completos de tarjetas o cuentas bancarias."
     }, origin);
   }
   if (/invalid_or_expired_invite/i.test(message)) {
@@ -287,7 +287,7 @@ export async function onRequest(context) {
       const result = await rpc("private_chat_record_consent", {
         p_session_token_hash: sessionHash,
         p_choice: choice,
-        p_notice_version: "2026-10-28-v1"
+        p_notice_version: "2026-10-29-v3"
       });
       if (choice === "yes") await scheduleAdminPush(context, sessionHash);
       return json(200, { ok: true, result }, origin);
