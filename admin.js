@@ -3029,7 +3029,6 @@ let privateChatBaselineReady = false;
 let privateChatKnownConversationStates = new Map();
 let privateChatInboxLoading = false;
 let privateChatMessagesLoading = false;
-let privateChatNotificationPermissionAsked = false;
 
 const privateChatStatusEl = document.getElementById("private-chat-admin-status");
 const privateChatListEl = document.getElementById("private-chat-conversation-list");
@@ -3424,17 +3423,18 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
   if (button) button.disabled = true;
   privateChatSetStatus("Comprobando permisos y preparando las notificaciones…");
   try {
-    const result = await enableAdminNotifications();
-    privateChatNotificationPermissionAsked = true;
+    const result = await enableAdminNotifications({
+      supabase,
+      currentUser,
+      publicKey: CONFIG.adminPushPublicKey
+    });
     if (result.ok) {
       if (button) {
         button.textContent = "Probar notificaciones";
         button.title = "Mostrar una notificación de prueba en este dispositivo";
       }
       privateChatSetStatus(
-        result.mode === "service-worker"
-          ? "Notificaciones activadas y prueba mostrada. Los avisos nuevos dependen de que el navegador pueda consultar la bandeja; recibirlos con JB Manager cerrado requiere configurar push remoto."
-          : "El navegador mostró la prueba de notificación. Este modo no garantiza avisos en segundo plano; para eso se necesita Service Worker y push remoto.",
+        "Push registrado en este dispositivo. Se mostró la prueba; las alertas de solicitudes de compra pueden llegar aunque la pestaña no esté abierta, siempre que el navegador y el sistema permitan notificaciones.",
         "success"
       );
     } else if (result.reason === "unsupported") {
@@ -3445,6 +3445,14 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
       privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
     } else if (result.reason === "permission-not-granted") {
       privateChatSetStatus("No se concedió permiso para notificaciones. Podés seguir revisando la bandeja manualmente.", "error");
+    } else if (result.reason === "push-unsupported") {
+      privateChatSetStatus("Este navegador no admite push en segundo plano. Actualizá el navegador o activá las notificaciones desde un navegador compatible.", "error");
+    } else if (result.reason === "admin-session-required") {
+      privateChatSetStatus("Tu sesión administrativa no está lista. Cerrá sesión, volvé a entrar y activá las notificaciones.", "error");
+    } else if (result.reason === "push-config-missing" || result.reason === "invalid-public-key") {
+      privateChatSetStatus("Falta configuración válida de Web Push para este entorno. No se guardó como activado; revisá la configuración de despliegue.", "error");
+    } else if (result.reason === "push-setup-failed") {
+      privateChatSetStatus(String(result.message || "No se pudo registrar el dispositivo para avisos en segundo plano."), "error");
     } else {
       privateChatSetStatus("No se pudo mostrar la notificación de prueba: " + String(result.message || result.reason || "error desconocido") + ". Revisá los permisos del navegador e intentá de nuevo.", "error");
     }
