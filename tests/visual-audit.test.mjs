@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
-import { classifyRuntimeError } from "./visual-audit-policy.mjs";
+import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -37,7 +37,9 @@ let browser;
 const observations = [];
 const findings = [];
 const runtimeErrors = [];
+const networkFailures = [];
 const axeFindings = [];
+const axeViolationGroups = new Map();
 const screenshots = [];
 const journeyResults = [];
 
@@ -154,6 +156,8 @@ function fixtureScript(pageName) {
         ].map(([name, meta, price]) => '<article class="product-card perfume-product-card"><div class="product-image perfume-product-image"><img alt="" src="' + svg + '"></div><div class="product-card-content perfume-product-card-content"><h3>' + name + '</h3><div class="perfume-product-meta">' + meta + '</div><div class="perfume-product-price">' + price + '</div><div class="product-actions"><a class="button perfume-view-button" href="#audit-fixture">Ver producto ↗</a></div></div></article>').join("");
       }
       if (${JSON.stringify(pageName)} === "admin") {
+        // Synthetic authenticated-shell state for layout testing only; no login/API call is performed.
+        document.body.classList.add("admin-dashboard-active");
         document.getElementById("login-panel")?.classList.add("hidden");
         document.getElementById("dashboard")?.classList.remove("hidden");
         document.querySelectorAll("[data-admin-panel]").forEach(panel => {
@@ -237,12 +241,48 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       for (const theme of THEMES) {
         const page = await context.newPage();
         const pageErrors = [];
-        page.on("pageerror", error => pageErrors.push(error.message));
+        page.on("pageerror", error => pageErrors.push({
+          source: "pageerror", message: error.message, stack: error.stack || "",
+        }));
         page.on("console", msg => {
-          if (msg.type() === "error" && /uncaught|syntaxerror|referenceerror|typeerror/i.test(msg.text())) pageErrors.push(msg.text());
+          if (msg.type() === "error" && /uncaught|syntaxerror|referenceerror|typeerror/i.test(msg.text())) {
+            pageErrors.push({ source: "console", message: msg.text(), stack: "" });
+          }
         });
-        // Keep the audit deterministic and read-only: local first-party assets are allowed,
-        // remote APIs and third-party requests are not invoked by this static visual suite.
+        page.on("requestfailed", request => {
+          let requestedUrl;
+          try {
+            requestedUrl = new URL(request.url());
+          } catch {
+            return;
+          }
+          if (requestedUrl.protocol === "data:" || requestedUrl.protocol === "blob:") return;
+          const externalDependency = requestedUrl.origin !== origin;
+          const errorText = request.failure()?.errorText || "Unknown network error";
+          const blockedByPolicy = externalDependency && /ERR_BLOCKED_BY_CLIENT|blocked by client/i.test(errorText);
+          const resourceType = request.resourceType();
+          const classification = classifyRuntimeError(errorText, {
+            source: "network-request", externalDependency, blockedByPolicy, resourceType,
+          });
+          const failure = {
+            page: site.name, theme, viewport: viewport.name, host: requestedUrl.host,
+            resourceType, error: errorText, blockedByPolicy, ...classification,
+          };
+          networkFailures.push(failure);
+          if (classification.blocking) {
+            addFinding({
+              severity: classification.severity, page: site.name, theme, viewport: viewport.name,
+              element: "resource:" + requestedUrl.host + "/" + resourceType,
+              message: "Fallo de carga de recurso esencial",
+              evidence: requestedUrl.host + " (" + resourceType + "): " + errorText,
+              recommendation: classification.rationale,
+              blocking: true,
+            });
+          }
+        });
+        // Keep the audit deterministic and read-only: local first-party assets are allowed.
+        // Remote APIs and non-allowlisted hosts are blocked; cdn.jsdelivr.net is the only
+        // explicitly allowed external host needed to initialize the UI module.
         await page.route("**/*", route => {
           const url = new URL(route.request().url());
           if (url.origin === origin || url.protocol === "data:" || url.protocol === "blob:") return route.continue();
@@ -327,19 +367,29 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
 
         observations.push(snapshot);
-        for (const error of pageErrors) {
-          const classification = classifyRuntimeError(error);
-          runtimeErrors.push({ page: site.name, theme, viewport: viewport.name, error, ...classification });
+        for (const runtimeError of pageErrors) {
+          const error = runtimeError.message || String(runtimeError);
+          const classification = classifyRuntimeError(error, {
+            source: runtimeError.source || "pageerror",
+            stack: runtimeError.stack || "",
+          });
+          runtimeErrors.push({
+            page: site.name, theme, viewport: viewport.name,
+            source: runtimeError.source || "pageerror", error,
+            stack: runtimeError.stack || "", ...classification,
+          });
           addFinding({
             severity: classification.severity, page: site.name, theme, viewport: viewport.name, element: "runtime",
             message: classification.blocking
               ? "Excepción JavaScript no controlada"
-              : "Error de dependencia/red en la auditoría aislada",
+              : classification.category === "console_diagnostic"
+                ? "Diagnóstico de consola no confirmado como excepción"
+                : "Error de dependencia/red en la auditoría aislada",
             evidence: error,
             recommendation: classification.rationale + " " +
               (classification.blocking
                 ? "Localizar el primer archivo y corregir la excepción antes de publicar."
-                : "Repetir el flujo con dependencias conectadas antes de concluir que existe una regresión."),
+                : "Conservar el diagnóstico y confirmar por separado cualquier flujo conectado que dependa de este servicio."),
             blocking: classification.blocking,
           });
         }
@@ -395,16 +445,36 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
               .analyze();
             for (const violation of axe.violations) {
+              const targets = violation.nodes
+                .map(node => (node.target || []).join(" "))
+                .filter(Boolean)
+                .sort();
+              const fingerprint = `${site.name}|${violation.id}|${targets.join("|")}`;
+              const existingGroup = axeViolationGroups.get(fingerprint);
+              if (existingGroup) {
+                existingGroup.finding.occurrences += 1;
+                if (!existingGroup.finding.themes.includes(theme)) existingGroup.finding.themes.push(theme);
+                if (!existingGroup.finding.viewports.includes(viewport.name)) existingGroup.finding.viewports.push(viewport.name);
+                existingGroup.reportFinding.occurrences = existingGroup.finding.occurrences;
+                existingGroup.reportFinding.themes = existingGroup.finding.themes;
+                existingGroup.reportFinding.viewports = existingGroup.finding.viewports;
+                continue;
+              }
+              const impactClassification = classifyAxeImpact(violation.impact);
               const axeFinding = {
-                severity: violation.impact === "critical" || violation.impact === "serious" ? "high" :
-                  violation.impact === "moderate" ? "medium" : "low",
+                severity: impactClassification.severity,
                 page: site.name, theme, viewport: viewport.name, rule: violation.id, impact: violation.impact,
+                themes: [theme], viewports: [viewport.name], occurrences: 1, targets,
                 message: violation.help, evidence: `${violation.nodes.length} nodo(s): ${String(violation.nodes[0]?.target?.join(" ") || "selector no disponible")}`,
                 recommendation: violation.description + " Referencia: " + violation.helpUrl,
               };
               axeFinding.diagnosis = diagnose(axeFinding);
+              const reportFinding = {
+                ...axeFinding, element: axeFinding.rule, blocking: impactClassification.blocking,
+              };
+              axeViolationGroups.set(fingerprint, { finding: axeFinding, reportFinding });
               axeFindings.push(axeFinding);
-              findings.push({ ...axeFinding, element: axeFinding.rule, blocking: false });
+              findings.push(reportFinding);
             }
           } catch (error) {
             addFinding({
@@ -425,15 +495,27 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         if (viewport.mobile && theme === "light") {
           const scenario = { page: site.name, viewport: viewport.name, theme };
           if (site.name === "technology") {
-            await runJourney(page, scenario, "technology-brand-filter-open-close", async () => {
+            await runJourney(page, scenario, "technology-brand-filter-keyboard-and-toggle", async () => {
               const control = page.locator("#brand-filter-toggle");
+              const menu = page.locator("#brand-filter-menu");
+              const search = page.locator("#brand-filter-search");
               assert.equal(await control.count(), 1, "technology brand-filter button must exist");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "true");
-              assert.equal(await page.locator("#brand-filter-menu").evaluate(el => el.hidden), false);
+              assert.equal(await menu.evaluate(el => el.hidden), false);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "brand-filter-search",
+                "opening the filter must move focus to its search field");
+              await page.keyboard.press("Escape");
+              assert.equal(await control.getAttribute("aria-expanded"), "false");
+              assert.equal(await menu.evaluate(el => el.hidden), true);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "brand-filter-toggle",
+                "Escape must close the filter and return focus to its trigger");
+              await control.click();
+              await search.fill("samsung");
+              assert.equal(await search.inputValue(), "samsung");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "false");
-              return "El filtro de marcas abre y cierra con aria-expanded sincronizado.";
+              return "El filtro abre con foco accesible, Escape cierra y devuelve el foco; el buscador acepta texto y el botón puede cerrarlo.";
             });
             await runJourney(page, scenario, "technology-theme-toggle", async () => {
               const toggle = page.locator("[data-theme-toggle]");
@@ -444,15 +526,27 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               return "El control cambia el tema aplicado al documento.";
             });
           } else if (site.name === "perfumery") {
-            await runJourney(page, scenario, "perfumery-brand-filter-open-close", async () => {
+            await runJourney(page, scenario, "perfumery-brand-filter-keyboard-and-toggle", async () => {
               const control = page.locator("#perfume-brand-filter-toggle");
+              const menu = page.locator("#perfume-brand-filter-menu");
+              const search = page.locator("#perfume-brand-filter-search");
               assert.equal(await control.count(), 1, "perfume brand-filter button must exist");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "true");
-              assert.equal(await page.locator("#perfume-brand-filter-menu").evaluate(el => el.hidden), false);
+              assert.equal(await menu.evaluate(el => el.hidden), false);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "perfume-brand-filter-search",
+                "opening the filter must move focus to its search field");
+              await page.keyboard.press("Escape");
+              assert.equal(await control.getAttribute("aria-expanded"), "false");
+              assert.equal(await menu.evaluate(el => el.hidden), true);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "perfume-brand-filter-toggle",
+                "Escape must close the filter and return focus to its trigger");
+              await control.click();
+              await search.fill("arab");
+              assert.equal(await search.inputValue(), "arab");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "false");
-              return "El filtro de marcas de perfumería abre y cierra correctamente.";
+              return "El filtro abre con foco accesible, Escape cierra y devuelve el foco; el buscador acepta texto y el botón puede cerrarlo.";
             });
             await runJourney(page, scenario, "perfumery-theme-toggle", async () => {
               const toggle = page.locator("[data-theme-toggle]");
@@ -472,6 +566,30 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.equal(await page.locator("#dashboard").evaluate(el => el.classList.contains("admin-section-focused")), true);
               return "La navegación muestra Mensajería y deja el panel en modo enfocado.";
             });
+            await runJourney(page, scenario, "admin-mobile-sidebar-escape-and-backdrop", async () => {
+              const toggle = page.locator("#admin-menu-toggle");
+              const backdrop = page.locator("#admin-sidebar-backdrop");
+              assert.equal(await toggle.count(), 1, "admin mobile sidebar toggle must exist");
+              await toggle.click();
+              assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+              assert.equal(await page.locator("body").evaluate(el => el.classList.contains("admin-sidebar-open")), true);
+              assert.equal(await backdrop.evaluate(el => el.hidden), false);
+              await page.keyboard.press("Escape");
+              assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+              assert.equal(await page.locator("body").evaluate(el => el.classList.contains("admin-sidebar-open")), false);
+              assert.equal(await backdrop.evaluate(el => el.hidden), true);
+              await toggle.click();
+              const outsideX = await page.evaluate(() => {
+                const sidebar = document.getElementById("admin-sidebar");
+                const rect = sidebar.getBoundingClientRect();
+                return Math.max(2, Math.min(window.innerWidth - 2, Math.ceil(rect.right + 12)));
+              });
+              assert.ok(outsideX < 390, "test viewport must expose an area outside the mobile sidebar");
+              await page.mouse.click(outsideX, 400);
+              assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+              assert.equal(await backdrop.evaluate(el => el.hidden), true);
+              return "El menú móvil sincroniza aria-expanded y bloqueo de scroll; Escape y un clic real fuera del cajón cierran el panel.";
+            });
           } else if (site.name === "private-chat") {
             await runJourney(page, scenario, "private-chat-theme-toggle", async () => {
               const toggle = page.locator("#private-chat-theme-toggle");
@@ -482,13 +600,21 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.notEqual(await toggle.getAttribute("aria-pressed"), null);
               return "El chat cambia de tema y mantiene el estado accesible aria-pressed.";
             });
-            await runJourney(page, scenario, "private-chat-order-data-notice", async () => {
-              const text = await page.locator(".private-chat-privacy").innerText();
-              assert.match(text, /nombre completo/i);
-              assert.match(text, /cédula/i);
-              assert.match(text, /celular/i);
-              assert.match(text, /contraseñas|códigos de seguridad/i);
-              return "El aviso permite entender qué datos del pedido se pueden compartir y qué credenciales nunca se deben enviar.";
+            await runJourney(page, scenario, "private-chat-composer-input-behavior", async () => {
+              const form = page.locator("#private-chat-composer");
+              const input = page.locator("#private-chat-input");
+              const send = page.locator("#private-chat-send");
+              assert.equal(await form.evaluate(el => el.hidden), false, "fixture must expose the synthetic composer");
+              assert.equal(await send.getAttribute("type"), "submit");
+              assert.equal(await input.getAttribute("maxlength"), "1200");
+              const message = "Mensaje sintético para probar el campo de respuesta.";
+              await input.fill(message);
+              assert.equal(await input.inputValue(), message);
+              const styleHeight = await input.evaluate(el => el.style.height);
+              assert.match(styleHeight, /^\d+(?:\.\d+)?px$/, "textarea should update its height on input");
+              await input.fill("");
+              assert.equal(await input.inputValue(), "");
+              return "El compositor acepta y limpia texto de prueba, respeta maxlength y ajusta la altura sin enviar ninguna solicitud.";
             });
           }
         }
@@ -500,22 +626,35 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   const rank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
   findings.sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0));
   const blockingFindings = findings.filter(item => item.blocking);
+  const groupedFindings = groupRepeatedFindings(findings);
+  const uniqueBlockingFindings = groupedFindings.filter(item => item.blocking);
+  const groupedFindingOccurrences = groupedFindings.reduce((total, item) => total + item.occurrences, 0);
   const result = {
     generatedAt: new Date().toISOString(),
     matrix: { pages: PAGES.map(p => p.name), viewports: VIEWPORTS, themes: THEMES, combinations: observations.length },
     summary: {
       scenarios: observations.length, screenshotCount: screenshots.length,
       blockingFindings: blockingFindings.length, findings: findings.length,
+      uniqueFindings: groupedFindings.length,
+      uniqueBlockingFindings: uniqueBlockingFindings.length,
+      groupedFindingOccurrences,
       runtimeErrors: runtimeErrors.length,
       blockingRuntimeErrors: runtimeErrors.filter(error => error.blocking).length,
+      networkFailures: networkFailures.length,
+      blockedExternalRequests: networkFailures.filter(failure => failure.blockedByPolicy).length,
+      blockingResourceFailures: networkFailures.filter(failure => failure.blocking).length,
       journeyFailures: journeyResults.filter(journey => !journey.passed).length,
       axeViolations: axeFindings.length,
+      axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
+      blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
     },
-    observations, findings, axeFindings, runtimeErrors, screenshots, journeyResults,
+    observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
-      remoteApisCalled: false,
-      blockingRule: "Uncaught application JavaScript exceptions, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Known network errors from isolated external dependencies are reported but do not block.",
-      note: "Local deterministic fixture. It does not authenticate to Supabase, mutate data, or prove live production network behavior.",
+      remoteApisReached: false,
+      allowedExternalHosts: ["cdn.jsdelivr.net"],
+      externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
+      blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
+      note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
@@ -526,9 +665,15 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     `- Capturas generadas: ${screenshots.length}`,
     `- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`,
     `- Hallazgos bloqueantes: ${blockingFindings.length}`,
-    `- Hallazgos adicionales: ${findings.length}`,
+    `- Hallazgos adicionales (ocurrencias): ${findings.length}`,
+    `- Hallazgos únicos agrupados: ${groupedFindings.length}; bloqueantes únicos: ${uniqueBlockingFindings.length}; ocurrencias agrupadas: ${groupedFindingOccurrences}`,
     `- Errores JS: ${runtimeErrors.length}; bloqueantes: ${result.summary.blockingRuntimeErrors}`,
-    `- Violaciones Axe detectadas en móvil: ${axeFindings.length}`,
+    `- Solicitudes fallidas: ${result.summary.networkFailures}; bloqueadas intencionadamente: ${result.summary.blockedExternalRequests}; recursos esenciales bloqueantes: ${result.summary.blockingResourceFailures}`,
+    `- Violaciones Axe únicas detectadas en móvil: ${axeFindings.length}; ocurrencias por tema/escenario: ${result.summary.axeViolationOccurrences}; críticas/serias bloqueantes: ${result.summary.blockingAxeViolations}`,
+    "",
+    "## Hallazgos agrupados por causa",
+    "",
+    ...(groupedFindings.length ? groupedFindings.map((f, i) => `${i + 1}. **[${String(f.severity || "info").toUpperCase()}] ${f.page || "página"} / ${f.rule || f.code || f.category || f.element || "hallazgo"}** — ${f.message || f.evidence || "Sin descripción"}\n   - Ocurrencias: ${f.occurrences}; escenarios: ${f.scenarios.join(", ") || "no especificados"}\n   - Bloqueante: ${f.blocking ? "sí" : "no"}; confianza orientativa: ${Math.round((Number(f.confidence) || Number(f.diagnosis?.confidence) || 0) * 100)}%`) : ["No hay hallazgos agrupables."]),
     "",
     "## Hallazgos ordenados por gravedad",
     "",
@@ -553,8 +698,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "## Alcance y límites",
     "",
     "- Todas las páginas se sirven desde una copia estática local; la prueba inserta productos y mensajes sintéticos para revisar geometría representativa.",
-    "- No se llaman APIs externas, no se autentica a un usuario y no se modifica Supabase.",
-    "- Axe se usa como detector de posibles problemas WCAG y genera recomendaciones; sus hallazgos no bloquean por sí solos hasta que se clasifiquen y se establezca una línea base.",
+    "- La política permite recursos locales y el host cdn.jsdelivr.net; las peticiones a Supabase y a otros hosts externos no permitidos se abortan. No se autentica a un usuario ni se modifica Supabase.",
+    "- Axe se usa como detector WCAG. Las violaciones críticas/serias bloquean CI; las moderadas/menores permanecen como diagnósticos revisables. El mismo hallazgo por regla y selectores se agrupa entre temas, conservando sus ocurrencias.",
+    "- Los recursos externos bloqueados deliberadamente por la política de aislamiento se separan de los fallos de recursos esenciales; los errores de red no convierten automáticamente una excepción JavaScript no controlada en un falso positivo.",
     "- La puerta de bloqueo se aplica a regresiones geométricas deterministas especificadas en este test. La validación real de compras y de notificaciones necesita pruebas de integración separadas.",
     "",
   ].join("\n");
@@ -567,5 +713,6 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   }
   assert.equal(observations.length, PAGES.length * VIEWPORTS.length * THEMES.length, "each page must be measured in every viewport/theme combination");
   assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
-  assert.equal(blockingFindings.length, 0, "critical deterministic layout regressions block CI; see visual-audit-report.md");
+  assert.equal(result.summary.blockingAxeViolations, 0, "critical/serious Axe violations block CI; see visual-audit-report.md");
+  assert.equal(blockingFindings.length, 0, "critical deterministic layout/runtime/resource regressions block CI; see visual-audit-report.md");
 });
