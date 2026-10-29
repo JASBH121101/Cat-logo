@@ -309,3 +309,165 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
   .private-chat-admin-reply-form textarea { min-height: 38px; }
   .private-chat-admin-security-note { padding: 0 8px 7px; }
 }
+
+
+/* Focused admin workspace: keep only the catalog selector above non-dashboard panels. */
+.dashboard.admin-section-focused > .dashboard-top {
+  display:flex!important;
+  align-items:center!important;
+  justify-content:stretch!important;
+  gap:8px!important;
+  margin:0 0 8px!important;
+  min-width:0!important;
+}
+.dashboard.admin-section-focused > .dashboard-top > div:first-child {
+  display:none!important;
+}
+.dashboard.admin-section-focused > .dashboard-top > .admin-catalog-context {
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px 10px!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:8px 10px!important;
+  border-radius:10px!important;
+}
+.dashboard.admin-section-focused .admin-catalog-context label {
+  margin:0!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  white-space:nowrap!important;
+}
+.dashboard.admin-section-focused .admin-catalog-context select {
+  width:100%!important;
+  min-width:0!important;
+  min-height:36px!important;
+  padding:6px 9px!important;
+  font-size:12px!important;
+  line-height:1.3!important;
+}
+.dashboard.admin-section-focused #admin-context-hint,
+.dashboard.admin-section-focused > #admin-status {
+  display:none!important;
+}
+.dashboard.admin-section-focused #admin-section-messages.admin-nav-panel:not(.hidden) {
+  gap:8px!important;
+}
+.dashboard.admin-section-focused #admin-section-messages .private-chat-admin-heading {
+  gap:8px!important;
+  margin:0!important;
+}
+.dashboard.admin-section-focused #admin-section-messages .private-chat-admin-heading h2 {
+  margin:2px 0 0!important;
+  font-size:clamp(19px,4.8vw,23px)!important;
+  line-height:1.2!important;
+}
+.dashboard.admin-section-focused #admin-section-messages .private-chat-admin-heading > div > p:not(.eyebrow) {
+  margin:5px 0 0!important;
+}
+.dashboard.admin-section-focused #admin-section-messages .private-chat-admin-feedback:empty {
+  display:none!important;
+}
+.dashboard.admin-section-focused #admin-section-messages .private-chat-admin-feedback {
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+.dashboard.admin-section-focused #admin-section-messages .private-chat-admin-layout {
+  margin:0!important;
+  gap:8px!important;
+}
+@media(max-width:560px) {
+  .dashboard.admin-section-focused > .dashboard-top {
+    margin-bottom:6px!important;
+  }
+  .dashboard.admin-section-focused > .dashboard-top > .admin-catalog-context {
+    grid-template-columns:auto minmax(0,1fr)!important;
+    gap:5px 8px!important;
+    padding:7px 8px!important;
+  }
+  .dashboard.admin-section-focused .admin-catalog-context label {
+    font-size:10px!important;
+    letter-spacing:0!important;
+  }
+  .dashboard.admin-section-focused .admin-catalog-context select {
+    min-height:35px!important;
+    padding:5px 8px!important;
+    font-size:11px!important;
+  }
+  .dashboard.admin-section-focused #admin-section-messages .private-chat-admin-heading .eyebrow {
+    margin:0!important;
+    font-size:9px!important;
+    line-height:1.25!important;
+  }
+  .dashboard.admin-section-focused #admin-section-messages .private-chat-admin-heading > div > p:not(.eyebrow) {
+    display:none!important;
+  }
+  .dashboard.admin-section-focused #admin-section-messages .private-chat-admin-header-actions .button {
+    min-height:33px!important;
+    padding:6px 8px!important;
+    font-size:10px!important;
+  }
+}
+@media(max-width:360px) {
+  .dashboard.admin-section-focused > .dashboard-top > .admin-catalog-context {
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:4px!important;
+  }
+  .dashboard.admin-section-focused .admin-catalog-context label {
+    white-space:normal!important;
+  }
+}
+
+/* Compact color cards keep nested editor surfaces legible in the dark theme. */
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-section,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-card-body {
+  color:#e6edfc!important;
+  background-color:transparent!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-admin-row,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-card-collapse {
+  color:#e9efff!important;
+  border-color:#3a4c70!important;
+  background:linear-gradient(145deg,#17233a 0%,#121d31 100%)!important;
+  box-shadow:0 3px 0 rgba(2,7,17,.25),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-details {
+  color:#e6edfc!important;
+  border-color:#344566!important;
+  background-color:#101a2f!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-tools {
+  color:#d5e1fa!important;
+  border-color:#344566!important;
+  background-color:#13213a!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields > label,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-tools > label,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-name-field,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-field {
+  color:#d5e1fa!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields input:not([type="file"]):not([type="color"]),
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields select,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-tools input:not([type="file"]):not([type="color"]) {
+  border-color:#3b4d70!important;
+  color:#edf2ff!important;
+  background-color:#0d162a!important;
+  color-scheme:dark;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-actions button,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-remove {
+  border-color:#405577!important;
+  color:#e6edfc!important;
+  background:#1b2948!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-details > summary {
+  color:#a9c9ff!important;
+}
