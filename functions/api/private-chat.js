@@ -1,3 +1,5 @@
+import { sendWebPush } from "../_shared/web-push.js";
+
 const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
 const PUBLIC_CHAT_URL = "https://jb-collections.pages.dev";
@@ -89,6 +91,74 @@ async function rpc(name, params) {
   }
   return data;
 }
+async function dispatchAdminPush(sessionHash, env = {}) {
+  const dispatchSecret = String(env.PUSH_DISPATCH_SECRET || "");
+  const vapidPrivateJwk = env.VAPID_PRIVATE_JWK;
+  const vapidPublicKey = String(env.VAPID_PUBLIC_KEY || "");
+  if (!dispatchSecret || !vapidPrivateJwk || !vapidPublicKey) return;
+
+  let claim;
+  try {
+    claim = await rpc("private_chat_claim_push_delivery", {
+      p_dispatch_secret: dispatchSecret,
+      p_session_token_hash: sessionHash
+    });
+  } catch (error) {
+    console.warn("JB admin push claim failed:", clean(error?.message || "unknown error", 120));
+    return;
+  }
+  if (!claim?.sent || !claim.conversation_id || !Array.isArray(claim.subscriptions) || !claim.subscriptions.length) return;
+
+  const isPurchase = claim.contact_route === "buy";
+  const payload = {
+    title: isPurchase ? "Cliente confirmó que quiere comprar" : "Nueva solicitud de atención",
+    body: (String(claim.product_name || "Consulta general") + ": el cliente está listo para continuar.").slice(0, 180),
+    url: PUBLIC_CHAT_URL + "/admin.html?open=messages",
+    conversationId: claim.conversation_id,
+    tag: "jb-private-chat-" + claim.conversation_id
+  };
+
+  const deliveries = await Promise.all(claim.subscriptions.map(async subscription => {
+    try {
+      const result = await sendWebPush(subscription, payload, {
+        privateJwk: vapidPrivateJwk,
+        publicKey: vapidPublicKey,
+        subject: PUBLIC_CHAT_URL + "/"
+      });
+      if (result.expired) {
+        console.warn("JB admin push endpoint expired:", clean(subscription.id || "unknown", 60));
+      }
+      if (!result.ok) {
+        console.warn("JB admin push delivery failed:", clean(result.reason || String(result.status), 120));
+      }
+      return result;
+    } catch (error) {
+      console.warn("JB admin push delivery error:", clean(error?.message || "unknown error", 120));
+      return { ok: false };
+    }
+  }));
+  const delivered = deliveries.some(result => result?.ok);
+
+  try {
+    await rpc("private_chat_finish_push_delivery", {
+      p_dispatch_secret: dispatchSecret,
+      p_conversation_id: claim.conversation_id,
+      p_delivered: delivered
+    });
+  } catch (error) {
+    console.warn("JB admin push completion failed:", clean(error?.message || "unknown error", 120));
+  }
+}
+
+function scheduleAdminPush(context, sessionHash) {
+  const operation = dispatchAdminPush(sessionHash, context?.env || {});
+  if (typeof context?.waitUntil === "function") {
+    context.waitUntil(operation);
+    return Promise.resolve();
+  }
+  return operation;
+}
+
 function errorResponse(error, origin) {
   const message = String(error?.message || "");
   if (/personal_data_not_allowed/i.test(message)) {
@@ -121,7 +191,8 @@ function errorResponse(error, origin) {
   }, origin);
 }
 
-export async function onRequest({ request }) {
+export async function onRequest(context) {
+  const request = context.request;
   const origin = request.headers.get("Origin") || "";
   if (request.method === "OPTIONS") {
     if (!allowedOrigin(origin)) return json(403, { ok: false, error: "origin_not_allowed" }, "");
@@ -206,19 +277,20 @@ export async function onRequest({ request }) {
     if (action === "route") {
       const route = clean(body.route, 12).toLowerCase();
       if (!["support", "buy"].includes(route)) return json(400, { ok: false, error: "invalid_route" }, origin);
-      return json(200, { ok: true, result: await rpc("private_chat_choose_route", { p_session_token_hash: sessionHash, p_route: route }) }, origin);
+      const result = await rpc("private_chat_choose_route", { p_session_token_hash: sessionHash, p_route: route });
+      if (route === "support") await scheduleAdminPush(context, sessionHash);
+      return json(200, { ok: true, result }, origin);
     }
     if (action === "consent") {
       const choice = clean(body.choice, 8).toLowerCase();
       if (!["yes", "no"].includes(choice)) return json(400, { ok: false, error: "invalid_choice" }, origin);
-      return json(200, {
-        ok: true,
-        result: await rpc("private_chat_record_consent", {
-          p_session_token_hash: sessionHash,
-          p_choice: choice,
-          p_notice_version: "2026-10-28-v1"
-        })
-      }, origin);
+      const result = await rpc("private_chat_record_consent", {
+        p_session_token_hash: sessionHash,
+        p_choice: choice,
+        p_notice_version: "2026-10-28-v1"
+      });
+      if (choice === "yes") await scheduleAdminPush(context, sessionHash);
+      return json(200, { ok: true, result }, origin);
     }
     if (action === "send") {
       const content = clean(body.content, 1200);
