@@ -320,3 +320,42 @@ html[data-theme="dark"] body.admin-body select.variant-storage-unit {
   color: #e1eaff !important;
   cursor: pointer !important;
 }
+
+
+/* Mobile variant editor: make the configuration expand/collapse control unmistakable.
+   The previous chevron inherited the generic --ink token, which can be too dark
+   on a dark card, leaving only a faint empty-looking outline. */
+html[data-theme="dark"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary .variant-config-chevron {
+  color: #f4f7ff !important;
+  background-color: #2c4268 !important;
+  border-color: #8ba7dc !important;
+  box-shadow: 0 0 0 1px rgba(139, 167, 220, .22), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme="light"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary .variant-config-chevron {
+  color: #243b62 !important;
+  background-color: #f1f5ff !important;
+  border-color: #9aafd6 !important;
+  box-shadow: 0 0 0 1px rgba(91, 119, 170, .10) !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+}
+
+html body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary:focus-visible {
+  outline: 3px solid #73a4ff !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme="dark"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary:hover .variant-config-chevron {
+  background-color: #385684 !important;
+  border-color: #b5ccf4 !important;
+}
+
+html[data-theme="light"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary:hover .variant-config-chevron {
+  background-color: #e2ebff !important;
+  border-color: #6e8fc9 !important;
+}
