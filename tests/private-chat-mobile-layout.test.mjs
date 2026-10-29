@@ -105,13 +105,104 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
       document.querySelector(".login-panel")?.remove();
       const dashboard = document.getElementById("dashboard");
       dashboard?.classList.remove("hidden");
-      if (dashboard) dashboard.hidden = false;
+      if (dashboard) {
+        dashboard.hidden = false;
+        dashboard.classList.add("admin-section-focused");
+      }
 
       document.querySelectorAll("[data-admin-panel]").forEach(panel => panel.classList.add("hidden"));
       const section = document.getElementById("admin-section-messages");
       section?.classList.remove("hidden");
       if (section) section.hidden = false;
     });
+
+    const compactHeader = await page.evaluate(() => {
+      const dashboard = document.getElementById("dashboard");
+      const top = dashboard?.querySelector(".dashboard-top");
+      const greeting = top?.querySelector(":scope > div:first-child");
+      const context = top?.querySelector(".admin-catalog-context");
+      const sectionHeading = document.querySelector(".private-chat-admin-heading");
+      const description = sectionHeading?.querySelector(":scope > div > p:not(.eyebrow)");
+      const inbox = document.querySelector(".private-chat-admin-inbox");
+      const status = document.getElementById("admin-status");
+      return {
+        greetingDisplay: greeting ? getComputedStyle(greeting).display : "missing",
+        contextHeight: context?.getBoundingClientRect().height ?? -1,
+        dashboardTopHeight: top?.getBoundingClientRect().height ?? -1,
+        descriptionDisplay: description ? getComputedStyle(description).display : "missing",
+        adminStatusDisplay: status ? getComputedStyle(status).display : "missing",
+        gapAfterHeading: inbox && sectionHeading
+          ? inbox.getBoundingClientRect().top - sectionHeading.getBoundingClientRect().bottom
+          : -1
+      };
+    });
+    assert.equal(compactHeader.greetingDisplay, "none",
+      "non-dashboard admin sections should not keep the large welcome block");
+    assert.ok(compactHeader.contextHeight > 0 && compactHeader.contextHeight < 90,
+      "catalog selector should collapse to a compact context bar: " + JSON.stringify(compactHeader));
+    assert.ok(compactHeader.dashboardTopHeight < 100,
+      "compact context row should not reserve the old dashboard header height");
+    assert.equal(compactHeader.descriptionDisplay, "none",
+      "long messaging intro should be hidden on mobile to keep the inbox above the fold");
+    assert.equal(compactHeader.adminStatusDisplay, "none",
+      "stale global success messages should not consume space on a focused panel");
+    assert.ok(compactHeader.gapAfterHeading >= 0 && compactHeader.gapAfterHeading < 80,
+      "inbox should follow the compact header without a large blank spacer: " + JSON.stringify(compactHeader));
+
+    await page.evaluate(() => {
+      const form = document.getElementById("product-form");
+      if (!form) return;
+      const fixture = document.createElement("details");
+      fixture.id = "dark-theme-color-fixture";
+      fixture.className = "variant-admin-row inline-color-card inline-color-card-collapse";
+      fixture.innerHTML = `
+        <summary class="inline-color-card-summary">
+          <span class="inline-color-card-summary-copy"><strong>Grafito</strong><small>Estado: Disponible</small></span>
+          <span class="inline-color-card-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="inline-color-card-body">
+          <details class="inline-color-details" open>
+            <summary>Disponibilidad y fotografías</summary>
+            <div class="variant-color-fields">
+              <label>Disponibilidad
+                <select><option>Disponible</option></select>
+              </label>
+            </div>
+            <div class="variant-color-library-tools">
+              <label>Buscar color <input type="search" value="Grafito"></label>
+            </div>
+          </details>
+        </div>`;
+      form.append(fixture);
+    });
+    await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
+    const darkColorSurfaces = await page.evaluate(() => {
+      const card = document.querySelector("#dark-theme-color-fixture");
+      const inner = card?.querySelector(".inline-color-details");
+      const fields = card?.querySelector(".variant-color-fields select");
+      const library = card?.querySelector(".variant-color-library-tools");
+      const label = card?.querySelector(".variant-color-fields label");
+      return {
+        cardBackground: card ? getComputedStyle(card).backgroundColor : "missing",
+        innerBackground: inner ? getComputedStyle(inner).backgroundColor : "missing",
+        selectBackground: fields ? getComputedStyle(fields).backgroundColor : "missing",
+        selectColor: fields ? getComputedStyle(fields).color : "missing",
+        libraryBackground: library ? getComputedStyle(library).backgroundColor : "missing",
+        labelColor: label ? getComputedStyle(label).color : "missing"
+      };
+    });
+    assert.notEqual(darkColorSurfaces.cardBackground, "rgb(255, 255, 255)",
+      "compact color card must not remain white in dark mode");
+    assert.notEqual(darkColorSurfaces.innerBackground, "rgb(255, 255, 255)",
+      "nested availability/photo panel must honor dark mode");
+    assert.notEqual(darkColorSurfaces.selectBackground, "rgb(255, 255, 255)",
+      "availability controls must honor dark mode");
+    assert.notEqual(darkColorSurfaces.libraryBackground, "rgb(255, 255, 255)",
+      "color library panel must honor dark mode");
+    assert.notEqual(darkColorSurfaces.selectColor, "rgb(0, 0, 0)",
+      "dark mode control text must remain legible");
+    assert.notEqual(darkColorSurfaces.labelColor, "rgb(0, 0, 0)",
+      "dark mode labels must remain legible");
 
     // Run the actual selection renderer from admin.js with deterministic DOM
     // state and mocked network helpers; this verifies the JavaScript/CSS contract.
