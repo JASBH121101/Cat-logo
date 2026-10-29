@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-showcase-layout-unified1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-showcase-readable-type1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -62,6 +62,14 @@ test("all technology showcases share the Exclusivos horizontal card layout on de
   assert.ok(sharedLayout.includes("grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr) !important"));
   assert.ok(sharedLayout.includes("grid-column:1 !important"));
   assert.ok(sharedLayout.includes("grid-column:2 !important"));
+});
+
+test("curated showcase typography is easier to read without changing responsive auto-fit", () => {
+  assert.match(css, /JB TECH · subir la legibilidad de las vitrinas/);
+  assert.match(css, /\.section-subtitle\s*\{\s*font-size:clamp\(14px,1vw,16px\) !important;/);
+  assert.match(css, /#limited-edition-grid\.featured-grid[\s\S]*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,430px\),1fr\)\) !important/);
+  assert.match(css, /#limited-edition-grid\.featured-grid \.product-badge[\s\S]*?font-size:10px !important/);
+  assert.match(css, /#limited-edition-grid\.featured-grid \.product-view-button[\s\S]*?font-size:13\.5px !important/);
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
