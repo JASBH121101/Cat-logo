@@ -1385,7 +1385,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
       const statusLabel = colorStatusLabel(item.status);
       return `<button type="button" class="variant-choice ${isSelected ? "selected" : ""}" data-variant-dimension="configuration" data-variant-storage="${escapeHtml(item.storage)}" data-variant-ram="${escapeHtml(item.ram)}" aria-pressed="${isSelected ? "true" : "false"}" aria-label="${escapeHtml(item.label + ": " + statusLabel)}" title="${escapeHtml(item.label + " · " + statusLabel)}"><span>${escapeHtml(item.label)}</span><small class="variant-choice-status status-${item.status}">${escapeHtml(statusLabel)}</small></button>`;
     }).join("");
-    return `<section class="variant-option-group"><h3>${title}</h3><div class="variant-choice-list">${buttons}</div></section>`;
+    return `<section class="variant-option-group"><h2 class="variant-section-title">${title}</h2><div class="variant-choice-list">${buttons}</div></section>`;
   }
 
   const values = uniqueValues(variants, field);
@@ -1414,7 +1414,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
 
     return `
       <section class="variant-option-group variant-option-color-group">
-        <h3>${title}</h3>
+        <h2 class="variant-section-title">${title}</h2>
         <div class="variant-choice-list color-choice-list">${buttons}</div>
       </section>
     `;
@@ -1434,7 +1434,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
 
   return `
     <section class="variant-option-group">
-      <h3>${title}</h3>
+      <h2 class="variant-section-title">${title}</h2>
       <div class="variant-choice-list">${buttons}</div>
     </section>
   `;
@@ -1911,7 +1911,7 @@ function openProduct(product, requestedVariant = null) {
 
         ${warranty}
 
-        <h3>Especificaciones</h3>
+        <h2 class="dialog-section-title">Especificaciones</h2>
         ${
           specs.length
             ? `<ul class="dialog-specs">${specs.map(spec => `<li>${escapeHtml(spec)}</li>`).join("")}</ul>`
