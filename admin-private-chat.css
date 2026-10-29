@@ -263,3 +263,49 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
   .private-chat-admin-layout.has-selection .private-chat-admin-thread { min-height:0!important; }
   .private-chat-admin-layout.has-selection .private-chat-admin-messages { min-height:0!important; max-height:240px!important; }
 }
+
+
+/* Compact density pass: keep JB Manager inbox and selected chat focused, not padded out. */
+.private-chat-admin-heading { gap: 10px; margin-bottom: 8px; }
+.private-chat-admin-heading > div > p:not(.eyebrow) { margin: 5px 0 0; line-height: 1.42; }
+.private-chat-admin-header-actions { gap: 6px; }
+.private-chat-admin-header-actions .button { min-height: 34px; padding: 7px 10px; font-size: 11px; }
+.private-chat-admin-feedback { min-height: 0; margin: 0 0 7px; line-height: 1.4; }
+.private-chat-admin-layout { gap: 10px; }
+.private-chat-admin-inbox-heading { padding: 9px 11px; }
+.private-chat-admin-filters { gap: 4px; padding: 6px; }
+.private-chat-admin-filter { min-height: 30px; padding: 6px 4px; }
+.private-chat-admin-item { padding: 8px 10px; }
+.private-chat-admin-item-meta { margin-top: 5px; gap: 4px; }
+.private-chat-pill { padding: 3px 5px; }
+.private-chat-admin-thread-header { padding: 10px 11px; gap: 8px; }
+.private-chat-admin-thread-header h3 { margin: 2px 0 3px; }
+.private-chat-admin-actions { gap: 5px; padding: 7px 9px; }
+.private-chat-admin-actions .button { min-height: 30px; padding: 6px 8px; font-size: 10px; }
+.private-chat-admin-messages { gap: 6px; padding: 10px; max-height: 260px !important; }
+.private-chat-admin-message { padding: 7px 9px; border-radius: 10px; }
+.private-chat-admin-message time { margin-top: 3px; }
+.private-chat-admin-reply-form { gap: 6px; padding: 8px; }
+.private-chat-admin-reply-form textarea { min-height: 40px; padding: 8px 9px; }
+.private-chat-admin-reply-form .button { min-height: 36px; padding: 7px 10px; }
+.private-chat-admin-security-note { padding: 0 9px 8px; line-height: 1.4; }
+@media (max-width: 900px) {
+  .private-chat-admin-heading { gap: 8px; margin-bottom: 6px; }
+  .private-chat-admin-layout { gap: 8px; }
+  .private-chat-admin-thread-header { padding: 9px; }
+}
+@media (max-width: 560px) {
+  .private-chat-admin-header-actions { gap: 6px; }
+  .private-chat-admin-header-actions .button { min-height: 32px; padding: 6px 8px; font-size: 10px; }
+  .private-chat-admin-layout { gap: 7px; }
+  .private-chat-admin-inbox-heading { padding: 8px 10px; }
+  .private-chat-admin-filter { min-height: 31px; padding: 6px 2px; }
+  .private-chat-admin-item { padding: 8px 9px; }
+  .private-chat-admin-actions { gap: 5px; padding: 7px; }
+  .private-chat-admin-actions .button { flex: 1 1 calc(50% - 5px); min-height: 32px; padding: 6px 5px; }
+  .private-chat-admin-messages { padding: 8px; gap: 5px; max-height: 220px !important; }
+  .private-chat-admin-message { padding: 7px 8px; }
+  .private-chat-admin-reply-form { gap: 6px; padding: 7px; }
+  .private-chat-admin-reply-form textarea { min-height: 38px; }
+  .private-chat-admin-security-note { padding: 0 8px 7px; }
+}

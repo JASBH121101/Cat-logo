@@ -7,28 +7,25 @@ const themeCss = readFileSync(new URL("../theme-ui.css", import.meta.url), "utf8
 const aiJs = readFileSync(new URL("../ai-assistant.js", import.meta.url), "utf8");
 const assistantApi = readFileSync(new URL("../functions/api/assistant.js", import.meta.url), "utf8");
 
-test("AI launcher stays above the fixed back-to-top button on desktop", () => {
+test("AI launcher uses a compact floating control that does not compete with product copy", () => {
   const aiRoot = aiCss.match(/\.jb-ai-advisor\s*\{([^}]+)\}/);
   assert.ok(aiRoot, "AI advisor root rule exists");
-  assert.match(aiRoot[1], /bottom:\s*calc\(23px\s*\+\s*48px\s*\+\s*14px\)/);
-
-  const topButton = themeCss.match(/\.back-to-top\s*\{([^}]+)\}/);
-  assert.ok(topButton, "back-to-top rule exists");
-  assert.match(topButton[1], /bottom:\s*23px/);
-  assert.match(topButton[1], /width:\s*48px/);
-  assert.match(topButton[1], /height:\s*48px/);
+  assert.match(aiRoot[1], /bottom:\s*max\(14px,\s*calc\(env\(safe-area-inset-bottom,\s*0px\)\s*\+\s*10px\)\)/);
+  const launcher = aiCss.match(/\.jb-ai-launcher\s*\{([^}]+)\}/);
+  assert.ok(launcher, "AI launcher styles exist");
+  assert.match(launcher[1], /min-height:\s*48px/);
+  assert.match(aiJs, /aria-label="Abrir asesor IA de JB Collections"/);
 });
 
-test("AI launcher reserves the same clearance on narrow mobile screens and respects safe areas", () => {
+test("AI launcher becomes a 48px round icon on mobile and respects safe areas", () => {
   const mobile = aiCss.match(/@media\s*\(max-width:\s*520px\)\s*\{([\s\S]*?)\n\}/);
   assert.ok(mobile, "mobile breakpoint exists");
-  assert.match(
-    mobile[1],
-    /bottom:\s*calc\(max\(23px,\s*env\(safe-area-inset-bottom,\s*0px\)\)\s*\+\s*48px\s*\+\s*14px\)/
-  );
-  assert.match(mobile[1], /right:\s*max\(12px,\s*env\(safe-area-inset-right,\s*0px\)\)/);
+  assert.match(mobile[1], /width:\s*48px/);
+  assert.match(mobile[1], /height:\s*48px/);
+  assert.match(mobile[1], /border-radius:\s*50%/);
+  assert.match(mobile[1], /\.jb-ai-launcher-label\s*\{\s*display:\s*none/);
+  assert.match(mobile[1], /bottom:\s*max\(12px,\s*calc\(env\(safe-area-inset-bottom,\s*0px\)\s*\+\s*8px\)\)/);
 });
-
 
 test("AI conversation remembers preferences only for the current browser tab session", () => {
   assert.match(aiJs, /sessionStorageKey\s*=\s*"jb-ai-conversation-v2"/);

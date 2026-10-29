@@ -293,12 +293,27 @@ function isGeneratedSpecificationLabel(label) {
   return /^dato(?:\s+\d+)?$/i.test(String(label || "").trim());
 }
 
+function specificationOrder(value) {
+  const match = String(value ?? "").trim().match(/^(\d{1,3})[.)]\s+/);
+  return match ? Number(match[1]) : null;
+}
+
 function cleanSpecificationLine(value) {
   let line = String(value ?? "").trim();
   line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
   line = line.replace(/^Dato\s*\d+\s*:\s*/i, "");
+  // Remove supplier list markers but preserve numbers inside technical values (e.g. 5.4 GHz).
+  line = line.replace(/^\d{1,3}[.)]\s+/, "");
   line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
   return line.trim();
+}
+
+function orderSpecificationEntries(entries) {
+  if (entries.length > 1 && entries.every(entry => entry.order !== null)) {
+    return entries.slice().sort((a, b) => a.order - b.order || a.index - b.index)
+      .map(entry => entry.text).filter(Boolean);
+  }
+  return entries.map(entry => entry.text).filter(Boolean);
 }
 
 function specsArray(specs) {
@@ -306,23 +321,35 @@ function specsArray(specs) {
   if (!specs) return [];
 
   if (Array.isArray(specs)) {
-    return specs.map(item => {
-      if (typeof item === "string") return cleanSpecificationLine(item);
-      if (item && typeof item === "object") {
-        const label = String(item.label || item.name || "").trim();
-        const value = cleanSpecificationLine(item.value || "");
-        return !label || isGeneratedSpecificationLabel(label) ? value : `${label}: ${value}`;
+    const entries = specs.map((item, index) => {
+      if (typeof item === "string") {
+        return { text: cleanSpecificationLine(item), order: specificationOrder(item), index };
       }
-      return cleanSpecificationLine(item);
-    }).filter(Boolean);
+      if (item && typeof item === "object") {
+        const rawLabel = String(item.label || item.name || "").trim();
+        const rawValue = String(item.value || "");
+        const order = specificationOrder(rawLabel) ?? specificationOrder(rawValue);
+        const label = cleanSpecificationLine(rawLabel);
+        const value = cleanSpecificationLine(rawValue);
+        return {
+          text: !label || isGeneratedSpecificationLabel(label) ? value : (value ? `${label}: ${value}` : label),
+          order,
+          index,
+        };
+      }
+      return { text: cleanSpecificationLine(item), order: specificationOrder(item), index };
+    });
+    return orderSpecificationEntries(entries);
   }
 
   if (typeof specs === "object") {
-    return Object.entries(specs)
-      .map(([key, value]) => isGeneratedSpecificationLabel(key)
-        ? cleanSpecificationLine(value)
-        : `${key}: ${cleanSpecificationLine(value)}`)
-      .filter(Boolean);
+    const entries = Object.entries(specs).map(([key, value], index) => {
+      const order = specificationOrder(value) ?? specificationOrder(key);
+      const label = cleanSpecificationLine(key);
+      const cleanedValue = cleanSpecificationLine(value);
+      return { text: isGeneratedSpecificationLabel(label) ? cleanedValue : `${label}: ${cleanedValue}`, order, index };
+    });
+    return orderSpecificationEntries(entries);
   }
 
   return [];
