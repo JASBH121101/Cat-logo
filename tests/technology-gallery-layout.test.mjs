@@ -58,8 +58,8 @@ test("all technology showcases share the Exclusivos horizontal card layout on de
   ]) {
     assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the common showcase grid");
   }
-  assert.match(sharedLayout, /grid-template-columns:repeat\\(auto-fit,minmax\\(min\\(100%,430px\\),1fr\\)\\)!important/);
-  assert.match(sharedLayout, /grid-template-columns:minmax\\(0,\\.86fr\\) minmax\\(0,1\\.14fr\\)!important/);
+  assert.ok(sharedLayout.includes("grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)) !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr) !important"));
   assert.match(sharedLayout, /grid-column:1!important/);
   assert.match(sharedLayout, /grid-column:2!important/);
 });
