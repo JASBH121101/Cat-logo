@@ -85,7 +85,8 @@ test("purchase consent is displayed only in the consent panel, not duplicated as
   assert.match(duplicateNoticeRemoval, /consent_notice_version='2026-10-28-v1'/);
   assert.doesNotMatch(duplicateNoticeRemoval, /values \(v_row\.id, 'assistant', v_notice\)/);
   assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
-  assert.ok(customerJs.includes("/^¡Hola! Este es el canal privado de JB Collections\\./i.test(messageContent)"));\n  assert.ok(customerJs.includes("/No compartás aquí cédula, teléfono, correo ni datos de pago/i.test(messageContent)"));
+  assert.ok(customerJs.includes("/^¡Hola! Este es el canal privado de JB Collections\\./i.test(messageContent)"));
+  assert.ok(customerJs.includes("/No compartás aquí cédula, teléfono, correo ni datos de pago/i.test(messageContent)"));
   assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
   assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
   assert.match(adminHtml, /Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular/);
