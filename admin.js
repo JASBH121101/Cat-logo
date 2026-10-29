@@ -3375,7 +3375,14 @@ async function privateChatRunAdminAction(action) {
       : "private_chat_admin_close";
     const { data, error } = await supabase.rpc(rpcName, { p_conversation_id: item.id });
     if (error) throw error;
-    if (data?.ok === false) throw new Error("No se pudo aplicar el cambio.");
+    if (data?.ok === false) {
+      if (action === "claim" && data.code === "conversation_already_claimed_or_not_pending") {
+        await loadPrivateChatInbox({ silent: true });
+        privateChatSetStatus("Esta solicitud ya no está pendiente o fue tomada por otro asesor. Revisá las conversaciones pendientes para continuar.", "info");
+        return;
+      }
+      throw new Error("No se pudo aplicar el cambio.");
+    }
     privateChatSetStatus(action === "claim" ? "Tomaste la conversación; ya podés responder." :
       action === "purchase" ? "Compra confirmada. El acceso del cliente se extendió 30 minutos." : "Conversación cerrada.");
     await loadPrivateChatInbox({ silent: true });
