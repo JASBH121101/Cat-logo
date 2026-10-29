@@ -1871,7 +1871,7 @@ function openProduct(product, requestedVariant = null) {
 
       <div class="dialog-detail">
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
-        <h2>${escapeHtml(product.name)}</h2>
+        <h1 class="dialog-product-title">${escapeHtml(product.name)}</h1>
 
         ${
           variants.length
