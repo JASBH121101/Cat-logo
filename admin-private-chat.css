@@ -315,7 +315,7 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
 .dashboard.admin-section-focused > .dashboard-top {
   display:flex!important;
   align-items:center!important;
-  justify-content:stretch!important;
+  justify-content:flex-start!important;
   gap:8px!important;
   margin:0 0 8px!important;
   min-width:0!important;
@@ -331,6 +331,7 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
   flex:1 1 auto!important;
   width:100%!important;
   min-width:0!important;
+  box-sizing:border-box!important;
   margin:0!important;
   padding:8px 10px!important;
   border-radius:10px!important;
