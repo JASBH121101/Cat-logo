@@ -3579,3 +3579,79 @@ body.technology-catalog.product-detail-active #product-detail-page .payment-choi
     object-position: center center !important;
   }
 }
+
+
+/* JB TECH · dedicated product page in normal document flow (same-tab route). */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: calc(100svh - 76px) !important;
+  margin: 0 !important;
+  padding: clamp(22px, 2.8vw, 42px) clamp(20px, 3.4vw, 68px) 68px !important;
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+  box-sizing: border-box !important;
+  background: var(--tech-page) !important;
+}
+body.technology-catalog.product-detail-active main > :not(#product-detail-page) {
+  display: none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+  width: min(1760px, 100%) !important;
+  max-width: 1760px !important;
+  margin-inline: auto !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr) !important;
+  align-items: start !important;
+  gap: clamp(28px, 3.2vw, 58px) !important;
+  padding: 0 0 42px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  position: sticky !important;
+  top: 92px !important;
+  align-self: start !important;
+  z-index: 2 !important;
+  height: min(clamp(500px, 66vh, 760px), calc(100vh - 124px)) !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 124px) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+  padding: clamp(18px, 2vw, 34px) clamp(8px, 1.4vw, 22px) 32px !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    min-height: calc(100svh - 68px) !important;
+    padding: 12px 12px 38px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+    padding: 0 0 24px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    position: static !important;
+    top: auto !important;
+    height: clamp(250px, 40svh, 360px) !important;
+    min-height: 0 !important;
+    max-height: 360px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 10px 4px 20px !important;
+  }
+}
