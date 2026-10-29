@@ -21,7 +21,7 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-validation-summary"[^>]*aria-live="polite"/);
   assert.match(css, /provider-price-difference.is-different/);
   assert.match(css, /provider-validation-line.is-match/);
-  assert.match(admin, /admin-provider\.js\?v=20261028-provider-review-minimal4/);
+  assert.match(admin, /admin-provider\.js\?v=20261029-variant-overview-compact1/);
 });
 
 test("variant product comparison uses first configuration prices instead of duplicate general fields", () => {
@@ -34,7 +34,7 @@ test("variant product comparison uses first configuration prices instead of dupl
   assert.match(html, /id="provider-review-availability-field"/);
   assert.match(html, /id="provider-review-variant-overview-note"[^>]*hidden/);
   assert.match(provider, /field\.hidden = hasVariants/);
-  assert.match(css, /\.provider-dialog-fields \\[hidden\\] \{\s*display:none !important/);
+  assert.match(css, /\.provider-dialog-fields \[hidden\]\s*\{\s*display:none !important/);
 });
 
 test("provider review preserves references and uses guarded RPC for optional catalog synchronization", () => {
