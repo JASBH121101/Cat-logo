@@ -116,3 +116,9 @@ test("overall provider availability is derived from configuration and color stat
   assert.match(provider, /if \(statuses\.includes\("available"\)\) return "available"/);
   assert.match(provider, /if \(statuses\.includes\("on_order"\)\) return "on_order"/);
 });
+
+test("overall provider availability does not invent out-of-stock when no verified state exists", () => {
+  assert.match(provider, /return \["available", "on_order", "out_of_stock"\]\.includes\(normalizedFallback\)\s*\? normalizedFallback\s*:\s*null/);
+  assert.match(provider, /if \(!overallAvailability\)/);
+  assert.match(provider, /No hay una disponibilidad general verificable/);
+});
