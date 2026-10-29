@@ -34,16 +34,16 @@ export function analyzeProductComposition(layouts, { viewportWidth = 1365, mobil
         measuredRatio: areaRatio,
       });
     }
-    if (Number.isFinite(item.leftColumnRatio) && Number.isFinite(item.rightColumnRatio) &&
-        !mobile && item.leftColumnRatio > 0 && item.rightColumnRatio > 0 &&
-        item.leftColumnRatio / item.rightColumnRatio > 1.85 && item.rightContentDensity > 0.65) {
+    if (Number.isFinite(item.leftColumnWidth) && Number.isFinite(item.rightColumnWidth) &&
+        !mobile && item.leftColumnWidth > 0 && item.rightColumnWidth > 0 &&
+        item.leftColumnWidth / item.rightColumnWidth > 1.85 && item.rightContentDensity > 0.65) {
       findings.push({
         code: "PRODUCT_DETAIL_COLUMN_IMBALANCE",
         severity: "low",
         blocking: false,
         element: item.selector || ".dialog-layout",
         message: "La ficha concentra contenido en una columna y deja la otra con menor densidad visual",
-        evidence: `Proporción de columnas ${item.leftColumnRatio}:${item.rightColumnRatio}; densidad estimada de la columna informativa ${Math.round(item.rightContentDensity * 100)}%.`,
+        evidence: `Proporción de columnas ${item.leftColumnWidth}:${item.rightColumnWidth}px; densidad estimada de la columna informativa ${Math.round(item.rightContentDensity * 100)}%.`,
         recommendation: "Revisar conjuntamente el tamaño visible del producto, el ancho de las columnas y la agrupación de información. Dar protagonismo a la fotografía y conservar legibles las características, variantes y acciones de contacto.",
       });
     }
