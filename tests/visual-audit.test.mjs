@@ -96,6 +96,15 @@ function diagnose({ severity, page, theme, viewport, element, message, evidence 
       likelyFiles: ["admin-accessibility.css", "admin-private-chat.css", "private-chat.css", "technology-visual-refresh.css", "perfumeria.css"],
     };
   }
+  if (/objeto ocupa muy poca superficie|occupancy|subject underutilized/.test(text)) {
+    return {
+      code: "PRODUCT_SUBJECT_UNDERUTILIZED",
+      hypothesis: "El elemento de imagen puede tener buen tamaño CSS, pero el objeto ocupa una región pequeña de la fotografía original por márgenes internos o encuadre.",
+      confidence: 0.68,
+      nextCheck: "Abrir la URL de la imagen original, comparar el rectángulo estimado del objeto con la captura de la ficha y confirmar manualmente que el fondo de las esquinas represente el fondo real. No recortar ni deformar automáticamente.",
+      likelyFiles: ["technology-visual-refresh.css", "styles.css", "app.js", "perfumeria.css", "perfumeria.js", "tests/visual-image-quality-policy.mjs"],
+    };
+  }
   if (/imagen principal aprovecha poco|poco peso visual|concentra contenido en una columna/.test(text)) {
     const columnImbalance = /concentra contenido en una columna/.test(text);
     return {
@@ -637,6 +646,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           });
           findings[findings.length - 1].code = imageFinding.code;
           findings[findings.length - 1].confidence = imageFinding.confidence;
+          findings[findings.length - 1].diagnosis.confidence = imageFinding.confidence;
         }
         const dialogFindings = analyzeDialogQuality(snapshot.dialogLayouts, {
           viewportWidth: snapshot.viewportWidth,
@@ -1066,7 +1076,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,
       productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_") && finding.code !== "PRODUCT_SUBJECT_UNDERUTILIZED").length,
       productImageOccupancyFindings: findings.filter(finding => finding.code === "PRODUCT_SUBJECT_UNDERUTILIZED").length,
-      imageOccupancyMeasured: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => layout.imageOccupancy?.status === "measured").length, 0),
+      imageOccupancyMeasured: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => layout.imageOccupancy?.status === "measured" && Number(layout.imageOccupancy?.confidence) >= 0.55).length, 0),
+      imageOccupancyLowConfidence: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => layout.imageOccupancy?.status === "measured" && Number(layout.imageOccupancy?.confidence) < 0.55).length, 0),
       imageOccupancyUnavailable: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => ["unavailable", "inconclusive"].includes(layout.imageOccupancy?.status)).length, 0),
       visibleDialogStates: observations.reduce((total, observation) => total + (observation.dialogLayouts?.length || 0), 0),
     },
@@ -1115,7 +1126,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,
     `- Alertas geométricas de ficha: ${result.summary.productCompositionFindings}`,
     `- Alertas de ocupación visual del objeto dentro de la foto: ${result.summary.productImageOccupancyFindings}`,
-    `- Imágenes con análisis de píxeles medido: ${result.summary.imageOccupancyMeasured}; no evaluables/inconclusas: ${result.summary.imageOccupancyUnavailable}`,
+    `- Imágenes medidas con confianza suficiente: ${result.summary.imageOccupancyMeasured}; medidas con confianza baja: ${result.summary.imageOccupancyLowConfidence}; no evaluables/inconclusas: ${result.summary.imageOccupancyUnavailable}`,
     `- Estados de diálogo visibles capturados: ${result.summary.visibleDialogStates}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
