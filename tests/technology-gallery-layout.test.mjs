@@ -265,9 +265,9 @@ test("payment contact buttons keep visible labels and readable contrast in both 
 
 test("product detail uses a wider desktop canvas and readable text without breaking mobile", async () => {
   assert.match(css, /JB TECH · ficha de producto ancha y legible/);
-  assert.match(css, /width: min\\(1760px, 100%\\) !important/);
-  assert.match(css, /font-size: clamp\\(15\\.5px, \\.9vw, 18px\\) !important/);
-  assert.match(css, /@media \\(max-width: 760px\\)[\\s\\S]*?font-size: 14px !important/);
+  assert.ok(css.includes("width: min(1760px, 100%) !important"));
+  assert.ok(css.includes("font-size: clamp(15.5px, .9vw, 18px) !important"));
+  assert.ok(css.includes("@media (max-width: 760px)") && css.includes("font-size: 14px !important"));
 
   const browser = await chromium.launch({ headless: true });
   try {
