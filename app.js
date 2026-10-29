@@ -297,6 +297,7 @@ function cleanSpecificationLine(value) {
   let line = String(value ?? "").trim();
   line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
   line = line.replace(/^Dato\s*\d+\s*:\s*/i, "");
+  line = line.replace(/^\s*\d+\s*[.):\-]\s*/, "");
   line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
   return line.trim();
 }
@@ -305,27 +306,37 @@ function specsArray(specs) {
   specs = parseJSON(specs, {});
   if (!specs) return [];
 
+  let lines = [];
   if (Array.isArray(specs)) {
-    return specs.map(item => {
-      if (typeof item === "string") return cleanSpecificationLine(item);
+    lines = specs.map(item => {
+      if (typeof item === "string") return String(item ?? "").trim();
       if (item && typeof item === "object") {
         const label = String(item.label || item.name || "").trim();
-        const value = cleanSpecificationLine(item.value || "");
+        const value = String(item.value || "").trim();
         return !label || isGeneratedSpecificationLabel(label) ? value : `${label}: ${value}`;
       }
-      return cleanSpecificationLine(item);
+      return String(item ?? "").trim();
     }).filter(Boolean);
-  }
-
-  if (typeof specs === "object") {
-    return Object.entries(specs)
+  } else if (typeof specs === "object") {
+    lines = Object.entries(specs)
       .map(([key, value]) => isGeneratedSpecificationLabel(key)
-        ? cleanSpecificationLine(value)
-        : `${key}: ${cleanSpecificationLine(value)}`)
+        ? String(value ?? "").trim()
+        : `${key}: ${String(value ?? "").trim()}`)
       .filter(Boolean);
+  } else {
+    return [];
   }
 
-  return [];
+  // Older JB TECH entries were saved with explicit sequence numbers. Sort by that
+  // original sequence, then hide the implementation numbers in the customer UI.
+  const numbered = lines.filter(line => /^\s*\d+\s*[.):\-]\s*/.test(line));
+  if (numbered.length === lines.length && lines.length > 1) {
+    lines = lines
+      .map((line, index) => ({ line, index, order: Number(line.match(/^\s*(\d+)\s*[.):\-]\s*/)?.[1]) }))
+      .sort((left, right) => left.order - right.order || left.index - right.index)
+      .map(item => item.line);
+  }
+  return lines.map(cleanSpecificationLine).filter(Boolean);
 }
 
 function getProductImages(product) {
