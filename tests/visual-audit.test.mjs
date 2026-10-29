@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import { classifyRuntimeError } from "./visual-audit-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -327,11 +328,19 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
 
         observations.push(snapshot);
         for (const error of pageErrors) {
-          runtimeErrors.push({ page: site.name, theme, viewport: viewport.name, error });
+          const classification = classifyRuntimeError(error);
+          runtimeErrors.push({ page: site.name, theme, viewport: viewport.name, error, ...classification });
           addFinding({
-            severity: "high", page: site.name, theme, viewport: viewport.name, element: "runtime",
-            message: "Error de JavaScript durante el renderizado estático", evidence: error,
-            recommendation: "Reproducir el error en un navegador, identificar el primer archivo y comprobar si depende de una API remota que esta simulación no activa.",
+            severity: classification.severity, page: site.name, theme, viewport: viewport.name, element: "runtime",
+            message: classification.blocking
+              ? "Excepción JavaScript no controlada"
+              : "Error de dependencia/red en la auditoría aislada",
+            evidence: error,
+            recommendation: classification.rationale + " " +
+              (classification.blocking
+                ? "Localizar el primer archivo y corregir la excepción antes de publicar."
+                : "Repetir el flujo con dependencias conectadas antes de concluir que existe una regresión."),
+            blocking: classification.blocking,
           });
         }
         if (viewport.mobile && snapshot.horizontalOverflow >= 8) {
@@ -497,12 +506,15 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     summary: {
       scenarios: observations.length, screenshotCount: screenshots.length,
       blockingFindings: blockingFindings.length, findings: findings.length,
-      runtimeErrors: runtimeErrors.length, axeViolations: axeFindings.length,
+      runtimeErrors: runtimeErrors.length,
+      blockingRuntimeErrors: runtimeErrors.filter(error => error.blocking).length,
+      journeyFailures: journeyResults.filter(journey => !journey.passed).length,
+      axeViolations: axeFindings.length,
     },
     observations, findings, axeFindings, runtimeErrors, screenshots, journeyResults,
     policy: {
       remoteApisCalled: false,
-      blockingRule: "Header missing or technology trust-card geometry regression blocks CI; horizontal overflow >=24px is recorded as blocking evidence.",
+      blockingRule: "Uncaught application JavaScript exceptions, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Known network errors from isolated external dependencies are reported but do not block.",
       note: "Local deterministic fixture. It does not authenticate to Supabase, mutate data, or prove live production network behavior.",
     },
   };
@@ -515,7 +527,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     `- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`,
     `- Hallazgos bloqueantes: ${blockingFindings.length}`,
     `- Hallazgos adicionales: ${findings.length}`,
-    `- Errores JS: ${runtimeErrors.length}`,
+    `- Errores JS: ${runtimeErrors.length}; bloqueantes: ${result.summary.blockingRuntimeErrors}`,
     `- Violaciones Axe detectadas en móvil: ${axeFindings.length}`,
     "",
     "## Hallazgos ordenados por gravedad",
