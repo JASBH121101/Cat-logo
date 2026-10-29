@@ -55,7 +55,7 @@ test("database workflow restricts direct table access and protects admin actions
 test("customer private chat exposes a working light/dark theme toggle", () => {
   assert.match(customerHtml, /id="private-chat-theme-toggle"/);
   assert.match(customerHtml, /private-chat\.css\?v=20261028-chat-theme3/);
-  assert.match(customerHtml, /private-chat\.js\?v=20261028-chat-theme3/);
+  assert.match(customerHtml, /private-chat\.js\?v=20261029-chat-resume1/);
   assert.match(customerJs, /function applyPrivateChatTheme\(theme\)/);
   assert.match(customerJs, /themeToggle\?\.addEventListener\("click"/);
   assert.match(customerJs, /localStorage\.setItem\("ct-catalog-theme"/);
@@ -90,6 +90,8 @@ test("customer page implements the two routes, separate purchase consent and opt
   assert.match(customerJs, /api\("consent"/);
   assert.match(customerJs, /startDeleteCountdown/);
   assert.match(customerJs, /sessionStorage/);
+  assert.match(customerJs, /localStorage\.setItem\(SESSION_KEY, token\)/);
+  assert.match(customerJs, /function loadSessionToken\(\)/);
   assert.match(customerJs, /textContent = String\(item\.content/);
   assert.doesNotMatch(customerHtml, /type="tel"|type="email"|name="cedula"|name="identity/i);
 });
