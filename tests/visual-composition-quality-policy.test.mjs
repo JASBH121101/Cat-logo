@@ -6,7 +6,7 @@ const layout = (extra = {}) => ({
   visible: true, selector: "#dialog-image", productName: "Producto de prueba",
   frameWidth: 560, frameHeight: 620, imageWidth: 190, imageHeight: 250,
   imageFrameRatio: 0.30, imageAreaRatio: 0.13,
-  leftColumnRatio: 1.7, rightColumnRatio: 1, rightContentDensity: 0.8,
+  leftColumnRatio: 2.1, rightColumnRatio: 1, rightContentDensity: 0.8,
   ...extra,
 });
 
