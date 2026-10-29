@@ -818,7 +818,6 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "- Los hallazgos de accesibilidad son señales de revisión; no se corrigen ni se ocultan automáticamente.",
     "", "## Geometría observada",
     `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
-    `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
     "|---|---|---|---:|---:|---:|",
