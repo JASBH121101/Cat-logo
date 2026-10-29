@@ -1,5 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { initProviderTools } from "./admin-provider.js?v=20261028-provider-review-minimal4";
+import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-admin-notifications2";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -2760,7 +2761,8 @@ async function showDashboard(user) {
   dashboard.classList.remove("hidden");
   document.body.classList.add("admin-dashboard-active");
   setMobileSidebarOpen(false);
-  showAdminSection("home");
+  const requestedSection = new URLSearchParams(window.location.search).get("open");
+  showAdminSection(requestedSection === "messages" ? "messages" : "home");
 
   const greeting = $("#admin-greeting");
   if (greeting) greeting.textContent = "¡Bienvenido de nuevo, Steven! 👋";
@@ -3024,8 +3026,7 @@ let privateChatConversations = [];
 let privateChatSelectedId = "";
 let privateChatActiveFilter = "pending";
 let privateChatBaselineReady = false;
-let privateChatPendingBaselineReady = false;
-let privateChatKnownLatestMessages = new Map();
+let privateChatKnownConversationStates = new Map();
 let privateChatInboxLoading = false;
 let privateChatMessagesLoading = false;
 let privateChatNotificationPermissionAsked = false;
@@ -3080,10 +3081,12 @@ function privateChatSetStatus(message, kind = "") {
   privateChatStatusEl.dataset.kind = kind;
 }
 function privateChatShowNotification(title, body, conversationId) {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-  try {
-    new Notification(title, { body: String(body || "").slice(0, 180), tag: "jb-private-chat-" + String(conversationId || "inbox"), renotify: true });
-  } catch {}
+  return showAdminNotification(title, body, conversationId).then(result => {
+    if (!result.ok && result.reason === "display-failed") {
+      console.warn("No se pudo mostrar la notificación de JB Manager:", result.message || "Error del navegador.");
+    }
+    return result;
+  });
 }
 function privateChatBucket(item) {
   const status = String(item?.status || "");
@@ -3311,19 +3314,22 @@ async function loadPrivateChatInbox(options = {}) {
     const inboxCount = document.getElementById("private-chat-admin-inbox-count");
     if (inboxCount) inboxCount.textContent = String(privateChatConversations.length);
 
-    if (privateChatBaselineReady) {
-      for (const item of privateChatConversations) {
-        const latest = item._latestMessage;
-        const oldId = privateChatKnownLatestMessages.get(String(item.id));
-        if (latest && latest.sender_type === "customer" && oldId && oldId !== latest.id) {
-          privateChatShowNotification("Nuevo mensaje de cliente", (item.product_name || "JB Collections") + ": " + String(latest.content || "").slice(0, 120), item.id);
-        }
-      }
-    }
-    for (const item of privateChatConversations) {
-      if (item._latestMessage) privateChatKnownLatestMessages.set(String(item.id), item._latestMessage.id);
-    }
+    const notificationDelta = detectPrivateChatNotificationEvents({
+      conversations: privateChatConversations,
+      previousStates: privateChatKnownConversationStates,
+      baselineReady: privateChatBaselineReady
+    });
+    privateChatKnownConversationStates = notificationDelta.nextStates;
     if (!privateChatBaselineReady) privateChatBaselineReady = true;
+    for (const notification of notificationDelta.events) {
+      void privateChatShowNotification(notification.title, notification.body, notification.id);
+      privateChatSetStatus(
+        notification.kind === "request"
+          ? "Nueva solicitud lista para atención."
+          : "Nuevo mensaje recibido del cliente.",
+        "success"
+      );
+    }
 
     if (privateChatSelectedId && !privateChatConversations.some(item => String(item.id) === String(privateChatSelectedId))) {
       privateChatSelectedId = "";
@@ -3331,14 +3337,6 @@ async function loadPrivateChatInbox(options = {}) {
     privateChatRenderInbox();
     privateChatRenderSelected();
     if (privateChatSelectedId) await loadPrivateChatMessages(true);
-
-    const wasPending = Number(loadPrivateChatInbox._previousPending || 0);
-    if (privateChatPendingBaselineReady && pendingCount > wasPending) {
-      if (!silent) privateChatSetStatus("Hay nuevas solicitudes pendientes de atención.");
-      privateChatShowNotification("Nueva solicitud de atención", "Un cliente solicitó atención personal en JB Collections.", "pending-count");
-    }
-    loadPrivateChatInbox._previousPending = pendingCount;
-    privateChatPendingBaselineReady = true;
     if (!silent && !privateChatConversations.length) privateChatSetStatus("Todavía no hay conversaciones de clientes.");
     else if (!silent && privateChatStatusEl?.dataset.kind === "error") privateChatSetStatus("");
   } catch (error) {
@@ -3412,25 +3410,57 @@ async function privateChatSendAdminReply(event) {
   }
 }
 
-document.getElementById("private-chat-refresh")?.addEventListener("click", () => void loadPrivateChatInbox());
-document.getElementById("private-chat-enable-notifications")?.addEventListener("click", async () => {
-  if (!("Notification" in window)) {
-    privateChatSetStatus("Este navegador no ofrece notificaciones de escritorio. La bandeja se actualiza mientras JB Manager permanece abierto.", "error");
-    return;
-  }
+document.getElementById("private-chat-refresh")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (button) button.disabled = true;
   try {
-    const permission = await Notification.requestPermission();
-    privateChatNotificationPermissionAsked = true;
-    if (permission === "granted") {
-      privateChatSetStatus("Notificaciones del navegador activadas mientras JB Manager esté abierto. Las notificaciones push con la pestaña cerrada aún requieren configuración adicional.");
-      privateChatShowNotification("JB Manager", "Las notificaciones de nuevas conversaciones están activadas.", "private-chat-enabled");
-    } else {
-      privateChatSetStatus("No se concedió permiso de notificación. Podés seguir revisando la bandeja de mensajería.");
-    }
-  } catch {
-    privateChatSetStatus("No pudimos activar las notificaciones en este navegador.", "error");
+    await loadPrivateChatInbox();
+  } finally {
+    if (button) button.disabled = false;
   }
 });
+document.getElementById("private-chat-enable-notifications")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (button) button.disabled = true;
+  privateChatSetStatus("Comprobando permisos y preparando las notificaciones…");
+  try {
+    const result = await enableAdminNotifications();
+    privateChatNotificationPermissionAsked = true;
+    if (result.ok) {
+      if (button) {
+        button.textContent = "Probar notificaciones";
+        button.title = "Mostrar una notificación de prueba en este dispositivo";
+      }
+      privateChatSetStatus(
+        result.mode === "service-worker"
+          ? "Notificaciones activadas y prueba mostrada. Los avisos nuevos dependen de que el navegador pueda consultar la bandeja; recibirlos con JB Manager cerrado requiere configurar push remoto."
+          : "El navegador mostró la prueba de notificación. Este modo no garantiza avisos en segundo plano; para eso se necesita Service Worker y push remoto.",
+        "success"
+      );
+    } else if (result.reason === "unsupported") {
+      privateChatSetStatus("Este navegador no admite notificaciones. La mensajería seguirá actualizándose dentro de JB Manager.", "error");
+    } else if (result.reason === "insecure-context") {
+      privateChatSetStatus("Las notificaciones requieren HTTPS o localhost. Abrí JB Manager desde su dirección segura.", "error");
+    } else if (result.reason === "permission-denied") {
+      privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
+    } else if (result.reason === "permission-not-granted") {
+      privateChatSetStatus("No se concedió permiso para notificaciones. Podés seguir revisando la bandeja manualmente.", "error");
+    } else {
+      privateChatSetStatus("No se pudo mostrar la notificación de prueba: " + String(result.message || result.reason || "error desconocido") + ". Revisá los permisos del navegador e intentá de nuevo.", "error");
+    }
+  } catch (error) {
+    privateChatSetStatus("No se pudo activar la notificación: " + String(error?.message || error || "error desconocido"), "error");
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener("message", event => {
+    if (event.data?.type === "JB_MANAGER_OPEN_MESSAGES" && currentUser && dashboard && !dashboard.classList.contains("hidden")) {
+      showAdminSection("messages");
+    }
+  });
+}
 document.querySelectorAll("[data-private-chat-filter]").forEach(button => {
   button.addEventListener("click", () => {
     const next = String(button.dataset.privateChatFilter || "pending");
