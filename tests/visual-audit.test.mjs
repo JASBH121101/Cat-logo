@@ -508,7 +508,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           // Keep small and textless visible sections as separators so whitespace checks
           // never bridge over real banners, image bands, or compact navigation rows.
           const productCompositionLayouts = pageName === "technology-detail"
-            ? [...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(layout => {
+            ? (await Promise.all([...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(async layout => {
                 const frame = layout.querySelector("#dialog-image");
                 const image = layout.querySelector(".dialog-main-image");
                 const detail = layout.querySelector(".dialog-detail");
@@ -524,18 +524,20 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 }, 0);
                 const frameArea = Math.max(1, frameRect.width * frameRect.height);
                 const imageArea = Math.max(0, imageRect.width * imageRect.height);
+                const imageOccupancy = await inspectImageSubject(image);
                 return {
                   visible: true, selector: ".dialog-layout", productName: image.alt || "Producto",
                   frameWidth: Math.round(frameRect.width), frameHeight: Math.round(frameRect.height),
                   imageWidth: Math.round(imageRect.width), imageHeight: Math.round(imageRect.height),
                   imageFrameRatio: Math.min(imageRect.width / Math.max(1, frameRect.width), imageRect.height / Math.max(1, frameRect.height)),
                   imageAreaRatio: imageArea / frameArea,
+                  imageOccupancy,
                   leftColumnWidth: Math.round(leftRect.width),
                   rightColumnWidth: Math.round(rightRect.width),
                   rightColumnDensity: Math.min(1, contentArea / rightArea),
                   rightContentDensity: Math.min(1, contentArea / rightArea),
                 };
-              }).filter(Boolean)
+              }))).filter(Boolean)
             : [];
           const dialogLayouts = [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [aria-modal="true"]')]
             .filter(isVisible)
