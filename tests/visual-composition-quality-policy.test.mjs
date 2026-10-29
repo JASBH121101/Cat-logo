@@ -6,7 +6,7 @@ const layout = (extra = {}) => ({
   visible: true, selector: "#dialog-image", productName: "Producto de prueba",
   frameWidth: 560, frameHeight: 620, imageWidth: 190, imageHeight: 250,
   imageFrameRatio: 0.30, imageAreaRatio: 0.13,
-  leftColumnRatio: 2.1, rightColumnRatio: 1, rightContentDensity: 0.8,
+  leftColumnWidth: 420, rightColumnWidth: 200, rightContentDensity: 0.8,
   ...extra,
 });
 
@@ -35,7 +35,7 @@ test("mobile uses a different image threshold and ignores hidden or invalid layo
 
 test("well-proportioned product photography does not trigger image-utilization findings", () => {
   const findings = analyzeProductComposition([
-    layout({ imageFrameRatio: 0.72, imageAreaRatio: 0.42, leftColumnRatio: 1.4, rightColumnRatio: 1 }),
+    layout({ imageFrameRatio: 0.72, imageAreaRatio: 0.42, leftColumnWidth: 400, rightColumnWidth: 300 }),
   ], { viewportWidth: 1365, mobile: false });
   assert.deepEqual(findings, []);
 });
