@@ -67,3 +67,15 @@ export function classifyRuntimeError(value, context = {}) {
     rationale: "Una excepción JavaScript no controlada puede interrumpir el montaje o una interacción; debe reproducirse y corregirse antes de aprobar.",
   };
 }
+
+
+// Keep Axe severity and CI gate decisions centralized so reports and assertions cannot drift.
+export function classifyAxeImpact(value) {
+  const impact = String(value ?? "").toLowerCase();
+  if (impact === "critical" || impact === "serious") {
+    return { severity: "high", blocking: true };
+  }
+  if (impact === "moderate") return { severity: "medium", blocking: false };
+  if (impact === "minor") return { severity: "low", blocking: false };
+  return { severity: "medium", blocking: false };
+}
