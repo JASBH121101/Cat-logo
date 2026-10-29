@@ -52,7 +52,7 @@ function makeBrowser({ permission = "default", secure = true, serviceWorker = tr
     location: { href: "https://jb-collections.pages.dev/admin.html" },
     Notification: FakeNotification,
   };
-  const navigatorRef = { serviceWorker, userAgent: "Test Browser" };
+  const navigatorRef = { serviceWorker: worker, userAgent: "Test Browser" };
   const supabase = {
     from(table) {
       return {
