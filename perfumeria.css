@@ -2923,3 +2923,39 @@ body.perfume-detail-active #perfume-dialog-content .perfume-dialog-notes {
     padding-top: 12px !important;
   }
 }
+
+
+/* Use a sticky brand header in the dedicated fragrance page, not a fixed overlay. */
+html body.perfume-page.perfume-detail-active .site-header.perfume-header {
+  position: sticky !important;
+  inset: auto !important;
+  top: 0 !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 1200 !important;
+}
+body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-detail .perfume-dialog-title {
+  margin: 8px 0 16px !important;
+  color: var(--perfume-ink) !important;
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: clamp(32px, 3vw, 48px) !important;
+  font-weight: 600 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -.02em !important;
+  overflow-wrap: anywhere !important;
+}
+@media (max-width: 760px) {
+  html body.perfume-page.perfume-detail-active .site-header.perfume-header {
+    height: 68px !important;
+    min-height: 68px !important;
+  }
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-detail .perfume-dialog-title {
+    margin: 4px 0 12px !important;
+    font-size: clamp(27px, 7vw, 36px) !important;
+  }
+}
