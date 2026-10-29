@@ -1,5 +1,6 @@
 name: Build JB Manager Collections APK
 # Build and sign the Android APK using the latest merged production source from main.
+# Trigger update-compatible rebuild after the mobile variant theme fix was merged.
 
 concurrency:
   group: jb-manager-android-${{ github.ref }}
