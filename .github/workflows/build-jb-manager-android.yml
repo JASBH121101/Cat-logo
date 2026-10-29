@@ -245,7 +245,7 @@ jobs:
           test -s mobile/www/jb-manager-native-notifications.js || { echo "Missing bundled native notifications bridge." >&2; exit 1; }
           require_text 'jb-manager-private-chat' mobile/www/admin-notifications.mjs
           require_text 'admin-notifications.mjs?v=20261029-native-local-notifications1' mobile/www/admin.js
-          require_text 'Para recibir avisos con la app cerrada hace falta configurar push nativo' mobile/www/admin.js
+          require_text 'Para recibir avisos con la app en segundo plano o cerrada hace falta configurar push nativo' mobile/www/admin.js
           require_text 'compareVersions(latest.version, currentVersion) > 0' mobile/prepare-web.mjs
           require_text 'state.installPrompted' mobile/prepare-web.mjs
           require_text 'Android installer is the confirmation UI' mobile/prepare-web.mjs
