@@ -23,6 +23,8 @@ test("technology and perfumery detail URLs behave as same-tab page routes and pr
   assert.match(perfumeJs, /searchParams\.set\("fragancia", String\(product\.id\)\)/);
   assert.match(techJs, /<h1 class="dialog-product-title">/);
   assert.match(perfumeJs, /<h1 class="perfume-dialog-title">/);
+  assert.match(perfumeJs, /<h2 class="perfume-note-heading">/);
+  assert.match(techJs, /<h2 class="dialog-section-title">Especificaciones<\/h2>/);
   assert.match(techJs, /productDetailRoute: true, catalogScrollY: scrollY, productId: String\(product\.id\)/);
   assert.match(perfumeJs, /productDetailRoute: true, catalogScrollY: scrollY, productId: String\(product\.id\)/);
   assert.match(techJs, /window\.scrollTo\(\{ top: 0, behavior: "instant" \}\)/);
