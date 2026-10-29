@@ -49,9 +49,13 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(chatStyles, /dashboard\.admin-section-focused > \.dashboard-top > div:first-child/);
   assert.match(chatStyles, /dashboard\.admin-section-focused > #admin-status/);
   assert.match(chatStyles, /dashboard\.admin-section-focused \.admin-catalog-context/);
-  assert.ok(html.includes("admin-workflow.css?v=20261029-variant-theme-contrast2"));
+  assert.ok(html.includes("admin-workflow.css?v=20261029-mobile-chevron1"));
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.inline-color-details/);
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
+  assert.match(editorWorkflow, /\.variant-config-chevron::before\s*\{[^}]*border-right:\s*2px solid currentColor[^}]*border-bottom:\s*2px solid currentColor/);
+  assert.match(editorWorkflow, /\.variant-config-chevron\s*\{[^}]*font-size:\s*0\s*!important/);
+  assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary \.variant-config-chevron\s*\{[^}]*color:\s*#f4f7ff\s*!important;[^}]*background-color:\s*#2c4268\s*!important/);
+  assert.match(editorWorkflow, /html\[data-theme="light"\] body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary \.variant-config-chevron\s*\{[^}]*color:\s*#243b62\s*!important;[^}]*background-color:\s*#f1f5ff\s*!important/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
   assert.ok(html.includes("admin-accessibility.css?v=20261029-variant-unit-arrow1"));
@@ -156,6 +160,68 @@ test("complete admin panel audit validates navigation, accessibility signals and
     assert.equal(storageArrowStyle.dark.paddingRight, "22px");
     assert.doesNotMatch(storageArrowStyle.light.backgroundImage, /data:image\/svg\+xml/,
       "the custom chevron is dark-theme-only");
+
+    const variantChevronStyle = await page.evaluate(() => {
+      const root = document.documentElement;
+      const form = document.getElementById("product-form");
+      const panel = document.getElementById("admin-section-add");
+      if (!form || !panel) return null;
+      const previousTheme = root.getAttribute("data-theme");
+      const panelWasHidden = panel.classList.contains("hidden");
+      panel.classList.remove("hidden");
+      const probe = document.createElement("details");
+      probe.className = "variant-config-group variant-config-collapse";
+      probe.innerHTML = '<summary class="variant-config-summary"><span class="variant-config-summary-copy"><strong>Configuración de prueba</strong><small>0 color(es) · Disponible · tocá para desplegar</small></span><span class="variant-config-chevron" aria-hidden="true">⌄</span></summary><div class="variant-config-body">Contenido sintético</div>';
+      form.append(probe);
+      const chevron = probe.querySelector(".variant-config-chevron");
+      const read = () => {
+        const style = getComputedStyle(chevron);
+        const pseudo = getComputedStyle(chevron, "::before");
+        const rect = chevron.getBoundingClientRect();
+        return {
+          color: style.color,
+          backgroundColor: style.backgroundColor,
+          borderColor: style.borderTopColor,
+          fontSize: style.fontSize,
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          iconContent: pseudo.content,
+          iconRightBorder: pseudo.borderRightWidth,
+          iconBottomBorder: pseudo.borderBottomWidth,
+          iconColor: pseudo.borderRightColor,
+          iconWidth: pseudo.width,
+          iconHeight: pseudo.height,
+        };
+      };
+      root.setAttribute("data-theme", "dark");
+      const dark = read();
+      root.setAttribute("data-theme", "light");
+      const light = read();
+      probe.remove();
+      if (panelWasHidden) panel.classList.add("hidden");
+      if (previousTheme === null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", previousTheme);
+      return { dark, light };
+    });
+    assert.ok(variantChevronStyle, "the product editor and synthetic variant summary must exist");
+    assert.equal(variantChevronStyle.dark.color, "rgb(244, 247, 255)",
+      "the expand icon must be bright in dark mode");
+    assert.equal(variantChevronStyle.dark.backgroundColor, "rgb(44, 66, 104)");
+    assert.equal(variantChevronStyle.dark.borderColor, "rgb(139, 167, 220)");
+    assert.equal(variantChevronStyle.dark.fontSize, "0px",
+      "the unsupported font glyph should be hidden because the arrow is CSS-drawn");
+    assert.ok(variantChevronStyle.dark.width >= 28 && variantChevronStyle.dark.height >= 28,
+      "the summary chevron's hit area must remain visible");
+    assert.notEqual(variantChevronStyle.dark.iconContent, "none",
+      "a CSS pseudo-element must draw the arrow instead of a platform-dependent glyph");
+    assert.equal(variantChevronStyle.dark.iconRightBorder, "2px");
+    assert.equal(variantChevronStyle.dark.iconBottomBorder, "2px");
+    assert.equal(variantChevronStyle.dark.iconColor, "rgb(244, 247, 255)");
+    assert.equal(variantChevronStyle.dark.iconWidth, "8px");
+    assert.equal(variantChevronStyle.dark.iconHeight, "8px");
+    assert.equal(variantChevronStyle.light.color, "rgb(36, 59, 98)");
+    assert.equal(variantChevronStyle.light.backgroundColor, "rgb(241, 245, 255)");
+    assert.equal(variantChevronStyle.light.iconColor, "rgb(36, 59, 98)");
 
     for (const panelName of panels) {
       for (const viewport of widths) {

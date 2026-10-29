@@ -694,3 +694,39 @@ html[data-theme="light"] body.admin-body form#product-form .variant-config-body 
   border-color:#c6d1e3!important;
   color-scheme:light;
 }
+
+
+/* Mobile reliability: draw the variant collapse indicator with CSS rather than
+   a font glyph, which can render as an empty outlined square on some devices. */
+html body.admin-body form#product-form .variant-config-chevron {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: currentColor !important;
+}
+html body.admin-body form#product-form .variant-config-chevron::before {
+  content: "" !important;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 2px solid currentColor !important;
+  border-bottom: 2px solid currentColor !important;
+  transform: translateY(-2px) rotate(45deg) !important;
+  box-sizing: border-box !important;
+}
+
+
+/* Keep the CSS-drawn icon high-contrast; currentColor alone can inherit a dark
+   brand token on dark cards and make the new indicator look blank. */
+html[data-theme="dark"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary .variant-config-chevron {
+  color: #f4f7ff !important;
+  background-color: #2c4268 !important;
+  border-color: #8ba7dc !important;
+  box-shadow: 0 0 0 1px rgba(139, 167, 220, .22), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+}
+
+html[data-theme="light"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary .variant-config-chevron {
+  color: #243b62 !important;
+  background-color: #f1f5ff !important;
+  border-color: #9aafd6 !important;
+  box-shadow: 0 0 0 1px rgba(91, 119, 170, .10) !important;
+}
