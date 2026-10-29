@@ -55,7 +55,7 @@ test("database workflow restricts direct table access and protects admin actions
 test("customer private chat exposes a working light/dark theme toggle", () => {
   assert.match(customerHtml, /id="private-chat-theme-toggle"/);
   assert.match(customerHtml, /private-chat\.css\?v=20261029-a11y-contrast1/);
-  assert.match(customerHtml, /private-chat\.js\?v=20261029-a11y-contrast1/);
+  assert.match(customerHtml, /private-chat\\.js\\?v=20261029-order-data-policy1/);
   assert.match(customerJs, /function applyPrivateChatTheme\(theme\)/);
   assert.match(customerJs, /themeToggle\?\.addEventListener\("click"/);
   assert.match(customerJs, /localStorage\.setItem\("ct-catalog-theme"/);
