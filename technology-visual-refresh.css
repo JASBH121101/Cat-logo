@@ -2824,3 +2824,110 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
     font-size: 6.8px !important;
   }
 }
+
+
+/* Conversion trust strip: concise, scannable, and scoped exclusively to JB TECH. */
+body.technology-catalog .hero-description {
+  max-width: 500px;
+  margin-bottom: 15px;
+  line-height: 1.62;
+}
+body.technology-catalog .hero-trust {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 10px;
+  max-width: 560px;
+  margin-top: 15px;
+  color: #243b5b;
+  font-size: 12px;
+}
+body.technology-catalog .hero-trust-item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid rgba(91, 133, 196, .28);
+  border-radius: 13px;
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 5px 16px rgba(27, 63, 114, .055);
+}
+body.technology-catalog .hero-trust-icon {
+  display: block;
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  color: #2366c8;
+}
+body.technology-catalog .hero-trust-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+body.technology-catalog .hero-trust-copy strong {
+  color: #172a45;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+body.technology-catalog .hero-trust-copy small {
+  display: block;
+  color: #526884;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+html[data-theme="dark"] body.technology-catalog .hero-trust-item {
+  border-color: rgba(116, 161, 219, .3);
+  background: rgba(8, 22, 41, .82);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .15);
+}
+html[data-theme="dark"] body.technology-catalog .hero-trust-icon { color: #71d9ff; }
+html[data-theme="dark"] body.technology-catalog .hero-trust-copy strong { color: #eef6ff; }
+html[data-theme="dark"] body.technology-catalog .hero-trust-copy small { color: #aec2dd; }
+@media (max-width: 760px) {
+  body.technology-catalog .hero {
+    gap: 19px;
+    padding-top: 34px;
+    padding-bottom: 28px;
+  }
+  body.technology-catalog .hero-description {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  body.technology-catalog .hero-trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 11px;
+  }
+  body.technology-catalog .hero-trust-item {
+    gap: 7px;
+    padding: 10px 9px;
+    border-radius: 12px;
+  }
+  body.technology-catalog .hero-trust-icon {
+    flex-basis: 17px;
+    width: 17px;
+    height: 17px;
+  }
+  body.technology-catalog .hero-trust-copy strong {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  body.technology-catalog .hero-trust-copy small {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+@media (max-width: 360px) {
+  body.technology-catalog .hero-trust-item { padding: 9px 8px; gap: 6px; }
+  body.technology-catalog .hero-trust-copy strong { font-size: 10.5px; }
+  body.technology-catalog .hero-trust-copy small { font-size: 9.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.technology-catalog .hero-trust-item { transition: none !important; }
+}

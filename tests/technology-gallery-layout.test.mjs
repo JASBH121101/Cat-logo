@@ -9,7 +9,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261028-compact-variants3/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-conversion-trust1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
   assert.match(html, /app\.js\?v=20261028-ai-chat-escalation2/);
   assert.match(html, /id="quality-price-section"/);
@@ -99,8 +99,10 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
   const perfume = readFileSync("perfumeria/index.html", "utf8");
   assert.doesNotMatch(html, /Explorar equipos/);
   assert.doesNotMatch(perfume, /Explorar perfumería/);
-  assert.match(html, /Consultas directas por WhatsApp/);
-  assert.match(html, /Opciones de pago sujetas a confirmación/);
+  assert.match(html, /data-trust-item="payment"/);
+  assert.match(html, /data-trust-item="shipping"/);
+  assert.match(html, /data-trust-item="whatsapp"/);
+  assert.match(html, /data-trust-item="warranty"/);
   assert.match(perfume, /AROMAS CON IDENTIDAD/);
   assert.match(perfume, /href="#coleccion"/);
 });
