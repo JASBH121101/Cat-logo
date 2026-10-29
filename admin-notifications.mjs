@@ -1,10 +1,15 @@
 const WORKER_URL = "./jb-manager-sw.js?v=20261029-admin-notifications2";
+const registrationPromises = new WeakMap();
 
 function dependencies(overrides = {}) {
+  const windowRef = overrides.windowRef ?? globalThis.window;
   return {
-    windowRef: overrides.windowRef ?? globalThis.window,
+    windowRef,
     navigatorRef: overrides.navigatorRef ?? globalThis.navigator,
-    NotificationApi: overrides.NotificationApi ?? (overrides.windowRef ?? globalThis.window)?.Notification,
+    NotificationApi: overrides.NotificationApi ?? windowRef?.Notification,
+    supabase: overrides.supabase,
+    currentUser: overrides.currentUser,
+    publicKey: overrides.publicKey,
   };
 }
 
@@ -20,16 +25,28 @@ function isSecureWindow(windowRef) {
 async function getRegistration(windowRef, navigatorRef) {
   const serviceWorker = navigatorRef?.serviceWorker;
   if (!serviceWorker) return null;
-  const baseUrl = new URL("./", windowRef.location.href);
-  const workerUrl = new URL(WORKER_URL, windowRef.location.href);
-  // Always register the versioned URL so an existing worker can be updated after a deploy.
-  const requested = await serviceWorker.register(workerUrl.href, { scope: baseUrl.href });
-  const ready = await serviceWorker.ready;
-  const registration = ready && typeof ready.showNotification === "function" ? ready : requested;
-  if (!registration || typeof registration.showNotification !== "function") {
-    throw new Error("El navegador no activó el Service Worker de notificaciones.");
+  let promise = registrationPromises.get(serviceWorker);
+  if (!promise) {
+    promise = (async () => {
+      const baseUrl = new URL("./", windowRef.location.href);
+      const workerUrl = new URL(WORKER_URL, windowRef.location.href);
+      // Register the versioned script so a deployment can update the worker already installed.
+      const requested = await serviceWorker.register(workerUrl.href, { scope: baseUrl.href });
+      const ready = await serviceWorker.ready;
+      const registration = ready && typeof ready.showNotification === "function" ? ready : requested;
+      if (!registration || typeof registration.showNotification !== "function") {
+        throw new Error("El navegador no activó el Service Worker de notificaciones.");
+      }
+      return registration;
+    })();
+    registrationPromises.set(serviceWorker, promise);
   }
-  return registration;
+  try {
+    return await promise;
+  } catch (error) {
+    registrationPromises.delete(serviceWorker);
+    throw error;
+  }
 }
 
 function notificationOptions(windowRef, body, conversationId) {
@@ -41,6 +58,57 @@ function notificationOptions(windowRef, body, conversationId) {
     renotify: true,
     data: { url: new URL("./admin.html?open=messages", windowRef.location.href).href },
   };
+}
+
+function decodeBase64Url(value) {
+  const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+
+async function registerPushSubscription({ registration, navigatorRef, windowRef, supabase, currentUser, publicKey }) {
+  if (!registration?.pushManager || typeof registration.pushManager.subscribe !== "function") {
+    return { ok: false, reason: "push-unsupported" };
+  }
+  if (!supabase || !currentUser?.id) return { ok: false, reason: "admin-session-required" };
+  if (!publicKey) return { ok: false, reason: "push-config-missing" };
+
+  const keyBytes = decodeBase64Url(publicKey);
+  if (keyBytes.length !== 65 || keyBytes[0] !== 4) {
+    return { ok: false, reason: "invalid-public-key" };
+  }
+
+  let subscription = typeof registration.pushManager.getSubscription === "function"
+    ? await registration.pushManager.getSubscription()
+    : null;
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: keyBytes,
+    });
+  }
+  const details = typeof subscription.toJSON === "function" ? subscription.toJSON() : subscription;
+  const endpoint = String(details?.endpoint || subscription.endpoint || "");
+  const p256dh = String(details?.keys?.p256dh || "");
+  const auth = String(details?.keys?.auth || "");
+  if (!endpoint.startsWith("https://") || !p256dh || !auth) {
+    return { ok: false, reason: "invalid-subscription" };
+  }
+
+  const { error } = await supabase.from("admin_push_subscriptions").upsert({
+    user_id: currentUser.id,
+    endpoint,
+    p256dh,
+    auth_secret: auth,
+    expiration_time: details.expirationTime ? new Date(details.expirationTime).toISOString() : null,
+    user_agent: String(navigatorRef?.userAgent || windowRef?.navigator?.userAgent || "").slice(0, 300),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "endpoint" });
+  if (error) {
+    throw new Error("El permiso está concedido, pero no se pudo registrar este dispositivo para push: " + String(error.message || error));
+  }
+  return { ok: true, subscription };
 }
 
 export async function showAdminNotification(title, body, conversationId, overrides = {}) {
@@ -56,13 +124,11 @@ export async function showAdminNotification(title, body, conversationId, overrid
       await registration.showNotification(String(title || "JB Manager"), options);
       return { ok: true, mode: "service-worker" };
     } catch (error) {
-      // Keep a visible failure result rather than silently losing the notification.
       return { ok: false, reason: "display-failed", message: String(error?.message || error || "Error desconocido") };
     }
   }
 
   try {
-    // Desktop fallback only. Mobile browsers generally require showNotification on a Service Worker.
     const notification = new NotificationApi(String(title || "JB Manager"), options);
     return { ok: true, mode: "page", notification };
   } catch (error) {
@@ -71,7 +137,7 @@ export async function showAdminNotification(title, body, conversationId, overrid
 }
 
 export async function enableAdminNotifications(overrides = {}) {
-  const { windowRef, navigatorRef, NotificationApi } = dependencies(overrides);
+  const { windowRef, navigatorRef, NotificationApi, supabase, currentUser, publicKey } = dependencies(overrides);
   if (!windowRef || !NotificationApi) return { ok: false, reason: "unsupported" };
   if (!isSecureWindow(windowRef)) return { ok: false, reason: "insecure-context" };
 
@@ -87,13 +153,24 @@ export async function enableAdminNotifications(overrides = {}) {
     }
   }
   if (permission !== "granted") return { ok: false, reason: permission === "denied" ? "permission-denied" : "permission-not-granted" };
+  if (!navigatorRef?.serviceWorker) return { ok: false, reason: "push-unsupported" };
 
-  return showAdminNotification(
-    "JB Manager",
-    "Prueba de notificaciones completada. Este dispositivo puede mostrar avisos de mensajería.",
-    "private-chat-enabled",
-    { windowRef, navigatorRef, NotificationApi },
-  );
+  try {
+    const registration = await getRegistration(windowRef, navigatorRef);
+    const saved = await registerPushSubscription({
+      registration, navigatorRef, windowRef, supabase, currentUser, publicKey,
+    });
+    if (!saved.ok) return saved;
+
+    await registration.showNotification("JB Manager", notificationOptions(
+      windowRef,
+      "Notificaciones push registradas en este dispositivo. Esta es la prueba de funcionamiento.",
+      "private-chat-enabled"
+    ));
+    return { ok: true, mode: "push" };
+  } catch (error) {
+    return { ok: false, reason: "push-setup-failed", message: String(error?.message || error || "Error desconocido") };
+  }
 }
 
 /**
