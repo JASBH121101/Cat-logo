@@ -145,6 +145,9 @@ try {
         }
 
         await page.waitForTimeout(1200);
+        if (site.products) {
+          await page.locator(site.products).first().waitFor({ state: "visible", timeout: 7000 }).catch(() => {});
+        }
         const actualTheme = await page.locator("html").getAttribute("data-theme");
         const snapshot = await page.evaluate(() => {
           const visible = el => {
@@ -226,8 +229,10 @@ try {
               });
               const imageFindings=analyzeImageOccupancy([{visible:true,selector:site.image,productName:detailSnapshot.detailHeading,imageOccupancy:imageAudit}],{viewportWidth:viewport.width,mobile:viewport.mobile});
               const detailName=site.name+"-detail--"+viewport.name+"--"+theme+".png";
+              const viewportDetailName=detailName.replace(".png","--viewport.png");
               await page.screenshot({path:resolve(OUT_DIR,detailName),fullPage:true,animations:"disabled"});
-              results.push({page:site.name+"-detail",viewport:viewport.name,theme,screenshot:detailName,snapshot:detailSnapshot,imageOccupancy:imageAudit,imageFindings});
+              await page.screenshot({path:resolve(OUT_DIR,viewportDetailName),fullPage:false,animations:"disabled"});
+              results.push({page:site.name+"-detail",viewport:viewport.name,theme,screenshot:detailName,viewportScreenshot:viewportDetailName,snapshot:detailSnapshot,imageOccupancy:imageAudit,imageFindings});
               if (detailSnapshot.horizontalOverflow>=24) errors.push({severity:"critical",page:site.name+"-detail",viewport:viewport.name,theme,type:"detail-horizontal-overflow",message:"La ficha real excede el viewport.",evidence:detailSnapshot.horizontalOverflow+" px"});
               if (imageAudit.status==="unavailable"||imageAudit.status==="inconclusive") {
                 errors.push({severity:"info",page:site.name+"-detail",viewport:viewport.name,theme,type:"image-analysis-inconclusive",message:"No fue posible medir la ocupación de píxeles de la fotografía real; no se contará como aprobado.",evidence:imageAudit.reason||"sin causa"});
