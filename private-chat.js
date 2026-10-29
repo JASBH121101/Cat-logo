@@ -71,13 +71,13 @@ function clearSavedSessionToken() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch {}
 }
 
-function showFatal(message) {
+function showFatal(message, { clearAccess = true } = {}) {
   expired = true;
   loading.hidden = true;
   appPanel.hidden = true;
   errorPanel.hidden = false;
   errorPanel.textContent = message;
-  clearSavedSessionToken();
+  if (clearAccess) clearSavedSessionToken();
   if (countdownTimer) clearInterval(countdownTimer);
 }
 function updateStatus(message, kind = "") {
@@ -300,7 +300,16 @@ async function initialize() {
     loading.hidden = true;
     await refreshConversation();
   } catch (error) {
-    showFatal(error.message || "Este enlace ya venció o no es válido. Iniciá otra conversación desde el catálogo.");
+    const expiredAccess = error?.status === 410 ||
+      ["session_expired", "invite_expired"].includes(String(error?.code || ""));
+    if (!inviteToken && !expiredAccess) {
+      showFatal(
+        "No pudimos conectar con el chat. Conservamos el acceso temporal en este dispositivo; revisá tu conexión y recargá para volver a intentarlo.",
+        { clearAccess: false }
+      );
+    } else {
+      showFatal(error.message || "Este enlace ya venció o no es válido. Iniciá otra conversación desde el catálogo.");
+    }
   }
 }
 
