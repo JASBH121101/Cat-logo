@@ -10,7 +10,7 @@ function base64url(bytes) {
   return Buffer.from(bytes).toString("base64url");
 }
 
-function makeBrowser({ permission = "default", secure = true, serviceWorker = true, rejectShow = false, rejectSave = false, withSession = true } = {}) {
+function makeBrowser({ permission = "default", secure = true, serviceWorker = true, rejectShow = false, rejectSave = false, withSession = true, neverReady = false, serviceWorkerReadyTimeoutMs } = {}) {
   const calls = [];
   const endpoint = "https://push.example.test/subscription-1";
   const subscription = {
@@ -36,7 +36,7 @@ function makeBrowser({ permission = "default", secure = true, serviceWorker = tr
   };
   const worker = serviceWorker ? {
     async register(url, options) { calls.push({ registered: url, scope: options.scope }); return registration; },
-    ready: Promise.resolve(registration),
+    ready: neverReady ? new Promise(() => {}) : Promise.resolve(registration),
   } : undefined;
   class FakeNotification {
     constructor(title, options) { calls.push({ title, options, fallback: true }); }
@@ -68,6 +68,7 @@ function makeBrowser({ permission = "default", secure = true, serviceWorker = tr
     supabase: withSession ? supabase : null,
     currentUser: withSession ? { id: "admin-user-1" } : null,
     publicKey: base64url(Uint8Array.from({ length: 65 }, (_, i) => i === 0 ? 4 : i)),
+    serviceWorkerReadyTimeoutMs,
   };
 }
 
@@ -116,6 +117,16 @@ test("push subscription database failures are surfaced instead of silently claim
   assert.equal(result.reason, "push-setup-failed");
   assert.match(result.message, /database offline/);
   assert.equal(browser.calls.some(call => call.title === "JB Manager"), false);
+});
+
+test("activation does not hang forever if the browser never activates the service worker", async () => {
+  const browser = makeBrowser({ neverReady: true, serviceWorkerReadyTimeoutMs: 15 });
+  const startedAt = Date.now();
+  const result = await enableAdminNotifications(browser);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "push-setup-failed");
+  assert.match(result.message, /no terminó de activar el servicio de notificaciones/i);
+  assert.ok(Date.now() - startedAt < 1000, "activation should fail promptly rather than leaving the button busy forever");
 });
 
 test("service-worker display errors are surfaced instead of swallowed", async () => {

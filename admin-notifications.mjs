@@ -22,7 +22,7 @@ function isSecureWindow(windowRef) {
   }
 }
 
-async function getRegistration(windowRef, navigatorRef) {
+async function getRegistration(windowRef, navigatorRef, readyTimeoutMs = 12000) {
   const serviceWorker = navigatorRef?.serviceWorker;
   if (!serviceWorker) return null;
   let promise = registrationPromises.get(serviceWorker);
@@ -32,7 +32,20 @@ async function getRegistration(windowRef, navigatorRef) {
       const workerUrl = new URL(WORKER_URL, windowRef.location.href);
       // Register the versioned script so a deployment can update the worker already installed.
       const requested = await serviceWorker.register(workerUrl.href, { scope: baseUrl.href });
-      const ready = await serviceWorker.ready;
+      let timeoutId;
+      let ready;
+      try {
+        ready = await Promise.race([
+          serviceWorker.ready,
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(
+              "El navegador no terminó de activar el servicio de notificaciones. Actualizá JB Manager y volvé a intentarlo."
+            )), Math.max(1, Number(readyTimeoutMs) || 12000));
+          })
+        ]);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
       const registration = ready && typeof ready.showNotification === "function" ? ready : requested;
       if (!registration || typeof registration.showNotification !== "function") {
         throw new Error("El navegador no activó el Service Worker de notificaciones.");
@@ -120,7 +133,7 @@ export async function showAdminNotification(title, body, conversationId, overrid
   const options = notificationOptions(windowRef, body, conversationId);
   if (navigatorRef?.serviceWorker) {
     try {
-      const registration = await getRegistration(windowRef, navigatorRef);
+      const registration = await getRegistration(windowRef, navigatorRef, overrides.serviceWorkerReadyTimeoutMs);
       await registration.showNotification(String(title || "JB Manager"), options);
       return { ok: true, mode: "service-worker" };
     } catch (error) {
@@ -158,7 +171,7 @@ export async function enableAdminNotifications(overrides = {}) {
   if (!publicKey) return { ok: false, reason: "push-config-missing" };
 
   try {
-    const registration = await getRegistration(windowRef, navigatorRef);
+    const registration = await getRegistration(windowRef, navigatorRef, overrides.serviceWorkerReadyTimeoutMs);
     const saved = await registerPushSubscription({
       registration, navigatorRef, windowRef, supabase, currentUser, publicKey,
     });
