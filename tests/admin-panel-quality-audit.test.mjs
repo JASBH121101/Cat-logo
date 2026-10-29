@@ -11,7 +11,7 @@ const chatStyles = await readFile(new URL("admin-private-chat.css", root), "utf8
 const workflow = await readFile(new URL(".github/workflows/catalog-static-checks.yml", root), "utf8");
 
 function collectAttributeValues(source, attribute) {
-  const regex = new RegExp("\b" + attribute + "\s*=\s*([\"'])(.*?)\1", "g");
+  const regex = new RegExp("\\b" + attribute + "\\s*=\\s*([\\"'])(.*?)\\1", "g");
   return [...source.matchAll(regex)].map(match => match[2]);
 }
 
@@ -32,22 +32,27 @@ test("every static HTML id is unique and admin navigation has accessible state",
   assert.match(adminJs, /button\.setAttribute\("aria-current", "page"\)/);
 });
 
-test("admin panel buttons have explicit form behavior and status regions", () => {
-  const buttons = [...html.matchAll(/<button\b[^>]*>/gi)].map(match => match[0]);
-  const missingType = buttons.filter(button => !/\btype\s*=/.test(button));
+test("admin panel controls are audited for explicit type and accessible names", () => {
+  const buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/gi)]
+    .map(match => ({ attributes: match[1], inner: match[2] }));
+  const missingType = buttons.filter(button => !/\btype\s*=/.test(button.attributes));
   const missingName = buttons.filter(button =>
-    !/\baria-label\s*=|\btitle\s*=/.test(button) &&
-    !/>\s*[\w\p{L}]/u.test(button)
+    !/\baria-label\s*=|\btitle\s*=/.test(button.attributes) &&
+    !button.inner.replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/gi, " ").trim()
   );
   const findings = [];
   if (missingType.length) findings.push(missingType.length + " botones sin type explícito");
   if (missingName.length) findings.push(missingName.length + " botones estáticos sin etiqueta detectable");
-  if (!/id="private-chat-admin-status"[^>]*role="status"[^>]*aria-live="polite"/.test(html)) findings.push("estado de mensajería sin anuncio accesible");
+  if (!/id="private-chat-admin-status"[^>]*role="status"[^>]*aria-live="polite"/.test(html)) {
+    findings.push("estado de mensajería sin anuncio accesible");
+  }
+
   console.log("\nADMIN QUALITY AUDIT — hallazgos estructurales");
   console.log("Botones HTML estáticos: " + buttons.length);
   console.log("Hallazgos informativos: " + (findings.length ? findings.join(" · ") : "sin incidencias estructurales configuradas"));
-  console.log("Archivos con estilos de administración inspeccionados: styles.css, theme-ui.css, admin-private-chat.css");
-  // The structural counters are advisory; required navigation and IDs are hard assertions above.
+  console.log("Archivos con estilos inspeccionados: styles.css, theme-ui.css, admin-private-chat.css");
+
+  // Accessibility counters are advisory; routing and IDs are hard assertions below.
   assert.ok(buttons.length > 0);
   assert.match(html, /id="private-chat-enable-notifications"/);
   assert.match(adminJs, /enableAdminNotifications/);
