@@ -942,6 +942,34 @@ if (!perfumeCatalogHtml.includes('id="perfume-exclusive-section"')
 }
 const builtTechnologyStyles = await readFile(join(webDir, "technology-visual-refresh.css"), "utf8");
 const builtPerfumeStyles = await readFile(join(webDir, "perfumeria.css"), "utf8");
+const builtHomeHtml = await readFile(join(webDir, "index.html"), "utf8");
+const builtTechnologyApp = await readFile(join(webDir, "app.js"), "utf8");
+const builtPerfumeApp = await readFile(join(webDir, "perfumeria.js"), "utf8");
+
+// Gate the package on the approved commercial trust copy from main. Warranty
+// claims must stay in technology only and the exact term remains product-specific.
+for (const trustKey of ["payment", "shipping", "whatsapp", "warranty"]) {
+  if (!builtCatalogHtml.includes('data-trust-item="' + trustKey + '"')) {
+    throw new Error("Technology catalog is missing the approved trust item: " + trustKey);
+  }
+}
+if (!builtCatalogHtml.includes("3, 6 o 12 meses, según producto")
+  || !builtCatalogHtml.includes("Cuando esté disponible para tu pedido")
+  || !builtCatalogHtml.includes("Coordinados según tu destino")) {
+  throw new Error("Technology catalog trust copy is missing its product-specific/payment/shipping qualifications.");
+}
+if (!builtTechnologyStyles.includes("Conversion trust strip: concise, scannable")
+  || !builtHomeHtml.includes("world-trust-note--tech")
+  || !builtHomeHtml.includes("Garantía de fábrica según producto")) {
+  throw new Error("APK source is missing the approved conversion trust styles or homepage microcopy.");
+}
+if (/garantía/i.test(perfumeCatalogHtml) || /warranty_months|Garantía:/i.test(builtPerfumeApp)) {
+  throw new Error("Warranty copy must not be added to JB Parfums.");
+}
+if (!builtTechnologyApp.includes("product.warranty_months")
+  || !builtTechnologyApp.includes("meses, según catálogo")) {
+  throw new Error("Technology product detail must display the exact warranty period recorded for each product.");
+}
 if (!builtTechnologyStyles.includes("limited-edition-section")
   || !builtPerfumeStyles.includes("perfume-featured-section--limited-edition")) {
   throw new Error("Limited-edition collection styles are missing from the Android bundle.");
