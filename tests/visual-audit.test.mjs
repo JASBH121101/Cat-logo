@@ -280,8 +280,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             });
           }
         });
-        // Keep the audit deterministic and read-only: local first-party assets are allowed,
-        // remote APIs and third-party requests are not invoked by this static visual suite.
+        // Keep the audit deterministic and read-only: local first-party assets are allowed.
+        // Remote APIs and non-allowlisted hosts are blocked; cdn.jsdelivr.net is the only
+        // explicitly allowed external host needed to initialize the UI module.
         await page.route("**/*", route => {
           const url = new URL(route.request().url());
           if (url.origin === origin || url.protocol === "data:" || url.protocol === "blob:") return route.continue();
@@ -644,9 +645,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     observations, findings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
       remoteApisReached: false,
+      allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
-      note: "Local deterministic fixture. External requests are intercepted by the browser route policy; no Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
+      note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
@@ -685,7 +687,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "## Alcance y límites",
     "",
     "- Todas las páginas se sirven desde una copia estática local; la prueba inserta productos y mensajes sintéticos para revisar geometría representativa.",
-    "- Las solicitudes externas se interceptan y bloquean antes de salir del navegador de prueba; no se autentica a un usuario ni se modifica Supabase.",
+    "- La política permite recursos locales y el host cdn.jsdelivr.net; las peticiones a Supabase y a otros hosts externos no permitidos se abortan. No se autentica a un usuario ni se modifica Supabase.",
     "- Axe se usa como detector WCAG. Las violaciones críticas/serias bloquean CI; las moderadas/menores permanecen como diagnósticos revisables. El mismo hallazgo por regla y selectores se agrupa entre temas, conservando sus ocurrencias.",
     "- Los recursos externos bloqueados deliberadamente por la política de aislamiento se separan de los fallos de recursos esenciales; los errores de red no convierten automáticamente una excepción JavaScript no controlada en un falso positivo.",
     "- La puerta de bloqueo se aplica a regresiones geométricas deterministas especificadas en este test. La validación real de compras y de notificaciones necesita pruebas de integración separadas.",
