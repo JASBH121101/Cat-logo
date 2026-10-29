@@ -45,8 +45,71 @@ function severityForOverflow(px) {
   if (px > 2) return "medium";
   return "info";
 }
+function diagnose({ severity, page, theme, viewport, element, message, evidence }) {
+  const text = `${message || ""} ${evidence || ""}`.toLowerCase();
+  if (/desbordamiento horizontal/.test(text)) {
+    return {
+      code: "LAYOUT_OVERFLOW",
+      hypothesis: "Un hijo de grid/flex o un elemento con ancho mínimo fijo excede el ancho disponible.",
+      confidence: 0.86,
+      nextCheck: "Usar los selectores y límites del reporte para localizar el primer elemento cuyo rectángulo rebasa el viewport; inspeccionar min-width, width, padding y texto largo.",
+      likelyFiles: page === "technology" ? ["technology-visual-refresh.css", "styles.css"] :
+        page === "perfumery" ? ["perfumeria.css", "styles.css"] :
+        page === "admin" ? ["admin-private-chat.css", "admin-workflow.css", "styles.css"] : ["private-chat.css"],
+    };
+  }
+  if (/tarjeta de confianza|hero-trust-copy/.test(text)) {
+    return {
+      code: "NESTED_SELECTOR_COLLISION",
+      hypothesis: "Una regla CSS amplia aplica a un wrapper de texto estilos pensados para un chip o etiqueta.",
+      confidence: 0.95,
+      nextCheck: "Comparar computedStyle del wrapper interior con su tarjeta; restringir la regla decorativa al hijo directo y volver a validar ambos temas.",
+      likelyFiles: ["technology-visual-refresh.css", "tests/technology-gallery-layout.test.mjs", "tests/visual-audit.test.mjs"],
+    };
+  }
+  if (/encabezado principal no visible/.test(text)) {
+    return {
+      code: "SHELL_VISIBILITY",
+      hypothesis: "El selector no coincide con el HTML actual o una clase/estilo mantiene el encabezado oculto.",
+      confidence: 0.82,
+      nextCheck: "Inspeccionar DOM final, clases hidden, display/visibility y geometría del encabezado en el mismo viewport.",
+      likelyFiles: ["admin.html", "mensajes.html", "tecnologia/index.html", "perfumeria/index.html"],
+    };
+  }
+  if (/axe|wcag|contrast|button-name|label/.test(text)) {
+    return {
+      code: "ACCESSIBILITY_REVIEW",
+      hypothesis: "El DOM puede carecer de un nombre accesible, etiqueta asociada o contraste suficiente.",
+      confidence: 0.74,
+      nextCheck: "Abrir el nodo exacto reportado; verificar nombre accesible, asociación label/control y contraste calculado antes de cambiar CSS.",
+      likelyFiles: ["admin-accessibility.css", "admin-private-chat.css", "private-chat.css", "technology-visual-refresh.css", "perfumeria.css"],
+    };
+  }
+  if (/error de javascript|runtime/.test(text)) {
+    const likelyEnvironment = /fetch|network|failed to load|blockedbyclient|supabase|aborted/i.test(text);
+    return {
+      code: likelyEnvironment ? "RUNTIME_OR_BLOCKED_DEPENDENCY" : "RUNTIME_EXCEPTION",
+      hypothesis: likelyEnvironment
+        ? "El error podría depender de una API o recurso externo que esta prueba está bloqueando deliberadamente; hay que separarlo de un fallo de JavaScript real."
+        : "Una excepción de ejecución puede haber detenido una parte del montaje o de los eventos.",
+      confidence: likelyEnvironment ? 0.62 : 0.80,
+      nextCheck: "Revisar primero el archivo y la primera línea de la excepción; repetir el escenario con dependencias simuladas y después confirmar el flujo conectado por separado.",
+      likelyFiles: page === "admin" ? ["admin.js", "admin-provider.js"] :
+        page === "private-chat" ? ["private-chat.js", "functions/api/private-chat.js"] : ["app.js", "perfumeria.js", "config.js"],
+    };
+  }
+  return {
+    code: "NEEDS_TRIAGE",
+    hypothesis: "La evidencia no coincide con una firma conocida; no conviene aplicar una reparación automática.",
+    confidence: 0.45,
+    nextCheck: "Inspeccionar captura, selector, estilos calculados y traza completa. Crear primero una prueba mínima que reproduzca el comportamiento.",
+    likelyFiles: [],
+  };
+}
 function addFinding({ severity, page, theme, viewport, element, message, evidence, recommendation, blocking = false }) {
-  findings.push({ severity, page, theme, viewport, element, message, evidence, recommendation, blocking });
+  const finding = { severity, page, theme, viewport, element, message, evidence, recommendation, blocking };
+  finding.diagnosis = diagnose(finding);
+  findings.push(finding);
 }
 function escMarkdown(value) {
   return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
@@ -278,13 +341,16 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
               .analyze();
             for (const violation of axe.violations) {
-              axeFindings.push({
+              const axeFinding = {
                 severity: violation.impact === "critical" || violation.impact === "serious" ? "high" :
                   violation.impact === "moderate" ? "medium" : "low",
                 page: site.name, theme, viewport: viewport.name, rule: violation.id, impact: violation.impact,
                 message: violation.help, evidence: `${violation.nodes.length} nodo(s): ${String(violation.nodes[0]?.target?.join(" ") || "selector no disponible")}`,
                 recommendation: violation.description + " Referencia: " + violation.helpUrl,
-              });
+              };
+              axeFinding.diagnosis = diagnose(axeFinding);
+              axeFindings.push(axeFinding);
+              findings.push({ ...axeFinding, element: axeFinding.rule, blocking: false });
             }
           } catch (error) {
             addFinding({
@@ -337,7 +403,11 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "",
     ...(findings.length ? findings.map((f, i) => `${i + 1}. **[${f.severity.toUpperCase()}]` ${f.page} / ${f.theme} / ${f.viewport} — ${f.message}\n   - Evidencia: ${escMarkdown(f.evidence)}\n   - Reparación sugerida: ${escMarkdown(f.recommendation)}`) : ["No se activaron las reglas de diagnóstico configuradas. Esto no equivale a probar flujos de negocio autenticados."]),
     "",
-    "## Geometría observada",
+    "## Resumen del diagnóstico", "",
+    "- El sistema asigna códigos de causa probable, confianza orientativa, archivos candidatos y un siguiente paso de verificación.",
+    "- La confianza es una heurística basada en la evidencia, no una probabilidad estadística ni una reparación automática.",
+    "- Los hallazgos de accesibilidad son señales de revisión; no se corrigen ni se ocultan automáticamente.",
+    "", "## Geometría observada",
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
     "|---|---|---|---:|---:|---:|",
