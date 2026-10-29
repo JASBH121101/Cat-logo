@@ -20,8 +20,15 @@ test("supplier review collects provider availability for every configuration and
   assert.match(provider, /data-provider-color-availability/);
   assert.match(provider, /provider_variant_snapshot: variantSnapshot/);
   assert.match(provider, /const unconfirmedVariantStatus = variantSnapshot\.some/);
-  assert.match(provider, /if \(overallAvailability === "unknown" \|\| unconfirmedVariantStatus\)/);
+  assert.match(provider, /if \(\(!hasVariants && overallAvailability === "unknown"\) \|\| \(hasVariants && unconfirmedVariantStatus\)\)/);
+  assert.match(provider, /cada configuración y cada color/);
+  assert.match(provider, /disponibilidad general comprobada/);
   assert.match(html, /Confirmar revisión/);
+});
+
+test("save validation requires general availability only for products without variants", () => {
+  assert.match(provider, /if \(\(!hasVariants && overallAvailability === "unknown"\) \|\| \(hasVariants && unconfirmedVariantStatus\)\)/);
+  assert.doesNotMatch(provider, /if \(overallAvailability === "unknown" \|\| unconfirmedVariantStatus\)/);
 });
 
 test("variant products do not require duplicate general price or availability confirmation", () => {
