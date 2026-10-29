@@ -22,6 +22,8 @@ CODE_EXTS = JS_EXTS | {".html", ".css"}
 IMPORT_RE = re.compile(r"""(?:\b(?:import|export)\s+(?:[^;'"]*?\s+from\s*)?|\bimport\s*\(|\brequire\s*\()\s*['"]([^'"]+)['"]""")
 NEW_URL_RE = re.compile(r"""new\s+URL\(\s*['"]([^'"]+)['"]\s*,\s*import\.meta\.url""")
 FETCH_RE = re.compile(r"""\bfetch\(\s*['"]([^'"]+)['"]""")
+STRING_CONST_RE = re.compile(r"""^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(['"])(.*?)\2""", re.M)
+SERVICE_WORKER_REGISTER_RE = re.compile(r"""serviceWorker\s*\.\s*register\s*\(\s*(?:(['"])([^'"]+)\1|([A-Za-z_$][\w$]*))""")
 DECL_RE = re.compile(r"""^\s*(?:export\s+)?(?:(?:async\s+)?function|class)\s+([A-Za-z_$][\w$]*)\b|^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=""")
 
 def ignored(path: Path) -> bool:
@@ -96,7 +98,15 @@ def audit(root: Path) -> dict:
     edges = set()
     issues = []
     html_entries = set()
-    function_entries = {p for p in files if p.suffix.lower() in JS_EXTS and rel[p].startswith("functions/")}
+    # Deployment platforms route these handlers by filesystem path; lack of a local
+    # import does not make them dead code. Shared helper modules remain dependencies.
+    function_entries = {
+        p for p in files
+        if p.suffix.lower() in JS_EXTS and (
+            rel[p].startswith("api/") or
+            (rel[p].startswith("functions/") and not rel[p].startswith("functions/_shared/"))
+        )
+    }
 
     def add_reference(source: Path, raw: str, mode: str, strict: bool):
         target = resolve_local(root, source, raw)
@@ -104,7 +114,7 @@ def audit(root: Path) -> dict:
             return
         suffix = target.suffix.lower()
         if mode == "html":
-            if suffix not in {".js", ".css"}:
+            if suffix not in JS_EXTS | {".css"}:
                 return
             candidates = [target]
             if not target.suffix:
@@ -136,7 +146,7 @@ def audit(root: Path) -> dict:
             for raw in parser.references:
                 add_reference(source, raw, "html", True)
                 target = resolve_local(root, source, raw)
-                if target and target.suffix.lower() == ".js" and target.is_file():
+                if target and target.suffix.lower() in JS_EXTS and target.is_file():
                     html_entries.add(target)
         elif source.suffix.lower() == ".css":
             imports = re.findall(r"""@import\s+(?:url\(\s*)?['"]?([^'"\s\)]+)""", text, re.I)
@@ -157,8 +167,22 @@ def audit(root: Path) -> dict:
                     continue
                 if raw.startswith((".", "/")) and kind == "module":
                     add_reference(source, raw, "module", True)
-                elif raw.startswith((".", "/")) and kind == "fetch" and Path(urlsplit(raw).path).suffix.lower() in {".js", ".css"}:
+                elif raw.startswith((".", "/")) and kind == "fetch" and Path(urlsplit(raw).path).suffix.lower() in JS_EXTS | {".css"}:
                     add_reference(source, raw, "module", True)
+
+            # Service workers are loaded by register(), not import(). Recognize both a
+            # literal URL and a locally declared string constant, including cache queries.
+            string_constants = {
+                match.group(1): match.group(3)
+                for match in STRING_CONST_RE.finditer(text)
+            }
+            for match in SERVICE_WORKER_REGISTER_RE.finditer(text):
+                raw = match.group(2) if match.group(1) else string_constants.get(match.group(3))
+                if not raw:
+                    continue
+                target = resolve_module(root, source, raw)
+                if target is not None and target.is_file() and target in rel:
+                    edges.add((rel[source], rel[target], raw))
 
     adjacency = defaultdict(set)
     for source, target, _ in edges:
@@ -196,6 +220,15 @@ def audit(root: Path) -> dict:
     dead_symbols = []
     for item in declarations:
         name = item["name"]
+        file_name = item["file"]
+        # Handler names are deployment contracts for filesystem-routed endpoints,
+        # not ordinary local calls. Avoid reporting them as dead declarations.
+        is_platform_route = (
+            file_name.startswith("api/") or
+            (file_name.startswith("functions/") and not file_name.startswith("functions/_shared/"))
+        )
+        if is_platform_route and name in {"handler", "onRequest", "onRequestGet"}:
+            continue
         if identifier_counts[name] <= declaration_counts[name]:
             dead_symbols.append(item)
 
