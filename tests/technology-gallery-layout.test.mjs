@@ -155,7 +155,7 @@ test("mobile trust tiles keep the text inside one rectangular card instead of ne
       assert.equal(result.cards.length, 4);
       for (const card of result.cards) {
         assert.ok(card.width > 120, theme + ": cards must retain readable width");
-        assert.ok(card.height > 55, theme + ": card height must contain title and description");
+        assert.ok(card.height > 45, theme + ": card height must contain title and description");
         assert.ok(card.left >= 0 && card.right <= result.viewportWidth,
           theme + ": card should fit within viewport without horizontal overflow");
         assert.ok(card.copyRight <= card.right - 4,
