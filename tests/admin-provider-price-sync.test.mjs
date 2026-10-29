@@ -72,7 +72,7 @@ test("admin settings are located in the dashboard sidebar and hidden during logi
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) \.admin-main\{padding-top:0!important\}/);
   assert.match(css, /\.admin-sidebar \.admin-settings-menu\{position:static/);
   assert.match(html, /admin-provider\.css\?v=20261028-provider-contrast-compact3/);
-  assert.match(html, /admin\.js\?v=20261028-inbox-no-blank-space7/);
+  assert.match(html, /admin\.js\?v=20261029-admin-webpush3/);
 });
 
 
