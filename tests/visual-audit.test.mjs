@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
-import { classifyRuntimeError } from "./visual-audit-policy.mjs";
+import { classifyAxeImpact, classifyRuntimeError } from "./visual-audit-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -457,17 +457,18 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 existingGroup.reportFinding.viewports = existingGroup.finding.viewports;
                 continue;
               }
+              const impactClassification = classifyAxeImpact(violation.impact);
               const axeFinding = {
-                severity: violation.impact === "critical" || violation.impact === "serious" ? "high" :
-                  violation.impact === "moderate" ? "medium" : "low",
+                severity: impactClassification.severity,
                 page: site.name, theme, viewport: viewport.name, rule: violation.id, impact: violation.impact,
                 themes: [theme], viewports: [viewport.name], occurrences: 1, targets,
                 message: violation.help, evidence: `${violation.nodes.length} nodo(s): ${String(violation.nodes[0]?.target?.join(" ") || "selector no disponible")}`,
                 recommendation: violation.description + " Referencia: " + violation.helpUrl,
               };
               axeFinding.diagnosis = diagnose(axeFinding);
-              const axeBlocks = violation.impact === "critical" || violation.impact === "serious";
-              const reportFinding = { ...axeFinding, element: axeFinding.rule, blocking: axeBlocks };
+              const reportFinding = {
+                ...axeFinding, element: axeFinding.rule, blocking: impactClassification.blocking,
+              };
               axeViolationGroups.set(fingerprint, { finding: axeFinding, reportFinding });
               axeFindings.push(axeFinding);
               findings.push(reportFinding);
@@ -491,15 +492,27 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         if (viewport.mobile && theme === "light") {
           const scenario = { page: site.name, viewport: viewport.name, theme };
           if (site.name === "technology") {
-            await runJourney(page, scenario, "technology-brand-filter-open-close", async () => {
+            await runJourney(page, scenario, "technology-brand-filter-keyboard-and-toggle", async () => {
               const control = page.locator("#brand-filter-toggle");
+              const menu = page.locator("#brand-filter-menu");
+              const search = page.locator("#brand-filter-search");
               assert.equal(await control.count(), 1, "technology brand-filter button must exist");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "true");
-              assert.equal(await page.locator("#brand-filter-menu").evaluate(el => el.hidden), false);
+              assert.equal(await menu.evaluate(el => el.hidden), false);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "brand-filter-search",
+                "opening the filter must move focus to its search field");
+              await page.keyboard.press("Escape");
+              assert.equal(await control.getAttribute("aria-expanded"), "false");
+              assert.equal(await menu.evaluate(el => el.hidden), true);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "brand-filter-toggle",
+                "Escape must close the filter and return focus to its trigger");
+              await control.click();
+              await search.fill("samsung");
+              assert.equal(await search.inputValue(), "samsung");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "false");
-              return "El filtro de marcas abre y cierra con aria-expanded sincronizado.";
+              return "El filtro abre con foco accesible, Escape cierra y devuelve el foco; el buscador acepta texto y el botón puede cerrarlo.";
             });
             await runJourney(page, scenario, "technology-theme-toggle", async () => {
               const toggle = page.locator("[data-theme-toggle]");
@@ -510,15 +523,27 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               return "El control cambia el tema aplicado al documento.";
             });
           } else if (site.name === "perfumery") {
-            await runJourney(page, scenario, "perfumery-brand-filter-open-close", async () => {
+            await runJourney(page, scenario, "perfumery-brand-filter-keyboard-and-toggle", async () => {
               const control = page.locator("#perfume-brand-filter-toggle");
+              const menu = page.locator("#perfume-brand-filter-menu");
+              const search = page.locator("#perfume-brand-filter-search");
               assert.equal(await control.count(), 1, "perfume brand-filter button must exist");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "true");
-              assert.equal(await page.locator("#perfume-brand-filter-menu").evaluate(el => el.hidden), false);
+              assert.equal(await menu.evaluate(el => el.hidden), false);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "perfume-brand-filter-search",
+                "opening the filter must move focus to its search field");
+              await page.keyboard.press("Escape");
+              assert.equal(await control.getAttribute("aria-expanded"), "false");
+              assert.equal(await menu.evaluate(el => el.hidden), true);
+              assert.equal(await page.evaluate(() => document.activeElement?.id), "perfume-brand-filter-toggle",
+                "Escape must close the filter and return focus to its trigger");
+              await control.click();
+              await search.fill("arab");
+              assert.equal(await search.inputValue(), "arab");
               await control.click();
               assert.equal(await control.getAttribute("aria-expanded"), "false");
-              return "El filtro de marcas de perfumería abre y cierra correctamente.";
+              return "El filtro abre con foco accesible, Escape cierra y devuelve el foco; el buscador acepta texto y el botón puede cerrarlo.";
             });
             await runJourney(page, scenario, "perfumery-theme-toggle", async () => {
               const toggle = page.locator("[data-theme-toggle]");
@@ -538,6 +563,24 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.equal(await page.locator("#dashboard").evaluate(el => el.classList.contains("admin-section-focused")), true);
               return "La navegación muestra Mensajería y deja el panel en modo enfocado.";
             });
+            await runJourney(page, scenario, "admin-mobile-sidebar-escape-and-backdrop", async () => {
+              const toggle = page.locator("#admin-menu-toggle");
+              const backdrop = page.locator("#admin-sidebar-backdrop");
+              assert.equal(await toggle.count(), 1, "admin mobile sidebar toggle must exist");
+              await toggle.click();
+              assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+              assert.equal(await page.locator("body").evaluate(el => el.classList.contains("admin-sidebar-open")), true);
+              assert.equal(await backdrop.evaluate(el => el.hidden), false);
+              await page.keyboard.press("Escape");
+              assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+              assert.equal(await page.locator("body").evaluate(el => el.classList.contains("admin-sidebar-open")), false);
+              assert.equal(await backdrop.evaluate(el => el.hidden), true);
+              await toggle.click();
+              await backdrop.click();
+              assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+              assert.equal(await backdrop.evaluate(el => el.hidden), true);
+              return "El menú móvil sincroniza aria-expanded, bloqueo de scroll y backdrop; Escape y backdrop cierran el panel.";
+            });
           } else if (site.name === "private-chat") {
             await runJourney(page, scenario, "private-chat-theme-toggle", async () => {
               const toggle = page.locator("#private-chat-theme-toggle");
@@ -548,13 +591,21 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.notEqual(await toggle.getAttribute("aria-pressed"), null);
               return "El chat cambia de tema y mantiene el estado accesible aria-pressed.";
             });
-            await runJourney(page, scenario, "private-chat-order-data-notice", async () => {
-              const text = await page.locator(".private-chat-privacy").innerText();
-              assert.match(text, /nombre completo/i);
-              assert.match(text, /cédula/i);
-              assert.match(text, /celular/i);
-              assert.match(text, /contraseñas|códigos de seguridad/i);
-              return "El aviso permite entender qué datos del pedido se pueden compartir y qué credenciales nunca se deben enviar.";
+            await runJourney(page, scenario, "private-chat-composer-input-behavior", async () => {
+              const form = page.locator("#private-chat-composer");
+              const input = page.locator("#private-chat-input");
+              const send = page.locator("#private-chat-send");
+              assert.equal(await form.evaluate(el => el.hidden), false, "fixture must expose the synthetic composer");
+              assert.equal(await send.getAttribute("type"), "submit");
+              assert.equal(await input.getAttribute("maxlength"), "1200");
+              const message = "Mensaje sintético para probar el campo de respuesta.";
+              await input.fill(message);
+              assert.equal(await input.inputValue(), message);
+              const styleHeight = await input.evaluate(el => el.style.height);
+              assert.match(styleHeight, /^\d+(?:\.\d+)?px$/, "textarea should update its height on input");
+              await input.fill("");
+              assert.equal(await input.inputValue(), "");
+              return "El compositor acepta y limpia texto de prueba, respeta maxlength y ajusta la altura sin enviar ninguna solicitud.";
             });
           }
         }
@@ -580,7 +631,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       journeyFailures: journeyResults.filter(journey => !journey.passed).length,
       axeViolations: axeFindings.length,
       axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
-      blockingAxeViolations: axeFindings.filter(finding => finding.impact === "critical" || finding.impact === "serious").length,
+      blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
     },
     observations, findings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
