@@ -70,7 +70,7 @@ test("Go Partners order data is allowed while unneeded contact and financial cre
   assert.ok(!validator.includes("505"), "phone numbers are permitted for order registration");
   assert.ok(!/c[eé]dula|pasaporte|n[uú]mero de identidad/i.test(validator),
     "cédula values are permitted for order registration");
-  assert.match(validator, /@[A-Z0-9.-]+/i, "unrequested email addresses remain blocked");
+  assert.ok(validator.includes("@[A-Z0-9.-]+"), "unrequested email addresses remain blocked");
   assert.match(validator, /tarjeta/i, "full payment-card details remain blocked");
   assert.match(validator, /cuenta bancaria/i, "bank-account details remain blocked");
   assert.match(customerHtml, /podés compartir tu nombre completo, cédula y celular/i);
@@ -85,7 +85,7 @@ test("purchase consent is displayed only in the consent panel, not duplicated as
   assert.match(duplicateNoticeRemoval, /consent_notice_version='2026-10-28-v1'/);
   assert.doesNotMatch(duplicateNoticeRemoval, /values \(v_row\.id, 'assistant', v_notice\)/);
   assert.match(customerJs, /PRIVACY_NOTICE_VERSION = "2026-10-29-v3"/);
-  assert.match(customerJs, /legacy database bubbles that still contradict it/);
+  assert.ok(customerJs.includes("/^¡Hola! Este es el canal privado de JB Collections\\./i.test(messageContent)"));\n  assert.ok(customerJs.includes("/No compartás aquí cédula, teléfono, correo ni datos de pago/i.test(messageContent)"));
   assert.match(adminCss, /html\[data-theme="light"\] \.private-chat-admin-message p/);
   assert.match(adminCss, /html\[data-theme="dark"\] \.private-chat-admin-message\.is-customer/);
   assert.match(adminHtml, /Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular/);
