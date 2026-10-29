@@ -15,6 +15,8 @@ const REPORT_MD = resolve(ROOT, "visual-audit-report.md");
 const VIEWPORTS = [
   { name: "mobile-390", width: 390, height: 844, mobile: true },
   { name: "desktop-1365", width: 1365, height: 900, mobile: false },
+  { name: "desktop-capture-1648", width: 1648, height: 925, mobile: false },
+  { name: "desktop-fullhd-1920", width: 1920, height: 1080, mobile: false },
 ];
 const THEMES = ["light", "dark"];
 const PAGES = [
@@ -147,6 +149,23 @@ function fixtureScript(pageName) {
           ["Xiaomi Redmi Note 15 Pro Max 5G", "12 GB RAM / 512 GB", "$ 489"],
           ["Samsung Galaxy Ultra Gaming Edition", "16 GB RAM / 1 TB", "$ 1,090"]
         ].map(([name, capacity, price]) => '<article class="product-card"><div class="product-image"><img alt="" src="' + svg + '"></div><div class="product-card-content"><div class="product-card-badges"><span class="product-badge">DISPONIBLE</span></div><h3>' + name + '</h3><p class="product-card-capacity">' + capacity + '</p><div class="product-price-label">Precio</div><div class="product-price">' + price + '</div><div class="product-actions"><a class="buy-button product-view-button" href="#audit-fixture">Ver producto ↗</a></div></div></article>').join("");
+      }
+      if (${JSON.stringify(pageName)} === "technology") {
+        // Exercise one-item desktop states in all tag showcases, not just the main catalog grid.
+        const showcases = [
+          ["featured-section", "featured-grid", "Productos exclusivos"],
+          ["limited-edition-section", "limited-edition-grid", "Colección especial"],
+          ["high-performance-section", "high-performance-grid", "Alto rendimiento"],
+          ["quality-price-section", "quality-price-grid", "Calidad precio"],
+          ["top-gaming-section", "top-gaming-grid", "Top Gaming"]
+        ];
+        for (const [sectionId, gridId, title] of showcases) {
+          const section = document.getElementById(sectionId);
+          const showcaseGrid = document.getElementById(gridId);
+          if (!section || !showcaseGrid) continue;
+          section.classList.remove("hidden");
+          showcaseGrid.innerHTML = '<article class="product-card"><div class="product-image"><img alt="" src="' + svg + '"></div><div class="product-card-content"><div class="product-card-badges"><span class="product-badge">EDICIÓN ESPECIAL</span></div><h3>' + title + ' · Producto de prueba</h3><p class="product-card-capacity">12 GB RAM / 512 GB</p><div class="product-price-label">Precio desde</div><div class="product-price">US$ 489</div><div class="product-actions"><a class="buy-button product-view-button" href="#audit-fixture">Ver producto ↗</a></div></div></article>';
+        }
       }
       if (${JSON.stringify(pageName)} === "perfumery") {
         const grid = document.querySelector("#product-grid-nicho");
@@ -347,6 +366,22 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             const copy = card.querySelector(".hero-trust-copy");
             return { card: rectData(card), copy: copy ? rectData(copy) : null, text: copy?.innerText || "" };
           });
+          const showcaseLayouts = pageName === "technology"
+            ? [...document.querySelectorAll(".featured-grid")].filter(isVisible).map(grid => {
+                const gridRect = grid.getBoundingClientRect();
+                const cards = [...grid.querySelectorAll(":scope > .product-card")].filter(isVisible);
+                const cardRect = cards.length === 1 ? cards[0].getBoundingClientRect() : null;
+                const gridCenter = (gridRect.left + gridRect.right) / 2;
+                const cardCenter = cardRect ? (cardRect.left + cardRect.right) / 2 : null;
+                return {
+                  id: grid.id, left: Math.round(gridRect.left), right: Math.round(gridRect.right),
+                  width: Math.round(gridRect.width), cardCount: cards.length,
+                  cardLeft: cardRect ? Math.round(cardRect.left) : null,
+                  cardRight: cardRect ? Math.round(cardRect.right) : null,
+                  centerOffset: cardCenter === null ? null : Math.round(Math.abs(cardCenter - gridCenter))
+                };
+              })
+            : [];
           const keyText = [...document.querySelectorAll("h1, h2, h3, .hero-trust-copy, .private-chat-privacy, .private-chat-footer-note, .private-chat-admin-security-note, button, .buy-button")]
             .filter(isVisible).slice(0, 70).map(el => ({
               selector: el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
@@ -362,6 +397,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             visibleMajorRegions: visibleGrids.length,
             productCards: products.length,
             trustCards,
+            showcaseLayouts,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
@@ -393,14 +429,28 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             blocking: classification.blocking,
           });
         }
-        if (viewport.mobile && snapshot.horizontalOverflow >= 8) {
+        if (snapshot.horizontalOverflow >= 8) {
           addFinding({
             severity: severityForOverflow(snapshot.horizontalOverflow), page: site.name, theme, viewport: viewport.name, element: "document",
-            message: "Desbordamiento horizontal en móvil",
+            message: viewport.mobile ? "Desbordamiento horizontal en móvil" : "Desbordamiento horizontal en escritorio",
             evidence: `Documento ${snapshot.documentWidth}px para viewport ${snapshot.viewportWidth}px; exceso ${snapshot.horizontalOverflow}px.`,
             recommendation: "Inspeccionar los elementos que exceden el viewport; corregir anchuras mínimas, padding, grid/flex y texto largo. No ocultar el problema con overflow-x:hidden.",
             blocking: snapshot.horizontalOverflow >= 24,
           });
+        }
+        if (site.name === "technology" && !viewport.mobile) {
+          for (const layout of snapshot.showcaseLayouts) {
+            if (layout.cardCount === 1 && layout.centerOffset > 10) {
+              addFinding({
+                severity: "high", page: site.name, theme, viewport: viewport.name,
+                element: "#" + layout.id,
+                message: "Tarjeta única de sección destacada descentrada en escritorio",
+                evidence: `La tarjeta única está desplazada ${layout.centerOffset}px del centro de su grid (ancho del grid: ${layout.width}px).`,
+                recommendation: "Centrar la única tarjeta destacada en el ancho disponible sin ampliar el producto hasta dominar la página.",
+                blocking: true,
+              });
+            }
+          }
         }
         if (!snapshot.shell || snapshot.shell.height <= 0) {
           addFinding({
