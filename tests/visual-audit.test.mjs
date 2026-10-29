@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
-import { classifyAxeImpact, classifyRuntimeError } from "./visual-audit-policy.mjs";
+import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -626,12 +626,18 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   const rank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
   findings.sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0));
   const blockingFindings = findings.filter(item => item.blocking);
+  const groupedFindings = groupRepeatedFindings(findings);
+  const uniqueBlockingFindings = groupedFindings.filter(item => item.blocking);
+  const groupedFindingOccurrences = groupedFindings.reduce((total, item) => total + item.occurrences, 0);
   const result = {
     generatedAt: new Date().toISOString(),
     matrix: { pages: PAGES.map(p => p.name), viewports: VIEWPORTS, themes: THEMES, combinations: observations.length },
     summary: {
       scenarios: observations.length, screenshotCount: screenshots.length,
       blockingFindings: blockingFindings.length, findings: findings.length,
+      uniqueFindings: groupedFindings.length,
+      uniqueBlockingFindings: uniqueBlockingFindings.length,
+      groupedFindingOccurrences,
       runtimeErrors: runtimeErrors.length,
       blockingRuntimeErrors: runtimeErrors.filter(error => error.blocking).length,
       networkFailures: networkFailures.length,
@@ -642,7 +648,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
     },
-    observations, findings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
+    observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
       remoteApisReached: false,
       allowedExternalHosts: ["cdn.jsdelivr.net"],
@@ -659,10 +665,15 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     `- Capturas generadas: ${screenshots.length}`,
     `- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`,
     `- Hallazgos bloqueantes: ${blockingFindings.length}`,
-    `- Hallazgos adicionales: ${findings.length}`,
+    `- Hallazgos adicionales (ocurrencias): ${findings.length}`,
+    `- Hallazgos únicos agrupados: ${groupedFindings.length}; bloqueantes únicos: ${uniqueBlockingFindings.length}; ocurrencias agrupadas: ${groupedFindingOccurrences}`,
     `- Errores JS: ${runtimeErrors.length}; bloqueantes: ${result.summary.blockingRuntimeErrors}`,
     `- Solicitudes fallidas: ${result.summary.networkFailures}; bloqueadas intencionadamente: ${result.summary.blockedExternalRequests}; recursos esenciales bloqueantes: ${result.summary.blockingResourceFailures}`,
     `- Violaciones Axe únicas detectadas en móvil: ${axeFindings.length}; ocurrencias por tema/escenario: ${result.summary.axeViolationOccurrences}; críticas/serias bloqueantes: ${result.summary.blockingAxeViolations}`,
+    "",
+    "## Hallazgos agrupados por causa",
+    "",
+    ...(groupedFindings.length ? groupedFindings.map((f, i) => `${i + 1}. **[${String(f.severity || "info").toUpperCase()}] ${f.page || "página"} / ${f.rule || f.code || f.category || f.element || "hallazgo"}** — ${f.message || f.evidence || "Sin descripción"}\n   - Ocurrencias: ${f.occurrences}; escenarios: ${f.scenarios.join(", ") || "no especificados"}\n   - Bloqueante: ${f.blocking ? "sí" : "no"}; confianza orientativa: ${Math.round((Number(f.confidence) || Number(f.diagnosis?.confidence) || 0) * 100)}%`) : ["No hay hallazgos agrupables."]),
     "",
     "## Hallazgos ordenados por gravedad",
     "",
