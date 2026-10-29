@@ -3479,7 +3479,11 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
     } else if (result.reason === "insecure-context") {
       privateChatSetStatus("Las notificaciones requieren HTTPS o localhost. Abrí JB Manager desde su dirección segura.", "error");
     } else if (result.reason === "permission-denied") {
-      privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
+      if (window.Capacitor?.isNativePlatform?.()) {
+        privateChatSetStatus("Android bloqueó las notificaciones de JB Manager. Abrí Ajustes del teléfono → Aplicaciones → JB Manager Collections → Notificaciones y habilitalas; después regresá y probá otra vez.", "error");
+      } else {
+        privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
+      }
     } else if (result.reason === "permission-not-granted") {
       privateChatSetStatus("No se concedió permiso para notificaciones. Podés seguir revisando la bandeja manualmente.", "error");
     } else if (result.reason === "native-notifications-unavailable") {
