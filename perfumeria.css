@@ -2784,3 +2784,9 @@ html[data-theme="light"] body.perfume-page .perfume-featured-heading .perfume-ki
 html[data-theme="light"] body.perfume-page .perfume-results-heading .perfume-kicker {
   color:#6f4f20!important;
 }
+
+
+/* Accessibility audit fix: the decorative USD prefix should remain readable on the light filter surface. */
+html[data-theme="light"] body.perfume-page .perfume-budget-filter .budget-price-input-wrap {
+  color:#6f4f20!important;
+}
