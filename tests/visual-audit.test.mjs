@@ -23,7 +23,7 @@ const VIEWPORTS = [
 ];
 const THEMES = ["light", "dark"];
 const PAGES = [
-  { name: "technology", path: "/tecnologia/", shell: ".site-header", title: ".hero h1, h1", fixture: "technology" },
+  { name: "technology", path: "/tecnologia/", shell: ".site-header", title: ".hero h1, h1", fixture: "technology" },\n  { name: "technology-detail", path: "/tecnologia/", shell: ".site-header", title: "#product-detail-page h2", fixture: "technology-detail" },
   { name: "perfumery", path: "/perfumeria/", shell: ".site-header", title: "h1", fixture: "perfumery" },
   { name: "admin", path: "/admin.html", shell: ".admin-header", title: ".provider-page-heading h1, h1", fixture: "admin" },
   { name: "private-chat", path: "/mensajes.html", shell: ".private-chat-header", title: "#private-chat-title", fixture: "chat" },
@@ -62,7 +62,7 @@ function diagnose({ severity, page, theme, viewport, element, message, evidence 
       hypothesis: "Un hijo de grid/flex o un elemento con ancho mínimo fijo excede el ancho disponible.",
       confidence: 0.86,
       nextCheck: "Usar los selectores y límites del reporte para localizar el primer elemento cuyo rectángulo rebasa el viewport; inspeccionar min-width, width, padding y texto largo.",
-      likelyFiles: page === "technology" ? ["technology-visual-refresh.css", "styles.css"] :
+      likelyFiles: page === "technology" || page === "technology-detail" ? ["technology-visual-refresh.css", "styles.css"] :
         page === "perfumery" ? ["perfumeria.css", "styles.css"] :
         page === "admin" ? ["admin-private-chat.css", "admin-workflow.css", "styles.css"] : ["private-chat.css"],
     };
@@ -146,6 +146,17 @@ function fixtureScript(pageName) {
   return `
     (() => {
       const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#d7deeb"/></svg>');
+      if (${JSON.stringify(pageName)} === "technology-detail") {
+        const detail = document.getElementById("product-detail-page");
+        const content = document.getElementById("dialog-content");
+        if (detail && content) {
+          detail.classList.remove("hidden");
+          document.body.classList.add("product-detail-active");
+          document.querySelector("main")?.classList.add("is-product-detail-view");
+          document.getElementById("product-detail-header-back")?.removeAttribute("hidden");
+          content.innerHTML = '<div class="dialog-layout"><div id="dialog-image"><div class="dialog-gallery-main"><button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía"><img class="dialog-main-image" alt="Samsung Galaxy S26+ · imagen sintética de auditoría" src="' + svg + '"></button></div><div class="dialog-gallery-thumbs"><button class="dialog-gallery-thumb active" type="button" aria-label="Foto 1"><img alt="" src="' + svg + '"></button><button class="dialog-gallery-thumb" type="button" aria-label="Foto 2"><img alt="" src="' + svg + '"></button></div></div><div class="dialog-detail"><h2>Samsung Galaxy S26+ 5G</h2><p class="dialog-product-description">Pantalla Dynamic AMOLED, cámara avanzada y batería de larga duración. Texto sintético para comprobar la proporción de la ficha.</p><div class="product-price">C$ 34,780.00</div><p>Precio aplica únicamente para efectivo o transferencias.</p><div class="product-contact-actions"><button type="button">WhatsApp</button><button type="button">Contactar JB Collections</button></div><div class="payment-choice-panel"><strong>¿Qué querés consultar?</strong><select aria-label="Tema de consulta"><option>Seleccioná una opción</option></select></div><h3>Especificaciones</h3><ul class="dialog-specs"><li>12 GB RAM</li><li>512 GB de almacenamiento</li><li>Cámara principal de 50 MP</li><li>Batería de 4,900 mAh</li><li>Pantalla hasta 120 Hz</li></ul></div></div>';
+        }
+      }
       if (${JSON.stringify(pageName)} === "technology") {
         const grid = document.querySelector("#product-grid");
         if (grid) grid.innerHTML = [
@@ -359,10 +370,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           const root = document.documentElement;
           const docWidth = Math.max(root.scrollWidth, document.body.scrollWidth);
           const viewportWidth = window.innerWidth;
-          const shellSelector = pageName === "technology" || pageName === "perfumery"
+          const shellSelector = pageName === "technology" || pageName === "technology-detail" || pageName === "perfumery"
             ? ".site-header" : pageName === "admin" ? ".admin-header" : ".private-chat-header";
           const shell = document.querySelector(shellSelector);
-          const title = document.querySelector(pageName === "technology" ? ".hero h1" : pageName === "admin" ? "#admin-section-messages h1, .dashboard-top h1, h1" : "h1");
+          const title = document.querySelector(pageName === "technology-detail" ? "#product-detail-page h2" : pageName === "technology" ? ".hero h1" : pageName === "admin" ? "#admin-section-messages h1, .dashboard-top h1, h1" : "h1");
           const visibleGrids = [...document.querySelectorAll(".product-grid, .featured-grid, .private-chat-admin-layout, .private-chat-card")].filter(isVisible);
           const products = [...document.querySelectorAll("#product-grid .product-card, #product-grid-nicho .product-card")].filter(isVisible);
           const trustCards = [...document.querySelectorAll(".hero-trust-item")].filter(isVisible).map(card => {
@@ -428,7 +439,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               };
             })
             .filter(region => region.height >= 80 && region.textLength >= 24);
-          const productCompositionLayouts = pageName === "technology"
+          const productCompositionLayouts = pageName === "technology-detail"
             ? [...document.querySelectorAll("#product-detail-page:not(.hidden) .dialog-layout")].filter(isVisible).map(layout => {
                 const frame = layout.querySelector("#dialog-image");
                 const image = layout.querySelector(".dialog-main-image");
