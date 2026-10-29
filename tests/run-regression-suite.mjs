@@ -73,7 +73,12 @@ async function runGroup(group) {
     results.push(result);
     console.log(`[${result.ok ? "PASS" : "FAIL"}] ${result.file} (${(result.ms / 1000).toFixed(2)}s)`);
     if (!result.ok) console.error(result.output || `Exit code: ${result.code ?? "unknown"}; signal: ${result.signal ?? "none"}`);
-    else if (process.env.VERBOSE_TESTS === "1" && result.output) console.log(result.output);
+    else if (result.file === "tests/visual-audit.test.mjs" && result.output) {
+      const diagnostics = result.output.split("\\n").filter(line =>
+        /VISUAL AUDIT:|JOURNEY (?:PASS|FAIL)|\\[(?:CRITICAL|HIGH)\\]/.test(line)
+      );
+      if (diagnostics.length) console.log(diagnostics.join("\\n"));
+    } else if (process.env.VERBOSE_TESTS === "1" && result.output) console.log(result.output);
   }
   console.log(`[GROUP END] ${group.name}`);
 }
