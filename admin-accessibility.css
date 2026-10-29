@@ -320,3 +320,82 @@ html[data-theme="dark"] body.admin-body select.variant-storage-unit {
   color: #e1eaff !important;
   cursor: pointer !important;
 }
+
+
+/* JB MANAGER · ficha de consulta más útil y legible (2026-10-30).
+   Se usa mejor el ancho del diálogo; las fotos no se fuerzan a superar su resolución nativa. */
+body.admin-body .admin-product-preview-dialog {
+  width: min(1260px, calc(100vw - 24px)) !important;
+  max-height: min(93vh, 1000px) !important;
+  max-height: min(93dvh, 1000px) !important;
+}
+body.admin-body .admin-product-preview-content {
+  gap: 14px !important;
+  padding: 16px !important;
+}
+body.admin-body .admin-preview-layout {
+  grid-template-columns: minmax(280px, .88fr) minmax(0, 1.12fr) !important;
+  gap: 16px !important;
+}
+body.admin-body .admin-preview-media,
+body.admin-body .admin-preview-overview {
+  padding: 14px !important;
+}
+body.admin-body .admin-preview-gallery-main img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: auto;
+}
+body.admin-body .admin-preview-brand-model,
+body.admin-body .admin-preview-description p,
+body.admin-body .admin-preview-notes p,
+body.admin-body .admin-preview-spec-list {
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+body.admin-body .admin-preview-facts dt {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+body.admin-body .admin-preview-facts dd {
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+body.admin-body .admin-preview-description h4,
+body.admin-body .admin-preview-notes h4 {
+  font-size: 14px !important;
+}
+body.admin-body .admin-preview-image-count,
+body.admin-body .admin-preview-muted {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+@media (min-width: 761px) {
+  body.admin-body .admin-preview-gallery-main,
+  body.admin-body .admin-preview-photo-placeholder {
+    height: clamp(250px, 39dvh, 430px) !important;
+    min-height: 210px !important;
+  }
+}
+@media (max-width: 760px) {
+  body.admin-body .admin-product-preview-dialog {
+    width: calc(100vw - 16px) !important;
+    max-height: 94dvh !important;
+  }
+  body.admin-body .admin-product-preview-content {
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  body.admin-body .admin-preview-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+  body.admin-body .admin-preview-gallery-main,
+  body.admin-body .admin-preview-photo-placeholder {
+    height: 250px !important;
+    min-height: 200px !important;
+  }
+}
