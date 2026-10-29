@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261030-detail-image-density1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-detail-balance1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-dedicated-detail-navigation1/);
   assert.match(html, /id="quality-price-section"/);
@@ -318,4 +318,12 @@ test("product detail uses a wider desktop canvas and readable text without break
   } finally {
     await browser.close();
   }
+});
+
+
+test("technology detail uses separate compact desktop/mobile spacing and keeps native image dimensions", () => {
+  assert.match(css, /JB TECH · ficha compacta y balanceada \(2026-10-29\)/);
+  assert.match(css, /@media \(min-width: 761px\)[\s\S]*?body\.technology-catalog\.product-detail-active #product-detail-page #dialog-content\s*\{[^}]*max-width: 1520px !important;/);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?height: clamp\(280px, 38svh, 340px\) !important;/);
+  assert.match(css, /\.dialog-main-image\s*\{[^}]*width: auto !important;[^}]*height: auto !important;[^}]*object-fit: contain !important;/);
 });
