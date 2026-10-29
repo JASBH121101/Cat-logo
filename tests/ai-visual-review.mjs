@@ -180,7 +180,7 @@ if (!ACCOUNT_ID || !API_TOKEN) {
   const allStructured = summary.structuredReviews === CASES.length && errors.length === 0;
   const useful = summary.reviewedScreenshots > 0;
   const report = { generatedAt: new Date().toISOString(), status: allStructured ? "completed" : useful ? "partial" : analyses.length ? "needs_manual_review" : "failed", model: MODEL,
-    reviewType: "advisory multimodal critique; JSON schema validation, one retry, repetition deduplication, safe prose recovery",
+    reviewType: "advisory multimodal visual critique; JSON schema validation, one retry, repetition deduplication, safe prose recovery",
     summary, analyses, errors,
     safety: "Findings are advisory. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
