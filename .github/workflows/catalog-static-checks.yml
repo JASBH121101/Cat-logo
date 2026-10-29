@@ -68,6 +68,8 @@ jobs:
           node --test tests/conversion-trust.test.mjs
           node --test tests/design-authenticity-audit.test.mjs
           node --test tests/design-quality-audit.test.mjs
+          node --test tests/admin-notifications.test.mjs
+          node --test tests/admin-panel-quality-audit.test.mjs
           node --test tests/admin-save-regression.test.mjs
           node --test tests/admin-product-form-workflow.test.mjs
           node --test tests/limited-edition-sections.test.mjs
