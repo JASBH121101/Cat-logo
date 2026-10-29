@@ -22,10 +22,8 @@ async function getRegistration(windowRef, navigatorRef) {
   if (!serviceWorker) return null;
   const baseUrl = new URL("./", windowRef.location.href);
   const workerUrl = new URL(WORKER_URL, windowRef.location.href);
-  const existing = typeof serviceWorker.getRegistration === "function"
-    ? await serviceWorker.getRegistration(baseUrl.href)
-    : null;
-  const requested = existing || await serviceWorker.register(workerUrl.href, { scope: baseUrl.href });
+  // Always register the versioned URL so an existing worker can be updated after a deploy.
+  const requested = await serviceWorker.register(workerUrl.href, { scope: baseUrl.href });
   const ready = await serviceWorker.ready;
   const registration = ready && typeof ready.showNotification === "function" ? ready : requested;
   if (!registration || typeof registration.showNotification !== "function") {
