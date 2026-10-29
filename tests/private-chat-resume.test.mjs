@@ -31,7 +31,7 @@ const server = createServer((request, response) => {
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/chat-return.css?v=20261029-resume1">
 <script>window.CATALOG_CONFIG = { publicCatalogUrl: location.origin };</script>
-<script src="/chat-return.js?v=20261029-resume1" defer></script></head>
+</head>
 <body><main><h1>Catálogo de prueba</h1></main></body></html>`);
     return;
   }
@@ -68,9 +68,9 @@ after(async () => {
 
 async function openPage(browser, mode, token = "a".repeat(64)) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
-  await page.addInitScript(({ key, savedToken }) => {
-    localStorage.setItem(key, savedToken);
-  }, { key: SESSION_KEY, savedToken: token });
+  await page.addInitScript(() => {
+    // Keep storage clean between browser-context tests; tokens are seeded once page has an origin.
+  });
   const statusRequests = [];
   await page.route("**/api/private-chat", async route => {
     let body = {};
@@ -94,6 +94,8 @@ async function openPage(browser, mode, token = "a".repeat(64)) {
     });
   });
   await page.goto(origin + "/__chat-resume-test.html", { waitUntil: "commit", timeout: 8000 });
+  await page.evaluate(({ key, savedToken }) => localStorage.setItem(key, savedToken), { key: SESSION_KEY, savedToken: token });
+  await page.addScriptTag({ path: resolve(root, "chat-return.js") });
   page.statusRequests = statusRequests;
   return page;
 }
