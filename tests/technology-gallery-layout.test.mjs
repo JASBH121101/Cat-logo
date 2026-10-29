@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-public-whitespace1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-detail-wide-readable1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -257,6 +257,64 @@ test("payment contact buttons keep visible labels and readable contrast in both 
       }
     }
     await page.close();
+  } finally {
+    await browser.close();
+  }
+});
+
+
+test("product detail uses a wider desktop canvas and readable text without breaking mobile", async () => {
+  assert.match(css, /JB TECH · ficha de producto ancha y legible/);
+  assert.match(css, /width: min\\(1760px, 100%\\) !important/);
+  assert.match(css, /font-size: clamp\\(15\\.5px, \\.9vw, 18px\\) !important/);
+  assert.match(css, /@media \\(max-width: 760px\\)[\\s\\S]*?font-size: 14px !important/);
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const viewport of [
+      { width: 1920, height: 1080, mobile: false },
+      { width: 1365, height: 900, mobile: false },
+      { width: 390, height: 844, mobile: true },
+    ]) {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height }, isMobile: viewport.mobile });
+      const markup = '<!doctype html><html data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}' + css + '</style></head><body class="technology-catalog product-detail-active">' +
+        '<header class="site-header"></header><main class="is-product-detail-view"><section id="product-detail-page" class="product-detail-page">' +
+        '<div id="dialog-content"><div class="dialog-layout"><div class="dialog-image" id="dialog-image"><div class="dialog-gallery-main"><img class="dialog-main-image" alt="Tablet" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\'%3E%3Crect width=\'400\' height=\'600\' fill=\'%2399aacc\'/%3E%3C/svg%3E"></div><div class="dialog-gallery-thumbs"><button class="dialog-gallery-thumb">1</button></div></div>' +
+        '<div class="dialog-detail"><h2>Samsung Galaxy Tab S12 Ultra</h2><div class="variant-option-group"><h3>Configuración</h3><div class="variant-choice-list"><button class="variant-choice">256 GB / 12 GB</button></div></div><div class="variant-option-group variant-option-color-group"><h3>Color</h3><div class="variant-choice-list"><button class="variant-choice color-choice">Gray</button><button class="variant-choice color-choice">Silver</button></div></div><div class="product-price-label">Precio de esta versión</div><div class="product-price">US$1,426</div><p class="dialog-product-description">Pantalla de alta resolución, procesador potente y almacenamiento suficiente para trabajar, editar contenido y disfrutar de juegos exigentes.</p><div class="product-contact-actions"><button class="contact-channel-button">WhatsApp</button><button class="payment-channel-button">Contactar JB Collections</button></div></div></div></div></section></main></body></html>';
+      await page.setContent(markup);
+
+      const measurement = await page.evaluate(() => {
+        const rect = selector => {
+          const box = document.querySelector(selector).getBoundingClientRect();
+          return { x: box.x, width: box.width, height: box.height };
+        };
+        return {
+          viewport: innerWidth,
+          page: rect("#product-detail-page"),
+          content: rect("#dialog-content"),
+          layout: rect(".dialog-layout"),
+          image: rect("#dialog-image"),
+          detail: rect(".dialog-detail"),
+          descriptionFont: parseFloat(getComputedStyle(document.querySelector(".dialog-product-description")).fontSize),
+          variantFont: parseFloat(getComputedStyle(document.querySelector(".variant-choice")).fontSize),
+          columns: getComputedStyle(document.querySelector(".dialog-layout")).gridTemplateColumns,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+
+      if (!viewport.mobile && viewport.width >= 1900) {
+        assert.ok(measurement.content.width >= 1700, "1920px desktop: wider content (" + measurement.content.width + "px)");
+      } else if (!viewport.mobile) {
+        assert.ok(measurement.content.width >= 1250, "1365px desktop: uses most of available width (" + measurement.content.width + "px)");
+      } else {
+        assert.ok(measurement.content.width <= viewport.width, "mobile detail must stay within viewport");
+        assert.ok(measurement.columns.split(" ").length <= 2, "mobile detail must keep a single-column layout");
+      }
+      assert.ok(measurement.descriptionFont >= (viewport.mobile ? 14 : 15.5), viewport.width + "px: description remains readable");
+      assert.ok(measurement.variantFont >= (viewport.mobile ? 11.5 : 12.5), viewport.width + "px: variant buttons remain readable");
+      assert.ok(measurement.overflow <= 2, viewport.width + "px: no horizontal page overflow");
+      await page.close();
+    }
   } finally {
     await browser.close();
   }
