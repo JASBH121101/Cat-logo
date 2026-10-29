@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-sticky-product-gallery1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-larger-product-gallery1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -357,6 +357,8 @@ test("desktop product gallery stays visible while long product details scroll", 
         position: getComputedStyle(document.querySelector("#dialog-image")).position,
         pageTop: document.querySelector("#product-detail-page").getBoundingClientRect().top,
         imageTop: document.querySelector("#dialog-image").getBoundingClientRect().top,
+        imageHeight: document.querySelector("#dialog-image").getBoundingClientRect().height,
+        mainImageFit: getComputedStyle(document.querySelector("#dialog-image .dialog-main-image")).objectFit,
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         scrollTop: document.querySelector("#product-detail-page").scrollTop,
         columns: getComputedStyle(document.querySelector(".dialog-layout")).gridTemplateColumns,
@@ -364,6 +366,8 @@ test("desktop product gallery stays visible while long product details scroll", 
 
       if (!viewport.mobile) {
         assert.equal(after.position, "sticky", "desktop gallery must be sticky");
+        assert.ok(after.imageHeight >= 560, "desktop image stage grows to at least 560px on a tall desktop viewport; got " + after.imageHeight);
+        assert.equal(after.mainImageFit, "contain", "larger product images must not be cropped or distorted");
         assert.ok(after.imageTop >= after.pageTop + 8, "desktop gallery must remain inside the visible scroll area");
         assert.ok(after.scrollTop >= 300, "desktop detail container must actually scroll");
         assert.ok(after.imageTop <= Math.min(after.pageTop + 140, viewport.height * 0.35), "desktop gallery must remain visible near the top while details scroll (imageTop=" + after.imageTop + ", pageTop=" + after.pageTop + ", scrollTop=" + after.scrollTop + ")");
