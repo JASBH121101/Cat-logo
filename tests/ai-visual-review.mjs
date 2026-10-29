@@ -53,7 +53,7 @@ async function review(item) {
     "Prioridad de negocio: el producto debe ser protagonista sin sacrificar legibilidad de características, precio y contacto.",
     "Indicá si el espacio vacío parece deliberado o desperdiciado. Si no se puede decidir por una sola captura, anotá la limitación.",
   ].join("\n");
-  const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(ACCOUNT_ID) + "/ai/run/" + encodeURIComponent(MODEL);
+  const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(ACCOUNT_ID) + "/ai/run/" + MODEL;
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { Authorization: "Bearer " + API_TOKEN, "Content-Type": "application/json" },
