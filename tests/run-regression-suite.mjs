@@ -30,7 +30,7 @@ export const regressionGroups = [
   ]},
   { name: "cross-page-visual-audit", tests: [
     test("tests/visual-audit-policy.test.mjs"), test("tests/visual-design-quality-policy.test.mjs"),
-    test("tests/visual-state-quality-policy.test.mjs"), test("tests/visual-audit.test.mjs"),
+    test("tests/visual-state-quality-policy.test.mjs"), test("tests/visual-composition-quality-policy.test.mjs"), test("tests/visual-audit.test.mjs"),
   ] },
   { name: "cloudflare-and-browser", tests: [
     test("tests/cloudflare-share.test.mjs", true), test("tests/cloudflare-download.test.mjs", true),
