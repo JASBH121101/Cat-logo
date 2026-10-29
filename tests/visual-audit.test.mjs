@@ -836,6 +836,59 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.equal(await backdrop.evaluate(el => el.hidden), true);
               return "El menú móvil sincroniza aria-expanded y bloqueo de scroll; Escape y un clic real fuera del cajón cierran el panel.";
             });
+
+            await runJourney(page, scenario, "admin-product-variant-and-color-ai-dialog", async () => {
+              // Este recorrido usa el HTML/JS del administrador, pero no inicia sesión ni guarda datos.
+              const addSection = page.locator('[data-admin-section="add"]').first();
+              assert.equal(await addSection.count(), 1, "navigation entry for product editor must exist");
+              await addSection.evaluate(el => el.click());
+              const form = page.locator("#product-form");
+              assert.equal(await form.isVisible(), true, "product editor must be reachable from admin navigation");
+
+              await page.locator('[data-product-form-step="2"]').click();
+              assert.equal(await page.locator('[data-product-form-panel="2"]').evaluate(el => el.classList.contains("hidden")), false,
+                "variant step must open from its tab");
+              assert.equal(await page.locator('[data-product-form-panel="1"]').evaluate(el => el.classList.contains("hidden")), true,
+                "opening variant step must hide the basic-data panel");
+
+              const addVariant = page.locator("#add-variant-button");
+              assert.equal(await addVariant.isVisible(), true, "variant action must be visible in the editor");
+              const groupsBefore = await page.locator("#product-variants-list [data-variant-group]").count();
+              await addVariant.click();
+              await page.waitForFunction(previous => document.querySelectorAll("#product-variants-list [data-variant-group]").length === previous + 1,
+                groupsBefore, { timeout: 3000 });
+              const groups = page.locator("#product-variants-list [data-variant-group]");
+              assert.equal(await groups.count(), groupsBefore + 1, "adding a variant must create exactly one configuration");
+              const group = groups.last();
+              await group.locator("summary").click();
+              for (const selector of ["[data-group-storage]", "[data-group-ram]", "[data-group-price-usd]", "[data-group-price-nio]"]) {
+                assert.equal(await group.locator(selector).count(), 1, "each variant must expose its own RAM, storage and price fields: " + selector);
+              }
+
+              await group.locator("[data-add-group-color]").click();
+              const colorRow = group.locator("[data-variant-row]").last();
+              await colorRow.waitFor({ state: "attached", timeout: 3000 });
+              const colorAi = colorRow.locator("[data-ai-color-open]");
+              assert.equal(await colorAi.count(), 1, "each variant color row must expose the AI color helper");
+              await colorAi.click();
+
+              const overlay = page.locator("#jb-color-ai-overlay");
+              await overlay.waitFor({ state: "visible", timeout: 3000 });
+              assert.equal(await overlay.locator('[role="dialog"][aria-modal="true"]').count(), 1,
+                "color helper must open an accessible modal dialog");
+              assert.equal(await overlay.locator("[data-color-ai-query]").count(), 1);
+              assert.equal(await overlay.locator("[data-color-ai-image]").count(), 1);
+              await overlay.locator("[data-color-ai-analyze]").click();
+              assert.match(await overlay.locator("[data-color-ai-status]").innerText(),
+                /Escribí una referencia\/pregunta o adjuntá una foto/,
+                "empty input must show validation feedback without calling the remote AI endpoint");
+              assert.equal(await overlay.locator("[data-color-ai-result]").evaluate(el => el.hidden), true,
+                "invalid empty input must not fabricate an AI result");
+
+              await page.keyboard.press("Escape");
+              await overlay.waitFor({ state: "detached", timeout: 3000 });
+              return "El editor abre la sección de variantes, agrega una configuración independiente con campos RAM/almacenamiento/precios y abre/cierra el diálogo de color IA; la validación vacía no llama al endpoint ni guarda datos.";
+            });
           } else if (site.name === "private-chat") {
             await runJourney(page, scenario, "private-chat-theme-toggle", async () => {
               const toggle = page.locator("#private-chat-theme-toggle");
