@@ -369,17 +369,22 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           const showcaseLayouts = pageName === "technology"
             ? [...document.querySelectorAll(".featured-grid")].filter(isVisible).map(grid => {
                 const gridRect = grid.getBoundingClientRect();
+                const section = grid.closest("section") || grid.parentElement || grid;
+                const sectionRect = section.getBoundingClientRect();
                 const cards = [...grid.querySelectorAll(":scope > .product-card")].filter(isVisible);
                 const cardRect = cards.length === 1 ? cards[0].getBoundingClientRect() : null;
-                const gridCenter = (gridRect.left + gridRect.right) / 2;
+                // Measure against the visible section, not just the grid: a left-pinned card can look centered in its own narrow track.
+                const sectionCenter = (sectionRect.left + sectionRect.right) / 2;
                 const cardCenter = cardRect ? (cardRect.left + cardRect.right) / 2 : null;
                 return {
                   id: grid.id, left: Math.round(gridRect.left), right: Math.round(gridRect.right),
-                  width: Math.round(gridRect.width), cardCount: cards.length,
+                  width: Math.round(gridRect.width),
+                  sectionLeft: Math.round(sectionRect.left), sectionRight: Math.round(sectionRect.right),
+                  sectionWidth: Math.round(sectionRect.width), cardCount: cards.length,
                   cardLeft: cardRect ? Math.round(cardRect.left) : null,
                   cardRight: cardRect ? Math.round(cardRect.right) : null,
                   cardWidth: cardRect ? Math.round(cardRect.width) : null,
-                  centerOffset: cardCenter === null ? null : Math.round(Math.abs(cardCenter - gridCenter))
+                  centerOffset: cardCenter === null ? null : Math.round(Math.abs(cardCenter - sectionCenter))
                 };
               })
             : [];
