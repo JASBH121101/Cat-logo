@@ -154,3 +154,55 @@ html[data-theme="dark"] .payment-choice-panel {
   .contact-channel-button,
   .payment-channel-button { transition: none; }
 }
+
+
+/* Theme contrast guard: keep both contact actions readable inside product detail dialogs. */
+body.technology-catalog #product-detail-page .contact-channel-button,
+body.technology-catalog #product-detail-page .payment-channel-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: currentColor;
+}
+body.technology-catalog #product-detail-page .contact-channel-button > span,
+body.technology-catalog #product-detail-page .payment-channel-button > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+body.technology-catalog #product-detail-page .contact-channel-button--whatsapp,
+body.technology-catalog #product-detail-page .payment-channel-button--whatsapp {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  border-color: #128c7e !important;
+  background: #128c7e !important;
+}
+body.technology-catalog #product-detail-page .contact-channel-button--jb,
+body.technology-catalog #product-detail-page .payment-channel-button--jb {
+  color: var(--tech-ink, #14243d) !important;
+  -webkit-text-fill-color: var(--tech-ink, #14243d) !important;
+  border-color: var(--tech-line, #dce6f4) !important;
+  background: var(--tech-card, #fff) !important;
+}
+html[data-theme="dark"] body.technology-catalog #product-detail-page .contact-channel-button--jb,
+html[data-theme="dark"] body.technology-catalog #product-detail-page .payment-channel-button--jb {
+  color: #f1f6ff !important;
+  -webkit-text-fill-color: #f1f6ff !important;
+  border-color: rgba(105, 142, 204, .4) !important;
+  background: #101f36 !important;
+}
+body.technology-catalog #product-detail-page .contact-channel-button:focus-visible,
+body.technology-catalog #product-detail-page .payment-channel-button:focus-visible,
+body.technology-catalog #product-detail-page .payment-choice-select:focus-visible {
+  outline: 3px solid #049fce !important;
+  outline-offset: 3px !important;
+}
+html[data-theme="dark"] body.technology-catalog #product-detail-page .contact-channel-button:focus-visible,
+html[data-theme="dark"] body.technology-catalog #product-detail-page .payment-channel-button:focus-visible,
+html[data-theme="dark"] body.technology-catalog #product-detail-page .payment-choice-select:focus-visible {
+  outline-color: #4be2ff !important;
+}
