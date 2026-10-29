@@ -1,10 +1,12 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { getModelText, interpretModelResponse, recoverExplicitFindings, safeText } from "./ai-visual-review-utils.mjs";
 
 const ACCOUNT_ID = String(process.env.CLOUDFLARE_ACCOUNT_ID || "").trim();
 const API_TOKEN = String(process.env.CLOUDFLARE_API_TOKEN || "").trim();
 const MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const ROOT = resolve("artifacts/production-visual-audit");
+const MAX_IMAGE_BYTES = 5_200_000;
 const CASES = [
   { page: "JB TECH", viewport: "desktop-1365", theme: "light", file: "technology-detail--desktop-1365--light--viewport.png" },
   { page: "JB TECH", viewport: "mobile-390", theme: "dark", file: "technology-detail--mobile-390--dark--viewport.png" },
@@ -13,146 +15,170 @@ const CASES = [
 ];
 const analyses = [];
 const errors = [];
-
-function extractModelOutput(payload) {
-  const result = payload?.result ?? payload;
-  if (result && typeof result === "object" && !Array.isArray(result) &&
-      (Array.isArray(result.issues) || typeof result.visual_score === "number")) return result;
-  const candidate = typeof result?.response === "string" ? result.response
-    : typeof result?.output_text === "string" ? result.output_text
-    : typeof result?.result === "string" ? result.result
-    : typeof result === "string" ? result
-    : "";
-  if (!candidate) throw new Error("AI response did not include structured text.");
-  const cleaned = candidate.replace(/^`{3}(?:json)?/i, "").replace(/`{3}$/,"").trim();
-  try { return JSON.parse(cleaned); } catch {}
-  const first = cleaned.indexOf("{"), last = cleaned.lastIndexOf("}");
-  if (first >= 0 && last > first) {
-    try { return JSON.parse(cleaned.slice(first, last + 1)); } catch {}
-  }
-  return { raw_response: cleaned.slice(0, 6000), parse_status: "unparsed" };
-}
-
+const schemaExample = { visual_score: 0, overall_assessment: "Resumen basado en la captura.", strengths: [], issues: [{ severity: "medium", region: "zona concreta", evidence: "defecto visible", recommendation: "acción verificable", confidence: 0.75 }], manual_review_required: true, limitations: [] };
 const systemPrompt = [
-  "Sos un auditor visual senior de interfaces web de comercio electrónico. Analizás capturas de una ficha de producto real.",
-  "Evaluá solo lo visible en la captura: protagonismo y tamaño aparente del producto dentro de la galería, espacios vacíos, jerarquía, equilibrio entre imagen e información, legibilidad, alineación, controles cortados y densidad innecesaria.",
-  "No inventés datos, no afirmés que un botón funciona por verlo, no asumas características que no aparecen y no propongas cambiar Supabase.",
-  "Distinguí defectos visibles de preferencias subjetivas. Toda incidencia debe incluir evidencia visual específica y una recomendación proporcional. No ordenés recortar ni deformar la fotografía si no se demuestra que el objeto queda pequeño.",
-  "La captura puede estar incompleta por el viewport y la auditoría geométrica acompaña el análisis. No declares que el sitio está perfecto ni que el test pasó globalmente.",
-  "Devolvé SOLO JSON válido con: visual_score (0-100, estimación orientativa), overall_assessment (string), strengths (array de hasta 4 strings), issues (array de objetos con severity [critical, high, medium, low], region, evidence, recommendation, confidence 0-1), manual_review_required (boolean), limitations (array de strings).",
+  "Sos auditor QA visual senior de ecommerce. Evalúa ÚNICAMENTE lo visible en la captura adjunta.",
+  "Busca: producto demasiado pequeño, espacios desproporcionados entre imagen e información, texto ilegible/pequeño, jerarquía confusa, alineación rota, elementos cortados/desbordados, solapamientos y contraste insuficiente.",
+  "No confundas espacio negativo intencional con defecto. No inventes fallos funcionales, datos ocultos ni propongas cambios en base de datos.",
+  "Devuelve SOLO JSON válido sin Markdown. Usa las claves del esquema del usuario. issues=[] si no hay defecto concreto; máximo 3 incidencias distintas. Sin repeticiones. Cada incidencia requiere severity (critical/high/medium/low), region, evidence, recommendation y confidence 0-1.",
+  "Usa critical solo si bloquea claramente el uso; high si contenido esencial queda inaccesible; medium para defectos claros de jerarquía/espaciado/legibilidad; low para pulido menor.",
+  "visual_score es subjetivo, no una medición certificada. manual_review_required debe ser true. Nunca declares que todo el sitio está perfecto.",
 ].join(" ");
 
+function userPrompt(item, retry) {
+  return [
+    `Audita la ficha pública ${item.page}. Viewport ${item.viewport}; tema ${item.theme}.`,
+    "Prioridad: producto protagonista, fotografía sin deformación, información legible, composición equilibrada y uso útil del espacio.",
+    "No infieras lo que no puede confirmarse con una sola captura.",
+    retry ? "La respuesta anterior no fue JSON válido. Devuelve ahora únicamente un objeto JSON parseable, sin texto introductorio ni frases repetidas." : "",
+    "Esquema orientativo; usa datos reales y no copies valores de ejemplo:", JSON.stringify(schemaExample),
+  ].filter(Boolean).join("\n");
+}
+
+async function callModel(item, bytes, attempt) {
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(ACCOUNT_ID)}/ai/run/${MODEL}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 75_000);
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST", headers: { Authorization: `Bearer ${API_TOKEN}`, "Content-Type": "application/json" }, signal: controller.signal,
+      body: JSON.stringify({
+        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt(item, attempt > 1) }],
+        image: `data:image/png;base64,${bytes.toString("base64")}`,
+        max_tokens: 650, temperature: 0, top_p: 0.85, repetition_penalty: 1.15, frequency_penalty: 0.45,
+        seed: 20261029 + CASES.indexOf(item),
+      }),
+    });
+    const bodyText = await response.text();
+    let payload;
+    try { payload = JSON.parse(bodyText); } catch { payload = { raw_response: bodyText.slice(0, 2500) }; }
+    if (!response.ok || payload.success === false) {
+      const reason = Array.isArray(payload.errors) ? payload.errors.map((e) => safeText(e.message || e.code || "unknown", 300)).join("; ") : `HTTP ${response.status}`;
+      throw new Error(`Cloudflare Workers AI request failed: ${reason}`);
+    }
+    const output = getModelText(payload) || safeText(payload.raw_response, 2500);
+    if (!output) throw new Error("Cloudflare response contained no model text.");
+    return output;
+  } catch (error) {
+    if (error?.name === "AbortError") throw new Error("Cloudflare Workers AI request timed out after 75 seconds.");
+    throw error;
+  } finally { clearTimeout(timer); }
+}
+
+function recoverReview(text, reason) {
+  const result = recoverExplicitFindings(text);
+  if (!result.issues.length) return { review: null, duplicates: result.duplicateSentenceCount };
+  return {
+    duplicates: result.duplicateSentenceCount,
+    review: {
+      visual_score: null,
+      overall_assessment: "Se recuperó una observación explícita de prosa no estructurada; no equivale a una revisión JSON validada.",
+      strengths: [], issues: result.issues, manual_review_required: true,
+      limitations: ["Hallazgo recuperado automáticamente: verificarlo contra la captura antes de cambiar código.", safeText(reason, 300)],
+    },
+  };
+}
+
 async function review(item) {
-  const path = resolve(ROOT, item.file);
-  const bytes = await readFile(path);
-  if (bytes.byteLength > 5_200_000) throw new Error("Screenshot exceeds the 5.2 MB safeguard.");
-  const dataUrl = "data:image/png;base64," + bytes.toString("base64");
-  const prompt = [
-    "Revisá esta captura de la ficha de " + item.page + ".",
-    "Viewport: " + item.viewport + "; tema: " + item.theme + ".",
-    "Prioridad de negocio: el producto debe ser protagonista sin sacrificar legibilidad de características, precio y contacto.",
-    "Indicá si el espacio vacío parece deliberado o desperdiciado. Si no se puede decidir por una sola captura, anotá la limitación.",
-  ].join("\n");
-  const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(ACCOUNT_ID) + "/ai/run/" + MODEL;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { Authorization: "Bearer " + API_TOKEN, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt },
-      ],
-      image: dataUrl,
-      max_tokens: 900,
-      temperature: 0.1,
-    }),
-  });
-  const textBody = await response.text();
-  let payload;
-  try { payload = JSON.parse(textBody); } catch { payload = { raw_response: textBody.slice(0, 3000) }; }
-  if (!response.ok || payload.success === false) {
-    const message = Array.isArray(payload.errors)
-      ? payload.errors.map(item => item.message || item.code || "unknown").join("; ")
-      : "HTTP " + response.status;
-    throw new Error("Cloudflare Workers AI request failed: " + message);
+  const bytes = await readFile(resolve(ROOT, item.file));
+  if (!bytes.length) throw new Error("Screenshot is empty.");
+  if (bytes.length > MAX_IMAGE_BYTES) throw new Error(`Screenshot exceeds the ${MAX_IMAGE_BYTES} byte safeguard.`);
+  const firstText = await callModel(item, bytes, 1);
+  const first = interpretModelResponse(firstText);
+  let text = firstText, parsed = first, attempts = 1, retryError = null;
+  if (first.status !== "structured") {
+    try {
+      const secondText = await callModel(item, bytes, 2);
+      attempts = 2;
+      const second = interpretModelResponse(secondText);
+      if (second.status === "structured") { text = secondText; parsed = second; }
+      else {
+        text = secondText;
+        const recovery = recoverReview([firstText, secondText].join("\n"), `JSON inválido tras dos intentos: ${second.reason || first.reason || "formato no reconocido"}`);
+        parsed = { status: recovery.review ? "recovered" : "invalid", reason: second.reason || first.reason, review: recovery.review, duplicateSentenceCount: recovery.duplicates };
+      }
+    } catch (error) { retryError = safeText(error.message, 500); }
   }
-  return { ...item, imageBytes: bytes.byteLength, model: MODEL, review: extractModelOutput(payload) };
+  let recovery = null;
+  if (parsed.status !== "structured" && !parsed.review) recovery = recoverReview(text, parsed.reason || "Formato de respuesta inválido.");
+  const reviewData = parsed.review || recovery?.review || null;
+  const parseStatus = parsed.status === "structured" ? "structured" : reviewData ? "recovered" : "invalid";
+  return {
+    ...item, imageBytes: bytes.length, model: MODEL, parseStatus, attempts, parseReason: parseStatus === "structured" ? null : safeText(parsed.reason || "Model response was not valid JSON", 400),
+    duplicateSentenceCount: parsed.duplicateSentenceCount || recovery?.duplicates || 0, review: reviewData,
+    rawResponseExcerpt: safeText(text, 1800), ...(retryError ? { retryError } : {}),
+  };
+}
+
+function makeSummary() {
+  const count = (status) => analyses.filter((a) => a.parseStatus === status).length;
+  return {
+    requestedScreenshots: CASES.length, apiResponses: analyses.length,
+    reviewedScreenshots: count("structured") + count("recovered"), structuredReviews: count("structured"),
+    recoveredReviews: count("recovered"), invalidResponses: count("invalid"), failedReviews: errors.length,
+    reportedIssues: analyses.reduce((sum, a) => sum + (a.review?.issues?.length || 0), 0),
+    repeatedSentencesRemoved: analyses.reduce((sum, a) => sum + (a.duplicateSentenceCount || 0), 0),
+    manualReviewRequired: analyses.filter((a) => a.parseStatus !== "structured" || a.review?.manual_review_required !== false).length,
+  };
+}
+
+function markdown(report) {
+  const s = report.summary;
+  const lines = ["# JB Collections — revisión visual con IA", "", `- Estado: **${report.status}**`, `- Modelo: \`${MODEL}\``,
+    `- Capturas solicitadas: ${s.requestedScreenshots}`, `- Respuestas API: ${s.apiResponses}`, `- JSON validados: ${s.structuredReviews}`,
+    `- Recuperadas de prosa (requieren revisión): ${s.recoveredReviews}`, `- Respuestas inválidas: ${s.invalidResponses}`,
+    `- Errores de solicitud: ${s.failedReviews}`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
+    `- Capturas que requieren revisión manual: ${s.manualReviewRequired}`, "",
+    "> Cero incidencias no prueba que el diseño esté perfecto. Solo respuestas JSON válidas cuentan como revisión estructurada; toda recuperación de prosa necesita revisión humana.", "", "## Detalle por captura", ""];
+  if (!report.analyses.length) lines.push("No se obtuvieron respuestas de la IA.", "");
+  for (const a of report.analyses) {
+    lines.push(`### ${a.page} — ${a.viewport} — ${a.theme}`, "", `- Captura: \`${a.file}\``, `- Estado: **${a.parseStatus}**`, `- Intentos: ${a.attempts}`, "- Revisión manual requerida: **sí**");
+    if (a.parseReason) lines.push(`- Motivo: ${a.parseReason}`);
+    if (a.retryError) lines.push(`- Error del segundo intento: ${a.retryError}`);
+    if (a.review) {
+      lines.push("", a.review.overall_assessment || "Sin resumen.", "", `- Puntuación orientativa: ${Number.isFinite(a.review.visual_score) ? a.review.visual_score + "/100" : "no validada"}`);
+      for (const issue of a.review.issues || []) lines.push(`- **[${issue.severity.toUpperCase()}] ${issue.region}** — ${issue.evidence} Recomendación: ${issue.recommendation} Confianza orientativa: ${Math.round(issue.confidence * 100)}%.`);
+      if (!a.review.issues?.length) lines.push("- La respuesta estructurada no enumera incidencias; verificar visualmente antes de darla por limpia.");
+      for (const limitation of a.review.limitations || []) lines.push(`- Limitación: ${safeText(limitation, 300)}`);
+    } else lines.push("", "**No se acepta como evaluación válida**; el formato no se pudo verificar y no cuenta como resultado limpio.", "", "> " + safeText(a.rawResponseExcerpt, 1200).replace(/\n/g, "\n> "));
+    lines.push("");
+  }
+  if (report.errors.length) lines.push("## Errores de solicitud", "", ...report.errors.map((e) => `- ${e.page} / ${e.viewport} / ${e.theme}: ${safeText(e.message, 500)}`), "");
+  lines.push("## Salvaguardas", "", "- Modo solo lectura: no se edita código, catálogo, pedidos ni datos de producción.", "- La IA no corrige código automáticamente ni decide por sí sola sobre calidad subjetiva.", "- Puntuación y confianza son estimaciones, no probabilidades calibradas.", "- Respuestas sin JSON válido nunca aparecen como aprobación limpia.", "");
+  return lines.join("\n");
+}
+
+async function appendStepSummary(report) {
+  if (!process.env.GITHUB_STEP_SUMMARY) return;
+  const s = report.summary;
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, ["## Revisión visual con IA", "", `**Estado: ${report.status}** — \`${MODEL}\``, "",
+    "| Métrica | Resultado |", "|---|---:|", `| Capturas solicitadas | ${s.requestedScreenshots} |`, `| Respuestas API | ${s.apiResponses} |`,
+    `| JSON validados | ${s.structuredReviews} |`, `| Recuperadas de prosa | ${s.recoveredReviews} |`, `| Respuestas inválidas | ${s.invalidResponses} |`,
+    `| Errores de solicitud | ${s.failedReviews} |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
+    "> El estado del job no equivale a una aprobación visual. Consultá el artefacto para evidencia por captura.", ""].join("\n") + "\n", "utf8");
 }
 
 await mkdir(ROOT, { recursive: true });
 if (!ACCOUNT_ID || !API_TOKEN) {
-  const status = {
-    status: "skipped",
-    reason: "AI review credentials are not configured",
-    required: ["GitHub repository variable CLOUDFLARE_ACCOUNT_ID", "GitHub repository secret CLOUDFLARE_API_TOKEN"],
-    note: "No screenshot was sent to an AI service.",
-  };
+  const status = { status: "skipped", reason: "AI review credentials are not configured", required: ["CLOUDFLARE_ACCOUNT_ID repository variable", "CLOUDFLARE_API_TOKEN repository secret"], note: "No screenshot was sent to an AI service." };
   await writeFile(resolve(ROOT, "ai-visual-review-status.json"), JSON.stringify(status, null, 2), "utf8");
-  await writeFile(resolve(ROOT, "ai-visual-review-status.md"),
-    "# AI visual review\n\nStatus: **not run**. Configure the repository variable `CLOUDFLARE_ACCOUNT_ID` and secret `CLOUDFLARE_API_TOKEN` to enable the optional model-based review. No screenshot was sent to an AI service.\n", "utf8");
-  console.log("AI visual review skipped: credentials are not configured; deterministic audit remains separate.");
+  await writeFile(resolve(ROOT, "ai-visual-review-status.md"), "# AI visual review\n\nStatus: **not run**. Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. No screenshot was sent to an AI service.\n", "utf8");
+  console.log("AI visual review skipped: credentials are not configured.");
 } else {
   for (const item of CASES) {
-    try {
-      analyses.push(await review(item));
-    } catch (error) {
-      errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, message: error.message });
-    }
+    try { analyses.push(await review(item)); }
+    catch (error) { errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, message: safeText(error.message, 800) }); }
   }
-  const report = {
-    generatedAt: new Date().toISOString(),
-    status: analyses.length === CASES.length ? "completed" : analyses.length ? "partial" : "failed",
-    model: MODEL,
-    reviewType: "advisory multimodal visual critique",
-    summary: {
-      requestedScreenshots: CASES.length,
-      reviewedScreenshots: analyses.length,
-      failedReviews: errors.length,
-      reportedIssues: analyses.reduce((sum, item) => sum + (Array.isArray(item.review?.issues) ? item.review.issues.length : 0), 0),
-    },
-    analyses,
-    errors,
-    safety: "Model suggestions are advisory and never auto-edit code, fail CI by subjective score, or modify production data. A model response is not a calibrated probability or a guarantee of visual quality.",
-  };
+  const summary = makeSummary();
+  const allStructured = summary.structuredReviews === CASES.length && errors.length === 0;
+  const useful = summary.reviewedScreenshots > 0;
+  const report = { generatedAt: new Date().toISOString(), status: allStructured ? "completed" : useful ? "partial" : analyses.length ? "needs_manual_review" : "failed", model: MODEL,
+    reviewType: "advisory multimodal critique; JSON schema validation, one retry, repetition deduplication, safe prose recovery",
+    summary, analyses, errors,
+    safety: "Findings are advisory. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
-  const markdown = [
-    "# JB Collections — AI visual review",
-    "",
-    "- Status: " + report.status,
-    "- Model: " + MODEL,
-    "- Screenshots reviewed: " + analyses.length + "/" + CASES.length,
-    "- Reported issues: " + report.summary.reportedIssues,
-    "- Failed reviews: " + errors.length,
-    "",
-    "## Visual assessments",
-    "",
-    ...(analyses.length ? analyses.map(item => {
-      const review = item.review || {};
-      const lines = [
-        "### " + item.page + " — " + item.viewport + " — " + item.theme,
-        "",
-        "- Screenshot: `" + item.file + "`",
-        "- Indicative visual score: " + (Number.isFinite(review.visual_score) ? review.visual_score + "/100" : "no score supplied"),
-        "- Assessment: " + String(review.overall_assessment || review.raw_response || "No assessment returned"),
-        "- Manual review required: " + (review.manual_review_required === true ? "yes" : "no / not specified"),
-        "",
-      ];
-      if (Array.isArray(review.strengths) && review.strengths.length) lines.push("Strengths:", ...review.strengths.map(value => "- " + value), "");
-      if (Array.isArray(review.issues) && review.issues.length) {
-        lines.push("Issues:");
-        for (const issue of review.issues) lines.push("- **[" + String(issue.severity || "medium").toUpperCase() + "] " + String(issue.region || "region") + "** — " + String(issue.evidence || "No evidence") + " Recommendation: " + String(issue.recommendation || "Manual inspection") + " Confidence: " + (Number.isFinite(issue.confidence) ? Math.round(issue.confidence * 100) + "%" : "not supplied"));
-        lines.push("");
-      } else lines.push("No specific issues returned by the model (not a guarantee of perfect design).", "");
-      if (Array.isArray(review.limitations) && review.limitations.length) lines.push("Limitations:", ...review.limitations.map(value => "- " + value), "");
-      return lines.join("\n");
-    }) : ["No screenshots were successfully analyzed."]),
-    ...(errors.length ? ["", "## Model/API errors", "", ...errors.map(item => "- " + item.page + " / " + item.viewport + " / " + item.theme + ": " + item.message)] : []),
-    "",
-    "## Interpretation",
-    "",
-    "The model provides a visual second opinion. Its scores and confidence values are estimates, not calibrated measurements. Confirm each proposed issue against the screenshot before changing the site.",
-  ].join("\n");
-  await writeFile(resolve(ROOT, "ai-visual-review-report.md"), markdown, "utf8");
-  console.log(JSON.stringify(report.summary, null, 2));
-  if (!analyses.length) console.log("AI visual review produced no analyses; see ai-visual-review-report.json for request errors.");
+  await writeFile(resolve(ROOT, "ai-visual-review-report.md"), markdown(report), "utf8");
+  await appendStepSummary(report);
+  console.log(JSON.stringify(summary, null, 2));
+  console.log(`AI visual review status: ${report.status}; inspect ai-visual-review-report.md for per-screenshot results.`);
 }
