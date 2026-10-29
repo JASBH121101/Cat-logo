@@ -384,27 +384,3 @@ test("desktop product gallery stays visible while long product details scroll", 
     await browser.close();
   }
 });
-
-
-test("temporary live product-image resolution probe", { timeout: 30000 }, async () => {
-  const sources = [
-    "https://uwqnoadelnnplcvqqlyz.supabase.co/storage/v1/object/public/product-images/46c35eed-d122-4161-8ccf-3bfaae9ce01c/variants/8e2dd168-0ef6-41a7-8935-2729be490204-257798.webp",
-    "https://uwqnoadelnnplcvqqlyz.supabase.co/storage/v1/object/public/product-images/46c35eed-d122-4161-8ccf-3bfaae9ce01c/variants/da488b55-27a8-4772-8f4b-c7ec90c0c943-257796.webp",
-    "https://uwqnoadelnnplcvqqlyz.supabase.co/storage/v1/object/public/product-images/46c35eed-d122-4161-8ccf-3bfaae9ce01c/variants/df2f66a4-5410-4ee0-9c6c-5fd3de7b6c00-257797.webp"
-  ];
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage();
-    const dimensions = await page.evaluate(async urls => Promise.all(urls.map(src => new Promise(resolve => {
-      const img = new Image();
-      const timer = setTimeout(() => resolve({src: src.split("/").pop(), loaded: false, reason: "timeout"}), 12000);
-      img.onload = () => { clearTimeout(timer); resolve({src: src.split("/").pop(), loaded: true, width: img.naturalWidth, height: img.naturalHeight}); };
-      img.onerror = () => { clearTimeout(timer); resolve({src: src.split("/").pop(), loaded: false, reason: "load-error"}); };
-      img.src = src;
-    }))), sources);
-    assert.fail("[PRODUCT_IMAGE_RESOLUTION_PROBE] " + JSON.stringify(dimensions));
-    await page.close();
-  } finally {
-    await browser.close();
-  }
-});
