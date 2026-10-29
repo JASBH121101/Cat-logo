@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-detail-wide-readable1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-sticky-product-gallery1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -313,6 +313,64 @@ test("product detail uses a wider desktop canvas and readable text without break
       assert.ok(measurement.descriptionFont >= (viewport.mobile ? 14 : 15.5), viewport.width + "px: description remains readable");
       assert.ok(measurement.variantFont >= (viewport.mobile ? 11.5 : 12.5), viewport.width + "px: variant buttons remain readable");
       assert.ok(measurement.overflow <= 2, viewport.width + "px: no horizontal page overflow");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+
+test("desktop product gallery stays visible while long product details scroll", async () => {
+  assert.ok(css.includes("JB TECH · galería persistente en escritorio"));
+  assert.ok(css.includes("position: sticky !important"));
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const viewport of [
+      { width: 1365, height: 900, mobile: false },
+      { width: 390, height: 844, mobile: true },
+    ]) {
+      const page = await browser.newPage({
+        viewport: { width: viewport.width, height: viewport.height },
+        isMobile: viewport.mobile,
+      });
+      const longDescription = Array.from({ length: 7 }, (_, i) =>
+        '<p>Detalle técnico ' + (i + 1) + ': pantalla, procesador, almacenamiento y características del producto.</p>'
+      ).join("");
+      const markup = '<!doctype html><html data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>' +
+        '*,*::before,*::after{box-sizing:border-box}body{margin:0}.product-detail-page{position:fixed;inset:76px 0 0;overflow-y:auto;padding:24px 28px}' +
+        '.dialog-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}.dialog-image{height:460px}' +
+        '.dialog-detail p{min-height:120px}.dialog-gallery-main{height:100%;min-height:260px}' + css +
+        '</style></head><body class="technology-catalog product-detail-active"><section id="product-detail-page" class="product-detail-page">' +
+        '<div id="dialog-content"><div class="dialog-layout"><div id="dialog-image" class="dialog-image"><div class="dialog-gallery-main"><img class="dialog-main-image" alt="Tablet" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'600\'%3E%3Crect width=\'400\' height=\'600\' fill=\'%2399aacc\'/%3E%3C/svg%3E"></div><div class="dialog-gallery-thumbs"><button class="dialog-gallery-thumb">1</button><button class="dialog-gallery-thumb">2</button></div></div>' +
+        '<div class="dialog-detail"><h2>Samsung Galaxy Tab S12 Ultra</h2><div class="variant-option-group"><h3>Configuración</h3><button class="variant-choice">256 GB / 12 GB</button></div>' +
+        '<div class="product-price">US$1,426</div>' + longDescription + '</div></div></div></section></body></html>';
+      await page.setContent(markup);
+      const before = await page.evaluate(() => ({
+        position: getComputedStyle(document.querySelector("#dialog-image")).position,
+        pageTop: document.querySelector("#product-detail-page").getBoundingClientRect().top,
+        imageTop: document.querySelector("#dialog-image").getBoundingClientRect().top,
+      }));
+      await page.locator("#product-detail-page").evaluate(el => { el.scrollTop = 340; });
+      await page.waitForTimeout(40);
+      const after = await page.evaluate(() => ({
+        position: getComputedStyle(document.querySelector("#dialog-image")).position,
+        pageTop: document.querySelector("#product-detail-page").getBoundingClientRect().top,
+        imageTop: document.querySelector("#dialog-image").getBoundingClientRect().top,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        columns: getComputedStyle(document.querySelector(".dialog-layout")).gridTemplateColumns,
+      }));
+
+      if (!viewport.mobile) {
+        assert.equal(after.position, "sticky", "desktop gallery must be sticky");
+        assert.ok(after.imageTop >= after.pageTop + 8, "desktop gallery must remain inside the visible scroll area");
+        assert.ok(after.imageTop <= after.pageTop + 22, "desktop gallery must settle at the sticky offset");
+        assert.ok(before.imageTop > after.imageTop - 30, "gallery moves into its sticky position, then stays visible");
+      } else {
+        assert.notEqual(after.position, "sticky", "mobile gallery stays in normal document flow");
+        assert.ok(after.overflow <= 2, "mobile page must not overflow horizontally");
+        assert.equal(after.columns, "390px", "mobile detail remains one column");
+      }
       await page.close();
     }
   } finally {
