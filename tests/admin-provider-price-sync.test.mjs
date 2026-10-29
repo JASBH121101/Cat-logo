@@ -42,8 +42,8 @@ test("provider review preserves references and uses guarded RPC for optional cat
   const end = provider.indexOf("async function openHistory(productId)", start);
   assert.ok(start >= 0 && end > start, "provider save handler has a clear boundary");
   const save = provider.slice(start, end);
-  assert.match(save, /provider_price_usd: priceUSD \?\? previous\.provider_price_usd \?\? null/);
-  assert.match(save, /provider_price_nio: priceNIO \?\? previous\.provider_price_nio \?\? null/);
+  assert.match(save, /provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null)/);
+  assert.match(save, /provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null)/);
   assert.match(save, /provider_product_id: previous\.provider_product_id \?\? null/);
   assert.match(save, /confirm_provider_product_review/);
   assert.match(save, /p_sync_catalog_availability: syncCatalogAvailability/);
@@ -84,8 +84,8 @@ test("admin settings are located in the dashboard sidebar and hidden during logi
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) #dashboard\.hidden[\s\S]*?display:none!important/);
   assert.match(css, /body\.admin-body:not\(\.admin-dashboard-active\) \.admin-main\{padding-top:0!important\}/);
   assert.match(css, /\.admin-sidebar \.admin-settings-menu\{position:static/);
-  assert.match(html, /admin-provider\.css\?v=20261028-provider-contrast-compact3/);
-  assert.match(html, /admin\.js\?v=20261029-claim-conflict-recovery2/);
+  assert.match(html, /admin-provider\.css\?v=20261029-variant-overview-compact1/);
+  assert.match(html, /admin\.js\?v=20261029-variant-overview-compact1/);
 });
 
 
