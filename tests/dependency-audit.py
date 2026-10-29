@@ -23,7 +23,8 @@ IMPORT_RE = re.compile(r"""(?:\b(?:import|export)\s+(?:[^;'"]*?\s+from\s*)?|\bim
 NEW_URL_RE = re.compile(r"""new\s+URL\(\s*['"]([^'"]+)['"]\s*,\s*import\.meta\.url""")
 FETCH_RE = re.compile(r"""\bfetch\(\s*['"]([^'"]+)['"]""")
 STRING_CONST_RE = re.compile(r"""^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(['"])(.*?)\2""", re.M)
-SERVICE_WORKER_REGISTER_RE = re.compile(r"""serviceWorker\s*\.\s*register\s*\(\s*(?:(['"])([^'"]+)\1|([A-Za-z_$][\w$]*))""")
+URL_CONST_RE = re.compile(r"""^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*new\s+URL\(\s*([A-Za-z_$][\w$]*)\s*,[^)]*\)""", re.M)
+SERVICE_WORKER_REGISTER_RE = re.compile(r"""serviceWorker\s*\.\s*register\s*\(\s*(?:(['"])([^'"]+)\1|([A-Za-z_$][\w$]*)(?:\.href)?)""")
 DECL_RE = re.compile(r"""^\s*(?:export\s+)?(?:(?:async\s+)?function|class)\s+([A-Za-z_$][\w$]*)\b|^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=""")
 
 def ignored(path: Path) -> bool:
@@ -176,6 +177,13 @@ def audit(root: Path) -> dict:
                 match.group(1): match.group(3)
                 for match in STRING_CONST_RE.finditer(text)
             }
+            # Resolve URL objects constructed from a string constant, for example:
+            # const workerUrl = new URL(WORKER_URL, window.location.href);
+            # navigator.serviceWorker.register(workerUrl.href).
+            for match in URL_CONST_RE.finditer(text):
+                url_variable, source_variable = match.group(1), match.group(2)
+                if source_variable in string_constants:
+                    string_constants[url_variable] = string_constants[source_variable]
             for match in SERVICE_WORKER_REGISTER_RE.finditer(text):
                 raw = match.group(2) if match.group(1) else string_constants.get(match.group(3))
                 if not raw:
