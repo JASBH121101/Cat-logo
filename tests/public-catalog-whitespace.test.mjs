@@ -10,6 +10,7 @@ test("public technology catalog trims excess vertical spacing without affecting 
   assert.match(html, /technology-visual-refresh\.css\?v=20261029-public-whitespace1/);
   assert.match(css, /JB TECH · Auditoría de espacio público/);
   assert.match(css, /\.catalog-section\s*\{[^}]*padding-top:\s*clamp\(38px, 4\.2vw, 58px\)/s);
+  assert.match(css, /@media \(min-width: 1200px\)[\s\S]*?padding: clamp\(38px, 3\.6vw, 54px\) clamp\(18px, 1\.8vw, 30px\) 44px !important/);
   assert.match(css, /\.technology-promo-banner\s*\{[^}]*margin-top:\s*24px/s);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.catalog-section\s*\{[^}]*padding:\s*30px 16px 34px/s);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.catalog-extra-filters\s*\{[^}]*padding:\s*12px/s);
@@ -48,8 +49,8 @@ test("public technology spacing remains inside the intended container in both th
         assert.equal(measured.overflow, 0, `${viewport.width}px ${theme}: no horizontal overflow`);
         assert.ok(measured.catalog.left >= 0 && measured.catalog.right <= measured.viewport, `${viewport.width}px ${theme}: catalog stays within viewport`);
         assert.ok(measured.filters.height > 0 && measured.budget.height > 0, `${viewport.width}px ${theme}: filter surfaces remain rendered`);
-        await page.close();
       }
+      await page.close();
     }
   } finally {
     await browser.close();
