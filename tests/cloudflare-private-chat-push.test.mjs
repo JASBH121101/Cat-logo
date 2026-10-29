@@ -1,3 +1,4 @@
+import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/api/private-chat.js";
 
