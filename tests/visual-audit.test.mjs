@@ -391,7 +391,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   cardWidth: cardRect ? Math.round(cardRect.width) : null,
                   cardDisplay: cardStyle?.display || null,
                   cardGridColumns: gridColumns,
-                  cardColumnCount: gridColumns === "none" ? 0 : gridColumns.trim().split(/\\s+/).length,
+                  cardColumnCount: gridColumns === "none" ? 0 : gridColumns.trim().split(" ").length,
                   imageLeft: imageRect ? Math.round(imageRect.left) : null,
                   imageRight: imageRect ? Math.round(imageRect.right) : null,
                   imageTop: imageRect ? Math.round(imageRect.top) : null,
