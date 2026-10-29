@@ -619,6 +619,25 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           findings[findings.length - 1].code = composition.code;
           if (Number.isFinite(composition.measuredRatio)) findings[findings.length - 1].measuredRatio = composition.measuredRatio;
         }
+        const imageOccupancyFindings = analyzeImageOccupancy(snapshot.productCompositionLayouts, {
+          viewportWidth: snapshot.viewportWidth,
+          mobile: viewport.mobile,
+        });
+        for (const imageFinding of imageOccupancyFindings) {
+          addFinding({
+            severity: imageFinding.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: imageFinding.element,
+            message: imageFinding.message,
+            evidence: imageFinding.evidence,
+            recommendation: imageFinding.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = imageFinding.code;
+          findings[findings.length - 1].confidence = imageFinding.confidence;
+        }
         const dialogFindings = analyzeDialogQuality(snapshot.dialogLayouts, {
           viewportWidth: snapshot.viewportWidth,
           viewportHeight: viewport.height,
@@ -1045,7 +1064,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
       whitespaceRhythmFindings: findings.filter(finding => finding.code === "VISUAL_WHITESPACE_RHYTHM").length,
       dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,
-      productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_")).length,
+      productCompositionFindings: findings.filter(finding => String(finding.code || "").startsWith("PRODUCT_") && finding.code !== "PRODUCT_SUBJECT_UNDERUTILIZED").length,
+      productImageOccupancyFindings: findings.filter(finding => finding.code === "PRODUCT_SUBJECT_UNDERUTILIZED").length,
+      imageOccupancyMeasured: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => layout.imageOccupancy?.status === "measured").length, 0),
+      imageOccupancyUnavailable: observations.reduce((total, observation) => total + (observation.productCompositionLayouts || []).filter(layout => ["unavailable", "inconclusive"].includes(layout.imageOccupancy?.status)).length, 0),
       visibleDialogStates: observations.reduce((total, observation) => total + (observation.dialogLayouts?.length || 0), 0),
     },
     observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
@@ -1054,10 +1076,14 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
-      designQualityRule: "The client-eye audit measures unusually large blank gaps, product image/frame geometry, information-column balance, and visible dialog/control dimensions. These deterministic checks produce advisory findings with evidence; they do not interpret image pixels or replace human visual judgment. The product-detail layout uses synthetic content. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
+      designQualityRule: "The client-eye audit measures unusually large blank gaps, product image/frame geometry, approximate subject occupancy within readable image pixels, information-column balance, and visible dialog/control dimensions. Pixel occupancy is a low-cost color-distance heuristic, advisory only; complex backgrounds or cross-origin canvas restrictions may make it inconclusive. It does not replace human visual judgment. The product-detail layout uses synthetic content. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
       note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
+  assert.ok(Number.isInteger(result.summary.journeyFailures), "journey failure count must always be numeric");
+  assert.ok(Number.isInteger(result.summary.scenarios), "scenario count must always be numeric");
+  assert.equal(new Set(screenshots).size, screenshots.length, "every screenshot path must be unique");
+  assert.match(`- Recorridos de interfaz: ${journeyResults.filter(j => j.passed).length}/${journeyResults.length}; fallos: ${result.summary.journeyFailures}`, /fallos: \\d+$/, "report must not print an undefined journey failure count");
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
   const md = [
     "# JB Collections — informe de auditoría visual",
@@ -1087,7 +1113,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "", "## Geometría observada",
     `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
     `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,
-    `- Alertas de composición de ficha de producto: ${result.summary.productCompositionFindings}`,
+    `- Alertas geométricas de ficha: ${result.summary.productCompositionFindings}`,
+    `- Alertas de ocupación visual del objeto dentro de la foto: ${result.summary.productImageOccupancyFindings}`,
+    `- Imágenes con análisis de píxeles medido: ${result.summary.imageOccupancyMeasured}; no evaluables/inconclusas: ${result.summary.imageOccupancyUnavailable}`,
     `- Estados de diálogo visibles capturados: ${result.summary.visibleDialogStates}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
@@ -1125,8 +1153,10 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     observation.productCompositionLayouts.some(layout =>
       layout.visible && layout.frameWidth > 0 && layout.frameHeight > 0 &&
       layout.imageWidth > 0 && layout.imageHeight > 0 &&
-      layout.leftColumnWidth > 0 && layout.rightColumnWidth > 0
-    )), "every detail scenario must produce usable gallery and column measurements");
+      layout.leftColumnWidth > 0 && layout.rightColumnWidth > 0 &&
+      layout.imageOccupancy?.status === "measured" &&
+      Number.isFinite(layout.imageOccupancy.foregroundAreaRatio)
+    )), "every synthetic detail scenario must produce geometry and readable pixel-occupancy measurements");
   assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
   assert.equal(result.summary.blockingAxeViolations, 0, "critical/serious Axe violations block CI; see visual-audit-report.md");
   assert.equal(blockingFindings.length, 0, "critical deterministic layout/runtime/resource regressions block CI; see visual-audit-report.md");
