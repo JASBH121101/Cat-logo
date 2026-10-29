@@ -20,7 +20,8 @@ test("supplier review collects provider availability for every configuration and
   assert.match(provider, /data-provider-color-availability/);
   assert.match(provider, /provider_variant_snapshot: variantSnapshot/);
   assert.match(provider, /const unconfirmedVariantStatus = variantSnapshot\.some/);
-  assert.match(provider, /if \(overallAvailability === "unknown" \|\| unconfirmedVariantStatus\)/);
+  assert.match(provider, /if \(unconfirmedVariantStatus\)/);
+  assert.match(provider, /aggregateProviderAvailability\(variantSnapshot/);
   assert.match(html, /Confirmar revisión/);
 });
 
@@ -95,4 +96,23 @@ test("provider price sync applies confirmed prices per configuration and recalcu
   assert.match(priceSyncMigration, /min\(CASE/);
   assert.match(priceSyncMigration, /SECURITY INVOKER/);
   assert.doesNotMatch(priceSyncMigration, /price_usd = v_provider_price_usd/i);
+});
+
+test("supplier review removes duplicate general price and availability inputs", () => {
+  assert.doesNotMatch(html, /id="provider-review-price-usd"/);
+  assert.doesNotMatch(html, /id="provider-review-price-nio"/);
+  assert.doesNotMatch(html, /id="provider-review-availability"/);
+  assert.match(html, /id="provider-review-name"/);
+  assert.match(html, /data-provider-config-price-usd/);
+  assert.match(html, /data-provider-config-price-nio/);
+  assert.match(html, /data-provider-config-availability/);
+  assert.match(html, /data-provider-color-availability/);
+  assert.match(provider, /provider_price_usd: previous\.provider_price_usd \?\? null/);
+  assert.match(provider, /provider_price_nio: previous\.provider_price_nio \?\? null/);
+});
+
+test("overall provider availability is derived from configuration and color statuses", () => {
+  assert.match(provider, /function aggregateProviderAvailability\(snapshot, fallback = "unknown"\)/);
+  assert.match(provider, /if \(statuses\.includes\("available"\)\) return "available"/);
+  assert.match(provider, /if \(statuses\.includes\("on_order"\)\) return "on_order"/);
 });
