@@ -10,7 +10,7 @@ test("production audit blocks all non-read HTTP methods before sending requests"
   assert.match(productionAudit, /\["GET", "HEAD", "OPTIONS"\]\.includes\(request\.method\(\)\.toUpperCase\(\)\)/);
   assert.match(productionAudit, /blockedWrites\.push\(entry\)/);
   assert.match(productionAudit, /await route\.abort\("blockedbyclient"\)/);
-  assert.match(productionAudit, /No sign-in, order submission, messaging send, or database mutation/);
+  assert.match(productionAudit, /Non-GET\/HEAD\/OPTIONS requests are blocked to prevent analytics or controls from writing while the audit runs/);
 });
 
 test("production browser audit only targets public pages and has no authenticated admin actions", () => {
