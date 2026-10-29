@@ -127,5 +127,5 @@ test("grouped audit findings retain occurrences, scenarios, strongest severity a
   assert.equal(grouped[0].occurrences, 5);
   assert.equal(grouped[0].severity, "high");
   assert.equal(grouped[0].blocking, true);
-  assert.deepEqual(grouped[0].scenarios, ["dark/desktop", "light/mobile"]);
+  assert.deepEqual(grouped[0].scenarios, ["dark/desktop", "dark/mobile", "light/mobile"]);
 });
