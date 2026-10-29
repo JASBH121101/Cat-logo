@@ -9,8 +9,8 @@ const css = readFileSync("technology-visual-refresh.css", "utf8");
 test("public technology catalog exposes an accessible subcategory selector", () => {
   assert.match(html, /id="subcategory-filter"/);
   assert.match(html, /class="subcategory-filter-bar"/);
-  assert.match(html, /technology-visual-refresh\.css\?v=20261029-larger-product-gallery1/);
-  assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
+  assert.match(html, /technology-visual-refresh\.css\?v=20261029-dedicated-product-page1/);
+  assert.match(html, /app\.js\?v=20261029-dedicated-detail-navigation1/);
 });
 
 test("subcategory options come from the existing product subcategory field", () => {

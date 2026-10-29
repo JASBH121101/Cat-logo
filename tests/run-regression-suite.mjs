@@ -36,7 +36,7 @@ export const regressionGroups = [
     test("tests/cloudflare-share.test.mjs", true), test("tests/cloudflare-download.test.mjs", true),
     test("tests/cloudflare-private-chat-push.test.mjs", true), test("tests/web-push.test.mjs", true),
     test("tests/cloudflare-assistant.test.mjs", true), test("tests/cloudflare-color-assistant.test.mjs", true),
-    test("tests/technology-gallery-layout.test.mjs", true),
+    test("tests/technology-gallery-layout.test.mjs", true), test("tests/dedicated-product-detail-page.test.mjs", true),
   ]},
 ];
 

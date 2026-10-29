@@ -3579,3 +3579,188 @@ body.technology-catalog.product-detail-active #product-detail-page .payment-choi
     object-position: center center !important;
   }
 }
+
+
+/* JB TECH · dedicated product page in normal document flow (same-tab route). */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: calc(100svh - 76px) !important;
+  margin: 0 !important;
+  padding: clamp(22px, 2.8vw, 42px) clamp(20px, 3.4vw, 68px) 68px !important;
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+  box-sizing: border-box !important;
+  background: var(--tech-page) !important;
+}
+body.technology-catalog.product-detail-active main > :not(#product-detail-page) {
+  display: none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+  width: min(1760px, 100%) !important;
+  max-width: 1760px !important;
+  margin-inline: auto !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr) !important;
+  align-items: start !important;
+  gap: clamp(28px, 3.2vw, 58px) !important;
+  padding: 0 0 42px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  position: sticky !important;
+  top: 92px !important;
+  align-self: start !important;
+  z-index: 2 !important;
+  height: min(clamp(500px, 66vh, 760px), calc(100vh - 124px)) !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 124px) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+  padding: clamp(18px, 2vw, 34px) clamp(8px, 1.4vw, 22px) 32px !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    min-height: calc(100svh - 68px) !important;
+    padding: 12px 12px 38px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+    padding: 0 0 24px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    position: static !important;
+    top: auto !important;
+    height: clamp(250px, 40svh, 360px) !important;
+    min-height: 0 !important;
+    max-height: 360px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 10px 4px 20px !important;
+  }
+}
+
+
+/* Dedicated detail header must stay in document flow instead of acting as an overlay. */
+html body.technology-catalog.product-detail-active .site-header {
+  position: sticky !important;
+  inset: auto !important;
+  top: 0 !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 1200 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+  margin: 6px 0 20px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(30px, 2.1vw, 42px) !important;
+  font-weight: 800 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -.025em !important;
+  overflow-wrap: anywhere !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #d2dced !important;
+}
+@media (max-width: 760px) {
+  html body.technology-catalog.product-detail-active .site-header {
+    height: 68px !important;
+    min-height: 68px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+    margin: 4px 0 14px !important;
+    font-size: clamp(24px, 6.2vw, 32px) !important;
+  }
+}
+
+
+/* Clear heading hierarchy for the full product page; keep variant labels compact. */
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+  margin: 0 0 10px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(15px, .9vw, 18px) !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+  margin: 24px 0 12px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(18px, 1.15vw, 22px) !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #d2dced !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+    font-size: 14px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+    margin-top: 18px !important;
+    font-size: 17px !important;
+  }
+}
+
+
+/* Specification bullets must remain readable on the dedicated product page. */
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
+  color: #d2dced !important;
+}
+
+
+/* Fully neutralize legacy overlay offsets on the full-page technology route. */
+html body.technology-catalog.product-detail-active > main.is-product-detail-view {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
+html body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}

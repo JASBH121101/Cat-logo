@@ -17,7 +17,7 @@ const requiredTests = [
   "admin-provider-price-sync.test.mjs", "provider-review-variants.test.mjs", "perfume-card-layout.test.mjs",
   "commercial-description-layout.test.mjs", "catalog-contact-channels.test.mjs", "private-chat-workflow.test.mjs",
   "private-chat-resume.test.mjs", "product-tag-formatting.test.mjs", "asset-cache-contract.test.mjs",
-  "technology-gallery-layout.test.mjs", "technology-subcategory-filter.test.mjs",
+  "technology-gallery-layout.test.mjs", "technology-subcategory-filter.test.mjs", "dedicated-product-detail-page.test.mjs",
   "visual-audit-policy.test.mjs", "visual-design-quality-policy.test.mjs", "visual-state-quality-policy.test.mjs", "visual-composition-quality-policy.test.mjs", "visual-audit.test.mjs",
 ];
 
