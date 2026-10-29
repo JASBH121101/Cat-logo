@@ -49,9 +49,11 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(chatStyles, /dashboard\.admin-section-focused > \.dashboard-top > div:first-child/);
   assert.match(chatStyles, /dashboard\.admin-section-focused > #admin-status/);
   assert.match(chatStyles, /dashboard\.admin-section-focused \.admin-catalog-context/);
-  assert.ok(html.includes("admin-workflow.css?v=20261029-variant-theme-contrast2"));
+  assert.ok(html.includes("admin-workflow.css?v=20261029-mobile-chevron1"));
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.inline-color-details/);
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
+  assert.match(editorWorkflow, /\.variant-config-chevron::before\s*\{[^}]*border-right:\s*2px solid currentColor[^}]*border-bottom:\s*2px solid currentColor/);
+  assert.match(editorWorkflow, /\.variant-config-chevron\s*\{[^}]*font-size:\s*0\s*!important/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
   assert.ok(html.includes("admin-accessibility.css?v=20261029-variant-unit-arrow1"));
