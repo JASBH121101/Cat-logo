@@ -23,7 +23,8 @@ const VIEWPORTS = [
 ];
 const THEMES = ["light", "dark"];
 const PAGES = [
-  { name: "technology", path: "/tecnologia/", shell: ".site-header", title: ".hero h1, h1", fixture: "technology" },\n  { name: "technology-detail", path: "/tecnologia/", shell: ".site-header", title: "#product-detail-page h2", fixture: "technology-detail" },
+  { name: "technology", path: "/tecnologia/", shell: ".site-header", title: ".hero h1, h1", fixture: "technology" },
+  { name: "technology-detail", path: "/tecnologia/", shell: ".site-header", title: "#product-detail-page h2", fixture: "technology-detail" },
   { name: "perfumery", path: "/perfumeria/", shell: ".site-header", title: "h1", fixture: "perfumery" },
   { name: "admin", path: "/admin.html", shell: ".admin-header", title: ".provider-page-heading h1, h1", fixture: "admin" },
   { name: "private-chat", path: "/mensajes.html", shell: ".private-chat-header", title: "#private-chat-title", fixture: "chat" },
