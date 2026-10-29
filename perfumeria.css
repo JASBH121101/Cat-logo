@@ -2959,3 +2959,19 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     font-size: clamp(27px, 7vw, 36px) !important;
   }
 }
+
+
+/* Fragrance note groups are second-level sections under the product h1. */
+body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-notes .perfume-note-heading {
+  margin: 0 0 12px !important;
+  color: var(--perfume-ink) !important;
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: clamp(20px, 1.7vw, 28px) !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+@media (max-width: 760px) {
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-notes .perfume-note-heading {
+    font-size: 22px !important;
+  }
+}
