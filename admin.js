@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { initProviderTools } from "./admin-provider.js?v=20261029-variant-availability-validation1";
-import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-push-timeout1";
+import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -3463,18 +3463,31 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
         button.textContent = "Probar notificaciones";
         button.title = "Mostrar una notificación de prueba en este dispositivo";
       }
-      privateChatSetStatus(
-        "Push registrado en este dispositivo. Se mostró la prueba; las alertas de solicitudes de compra pueden llegar aunque la pestaña no esté abierta, siempre que el navegador y el sistema permitan notificaciones.",
-        "success"
-      );
+      if (result.mode === "native-local") {
+        privateChatSetStatus(
+          "Permiso nativo concedido y notificación de prueba mostrada. En esta APK las alertas se generan mientras JB Manager esté abierto y pueda consultar la bandeja. Para recibir avisos con la app en segundo plano o cerrada hace falta configurar push nativo (FCM).",
+          "success"
+        );
+      } else {
+        privateChatSetStatus(
+          "Push registrado en este dispositivo. Se mostró la prueba; las alertas de solicitudes de compra pueden llegar aunque la pestaña no esté abierta, siempre que el navegador y el sistema permitan notificaciones.",
+          "success"
+        );
+      }
     } else if (result.reason === "unsupported") {
       privateChatSetStatus("Este navegador o contenedor no admite notificaciones. Si abriste JB Manager desde una APK o ventana integrada, abrí el panel directamente en Google Chrome: https://jb-collections.pages.dev/admin.html. Android WebView no admite PushManager; dentro de la APK las alertas push no se pueden activar con esta función.", "error");
     } else if (result.reason === "insecure-context") {
       privateChatSetStatus("Las notificaciones requieren HTTPS o localhost. Abrí JB Manager desde su dirección segura.", "error");
     } else if (result.reason === "permission-denied") {
-      privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
+      if (window.Capacitor?.isNativePlatform?.()) {
+        privateChatSetStatus("Android bloqueó las notificaciones de JB Manager. Abrí Ajustes del teléfono → Aplicaciones → JB Manager Collections → Notificaciones y habilitalas; después regresá y probá otra vez.", "error");
+      } else {
+        privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
+      }
     } else if (result.reason === "permission-not-granted") {
       privateChatSetStatus("No se concedió permiso para notificaciones. Podés seguir revisando la bandeja manualmente.", "error");
+    } else if (result.reason === "native-notifications-unavailable") {
+      privateChatSetStatus("Esta APK todavía no incluye el módulo nativo de notificaciones. Actualizá JB Manager cuando se publique la nueva versión.", "error");
     } else if (result.reason === "push-unsupported") {
       privateChatSetStatus("Este navegador no admite Web Push en segundo plano. Si estás usando JB Manager dentro de una APK o ventana integrada, abrí https://jb-collections.pages.dev/admin.html directamente en Google Chrome y activá las notificaciones allí.", "error");
     } else if (result.reason === "admin-session-required") {

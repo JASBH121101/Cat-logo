@@ -10,6 +10,37 @@ function base64url(bytes) {
   return Buffer.from(bytes).toString("base64url");
 }
 
+function makeNativeApp({ permission = "prompt", requestedPermission = "granted", scheduleError = false } = {}) {
+  const calls = [];
+  let currentPermission = permission;
+  const nativeNotifications = {
+    async checkPermissions() {
+      calls.push({ method: "checkPermissions" });
+      return { display: currentPermission };
+    },
+    async requestPermissions() {
+      calls.push({ method: "requestPermissions" });
+      currentPermission = requestedPermission;
+      return { display: currentPermission };
+    },
+    async createChannel(options) {
+      calls.push({ method: "createChannel", options });
+    },
+    async schedule(options) {
+      calls.push({ method: "schedule", options });
+      if (scheduleError) throw new Error("Android notification manager failed");
+      return { notifications: options.notifications || [] };
+    },
+  };
+  const windowRef = {
+    isSecureContext: true,
+    location: { href: "https://localhost/admin.html" },
+    Capacitor: { isNativePlatform: () => true },
+    JBManagerNativeNotifications: nativeNotifications,
+  };
+  return { windowRef, navigatorRef: {}, nativeNotifications, calls };
+}
+
 function makeBrowser({ permission = "default", secure = true, serviceWorker = true, rejectShow = false, rejectSave = false, withSession = true, neverReady = false, serviceWorkerReadyTimeoutMs } = {}) {
   const calls = [];
   const endpoint = "https://push.example.test/subscription-1";
@@ -71,6 +102,62 @@ function makeBrowser({ permission = "default", secure = true, serviceWorker = tr
     serviceWorkerReadyTimeoutMs,
   };
 }
+
+test("Capacitor APK requests Android permission and shows a native test notification without Web Push", async () => {
+  const app = makeNativeApp();
+  const result = await enableAdminNotifications({
+    ...app,
+    NotificationApi: undefined,
+    supabase: null,
+    currentUser: null,
+    publicKey: "",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.mode, "native-local");
+  assert.ok(app.calls.some(call => call.method === "checkPermissions"));
+  assert.ok(app.calls.some(call => call.method === "requestPermissions"));
+  assert.ok(app.calls.some(call => call.method === "createChannel"));
+  const scheduled = app.calls.find(call => call.method === "schedule");
+  assert.ok(scheduled);
+  assert.equal(scheduled.options.notifications.length, 1);
+  assert.equal(scheduled.options.notifications[0].title, "JB Manager");
+  assert.match(scheduled.options.notifications[0].body, /mientras JB Manager esté abierto/i);
+  assert.match(scheduled.options.notifications[0].extra.url, /admin\.html\?open=messages$/);
+  assert.ok(Number.isInteger(scheduled.options.notifications[0].id));
+});
+
+test("Capacitor APK never claims notifications are enabled when Android permission is denied", async () => {
+  const app = makeNativeApp({ permission: "denied", requestedPermission: "denied" });
+  const result = await enableAdminNotifications({ ...app, NotificationApi: undefined });
+  assert.deepEqual({ ok: result.ok, reason: result.reason }, { ok: false, reason: "permission-denied" });
+  assert.equal(app.calls.some(call => call.method === "schedule"), false);
+});
+
+test("new customer chat notifications use Android Local Notifications in the APK", async () => {
+  const app = makeNativeApp({ permission: "granted" });
+  const result = await showAdminNotification("Nuevo mensaje de cliente", "¿Hay stock?", "chat-123", {
+    ...app,
+    NotificationApi: undefined,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.mode, "native-local");
+  const scheduled = app.calls.find(call => call.method === "schedule").options.notifications[0];
+  assert.equal(scheduled.title, "Nuevo mensaje de cliente");
+  assert.equal(scheduled.body, "¿Hay stock?");
+  assert.equal(scheduled.extra.conversationId, "chat-123");
+});
+
+test("native notification display errors are surfaced instead of pretending the APK notification worked", async () => {
+  const app = makeNativeApp({ permission: "granted", scheduleError: true });
+  const result = await showAdminNotification("Test", "Body", "chat-123", {
+    ...app,
+    NotificationApi: undefined,
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "display-failed");
+  assert.match(result.message, /Android notification manager failed/);
+});
 
 test("activation registers background push, saves this admin device and shows a test notification", async () => {
   const browser = makeBrowser();
