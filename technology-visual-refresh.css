@@ -3735,3 +3735,12 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
     font-size: 17px !important;
   }
 }
+
+
+/* Specification bullets must remain readable on the dedicated product page. */
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
+  color: #d2dced !important;
+}
