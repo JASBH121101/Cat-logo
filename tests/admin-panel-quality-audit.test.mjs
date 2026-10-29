@@ -45,6 +45,13 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.ok(chatStyles.includes("max-height: 220px !important"));
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261029-contrast-audit1"));
+  const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
+  assert.match(accessibilityStyles, /\.admin-body \.admin-input-unit > span\s*\{[^}]*color:\s*#455675\s*!important/);
+  assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body \.admin-input-unit > span\s*\{[^}]*color:\s*#c9d5e9\s*!important/);
+  assert.match(accessibilityStyles, /\.provider-metric > span/);
+  assert.match(accessibilityStyles, /\.provider-empty-state/);
+  assert.match(accessibilityStyles, /\.provider-import-explainer p strong/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(workflow, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
@@ -57,7 +64,11 @@ test("complete admin panel audit validates navigation, accessibility signals and
   );
   const controls = [...html.matchAll(/<(input|select|textarea)\b([^>]*)>/gi)]
     .map(match => ({ tag: match[1].toLowerCase(), attributes: match[2], position: match.index }))
-    .filter(control => !/\btype\s*=\s*["']?hidden\b/i.test(control.attributes));
+    .filter(control =>
+      !/\btype\s*=\s*["']?hidden\b/i.test(control.attributes) &&
+      !/\bhidden(?:\s|=|$)/i.test(control.attributes) &&
+      !/\baria-hidden\s*=\s*["']true["']/i.test(control.attributes)
+    );
   const labelledFor = new Set([...html.matchAll(/<label\b[^>]*\bfor=["']([^"']+)["']/gi)].map(match => match[1]));
   const labelRanges = [...html.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/gi)]
     .map(match => [match.index, match.index + match[0].length]);
