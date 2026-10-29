@@ -41,8 +41,15 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(adminJs, /detectPrivateChatNotificationEvents/);
   assert.match(adminJs, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(chatStyles, /private-chat-admin-layout/);
-  assert.ok(html.includes("admin-private-chat.css?v=20261029-compact-inbox1"));
+  assert.ok(html.includes("admin-private-chat.css?v=20261029-compact-inbox2"));
   assert.ok(chatStyles.includes("max-height: 220px !important"));
+  assert.match(adminJs, /dashboard\?\.classList\.toggle\("admin-section-focused", section !== "home"\)/);
+  assert.match(chatStyles, /dashboard\.admin-section-focused > \.dashboard-top > div:first-child/);
+  assert.match(chatStyles, /dashboard\.admin-section-focused > #admin-status/);
+  assert.match(chatStyles, /dashboard\.admin-section-focused \.admin-catalog-context/);
+  assert.match(workflow, /admin-workflow\.css\?v=20261029-dark-variant-colors1/);
+  assert.match(workflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.inline-color-details/);
+  assert.match(workflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
   assert.ok(html.includes("admin-accessibility.css?v=20261029-contrast-audit1"));
