@@ -6,27 +6,40 @@ import {
   showAdminNotification,
 } from "../admin-notifications.mjs";
 
-function makeBrowser({ permission = "default", secure = true, serviceWorker = true, rejectShow = false } = {}) {
+function base64url(bytes) {
+  return Buffer.from(bytes).toString("base64url");
+}
+
+function makeBrowser({ permission = "default", secure = true, serviceWorker = true, rejectShow = false, rejectSave = false, withSession = true } = {}) {
   const calls = [];
+  const endpoint = "https://push.example.test/subscription-1";
+  const subscription = {
+    endpoint,
+    toJSON() {
+      return {
+        endpoint,
+        expirationTime: null,
+        keys: { p256dh: base64url(Uint8Array.from({ length: 65 }, (_, i) => i === 0 ? 4 : i)), auth: base64url(new Uint8Array(16).fill(7)) },
+      };
+    },
+  };
+  const pushManager = {
+    async getSubscription() { calls.push({ getSubscription: true }); return subscription; },
+    async subscribe(options) { calls.push({ subscribe: true, options }); return subscription; },
+  };
   const registration = {
+    pushManager,
     async showNotification(title, options) {
       calls.push({ title, options });
       if (rejectShow) throw new Error("OS notification blocked");
     },
   };
   const worker = serviceWorker ? {
-    async getRegistration() { return null; },
-    async register(url, options) {
-      calls.push({ registered: url, scope: options.scope });
-      return registration;
-    },
+    async register(url, options) { calls.push({ registered: url, scope: options.scope }); return registration; },
     ready: Promise.resolve(registration),
   } : undefined;
   class FakeNotification {
-    constructor(title, options) {
-      calls.push({ title, options, fallback: true });
-      if (rejectShow) throw new Error("constructor blocked");
-    }
+    constructor(title, options) { calls.push({ title, options, fallback: true }); }
   }
   FakeNotification.permission = permission;
   FakeNotification.requestPermission = async () => {
@@ -39,33 +52,70 @@ function makeBrowser({ permission = "default", secure = true, serviceWorker = tr
     location: { href: "https://jb-collections.pages.dev/admin.html" },
     Notification: FakeNotification,
   };
-  const navigatorRef = { serviceWorker: worker };
-  return { windowRef, navigatorRef, NotificationApi: FakeNotification, calls };
+  const navigatorRef = { serviceWorker, userAgent: "Test Browser" };
+  const supabase = {
+    from(table) {
+      return {
+        async upsert(values, options) {
+          calls.push({ upsert: true, table, values, options });
+          return { error: rejectSave ? { message: "database offline" } : null };
+        },
+      };
+    },
+  };
+  return {
+    windowRef, navigatorRef, NotificationApi: FakeNotification, calls,
+    supabase: withSession ? supabase : null,
+    currentUser: withSession ? { id: "admin-user-1" } : null,
+    publicKey: base64url(Uint8Array.from({ length: 65 }, (_, i) => i === 0 ? 4 : i)),
+  };
 }
 
-test("notification activation asks permission then registers worker and shows a real test notification", async () => {
+test("activation registers background push, saves this admin device and shows a test notification", async () => {
   const browser = makeBrowser();
   const result = await enableAdminNotifications(browser);
   assert.equal(result.ok, true);
-  assert.equal(result.mode, "service-worker");
+  assert.equal(result.mode, "push");
   assert.ok(browser.calls.some(call => call.permissionRequest));
   assert.ok(browser.calls.some(call => call.registered?.includes("jb-manager-sw.js")));
+  assert.ok(browser.calls.some(call => call.subscribe));
+  const save = browser.calls.find(call => call.upsert);
+  assert.equal(save.table, "admin_push_subscriptions");
+  assert.equal(save.values.user_id, "admin-user-1");
+  assert.equal(save.values.endpoint, "https://push.example.test/subscription-1");
+  assert.equal(save.options.onConflict, "endpoint");
   assert.equal(browser.calls.at(-1).title, "JB Manager");
   assert.match(browser.calls.at(-1).options.data.url, /admin\.html\?open=messages$/);
 });
 
-test("notification activation does not pretend denied permissions were enabled", async () => {
+test("activation does not pretend denied permissions were enabled", async () => {
   const browser = makeBrowser({ permission: "denied" });
   const result = await enableAdminNotifications(browser);
   assert.deepEqual({ ok: result.ok, reason: result.reason }, { ok: false, reason: "permission-denied" });
   assert.equal(browser.calls.length, 0);
 });
 
-test("notification activation refuses insecure contexts and unsupported browsers", async () => {
+test("activation rejects insecure contexts, unsupported browsers and missing admin sessions", async () => {
   const insecure = makeBrowser({ secure: false });
   assert.equal((await enableAdminNotifications(insecure)).reason, "insecure-context");
-  const unsupported = await enableAdminNotifications({ windowRef: { isSecureContext: true, location: { href: "https://example.test/" } }, navigatorRef: {} });
+  const unsupported = await enableAdminNotifications({
+    windowRef: { isSecureContext: true, location: { href: "https://example.test/" } },
+    navigatorRef: {},
+  });
   assert.equal(unsupported.reason, "unsupported");
+  const noPush = makeBrowser({ serviceWorker: false });
+  assert.equal((await enableAdminNotifications(noPush)).reason, "push-unsupported");
+  const noAdmin = makeBrowser({ withSession: false });
+  assert.equal((await enableAdminNotifications(noAdmin)).reason, "admin-session-required");
+});
+
+test("push subscription database failures are surfaced instead of silently claiming success", async () => {
+  const browser = makeBrowser({ rejectSave: true });
+  const result = await enableAdminNotifications(browser);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "push-setup-failed");
+  assert.match(result.message, /database offline/);
+  assert.equal(browser.calls.some(call => call.title === "JB Manager"), false);
 });
 
 test("service-worker display errors are surfaced instead of swallowed", async () => {
