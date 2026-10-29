@@ -28,7 +28,9 @@ export const regressionGroups = [
     test("tests/catalog-contact-channels.test.mjs"), test("tests/private-chat-workflow.test.mjs"),
     test("tests/private-chat-resume.test.mjs"),
   ]},
-  { name: "cross-page-visual-audit", tests: [ test("tests/visual-audit.test.mjs") ] },
+  { name: "cross-page-visual-audit", tests: [
+    test("tests/visual-audit-policy.test.mjs"), test("tests/visual-audit.test.mjs"),
+  ] },
   { name: "cloudflare-and-browser", tests: [
     test("tests/cloudflare-share.test.mjs", true), test("tests/cloudflare-download.test.mjs", true),
     test("tests/cloudflare-private-chat-push.test.mjs", true), test("tests/web-push.test.mjs", true),
@@ -74,10 +76,10 @@ async function runGroup(group) {
     console.log(`[${result.ok ? "PASS" : "FAIL"}] ${result.file} (${(result.ms / 1000).toFixed(2)}s)`);
     if (!result.ok) console.error(result.output || `Exit code: ${result.code ?? "unknown"}; signal: ${result.signal ?? "none"}`);
     else if (result.file === "tests/visual-audit.test.mjs" && result.output) {
-      const diagnostics = result.output.split("\\n").filter(line =>
-        /VISUAL AUDIT:|JOURNEY (?:PASS|FAIL)|\\[(?:CRITICAL|HIGH)\\]/.test(line)
+      const diagnostics = result.output.split(/\r?\n/).filter(line =>
+        /VISUAL AUDIT:|JOURNEY (?:PASS|FAIL)|\[(?:CRITICAL|HIGH)\]/.test(line)
       );
-      if (diagnostics.length) console.log(diagnostics.join("\\n"));
+      if (diagnostics.length) console.log(diagnostics.join("\n"));
     } else if (process.env.VERBOSE_TESTS === "1" && result.output) console.log(result.output);
   }
   console.log(`[GROUP END] ${group.name}`);
