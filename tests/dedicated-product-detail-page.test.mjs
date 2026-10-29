@@ -47,7 +47,7 @@ test("both dedicated product pages use natural document scrolling on desktop and
     '<main class="is-product-detail-view"><section id="product-detail-page" class="product-detail-page">' +
       '<div id="dialog-content"><div class="dialog-layout">' +
         '<div class="dialog-image" id="dialog-image"><div class="dialog-gallery-main"><img class="dialog-main-image" alt="Dispositivo" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'900\'%3E%3Crect width=\'600\' height=\'900\' fill=\'%23849ac7\'/%3E%3C/svg%3E"></div><div class="dialog-gallery-thumbs"><button class="dialog-gallery-thumb">1</button><button class="dialog-gallery-thumb">2</button></div></div>' +
-        '<div class="dialog-detail"><div class="product-category">Tablets</div><h2>Samsung Galaxy Tab S12 Ultra</h2><div class="variant-option-group"><h3>Configuración</h3><button class="variant-choice">256 GB / 12 GB</button></div><div class="product-price">$1,426</div><div class="dialog-product-description">' +
+        '<div class="dialog-detail"><div class="product-category">Tablets</div><h2>Samsung Galaxy Tab S12 Ultra</h2><div class="variant-option-group"><h2 class="variant-section-title">Configuración</h2><button class="variant-choice">256 GB / 12 GB</button></div><div class="product-price">$1,426</div><div class="dialog-product-description">' +
           Array.from({length:9},(_,i)=>'<p>Descripción técnica '+(i+1)+': pantalla de alta resolución, procesador, almacenamiento, conectividad, batería, cámaras y características del producto para trabajar y entretenerse.</p>').join("") +
         '</div><section class="payment-choice-panel"><label>¿Qué querés consultar?</label><select><option>Seleccioná una opción</option></select></section><ul class="dialog-specs">' +
           Array.from({length:12},(_,i)=>'<li>Especificación de producto '+(i+1)+'</li>').join("") +
@@ -65,7 +65,7 @@ test("both dedicated product pages use natural document scrolling on desktop and
           Array.from({length:9},(_,i)=>'<p>Descripción olfativa '+(i+1)+': un perfil aromático con matices frescos, florales, amaderados y cálidos para una experiencia memorable.</p>').join("") +
         '</div><dl class="perfume-dialog-facts"><div><dt>Concentración</dt><dd>EDP</dd></div><div><dt>Contenido</dt><dd>100 ml</dd></div><div><dt>Disponibilidad</dt><dd>Disponible</dd></div></dl><div class="perfume-dialog-price"><span>Precio</span><strong>US$89</strong></div><div class="perfume-dialog-actions"><button>WhatsApp</button><button>Contactar</button></div><section class="payment-choice-panel"><label>¿Qué querés consultar?</label><select><option>Seleccioná una opción</option></select></section></section>' +
       '</div><div class="perfume-dialog-notes">' +
-        Array.from({length:3},(_,i)=>'<section class="perfume-note-group"><h3>Notas '+(i+1)+'</h3><ul><li>Bergamota</li><li>Vainilla</li><li>Madera</li></ul></section>').join("") +
+        Array.from({length:3},(_,i)=>'<section class="perfume-note-group"><h2 class="perfume-note-heading">Notas '+(i+1)+'</h2><ul><li>Bergamota</li><li>Vainilla</li><li>Madera</li></ul></section>').join("") +
       '</div></div></section><section class="perfume-hero" id="mock-catalog"><h1>Catálogo que debe ocultarse</h1></section></main><footer class="perfume-footer">Pie del catálogo</footer>';
 
   const cases = [
