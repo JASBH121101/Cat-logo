@@ -3034,6 +3034,7 @@ let privateChatBaselineReady = false;
 let privateChatKnownConversationStates = new Map();
 let privateChatInboxLoading = false;
 let privateChatMessagesLoading = false;
+let privateChatActionInFlight = false;
 
 const privateChatStatusEl = document.getElementById("private-chat-admin-status");
 const privateChatListEl = document.getElementById("private-chat-conversation-list");
@@ -3356,8 +3357,10 @@ async function loadPrivateChatInbox(options = {}) {
   }
 }
 async function privateChatRunAdminAction(action) {
+  if (privateChatActionInFlight) return;
   const item = privateChatSelectedConversation();
   if (!item || !supabase || !currentUser) return;
+  privateChatActionInFlight = true;
   const buttonIds = {
     claim: "private-chat-admin-claim",
     purchase: "private-chat-admin-purchase",
@@ -3378,8 +3381,17 @@ async function privateChatRunAdminAction(action) {
     await loadPrivateChatInbox({ silent: true });
     if (privateChatSelectedId) await loadPrivateChatMessages(true);
   } catch (error) {
-    privateChatSetStatus(String(error.message || "No se pudo completar la acción."), "error");
+    const message = String(error?.message || error || "No se pudo completar la acción.");
+    if (action === "claim" && /conversation_already_claimed_or_not_pending/i.test(message)) {
+      // The inbox may be stale if another advisor or tab claimed this request.
+      // Refresh authoritative state so the Claim action disappears instead of inviting retries.
+      await loadPrivateChatInbox({ silent: true });
+      privateChatSetStatus("Esta solicitud ya no está pendiente o fue tomada por otro asesor. Se intentó actualizar la bandeja; revisá el estado antes de continuar.", "info");
+    } else {
+      privateChatSetStatus(message, "error");
+    }
   } finally {
+    privateChatActionInFlight = false;
     if (button) button.disabled = false;
   }
 }

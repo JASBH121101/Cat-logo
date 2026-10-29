@@ -183,3 +183,17 @@ test("public customer-chat RPCs require the anonymous capability-token path, not
     assert.ok(customerRpcPermissions.includes("GRANT EXECUTE ON FUNCTION public." + signature + " TO anon;"));
   }
 });
+
+
+test("admin claim conflicts refresh stale inbox state and serialize concurrent actions", () => {
+  assert.match(adminJs, /let privateChatActionInFlight = false/);
+  assert.match(adminJs, /if \(privateChatActionInFlight\) return/);
+  const start = adminJs.indexOf("async function privateChatRunAdminAction(action)");
+  const end = adminJs.indexOf("async function privateChatSendAdminReply", start);
+  assert.ok(start >= 0 && end > start, "admin action function should exist");
+  const action = adminJs.slice(start, end);
+  assert.match(action, /action === "claim" && \/conversation_already_claimed_or_not_pending\/i\.test\(message\)/);
+  assert.match(action, /await loadPrivateChatInbox\(\{ silent: true \}\)/);
+  assert.match(action, /privateChatActionInFlight = false/);
+  assert.match(action, /Esta solicitud ya no está pendiente/);
+});
