@@ -3308,3 +3308,65 @@ body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
     padding:9px 12px !important;
   }
 }
+
+
+/* JB TECH · Auditoría de espacio público (2026-10-29).
+   Acerca el hero al catálogo sin tocar los controles ni la lógica de datos.
+   Ajustes limitados a ritmo vertical y espacio lateral de la página de listado. */
+@media (min-width: 761px) {
+  body.technology-catalog .catalog-section {
+    padding-top: clamp(38px, 4.2vw, 58px);
+    padding-bottom: 44px;
+  }
+  body.technology-catalog .technology-promo-banner {
+    margin-top: 24px;
+    margin-bottom: 0;
+  }
+  body.technology-catalog .section-heading {
+    margin-bottom: 18px;
+  }
+  body.technology-catalog .filter-row {
+    margin-top: 18px;
+    margin-bottom: 13px;
+  }
+  body.technology-catalog .budget-filter-bar {
+    margin-bottom: 22px;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog .catalog-section {
+    padding: 30px 16px 34px;
+  }
+  body.technology-catalog .section-heading {
+    gap: 14px;
+    margin-bottom: 15px;
+  }
+  body.technology-catalog .filter-row {
+    gap: 7px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+  body.technology-catalog .filter-chip {
+    min-height: 36px;
+    padding: 7px 12px;
+  }
+  body.technology-catalog .catalog-extra-filters {
+    gap: 11px;
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+  body.technology-catalog .budget-filter-bar {
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 12px;
+  }
+  body.technology-catalog .catalog-results-heading {
+    margin-top: 16px;
+  }
+}
+@media (min-width: 1200px) {
+  /* Override the existing desktop padding shorthand that intentionally uses !important. */
+  body.technology-catalog .catalog-section {
+    padding: clamp(38px, 3.6vw, 54px) clamp(18px, 1.8vw, 30px) 44px !important;
+  }
+}

@@ -10,7 +10,7 @@ export const regressionGroups = [
   { name: "core-and-design", tests: [
     test("tests/cache-key-change-guard.test.mjs"), test("tests/dependency-audit.test.mjs"),
     test("tests/migration-history-hygiene.test.mjs"), test("tests/ai-assistant-layout.test.mjs"),
-    test("tests/catalog-specifications-format.test.mjs"), test("tests/public-commercial-readiness.test.mjs"),
+    test("tests/catalog-specifications-format.test.mjs"), test("tests/public-commercial-readiness.test.mjs"), test("tests/public-catalog-whitespace.test.mjs"),
     test("tests/conversion-trust.test.mjs"), test("tests/design-authenticity-audit.test.mjs"),
     test("tests/design-quality-audit.test.mjs"), test("tests/limited-edition-sections.test.mjs"),
     test("tests/product-tag-formatting.test.mjs"), test("tests/asset-cache-contract.test.mjs"),

@@ -8,7 +8,7 @@ const workflow = readFileSync(new URL("../.github/workflows/catalog-static-check
 const requiredTests = [
   "cache-key-change-guard.test.mjs", "dependency-audit.test.mjs", "migration-history-hygiene.test.mjs",
   "private-chat-mobile-layout.test.mjs", "private-chat-state-behavior.test.mjs", "ai-assistant-layout.test.mjs",
-  "catalog-specifications-format.test.mjs", "public-commercial-readiness.test.mjs", "conversion-trust.test.mjs",
+  "catalog-specifications-format.test.mjs", "public-commercial-readiness.test.mjs", "public-catalog-whitespace.test.mjs", "conversion-trust.test.mjs",
   "design-authenticity-audit.test.mjs", "design-quality-audit.test.mjs", "admin-notifications.test.mjs",
   "admin-panel-quality-audit.test.mjs", "admin-save-regression.test.mjs", "admin-product-form-workflow.test.mjs",
   "limited-edition-sections.test.mjs", "cloudflare-share.test.mjs", "cloudflare-download.test.mjs",
