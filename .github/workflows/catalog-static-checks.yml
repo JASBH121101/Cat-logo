@@ -65,6 +65,17 @@ jobs:
             count=$((count + 1))
           done < <(git ls-files -z '*.js')
           echo "JavaScript syntax check passed for $count tracked .js files."
+      - name: Check syntax of all tracked JavaScript module files
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            echo "Checking module $file"
+            node --check "$file"
+            count=$((count + 1))
+          done < <(git ls-files -z '*.mjs')
+          echo "JavaScript module syntax check passed for $count tracked .mjs files."
       - name: Guard cache keys when browser assets change
         shell: bash
         env:
