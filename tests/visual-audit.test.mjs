@@ -918,6 +918,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 "color helper must open an accessible modal dialog");
               assert.equal(await overlay.locator("[data-color-ai-query]").count(), 1);
               assert.equal(await overlay.locator("[data-color-ai-image]").count(), 1);
+              // The dialog pre-fills the current color as a convenience; clear it to test empty-input validation.
+              await overlay.locator("[data-color-ai-query]").fill("");
               await overlay.locator("[data-color-ai-analyze]").click();
               assert.match(await overlay.locator("[data-color-ai-status]").innerText(),
                 /Escribí una referencia\/pregunta o adjuntá una foto/,
