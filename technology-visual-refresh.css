@@ -3221,3 +3221,90 @@ body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
     min-height:42px !important;
   }
 }
+
+
+/* JB TECH · escritorio: más ancho útil y etiquetas legibles sin alargar las tarjetas. */
+@media (min-width:1200px) {
+  body.technology-catalog .catalog-section {
+    width:min(1580px,calc(100% - 40px)) !important;
+    max-width:1580px !important;
+    padding:clamp(44px,4vw,62px) clamp(18px,1.8vw,30px) 54px !important;
+  }
+  body.technology-catalog #featured-section,
+  body.technology-catalog #limited-edition-section,
+  body.technology-catalog #high-performance-section,
+  body.technology-catalog #quality-price-section,
+  body.technology-catalog #top-gaming-section {
+    padding:22px !important;
+    margin:22px 0 28px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)) !important;
+    gap:14px !important;
+  }
+  body.technology-catalog #featured-grid .product-card-badges,
+  body.technology-catalog #limited-edition-grid .product-card-badges,
+  body.technology-catalog #high-performance-grid .product-card-badges,
+  body.technology-catalog #quality-price-grid .product-card-badges,
+  body.technology-catalog #top-gaming-grid .product-card-badges {
+    gap:4px 5px !important;
+    margin-bottom:1px !important;
+  }
+  body.technology-catalog #featured-grid .product-badge,
+  body.technology-catalog #limited-edition-grid .product-badge,
+  body.technology-catalog #high-performance-grid .product-badge,
+  body.technology-catalog #quality-price-grid .product-badge,
+  body.technology-catalog #top-gaming-grid .product-badge,
+  body.technology-catalog #featured-grid .product-tag-badge,
+  body.technology-catalog #limited-edition-grid .product-tag-badge,
+  body.technology-catalog #high-performance-grid .product-tag-badge,
+  body.technology-catalog #quality-price-grid .product-tag-badge,
+  body.technology-catalog #top-gaming-grid .product-tag-badge {
+    font-size:11.5px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    padding:4px 7px !important;
+    letter-spacing:0 !important;
+    white-space:nowrap !important;
+    overflow-wrap:normal !important;
+  }
+  body.technology-catalog #featured-grid .product-card-capacity,
+  body.technology-catalog #limited-edition-grid .product-card-capacity,
+  body.technology-catalog #high-performance-grid .product-card-capacity,
+  body.technology-catalog #quality-price-grid .product-card-capacity,
+  body.technology-catalog #top-gaming-grid .product-card-capacity {
+    font-size:12.5px !important;
+    line-height:1.3 !important;
+    padding:4px 7px !important;
+  }
+  body.technology-catalog #featured-grid .product-price-label,
+  body.technology-catalog #limited-edition-grid .product-price-label,
+  body.technology-catalog #high-performance-grid .product-price-label,
+  body.technology-catalog #quality-price-grid .product-price-label,
+  body.technology-catalog #top-gaming-grid .product-price-label {
+    font-size:11.5px !important;
+    line-height:1.3 !important;
+    padding-top:3px !important;
+  }
+  body.technology-catalog #featured-grid .product-price-secondary,
+  body.technology-catalog #limited-edition-grid .product-price-secondary,
+  body.technology-catalog #high-performance-grid .product-price-secondary,
+  body.technology-catalog #quality-price-grid .product-price-secondary,
+  body.technology-catalog #top-gaming-grid .product-price-secondary {
+    font-size:12.5px !important;
+    line-height:1.25 !important;
+  }
+  body.technology-catalog #featured-grid .product-view-button,
+  body.technology-catalog #limited-edition-grid .product-view-button,
+  body.technology-catalog #high-performance-grid .product-view-button,
+  body.technology-catalog #quality-price-grid .product-view-button,
+  body.technology-catalog #top-gaming-grid .product-view-button {
+    font-size:14px !important;
+    min-height:42px !important;
+    padding:9px 12px !important;
+  }
+}

@@ -760,3 +760,32 @@ body.perfume-page .jb-ai-compare-ai {
   }
   body.technology-catalog .jb-ai-launcher-spark { font-size: 20px; }
 }
+
+
+/* JB TECH · lanzador flotante solo con icono en escritorio; mantiene nombre accesible. */
+body.technology-catalog .jb-ai-launcher-label {
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+@media (min-width:521px) {
+  body.technology-catalog .jb-ai-launcher {
+    width:52px;
+    min-width:52px;
+    height:52px;
+    min-height:52px;
+    padding:0;
+    border-radius:50%;
+    gap:0;
+    box-shadow:0 7px 20px rgba(42,65,155,.32);
+  }
+  body.technology-catalog .jb-ai-launcher-spark {
+    font-size:23px;
+  }
+}

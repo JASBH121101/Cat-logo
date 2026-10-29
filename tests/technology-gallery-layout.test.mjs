@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-showcase-readable-type1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-desktop-readable-bubble1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
@@ -70,6 +70,14 @@ test("curated showcase typography is easier to read without changing responsive 
   assert.match(css, /#limited-edition-grid\.featured-grid[\s\S]*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,430px\),1fr\)\) !important/);
   assert.match(css, /#limited-edition-grid\.featured-grid \.product-badge[\s\S]*?font-size:10px !important/);
   assert.match(css, /#limited-edition-grid\.featured-grid \.product-view-button[\s\S]*?font-size:13\.5px !important/);
+});
+
+test("desktop JB TECH showcases use the available width and readable compact labels", () => {
+  assert.match(css, /JB TECH · escritorio: más ancho útil y etiquetas legibles/);
+  assert.match(css, /width:min\(1580px,calc\(100% - 40px\)\) !important/);
+  assert.match(css, /max-width:1580px !important/);
+  assert.match(css, /font-size:11\.5px !important/);
+  assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,430px\),1fr\)\) !important/);
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
