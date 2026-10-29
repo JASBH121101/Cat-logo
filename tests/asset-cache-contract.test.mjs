@@ -45,5 +45,5 @@ test("shared contact-channel styles load after catalog-specific styles", () => {
   assert.match(styleLinks(techHtml).at(-1) || "", /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(styleLinks(perfumeHtml).at(-1) || "", /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(styleLinks(techHtml).at(-2) || "", /technology-visual-refresh\.css\?v=20261029-desktop-readable-bubble1/);
-  assert.match(styleLinks(perfumeHtml).at(-2) || "", /perfumeria\.css\?v=20261029-a11y-contrast3/);
+  assert.match(styleLinks(perfumeHtml).at(-2) || "", /perfumeria\.css\?v=20261029-whitespace-hero1/);
 });
