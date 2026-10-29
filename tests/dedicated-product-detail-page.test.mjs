@@ -110,6 +110,7 @@ test("both dedicated product pages use natural document scrolling on desktop and
         const markup='<!doctype html><html lang="es" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}'+item.css+'</style></head><body class="'+item.bodyClass+'">'+item.markup+'</body></html>';
         await page.setContent(markup);
         for (const theme of ["light","dark"]) {
+          await page.evaluate(() => window.scrollTo({top:0,behavior:"instant"}));
           await page.evaluate(value => { document.documentElement.dataset.theme=value; },theme);
           const before=await page.evaluate(({detail,content,layout,gallery,sibling,header})=>{
             const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return{top:r.top,left:r.left,right:r.right,width:r.width,height:r.height};};
