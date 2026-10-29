@@ -47,7 +47,7 @@ test("perfumery cards and product detail use a compact mobile rhythm and refresh
 
 test("perfumery hero reduces desktop dead space and blends light product-photo backgrounds into the stage", () => {
   assert.match(perfumeCss, /@media \(min-width: 881px\)[\s\S]*?body\.perfume-page \.perfume-hero\s*\{[^}]*padding-top:\s*clamp\(30px, 4vw, 56px\)[^}]*padding-bottom:\s*clamp\(26px, 3\.1vw, 42px\)[^}]*gap:\s*clamp\(22px, 3\.8vw, 54px\)/);
-  assert.match(perfumeCss, /html\[data-theme="light"\]\s+body\.perfume-page \.perfume-hero-photo\s*\{[^}]*mix-blend-mode:\s*multiply\s*!important/);
+  assert.match(perfumeCss, /body\.perfume-page \.perfume-hero-photo\s*\{[^}]*mix-blend-mode:\s*darken\s*!important/);
   assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-whitespace-hero1/);
 });
 
