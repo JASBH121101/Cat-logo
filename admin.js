@@ -3438,7 +3438,7 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
         "success"
       );
     } else if (result.reason === "unsupported") {
-      privateChatSetStatus("Este navegador no admite notificaciones. La mensajería seguirá actualizándose dentro de JB Manager.", "error");
+      privateChatSetStatus("Este navegador o contenedor no admite notificaciones. Si abriste JB Manager desde una APK o ventana integrada, abrí el panel directamente en Google Chrome: https://jb-collections.pages.dev/admin.html. Android WebView no admite PushManager; dentro de la APK las alertas push no se pueden activar con esta función.", "error");
     } else if (result.reason === "insecure-context") {
       privateChatSetStatus("Las notificaciones requieren HTTPS o localhost. Abrí JB Manager desde su dirección segura.", "error");
     } else if (result.reason === "permission-denied") {
@@ -3446,7 +3446,7 @@ document.getElementById("private-chat-enable-notifications")?.addEventListener("
     } else if (result.reason === "permission-not-granted") {
       privateChatSetStatus("No se concedió permiso para notificaciones. Podés seguir revisando la bandeja manualmente.", "error");
     } else if (result.reason === "push-unsupported") {
-      privateChatSetStatus("Este navegador no admite push en segundo plano. Actualizá el navegador o activá las notificaciones desde un navegador compatible.", "error");
+      privateChatSetStatus("Este navegador no admite Web Push en segundo plano. Si estás usando JB Manager dentro de una APK o ventana integrada, abrí https://jb-collections.pages.dev/admin.html directamente en Google Chrome y activá las notificaciones allí.", "error");
     } else if (result.reason === "admin-session-required") {
       privateChatSetStatus("Tu sesión administrativa no está lista. Cerrá sesión, volvé a entrar y activá las notificaciones.", "error");
     } else if (result.reason === "push-config-missing" || result.reason === "invalid-public-key") {
