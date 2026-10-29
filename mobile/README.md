@@ -27,3 +27,5 @@ When the run has completed successfully, open the run and download the artifact 
 - Catalog edits still require internet access because product data, authentication, and image storage use Supabase.
 - The application bundle contains the admin web assets but does not contain Supabase service-role credentials. The existing public publishable/anonymous key continues to rely on Supabase Row Level Security and database policies.
 - The public GitHub Pages URLs are not changed by this Android wrapper.
+
+- Android APK notifications use Capacitor Local Notifications for permission prompts and on-device alerts while JB Manager is running and polling the inbox. This is not background push: alerts while the app is backgrounded or closed require a separately configured Firebase Cloud Messaging (FCM) project and server credentials. The browser version continues to use Web Push and its service worker.
