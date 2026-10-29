@@ -42,5 +42,12 @@ test("perfumery cards and product detail use a compact mobile rhythm and refresh
   assert.match(perfumeCss, /\.perfume-page \.perfume-dialog-main-image\s*\{/);
   assert.match(perfumeCss, /@media \(max-width: 640px\)[\s\S]*?\.perfume-product-card-content/);
   assert.match(techHtml, /technology-visual-refresh\.css\?v=20261029-desktop-readable-bubble1/);
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-a11y-contrast3/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-whitespace-hero1/);
+});
+
+
+test("perfumery hero reduces desktop dead space and blends light product-photo backgrounds into the stage", () => {
+  assert.match(perfumeCss, /@media \\(min-width: 881px\\)[\\s\\S]*?body\\.perfume-page \\.perfume-hero\\s*\\{[^}]*padding-top:\\s*clamp\\(30px, 4vw, 56px\\)[^}]*padding-bottom:\\s*clamp\\(26px, 3\\.1vw, 42px\\)[^}]*gap:\\s*clamp\\(22px, 3\\.8vw, 54px\\)/);
+  assert.match(perfumeCss, /html\\[data-theme="light"\\]\\s+body\\.perfume-page \\.perfume-hero-photo\\s*\\{[^}]*mix-blend-mode:\\s*multiply\\s*!important/);
+  assert.match(perfumeHtml, /perfumeria\\.css\\?v=20261029-whitespace-hero1/);
 });
