@@ -109,6 +109,13 @@ test("AI assistant blocks personal data locally and discloses session-only memor
 });
 
 
+test("JB TECH desktop advisor is an accessible icon-only bubble", () => {
+  assert.match(aiCss, /JB TECH · lanzador flotante solo con icono en escritorio/);
+  assert.match(aiCss, /@media \(min-width:521px\)[\s\S]*?body\.technology-catalog \.jb-ai-launcher[\s\S]*?width:52px[\s\S]*?height:52px[\s\S]*?border-radius:50%/);
+  assert.match(aiCss, /body\.technology-catalog \.jb-ai-launcher-label[\s\S]*?clip:rect\(0,0,0,0\)/);
+  assert.match(aiJs, /aria-label="Abrir asesor IA de JB Collections"/);
+});
+
 test("JB TECH mobile advisor is a compact round control while Parfums keeps its launcher", () => {
   assert.ok(aiCss.includes("body.technology-catalog .jb-ai-launcher"));
   assert.ok(aiCss.includes("width: 48px"));
