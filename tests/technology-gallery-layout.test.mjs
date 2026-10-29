@@ -402,7 +402,7 @@ test("temporary live product-image resolution probe", { timeout: 30000 }, async 
       img.onerror = () => { clearTimeout(timer); resolve({src: src.split("/").pop(), loaded: false, reason: "load-error"}); };
       img.src = src;
     }))), sources);
-    console.log("[PRODUCT_IMAGE_RESOLUTION_PROBE] " + JSON.stringify(dimensions));
+    assert.fail("[PRODUCT_IMAGE_RESOLUTION_PROBE] " + JSON.stringify(dimensions));
     await page.close();
   } finally {
     await browser.close();
