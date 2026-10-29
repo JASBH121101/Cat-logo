@@ -498,7 +498,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "",
     "## Hallazgos ordenados por gravedad",
     "",
-    ...(findings.length ? findings.map((f, i) => `${i + 1}. **[${f.severity.toUpperCase()}]` ${f.page} / ${f.theme} / ${f.viewport} — ${f.message}\n   - Evidencia: ${escMarkdown(f.evidence)}\n   - Reparación sugerida: ${escMarkdown(f.recommendation)}`) : ["No se activaron las reglas de diagnóstico configuradas. Esto no equivale a probar flujos de negocio autenticados."]),
+...(findings.length ? findings.map((f, i) => `${i + 1}. **[${f.severity.toUpperCase()}] ${f.page} / ${f.theme} / ${f.viewport}** — ${f.message}\\n   - Evidencia: ${escMarkdown(f.evidence)}\\n   - Diagnóstico (${Math.round((f.diagnosis?.confidence || 0) * 100)}%): ${f.diagnosis?.hypothesis || "Sin hipótesis"}\\n   - Siguiente verificación: ${f.diagnosis?.nextCheck || "Revisión manual"}\\n   - Recomendación: ${escMarkdown(f.recommendation)}`) : ["No se activaron las reglas de diagnóstico configuradas. Esto no equivale a probar flujos de negocio autenticados."]),
     "",
     "## Resumen del diagnóstico", "",
     "- El sistema asigna códigos de causa probable, confianza orientativa, archivos candidatos y un siguiente paso de verificación.",
