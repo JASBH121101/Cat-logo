@@ -12,10 +12,14 @@ const chatStyles = await readFile(new URL("admin-private-chat.css", root), "utf8
 const workflow = await readFile(new URL(".github/workflows/catalog-static-checks.yml", root), "utf8");
 
 function attrValues(source, attribute) {
-  const regex = new RegExp("\\b" + attribute + "\\s*=\\s*([\\"'])(.*?)\\1", "g");
-  return [...source.matchAll(regex)].map(match => match[2]);
+  const values = [];
+  for (const tag of source.matchAll(/<[a-z][^>]*>/gi)) {
+    for (const match of tag[0].matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+      if (match[1].toLowerCase() === attribute.toLowerCase()) values.push(match[2] ?? match[3] ?? "");
+    }
+  }
+  return values;
 }
-
 test("complete admin panel audit validates navigation, accessibility signals and responsive geometry", { timeout: 90000 }, async () => {
   const findings = [];
   const actions = new Set(attrValues(html, "data-admin-section"));
