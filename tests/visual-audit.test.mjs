@@ -10,6 +10,7 @@ import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "
 import { analyzeVerticalRhythm } from "./visual-design-quality-policy.mjs";
 import { analyzeDialogQuality } from "./visual-state-quality-policy.mjs";
 import { analyzeProductComposition } from "./visual-composition-quality-policy.mjs";
+import { analyzeImageOccupancy } from "./visual-image-quality-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -159,7 +160,7 @@ function escMarkdown(value) {
 function fixtureScript(pageName) {
   return `
     (() => {
-      const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#d7deeb"/></svg>');
+      const svg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900"><rect width="600" height="900" fill="#ffffff"/><rect x="190" y="95" width="220" height="690" rx="30" fill="#20242a" stroke="#111820" stroke-width="14"/><rect x="210" y="135" width="180" height="590" rx="16" fill="#7188b7"/><circle cx="300" cy="752" r="8" fill="#111820"/></svg>');
       if (${JSON.stringify(pageName)} === "technology-detail") {
         const detail = document.getElementById("product-detail-page");
         const content = document.getElementById("dialog-content");
@@ -362,7 +363,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           }
         }, theme);
 
-        const snapshot = await page.evaluate(({ pageName, viewportName, themeName }) => {
+        const snapshot = await page.evaluate(async ({ pageName, viewportName, themeName }) => {
           const rectData = element => {
             const rect = element.getBoundingClientRect();
             const style = getComputedStyle(element);
@@ -380,6 +381,58 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           const isVisible = el => {
             const s = getComputedStyle(el), r = el.getBoundingClientRect();
             return s.display !== "none" && s.visibility !== "hidden" && r.width > 0 && r.height > 0;
+          };
+          // Estimate the object's visible footprint inside the source photo, not just the CSS img box.
+          // Advisory heuristic: compare pixels to the average corner color; no semantic AI model is assumed.
+          const inspectImageSubject = async image => {
+            if (!image || !image.complete || !(image.naturalWidth > 0) || !(image.naturalHeight > 0)) {
+              return { status: "unavailable", reason: "image-not-loaded" };
+            }
+            try {
+              if (typeof image.decode === "function") await image.decode();
+              const scale = Math.min(1, 240 / Math.max(image.naturalWidth, image.naturalHeight));
+              const width = Math.max(1, Math.round(image.naturalWidth * scale));
+              const height = Math.max(1, Math.round(image.naturalHeight * scale));
+              const canvas = document.createElement("canvas");
+              canvas.width = width; canvas.height = height;
+              const context = canvas.getContext("2d", { willReadFrequently: true });
+              if (!context) return { status: "unavailable", reason: "canvas-context-unavailable" };
+              context.drawImage(image, 0, 0, width, height);
+              const pixels = context.getImageData(0, 0, width, height).data;
+              const corners = [[1,1],[width-2,1],[1,height-2],[width-2,height-2]].map(([x,y]) => {
+                const i = (Math.max(0,y)*width+Math.max(0,x))*4;
+                return [pixels[i],pixels[i+1],pixels[i+2]];
+              });
+              const background = [0,1,2].map(c => corners.reduce((sum,p)=>sum+p[c],0)/corners.length);
+              const cornerSpread = Math.max(...corners.map(p =>
+                Math.sqrt(p.reduce((sum,v,c)=>sum+(v-background[c])**2,0))
+              ));
+              let minX=width,minY=height,maxX=-1,maxY=-1,foregroundPixels=0;
+              for(let y=0;y<height;y+=1) for(let x=0;x<width;x+=1) {
+                const i=(y*width+x)*4, alpha=pixels[i+3]/255;
+                const distance=Math.sqrt((pixels[i]-background[0])**2+(pixels[i+1]-background[1])**2+(pixels[i+2]-background[2])**2);
+                if(alpha>0.12 && distance>=48) {
+                  foregroundPixels+=1; minX=Math.min(minX,x); minY=Math.min(minY,y);
+                  maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
+                }
+              }
+              if(foregroundPixels<8 || maxX<minX || maxY<minY) {
+                return {status:"inconclusive",reason:"no-distinct-subject-detected",confidence:0.2,cornerSpread};
+              }
+              const boxWidth=maxX-minX+1, boxHeight=maxY-minY+1;
+              return {
+                status:"measured",
+                confidence:cornerSpread<=42?0.9:cornerSpread<=100?0.58:0.35,
+                imageWidth:image.naturalWidth,imageHeight:image.naturalHeight,
+                foregroundWidthRatio:boxWidth/width,foregroundHeightRatio:boxHeight/height,
+                foregroundAreaRatio:(boxWidth*boxHeight)/(width*height),
+                foregroundPixelRatio:foregroundPixels/(width*height),
+                cornerSpread:Math.round(cornerSpread),
+                method:"corner-background color-distance bounding-box heuristic"
+              };
+            } catch(error) {
+              return {status:"unavailable",reason:/taint|origin|cross-origin/i.test(error?.message||"")?"canvas-cross-origin":"canvas-read-failed"};
+            }
           };
           const root = document.documentElement;
           const docWidth = Math.max(root.scrollWidth, document.body.scrollWidth);
