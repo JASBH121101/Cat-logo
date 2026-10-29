@@ -7,6 +7,7 @@ import test from "node:test";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
+import { analyzeVerticalRhythm } from "./visual-design-quality-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -401,6 +402,30 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 };
               })
             : [];
+          const contentRegions = [...document.querySelectorAll("main > section, main > div, #dashboard > section, .admin-main > section, .admin-content > section")]
+            .filter(isVisible)
+            .map((element, index) => {
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              const text = (element.innerText || "").replace(/\\s+/g, " ").trim();
+              return {
+                index,
+                selector: element.tagName.toLowerCase() + (element.id ? "#" + element.id : "") +
+                  (typeof element.className === "string" && element.className.trim()
+                    ? "." + element.className.trim().split(/\\s+/).slice(0, 2).join(".") : ""),
+                top: Math.round(rect.top + window.scrollY),
+                bottom: Math.round(rect.bottom + window.scrollY),
+                height: Math.round(rect.height),
+                textLength: text.length,
+                childCount: element.children.length,
+                paddingTop: style.paddingTop,
+                paddingBottom: style.paddingBottom,
+                marginTop: style.marginTop,
+                marginBottom: style.marginBottom,
+                background: style.backgroundColor,
+              };
+            })
+            .filter(region => region.height >= 80 && region.textLength >= 24);
           const keyText = [...document.querySelectorAll("h1, h2, h3, .hero-trust-copy, .private-chat-privacy, .private-chat-footer-note, .private-chat-admin-security-note, button, .buy-button")]
             .filter(isVisible).slice(0, 70).map(el => ({
               selector: el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
@@ -417,11 +442,31 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             productCards: products.length,
             trustCards,
             showcaseLayouts,
+            contentRegions,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
 
         observations.push(snapshot);
+        const rhythmFindings = analyzeVerticalRhythm(snapshot.contentRegions, {
+          viewportWidth: snapshot.viewportWidth,
+          mobile: viewport.mobile,
+        });
+        for (const rhythm of rhythmFindings) {
+          addFinding({
+            severity: rhythm.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: rhythm.element,
+            message: rhythm.message,
+            evidence: rhythm.evidence,
+            recommendation: rhythm.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = rhythm.code;
+          findings[findings.length - 1].measuredGap = rhythm.measuredGap;
+        }
         for (const runtimeError of pageErrors) {
           const error = runtimeError.message || String(runtimeError);
           const classification = classifyRuntimeError(error, {
@@ -733,6 +778,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       axeViolations: axeFindings.length,
       axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
+      whitespaceRhythmFindings: findings.filter(finding => finding.code === "VISUAL_WHITESPACE_RHYTHM").length,
     },
     observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
@@ -740,6 +786,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
+      designQualityRule: "The client-eye audit flags unusually large blank gaps between meaningful top-level content regions with measured geometry and a concrete compaction suggestion. These findings are advisory until thresholds are calibrated against intentional brand layouts.",
       note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
@@ -770,6 +817,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "- La confianza es una heurística basada en la evidencia, no una probabilidad estadística ni una reparación automática.",
     "- Los hallazgos de accesibilidad son señales de revisión; no se corrigen ni se ocultan automáticamente.",
     "", "## Geometría observada",
+    `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
     "|---|---|---|---:|---:|---:|",
