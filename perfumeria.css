@@ -3129,38 +3129,67 @@ html body.perfume-page.perfume-detail-active #perfume-detail-page:not(.hidden) {
 /* JB PARFUMS · premium price numerals: preserve the editorial serif, improve readability. */
 body.perfume-page .perfume-product-card .perfume-product-price {
   font-family: "Playfair Display", Georgia, serif !important;
-  font-size: clamp(23px, 1.65vw, 27px) !important;
+  font-size: clamp(25px, 1.8vw, 29px) !important;
   font-weight: 700 !important;
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: "kern" 1, "lnum" 1, "tnum" 1;
-  letter-spacing: .012em !important;
-  line-height: 1.16 !important;
+  letter-spacing: .025em !important;
+  font-kerning: normal;
+  line-height: 1.2 !important;
   white-space: nowrap;
 }
 body.perfume-page .perfume-product-card .perfume-product-price-secondary {
   margin-top: 0 !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  line-height: 1.35 !important;
+  line-height: 1.4 !important;
   letter-spacing: .015em;
   font-variant-numeric: lining-nums tabular-nums;
 }
 body.perfume-page .perfume-product-card .perfume-product-meta {
-  font-size: 10px !important;
-  line-height: 1.4 !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
 }
 @media (max-width: 640px) {
   body.perfume-page .perfume-product-card .perfume-product-price {
-    font-size: clamp(21px, 5.4vw, 25px) !important;
+    font-size: clamp(24px, 6.1vw, 28px) !important;
     font-weight: 700 !important;
-    letter-spacing: .008em !important;
-    line-height: 1.18 !important;
+    letter-spacing: .025em !important;
+    font-kerning: normal;
+    line-height: 1.2 !important;
   }
   body.perfume-page .perfume-product-card .perfume-product-price-secondary {
-    font-size: 11px !important;
+    font-size: 12px !important;
     font-weight: 600 !important;
   }
   body.perfume-page .perfume-product-card .perfume-product-meta {
-    font-size: 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+
+/* Price detail: bolder lining numerals without changing JB Parfums' elegant serif identity. */
+body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price strong {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: clamp(35px, 2.6vw, 44px) !important;
+  font-weight: 700 !important;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "kern" 1, "lnum" 1, "tnum" 1;
+  letter-spacing: .025em !important;
+  line-height: 1.2 !important;
+}
+body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price small {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+@media (max-width: 640px) {
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price strong {
+    font-size: clamp(32px, 8vw, 38px) !important;
+    font-weight: 700 !important;
+    letter-spacing: .02em !important;
+  }
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price small {
+    font-size: 12px !important;
   }
 }
