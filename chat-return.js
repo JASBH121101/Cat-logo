@@ -11,7 +11,8 @@
     try {
       const token = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY) || "";
       if (token) {
-        // Keep both stores aligned so older same-tab navigation still works.
+        // Promote legacy same-tab sessions to persistent access on this device.
+        try { localStorage.setItem(SESSION_KEY, token); } catch {}
         try { sessionStorage.setItem(SESSION_KEY, token); } catch {}
       }
       return token;
