@@ -232,7 +232,7 @@ jobs:
           grep -Fq 'JBManagerNativeNotifications' mobile/native-notifications.js
           grep -Fq 'src="./jb-manager-native-notifications.js"' mobile/www/admin.html
           test -s mobile/www/jb-manager-native-notifications.js
-          grep -Fq 'jb-manager-private-chat' mobile/www/jb-manager-native-notifications.js
+          grep -Fq 'jb-manager-private-chat' mobile/www/admin-notifications.mjs
           grep -Fq 'admin-notifications.mjs?v=20261029-native-local-notifications1' mobile/www/admin.js
           grep -Fq 'Para recibir avisos con la app cerrada hace falta configurar push nativo' mobile/www/admin.js
           grep -Fq 'compareVersions(savedVersion, installedVersion) > 0' mobile/native-android/ApkUpdaterPlugin.java
