@@ -22,7 +22,7 @@ test("public technology spacing remains inside the intended container in both th
   try {
     for (const viewport of [{width:390,height:844},{width:1365,height:900}]) {
       const page = await browser.newPage({viewport, isMobile: viewport.width < 600});
-      await page.setContent(`<!doctype html><html data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;overflow-x:hidden}${css}</style></head><body class="technology-catalog">
+      await page.setContent(`<!doctype html><html data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}${css}</style></head><body class="technology-catalog">
         <section class="technology-promo-banner"></section>
         <section class="catalog-section"><div class="section-heading"><h2>Catálogo</h2><label class="search-box"><input></label></div>
         <div class="filter-row"><button class="filter-chip">Celulares</button><button class="filter-chip">Accesorios</button></div>
@@ -43,10 +43,11 @@ test("public technology spacing remains inside the intended container in both th
             filters: rect(".catalog-extra-filters"),
             budget: rect(".budget-filter-bar"),
             theme: document.documentElement.dataset.theme,
-            overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+            overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            offenders: [...document.querySelectorAll("body *")].map(node => ({selector: node.tagName.toLowerCase() + (node.className && typeof node.className === "string" ? "." + node.className.trim().replace(/\\s+/g, ".") : ""), left: Math.round(node.getBoundingClientRect().left), right: Math.round(node.getBoundingClientRect().right), width: Math.round(node.getBoundingClientRect().width)})).filter(box => box.right > innerWidth + 2 || box.left < -2).slice(0, 10)
           };
         });
-        assert.ok(measured.overflow <= 2, `${viewport.width}px ${theme}: no meaningful horizontal overflow (measured ${measured.overflow}px)`);
+        assert.ok(measured.overflow <= 2, `${viewport.width}px ${theme}: no meaningful horizontal overflow (measured ${measured.overflow}px); offenders=${JSON.stringify(measured.offenders)}`);
         assert.ok(measured.catalog.left >= 0 && measured.catalog.right <= measured.viewport, `${viewport.width}px ${theme}: catalog stays within viewport`);
         assert.ok(measured.filters.height > 0 && measured.budget.height > 0, `${viewport.width}px ${theme}: filter surfaces remain rendered`);
       }
