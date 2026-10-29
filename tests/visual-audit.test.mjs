@@ -466,7 +466,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 recommendation: violation.description + " Referencia: " + violation.helpUrl,
               };
               axeFinding.diagnosis = diagnose(axeFinding);
-              const reportFinding = { ...axeFinding, element: axeFinding.rule, blocking: false };
+              const axeBlocks = violation.impact === "critical" || violation.impact === "serious";
+              const reportFinding = { ...axeFinding, element: axeFinding.rule, blocking: axeBlocks };
               axeViolationGroups.set(fingerprint, { finding: axeFinding, reportFinding });
               axeFindings.push(axeFinding);
               findings.push(reportFinding);
