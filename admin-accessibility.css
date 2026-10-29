@@ -248,3 +248,33 @@ html body.admin-body .dashboard.admin-section-focused #admin-section-messages .p
   padding: 7px 9px !important;
   font-size: 12px !important;
 }
+
+
+/* Ajuste final basado en el escaneo tipográfico: acciones primarias y etiquetas
+   de contexto/datos pasan a 12px; se mantiene el espacio general compacto. */
+html body.admin-body #private-chat-refresh,
+html body.admin-body #private-chat-enable-notifications,
+html body.admin-body .private-chat-admin-header-actions .button {
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+  font-size: 12px !important;
+}
+html body.admin-body .dashboard.admin-section-focused #admin-section-messages #private-chat-refresh,
+html body.admin-body .dashboard.admin-section-focused #admin-section-messages #private-chat-enable-notifications {
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+  font-size: 12px !important;
+}
+html body.admin-body .admin-catalog-context label {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+html body.admin-body .dashboard-interest-products-heading > span {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+html body.admin-body .eyebrow,
+html body.admin-body .admin-welcome-kicker {
+  font-size: 11.5px !important;
+  line-height: 1.3 !important;
+}
