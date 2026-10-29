@@ -313,6 +313,8 @@ jobs:
     name: Read-only production visual audit
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_production }}
     runs-on: ubuntu-latest
+    env:
+      AI_REVIEW_ENABLED: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -330,6 +332,24 @@ jobs:
         env:
           VISUAL_AUDIT_BASE_URL: https://jb-collections.pages.dev
         run: node tests/production-readonly-visual-audit.mjs
+      - name: AI review of real product detail screenshots (optional)
+        if: ${{ env.AI_REVIEW_ENABLED == 'true' }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node tests/ai-visual-review.mjs
+      - name: Record that model review is not configured
+        if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/production-visual-audit
+          cat > artifacts/production-visual-audit/ai-visual-review-status.md <<'EOF'
+          # AI visual review
+          
+          Status: not run.
+          
+          To enable optional screenshot review, configure the repository variable `CLOUDFLARE_ACCOUNT_ID` and repository secret `CLOUDFLARE_API_TOKEN`. The static browser audit will still run without these credentials. No screenshot is sent to an AI service unless both values are configured.
+          EOF
       - name: Upload production audit evidence
         if: always()
         uses: actions/upload-artifact@v4
