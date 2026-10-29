@@ -71,7 +71,11 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /html body\.admin-body footer\.site-footer span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.commission-summary-grid span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-updated,[\s\S]*?font-size:\s*12px\s*!important;/);
-  assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body select\.variant-storage-unit\s*\{[\s\S]*?appearance:\s*none\s*!important;[\s\S]*?background-image:\s*url\("data:image\/svg\+xml,[\s\S]*?stroke='%23E1EAFF'[\s\S]*?background-repeat:\s*no-repeat\s*!important;[\s\S]*?padding:\s*4px 22px 4px 7px\s*!important;/);
+  const storageArrowRule = accessibilityStyles.match(/html\[data-theme="dark"\] body\.admin-body select\.variant-storage-unit\s*\{[^}]*\}/)?.[0] || "";
+  assert.match(storageArrowRule, /appearance:\s*none\s*!important;/);
+  assert.match(storageArrowRule, /background-image:\s*url\("data:image\/svg\+xml,[\s\S]*?stroke='%23E1EAFF'/);
+  assert.match(storageArrowRule, /background-repeat:\s*no-repeat\s*!important;/);
+  assert.match(storageArrowRule, /padding:\s*4px 22px 4px 7px\s*!important;/);
   assert.match(html, /<select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(regressionRunner, /tests\/admin-panel-quality-audit\.test\.mjs/);
