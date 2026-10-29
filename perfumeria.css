@@ -2774,3 +2774,13 @@ html[data-theme="light"] body.perfume-page .perfume-featured-section--limited-ed
   .perfume-page .perfume-product-card-content { padding: 8px; }
   .perfume-page .perfume-product-card h3 { font-size: 12px; }
 }
+
+
+/* Accessibility audit fix: darken small gold editorial labels on the light paper surface. */
+html[data-theme="light"] body.perfume-page .perfume-hero-copy > .perfume-kicker,
+html[data-theme="light"] body.perfume-page .perfume-audience-heading .perfume-kicker,
+html[data-theme="light"] body.perfume-page .perfume-section-heading .perfume-kicker,
+html[data-theme="light"] body.perfume-page .perfume-featured-heading .perfume-kicker,
+html[data-theme="light"] body.perfume-page .perfume-results-heading .perfume-kicker {
+  color:#6f4f20!important;
+}
