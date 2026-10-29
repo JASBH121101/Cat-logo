@@ -37,7 +37,9 @@ let browser;
 const observations = [];
 const findings = [];
 const runtimeErrors = [];
+const networkFailures = [];
 const axeFindings = [];
+const axeViolationGroups = new Map();
 const screenshots = [];
 const journeyResults = [];
 
@@ -237,9 +239,44 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       for (const theme of THEMES) {
         const page = await context.newPage();
         const pageErrors = [];
-        page.on("pageerror", error => pageErrors.push(error.message));
+        page.on("pageerror", error => pageErrors.push({
+          source: "pageerror", message: error.message, stack: error.stack || "",
+        }));
         page.on("console", msg => {
-          if (msg.type() === "error" && /uncaught|syntaxerror|referenceerror|typeerror/i.test(msg.text())) pageErrors.push(msg.text());
+          if (msg.type() === "error" && /uncaught|syntaxerror|referenceerror|typeerror/i.test(msg.text())) {
+            pageErrors.push({ source: "console", message: msg.text(), stack: "" });
+          }
+        });
+        page.on("requestfailed", request => {
+          let requestedUrl;
+          try {
+            requestedUrl = new URL(request.url());
+          } catch {
+            return;
+          }
+          if (requestedUrl.protocol === "data:" || requestedUrl.protocol === "blob:") return;
+          const externalDependency = requestedUrl.origin !== origin;
+          const errorText = request.failure()?.errorText || "Unknown network error";
+          const blockedByPolicy = externalDependency && /ERR_BLOCKED_BY_CLIENT|blocked by client/i.test(errorText);
+          const resourceType = request.resourceType();
+          const classification = classifyRuntimeError(errorText, {
+            source: "network-request", externalDependency, blockedByPolicy, resourceType,
+          });
+          const failure = {
+            page: site.name, theme, viewport: viewport.name, host: requestedUrl.host,
+            resourceType, error: errorText, blockedByPolicy, ...classification,
+          };
+          networkFailures.push(failure);
+          if (classification.blocking) {
+            addFinding({
+              severity: classification.severity, page: site.name, theme, viewport: viewport.name,
+              element: "resource:" + requestedUrl.host + "/" + resourceType,
+              message: "Fallo de carga de recurso esencial",
+              evidence: requestedUrl.host + " (" + resourceType + "): " + errorText,
+              recommendation: classification.rationale,
+              blocking: true,
+            });
+          }
         });
         // Keep the audit deterministic and read-only: local first-party assets are allowed,
         // remote APIs and third-party requests are not invoked by this static visual suite.
@@ -327,19 +364,29 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
 
         observations.push(snapshot);
-        for (const error of pageErrors) {
-          const classification = classifyRuntimeError(error);
-          runtimeErrors.push({ page: site.name, theme, viewport: viewport.name, error, ...classification });
+        for (const runtimeError of pageErrors) {
+          const error = runtimeError.message || String(runtimeError);
+          const classification = classifyRuntimeError(error, {
+            source: runtimeError.source || "pageerror",
+            stack: runtimeError.stack || "",
+          });
+          runtimeErrors.push({
+            page: site.name, theme, viewport: viewport.name,
+            source: runtimeError.source || "pageerror", error,
+            stack: runtimeError.stack || "", ...classification,
+          });
           addFinding({
             severity: classification.severity, page: site.name, theme, viewport: viewport.name, element: "runtime",
             message: classification.blocking
               ? "Excepción JavaScript no controlada"
-              : "Error de dependencia/red en la auditoría aislada",
+              : classification.category === "console_diagnostic"
+                ? "Diagnóstico de consola no confirmado como excepción"
+                : "Error de dependencia/red en la auditoría aislada",
             evidence: error,
             recommendation: classification.rationale + " " +
               (classification.blocking
                 ? "Localizar el primer archivo y corregir la excepción antes de publicar."
-                : "Repetir el flujo con dependencias conectadas antes de concluir que existe una regresión."),
+                : "Conservar el diagnóstico y confirmar por separado cualquier flujo conectado que dependa de este servicio."),
             blocking: classification.blocking,
           });
         }
@@ -395,16 +442,34 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
               .analyze();
             for (const violation of axe.violations) {
+              const targets = violation.nodes
+                .map(node => (node.target || []).join(" "))
+                .filter(Boolean)
+                .sort();
+              const fingerprint = `${site.name}|${violation.id}|${targets.join("|")}`;
+              const existingGroup = axeViolationGroups.get(fingerprint);
+              if (existingGroup) {
+                existingGroup.finding.occurrences += 1;
+                if (!existingGroup.finding.themes.includes(theme)) existingGroup.finding.themes.push(theme);
+                if (!existingGroup.finding.viewports.includes(viewport.name)) existingGroup.finding.viewports.push(viewport.name);
+                existingGroup.reportFinding.occurrences = existingGroup.finding.occurrences;
+                existingGroup.reportFinding.themes = existingGroup.finding.themes;
+                existingGroup.reportFinding.viewports = existingGroup.finding.viewports;
+                continue;
+              }
               const axeFinding = {
                 severity: violation.impact === "critical" || violation.impact === "serious" ? "high" :
                   violation.impact === "moderate" ? "medium" : "low",
                 page: site.name, theme, viewport: viewport.name, rule: violation.id, impact: violation.impact,
+                themes: [theme], viewports: [viewport.name], occurrences: 1, targets,
                 message: violation.help, evidence: `${violation.nodes.length} nodo(s): ${String(violation.nodes[0]?.target?.join(" ") || "selector no disponible")}`,
                 recommendation: violation.description + " Referencia: " + violation.helpUrl,
               };
               axeFinding.diagnosis = diagnose(axeFinding);
+              const reportFinding = { ...axeFinding, element: axeFinding.rule, blocking: false };
+              axeViolationGroups.set(fingerprint, { finding: axeFinding, reportFinding });
               axeFindings.push(axeFinding);
-              findings.push({ ...axeFinding, element: axeFinding.rule, blocking: false });
+              findings.push(reportFinding);
             }
           } catch (error) {
             addFinding({
@@ -508,14 +573,19 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       blockingFindings: blockingFindings.length, findings: findings.length,
       runtimeErrors: runtimeErrors.length,
       blockingRuntimeErrors: runtimeErrors.filter(error => error.blocking).length,
+      networkFailures: networkFailures.length,
+      blockedExternalRequests: networkFailures.filter(failure => failure.blockedByPolicy).length,
+      blockingResourceFailures: networkFailures.filter(failure => failure.blocking).length,
       journeyFailures: journeyResults.filter(journey => !journey.passed).length,
       axeViolations: axeFindings.length,
+      axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
+      blockingAxeViolations: axeFindings.filter(finding => finding.impact === "critical" || finding.impact === "serious").length,
     },
-    observations, findings, axeFindings, runtimeErrors, screenshots, journeyResults,
+    observations, findings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
       remoteApisCalled: false,
-      blockingRule: "Uncaught application JavaScript exceptions, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Known network errors from isolated external dependencies are reported but do not block.",
-      note: "Local deterministic fixture. It does not authenticate to Supabase, mutate data, or prove live production network behavior.",
+      blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
+      note: "Local deterministic fixture. It does not authenticate to Supabase, mutate data, or prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
   await writeFile(REPORT_JSON, JSON.stringify(result, null, 2), "utf8");
@@ -528,7 +598,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     `- Hallazgos bloqueantes: ${blockingFindings.length}`,
     `- Hallazgos adicionales: ${findings.length}`,
     `- Errores JS: ${runtimeErrors.length}; bloqueantes: ${result.summary.blockingRuntimeErrors}`,
-    `- Violaciones Axe detectadas en móvil: ${axeFindings.length}`,
+    `- Solicitudes fallidas: ${result.summary.networkFailures}; bloqueadas intencionadamente: ${result.summary.blockedExternalRequests}; recursos esenciales bloqueantes: ${result.summary.blockingResourceFailures}`,
+    `- Violaciones Axe únicas detectadas en móvil: ${axeFindings.length}; ocurrencias por tema/escenario: ${result.summary.axeViolationOccurrences}; críticas/serias bloqueantes: ${result.summary.blockingAxeViolations}`,
     "",
     "## Hallazgos ordenados por gravedad",
     "",
@@ -554,7 +625,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "",
     "- Todas las páginas se sirven desde una copia estática local; la prueba inserta productos y mensajes sintéticos para revisar geometría representativa.",
     "- No se llaman APIs externas, no se autentica a un usuario y no se modifica Supabase.",
-    "- Axe se usa como detector de posibles problemas WCAG y genera recomendaciones; sus hallazgos no bloquean por sí solos hasta que se clasifiquen y se establezca una línea base.",
+    "- Axe se usa como detector WCAG. Las violaciones críticas/serias bloquean CI; las moderadas/menores permanecen como diagnósticos revisables. El mismo hallazgo por regla y selectores se agrupa entre temas, conservando sus ocurrencias.",
+    "- Los recursos externos bloqueados deliberadamente por la política de aislamiento se separan de los fallos de recursos esenciales; los errores de red no convierten automáticamente una excepción JavaScript no controlada en un falso positivo.",
     "- La puerta de bloqueo se aplica a regresiones geométricas deterministas especificadas en este test. La validación real de compras y de notificaciones necesita pruebas de integración separadas.",
     "",
   ].join("\n");
@@ -567,5 +639,6 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
   }
   assert.equal(observations.length, PAGES.length * VIEWPORTS.length * THEMES.length, "each page must be measured in every viewport/theme combination");
   assert.equal(screenshots.length, observations.length, "every visual scenario must produce screenshot evidence");
-  assert.equal(blockingFindings.length, 0, "critical deterministic layout regressions block CI; see visual-audit-report.md");
+  assert.equal(result.summary.blockingAxeViolations, 0, "critical/serious Axe violations block CI; see visual-audit-report.md");
+  assert.equal(blockingFindings.length, 0, "critical deterministic layout/runtime/resource regressions block CI; see visual-audit-report.md");
 });
