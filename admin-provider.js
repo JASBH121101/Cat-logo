@@ -1000,9 +1000,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       provider_name: providerName,
       provider_product_id: previous.provider_product_id ?? null,
       provider_url: previous.provider_url ?? null,
-      // Blank fields mean "not provided this time"; retain the latest known supplier values.
-      provider_price_usd: priceUSD ?? previous.provider_price_usd ?? null,
-      provider_price_nio: priceNIO ?? previous.provider_price_nio ?? null,
+      // Variant products store the base price from the lowest-spec configuration only.
+      // Products without variants retain the previous general supplier price when the field is blank.
+      provider_price_usd: hasVariants ? priceUSD : (priceUSD ?? previous.provider_price_usd ?? null),
+      provider_price_nio: hasVariants ? priceNIO : (priceNIO ?? previous.provider_price_nio ?? null),
       provider_availability: overallAvailability,
       provider_variant_snapshot: variantSnapshot,
       review_notes: $("#provider-review-notes").value.trim() || null,
