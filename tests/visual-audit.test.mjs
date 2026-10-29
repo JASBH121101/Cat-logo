@@ -463,7 +463,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   imageWidth: Math.round(imageRect.width), imageHeight: Math.round(imageRect.height),
                   imageFrameRatio: Math.min(imageRect.width / Math.max(1, frameRect.width), imageRect.height / Math.max(1, frameRect.height)),
                   imageAreaRatio: imageArea / frameArea,
-                  leftColumnRatio: leftRect.width / Math.max(1, rightRect.width),
+                  leftColumnWidth: Math.round(leftRect.width),\n                  rightColumnWidth: Math.round(rightRect.width),
                   rightColumnDensity: Math.min(1, contentArea / rightArea),
                   rightContentDensity: Math.min(1, contentArea / rightArea),
                 };
@@ -888,7 +888,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
-      designQualityRule: "The client-eye audit flags unusually large blank gaps between meaningful top-level content regions and audits visible dialog geometry/control sizes with measured evidence. These findings are advisory until thresholds are calibrated against intentional brand layouts. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
+      designQualityRule: "The client-eye audit measures unusually large blank gaps, product image/frame geometry, information-column balance, and visible dialog/control dimensions. These deterministic checks produce advisory findings with evidence; they do not interpret image pixels or replace human visual judgment. The product-detail layout uses synthetic content. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
       note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
