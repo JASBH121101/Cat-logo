@@ -378,6 +378,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   width: Math.round(gridRect.width), cardCount: cards.length,
                   cardLeft: cardRect ? Math.round(cardRect.left) : null,
                   cardRight: cardRect ? Math.round(cardRect.right) : null,
+                  cardWidth: cardRect ? Math.round(cardRect.width) : null,
                   centerOffset: cardCenter === null ? null : Math.round(Math.abs(cardCenter - gridCenter))
                 };
               })
@@ -440,13 +441,16 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         }
         if (site.name === "technology" && !viewport.mobile) {
           for (const layout of snapshot.showcaseLayouts) {
-            if (layout.cardCount === 1 && layout.centerOffset > 10) {
+            if (layout.cardCount === 1 && (layout.centerOffset > 10 || layout.cardWidth > 680)) {
+              const tooWide = layout.cardWidth > 680;
               addFinding({
                 severity: "high", page: site.name, theme, viewport: viewport.name,
                 element: "#" + layout.id,
-                message: "Tarjeta única de sección destacada descentrada en escritorio",
-                evidence: `La tarjeta única está desplazada ${layout.centerOffset}px del centro de su grid (ancho del grid: ${layout.width}px).`,
-                recommendation: "Centrar la única tarjeta destacada en el ancho disponible sin ampliar el producto hasta dominar la página.",
+                message: tooWide
+                  ? "Tarjeta única de sección destacada demasiado ancha en escritorio"
+                  : "Tarjeta única de sección destacada descentrada en escritorio",
+                evidence: `Ancho de tarjeta: ${layout.cardWidth}px; desplazamiento del centro: ${layout.centerOffset}px; ancho del grid: ${layout.width}px.`,
+                recommendation: "Limitar la tarjeta individual a un ancho de lectura equilibrado y centrarla; conservar el grid habitual cuando hay varias tarjetas.",
                 blocking: true,
               });
             }
