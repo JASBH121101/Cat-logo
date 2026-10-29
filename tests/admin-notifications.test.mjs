@@ -24,7 +24,7 @@ function makeBrowser({ permission = "default", secure = true, serviceWorker = tr
     },
   };
   const pushManager = {
-    async getSubscription() { calls.push({ getSubscription: true }); return subscription; },
+    async getSubscription() { calls.push({ getSubscription: true }); return null; },
     async subscribe(options) { calls.push({ subscribe: true, options }); return subscription; },
   };
   const registration = {
