@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { classifyAxeImpact, classifyRuntimeError, groupRepeatedFindings } from "./visual-audit-policy.mjs";
 import { analyzeVerticalRhythm } from "./visual-design-quality-policy.mjs";
+import { analyzeDialogQuality } from "./visual-state-quality-policy.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const OUTPUT_DIR = resolve(ROOT, "artifacts/visual-audit");
@@ -426,6 +427,24 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               };
             })
             .filter(region => region.height >= 80 && region.textLength >= 24);
+          const dialogLayouts = [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], [aria-modal="true"]')]
+            .filter(isVisible)
+            .map((dialog, index) => {
+              const rect = dialog.getBoundingClientRect();
+              const controls = [...dialog.querySelectorAll('input, select, textarea, button, [role="button"]')].filter(isVisible);
+              const heights = controls.map(control => Math.round(control.getBoundingClientRect().height)).filter(height => height > 0);
+              const title = dialog.querySelector('h1, h2, h3, [aria-label]')?.innerText ||
+                dialog.getAttribute('aria-label') || dialog.getAttribute('aria-labelledby') || '';
+              const selector = dialog.id ? '#' + dialog.id :
+                dialog.tagName.toLowerCase() + (typeof dialog.className === 'string' && dialog.className.trim()
+                  ? '.' + dialog.className.trim().split(/\\s+/).slice(0, 2).join('.') : '');
+              return {
+                index, selector, title: String(title).replace(/\\s+/g, ' ').trim().slice(0, 100),
+                visible: true, width: Math.round(rect.width), height: Math.round(rect.height),
+                controlCount: controls.length, minimumControlHeight: heights.length ? Math.min(...heights) : null,
+                scrollHeight: dialog.scrollHeight, clientHeight: dialog.clientHeight,
+              };
+            });
           const keyText = [...document.querySelectorAll("h1, h2, h3, .hero-trust-copy, .private-chat-privacy, .private-chat-footer-note, .private-chat-admin-security-note, button, .buy-button")]
             .filter(isVisible).slice(0, 70).map(el => ({
               selector: el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""),
@@ -443,6 +462,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             trustCards,
             showcaseLayouts,
             contentRegions,
+            dialogLayouts,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
@@ -466,6 +486,24 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           });
           findings[findings.length - 1].code = rhythm.code;
           findings[findings.length - 1].measuredGap = rhythm.measuredGap;
+        }
+        const dialogFindings = analyzeDialogQuality(snapshot.dialogLayouts, {
+          viewportWidth: snapshot.viewportWidth,
+          viewportHeight: viewport.height,
+        });
+        for (const dialogFinding of dialogFindings) {
+          addFinding({
+            severity: dialogFinding.severity,
+            page: site.name,
+            theme,
+            viewport: viewport.name,
+            element: dialogFinding.element,
+            message: dialogFinding.message,
+            evidence: dialogFinding.evidence,
+            recommendation: dialogFinding.recommendation,
+            blocking: false,
+          });
+          findings[findings.length - 1].code = dialogFinding.code;
         }
         for (const runtimeError of pageErrors) {
           const error = runtimeError.message || String(runtimeError);
@@ -779,6 +817,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       axeViolationOccurrences: axeFindings.reduce((total, finding) => total + finding.occurrences, 0),
       blockingAxeViolations: axeFindings.filter(finding => classifyAxeImpact(finding.impact).blocking).length,
       whitespaceRhythmFindings: findings.filter(finding => finding.code === "VISUAL_WHITESPACE_RHYTHM").length,
+      dialogLayoutFindings: findings.filter(finding => String(finding.code || "").startsWith("DIALOG_")).length,
+      visibleDialogStates: observations.reduce((total, observation) => total + (observation.dialogLayouts?.length || 0), 0),
     },
     observations, findings, groupedFindings, axeFindings, runtimeErrors, networkFailures, screenshots, journeyResults,
     policy: {
@@ -786,7 +826,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
       allowedExternalHosts: ["cdn.jsdelivr.net"],
       externalRequestsBlockedByPolicy: networkFailures.some(failure => failure.blockedByPolicy),
       blockingRule: "Uncaught application JavaScript exceptions, confirmed uncaught/syntax errors in the console, first-party resource failures, failed essential external document/script/stylesheet loads, critical/serious Axe violations, failed UI journeys, missing headers, technology trust-card geometry regressions, and horizontal overflow >=24px block CI. Requests blocked explicitly by the isolated test policy are reported separately and do not block.",
-      designQualityRule: "The client-eye audit flags unusually large blank gaps between meaningful top-level content regions with measured geometry and a concrete compaction suggestion. These findings are advisory until thresholds are calibrated against intentional brand layouts.",
+      designQualityRule: "The client-eye audit flags unusually large blank gaps between meaningful top-level content regions and audits visible dialog geometry/control sizes with measured evidence. These findings are advisory until thresholds are calibrated against intentional brand layouts. Only dialogs visible during a tested state are inspected; this does not claim every modal workflow has been opened.",
       note: "Local deterministic fixture. The browser route policy allows local assets and cdn.jsdelivr.net, and blocks Supabase plus other non-allowlisted hosts before a request reaches them. No Supabase session is created and no real data is mutated. This does not prove live production network behavior. An exception that says 'Failed to fetch' still blocks if it is an uncaught pageerror; expected blocked network requests are classified from requestfailed events instead.",
     },
   };
@@ -818,6 +858,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
     "- Los hallazgos de accesibilidad son señales de revisión; no se corrigen ni se ocultan automáticamente.",
     "", "## Geometría observada",
     `- Alertas de ritmo/espacio en blanco: ${result.summary.whitespaceRhythmFindings}`,
+    `- Alertas de geometría de diálogos/controles: ${result.summary.dialogLayoutFindings}`,
+    `- Estados de diálogo visibles capturados: ${result.summary.visibleDialogStates}`,
     "",
     "| Página | Tema | Viewport | Ancho doc. | Exceso horizontal | Tarjetas producto |",
     "|---|---|---|---:|---:|---:|",
