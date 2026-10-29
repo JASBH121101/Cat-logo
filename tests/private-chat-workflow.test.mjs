@@ -195,5 +195,5 @@ test("admin claim conflicts refresh stale inbox state and serialize concurrent a
   assert.match(action, /action === "claim" && \/conversation_already_claimed_or_not_pending\/i\.test\(message\)/);
   assert.match(action, /await loadPrivateChatInbox\(\{ silent: true \}\)/);
   assert.match(action, /privateChatActionInFlight = false/);
-  assert.match(action, /La solicitud ya no está pendiente/);
+  assert.match(action, /Esta solicitud ya no está pendiente/);
 });
