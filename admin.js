@@ -3141,9 +3141,15 @@ function privateChatRenderInbox() {
 }
 function privateChatRenderMessages(messages) {
   if (!privateChatMessagesEl) return;
-  const list = (Array.isArray(messages) ? messages : []).filter(item =>
-    !(item.sender_type === "assistant" && /^Antes de continuar con una compra:/i.test(String(item.content || "")))
-  );
+  const list = (Array.isArray(messages) ? messages : []).filter(item => {
+    if (item.sender_type !== "assistant") return true;
+    const content = String(item.content || "");
+    // Hide obsolete system notices that tell customers not to share the exact
+    // identity/contact details needed by the Go Partners order-registration flow.
+    return !/^Antes de continuar con una compra:/i.test(content) &&
+      !(/^¡Hola! Este es el canal privado de JB Collections\./i.test(content) &&
+        /No compartás aquí cédula, teléfono, correo ni datos de pago/i.test(content));
+  });
   const selected = privateChatSelectedConversation();
   const previous = privateChatMessagesEl.dataset.signature || "";
   const signature = list.map(item => String(item.id) + ":" + String(item.content)).join("|");
