@@ -8,17 +8,23 @@ const MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const ROOT = resolve("artifacts/production-visual-audit");
 const MAX_IMAGE_BYTES = 5_200_000;
 const CASES = [
-  { page: "JB TECH", viewport: "desktop-1365", theme: "light", file: "technology-detail--desktop-1365--light--viewport.png" },
-  { page: "JB TECH", viewport: "mobile-390", theme: "dark", file: "technology-detail--mobile-390--dark--viewport.png" },
-  { page: "JB Parfums", viewport: "desktop-1365", theme: "dark", file: "perfumery-detail--desktop-1365--dark--viewport.png" },
-  { page: "JB Parfums", viewport: "mobile-390", theme: "light", file: "perfumery-detail--mobile-390--light--viewport.png" },
+  { page: "JB Collections — portada", viewport: "mobile-390", theme: "light", file: "home--mobile-390--light.png", focus: "header, navegación, hero, espacios vacíos, CTA y legibilidad en el primer viewport" },
+  { page: "JB Collections — portada", viewport: "desktop-1365", theme: "dark", file: "home--desktop-1365--dark.png", focus: "uso del ancho, hero, jerarquía, navegación y llamadas a la acción" },
+  { page: "JB TECH — catálogo", viewport: "mobile-390", theme: "dark", file: "technology--mobile-390--dark.png", focus: "densidad y alineación de tarjetas, fotografías, precios, filtros y botones" },
+  { page: "JB TECH — catálogo", viewport: "desktop-1365", theme: "light", file: "technology--desktop-1365--light.png", focus: "consistencia de cuadrícula, espacios, filtros, escala de imágenes y jerarquía de tarjetas" },
+  { page: "JB TECH — detalle de producto", viewport: "desktop-1365", theme: "light", file: "technology-detail--desktop-1365--light--viewport.png", focus: "protagonismo del producto, galería, espacio entre imagen e información, precio y contacto" },
+  { page: "JB TECH — detalle de producto", viewport: "mobile-390", theme: "dark", file: "technology-detail--mobile-390--dark--viewport.png", focus: "galería móvil, legibilidad, orden vertical, controles y contenido que quede fuera de pantalla" },
+  { page: "JB Parfums — catálogo", viewport: "mobile-390", theme: "light", file: "perfumery--mobile-390--light.png", focus: "legibilidad del banner, tarjetas, fotos de perfumes, categorías, precios y espaciado" },
+  { page: "JB Parfums — catálogo", viewport: "desktop-1365", theme: "dark", file: "perfumery--desktop-1365--dark.png", focus: "consistencia de cuadrícula, protagonismo fotográfico, jerarquía del banner y uso del espacio" },
+  { page: "JB Parfums — detalle de producto", viewport: "desktop-1365", theme: "dark", file: "perfumery-detail--desktop-1365--dark--viewport.png", focus: "protagonismo del frasco, galería, espacio entre imagen e información, precio y contacto" },
+  { page: "JB Parfums — detalle de producto", viewport: "mobile-390", theme: "light", file: "perfumery-detail--mobile-390--light--viewport.png", focus: "tamaño del frasco, galería móvil, texto, precio, contacto y orden vertical" },
 ];
 const analyses = [];
 const errors = [];
 const schemaExample = { visual_score: 0, overall_assessment: "Resumen basado en la captura.", strengths: [], issues: [{ severity: "medium", region: "zona concreta", evidence: "defecto visible", recommendation: "acción verificable", confidence: 0.75 }], manual_review_required: true, limitations: [] };
 const systemPrompt = [
   "Sos auditor QA visual senior de ecommerce. Evalúa ÚNICAMENTE lo visible en la captura adjunta.",
-  "Busca: producto demasiado pequeño, espacios desproporcionados entre imagen e información, texto ilegible/pequeño, jerarquía confusa, alineación rota, elementos cortados/desbordados, solapamientos y contraste insuficiente.",
+  "Busca: hero o producto poco protagonista, espacios desproporcionados, tarjetas inconsistentes, cuadrículas demasiado densas o vacías, texto pequeño/ilegible, jerarquía confusa, alineación rota, filtros poco visibles, elementos cortados/desbordados, solapamientos y contraste insuficiente.",
   "No confundas espacio negativo intencional con defecto. No inventes fallos funcionales, datos ocultos ni propongas cambios en base de datos.",
   "Devuelve SOLO JSON válido sin Markdown. Usa las claves del esquema del usuario. issues=[] si no hay defecto concreto; máximo 3 incidencias distintas. Sin repeticiones. Cada incidencia requiere severity (critical/high/medium/low), region, evidence, recommendation y confidence 0-1.",
   "Usa critical solo si bloquea claramente el uso; high si contenido esencial queda inaccesible; medium para defectos claros de jerarquía/espaciado/legibilidad; low para pulido menor.",
@@ -27,8 +33,9 @@ const systemPrompt = [
 
 function userPrompt(item, retry) {
   return [
-    `Audita la ficha pública ${item.page}. Viewport ${item.viewport}; tema ${item.theme}.`,
-    "Prioridad: producto protagonista, fotografía sin deformación, información legible, composición equilibrada y uso útil del espacio.",
+    `Audita la superficie pública ${item.page}. Viewport ${item.viewport}; tema ${item.theme}.`,
+    `Enfoque específico: ${item.focus}.`,
+    "Prioridad: jerarquía visual clara, fotografías nítidas y sin deformación, contenido legible, composición equilibrada y espacio útil.",
     "No infieras lo que no puede confirmarse con una sola captura.",
     retry ? "La respuesta anterior no fue JSON válido. Devuelve ahora únicamente un objeto JSON parseable, sin texto introductorio ni frases repetidas." : "",
     "Esquema orientativo; usa datos reales y no copies valores de ejemplo:", JSON.stringify(schemaExample),
@@ -114,8 +121,8 @@ function makeSummary() {
   const count = (status) => analyses.filter((a) => a.parseStatus === status).length;
   return {
     requestedScreenshots: CASES.length, apiResponses: analyses.length,
-    reviewedScreenshots: count("structured") + count("recovered"), structuredReviews: count("structured"),
-    recoveredReviews: count("recovered"), invalidResponses: count("invalid"), failedReviews: errors.length,
+    reviewedScreenshots: count("structured") + count("recovered"),
+    structuredReviews: count("structured"), recoveredReviews: count("recovered"), invalidResponses: count("invalid"), failedReviews: errors.length,
     reportedIssues: analyses.reduce((sum, a) => sum + (a.review?.issues?.length || 0), 0),
     repeatedSentencesRemoved: analyses.reduce((sum, a) => sum + (a.duplicateSentenceCount || 0), 0),
     manualReviewRequired: analyses.filter((a) => a.parseStatus !== "structured" || a.review?.manual_review_required !== false).length,
