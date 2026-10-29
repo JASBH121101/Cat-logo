@@ -734,7 +734,7 @@ function renderProducts() {
 function notesSection(title, values) {
   const items = Array.isArray(values) ? values.filter(Boolean) : [];
   if (!items.length) return "";
-  return '<section class="perfume-note-group"><h3>' + title + '</h3>' +
+  return '<section class="perfume-note-group"><h2 class="perfume-note-heading">' + title + '</h2>' +
     '<ul>' + items.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>' +
     '</section>';
 }
