@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jb-collections.pages.dev/sitemap.xml

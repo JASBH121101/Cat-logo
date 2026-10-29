@@ -57,3 +57,29 @@ test("configuration availability affects public variant choices, status, and Wha
   assert.match(app, /variant-choice-status status-/);
   assert.match(techHtml, /app\.js\?v=20261029-ai-compact-launcher1/);
 });
+
+const sitemapXml = readFileSync(new URL("../sitemap.xml", import.meta.url), "utf8");
+const robotsTxt = readFileSync(new URL("../robots.txt", import.meta.url), "utf8");
+
+test("catalog entry points include share previews and sitemap discovery", () => {
+  for (const [html, url, title] of [
+    [homeHtml, "https://jb-collections.pages.dev/", "JB Collections"],
+    [techHtml, "https://jb-collections.pages.dev/tecnologia/", "JB TECH"],
+    [perfumeHtml, "https://jb-collections.pages.dev/perfumeria/", "JB Parfums"]
+  ]) {
+    assert.ok(html.includes('property="og:title"'), "Open Graph title is required");
+    assert.ok(html.includes('property="og:description"'), "Open Graph description is required");
+    assert.ok(html.includes('property="og:url"'), "Open Graph URL is required");
+    assert.ok(html.includes('property="og:image"'), "Open Graph image is required");
+    assert.ok(html.includes('name="twitter:card"'), "Social card is required");
+    assert.ok(html.includes(url), "Canonical/share URL is required");
+    assert.ok(html.includes(title), "Title brand must match the catalog section");
+  }
+  assert.match(robotsTxt, /User-agent: \*/);
+  assert.match(robotsTxt, /Sitemap: https:\/\/jb-collections\.pages\.dev\/sitemap\.xml/);
+  for (const url of [
+    "https://jb-collections.pages.dev/",
+    "https://jb-collections.pages.dev/tecnologia/",
+    "https://jb-collections.pages.dev/perfumeria/"
+  ]) assert.ok(sitemapXml.includes("<loc>" + url + "</loc>"));
+});
