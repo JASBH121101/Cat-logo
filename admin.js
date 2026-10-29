@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { initProviderTools } from "./admin-provider.js?v=20261028-provider-review-minimal4";
-import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-admin-webpush3";
+import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-push-timeout1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
