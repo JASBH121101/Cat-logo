@@ -11,7 +11,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.ok(styles.length > 0, "page should declare stylesheets");
   assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261029-conversion-trust1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261028-dual-contact1/);
-  assert.match(html, /app\.js\?v=20261028-ai-chat-escalation2/);
+  assert.match(html, /app\.js\?v=20261029-ai-compact-launcher1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
