@@ -3016,6 +3016,9 @@ function showAdminSection(section) {
   const dashboard = document.getElementById("dashboard");
   dashboard?.classList.toggle("admin-section-focused", section !== "home");
   setMobileSidebarOpen(false);
+  // Navigation can be triggered while the page is scrolled far down. Reset the
+  // document scroll so the sticky admin header never covers the selected panel title.
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   if (section === "messages") void loadPrivateChatInbox();
 }
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));

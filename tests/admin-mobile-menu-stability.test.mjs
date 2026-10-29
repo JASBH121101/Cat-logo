@@ -29,7 +29,7 @@ test("admin page cache-busts the Android-safe sidebar stylesheet", () => {
 
 
 test("admin script uses fresh cache key for the scroll-lock repair", () => {
-  assert.ok(html.includes("admin.js?v=20261029-admin-section-compact1"));
+  assert.ok(html.includes("admin.js?v=20261029-admin-section-scroll-reset2"));
 });
 
 test("opening the drawer locks document scrolling and closing restores the saved position", () => {
@@ -116,4 +116,11 @@ test("mobile drawer covers the full viewport instead of leaving the dashboard to
   assert.match(css, /body\.admin-body\.admin-dashboard-active \.admin-sidebar-backdrop:not\(\[hidden\]\)\s*\{[^}]*inset:\s*0 !important;[^}]*z-index:\s*1300 !important;/s);
   assert.match(css, /body\.admin-body\.admin-dashboard-active \.site-header\.admin-header\s*\{[^}]*z-index:\s*1200 !important;/s);
   assert.match(html, /theme-ui\.css\?v=20261028-limited-edition-icons1/);
+});
+
+
+test("switching admin sections resets scroll so the sticky header cannot cover the panel heading", () => {
+  assert.ok(adminJs.includes('window.scrollTo({ top: 0, left: 0, behavior: "auto" })'));
+  assert.ok(adminJs.indexOf('setMobileSidebarOpen(false);', adminJs.indexOf('function showAdminSection(section)')) < adminJs.indexOf('window.scrollTo({ top: 0, left: 0, behavior: "auto" })', adminJs.indexOf('function showAdminSection(section)')));
+  assert.ok(html.includes("admin.js?v=20261029-admin-section-scroll-reset2"));
 });

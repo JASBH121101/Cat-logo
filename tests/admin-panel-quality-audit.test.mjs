@@ -42,7 +42,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(adminJs, /detectPrivateChatNotificationEvents/);
   assert.match(adminJs, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(chatStyles, /private-chat-admin-layout/);
-  assert.ok(html.includes("admin-private-chat.css?v=20261029-compact-inbox2"));
+  assert.ok(html.includes("admin-private-chat.css?v=20261029-chat-reply-theme3"));
   assert.ok(chatStyles.includes("max-height: 220px !important"));
   assert.match(adminJs, /dashboard\?\.classList\.toggle\("admin-section-focused", section !== "home"\)/);
   assert.match(chatStyles, /dashboard\.admin-section-focused > \.dashboard-top > div:first-child/);

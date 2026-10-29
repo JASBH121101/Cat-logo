@@ -291,7 +291,10 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
           messagesScrollHeight: messages.scrollHeight,
           messagesScrollTop: messages.scrollTop,
           overflowY: getComputedStyle(messages).overflowY,
-          display: getComputedStyle(thread).display
+          display: getComputedStyle(thread).display,
+          replyBackground: getComputedStyle(document.querySelector("#private-chat-admin-reply-form textarea")).backgroundColor,
+          replyColor: getComputedStyle(document.querySelector("#private-chat-admin-reply-form textarea")).color,
+          replyPlaceholderColor: getComputedStyle(document.querySelector("#private-chat-admin-reply-form textarea"), "::placeholder").color
         };
       });
 
@@ -308,6 +311,21 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
         theme + ": long history must overflow inside its message list");
       assert.ok(layout.messagesScrollTop > 0,
         theme + ": message list should actually scroll independently: " + JSON.stringify(layout));
+      if (theme === "dark") {
+        assert.equal(layout.replyBackground, "rgb(13, 23, 43)",
+          "dark theme reply box must not inherit a white background");
+        assert.equal(layout.replyColor, "rgb(243, 246, 255)",
+          "dark theme reply text must remain readable");
+        assert.equal(layout.replyPlaceholderColor, "rgb(167, 184, 216)",
+          "dark theme reply placeholder must remain readable");
+      } else {
+        assert.equal(layout.replyBackground, "rgb(255, 255, 255)",
+          "light theme reply box should use a white background");
+        assert.equal(layout.replyColor, "rgb(24, 36, 58)",
+          "light theme reply text must remain dark and readable");
+        assert.equal(layout.replyPlaceholderColor, "rgb(102, 116, 141)",
+          "light theme reply placeholder must remain readable");
+      }
     }
   } finally {
     await browser.close();

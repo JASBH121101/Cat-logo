@@ -422,3 +422,27 @@ html[data-theme="dark"] .private-chat-admin-back{border-color:#405577;background
     white-space:normal!important;
   }
 }
+
+
+/* Reply composer must follow the selected theme; prevent global input styles
+   from turning the dark-mode textarea white with near-white text. */
+html[data-theme="dark"] body.admin-body .private-chat-admin-reply-form textarea {
+  color:#f3f6ff!important;
+  background:#0d172b!important;
+  border-color:#53688e!important;
+  color-scheme:dark;
+}
+html[data-theme="dark"] body.admin-body .private-chat-admin-reply-form textarea::placeholder {
+  color:#a7b8d8!important;
+  opacity:1!important;
+}
+html[data-theme="light"] body.admin-body .private-chat-admin-reply-form textarea {
+  color:#18243a!important;
+  background:#fff!important;
+  border-color:#c6d1e3!important;
+  color-scheme:light;
+}
+html[data-theme="light"] body.admin-body .private-chat-admin-reply-form textarea::placeholder {
+  color:#66748d!important;
+  opacity:1!important;
+}
