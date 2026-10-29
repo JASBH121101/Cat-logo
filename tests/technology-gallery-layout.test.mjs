@@ -136,7 +136,7 @@ test("mobile trust tiles keep the text inside one rectangular card instead of ne
         const copies = [...document.querySelectorAll(".hero-trust-copy")];
         return {
           viewportWidth: window.innerWidth,
-          columns: getComputedStyle(trust).gridTemplateColumns.trim().split(/\\s+/).length,
+          columns: getComputedStyle(trust).gridTemplateColumns.trim().split(/\s+/).length,
           cards: cards.map((card, index) => {
             const rect = card.getBoundingClientRect();
             const copy = copies[index];
