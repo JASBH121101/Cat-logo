@@ -3013,6 +3013,8 @@ function showAdminSection(section) {
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  const dashboard = document.getElementById("dashboard");
+  dashboard?.classList.toggle("admin-section-focused", section !== "home");
   setMobileSidebarOpen(false);
   if (section === "messages") void loadPrivateChatInbox();
 }
