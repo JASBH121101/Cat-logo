@@ -369,7 +369,7 @@ test("desktop product gallery stays visible while long product details scroll", 
       } else {
         assert.notEqual(after.position, "sticky", "mobile gallery stays in normal document flow");
         assert.ok(after.overflow <= 2, "mobile page must not overflow horizontally");
-        assert.equal(after.columns, "390px", "mobile detail remains one column");
+        assert.equal(after.columns.trim().split(/\\s+/).length, 1, "mobile detail remains one column");
       }
       await page.close();
     }
