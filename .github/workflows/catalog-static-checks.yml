@@ -18,6 +18,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Cache npm package downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-playwright-1.64.1-axe-4.14.0
+          restore-keys: |
+            ${{ runner.os }}-npm-playwright-
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-1.64.1
+          restore-keys: |
+            ${{ runner.os }}-playwright-chromium-
+
       - name: Install Chromium for mobile layout tests
         shell: bash
         run: |
@@ -54,45 +70,13 @@ jobs:
           fi
           python tests/cache-key-change-guard.py "$BASE_SHA" "$GITHUB_SHA"
 
-      - name: Run automated regression suite
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --test tests/cache-key-change-guard.test.mjs
-          node --test tests/dependency-audit.test.mjs
-          node --test tests/migration-history-hygiene.test.mjs
-          node --test tests/private-chat-mobile-layout.test.mjs
-          node --test tests/private-chat-state-behavior.test.mjs
-          node --test tests/ai-assistant-layout.test.mjs
-          node --test tests/catalog-specifications-format.test.mjs
-          node --test tests/public-commercial-readiness.test.mjs
-          node --test tests/conversion-trust.test.mjs
-          node --test tests/design-authenticity-audit.test.mjs
-          node --test tests/design-quality-audit.test.mjs
-          node --test tests/admin-notifications.test.mjs
-          node --test tests/admin-panel-quality-audit.test.mjs
-          node --test tests/admin-save-regression.test.mjs
-          node --test tests/admin-product-form-workflow.test.mjs
-          node --test tests/limited-edition-sections.test.mjs
-          node --experimental-default-type=module --test tests/cloudflare-share.test.mjs
-          node --experimental-default-type=module --test tests/cloudflare-download.test.mjs
-          node --experimental-default-type=module --test tests/cloudflare-private-chat-push.test.mjs
-          node --experimental-default-type=module --test tests/web-push.test.mjs
-          node --experimental-default-type=module --test tests/cloudflare-assistant.test.mjs
-          node --experimental-default-type=module --test tests/cloudflare-color-assistant.test.mjs
-          node --test tests/admin-color-assistant.test.mjs
-          node --test tests/admin-mobile-menu-stability.test.mjs
-          node --test tests/admin-provider-price-sync.test.mjs
-          node --test tests/provider-review-variants.test.mjs
-          node --test tests/perfume-card-layout.test.mjs
-          node --test tests/commercial-description-layout.test.mjs
-          node --test tests/catalog-contact-channels.test.mjs
-          node --test tests/private-chat-workflow.test.mjs
-          node --test tests/private-chat-resume.test.mjs
-          node --test tests/product-tag-formatting.test.mjs
-          node --test tests/asset-cache-contract.test.mjs
-          node --experimental-default-type=module --test tests/technology-gallery-layout.test.mjs
-          node --test tests/technology-subcategory-filter.test.mjs
+      - name: Verify regression runner inventory
+        run: node --test tests/regression-runner-contract.test.mjs
+
+      - name: Run automated regression suite in parallel groups
+        env:
+          TEST_GROUP_CONCURRENCY: "4"
+        run: node tests/run-regression-suite.mjs
 
       - name: Check canonical URLs and public share origin
         shell: bash
