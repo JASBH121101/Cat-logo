@@ -54,7 +54,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261029-contrast-typography3"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261029-contrast-typography4"));
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /\.admin-body \.admin-input-unit > span\s*\{[^}]*color:\s*#455675\s*!important/);
   assert.match(accessibilityStyles, /html\[data-theme="dark"\] body\.admin-body \.admin-input-unit > span,[\s\S]*?\{[^}]*color:\s*#c9d5e9\s*!important/);
@@ -64,6 +64,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /html\[data-theme="light"\] body\.admin-body #product-form \.product-form-section-actions > span\s*\{[^}]*color:\s*#455675\s*!important;[^}]*font-size:\s*13px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.private-chat-admin-message p\s*\{[^}]*font-size:\s*13px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.private-chat-admin-filter\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html\[data-theme="light"\] body\.admin-body #admin-context-hint\s*\{[^}]*font-size:\s*12px\s*!important;/);
+  assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-eyebrow\s*\{[^}]*font-size:\s*11\.5px\s*!important;/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(regressionRunner, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
