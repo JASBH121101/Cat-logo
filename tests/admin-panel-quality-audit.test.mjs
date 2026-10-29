@@ -36,6 +36,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(html, /id="admin-menu-toggle"[^>]*aria-controls="admin-sidebar"[^>]*aria-expanded=/);
   assert.match(html, /id="private-chat-enable-notifications"/);
   assert.match(adminJs, /enableAdminNotifications/);
+  assert.match(adminJs, /Android WebView no admite PushManager/);
+  assert.match(adminJs, /directamente en Google Chrome/);
   assert.match(adminJs, /detectPrivateChatNotificationEvents/);
   assert.match(adminJs, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(chatStyles, /private-chat-admin-layout/);
