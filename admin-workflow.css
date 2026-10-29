@@ -625,3 +625,72 @@ html[data-theme="dark"] body.admin-body form#product-form .inline-color-remove {
 html[data-theme="dark"] body.admin-body form#product-form .inline-color-details > summary {
   color:#a9c9ff!important;
 }
+
+
+/* Complete dark/light theme contract for the mobile variant editor.
+   Keep all variant fields readable, including RAM/storage/price controls and destructive actions. */
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-collapse,
+html[data-theme="dark"] body.admin-body form#product-form .variant-admin-row {
+  color:#eaf0ff!important;
+  background-color:#142139!important;
+  border-color:#405477!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-group-heading,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields label,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body label {
+  color:#e1eaff!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-summary-copy small,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body small,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body .muted,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-card-summary-copy small {
+  color:#b5c6e5!important;
+  opacity:1!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields input:not([type="file"]):not([type="color"]),
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields select,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields textarea,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body input:not([type="file"]):not([type="color"]),
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body select,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body textarea {
+  color:#f3f6ff!important;
+  background:#0d172b!important;
+  border-color:#53688e!important;
+  color-scheme:dark;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields input::placeholder,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body input::placeholder,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body textarea::placeholder {
+  color:#a7b8d8!important;
+  opacity:1!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body button,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields button {
+  color:#eaf0ff;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body button[class*="remove"],
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body button[class*="delete"],
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body .danger,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body .btn-danger {
+  color:#ffd9df!important;
+  background:#452332!important;
+  border-color:#92516a!important;
+}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields label,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body label {
+  color:#25324a!important;
+}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields input:not([type="file"]):not([type="color"]),
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields select,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body input:not([type="file"]):not([type="color"]),
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body select,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body textarea {
+  color:#18243a!important;
+  background:#fff!important;
+  border-color:#c6d1e3!important;
+  color-scheme:light;
+}
