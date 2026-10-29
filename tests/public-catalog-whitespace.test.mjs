@@ -7,7 +7,7 @@ const css = readFileSync(new URL("../technology-visual-refresh.css", import.meta
 const html = readFileSync(new URL("../tecnologia/index.html", import.meta.url), "utf8");
 
 test("public technology catalog trims excess vertical spacing without affecting behavior", () => {
-  assert.match(html, /technology-visual-refresh\.css\?v=20261029-detail-balance1/);
+  assert.match(html, /technology-visual-refresh\.css\?v=20261029-detail-balance2/);
   assert.match(css, /JB TECH · Auditoría de espacio público/);
   assert.match(css, /\.catalog-section\s*\{[^}]*padding-top:\s*clamp\(38px, 4\.2vw, 58px\)/s);
   assert.match(css, /@media \(min-width: 1200px\)[\s\S]*?padding: clamp\(38px, 3\.6vw, 54px\) clamp\(18px, 1\.8vw, 30px\) 44px !important/);
