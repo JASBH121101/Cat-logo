@@ -2778,6 +2778,7 @@ html[data-theme="light"] body.perfume-page .perfume-featured-section--limited-ed
 
 /* Accessibility audit fix: darken small gold editorial labels on the light paper surface. */
 html[data-theme="light"] body.perfume-page .perfume-hero-copy > .perfume-kicker,
+html[data-theme="light"] body.perfume-page .perfume-category-heading .perfume-kicker,
 html[data-theme="light"] body.perfume-page .perfume-audience-heading .perfume-kicker,
 html[data-theme="light"] body.perfume-page .perfume-section-heading .perfume-kicker,
 html[data-theme="light"] body.perfume-page .perfume-featured-heading .perfume-kicker,

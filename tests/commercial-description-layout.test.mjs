@@ -42,5 +42,5 @@ test("perfumery cards and product detail use a compact mobile rhythm and refresh
   assert.match(perfumeCss, /\.perfume-page \.perfume-dialog-main-image\s*\{/);
   assert.match(perfumeCss, /@media \(max-width: 640px\)[\s\S]*?\.perfume-product-card-content/);
   assert.match(techHtml, /technology-visual-refresh\.css\?v=20261029-a11y-contrast2/);
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-a11y-contrast2/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-a11y-contrast3/);
 });
