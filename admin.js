@@ -3397,7 +3397,7 @@ async function privateChatSendAdminReply(event) {
     });
     if (error) {
       if (/personal_data_not_allowed/i.test(String(error.message || ""))) {
-        throw new Error("Por seguridad, no envíes cédula, teléfono, correo ni datos de pago por este chat.");
+        throw new Error("Podés recibir nombre completo, cédula y celular para registrar la operación de Go Partners. No solicités contraseñas, PIN, códigos de seguridad ni números completos de tarjetas o cuentas bancarias.");
       }
       throw error;
     }
