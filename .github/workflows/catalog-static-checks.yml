@@ -25,21 +25,24 @@ jobs:
           npm install --no-save --no-package-lock playwright@1.64.1
           npx playwright install --with-deps chromium
 
-      - name: Check JavaScript syntax
+      - name: Check syntax of all tracked JavaScript files
         shell: bash
         run: |
           set -euo pipefail
-          for file in admin.js admin-provider.js app.js collections.js config.js perfumeria.js ui.js ai-assistant.js private-chat.js; do
+          count=0
+          while IFS= read -r -d '' file; do
             echo "Checking $file"
-            node --check "$file"
-          done
-          echo "Checking Cloudflare Pages Function syntax"
-          node --input-type=module --check < functions/api/share.js
-          node --input-type=module --check < functions/api/download/apk.js
-          node --input-type=module --check < functions/api/assistant.js
-          node --input-type=module --check < functions/api/color-assistant.js
-          node --input-type=module --check < functions/api/private-chat.js
-          node --input-type=module --check < functions/api/catalog-location.js
+            case "$file" in
+              functions/api/*|api/share.js)
+                node --input-type=module --check < "$file"
+                ;;
+              *)
+                node --check "$file"
+                ;;
+            esac
+            count=$((count + 1))
+          done < <(git ls-files -z '*.js')
+          echo "JavaScript syntax check passed for $count tracked .js files."
       - name: Guard cache keys when browser assets change
         shell: bash
         env:
@@ -51,11 +54,12 @@ jobs:
           fi
           python tests/cache-key-change-guard.py "$BASE_SHA" "$GITHUB_SHA"
 
-      - name: Test Cloudflare Pages share endpoint
+      - name: Run automated regression suite
         shell: bash
         run: |
           set -euo pipefail
           node --test tests/cache-key-change-guard.test.mjs
+          node --test tests/dependency-audit.test.mjs
           node --test tests/migration-history-hygiene.test.mjs
           node --test tests/private-chat-mobile-layout.test.mjs
           node --test tests/private-chat-state-behavior.test.mjs
@@ -174,6 +178,12 @@ jobs:
               sys.exit(1)
           print(f"Checked {len(html_files)} HTML files: no duplicate IDs or missing relative references.")
           PY
+      - name: Map source dependencies and report possible dead code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/dependency-audit.py --output dependency-audit.md --summary "$GITHUB_STEP_SUMMARY"
+
       - name: Check CSS block delimiters
         shell: bash
         run: |
@@ -256,3 +266,12 @@ jobs:
               sys.exit(1)
           print(f"Checked {sum(map(len, versions.values()))} migrations: all version identifiers are unique.")
           PY
+
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: dependency-audit.md
+          if-no-files-found: ignore
+          retention-days: 14
