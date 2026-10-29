@@ -74,7 +74,8 @@ test("complete admin panel audit validates navigation, accessibility signals and
   const pageErrors = [];
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    const browserContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    const page = await browserContext.newPage();
     page.on("pageerror", error => pageErrors.push(error.message));
     await page.goto(new URL("../admin.html", import.meta.url).href, { waitUntil: "domcontentloaded" });
     await page.evaluate(() => {
