@@ -578,10 +578,16 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               assert.equal(await page.locator("body").evaluate(el => el.classList.contains("admin-sidebar-open")), false);
               assert.equal(await backdrop.evaluate(el => el.hidden), true);
               await toggle.click();
-              await backdrop.click();
+              const outsideX = await page.evaluate(() => {
+                const sidebar = document.getElementById("admin-sidebar");
+                const rect = sidebar.getBoundingClientRect();
+                return Math.max(2, Math.min(window.innerWidth - 2, Math.ceil(rect.right + 12)));
+              });
+              assert.ok(outsideX < 390, "test viewport must expose an area outside the mobile sidebar");
+              await page.mouse.click(outsideX, 400);
               assert.equal(await toggle.getAttribute("aria-expanded"), "false");
               assert.equal(await backdrop.evaluate(el => el.hidden), true);
-              return "El menú móvil sincroniza aria-expanded, bloqueo de scroll y backdrop; Escape y backdrop cierran el panel.";
+              return "El menú móvil sincroniza aria-expanded y bloqueo de scroll; Escape y un clic real fuera del cajón cierran el panel.";
             });
           } else if (site.name === "private-chat") {
             await runJourney(page, scenario, "private-chat-theme-toggle", async () => {
