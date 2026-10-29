@@ -793,7 +793,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
     const normalizedFallback = normalizeAvailability(fallback, false);
     return ["available", "on_order", "out_of_stock"].includes(normalizedFallback)
       ? normalizedFallback
-      : "out_of_stock";
+      : null;
   }
 
   function renderReviewAvailabilityComparison(product, providerAvailability) {
@@ -880,6 +880,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
       variantSnapshot,
       previous.provider_availability || product.availability
     );
+    if (!overallAvailability) {
+      say(reviewMessage, "No hay una disponibilidad general verificable para este producto. Confirmá una configuración/color o actualizá el estado actual del catálogo antes de guardar.", "error");
+      return;
+    }
     const payload = {
       product_id: product.id,
       provider_name: providerName,
@@ -1403,13 +1407,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }));
   const reviewForm = $("#provider-review-form");
   const reviewSaveButton = $("#provider-review-save");
-  ["#provider-review-price-usd", "#provider-review-price-nio", "#provider-review-availability"].forEach(selector =>
-    $(selector)?.addEventListener("input", updateReviewComparison)
-  );
-  $("#provider-review-availability")?.addEventListener("change", () => {
-    updateReviewComparison();
-    updateProviderVariantReviewReadiness();
-  });
   // Explicit click handling is reliable in desktop browsers and Android WebView.
   // Keep the button out of native submit dispatch to avoid duplicate writes.
   reviewSaveButton?.addEventListener("click", () => { void saveReview(); });
