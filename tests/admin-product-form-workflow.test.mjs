@@ -117,7 +117,7 @@ test("technology products support editable subcategories and manually selected t
   assert.match(admin, /taxonomyReviewMarkup/);
   assert.match(admin, /reviewTagLabels/);
   const publicApp = readFileSync(new URL("../app.js", import.meta.url), "utf8");
-  assert.match(publicApp, /function specsArray\(specs\)[\s\S]*?isGeneratedSpecificationLabel\(key\)/);
+  assert.match(publicApp, /function specsArray\\(specs\\)[\\s\\S]*?isGeneratedSpecificationLabel\\(label\\)/);
 });
 
 test("public technology catalog renders manual badges and dedicated product sections", () => {
