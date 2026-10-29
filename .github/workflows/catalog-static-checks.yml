@@ -65,6 +65,7 @@ jobs:
           node --test tests/private-chat-state-behavior.test.mjs
           node --test tests/ai-assistant-layout.test.mjs
           node --test tests/public-commercial-readiness.test.mjs
+          node --test tests/conversion-trust.test.mjs
           node --test tests/admin-save-regression.test.mjs
           node --test tests/admin-product-form-workflow.test.mjs
           node --test tests/limited-edition-sections.test.mjs
