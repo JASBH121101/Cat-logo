@@ -1,3 +1,4 @@
+import test from "node:test";
 import assert from "node:assert/strict";
 import { sendWebPush } from "../functions/_shared/web-push.js";
 
