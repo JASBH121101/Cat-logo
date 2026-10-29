@@ -3655,3 +3655,46 @@ body.technology-catalog.product-detail-active #product-detail-page .dialog-detai
     padding: 10px 4px 20px !important;
   }
 }
+
+
+/* Dedicated detail header must stay in document flow instead of acting as an overlay. */
+html body.technology-catalog.product-detail-active .site-header {
+  position: sticky !important;
+  inset: auto !important;
+  top: 0 !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 1200 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+  margin: 6px 0 20px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(30px, 2.1vw, 42px) !important;
+  font-weight: 800 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -.025em !important;
+  overflow-wrap: anywhere !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #d2dced !important;
+}
+@media (max-width: 760px) {
+  html body.technology-catalog.product-detail-active .site-header {
+    height: 68px !important;
+    min-height: 68px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+    margin: 4px 0 14px !important;
+    font-size: clamp(24px, 6.2vw, 32px) !important;
+  }
+}
