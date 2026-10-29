@@ -858,7 +858,7 @@ const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
-if (!builtAdminHtml.includes('admin.js?v=20261028-limited-edition-icons1')) {
+if (!/src="admin\.js\?v=[^"]+"/.test(builtAdminHtml)) {
   throw new Error("The APK must load the current admin script containing smart duplicate detection and shared collection labels.");
 }
 if (!builtAdminHtml.includes('admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1')) {

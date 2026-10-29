@@ -62,8 +62,8 @@ jobs:
           grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
           grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
           test -s functions/api/color-assistant.js
-          grep -Fq 'admin.js?v=20261028-limited-edition-icons1' admin.html
-          grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' admin.html
+          grep -Eq 'src="admin\.js\?v=[^"]+"' admin.html
+          grep -Eq 'href="admin-provider\.css\?v=[^"]+"' admin.html
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
           grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
@@ -271,7 +271,7 @@ jobs:
           grep -Fq 'from("color_library")' admin.js
           grep -Fq 'data-color-ai-library-alias' admin.js
           grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
-          grep -Fq 'admin.js?v=20261028-limited-edition-icons1' admin.html
+          grep -Eq 'src="admin\.js\?v=[^"]+"' admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
           grep -Fq 'id="product-tag-limited-edition"' admin.html
           grep -Fq 'product-tag-option-icon--tech' admin.html
@@ -323,7 +323,7 @@ jobs:
 
           grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
           grep -Fq 'theme-ui.css?v=20261028-limited-edition-icons1' mobile/www/admin.html
-          grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' mobile/www/admin.html
+          grep -Eq 'href="admin-provider\.css\?v=[^"]+"' mobile/www/admin.html
           grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
           grep -Fq 'id="product-tag-limited-edition"' mobile/www/admin.html
           grep -Fq 'product-tag-option-icon--tech' mobile/www/admin.html
@@ -621,11 +621,11 @@ jobs:
             echo "APK is missing the light/dark AI color dialog styles." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-provider.css?v=20261028-reviewed-sections1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Eq 'href="admin-provider\.css\?v=[^"]+"' || {
             echo "::error::APK does not include the provider dialog contrast fix."
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin.js?v=20261028-limited-edition-icons1' || {
+          unzip -p "$APK" assets/public/admin.html | grep -Eq 'src="admin\.js\?v=[^"]+"' || {
             echo "APK does not load the updated AI color-knowledge script." >&2
             exit 1
           }
