@@ -107,3 +107,14 @@ test("AI assistant blocks personal data locally and discloses session-only memor
   assert.match(assistantApi, /AUTONOMÍA ACOTADA/);
   assert.match(assistantApi, /nunca solicités ni necesités nombres completos/);
 });
+
+
+test("JB TECH mobile advisor is a compact round control while Parfums keeps its launcher", () => {
+  assert.ok(aiCss.includes("body.technology-catalog .jb-ai-launcher"));
+  assert.ok(aiCss.includes("width: 48px"));
+  assert.ok(aiCss.includes("height: 48px"));
+  assert.ok(aiCss.includes("border-radius: 50%"));
+  assert.ok(aiCss.includes("body.technology-catalog .jb-ai-launcher-label"));
+  assert.ok(aiJs.includes('aria-label="Abrir asesor IA de JB Collections"'));
+  assert.ok(!aiCss.includes("body.perfume-page .jb-ai-launcher {\n    width: 48px"));
+});
