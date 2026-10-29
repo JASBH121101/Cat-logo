@@ -3866,8 +3866,8 @@ body.technology-catalog.product-detail-active #product-detail-page .dialog-detai
     padding: clamp(18px, 1.8vw, 28px) clamp(24px, 3vw, 52px) 40px !important;
   }
   body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
-    width: min(1520px, 100%) !important;
-    max-width: 1520px !important;
+    width: min(1760px, 100%) !important;
+    max-width: 1760px !important;
     margin-inline: auto !important;
   }
   body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
