@@ -1,5 +1,5 @@
 name: Build JB Manager Collections APK
-# Includes the cleaned catalog hero layouts from main.
+# Build and sign the Android APK using the latest merged production source from main.
 
 concurrency:
   group: jb-manager-android-${{ github.ref }}
