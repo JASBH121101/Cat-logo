@@ -95,6 +95,19 @@ function diagnose({ severity, page, theme, viewport, element, message, evidence 
       likelyFiles: ["admin-accessibility.css", "admin-private-chat.css", "private-chat.css", "technology-visual-refresh.css", "perfumeria.css"],
     };
   }
+  if (/imagen principal aprovecha poco|poco peso visual|concentra contenido en una columna/.test(text)) {
+    const columnImbalance = /concentra contenido en una columna/.test(text);
+    return {
+      code: columnImbalance ? "PRODUCT_DETAIL_COLUMN_IMBALANCE" :
+        /poco peso visual/.test(text) ? "PRODUCT_GALLERY_LOW_VISUAL_WEIGHT" : "PRODUCT_IMAGE_UNDERUTILIZED",
+      hypothesis: columnImbalance
+        ? "La proporción geométrica de la galería y la columna informativa puede estar restando protagonismo al producto o haciendo que la ficha se perciba desequilibrada."
+        : "El marco de galería o el tamaño renderizado del elemento de imagen puede no estar aprovechando el espacio previsto; una fotografía también puede contener márgenes blancos internos que la medición DOM no detecta.",
+      confidence: columnImbalance ? 0.72 : 0.68,
+      nextCheck: "Comparar la captura con los rectángulos medidos; inspeccionar el ancho/alto del marco, las dimensiones renderizadas de la imagen, object-fit/object-position y el recorte real del archivo. Confirmar en escritorio, móvil y ambos temas antes de cambiar CSS.",
+      likelyFiles: ["technology-visual-refresh.css", "styles.css", "tests/visual-audit.test.mjs", "tests/visual-composition-quality-policy.mjs"],
+    };
+  }
   if (/error de javascript|runtime/.test(text)) {
     const likelyEnvironment = /fetch|network|failed to load|blockedbyclient|supabase|aborted/i.test(text);
     return {
