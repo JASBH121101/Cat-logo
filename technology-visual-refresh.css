@@ -3764,3 +3764,54 @@ html body.technology-catalog.product-detail-active #product-detail-page:not(.hid
   transform: none !important;
   translate: none !important;
 }
+
+
+/* DESKTOP DETAIL DENSITY FIX — use the viewport in dedicated product-page mode. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active > main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    width: 100% !important;
+    max-width: none !important;
+    padding: clamp(22px, 2.7vw, 40px) clamp(24px, 4vw, 74px) 64px !important;
+    box-sizing: border-box !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: min(1760px, 100%) !important;
+    max-width: 1760px !important;
+    min-width: 0 !important;
+    margin-inline: auto !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    width: 100% !important;
+    grid-template-columns: minmax(0, .96fr) minmax(0, 1.04fr) !important;
+    gap: clamp(24px, 3vw, 54px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail > p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: clamp(14px, .98vw, 16px) !important;
+    line-height: 1.62 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+    font-size: clamp(15px, 1vw, 18px) !important;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+  }
+}
