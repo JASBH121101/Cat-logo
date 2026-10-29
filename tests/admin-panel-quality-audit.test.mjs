@@ -11,7 +11,7 @@ const chatStyles = await readFile(new URL("admin-private-chat.css", root), "utf8
 const workflow = await readFile(new URL(".github/workflows/catalog-static-checks.yml", root), "utf8");
 
 function collectAttributeValues(source, attribute) {
-  const regex = new RegExp("\\b" + attribute + "\\s*=\\s*([\"'])(.*?)\\1", "g");
+  const regex = new RegExp("\b" + attribute + "\s*=\s*([\"'])(.*?)\1", "g");
   return [...source.matchAll(regex)].map(match => match[2]);
 }
 
@@ -33,17 +33,17 @@ test("every static HTML id is unique and admin navigation has accessible state",
 });
 
 test("admin panel buttons have explicit form behavior and status regions", () => {
-  const buttons = [...html.matchAll(/<button\\b[^>]*>/gi)].map(match => match[0]);
-  const missingType = buttons.filter(button => !/\\btype\\s*=/.test(button));
+  const buttons = [...html.matchAll(/<button\b[^>]*>/gi)].map(match => match[0]);
+  const missingType = buttons.filter(button => !/\btype\s*=/.test(button));
   const missingName = buttons.filter(button =>
-    !/\\baria-label\\s*=|\\btitle\\s*=/.test(button) &&
-    !/>\\s*[\\w\\p{L}]/u.test(button)
+    !/\baria-label\s*=|\btitle\s*=/.test(button) &&
+    !/>\s*[\w\p{L}]/u.test(button)
   );
   const findings = [];
   if (missingType.length) findings.push(missingType.length + " botones sin type explícito");
   if (missingName.length) findings.push(missingName.length + " botones estáticos sin etiqueta detectable");
   if (!/id="private-chat-admin-status"[^>]*role="status"[^>]*aria-live="polite"/.test(html)) findings.push("estado de mensajería sin anuncio accesible");
-  console.log("\\nADMIN QUALITY AUDIT — hallazgos estructurales");
+  console.log("\nADMIN QUALITY AUDIT — hallazgos estructurales");
   console.log("Botones HTML estáticos: " + buttons.length);
   console.log("Hallazgos informativos: " + (findings.length ? findings.join(" · ") : "sin incidencias estructurales configuradas"));
   console.log("Archivos con estilos de administración inspeccionados: styles.css, theme-ui.css, admin-private-chat.css");
@@ -54,5 +54,5 @@ test("admin panel buttons have explicit form behavior and status regions", () =>
   assert.match(adminJs, /detectPrivateChatNotificationEvents/);
   assert.match(chatStyles, /private-chat-admin-layout/);
   assert.match(styles + theme, /admin-sidebar/);
-  assert.match(workflow, /tests\\/admin-panel-quality-audit\\.test\\.mjs/);
+  assert.match(workflow, /tests\/admin-panel-quality-audit\.test\.mjs/);
 });
