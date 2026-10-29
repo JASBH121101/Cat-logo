@@ -476,7 +476,8 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   imageWidth: Math.round(imageRect.width), imageHeight: Math.round(imageRect.height),
                   imageFrameRatio: Math.min(imageRect.width / Math.max(1, frameRect.width), imageRect.height / Math.max(1, frameRect.height)),
                   imageAreaRatio: imageArea / frameArea,
-                  leftColumnWidth: Math.round(leftRect.width),\n                  rightColumnWidth: Math.round(rightRect.width),
+                  leftColumnWidth: Math.round(leftRect.width),
+                  rightColumnWidth: Math.round(rightRect.width),
                   rightColumnDensity: Math.min(1, contentArea / rightArea),
                   rightContentDensity: Math.min(1, contentArea / rightArea),
                 };
@@ -518,6 +519,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
             showcaseLayouts,
             contentRegions,
             dialogLayouts,
+            productCompositionLayouts,
             keyText,
           };
         }, { pageName: site.name, viewportName: viewport.name, themeName: theme });
