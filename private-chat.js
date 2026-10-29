@@ -53,13 +53,31 @@ let expired = false;
 let countdownTimer = null;
 let activeCountdownExpiry = 0;
 
+function saveSessionToken(value) {
+  const token = String(value || "");
+  if (!token) return;
+  try { localStorage.setItem(SESSION_KEY, token); } catch {}
+  try { sessionStorage.setItem(SESSION_KEY, token); } catch {}
+}
+function loadSessionToken() {
+  let token = "";
+  try { token = localStorage.getItem(SESSION_KEY) || ""; } catch {}
+  if (!token) { try { token = sessionStorage.getItem(SESSION_KEY) || ""; } catch {} }
+  if (token) saveSessionToken(token);
+  return token;
+}
+function clearSavedSessionToken() {
+  try { localStorage.removeItem(SESSION_KEY); } catch {}
+  try { clearSavedSessionToken(); } catch {}
+}
+
 function showFatal(message) {
   expired = true;
   loading.hidden = true;
   appPanel.hidden = true;
   errorPanel.hidden = false;
   errorPanel.textContent = message;
-  sessionStorage.removeItem(SESSION_KEY);
+  clearSavedSessionToken();
   if (countdownTimer) clearInterval(countdownTimer);
 }
 function updateStatus(message, kind = "") {
@@ -135,7 +153,7 @@ function startDeleteCountdown(value) {
       clearInterval(countdownTimer);
       countdownTimer = null;
       activeCountdownExpiry = 0;
-      sessionStorage.removeItem(SESSION_KEY);
+      clearSavedSessionToken();
       expired = true;
       $("#private-chat-change-mind").disabled = true;
       updateStatus("El acceso expiró. Podés iniciar otra conversación desde el catálogo.");
@@ -268,11 +286,11 @@ async function initialize() {
       const result = await api("redeem", { inviteToken });
       sessionToken = String(result.sessionToken || "");
       if (!sessionToken) throw new Error("No pudimos activar este enlace.");
-      sessionStorage.setItem(SESSION_KEY, sessionToken);
+      saveSessionToken(sessionToken);
       conversation = result.conversation || null;
       window.history.replaceState({}, document.title, "/mensajes.html");
     } else {
-      sessionToken = sessionStorage.getItem(SESSION_KEY) || "";
+      sessionToken = loadSessionToken();
     }
     if (!sessionToken) {
       showFatal("No encontramos un enlace de acceso activo. Volvé al catálogo y elegí «Contactar JB Collections» para iniciar una conversación.");
