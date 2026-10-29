@@ -4,7 +4,7 @@ import { onRequest } from "../functions/api/private-chat.js";
 import { readFileSync } from "node:fs";
 
 const privateChatEdge = readFileSync(new URL("../supabase/functions/private-chat/index.ts", import.meta.url), "utf8");
-const pushSecurityMigration = readFileSync(new URL("../supabase/migrations/20261029123300_catalog_security_performance_hardening.sql", import.meta.url), "utf8");
+const pushSecurityMigration = readFileSync(new URL("../supabase/migrations/20261029124043_catalog_security_performance_hardening.sql", import.meta.url), "utf8");
 
 
 function base64url(bytes) {
