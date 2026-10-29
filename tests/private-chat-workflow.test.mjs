@@ -14,6 +14,8 @@ const customerHtml = readFileSync(new URL("../mensajes.html", import.meta.url), 
 const customerJs = readFileSync(new URL("../private-chat.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const adminJs = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
+const adminNotifications = readFileSync(new URL("../admin-notifications.mjs", import.meta.url), "utf8");
+const adminWorker = readFileSync(new URL("../jb-manager-sw.js", import.meta.url), "utf8");
 const adminCss = readFileSync(new URL("../admin-private-chat.css", import.meta.url), "utf8");
 const technology = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const perfumery = readFileSync(new URL("../perfumeria.js", import.meta.url), "utf8");
@@ -110,7 +112,11 @@ test("JB Manager includes a private inbox with claim, manual reply, close and pu
   assert.match(adminJs, /private_chat_admin_send/);
   assert.match(adminJs, /private_chat_admin_extend_after_purchase/);
   assert.match(adminJs, /private_chat_admin_close/);
-  assert.match(adminJs, /Notification\.requestPermission/);
+  assert.match(adminJs, /enableAdminNotifications/);
+  assert.match(adminNotifications, /NotificationApi\.requestPermission/);
+  assert.match(adminNotifications, /serviceWorker\.register/);
+  assert.match(adminWorker, /notificationclick/);
+  assert.match(adminWorker, /JB_MANAGER_OPEN_MESSAGES/);
   assert.match(adminCss, /\.private-chat-admin-layout/);
 });
 
