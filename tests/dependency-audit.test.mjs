@@ -28,7 +28,8 @@ function makeFixture(withBrokenReference = false) {
   writeFileSync(join(root, "assets/helper.js"), "export function helper() { return 1; }");
   writeFileSync(join(root, "assets/module.mjs"), [
     'const WORKER_URL = "../jb-manager-sw.js?v=1";',
-    "navigator.serviceWorker.register(WORKER_URL);"
+    "const workerUrl = new URL(WORKER_URL, window.location.href);",
+    "navigator.serviceWorker.register(workerUrl.href);"
   ].join("\n"));
   writeFileSync(join(root, "jb-manager-sw.js"), 'self.addEventListener("push", () => {});');
   writeFileSync(join(root, "api", "share.js"), "module.exports = async function handler(req, res) { return res.end('ok'); };");
