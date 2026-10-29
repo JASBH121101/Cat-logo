@@ -38,6 +38,10 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(adminJs, /detectPrivateChatNotificationEvents/);
   assert.match(adminJs, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(chatStyles, /private-chat-admin-layout/);
+  assert.match(html, /admin-private-chat\.css\?v=20261029-compact-inbox1/);
+  assert.match(chatStyles, /\.private-chat-admin-actions \.button\s*\{[^}]*min-height:\s*30px/);
+  assert.match(chatStyles, /\.private-chat-admin-messages\s*\{[^}]*max-height:\s*220px\s*!important/);
+  assert.match(chatStyles, /\.private-chat-admin-reply-form textarea\s*\{[^}]*min-height:\s*38px/);
   assert.match(styles + theme, /admin-sidebar/);
   assert.match(workflow, /tests\/admin-panel-quality-audit\.test\.mjs/);
 
