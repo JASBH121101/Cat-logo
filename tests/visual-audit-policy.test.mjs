@@ -79,3 +79,13 @@ test("ordinary console diagnostics do not become uncaught-exception failures", (
   assert.equal(uncaught.category, "uncaught_javascript_exception");
   assert.equal(uncaught.blocking, true);
 });
+
+
+test("Axe critical and serious impacts block while moderate and minor stay reviewable", async () => {
+  const { classifyAxeImpact } = await import("./visual-audit-policy.mjs");
+  assert.deepEqual(classifyAxeImpact("critical"), { severity: "high", blocking: true });
+  assert.deepEqual(classifyAxeImpact("serious"), { severity: "high", blocking: true });
+  assert.deepEqual(classifyAxeImpact("moderate"), { severity: "medium", blocking: false });
+  assert.deepEqual(classifyAxeImpact("minor"), { severity: "low", blocking: false });
+  assert.deepEqual(classifyAxeImpact(null), { severity: "medium", blocking: false });
+});
