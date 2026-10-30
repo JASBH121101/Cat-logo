@@ -195,7 +195,7 @@ async function analyzePhotoWithGemini(env, instruction, prompt, imageDataUrl) {
     throw error;
   }
 
-  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=\\r\\n]+)$/i.exec(imageDataUrl);
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=\r\n]+)$/i.exec(imageDataUrl);
   if (!match) {
     const error = new Error("Unsupported color photo format.");
     error.status = 415;
@@ -221,7 +221,7 @@ async function analyzePhotoWithGemini(env, instruction, prompt, imageDataUrl) {
           role: "user",
           parts: [
             { text: prompt },
-            { inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace(/\\s/g, "") } }
+            { inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace(/\s/g, "") } }
           ]
         }],
         generationConfig: {
@@ -253,7 +253,7 @@ async function analyzePhotoWithGemini(env, instruction, prompt, imageDataUrl) {
 
   const outputText = payload?.candidates?.[0]?.content?.parts
     ?.map(part => typeof part.text === "string" ? part.text : "")
-    .join("\\n")
+    .join("\n")
     .trim() || "";
   return parseModelValue({ response: outputText });
 }
@@ -317,8 +317,8 @@ export async function onRequest({ request, env }) {
 
   const relevantColors = selectRelevantLibraryEntries(query, productContext, sharedColors);
   const instruction = "Respondé exclusivamente con JSON con name (nombre corto del tono en español o nombre comercial probable), hex (#RRGGBB), aliases (hasta 6), confidence (estimación no calibrada 0-1) y explanation (frase breve). No afirmés que un nombre/código es oficial a menos que haya evidencia verificable en el propio texto. No tenés navegación ni acceso a bases oficiales: un código del fabricante debe tratarse como sugerencia no verificada. Para fotografía, estimá el color principal del producto, no el fondo ni reflejos evidentes. Si no podés identificarlo claramente, devolvé name 'Por confirmar', hex '#777777', aliases [] y explicá la incertidumbre. Si se incluyen colores de la biblioteca interna, respetá sus HEX cuando el nombre/alias coincida; la biblioteca es memoria interna, no una fuente oficial.";
-  const prompt = "Marca/modelo: " + (productContext || "No indicado") + "\\nConsulta/referencia: " + (query || "Analizar el color principal del producto en la fotografía.") + "\\nDevolvé nombre útil, HEX aproximado y alias; la sugerencia no es una identificación oficial." +
-    (relevantColors.length ? "\\nReferencias relevantes de la biblioteca compartida (JSON; usalas solo si encajan con la consulta): " + JSON.stringify(relevantColors) : "");
+  const prompt = "Marca/modelo: " + (productContext || "No indicado") + "\nConsulta/referencia: " + (query || "Analizar el color principal del producto en la fotografía.") + "\nDevolvé nombre útil, HEX aproximado y alias; la sugerencia no es una identificación oficial." +
+    (relevantColors.length ? "\nReferencias relevantes de la biblioteca compartida (JSON; usalas solo si encajan con la consulta): " + JSON.stringify(relevantColors) : "");
   let parsed;
   try {
     if (isImage) {
@@ -340,7 +340,7 @@ export async function onRequest({ request, env }) {
     let hex = clean(parsed && parsed.hex, 12).toUpperCase();
     if (hex && !hex.startsWith("#")) hex = "#" + hex;
     if (!name || !/^#[0-9A-F]{6}$/.test(hex)) return respond(422, { error: "color_not_identified", message: "La IA no devolvió un nombre y HEX válidos. Probá otra foto o agregá marca, modelo y código." }, origin);
-    const aliases = Array.isArray(parsed.aliases) ? [...new Set(parsed.aliases.map(value => clean(value, 45)).filter(value && value.toLowerCase() !== name.toLowerCase()))].slice(0, 6) : [];
+    const aliases = Array.isArray(parsed.aliases) ? [...new Set(parsed.aliases.map(value => clean(value, 45)).filter(value => value && value.toLowerCase() !== name.toLowerCase()))].slice(0, 6) : [];
     const rawConfidence = Number(parsed.confidence);
     const confidence = Number.isFinite(rawConfidence) ? Math.max(0, Math.min(1, rawConfidence)) : (isImage ? 0.55 : 0.3);
     const explanation = clean(parsed.explanation, 240) || (isImage ? "Estimación visual; el acabado y la iluminación pueden alterar el tono." : "Sugerencia de IA; no se contrastó con una ficha oficial en tiempo real.");
