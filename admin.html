@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
   <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
   <link rel="stylesheet" href="admin-accessibility.css?v=20261030-inventory-refresh1">
+  <link rel="stylesheet" href="admin-ai.css?v=20261030-jb-manager-ai1">
 
   <script src="config.js?v=20261029-admin-webpush3"></script>
   <script type="module" src="admin.js?v=20261030-cross-device-refresh1"></script>
@@ -159,6 +160,9 @@
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="reviewed">
             <span class="admin-nav-icon" aria-hidden="true">✓</span><span class="admin-nav-label">Revisados</span><span class="admin-nav-count" id="reviewed-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="ai">
+            <span class="admin-nav-icon" aria-hidden="true">✦</span><span class="admin-nav-label">JB Manager AI</span><span class="admin-nav-ai-tag">AI</span>
           </button>
           <button type="button" class="admin-nav-button" data-admin-section="messages" aria-label="Abrir mensajería privada">
             <span class="admin-nav-icon" aria-hidden="true">✉</span><span class="admin-nav-label">Mensajería</span><span class="admin-nav-count" id="private-chat-nav-count">0</span>
@@ -832,6 +836,45 @@
       </section>
 
 
+      <section id="admin-section-ai" class="admin-nav-panel hidden jb-manager-ai-page" data-admin-panel="ai">
+        <header class="jb-manager-ai-heading">
+          <div>
+            <p class="eyebrow">COPILOTO ADMINISTRATIVO · JB COLLECTIONS</p>
+            <h2>JB Manager <span>AI</span></h2>
+            <p>Un asistente para consultar tu catálogo, preparar revisiones de precios y agilizar el registro de productos.</p>
+          </div>
+          <div class="jb-manager-ai-status"><i></i><span>Sesión protegida</span></div>
+        </header>
+        <div class="jb-manager-ai-workspace">
+          <aside class="jb-manager-ai-aside">
+            <div class="jb-manager-ai-aside-mark">✦</div>
+            <h3>Tu centro de operaciones</h3>
+            <p>Dictá o escribí lo que necesitás. JB Manager AI te ayudará a organizar la información antes de cualquier cambio.</p>
+            <div class="jb-manager-ai-capability"><span>01</span><div><strong>Precios de proveedor</strong><small>Preparar revisiones de GoPartner.</small></div></div>
+            <div class="jb-manager-ai-capability"><span>02</span><div><strong>Alta de productos</strong><small>Recopilar datos y crear borradores.</small></div></div>
+            <div class="jb-manager-ai-capability"><span>03</span><div><strong>Consultas del catálogo</strong><small>Buscar productos y configuraciones.</small></div></div>
+            <p class="jb-manager-ai-privacy">La IA no guarda ni publica cambios. Toda acción administrativa requiere tu aprobación.</p>
+          </aside>
+          <section class="jb-manager-ai-chat" aria-label="Conversación con JB Manager AI">
+            <div class="jb-manager-ai-chat-head"><div><span class="jb-manager-ai-avatar">✦</span><div><strong>JB Copilot</strong><small>Asistente administrativo</small></div></div><button type="button" id="jb-ai-clear" aria-label="Limpiar conversación" title="Nueva conversación">↻</button></div>
+            <div id="jb-ai-messages" class="jb-manager-ai-messages" aria-live="polite">
+              <article class="jb-manager-ai-message is-assistant"><strong>Hola, estoy listo.</strong><p>Podés decirme, por ejemplo: “Quiero revisar el precio del POCO X8 Pro Max; el proveedor ahora lo ofrece a 245 dólares”.</p></article>
+            </div>
+            <div class="jb-manager-ai-prompts">
+              <button type="button" data-jb-ai-prompt="Quiero revisar un precio de proveedor.">Revisar un precio</button>
+              <button type="button" data-jb-ai-prompt="Ayudame a preparar un producto nuevo para JB TECH.">Añadir producto</button>
+              <button type="button" data-jb-ai-prompt="Buscá un producto en mis catálogos.">Buscar producto</button>
+            </div>
+            <form id="jb-ai-form" class="jb-manager-ai-form">
+              <button type="button" id="jb-ai-voice" class="jb-ai-voice" aria-label="Dictar mensaje" title="Dictar mensaje">🎙</button>
+              <textarea id="jb-ai-input" rows="1" maxlength="3000" placeholder="Escribí o dictá una instrucción…" aria-label="Mensaje para JB Manager AI"></textarea>
+              <button type="submit" id="jb-ai-send" class="jb-ai-send" aria-label="Enviar mensaje">➤</button>
+            </form>
+            <p id="jb-ai-status" class="jb-manager-ai-statusline" role="status">La voz depende del navegador y del permiso del micrófono.</p>
+          </section>
+        </div>
+      </section>
+      <button type="button" id="jb-ai-floating-launcher" class="jb-ai-floating-launcher" aria-label="Abrir JB Manager AI" title="Abrir JB Manager AI"><span aria-hidden="true">✦</span></button>
       <section id="admin-section-messages" class="admin-nav-panel hidden private-chat-admin-panel" data-admin-panel="messages">
         <header class="provider-page-heading private-chat-admin-heading">
           <div>
