@@ -65,3 +65,10 @@ test("a quota error during the JSON correction attempt reaches the batch circuit
 test("production audit only enforces the theme selector on catalog pages that support it", () => {
   assert.ok(productionAudit.includes("if (site.products && actualTheme !== theme)"));
 });
+
+test("AI review receives measured content width, viewport utilization and responsive grid metrics", () => {
+  assert.ok(reviewer.includes("viewportUtilizationPct"));
+  assert.ok(reviewer.includes("gridColumns"));
+  assert.ok(productionAudit.includes("contentMetrics"));
+  assert.ok(productionAudit.includes("contentWidth"));
+});
