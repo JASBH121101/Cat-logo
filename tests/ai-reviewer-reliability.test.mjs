@@ -101,10 +101,11 @@ test("both public catalogs declare the 3360px 4K content cap and expose layout m
 });
 
 
-test("AI visual review routes through Cloudflare first and falls back to OpenAI Responses vision", () => {
-  assert.ok(reviewer.includes('const OPENAI_MODEL = String(process.env.OPENAI_VISION_MODEL || "gpt-5.4-mini")'));
-  assert.ok(reviewer.includes('const endpoint = "https://api.openai.com/v1/responses"'));
-  assert.ok(reviewer.includes('{ type: "input_image", image_url:'));
+test("AI visual review routes through Cloudflare first and falls back to free-tier Gemini vision", () => {
+  assert.ok(reviewer.includes('const GEMINI_MODEL = String(process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite")'));
+  assert.ok(reviewer.includes("https://generativelanguage.googleapis.com/v1beta/models/"));
+  assert.ok(reviewer.includes('"x-goog-api-key": GEMINI_API_KEY'));
+  assert.ok(reviewer.includes("inline_data: { mime_type: image.mimeType"));
   assert.ok(reviewer.includes("getConfiguredAiProviders"));
   assert.ok(reviewer.includes("callProviderModel(provider"));
   assert.ok(reviewer.includes("isProviderCircuitBreakingFailure"));
@@ -112,14 +113,15 @@ test("AI visual review routes through Cloudflare first and falls back to OpenAI 
   assert.ok(reviewer.includes("providerFallbacks"));
 });
 
-test("CI enables AI review when either OpenAI or a complete Cloudflare credential pair is configured", () => {
+test("CI enables only Cloudflare and free-tier Gemini after explicit AI-review opt-in", () => {
   assert.equal((workflow.match(/AI_REVIEW_ENABLED:/g) || []).length, 2);
-  assert.equal((workflow.match(/secrets.OPENAI_API_KEY != ''/g) || []).length, 2);
-  assert.equal((workflow.match(/OPENAI_API_KEY: \$\{\{ secrets.OPENAI_API_KEY \}\}/g) || []).length, 2);
-  assert.ok(workflow.includes("OPENAI_VISION_MODEL"));
+  assert.equal((workflow.match(/secrets.GEMINI_API_KEY != ''/g) || []).length, 2);
+  assert.equal((workflow.match(/GEMINI_API_KEY: \$\{\{ secrets.GEMINI_API_KEY \}\}/g) || []).length, 2);
+  assert.ok(workflow.includes("GEMINI_VISION_MODEL"));
   assert.ok(workflow.includes("AI_PROVIDER_ORDER"));
   assert.ok(workflow.includes("vars.ENABLE_AI_VISUAL_REVIEW == 'true'"));
-  assert.ok(workflow.includes("No screenshot is sent to an AI service unless the opt-in variable and at least one provider credential are configured."));
+  assert.ok(workflow.includes("The workflow does not configure OpenAI API or any paid provider."));
+  assert.doesNotMatch(workflow, /OPENAI_API_KEY|OPENAI_VISION_MODEL/);
 });
 
 test("deterministic production browser audit remains independent of optional AI credentials", () => {
