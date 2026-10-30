@@ -14,6 +14,7 @@ export const PERSONAL_EXPERIENCE_PROFILE = Object.freeze({
     { id: "clue", screenId: "clue-screen", label: "Pista personal", focus: "ritmo narrativo, legibilidad, composición y transición hacia la revelación" },
     { id: "reveal", screenId: "reveal-screen", label: "Revelación", focus: "impacto visual, protagonismo del retrato o su marcador, espacio y claridad de la transición" },
     { id: "letter", screenId: "letter-screen", label: "Carta y respuesta", focus: "comodidad de lectura, longitud de texto, jerarquía, tono respetuoso, claridad de las opciones y cierre sin presión" },
+    { id: "response", screenId: "letter-screen", label: "Respuesta interactiva", focus: "claridad del mensaje posterior a la elección, funcionamiento de las dos opciones y ausencia de presión o navegación inesperada" },
   ]),
 });
 
