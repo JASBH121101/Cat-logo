@@ -877,6 +877,8 @@ for (const relativePage of [
 // Validate the generated browser-side scripts before Android packages them.
 const builtAdminHtml = await readFile(join(webDir, "admin.html"), "utf8");
 const builtAdminScript = await readFile(join(webDir, "admin.js"), "utf8");
+const builtScannerScript = await readFile(join(webDir, "admin-gopartners-scanner.js"), "utf8");
+const builtProviderScript = await readFile(join(webDir, "admin-provider.js"), "utf8");
 const builtThemeCss = await readFile(join(webDir, "theme-ui.css"), "utf8");
 
 const colorAssistantSource = await readFile(join(repoRoot, "functions/api/color-assistant.js"), "utf8");
@@ -939,8 +941,8 @@ if (!builtAdminHtml.includes('id="jb-gp-scanner"')
   throw new Error("JARVIS scanner regression: APK admin panel is missing the Go Partners scanner interface.");
 }
 if (!builtAdminScript.includes("initGoPartnersScanner")
-  || !builtAdminScript.includes("/api/jb-gopartners-scan")
-  || !builtAdminScript.includes("openReviewFromScan")) {
+  || !builtScannerScript.includes("/api/jb-gopartners-scan")
+  || !builtProviderScript.includes("openReviewFromScan")) {
   throw new Error("JARVIS scanner regression: APK web bundle is missing the OCR review integration.");
 }
 
