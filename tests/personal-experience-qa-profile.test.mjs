@@ -7,12 +7,12 @@ import {
   calculateExperienceScores,
 } from "./personal-experience-qa-profile.mjs";
 
-test("personal experience profile is separate from the commerce audit and covers six narrative states", () => {
+test("personal experience profile is separate from the commerce audit and covers all narrative and response states", () => {
   assert.equal(PERSONAL_EXPERIENCE_PROFILE.id, "personal-experience");
   assert.deepEqual(PERSONAL_EXPERIENCE_PROFILE.states.map(item => item.id), [
-    "welcome", "music", "questions", "clue", "reveal", "letter",
+    "welcome", "music", "question-1", "question-2", "question-3", "clue", "reveal", "letter", "response-conversation", "response-thanks",
   ]);
-  assert.equal(buildExperienceAiCases().length, 14);
+  assert.equal(buildExperienceAiCases().length, 20);
   assert.ok(buildExperienceAiCases().every(item => item.file.startsWith("experience--")));
 });
 
