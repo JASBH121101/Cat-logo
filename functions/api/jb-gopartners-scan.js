@@ -73,7 +73,7 @@ export async function onRequestPost({ request, env }) {
   let body;
   try {
     const raw = await request.text();
-    if (raw.length > 110000) return reply(413, { ok: false, error: "request_too_large" }, origin);
+    if (raw.length > 180000) return reply(413, { ok: false, error: "request_too_large" }, origin);
     body = JSON.parse(raw);
   } catch { return reply(400, { ok: false, error: "invalid_json" }, origin); }
   if (!env.GEMINI_API_KEY) return reply(503, { ok: false, error: "gemini_not_configured" }, origin);
@@ -85,7 +85,7 @@ export async function onRequestPost({ request, env }) {
     captured_at: clean(item?.capturedAt, 40), text: clean(item?.text, 1200)
   })).filter(item => item.text.length >= 8);
   const total = observations.reduce((sum, item) => sum + item.text.length, 0);
-  if (!observations.length || total > 90000) return reply(400, { ok: false, error: "insufficient_or_excessive_ocr_text" }, origin);
+  if (!observations.length || total > 100000) return reply(400, { ok: false, error: "insufficient_or_excessive_ocr_text" }, origin);
 
   const instruction = [
     "Sos el extractor OCR del escáner JARVIS de JB Collections.",
