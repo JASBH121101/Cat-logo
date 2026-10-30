@@ -47,8 +47,10 @@ export function validateReview(value) {
   }
   const score = value.visual_score ?? value.visualScore ?? null;
   if (score !== null && (!Number.isFinite(Number(score)) || Number(score) < 0 || Number(score) > 100)) return { valid: false, reason: "visual_score must be 0-100" };
+  const narrativeScore = value.narrative_score ?? value.narrativeScore ?? null;
+  if (narrativeScore !== null && (!Number.isFinite(Number(narrativeScore)) || Number(narrativeScore) < 0 || Number(narrativeScore) > 100)) return { valid: false, reason: "narrative_score must be 0-100" };
   const list = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string").slice(0, 5).map((x) => str(x, 300)) : [];
-  return { valid: true, review: { visual_score: score === null ? null : Number(score), overall_assessment: assessment, strengths: list(value.strengths), issues: deduplicateIssues(issues), manual_review_required: true, limitations: list(value.limitations) } };
+  return { valid: true, review: { visual_score: score === null ? null : Number(score), narrative_score: narrativeScore === null ? null : Number(narrativeScore), overall_assessment: assessment, strengths: list(value.strengths), issues: deduplicateIssues(issues), manual_review_required: true, limitations: list(value.limitations) } };
 }
 
 function compactSentences(text) {
