@@ -12,7 +12,7 @@ test("personal experience profile is separate from the commerce audit and covers
   assert.deepEqual(PERSONAL_EXPERIENCE_PROFILE.states.map(item => item.id), [
     "welcome", "music", "questions", "clue", "reveal", "letter",
   ]);
-  assert.equal(buildExperienceAiCases().length, 12);
+  assert.equal(buildExperienceAiCases().length, 14);
   assert.ok(buildExperienceAiCases().every(item => item.file.startsWith("experience--")));
 });
 
