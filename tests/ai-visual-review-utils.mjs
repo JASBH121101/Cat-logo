@@ -276,12 +276,12 @@ export function getOpenAIResponseText(payload) {
       }
     }
   }
-  if (fragments.length) return str(fragments.join("\\n"), 16000);
+  if (fragments.length) return str(fragments.join("\n"), 16000);
   const choices = Array.isArray(payload?.choices) ? payload.choices : [];
   const content = choices[0]?.message?.content;
   if (typeof content === "string") return str(content, 16000);
   if (Array.isArray(content)) {
-    return str(content.filter(part => typeof part?.text === "string").map(part => part.text).join("\\n"), 16000);
+    return str(content.filter(part => typeof part?.text === "string").map(part => part.text).join("\n"), 16000);
   }
   return "";
 }
