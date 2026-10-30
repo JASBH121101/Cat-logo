@@ -73,5 +73,5 @@ test("contact channel controls are responsive, keyboard-focusable and styled con
   assert.ok(technologyHtml.includes("contact-channels.css?v=20261029-theme-contrast1"));
   assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261029-theme-contrast1"));
   assert.match(technologyHtml, /<script type="module" src="[^"]*app\.js\?v=20261030-[a-z0-9-]+"/);
-  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261030-gallery-ambient1"));
+  assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261029-dedicated-detail-navigation1"));
 });
