@@ -174,11 +174,24 @@ function region(s) {
 
 export function recoverExplicitFindings(text) {
   const compacted = compactSentences(text);
-  const issues = compacted.sentences.filter((s) => !NEGATED.test(s) && NEGATIVE.some((pattern) => pattern.test(s))).map((evidence) => ({
-    severity: /ocult[oa]|no\s+se\s+puede\s+leer|fuera\s+del\s+viewport|desbordamiento|overflow/i.test(evidence) ? "high" : "medium",
-    region: region(evidence), evidence: str(evidence, 700),
-    recommendation: "Verificar manualmente la captura y medir el elemento antes de modificar CSS o estructura.", confidence: 0.55,
-  }));
+  const issues = [];
+  for (let i = 0; i < compacted.sentences.length; i++) {
+    const evidence = compacted.sentences[i];
+    if (NEGATED.test(evidence) || !NEGATIVE.some(pattern => pattern.test(evidence))) continue;
+
+    const next = compacted.sentences[i + 1] || "";
+    const hasActionableRecommendation = /^(?:esto|esta|ese|esa|se puede|puede|podr[ií]a|conviene|se recomienda|para corregir|para mejorar)/i.test(next);
+    const recommendation = hasActionableRecommendation
+      ? str(next, 700)
+      : "Verificar manualmente la captura y medir el elemento antes de modificar CSS o estructura.";
+    issues.push({
+      severity: /ocult[oa]|no\\s+se\\s+puede\\s+leer|fuera\\s+del\\s+viewport|desbordamiento|overflow/i.test(evidence) ? "high" : "medium",
+      region: region(evidence),
+      evidence: str(evidence, 700),
+      recommendation,
+      confidence: null,
+    });
+  }
   return { issues: deduplicateIssues(issues).slice(0, 4), duplicateSentenceCount: compacted.duplicates };
 }
 
