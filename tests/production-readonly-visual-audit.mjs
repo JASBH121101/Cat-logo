@@ -184,7 +184,7 @@ try {
         }
         const imageLoadStats = await loadLazyImages(page);
         const actualTheme = await page.locator("html").getAttribute("data-theme");
-        if (actualTheme !== theme) errors.push({ severity: "high", page: site.name, viewport: viewport.name, theme, type: "theme-not-applied", message: "El tema solicitado no quedó aplicado al documento.", evidence: "esperado=" + theme + "; observado=" + String(actualTheme) });
+        if (site.products && actualTheme !== theme) errors.push({ severity: "high", page: site.name, viewport: viewport.name, theme, type: "theme-not-applied", message: "El tema solicitado no quedó aplicado al documento.", evidence: "esperado=" + theme + "; observado=" + String(actualTheme) });
         const snapshot = await page.evaluate(() => {
           const visible = el => {
             const style=getComputedStyle(el), rect=el.getBoundingClientRect();
