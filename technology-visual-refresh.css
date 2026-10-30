@@ -4088,3 +4088,54 @@ body.technology-catalog.product-detail-active #product-detail-page .dialog-detai
     line-height: 1.52 !important;
   }
 }
+
+/* JB TECH · galería móvil más protagonista con fondo ambiental sin recorte. */
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  background: var(--tech-card, #eef2f8) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-backdrop {
+  position: absolute !important;
+  inset: -18px !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: var(--tech-card, #eef2f8) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-backdrop img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: .28 !important;
+  filter: blur(24px) saturate(.88) brightness(.94) !important;
+  transform: scale(1.12) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main .dialog-image-zoom {
+  position: relative !important;
+  z-index: 1 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main .dialog-gallery-nav {
+  position: relative !important;
+  z-index: 2 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-backdrop img {
+  opacity: .34 !important;
+  filter: blur(26px) saturate(.78) brightness(.52) !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(280px, 42svh, 360px) !important;
+    max-height: 360px !important;
+  }
+}
+
