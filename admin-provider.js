@@ -955,6 +955,57 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     else reviewDialog.setAttribute("open", "");
   }
 
+  function openReviewFromScan(productId, scannedRows) {
+    const product = activeProducts().find(item => String(item.id) === String(productId));
+    const rows = Array.isArray(scannedRows) ? scannedRows : [];
+    if (!product || !rows.length) return { ok: false, message: "No se identificó el producto o la captura." };
+    const hasVariants = productHasProviderVariants(product);
+    const normalizeConfig = value => normalizedText(value).replace(/\\s+/g, "");
+    const matchedRows = [];
+    if (hasVariants) {
+      const variantRows = Array.from(document.querySelectorAll("#provider-review-variants [data-provider-variant-config-row]"));
+      for (const scanned of rows) {
+        const ram = normalizeConfig(scanned.ram);
+        const storage = normalizeConfig(scanned.storage);
+        const matches = variantRows.filter(row =>
+          (!ram || normalizeConfig(row.dataset.ram) === ram) &&
+          (!storage || normalizeConfig(row.dataset.storage) === storage)
+        );
+        if (matches.length !== 1) {
+          return { ok: false, message: matches.length
+            ? "La configuración coincide con más de una variante. Revisala manualmente."
+            : "No se encontró la configuración " + [scanned.ram, scanned.storage].filter(Boolean).join(" / ") + " en este producto." };
+        }
+        matchedRows.push({ row: matches[0], scanned });
+      }
+    }
+    openReview(productId);
+    if (hasVariants) {
+      for (const item of matchedRows) {
+        if (item.scanned.price_usd != null) {
+          const field = item.row.querySelector("[data-provider-config-price-usd]");
+          if (field) field.value = String(item.scanned.price_usd);
+        }
+        if (item.scanned.price_nio != null) {
+          const field = item.row.querySelector("[data-provider-config-price-nio]");
+          if (field) field.value = String(item.scanned.price_nio);
+        }
+      }
+    } else {
+      const scanned = rows[0];
+      if (scanned.price_usd != null) $("#provider-review-price-usd").value = String(scanned.price_usd);
+      if (scanned.price_nio != null) $("#provider-review-price-nio").value = String(scanned.price_nio);
+    }
+    const syncCheckbox = $("#provider-review-sync-catalog-availability");
+    if (syncCheckbox) syncCheckbox.checked = false;
+    const source = rows.map(row => "captura " + (row.source_observation || "sin índice")).join(", ");
+    const notes = $("#provider-review-notes");
+    const scannerNote = "JARVIS Scanner Go Partners · " + new Date().toLocaleString("es-NI") + " · " + source;
+    notes.value = [notes.value.trim(), scannerNote].filter(Boolean).join("\\n").slice(0, 2000);
+    updateReviewComparison();
+    return { ok: true, appliedConfigurations: matchedRows.length || 1 };
+  }
+
   let savingReview = false;
   async function saveReview(event) {
     event?.preventDefault?.();
@@ -1606,6 +1657,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     refresh,
     render: renderProviderList,
     renderReviewed: renderReviewedList,
-    getStatus(productId) { return providerStatuses.get(String(productId)) || null; }
+    getStatus(productId) { return providerStatuses.get(String(productId)) || null; },
+    openReviewFromScan
   };
 }
