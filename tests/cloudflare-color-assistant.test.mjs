@@ -21,13 +21,17 @@ function makeRequest(body = {}, options = {}) {
     body: options.method === "GET" || options.method === "OPTIONS" ? undefined : JSON.stringify(body)
   });
 }
-async function withAdminFetch(callback, colorRows = []) {
+async function withAdminFetch(callback, colorRows = [], geminiHandler = null) {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async input => {
+  globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
     if (url.endsWith("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
     if (url.includes("/rest/v1/admin_users")) return Response.json([{ user_id: ADMIN_ID }]);
     if (url.includes("/rest/v1/color_library")) return Response.json(colorRows);
+    if (url.includes("generativelanguage.googleapis.com")) {
+      if (typeof geminiHandler === "function") return geminiHandler(input, init);
+      throw new Error("Unexpected Gemini API request.");
+    }
     throw new Error("Unexpected fetch URL: " + url);
   };
   try { await callback(); } finally { globalThis.fetch = originalFetch; }
@@ -141,30 +145,52 @@ test("passes relevant saved aliases and HEX values to the AI for a non-exact man
   }, colorRows);
 });
 
-test("analyzes a photo with vision AI and marks the result as an estimate", async () => {
+test("analyzes a photo with Gemini Vision and marks the result as an estimate", async () => {
+  let calledUrl = "", receivedHeaders = null, receivedBody = null, cloudflareAICalled = false;
   await withAdminFetch(async () => {
-    let selectedModel = "", receivedInput = null;
     const response = await onRequest({
       request: makeRequest({
         query: "¿Qué color es este?",
         productContext: "Samsung Galaxy",
         imageDataUrl: "data:image/jpeg;base64,AAAA"
       }, { authorization: TOKEN }),
-      env: { AI: { run: async (model, input) => {
-        selectedModel = model;
-        receivedInput = input;
-        return { response: JSON.stringify({
-          name: "Azul grisáceo", hex: "#74879A", aliases: ["Azul acero"],
-          confidence: 0.7, explanation: "Tono azul apagado con matiz gris."
-        }) };
-      } } }
+      env: {
+        GEMINI_API_KEY: "test-gemini-key",
+        AI: { run: async () => { cloudflareAICalled = true; throw new Error("Photo analysis should use Gemini."); } }
+      }
     });
     assert.equal(response.status, 200);
-    assert.equal(selectedModel, "@cf/meta/llama-3.2-11b-vision-instruct");
-    assert.equal(receivedInput.image, "data:image/jpeg;base64,AAAA");
     const payload = await response.json();
     assert.equal(payload.officialVerified, false);
     assert.equal(payload.basis, "visual_estimate");
+    assert.equal(payload.name, "Azul grisáceo");
+    assert.equal(payload.hex, "#74879A");
+  }, [], async (input, init) => {
+    calledUrl = String(input);
+    receivedHeaders = new Headers(init.headers);
+    receivedBody = JSON.parse(init.body);
+    return Response.json({
+      candidates: [{ content: { parts: [{ text: JSON.stringify({
+        name: "Azul grisáceo", hex: "#74879A", aliases: ["Azul acero"],
+        confidence: 0.7, explanation: "Tono azul apagado con matiz gris."
+      }) }] } }]
+    });
+  });
+  assert.match(calledUrl, /models\/gemini-3\.5-flash-lite:generateContent$/);
+  assert.equal(receivedHeaders.get("x-goog-api-key"), "test-gemini-key");
+  assert.equal(receivedBody.contents[0].parts[1].inline_data.mime_type, "image/jpeg");
+  assert.equal(receivedBody.contents[0].parts[1].inline_data.data, "AAAA");
+  assert.equal(cloudflareAICalled, false);
+});
+
+test("requires the existing Gemini secret for photo analysis", async () => {
+  await withAdminFetch(async () => {
+    const response = await onRequest({
+      request: makeRequest({ imageDataUrl: "data:image/jpeg;base64,AAAA" }, { authorization: TOKEN }),
+      env: { AI: { run: async () => { throw new Error("Should not use Cloudflare vision."); } } }
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, "gemini_not_configured");
   });
 });
 
