@@ -789,3 +789,42 @@ body.technology-catalog .jb-ai-launcher-label {
     font-size:23px;
   }
 }
+
+/* JB PARFUMS · icon-only launcher to preserve product text and contact actions. */
+body.perfume-page .jb-ai-launcher-label {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+@media (min-width:521px) {
+  body.perfume-page .jb-ai-launcher {
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+    box-shadow: 0 7px 20px rgba(112,82,28,.32);
+  }
+  body.perfume-page .jb-ai-launcher-spark { font-size: 23px; }
+}
+@media (max-width:520px) {
+  body.perfume-page .jb-ai-launcher {
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+    box-shadow: 0 4px 14px rgba(65,48,18,.28);
+  }
+  body.perfume-page .jb-ai-launcher-spark { font-size: 20px; }
+}
