@@ -214,16 +214,16 @@ export function getConfiguredAiProviders({
   cloudflareAccountId = "",
   cloudflareApiToken = "",
   geminiApiKey = "",
-  order = "cloudflare,gemini",
+  order = "gemini,cloudflare",
 } = {}) {
   const configured = new Set();
   if (String(cloudflareAccountId).trim() && String(cloudflareApiToken).trim()) configured.add("cloudflare");
   if (String(geminiApiKey).trim()) configured.add("gemini");
-  const requested = String(order || "cloudflare,gemini")
+  const requested = String(order || "gemini,cloudflare")
     .split(",")
     .map(value => value.trim().toLowerCase())
     .filter(value => value === "cloudflare" || value === "gemini");
-  return [...new Set([...requested, "cloudflare", "gemini"])].filter(provider => configured.has(provider));
+  return [...new Set([...requested, "gemini", "cloudflare"])].filter(provider => configured.has(provider));
 }
 
 export function classifyGeminiFailure({ status = 0, payload = null, bodyText = "" } = {}) {
