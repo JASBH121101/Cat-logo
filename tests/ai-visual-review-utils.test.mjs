@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyCloudflareFailure, classifyOpenAIFailure, deduplicateIssues, getConfiguredAiProviders, getModelText, getOpenAIResponseText, interpretModelResponse, isProviderCircuitBreakingFailure, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
+import { classifyCloudflareFailure, classifyGeminiFailure, deduplicateIssues, getConfiguredAiProviders, getGeminiResponseText, getModelText, interpretModelResponse, isProviderCircuitBreakingFailure, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
 const review = { visual_score: 72, overall_assessment: "Ficha entendible, con separación amplia entre galería y texto.", strengths: ["Jerarquía clara"], issues: [{ severity: "medium", region: "espaciado / composición", evidence: "Separación amplia entre imagen e información.", recommendation: "Medir el espacio y reducirlo si no es intencional.", confidence: 0.78 }], manual_review_required: true, limitations: ["Una captura"] };
 test("extracts Cloudflare response", () => assert.equal(getModelText({ result: { response: " hola " } }), "hola"));
 test("validates structured review and always requires human review", () => { const x = validateReview({ ...review, manual_review_required: false }); assert.equal(x.valid, true); assert.equal(x.review.manual_review_required, true); });
@@ -86,42 +86,38 @@ test("recovers concrete findings and their next-sentence recommendations from mo
 });
 
 
-test("AI provider routing prefers Cloudflare and falls back to OpenAI when configured", () => {
+
+test("AI provider routing uses Cloudflare then free-tier Gemini when configured", () => {
   assert.deepEqual(getConfiguredAiProviders({
     cloudflareAccountId: "account",
     cloudflareApiToken: "token",
-    openaiApiKey: "openai-key",
-  }), ["cloudflare", "openai"]);
-  assert.deepEqual(getConfiguredAiProviders({ openaiApiKey: "openai-key" }), ["openai"]);
+    geminiApiKey: "gemini-key",
+  }), ["cloudflare", "gemini"]);
+  assert.deepEqual(getConfiguredAiProviders({ geminiApiKey: "gemini-key" }), ["gemini"]);
   assert.deepEqual(getConfiguredAiProviders({ cloudflareAccountId: "account", cloudflareApiToken: "token" }), ["cloudflare"]);
   assert.deepEqual(getConfiguredAiProviders({}), []);
 });
 
-test("OpenAI quota and authentication failures are detected without retrying account-level failures", () => {
-  assert.deepEqual(classifyOpenAIFailure({
-    status: 429, payload: { error: { code: "insufficient_quota", message: "You exceeded your current quota." } },
-  }), { kind: "billing_quota_exhausted", retryable: false });
-  assert.deepEqual(classifyOpenAIFailure({
-    status: 401, payload: { error: { code: "invalid_api_key", message: "Incorrect API key provided." } },
+test("Gemini rate limits and free-tier access failures open only the Gemini circuit", () => {
+  assert.deepEqual(classifyGeminiFailure({
+    status: 429, payload: { error: { status: "RESOURCE_EXHAUSTED", message: "Quota exceeded." } },
+  }), { kind: "free_quota_exhausted", retryable: false });
+  assert.deepEqual(classifyGeminiFailure({
+    status: 403, payload: { error: { status: "PERMISSION_DENIED", message: "Free tier unavailable for this project." } },
+  }), { kind: "access_restricted", retryable: false });
+  assert.deepEqual(classifyGeminiFailure({
+    status: 401, payload: { error: { message: "API key not valid." } },
   }), { kind: "authentication_error", retryable: false });
-  assert.equal(classifyOpenAIFailure({ status: 429, payload: { error: { code: "rate_limit_exceeded" } } }).retryable, true);
-  assert.equal(isProviderCircuitBreakingFailure("openai", "billing_quota_exhausted"), true);
+  assert.equal(isProviderCircuitBreakingFailure("gemini", "free_quota_exhausted"), true);
   assert.equal(isProviderCircuitBreakingFailure("cloudflare", "daily_quota_exhausted"), true);
-  assert.equal(isProviderCircuitBreakingFailure("openai", "rate_limited"), false);
+  assert.equal(isProviderCircuitBreakingFailure("gemini", "server_error"), false);
 });
 
-test("extracts model text from OpenAI Responses API and Chat Completions payloads", () => {
-  assert.equal(getOpenAIResponseText({ output_text: '{"issues":[]}' }), '{"issues":[]}');
-  assert.equal(getOpenAIResponseText({ output: [{ type: "message", content: [{ type: "output_text", text: '{"visual_score":88}' }] }] }), '{"visual_score":88}');
-  assert.equal(getOpenAIResponseText({ choices: [{ message: { content: '{"issues":[]}' } }] }), '{"issues":[]}');
-});
-
-test("joins multi-part OpenAI response text without literal escaped separators", () => {
-  assert.equal(getOpenAIResponseText({
-    output: [{ type: "message", content: [
-      { type: "output_text", text: "first" },
-      { type: "output_text", text: "second" },
-    ] }],
+test("extracts Gemini text from the first content candidate", () => {
+  assert.equal(getGeminiResponseText({
+    candidates: [{ content: { parts: [{ text: '{"issues":[]}' }] } }],
+  }), '{"issues":[]}');
+  assert.equal(getGeminiResponseText({
+    candidates: [{ content: { parts: [{ text: "first" }, { text: "second" }] } }],
   }), "first\nsecond");
 });
-
