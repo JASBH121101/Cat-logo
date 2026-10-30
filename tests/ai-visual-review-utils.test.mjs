@@ -62,3 +62,18 @@ test("parser prefers the fenced JSON response after explanatory model prose", ()
   const text = ["Analysis text.", "JSON Response:", String.fromCharCode(96).repeat(3) + "json", JSON.stringify(review), String.fromCharCode(96).repeat(3)].join(String.fromCharCode(10));
   assert.equal(interpretModelResponse(text).status, "structured");
 });
+
+test("recovers concrete findings and their next-sentence recommendations from model prose", () => {
+  const prose = [
+    "**Issues:**",
+    "* **Legibilidad:** Algunas partes del texto son difíciles de leer debido a la falta de contraste entre el texto y el fondo.",
+    "Esto puede resolverse aumentando el contraste y utilizando una tipografía más legible.",
+    "* **Composición:** La página tiene demasiado espacio vacío en la parte superior.",
+    "Se puede mejorar reorganizando el contenido y reduciendo ese espacio.",
+  ].join(String.fromCharCode(10));
+  const result = recoverExplicitFindings(prose);
+  assert.equal(result.issues.length, 2);
+  assert.equal(result.issues[0].confidence, null);
+  assert.match(result.issues[0].recommendation, /aumentando el contraste/);
+  assert.match(result.issues[1].recommendation, /reorganizando el contenido/);
+});
