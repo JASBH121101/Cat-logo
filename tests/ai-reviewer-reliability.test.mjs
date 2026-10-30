@@ -17,7 +17,8 @@ test("AI reviewer optimizes oversized screenshots without modifying original evi
 
 test("model requests have bounded transient retries and a targeted validation correction", () => {
   assert.ok(reviewer.includes("requestAttempt <= 3"));
-  assert.ok(reviewer.includes("response.status === 429"));
+  assert.ok(reviewer.includes("classifyCloudflareFailure"));
+  assert.ok(reviewer.includes("daily_quota_exhausted"));
   assert.ok(reviewer.includes("correctionReason"));
   assert.ok(reviewer.includes("Corrige específicamente este problema"));
   assert.ok(reviewer.includes("httpRetryAttempts"));
