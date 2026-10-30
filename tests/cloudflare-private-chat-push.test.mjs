@@ -166,12 +166,16 @@ test("push dispatch is skipped safely when production secrets are not configured
 });
 
 
-test("privileged push RPCs are hidden from anon and called through the Edge Function service key", () => {
+test("the public Edge Function is restricted to secret-protected internal push operations", () => {
   assert.match(privateChatEdge, /const SERVICE_KEY = getKey\("SUPABASE_SECRET_KEYS", "SUPABASE_SERVICE_ROLE_KEY"\)/);
-  assert.match(privateChatEdge, /async function serviceRpc\(/);
-  assert.match(privateChatEdge, /action === "push_claim" \|\| action === "push_finish"/);
+  assert.match(privateChatEdge, /const ALLOWED_ACTIONS = new Set\(\["push_claim", "push_finish"\]\)/);
+  assert.match(privateChatEdge, /if \(!ALLOWED_ACTIONS\.has\(action\)\)/);
   assert.match(privateChatEdge, /serviceRpc\("private_chat_claim_push_delivery"/);
   assert.match(privateChatEdge, /serviceRpc\("private_chat_finish_push_delivery"/);
+  assert.match(privateChatEdge, /p_dispatch_secret: dispatchSecret/);
+  assert.doesNotMatch(privateChatEdge, /if \(action === "start"\)/);
+  assert.doesNotMatch(privateChatEdge, /consent_choice:\s*"yes"/);
+  assert.doesNotMatch(privateChatEdge, /async function createConversation/);
   assert.match(pushSecurityMigration, /REVOKE EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text, text\) FROM PUBLIC, anon, authenticated/i);
   assert.match(pushSecurityMigration, /REVOKE EXECUTE ON FUNCTION public\.private_chat_finish_push_delivery\(text, uuid, boolean\) FROM PUBLIC, anon, authenticated/i);
   assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text, text\) TO service_role/i);
