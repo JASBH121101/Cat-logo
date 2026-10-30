@@ -7,7 +7,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
@@ -31,8 +30,6 @@ import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -42,7 +39,6 @@ import java.util.TimeZone;
 import java.util.zip.CRC32;
 
 public class GoPartnersCaptureService extends Service {
-    private static final String PREFS = "jb_go_partners_screen_scan";
     private static final String ACTION_START = "com.jbcollections.manager.v2.GP_SCAN_START";
     private static final String ACTION_STOP = "com.jbcollections.manager.v2.GP_SCAN_STOP";
     private static final String EXTRA_RESULT_CODE = "projection_result_code";
@@ -81,7 +77,7 @@ public class GoPartnersCaptureService extends Service {
         int resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0);
         Intent resultData = readIntentExtra(intent, EXTRA_RESULT_DATA);
         if (resultCode == 0 || resultData == null) {
-            setFlags(false, false);
+            GoPartnersScanSession.setFlags(false, false);
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -109,7 +105,7 @@ public class GoPartnersCaptureService extends Service {
         } else {
             startForeground(NOTIFICATION_ID, notification);
         }
-        setFlags(true, false);
+        GoPartnersScanSession.setFlags(true, false);
     }
 
     private void createNotificationChannel() {
@@ -171,7 +167,7 @@ public class GoPartnersCaptureService extends Service {
             "JBGoPartnersScanner", width, height, metrics.densityDpi,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader.getSurface(), null, captureHandler);
         if (virtualDisplay == null) throw new IllegalStateException("No se pudo iniciar la captura de pantalla.");
-        setFlags(true, false);
+        GoPartnersScanSession.setFlags(true, false);
     }
 
     private void processLatestFrame(ImageReader reader) {
@@ -203,7 +199,7 @@ public class GoPartnersCaptureService extends Service {
         lastFrameHash = hash;
         lastFrameAt = now;
         processing = true;
-        setFlags(true, true);
+        GoPartnersScanSession.setFlags(true, true);
         final Bitmap frame = bitmap;
         try {
             recognizer.process(InputImage.fromBitmap(frame, 0))
@@ -213,13 +209,13 @@ public class GoPartnersCaptureService extends Service {
                 .addOnCompleteListener(task -> {
                     processing = false;
                     if (!frame.isRecycled()) frame.recycle();
-                    setFlags(!stopping, false);
+                    GoPartnersScanSession.setFlags(!stopping, false);
                     if (stopping) finishShutdown();
                 });
         } catch (Exception error) {
             processing = false;
             if (!frame.isRecycled()) frame.recycle();
-            setFlags(!stopping, false);
+            GoPartnersScanSession.setFlags(!stopping, false);
             if (stopping) finishShutdown();
         }
     }
@@ -271,51 +267,19 @@ public class GoPartnersCaptureService extends Service {
         String text = recognized.getText();
         if (text == null) return;
         text = text.replaceAll("[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]", " ")
-            .replaceAll("[ \\t]+", " ").replaceAll("\\n{2,}", "\n").trim();
+            .replaceAll("[ \\t]+", " ").replaceAll("\\n{2,}", "\\n").trim();
         if (text.length() < 8) return;
         if (text.length() > MAX_TEXT_CHARS) text = text.substring(0, MAX_TEXT_CHARS);
         String normalized = text.toLowerCase(Locale.ROOT);
         if (normalized.equals(lastRecognizedText)) return;
         lastRecognizedText = normalized;
-
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        JSONArray items;
-        try { items = new JSONArray(prefs.getString("observations", "[]")); }
-        catch (Exception error) { items = new JSONArray(); }
-        if (items.length() >= MAX_OBSERVATIONS) {
-            prefs.edit().putBoolean("truncated", true).apply();
-            return;
-        }
-        try {
-            JSONObject observation = new JSONObject();
-            observation.put("index", items.length() + 1);
-            observation.put("capturedAt", isoDate(capturedAt));
-            observation.put("text", text);
-            items.put(observation);
-            prefs.edit().putString("observations", items.toString())
-                .putInt("observations_count", items.length()).apply();
-        } catch (Exception error) {
-            android.util.Log.w("JBGoPartnersScanner", "Could not persist temporary OCR text", error);
-        }
-    }
-
-    private String isoDate(long time) {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return format.format(new Date(time));
-    }
-
-    private void setFlags(boolean running, boolean isProcessing) {
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
-            .putBoolean("running", running)
-            .putBoolean("processing", isProcessing)
-            .apply();
+        GoPartnersScanSession.appendObservation(text, capturedAt);
     }
 
     private void requestStop() {
         if (stopping) return;
         stopping = true;
-        setFlags(false, processing);
+        GoPartnersScanSession.setFlags(false, processing);
         try { if (imageReader != null) imageReader.setOnImageAvailableListener(null, null); } catch (Exception ignored) {}
         try { if (virtualDisplay != null) virtualDisplay.release(); } catch (Exception ignored) {}
         virtualDisplay = null;
@@ -337,7 +301,7 @@ public class GoPartnersCaptureService extends Service {
             captureThread = null;
         }
         captureHandler = null;
-        setFlags(false, false);
+        GoPartnersScanSession.setFlags(false, false);
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) manager.cancel(NOTIFICATION_ID);
         try { stopForeground(true); } catch (Exception ignored) {}
