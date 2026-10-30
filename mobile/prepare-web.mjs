@@ -923,7 +923,7 @@ for (const [label, source, fragments] of [
     "selectRelevantLibraryEntries",
     "ambiguous_library_match",
     "shared_library_match",
-    "image: imageDataUrl"
+    "inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace"
   ]]
 ]) {
   for (const fragment of fragments) {
@@ -931,6 +931,17 @@ for (const [label, source, fragments] of [
       throw new Error("Color knowledge regression: " + label + " is missing " + fragment);
     }
   }
+}
+
+
+if (!builtAdminHtml.includes('id="jb-gp-scanner"')
+  || !builtAdminHtml.includes('admin-gopartners-scanner.css?v=20261030-gp-scanner1')) {
+  throw new Error("JARVIS scanner regression: APK admin panel is missing the Go Partners scanner interface.");
+}
+if (!builtAdminScript.includes("initGoPartnersScanner")
+  || !builtAdminScript.includes("/api/jb-gopartners-scan")
+  || !builtAdminScript.includes("openReviewFromScan")) {
+  throw new Error("JARVIS scanner regression: APK web bundle is missing the OCR review integration.");
 }
 
 // Prevent future Android packaging from silently dropping login/session controls
