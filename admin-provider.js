@@ -336,7 +336,7 @@ function matchProduct(row, products, statuses, fallbackType) {
   return { product: null, ambiguous: false, rowType, matchMethod: "Sin identificador verificable" };
 }
 
-export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) {
+export function initProviderTools({ getSupabase, getCurrentUser, getProducts, onRefreshCatalog }) {
   let providerStatuses = new Map();
   let importPlan = [];
   let rawImportRows = [];
@@ -1507,7 +1507,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts }) 
   }
 
   ["#provider-refresh", "#provider-refresh-reviewed"].forEach(selector =>
-    $(selector)?.addEventListener("click", () => { void refresh(); })
+    $(selector)?.addEventListener("click", event => {
+      if (typeof onRefreshCatalog === "function") void onRefreshCatalog(event.currentTarget);
+      else void refresh();
+    })
   );
   ["#provider-catalog-filter", "#provider-search"].forEach(selector =>
     $(selector)?.addEventListener(selector === "#provider-search" ? "input" : "change", renderProviderList)
