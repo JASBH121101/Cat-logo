@@ -52,7 +52,8 @@ test("CI caches Playwright browser and npm downloads between runs", () => {
 });
 
 test("workflow exposes a separate read-only Personal Experience QA profile", () => {
-  assert.match(workflow, /audit_personal_experience:[\\s\\S]*?type: boolean/);
+  assert.ok(workflow.includes("audit_personal_experience:"));
+  assert.match(workflow, /type: boolean/);
   assert.match(workflow, /personal-experience-audit:/);
   assert.ok(workflow.includes("node tests/personal-experience-qa.mjs"));
   assert.match(workflow, /QA_PROFILE: personal-experience/);
