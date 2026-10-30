@@ -10,11 +10,14 @@ export const PERSONAL_EXPERIENCE_PROFILE = Object.freeze({
   states: Object.freeze([
     { id: "welcome", screenId: "welcome", label: "Bienvenida", focus: "primera impresión, claridad de la invitación, jerarquía del título, legibilidad y CTA inicial" },
     { id: "music", screenId: "music-screen", label: "Pantalla de música", focus: "claridad de las opciones, jerarquía, controles y explicación; no evaluar la calidad de una reproducción que no se ha iniciado" },
-    { id: "questions", screenId: "question-screen", label: "Preguntas interactivas", focus: "claridad de la pregunta, lectura de alternativas, progreso, área táctil y feedback visible" },
+    { id: "question-1", screenId: "question-screen", label: "Pregunta 1", focus: "claridad de la primera pregunta, lectura de alternativas, progreso, área táctil y feedback visible" },
+    { id: "question-2", screenId: "question-screen", label: "Pregunta 2", focus: "claridad de la segunda pregunta, continuidad respecto a la anterior, lectura de alternativas y feedback visible" },
+    { id: "question-3", screenId: "question-screen", label: "Pregunta 3", focus: "claridad de la tercera pregunta, continuidad narrativa, lectura de alternativas y cierre del bloque interactivo" },
     { id: "clue", screenId: "clue-screen", label: "Pista personal", focus: "ritmo narrativo, legibilidad, composición y transición hacia la revelación" },
     { id: "reveal", screenId: "reveal-screen", label: "Revelación", focus: "impacto visual, protagonismo del retrato o su marcador, espacio y claridad de la transición" },
     { id: "letter", screenId: "letter-screen", label: "Carta y respuesta", focus: "comodidad de lectura, longitud de texto, jerarquía, tono respetuoso, claridad de las opciones y cierre sin presión" },
-    { id: "response", screenId: "letter-screen", label: "Respuesta interactiva", focus: "claridad del mensaje posterior a la elección, funcionamiento de las dos opciones y ausencia de presión o navegación inesperada" },
+    { id: "response-conversation", screenId: "letter-screen", label: "Respuesta: interés en conversar", focus: "claridad del mensaje posterior a expresar interés en conversar, autonomía y ausencia de presión o navegación inesperada" },
+    { id: "response-thanks", screenId: "letter-screen", label: "Respuesta: agradecimiento", focus: "claridad y calidez del mensaje de agradecimiento, tono respetuoso y cierre sin presión" },
   ]),
 });
 
