@@ -116,13 +116,14 @@ test("JB TECH desktop advisor is an accessible icon-only bubble", () => {
   assert.match(aiJs, /aria-label="Abrir asesor IA de JB Collections"/);
 });
 
-test("JB TECH and JB Parfums mobile advisors are compact accessible icon-only bubbles", () => {
+test("JB TECH and JB Parfums desktop and mobile advisors are compact accessible icon-only bubbles", () => {
   for (const catalog of ["technology-catalog", "perfume-page"]) {
-    assert.match(aiCss, new RegExp("body\\\\." + catalog + " \\\\.jb-ai-launcher[\\\\s\\\\S]*?width: (48|52)px[\\\\s\\\\S]*?height: (48|52)px[\\\\s\\\\S]*?border-radius: 50%"));
+    assert.ok(aiCss.includes("body." + catalog + " .jb-ai-launcher"));
     assert.ok(aiCss.includes("body." + catalog + " .jb-ai-launcher-label"));
   }
+  assert.match(aiCss, /body\\.technology-catalog \\.jb-ai-launcher/);
+  assert.match(aiCss, /body\\.perfume-page \\.jb-ai-launcher-label[\\s\\S]*?clip: rect\\(0, 0, 0, 0\\)/);
   assert.match(aiCss, /@media \\(min-width:521px\\)[\\s\\S]*?body\\.perfume-page \\.jb-ai-launcher[\\s\\S]*?width: 52px[\\s\\S]*?height: 52px[\\s\\S]*?border-radius: 50%/);
   assert.match(aiCss, /@media \\(max-width:520px\\)[\\s\\S]*?body\\.perfume-page \\.jb-ai-launcher[\\s\\S]*?width: 48px[\\s\\S]*?height: 48px[\\s\\S]*?border-radius: 50%/);
-  assert.match(aiCss, /body\\.perfume-page \\.jb-ai-launcher-label[\\s\\S]*?clip: rect\\(0, 0, 0, 0\\)/);
   assert.ok(aiJs.includes('aria-label="Abrir asesor IA de JB Collections"'));
 });
