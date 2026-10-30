@@ -13,7 +13,7 @@ const AI_PROVIDERS = getConfiguredAiProviders({
   cloudflareAccountId: ACCOUNT_ID,
   cloudflareApiToken: API_TOKEN,
   geminiApiKey: GEMINI_API_KEY,
-  order: process.env.AI_PROVIDER_ORDER || "cloudflare,gemini",
+  order: process.env.AI_PROVIDER_ORDER || "gemini,cloudflare",
 });
 const providerCircuit = new Set();
 const providerEvents = [];
