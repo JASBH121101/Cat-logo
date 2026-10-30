@@ -170,7 +170,7 @@ async function auditViewport(viewport) {
       assert.ok(await page.locator("#answer-list button").count() >= 2, "Las alternativas deben renderizarse.");
     });
     if (await page.locator("#question-screen.active").count()) {
-      await capture(page, viewport, "questions", "question-screen");
+      await capture(page, viewport, "question-1", "question-screen");
       for (let index = 0; index < 3; index += 1) {
         const previous = await page.locator("#question-title").innerText();
         await recordJourney(viewport, `responder-pregunta-${index + 1}`, async () => {
@@ -179,6 +179,7 @@ async function auditViewport(viewport) {
           await answers.first().click();
           if (index < 2) {
             await page.waitForFunction(previousTitle => document.querySelector("#question-title")?.innerText !== previousTitle, previous, { timeout: 5000 });
+            await capture(page, viewport, `question-${index + 2}`, "question-screen");
           } else {
             await page.locator("#clue-screen.active").waitFor({ state: "visible", timeout: 5000 });
           }
@@ -208,10 +209,11 @@ async function auditViewport(viewport) {
         await page.waitForFunction(previous => document.querySelector("#closing-note")?.innerText !== previous, before, { timeout: 3000 });
         assert.equal(await page.locator("#letter-screen.active").count(), 1, "La opción no debe navegar fuera de la experiencia.");
       });
-      if (await page.locator("#letter-screen.active").count()) await capture(page, viewport, "response", "letter-screen");
+      if (await page.locator("#letter-screen.active").count()) await capture(page, viewport, "response-conversation", "letter-screen");
       await recordJourney(viewport, "opcion-de-agradecimiento", async () => {
         await page.locator("#response-thanks").click();
         await assert.equal(await page.locator("#response-thanks").innerText(), "Gracias por leer 🌹");
+        await capture(page, viewport, "response-thanks", "letter-screen");
       });
       const href = await page.locator("#response-yes").getAttribute("href");
       if (href && /tiktok\.com\/?$/i.test(href)) {
