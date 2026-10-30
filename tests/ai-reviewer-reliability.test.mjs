@@ -48,14 +48,13 @@ test("AI review is grounded in browser measurements and ignores instructions emb
   assert.ok(productionAudit.includes("imageLoadStats"));
 });
 
-test("AI reviewer stops the entire batch for quota or model-license blockers and reports pending captures", () => {
-  assert.ok(reviewer.includes("isBatchBlockingFailure(failureKind)"));
-  assert.ok(reviewer.includes('let batchBlockedBy = ""'));
-  assert.ok(reviewer.includes('failureKind: pendingKind'));
-  assert.ok(reviewer.includes('batchBlockedBy === "model_license_required" ? "license_required"'));
-  assert.ok(reviewer.includes('error.failureKind = "model_license_required"'));
-  assert.ok(reviewer.includes('licensePendingScreenshots'));
-  assert.ok(reviewer.includes('status: reportStatus'));
+test("provider quota/license blockers open only the affected provider circuit and report failover", () => {
+  assert.ok(reviewer.includes("isProviderCircuitBreakingFailure(provider, failureKind)"));
+  assert.ok(reviewer.includes("providerCircuit.add(provider)"));
+  assert.ok(reviewer.includes('failureKind = providerCircuit.size >= AI_PROVIDERS.length ? "all_providers_unavailable" : "all_providers_failed"'));
+  assert.ok(reviewer.includes('const pendingKind = "provider_pending"'));
+  assert.ok(reviewer.includes("providerFallbacks"));
+  assert.ok(reviewer.includes("providerEvents"));
 });
 test("production audit includes 2K and ultrawide desktops with controlled product-detail journeys", () => {
   assert.ok(productionAudit.includes('name: "desktop-2560", width: 2560'));
@@ -68,10 +67,11 @@ test("AI reviewer labels the 4K UHD screenshot with its actual 3840px viewport",
   assert.ok(productionAudit.includes('name: "desktop-3840", width: 3840, height: 2160'));
 });
 
-test("a quota error during the JSON correction attempt reaches the batch circuit breaker", () => {
-  assert.ok(reviewer.includes('if (error.failureKind === "daily_quota_exhausted")'));
+test("provider request failures are retained as evidence and never counted as a successful review", () => {
+  assert.ok(reviewer.includes("providerEvents.push({ provider, failureKind, message })"));
   assert.ok(reviewer.includes("attachImagePreparation(error, sourceBytes, image)"));
   assert.ok(reviewer.includes("imageRuns = [...analyses, ...errors]"));
+  assert.ok(reviewer.includes("failedReviews: errors.filter"));
 });
 
 test("production audit only enforces the theme selector on catalog pages that support it", () => {
