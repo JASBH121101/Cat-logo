@@ -53,7 +53,7 @@ test("AI reviewer stops the entire batch for quota or model-license blockers and
   assert.ok(reviewer.includes('let batchBlockedBy = ""'));
   assert.ok(reviewer.includes('failureKind: pendingKind'));
   assert.ok(reviewer.includes('batchBlockedBy === "model_license_required" ? "license_required"'));
-  assert.ok(reviewer.includes('failureKind: "model_license_required"'));
+  assert.ok(reviewer.includes('error.failureKind = "model_license_required"'));
   assert.ok(reviewer.includes('licensePendingScreenshots'));
   assert.ok(reviewer.includes('status: reportStatus'));
 });
