@@ -27,9 +27,19 @@ test("evidence scores are calculated only from measured journey, viewport and Ax
   assert.deepEqual(scores, { functionality: 90, adaptability: 83, accessibility: 68 });
 });
 
+test("unexecuted journey steps count against the functionality score", () => {
+  const scores = calculateEvidenceScores({
+    summary: {
+      journeyChecks: 4, journeyExpectedChecks: 8, journeyPassed: 4,
+      scenarios: 4, overflowScenarios: 0, axeScans: 4, axeByImpact: {},
+    },
+  });
+  assert.equal(scores.functionality, 50);
+});
+
 test("overall experience score remains unavailable until all five dimensions have evidence", () => {
   const partial = calculateExperienceScores({
-    summary: { journeyChecks: 4, journeyPassed: 4, scenarios: 4, overflowScenarios: 0, axeScans: 4, axeByImpact: {} },
+    summary: { journeyChecks: 4, journeyExpectedChecks: 4, journeyPassed: 4, scenarios: 4, overflowScenarios: 0, axeScans: 4, axeByImpact: {} },
   }, [{ parseStatus: "structured", review: { visual_score: 88, narrative_score: null } }]);
   assert.equal(partial.overall, null);
   assert.equal(partial.availableDimensions, 4);
