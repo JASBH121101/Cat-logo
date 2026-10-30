@@ -59,6 +59,6 @@ test("temporary Workers AI capacity errors remain retryable", () => {
   assert.deepEqual(result, { kind: "capacity_temporarily_exceeded", retryable: true });
 });
 test("parser prefers the fenced JSON response after explanatory model prose", () => {
-  const text = "Analysis text.\\nJSON Response:\\n\`\`\`json\\n" + JSON.stringify(review) + "\\n\`\`\`";
+  const text = ["Analysis text.", "JSON Response:", String.fromCharCode(96).repeat(3) + "json", JSON.stringify(review), String.fromCharCode(96).repeat(3)].join(String.fromCharCode(10));
   assert.equal(interpretModelResponse(text).status, "structured");
 });
