@@ -399,3 +399,129 @@ body.admin-body .admin-preview-muted {
     min-height: 200px !important;
   }
 }
+
+
+/* JB MANAGER · refinamiento de densidad y jerarquía tipográfica (2026-10-30).
+   La interfaz usa DM Sans para lectura operativa y Manrope para títulos.
+   Se compacta la estructura; los campos y objetivos táctiles conservan tamaño cómodo. */
+html body.admin-body {
+  font-family: "DM Sans", sans-serif !important;
+  text-rendering: optimizeLegibility;
+}
+html body.admin-body :is(h1,h2,h3,h4,.admin-sidebar-brand strong,.dashboard-metric strong,.metric-value) {
+  font-family: "Manrope", sans-serif !important;
+  letter-spacing: -.018em;
+}
+html body.admin-body .admin-main {
+  padding-top: 28px;
+  padding-bottom: 52px;
+}
+html body.admin-body .dashboard-top {
+  gap: 14px;
+  margin-bottom: 14px;
+}
+html body.admin-body .dashboard-overview {
+  margin-top: 12px;
+}
+html body.admin-body .dashboard-overview-heading {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+html body.admin-body .dashboard-metrics {
+  gap: 12px;
+}
+html body.admin-body .dashboard-metric {
+  padding: 15px 16px;
+}
+html body.admin-body .dashboard-content-grid {
+  gap: 12px;
+  margin-top: 12px;
+}
+html body.admin-body .dashboard-widget {
+  padding: 14px;
+}
+html body.admin-body .admin-welcome {
+  gap: 18px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+html body.admin-body .admin-welcome h2 {
+  line-height: 1.12;
+}
+html body.admin-body .admin-card {
+  padding: 18px;
+}
+html body.admin-body .card-heading {
+  margin-bottom: 12px;
+}
+html body.admin-body .form-grid {
+  gap: 12px;
+}
+html body.admin-body .admin-section-nav {
+  gap: 7px;
+}
+html body.admin-body .admin-nav-button {
+  min-height: 42px;
+  padding: 9px 10px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13.5px;
+}
+html body.admin-body .admin-sidebar-section-label,
+html body.admin-body .dashboard-eyebrow,
+html body.admin-body .eyebrow {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+}
+html body.admin-body .admin-form label,
+html body.admin-body .variant-config-fields > label,
+html body.admin-body .provider-field > span {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 650;
+}
+html body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+html body.admin-body .admin-form select,
+html body.admin-body .admin-form textarea {
+  font-family: "DM Sans", sans-serif;
+}
+@media (max-width: 760px) {
+  html body.admin-body .admin-main {
+    padding: 18px 12px 36px;
+  }
+  html body.admin-body .admin-welcome {
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  html body.admin-body .dashboard-metrics {
+    gap: 9px;
+  }
+  html body.admin-body .dashboard-metric {
+    padding: 12px;
+  }
+  html body.admin-body .dashboard-content-grid {
+    gap: 10px;
+    margin-top: 10px;
+  }
+  html body.admin-body .dashboard-widget {
+    padding: 12px;
+  }
+  html body.admin-body .admin-card {
+    padding: 14px;
+  }
+  html body.admin-body .form-grid {
+    gap: 10px;
+  }
+  html body.admin-body .admin-nav-button {
+    min-height: 42px;
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 380px) {
+  html body.admin-body .admin-welcome {
+    padding: 13px;
+  }
+  html body.admin-body .admin-card {
+    padding: 12px;
+  }
+}
