@@ -371,7 +371,7 @@ jobs:
 
   personal-experience-audit:
     name: Read-only personal experience QA
-    needs: validate
+    # Intentionally independent from ecommerce regression checks.
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_personal_experience }}
     runs-on: ubuntu-latest
     env:
