@@ -202,8 +202,14 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       await native.clearScan();
       const result = await native.startScan();
       if (!result?.started) throw new Error(result?.message || "No se concedió el permiso de captura.");
+      await new Promise(resolve => setTimeout(resolve, 900));
+      const nativeState = await native.getScanState();
+      if (!nativeState?.running) {
+        await native.clearScan().catch(() => {});
+        throw new Error("Android no pudo mantener activa la captura. Revisá el permiso o si Go Partners bloquea las capturas de pantalla.");
+      }
       scanning = true; scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
-      setStatus("Escaneo activo. Abrí Go Partners y recorré los productos manualmente. Las capturas no se guardan: solo texto OCR temporal.");
+      setStatus("Escaneo activo. Abrí Go Partners y recorré los productos manualmente. Mantené cada ficha visible un par de segundos. Las imágenes no se guardan: solo texto OCR temporal.");
     } catch (error) { setStatus(error?.message || "No se pudo iniciar el escaneo.", true); }
     updateControls();
   }
@@ -217,7 +223,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const observations = Array.isArray(session?.observations) ? session.observations : [];
       await native.clearScan();
       if (!observations.length) { setStatus("No se reconoció texto. Comprobá que Go Partners permita capturas y repetí la sesión.", true); return; }
-      setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
+      if (session?.truncated) setStatus("Se alcanzó el límite de 80 pantallas. Se analizarán las primeras 80; podés continuar con otra sesión después.");
+      else setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
       const response = await fetch("/api/jb-gopartners-scan", {
         method: "POST", headers: { Authorization: "Bearer " + await getAccessToken(), "Content-Type": "application/json" },
         cache: "no-store", body: JSON.stringify({ observations: observations.slice(0, 80) })
