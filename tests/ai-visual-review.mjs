@@ -1,7 +1,7 @@
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
-import { classifyCloudflareFailure, getModelText, interpretModelResponse, recoverExplicitFindings, safeText } from "./ai-visual-review-utils.mjs";
+import { classifyCloudflareFailure, getModelText, interpretModelResponse, isBatchBlockingFailure, recoverExplicitFindings, safeText } from "./ai-visual-review-utils.mjs";
 import { buildExperienceAiCases, calculateExperienceScores } from "./personal-experience-qa-profile.mjs";
 
 const ACCOUNT_ID = String(process.env.CLOUDFLARE_ACCOUNT_ID || "").trim();
@@ -400,7 +400,7 @@ function makeSummary() {
     structuredReviews,
     recoveredReviews,
     invalidResponses,
-    failedReviews: errors.filter(item => item.failureKind !== "quota_pending").length,
+    failedReviews: errors.filter(item => !["quota_pending", "license_pending"].includes(item.failureKind)).length,
     reviewedScreenshots: structuredReviews + recoveredReviews,
     structuredRatePct: analyses.length ? Math.round(structuredReviews / CASES.length * 100) : 0,
     reportedIssues: analyses.reduce((sum, item) => sum + (item.review?.issues?.length || 0), 0),
@@ -409,6 +409,8 @@ function makeSummary() {
     evidenceBackedReviews: analyses.filter(item => item.measuredEvidenceAvailable).length,
     quotaExhausted: errors.some(item => item.failureKind === "daily_quota_exhausted"),
     quotaPendingScreenshots: errors.filter(item => item.failureKind === "quota_pending").length,
+    licenseRequired: errors.some(item => item.failureKind === "model_license_required"),
+    licensePendingScreenshots: errors.filter(item => item.failureKind === "license_pending").length,
     imageBytesSaved: optimized.reduce((sum, item) => sum + (imagePreparation(item).bytesSaved || 0), 0),
     httpRetryAttempts: analyses.reduce((sum, item) => sum + Math.max(0, (item.requestAttempts || 0) - (item.attempts || 0)), 0),
     averageReviewMs: successful.length ? Math.round(successful.reduce((sum, item) => sum + (item.durationMs || 0), 0) / successful.length) : null,
@@ -421,7 +423,7 @@ function markdown(report) {
   const lines = [EXPERIENCE_PROFILE ? "# Declaraci-n — revisión de experiencia personal con IA" : "# JB Collections — revisión visual con IA", "", `- Estado: **${report.status}**`, `- Modelo: \`${MODEL}\``,
     `- Capturas solicitadas: ${s.requestedScreenshots}`, `- Respuestas API: ${s.apiResponses}`, `- JSON validados: ${s.structuredReviews}`,
     `- Recuperadas de prosa (requieren revisión): ${s.recoveredReviews}`, `- Respuestas inválidas: ${s.invalidResponses}`,
-    `- Errores de solicitud: ${s.failedReviews}`, `- Cuota diaria agotada: ${s.quotaExhausted ? "sí" : "no"}`, `- Capturas omitidas por cuota: ${s.quotaPendingScreenshots}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Capturas con mediciones del navegador: ${s.evidenceBackedReviews}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
+    `- Errores de solicitud: ${s.failedReviews}`, `- Cuota diaria agotada: ${s.quotaExhausted ? "sí" : "no"}`, `- Capturas omitidas por cuota: ${s.quotaPendingScreenshots}`, `- Licencia de Meta requerida: ${s.licenseRequired ? "sí" : "no"}`, `- Capturas omitidas por licencia: ${s.licensePendingScreenshots}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Capturas con mediciones del navegador: ${s.evidenceBackedReviews}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
     `- Capturas que requieren revisión manual: ${s.manualReviewRequired}`, "",
     "> Cero incidencias no prueba que el diseño esté perfecto. Solo respuestas JSON válidas cuentan como revisión estructurada; toda recuperación de prosa necesita revisión humana.", "", "## Detalle por captura", ""];
   if (!report.analyses.length) lines.push("No se obtuvieron respuestas de la IA.", "");
@@ -523,7 +525,7 @@ async function appendStepSummary(report) {
   await appendFile(process.env.GITHUB_STEP_SUMMARY, ["## Revisión visual con IA", "", `**Estado: ${report.status}** — \`${MODEL}\``, "",
     "| Métrica | Resultado |", "|---|---:|", `| Capturas solicitadas | ${s.requestedScreenshots} |`, `| Respuestas API | ${s.apiResponses} |`,
     `| JSON validados | ${s.structuredReviews} |`, `| Recuperadas de prosa | ${s.recoveredReviews} |`, `| Respuestas inválidas | ${s.invalidResponses} |`,
-    `| Errores de solicitud | ${s.failedReviews} |`, `| Cuota diaria agotada | ${s.quotaExhausted ? "sí" : "no"} |`, `| Capturas omitidas por cuota | ${s.quotaPendingScreenshots} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Revisiones con mediciones del navegador | ${s.evidenceBackedReviews} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
+    `| Errores de solicitud | ${s.failedReviews} |`, `| Cuota diaria agotada | ${s.quotaExhausted ? "sí" : "no"} |`, `| Capturas omitidas por cuota | ${s.quotaPendingScreenshots} |`, `| Licencia de Meta requerida | ${s.licenseRequired ? "sí" : "no"} |`, `| Capturas omitidas por licencia | ${s.licensePendingScreenshots} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Revisiones con mediciones del navegador | ${s.evidenceBackedReviews} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
     "> El estado del job no equivale a una aprobación visual. Consultá el artefacto para evidencia por captura.", ""].join("\n") + "\n", "utf8");
 }
 
@@ -536,14 +538,16 @@ if (!ACCOUNT_ID || !API_TOKEN) {
   if (EXPERIENCE_PROFILE) await writeExperienceEvaluation("not-run");
 } else {
   const evidenceIndex = await loadAuditEvidence();
-  let quotaBlocked = false;
-  let quotaMessage = "";
+  let batchBlockedBy = "";
+  let batchBlockMessage = "";
   for (const item of CASES) {
-    if (quotaBlocked) {
+    if (batchBlockedBy) {
+      const pendingKind = batchBlockedBy === "daily_quota_exhausted" ? "quota_pending" : "license_pending";
+      const pendingMessage = batchBlockMessage || "La revisión se detuvo por un bloqueo de cuenta/modelo que afecta a todas las capturas.";
       errors.push({
         page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file,
-        failureKind: "quota_pending",
-        message: "No se envió esta captura porque Cloudflare ya confirmó que la cuota diaria de neuronas está agotada.",
+        failureKind: pendingKind,
+        message: pendingMessage,
       });
       continue;
     }
@@ -552,18 +556,23 @@ if (!ACCOUNT_ID || !API_TOKEN) {
     } catch (error) {
       const failureKind = error.failureKind || "review_failed";
       errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, failureKind, message: safeText(error.message, 800), ...(error.imagePreparation ? { imagePreparation: error.imagePreparation } : {}) });
-      if (failureKind === "daily_quota_exhausted") {
-        quotaBlocked = true;
-        quotaMessage = safeText(error.message, 800);
+      if (isBatchBlockingFailure(failureKind)) {
+        batchBlockedBy = failureKind;
+        batchBlockMessage = safeText(error.message, 800);
       }
     }
   }
   const summary = makeSummary();
   const allStructured = summary.structuredReviews === CASES.length && errors.length === 0;
   const useful = summary.reviewedScreenshots > 0;
-  const reportStatus = quotaBlocked ? "quota_exhausted" : allStructured ? "completed" : useful ? "partial" : analyses.length ? "needs_manual_review" : "failed";
-  const report = { generatedAt: new Date().toISOString(), status: reportStatus, quotaMessage: quotaMessage || null, model: MODEL,
-    reviewType: "advisory multimodal visual critique; image optimization, schema validation, targeted correction retry, transient request retries, prose recovery",
+  const reportStatus = batchBlockedBy === "daily_quota_exhausted" ? "quota_exhausted"
+    : batchBlockedBy === "model_license_required" ? "license_required"
+    : allStructured ? "completed" : useful ? "partial" : analyses.length ? "needs_manual_review" : "failed";
+  const report = { generatedAt: new Date().toISOString(), status: reportStatus,
+    quotaMessage: batchBlockedBy === "daily_quota_exhausted" ? batchBlockMessage : null,
+    licenseMessage: batchBlockedBy === "model_license_required" ? batchBlockMessage : null,
+    model: MODEL,
+    reviewType: "advisory multimodal visual critique; license-aware batch stopping, image optimization, schema validation, targeted correction retry, transient request retries, prose recovery",
     summary, analyses, errors,
     safety: "Read-only multimodal critique; never auto-edit code. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
