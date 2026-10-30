@@ -439,7 +439,7 @@ jobs:
               raise SystemExit("Expected one MainActivity.java for JARVIS registration.")
           main_path = candidates[0]
           source = main_path.read_text(encoding="utf-8")
-          package_match = re.search(r"^package\\s+([A-Za-z0-9_.]+);", source, re.M)
+          package_match = re.search(r"^package\s+([A-Za-z0-9_.]+);", source, re.M)
           if not package_match:
               raise SystemExit("Could not determine Android package for JARVIS scanner.")
           package_name = package_match.group(1)
@@ -450,7 +450,7 @@ jobs:
               ("GoPartnersCaptureService.java", service_source),
           ):
               content = re.sub(
-                  r"^package\\s+[^;]+;",
+                  r"^package\s+[^;]+;",
                   "package " + package_name + ";",
                   native_file.read_text(encoding="utf-8"),
                   count=1,
@@ -459,7 +459,7 @@ jobs:
               (package_dir / filename).write_text(content, encoding="utf-8")
 
           if "registerPlugin(GoPartnersScannerPlugin.class)" not in source:
-              registration = "registerPlugin(GoPartnersScannerPlugin.class);\\n        "
+              registration = "registerPlugin(GoPartnersScannerPlugin.class);\n        "
               if "super.onCreate(savedInstanceState);" not in source:
                   raise SystemExit("Android MainActivity has no onCreate hook for scanner registration.")
               source = source.replace("super.onCreate(savedInstanceState);", registration + "super.onCreate(savedInstanceState);", 1)
@@ -473,24 +473,24 @@ jobs:
           ]
           for permission in permissions:
               if permission not in manifest:
-                  manifest = manifest.replace("<application", permission + "\\n    <application", 1)
+                  manifest = manifest.replace("<application", permission + "\n    <application", 1)
           service = (
               '<service android:name=".' + "GoPartnersCaptureService" + '" '
               'android:exported="false" android:stopWithTask="false" '
               'android:foregroundServiceType="mediaProjection" />'
           )
           if "GoPartnersCaptureService" not in manifest:
-              manifest = manifest.replace("</application>", "        " + service + "\\n    </application>", 1)
+              manifest = manifest.replace("</application>", "        " + service + "\n    </application>", 1)
           manifest_path.write_text(manifest, encoding="utf-8")
 
           gradle_path = Path("mobile/android/app/build.gradle")
           gradle = gradle_path.read_text(encoding="utf-8")
           dependency = "implementation 'com.google.mlkit:text-recognition:16.0.1'"
           if dependency not in gradle:
-              match = re.search(r"dependencies\\s*\\{", gradle)
+              match = re.search(r"dependencies\s*\\{", gradle)
               if not match:
                   raise SystemExit("Could not find app-level Gradle dependencies block for ML Kit.")
-              gradle = gradle[:match.end()] + "\\n    " + dependency + gradle[match.end():]
+              gradle = gradle[:match.end()] + "\n    " + dependency + gradle[match.end():]
               gradle_path.write_text(gradle, encoding="utf-8")
 
           print("Installed JARVIS MediaProjection foreground service, Android plugin, and bundled ML Kit OCR.")
