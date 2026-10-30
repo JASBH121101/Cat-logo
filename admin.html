@@ -20,10 +20,10 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
   <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
-  <link rel="stylesheet" href="admin-accessibility.css?v=20261030-admin-color-swatch6">
+  <link rel="stylesheet" href="admin-accessibility.css?v=20261030-inventory-refresh1">
 
   <script src="config.js?v=20261029-admin-webpush3"></script>
-  <script type="module" src="admin.js?v=20261029-native-local-notifications1"></script>
+  <script type="module" src="admin.js?v=20261030-cross-device-refresh1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -668,7 +668,12 @@
 
       <section id="admin-section-published" class="admin-nav-panel hidden" data-admin-panel="published">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="published-section-title">Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div></div>
+          <div class="card-heading"><div><h2 id="published-section-title">Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados" placeholder="Buscar producto publicado"></label>
           <div id="published-product-list" class="admin-product-list"></div>
         </section>
@@ -676,7 +681,12 @@
 
       <section id="admin-section-unpublished" class="admin-nav-panel hidden" data-admin-panel="unpublished">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="unpublished-section-title">Productos no publicados</h2><p id="unpublished-count">Consultando productos…</p></div></div>
+          <div class="card-heading"><div><h2 id="unpublished-section-title">Productos no publicados</h2><p id="unpublished-count">Consultando productos…</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="unpublished-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
           <div id="unpublished-product-list" class="admin-product-list"></div>
         </section>
@@ -684,7 +694,12 @@
 
       <section id="admin-section-drafts" class="admin-nav-panel hidden" data-admin-panel="drafts">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="draft-section-title">Borradores de tecnología</h2><p id="draft-count">Consultando borradores…</p></div></div>
+          <div class="card-heading"><div><h2 id="draft-section-title">Borradores de tecnología</h2><p id="draft-count">Consultando borradores…</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar borradores" placeholder="Buscar borrador"></label>
           <div id="draft-product-list" class="admin-product-list"></div>
         </section>
@@ -701,7 +716,12 @@
 
       <section id="admin-section-trash" class="admin-nav-panel hidden" data-admin-panel="trash">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="trash-section-title">Papelera de tecnología</h2><p id="trash-count">Los productos se conservan durante 15 días antes de eliminarse definitivamente.</p></div></div>
+          <div class="card-heading"><div><h2 id="trash-section-title">Papelera de tecnología</h2><p id="trash-count">Los productos se conservan durante 15 días antes de eliminarse definitivamente.</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="trash-search" type="search" aria-label="Buscar productos en la papelera" placeholder="Buscar en papelera"></label>
           <div id="trash-product-list" class="admin-product-list"></div>
         </section>
@@ -772,7 +792,7 @@
         <header class="provider-page-heading">
           <div><p class="eyebrow">DROPSHIPPING · PRIMERA COMPROBACIÓN</p><h2>Productos por revisar</h2>
             <p>Aquí aparecen únicamente los productos que todavía no tienen una revisión manual. Al guardar la primera comprobación, el producto pasa a <strong>Revisados</strong> junto con su historial, sin cambiar el precio público.</p></div>
-          <button type="button" id="provider-refresh" class="button button-outline">Actualizar datos</button>
+          <div class="admin-list-refresh-control"><button type="button" id="provider-refresh" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar catálogo y revisiones" title="Sincronizar los productos y las revisiones desde la nube"><span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span></button><small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small></div>
         </header>
         <section class="provider-metrics" aria-label="Resumen de revisiones">
           <article class="provider-metric"><span>Sin revisar</span><strong id="provider-count-missing">0</strong><small>Productos pendientes de primera comprobación</small></article>
@@ -793,7 +813,7 @@
         <header class="provider-page-heading">
           <div><p class="eyebrow">HISTORIAL PRIVADO · SEGUIMIENTO MANUAL</p><h2>Productos revisados</h2>
             <p>Todos los productos que ya tienen una revisión guardada se administran aquí. Podés ver precios y disponibilidad del proveedor, actualizar revisiones vencidas y consultar el historial completo de cada producto.</p></div>
-          <button type="button" id="provider-refresh-reviewed" class="button button-outline">Actualizar datos</button>
+          <div class="admin-list-refresh-control"><button type="button" id="provider-refresh-reviewed" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar catálogo y revisiones" title="Sincronizar los productos y las revisiones desde la nube"><span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span></button><small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small></div>
         </header>
         <section class="provider-metrics" aria-label="Resumen de productos revisados">
           <article class="provider-metric"><span>Total revisados</span><strong id="provider-reviewed-count">0</strong><small>Con al menos una revisión guardada</small></article>
