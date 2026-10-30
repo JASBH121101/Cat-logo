@@ -4234,3 +4234,31 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
     gap: 24px;
   }
 }
+
+
+/* 2026-10-30 · 4K UHD and 21:9 ultrawide desktop expansion. */
+@media (min-width: 2560px) {
+  body.technology-catalog .catalog-section {
+    width: min(3360px, calc(100% - 144px));
+    max-width: 3360px;
+    padding-inline: 72px;
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(3200px, calc(100% - 160px));
+    max-width: 3200px;
+  }
+
+  body.technology-catalog .benefit-row {
+    width: min(3200px, calc(100% - 144px));
+    max-width: 3200px;
+  }
+
+  body.technology-catalog #product-grid.product-grid,
+  body.technology-catalog #featured-grid.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 350px));
+    justify-content: center;
+    align-content: start;
+    gap: 24px;
+  }
+}
