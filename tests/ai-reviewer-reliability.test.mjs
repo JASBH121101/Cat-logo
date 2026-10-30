@@ -61,3 +61,7 @@ test("a quota error during the JSON correction attempt reaches the batch circuit
   assert.ok(reviewer.includes("attachImagePreparation(error, sourceBytes, image)"));
   assert.ok(reviewer.includes("imageRuns = [...analyses, ...errors]"));
 });
+
+test("production audit only enforces the theme selector on catalog pages that support it", () => {
+  assert.ok(productionAudit.includes("if (site.products && actualTheme !== theme)"));
+});
