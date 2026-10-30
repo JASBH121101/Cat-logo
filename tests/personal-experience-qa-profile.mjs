@@ -39,7 +39,8 @@ const clampScore = value => Math.max(0, Math.min(100, Math.round(value)));
 export function calculateEvidenceScores(report) {
   const summary = report?.summary || {};
   const checks = Math.max(0, Number(summary.journeyChecks) || 0);
-  const passed = Math.max(0, Math.min(checks, Number(summary.journeyPassed) || 0));
+  const expectedChecks = Math.max(checks, Number(summary.journeyExpectedChecks) || checks);
+  const passed = Math.max(0, Math.min(expectedChecks, Number(summary.journeyPassed) || 0));
   const scenarios = Math.max(0, Number(summary.scenarios) || 0);
   const overflowScenarios = Math.max(0, Math.min(scenarios, Number(summary.overflowScenarios) || 0));
   const axeScans = Math.max(0, Number(summary.axeScans) || 0);
@@ -50,7 +51,7 @@ export function calculateEvidenceScores(report) {
     (Number(axe.moderate) || 0) * 7 +
     (Number(axe.minor) || 0) * 3;
   return {
-    functionality: checks > 0 ? clampScore((passed / checks) * 100) : null,
+    functionality: expectedChecks > 0 ? clampScore((passed / expectedChecks) * 100) : null,
     adaptability: scenarios > 0 ? clampScore(((scenarios - overflowScenarios) / scenarios) * 100) : null,
     accessibility: axeScans > 0 ? clampScore(100 - accessibilityPenalty) : null,
   };
