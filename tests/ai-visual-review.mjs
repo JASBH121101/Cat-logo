@@ -397,45 +397,56 @@ async function review(item, evidenceIndex) {
   const sourceBytes = await readFile(resolve(ROOT, item.file));
   const image = await prepareVisionImage(sourceBytes);
   const measuredEvidence = evidenceForCase(item, evidenceIndex);
-  let firstCall;
-  try {
-    firstCall = await callModel(item, image, 1, "", measuredEvidence);
-  } catch (error) {
-    throw attachImagePreparation(error, sourceBytes, image);
-  }
-  let text = firstCall.text;
-  let parsed = interpretModelResponse(text);
-  let attempts = 1;
-  let requestAttempts = firstCall.requestAttempts;
+  let text = "";
+  let parsed = { status: "invalid", reason: "No AI provider returned a response." };
+  let attempts = 0;
+  let requestAttempts = 0;
   let retryError = null;
+  let providerUsed = null;
+  let modelUsed = null;
+  let responseReceived = false;
+  const providersTried = [];
+  const providerFailures = [];
 
-  if (parsed.status !== "structured") {
-    try {
-      const secondCall = await callModel(item, image, 2, parsed.reason || "El formato no coincide con el contrato de salida.", measuredEvidence);
-      requestAttempts += secondCall.requestAttempts;
-      attempts = 2;
-      text = secondCall.text;
-      const second = interpretModelResponse(text);
-      if (second.status === "structured") {
-        parsed = second;
-      } else {
-        const recovery = recoverReview(
-          [firstCall.text, secondCall.text].join("\n"),
-          `La respuesta no pasó la validación tras dos generaciones: ${second.reason || parsed.reason || "formato no reconocido"}`,
-        );
-        parsed = {
-          status: recovery.review ? "recovered" : "invalid",
-          reason: second.reason || parsed.reason,
-          review: recovery.review,
-          duplicateSentenceCount: recovery.duplicates,
-        };
+  for (const provider of AI_PROVIDERS) {
+    if (providerCircuit.has(provider)) continue;
+    providersTried.push(provider);
+    for (let generation = 1; generation <= 2; generation++) {
+      const correctionReason = attempts > 0
+        ? (parsed.reason || "La respuesta anterior no pasó el contrato JSON; vuelve a evaluar la misma captura.")
+        : "";
+      try {
+        const result = await callProviderModel(provider, item, image, generation, correctionReason, measuredEvidence);
+        attempts++;
+        requestAttempts += result.requestAttempts;
+        text = result.text;
+        providerUsed = result.provider;
+        modelUsed = result.model;
+        responseReceived = true;
+        parsed = interpretModelResponse(text);
+        if (parsed.status === "structured") break;
+        if (generation === 1) continue;
+        break;
+      } catch (error) {
+        const failureKind = error.failureKind || "review_failed";
+        const message = safeText(error.message, 600);
+        providerFailures.push(`${provider}: ${failureKind}: ${message}`);
+        providerEvents.push({ provider, failureKind, message });
+        if (isProviderCircuitBreakingFailure(provider, failureKind)) {
+          providerCircuit.add(provider);
+          console.warn(`Visual AI provider circuit opened: ${provider} (${failureKind}).`);
+        }
+        break;
       }
-    } catch (error) {
-      if (error.failureKind === "daily_quota_exhausted") {
-        throw attachImagePreparation(error, sourceBytes, image);
-      }
-      retryError = safeText(error.message, 500);
     }
+    if (parsed.status === "structured") break;
+  }
+
+  if (!responseReceived) {
+    const error = new Error(providerFailures.join(" | ") || "All configured AI providers are unavailable.");
+    error.failureKind = providerCircuit.size >= AI_PROVIDERS.length ? "all_providers_unavailable" : "all_providers_failed";
+    error.providerFailures = providerFailures;
+    throw attachImagePreparation(error, sourceBytes, image);
   }
 
   let recovery = null;
@@ -444,6 +455,7 @@ async function review(item, evidenceIndex) {
   }
   const reviewData = parsed.review || recovery?.review || null;
   const parseStatus = parsed.status === "structured" ? "structured" : reviewData ? "recovered" : "invalid";
+  if (providerFailures.length) retryError = providerFailures.join(" | ");
   return {
     ...item,
     imageBytes: sourceBytes.length,
@@ -454,7 +466,9 @@ async function review(item, evidenceIndex) {
     measuredEvidenceAvailable: Boolean(measuredEvidence),
     measuredEvidence,
     bytesSaved: Math.max(0, sourceBytes.length - image.bytes.length),
-    model: MODEL,
+    provider: providerUsed,
+    model: modelUsed,
+    providersTried,
     parseStatus,
     attempts,
     requestAttempts,
