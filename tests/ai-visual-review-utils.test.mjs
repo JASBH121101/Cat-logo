@@ -115,3 +115,13 @@ test("extracts model text from OpenAI Responses API and Chat Completions payload
   assert.equal(getOpenAIResponseText({ output: [{ type: "message", content: [{ type: "output_text", text: '{"visual_score":88}' }] }] }), '{"visual_score":88}');
   assert.equal(getOpenAIResponseText({ choices: [{ message: { content: '{"issues":[]}' } }] }), '{"issues":[]}');
 });
+
+test("joins multi-part OpenAI response text without literal escaped separators", () => {
+  assert.equal(getOpenAIResponseText({
+    output: [{ type: "message", content: [
+      { type: "output_text", text: "first" },
+      { type: "output_text", text: "second" },
+    ] }],
+  }), "first\nsecond");
+});
+
