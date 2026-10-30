@@ -230,6 +230,13 @@ async function callModel(item, image, attempt, correctionReason = "", evidence =
         const reason = Array.isArray(payload.errors)
           ? payload.errors.map(item => safeText(item.message || item.code || "unknown", 300)).join("; ")
           : safeText(payload.message || bodyText || `HTTP ${response.status}`, 600);
+        if (failure.kind === "model_license_required") {
+          const error = new Error(
+            `Cloudflare requires prior acceptance of Meta's license and Acceptable Use Policy for ${MODEL}. A maintainer must review those terms and complete Cloudflare's documented one-time model opt-in by sending {"prompt":"agree"} to the model endpoint. This QA workflow will not accept legal terms automatically. Cloudflare response: ${reason}`
+          );
+          error.failureKind = "model_license_required";
+          throw error;
+        }
         if (failure.kind === "daily_quota_exhausted") {
           const error = new Error(`Cloudflare daily neuron allocation exhausted: ${reason}`);
           error.failureKind = "daily_quota_exhausted";
