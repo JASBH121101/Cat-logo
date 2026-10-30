@@ -2,6 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { initProviderTools } from "./admin-provider.js?v=20261029-variant-availability-validation1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261030-jb-manager-ai1";
+import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261030-gp-scanner1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -192,6 +193,12 @@ const providerTools = initProviderTools({
   getCurrentUser: () => currentUser,
   getProducts: () => products,
   onRefreshCatalog: button => refreshAdminInventory(button)
+});
+const goPartnersScanner = initGoPartnersScanner({
+  getSupabase: () => supabase,
+  getCurrentUser: () => currentUser,
+  getProducts: () => products,
+  providerTools
 });
 window.addEventListener("jb-catalog-provider-updated", () => {
   void loadProducts();
