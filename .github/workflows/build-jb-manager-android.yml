@@ -420,6 +420,82 @@ jobs:
           print("Installed native DownloadManager bridge and APK-install permission.")
           PY
 
+      - name: Install JARVIS Go Partners screen scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          native_dir = Path("mobile/native-android")
+          plugin_source = native_dir / "GoPartnersScannerPlugin.java"
+          service_source = native_dir / "GoPartnersCaptureService.java"
+          if not plugin_source.is_file() or not service_source.is_file():
+              raise SystemExit("JARVIS screen scanner native sources are missing.")
+
+          candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
+          if len(candidates) != 1:
+              raise SystemExit("Expected one MainActivity.java for JARVIS registration.")
+          main_path = candidates[0]
+          source = main_path.read_text(encoding="utf-8")
+          package_match = re.search(r"^package\\s+([A-Za-z0-9_.]+);", source, re.M)
+          if not package_match:
+              raise SystemExit("Could not determine Android package for JARVIS scanner.")
+          package_name = package_match.group(1)
+          package_dir = main_path.parent
+
+          for filename, native_file in (
+              ("GoPartnersScannerPlugin.java", plugin_source),
+              ("GoPartnersCaptureService.java", service_source),
+          ):
+              content = re.sub(
+                  r"^package\\s+[^;]+;",
+                  "package " + package_name + ";",
+                  native_file.read_text(encoding="utf-8"),
+                  count=1,
+                  flags=re.M,
+              )
+              (package_dir / filename).write_text(content, encoding="utf-8")
+
+          if "registerPlugin(GoPartnersScannerPlugin.class)" not in source:
+              registration = "registerPlugin(GoPartnersScannerPlugin.class);\\n        "
+              if "super.onCreate(savedInstanceState);" not in source:
+                  raise SystemExit("Android MainActivity has no onCreate hook for scanner registration.")
+              source = source.replace("super.onCreate(savedInstanceState);", registration + "super.onCreate(savedInstanceState);", 1)
+              main_path.write_text(source, encoding="utf-8")
+
+          manifest_path = Path("mobile/android/app/src/main/AndroidManifest.xml")
+          manifest = manifest_path.read_text(encoding="utf-8")
+          permissions = [
+              '<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
+              '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />',
+          ]
+          for permission in permissions:
+              if permission not in manifest:
+                  manifest = manifest.replace("<application", permission + "\\n    <application", 1)
+          service = (
+              '<service android:name=".' + "GoPartnersCaptureService" + '" '
+              'android:exported="false" android:stopWithTask="false" '
+              'android:foregroundServiceType="mediaProjection" />'
+          )
+          if "GoPartnersCaptureService" not in manifest:
+              manifest = manifest.replace("</application>", "        " + service + "\\n    </application>", 1)
+          manifest_path.write_text(manifest, encoding="utf-8")
+
+          gradle_path = Path("mobile/android/app/build.gradle")
+          gradle = gradle_path.read_text(encoding="utf-8")
+          dependency = "implementation 'com.google.mlkit:text-recognition:16.0.1'"
+          if dependency not in gradle:
+              match = re.search(r"dependencies\\s*\\{", gradle)
+              if not match:
+                  raise SystemExit("Could not find app-level Gradle dependencies block for ML Kit.")
+              gradle = gradle[:match.end()] + "\\n    " + dependency + gradle[match.end():]
+              gradle_path.write_text(gradle, encoding="utf-8")
+
+          print("Installed JARVIS MediaProjection foreground service, Android plugin, and bundled ML Kit OCR.")
+          PY
+
       - name: Set Android app version
         env:
           VERSION_CODE: ${{ github.run_number }}
@@ -813,6 +889,26 @@ jobs:
           }
           echo "Native updater source and package identity checks passed."
 
+      - name: Verify JARVIS Go Partners screen scanner wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="mobile/android/app/src/main/AndroidManifest.xml"
+          MAIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java"
+          GRADLE="mobile/android/app/build.gradle"
+          PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersScannerPlugin.java"
+          SERVICE="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersCaptureService.java"
+          test -s "$PLUGIN"
+          test -s "$SERVICE"
+          grep -q 'registerPlugin(GoPartnersScannerPlugin.class)' "$MAIN"
+          grep -q 'FOREGROUND_SERVICE_MEDIA_PROJECTION' "$MANIFEST"
+          grep -q 'foregroundServiceType="mediaProjection"' "$MANIFEST"
+          grep -q 'android:exported="false"' "$MANIFEST"
+          grep -q 'GoPartnersCaptureService' "$MANIFEST"
+          grep -q 'com.google.mlkit:text-recognition:16.0.1' "$GRADLE"
+          grep -q 'TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)' "$SERVICE"
+          grep -q 'MAX_OBSERVATIONS = 80' "$SERVICE"
+          echo "JARVIS screen scanner, MediaProjection foreground service, and bundled on-device OCR are wired into the APK."
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
