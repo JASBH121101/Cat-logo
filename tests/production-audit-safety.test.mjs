@@ -24,9 +24,11 @@ test("production browser audit only targets public pages and has no authenticate
 test("live audit is opt-in and optional model credentials are not embedded in source", () => {
   assert.match(workflow, /audit_production:[\s\S]*?default: false/);
   assert.match(workflow, /github\.event_name == 'workflow_dispatch' && inputs\.audit_production/);
-  assert.match(workflow, /AI_REVIEW_ENABLED: \$\{\{ vars\.ENABLE_AI_VISUAL_REVIEW == 'true' && \(\(secrets\.CLOUDFLARE_API_TOKEN != '' && vars\.CLOUDFLARE_ACCOUNT_ID != ''\) \|\| secrets\.OPENAI_API_KEY != ''\) \}\}/);
-  assert.match(workflow, /OPENAI_API_KEY: \$\{\{ secrets\.OPENAI_API_KEY \}\}/);
-  assert.match(aiReview, /process\.env\.OPENAI_API_KEY/);
+  assert.match(workflow, /AI_REVIEW_ENABLED: \$\{\{ vars\.ENABLE_AI_VISUAL_REVIEW == 'true' && \(\(secrets\.CLOUDFLARE_API_TOKEN != '' && vars\.CLOUDFLARE_ACCOUNT_ID != ''\) \|\| secrets\.GEMINI_API_KEY != ''\) \}\}/);
+  assert.match(workflow, /GEMINI_API_KEY: \$\{\{ secrets\.GEMINI_API_KEY \}\}/);
+  assert.match(aiReview, /process\.env\.GEMINI_API_KEY/);
+  assert.doesNotMatch(workflow, /OPENAI_API_KEY|OPENAI_VISION_MODEL/);
+  assert.doesNotMatch(aiReview, /api\.openai\.com|process\.env\.OPENAI_API_KEY/);
   assert.match(aiReview, /process\.env\.CLOUDFLARE_API_TOKEN/);
   assert.match(aiReview, /process\.env\.CLOUDFLARE_ACCOUNT_ID/);
   assert.doesNotMatch(aiReview, /sk-[A-Za-z0-9]{20,}/);
