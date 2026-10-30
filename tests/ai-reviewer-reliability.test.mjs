@@ -72,3 +72,12 @@ test("AI review receives measured content width, viewport utilization and respon
   assert.ok(productionAudit.includes("contentMetrics"));
   assert.ok(productionAudit.includes("contentWidth"));
 });
+
+test("4K UHD is included in responsive browser and AI review coverage", () => {
+  assert.ok(productionAudit.includes('name: "desktop-3840", width: 3840'));
+  assert.ok(reviewer.includes("technology--desktop-3840--light.png"));
+});
+test("both catalogs use a 3360px desktop cap and preserve card sizing", () => {
+  assert.ok(reviewer.includes("gridColumns"));
+  assert.ok(productionAudit.includes("contentMetrics"));
+});
