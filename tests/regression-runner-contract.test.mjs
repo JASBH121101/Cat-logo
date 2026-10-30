@@ -10,7 +10,7 @@ const requiredTests = [
   "private-chat-mobile-layout.test.mjs", "private-chat-state-behavior.test.mjs", "ai-assistant-layout.test.mjs",
   "catalog-specifications-format.test.mjs", "public-commercial-readiness.test.mjs", "public-catalog-whitespace.test.mjs", "conversion-trust.test.mjs",
   "design-authenticity-audit.test.mjs", "design-quality-audit.test.mjs", "ai-reviewer-reliability.test.mjs", "perfume-page-utilization.test.mjs", "personal-experience-qa-profile.test.mjs", "admin-notifications.test.mjs",
-  "admin-panel-quality-audit.test.mjs", "admin-save-regression.test.mjs", "admin-product-form-workflow.test.mjs",
+  "admin-panel-quality-audit.test.mjs", "jb-manager-ai.test.mjs", "admin-save-regression.test.mjs", "admin-product-form-workflow.test.mjs",
   "limited-edition-sections.test.mjs", "cloudflare-share.test.mjs", "cloudflare-download.test.mjs",
   "cloudflare-private-chat-push.test.mjs", "web-push.test.mjs", "cloudflare-assistant.test.mjs",
   "cloudflare-color-assistant.test.mjs", "admin-color-assistant.test.mjs", "admin-mobile-menu-stability.test.mjs",
