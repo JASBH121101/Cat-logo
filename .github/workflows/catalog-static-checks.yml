@@ -319,7 +319,7 @@ jobs:
 
   production-visual-audit:
     name: Read-only production visual audit
-    needs: validate
+    # Runs independently so commerce-test failures do not suppress visual evidence.
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.audit_production) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     env:
