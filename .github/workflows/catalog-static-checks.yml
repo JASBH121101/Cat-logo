@@ -49,7 +49,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-save --no-package-lock playwright@1.64.1 @axe-core/playwright@4.14.0 sharp@0.35.5
+          npm install --no-save --no-package-lock playwright@1.64.1 @axe-core/playwright@4.14.0
           npx playwright install --with-deps chromium
 
       - name: Check syntax of all tracked JavaScript files
@@ -388,7 +388,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-save --no-package-lock playwright@1.64.1 @axe-core/playwright@4.14.0
+          npm install --no-save --no-package-lock playwright@1.64.1 @axe-core/playwright@4.14.0 sharp@0.35.5
           npx playwright install --with-deps chromium
       - name: Run the interactive experience in a read-only browser
         run: node tests/personal-experience-qa.mjs
