@@ -3193,3 +3193,96 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     font-size: 12px !important;
   }
 }
+
+
+/* 2026-10-30 · Desktop space utilization and safe concierge heading wrapping. */
+@media (min-width: 1100px) {
+  body.perfume-page main {
+    width: min(1720px, 100%);
+    max-width: 1720px;
+    margin-inline: auto;
+    padding-inline: clamp(28px, 3vw, 52px);
+  }
+
+  body.perfume-page .perfume-category-section {
+    padding-top: clamp(28px, 3vw, 42px);
+    padding-bottom: clamp(28px, 3vw, 42px);
+  }
+
+  body.perfume-page .perfume-cross-promo {
+    width: min(1540px, calc(100% - 24px));
+    gap: clamp(22px, 2.2vw, 34px);
+    margin-top: 8px;
+    margin-bottom: clamp(34px, 3vw, 48px);
+    padding: clamp(24px, 2.2vw, 34px);
+  }
+
+  body.perfume-page .perfume-cross-promo-copy p:not(.perfume-kicker) {
+    max-width: 760px;
+    font-size: 13px;
+  }
+
+  body.perfume-page .perfume-contact {
+    margin-top: 18px;
+    padding: clamp(58px, 5vw, 82px) clamp(24px, 3vw, 52px);
+  }
+
+  body.perfume-page .perfume-contact h2 {
+    display: block;
+    width: 100%;
+    max-width: min(1280px, 100%);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding-block: .08em;
+    overflow: visible;
+    font-size: clamp(34px, 3.15vw, 56px);
+    line-height: 1.22;
+    letter-spacing: -.025em;
+    text-wrap: balance;
+    overflow-wrap: normal;
+  }
+}
+
+@media (max-width: 1099px) {
+  body.perfume-page .perfume-contact h2 {
+    display: block;
+    width: 100%;
+    max-width: min(900px, 100%);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    padding-block: .08em;
+    overflow: visible;
+    line-height: 1.22;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 640px) {
+  body.perfume-page main {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 14px;
+  }
+
+  body.perfume-page .perfume-cross-promo {
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 28px;
+  }
+
+  body.perfume-page .perfume-contact {
+    margin-top: 10px;
+    padding: 44px 14px 48px;
+  }
+
+  body.perfume-page .perfume-contact h2 {
+    max-width: 100%;
+    font-size: clamp(28px, 7.2vw, 40px);
+    line-height: 1.2;
+    letter-spacing: -.02em;
+  }
+}
