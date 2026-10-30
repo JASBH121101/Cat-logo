@@ -118,7 +118,8 @@ test("CI enables AI review when either OpenAI or a complete Cloudflare credentia
   assert.equal((workflow.match(/OPENAI_API_KEY: \$\{\{ secrets.OPENAI_API_KEY \}\}/g) || []).length, 2);
   assert.ok(workflow.includes("OPENAI_VISION_MODEL"));
   assert.ok(workflow.includes("AI_PROVIDER_ORDER"));
-  assert.ok(workflow.includes("No screenshot is sent to an AI service unless at least one provider is configured."));
+  assert.ok(workflow.includes("vars.ENABLE_AI_VISUAL_REVIEW == 'true'"));
+  assert.ok(workflow.includes("No screenshot is sent to an AI service unless the opt-in variable and at least one provider credential are configured."));
 });
 
 test("deterministic production browser audit remains independent of optional AI credentials", () => {
