@@ -11,6 +11,7 @@ const VIEWPORTS = [
   { name: "desktop-1920", width: 1920, height: 1080, mobile: false, auditDetails: false },
   { name: "desktop-2560", width: 2560, height: 1440, mobile: false, auditDetails: true },
   { name: "ultrawide-3440", width: 3440, height: 1440, mobile: false, auditDetails: false },
+  { name: "desktop-3840", width: 3840, height: 2160, mobile: false, auditDetails: false },
 ];
 const THEMES = ["light", "dark"];
 const PAGES = [
