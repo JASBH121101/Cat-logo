@@ -265,7 +265,7 @@ jobs:
           set -euo pipefail
           # The APK must package the same business logic, Supabase config, and styles
           # as the browser panel. Only the HTML shell/native bridges are platform-specific.
-          for file in admin.js admin-notifications.mjs admin-provider.js app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
+          for file in admin.js admin-notifications.mjs admin-provider.js admin-gopartners-scanner.js admin-gopartners-scanner.css app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
             if ! cmp -s "$file" "mobile/www/$file"; then
               echo "Shared source and APK bundle differ: $file" >&2
               diff -u "$file" "mobile/www/$file" || true
@@ -320,7 +320,7 @@ jobs:
           grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
           grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
           grep -Fq 'shared_library_match' functions/api/color-assistant.js
-          grep -Fq 'image: imageDataUrl' functions/api/color-assistant.js
+          grep -Fq 'inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace' functions/api/color-assistant.js
           grep -Fq '.jb-color-ai-overlay' theme-ui.css
           test -s functions/api/color-assistant.js
           echo "Shared AI color knowledge, manufacturer aliases, exact lookups, and photo endpoint are present."
