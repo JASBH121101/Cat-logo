@@ -157,7 +157,7 @@ const NEGATIVE = [
   /demasiado\s+espacio\s+(?:vac[ií]o|entre|alrededor)/i,
   /(?:texto|letra|tipograf[ií]a)\s+(?:demasiado\s+)?pequeñ[oa]s?/i,
   /(?:texto|contenido|bot[oó]n|imagen|control)\s+(?:est[aá]n?\s+)?(?:cortad[oa]s?|recortad[oa]s?|ocult[oa]s?)/i,
-  /(?:no\s+se\s+puede\s+leer|ilegible|poco\s+contraste|contraste\s+insuficiente)/i,
+  /(?:no\s+se\s+puede\s+leer|dif[ií]cil(?:es)?\s+de\s+leer|ilegible|poco\s+contraste|falta\s+de\s+contraste|contraste\s+insuficiente)/i,
   /(?:se\s+superpone|superpuest[oa]s?|solapad[oa]s?|desalinead[oa]s?)/i,
   /(?:imagen|fotograf[ií]a|producto)\s+(?:se\s+ve\s+)?(?:pixelad[oa]|borros[oa]|deformad[oa])/i,
   /(?:overflow|desbordamiento|fuera\s+del\s+viewport)/i,
@@ -185,7 +185,7 @@ export function recoverExplicitFindings(text) {
       ? str(next, 700)
       : "Verificar manualmente la captura y medir el elemento antes de modificar CSS o estructura.";
     issues.push({
-      severity: /ocult[oa]|no\\s+se\\s+puede\\s+leer|fuera\\s+del\\s+viewport|desbordamiento|overflow/i.test(evidence) ? "high" : "medium",
+      severity: /ocult[oa]|no\s+se\s+puede\s+leer|fuera\\s+del\\s+viewport|desbordamiento|overflow/i.test(evidence) ? "high" : "medium",
       region: region(evidence),
       evidence: str(evidence, 700),
       recommendation,
