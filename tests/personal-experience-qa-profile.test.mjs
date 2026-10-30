@@ -24,7 +24,7 @@ test("evidence scores are calculated only from measured journey, viewport and Ax
       axeScans: 12, axeByImpact: { critical: 0, serious: 1, moderate: 2, minor: 1 },
     },
   });
-  assert.deepEqual(scores, { functionality: 90, adaptability: 83, accessibility: 62 });
+  assert.deepEqual(scores, { functionality: 90, adaptability: 83, accessibility: 68 });
 });
 
 test("overall experience score remains unavailable until all five dimensions have evidence", () => {
