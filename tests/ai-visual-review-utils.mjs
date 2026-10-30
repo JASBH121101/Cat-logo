@@ -185,7 +185,7 @@ export function recoverExplicitFindings(text) {
       ? str(next, 700)
       : "Verificar manualmente la captura y medir el elemento antes de modificar CSS o estructura.";
     issues.push({
-      severity: /ocult[oa]|no\s+se\s+puede\s+leer|fuera\\s+del\\s+viewport|desbordamiento|overflow/i.test(evidence) ? "high" : "medium",
+      severity: /ocult[oa]|no\s+se\s+puede\s+leer|fuera\s+del\s+viewport|desbordamiento|overflow/i.test(evidence) ? "high" : "medium",
       region: region(evidence),
       evidence: str(evidence, 700),
       recommendation,
