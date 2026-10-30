@@ -25,13 +25,13 @@ test("concierge heading is allowed to grow and wrap without a clipping height", 
 test("JB TECH cross-catalog banner expands on desktop and remains responsive on mobile", () => {
   assert.match(techCss, /body\.technology-catalog \.technology-promo-banner\s*\{[^}]*width:\s*min\(1600px/);
   assert.match(techCss, /@media\s*\(max-width:\s*700px\)[\s\S]*?body\.technology-catalog \.technology-promo-banner\s*\{[^}]*width:\s*calc\(100%\s*-\s*28px\)/);
-  assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-ultrawide1"));
-  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-ultrawide1"));
+  assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-desktop4k1"));
+  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-desktop4k1"));
 });
 
 test("both public catalogs expand beyond 1720px on large desktop and ultrawide screens", () => {
   assert.ok(techCss.includes("@media (min-width: 2560px)"));
-  assert.ok(techCss.includes("width: min(2680px"));
+  assert.ok(techCss.includes("width: min(3360px"));
   assert.ok(perfCss.includes("@media (min-width: 2560px)"));
   assert.ok(perfCss.includes("width: min(2680px"));
   assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-ultrawide1"));
