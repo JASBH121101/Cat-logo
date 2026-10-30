@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyCloudflareFailure, deduplicateIssues, getModelText, interpretModelResponse, isBatchBlockingFailure, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
+import { classifyCloudflareFailure, classifyOpenAIFailure, deduplicateIssues, getConfiguredAiProviders, getModelText, getOpenAIResponseText, interpretModelResponse, isBatchBlockingFailure, isProviderCircuitBreakingFailure, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
 const review = { visual_score: 72, overall_assessment: "Ficha entendible, con separación amplia entre galería y texto.", strengths: ["Jerarquía clara"], issues: [{ severity: "medium", region: "espaciado / composición", evidence: "Separación amplia entre imagen e información.", recommendation: "Medir el espacio y reducirlo si no es intencional.", confidence: 0.78 }], manual_review_required: true, limitations: ["Una captura"] };
 test("extracts Cloudflare response", () => assert.equal(getModelText({ result: { response: " hola " } }), "hola"));
 test("validates structured review and always requires human review", () => { const x = validateReview({ ...review, manual_review_required: false }); assert.equal(x.valid, true); assert.equal(x.review.manual_review_required, true); });
@@ -89,4 +89,35 @@ test("recovers concrete findings and their next-sentence recommendations from mo
   assert.equal(result.issues[0].confidence, null);
   assert.match(result.issues[0].recommendation, /aumentando el contraste/);
   assert.match(result.issues[1].recommendation, /reorganizando el contenido/);
+});
+
+
+test("AI provider routing prefers Cloudflare and falls back to OpenAI when configured", () => {
+  assert.deepEqual(getConfiguredAiProviders({
+    cloudflareAccountId: "account",
+    cloudflareApiToken: "token",
+    openaiApiKey: "openai-key",
+  }), ["cloudflare", "openai"]);
+  assert.deepEqual(getConfiguredAiProviders({ openaiApiKey: "openai-key" }), ["openai"]);
+  assert.deepEqual(getConfiguredAiProviders({ cloudflareAccountId: "account", cloudflareApiToken: "token" }), ["cloudflare"]);
+  assert.deepEqual(getConfiguredAiProviders({}), []);
+});
+
+test("OpenAI quota and authentication failures are detected without retrying account-level failures", () => {
+  assert.deepEqual(classifyOpenAIFailure({
+    status: 429, payload: { error: { code: "insufficient_quota", message: "You exceeded your current quota." } },
+  }), { kind: "billing_quota_exhausted", retryable: false });
+  assert.deepEqual(classifyOpenAIFailure({
+    status: 401, payload: { error: { code: "invalid_api_key", message: "Incorrect API key provided." } },
+  }), { kind: "authentication_error", retryable: false });
+  assert.equal(classifyOpenAIFailure({ status: 429, payload: { error: { code: "rate_limit_exceeded" } } }).retryable, true);
+  assert.equal(isProviderCircuitBreakingFailure("openai", "billing_quota_exhausted"), true);
+  assert.equal(isProviderCircuitBreakingFailure("cloudflare", "daily_quota_exhausted"), true);
+  assert.equal(isProviderCircuitBreakingFailure("openai", "rate_limited"), false);
+});
+
+test("extracts model text from OpenAI Responses API and Chat Completions payloads", () => {
+  assert.equal(getOpenAIResponseText({ output_text: '{"issues":[]}' }), '{"issues":[]}');
+  assert.equal(getOpenAIResponseText({ output: [{ type: "message", content: [{ type: "output_text", text: '{"visual_score":88}' }] }] }), '{"visual_score":88}');
+  assert.equal(getOpenAIResponseText({ choices: [{ message: { content: '{"issues":[]}' } }] }), '{"issues":[]}');
 });
