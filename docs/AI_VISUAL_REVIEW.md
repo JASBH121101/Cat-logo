@@ -19,7 +19,7 @@ El orden predeterminado es `cloudflare,openai`.
 
 ## Configuración en GitHub
 
-En el repositorio, abrí **Settings → Secrets and variables → Actions**.
+En el repositorio, abrí **Settings → Secrets and variables → Actions**. La revisión por IA queda desactivada por defecto para evitar cargos automáticos. Para activarla, creá también la variable de repositorio `ENABLE_AI_VISUAL_REVIEW=true`. Con esa variable activa, las revisiones de IA se ejecutan en cada auditoría de producción de la rama `main`; el QA determinista de Playwright/Axe sigue ejecutándose aunque la variable esté ausente o en `false`.
 
 ### Para habilitar OpenAI como respaldo
 
@@ -28,6 +28,10 @@ En el repositorio, abrí **Settings → Secrets and variables → Actions**.
 3. No la guardés en archivos del repositorio, HTML, JavaScript público, variables del catálogo ni mensajes de chat.
 
 ### Variables opcionales
+
+| Variable | Predeterminado | Función |
+|---|---|---|
+| `ENABLE_AI_VISUAL_REVIEW` | `false` | Interruptor de consentimiento para ejecutar revisiones que consumen cuota de IA |
 
 | Variable | Predeterminado | Función |
 |---|---|---|
