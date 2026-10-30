@@ -16,11 +16,11 @@ const CATALOG_CASES = [
   { page: "JB Collections — portada", viewport: "mobile-390", theme: "light", file: "home--mobile-390--light.png", focus: "header, navegación, hero, espacios vacíos, CTA y legibilidad en el primer viewport" },
   { page: "JB Collections — portada", viewport: "desktop-1365", theme: "dark", file: "home--desktop-1365--dark.png", focus: "uso del ancho, hero, jerarquía, navegación y llamadas a la acción" },
   { page: "JB TECH — catálogo", viewport: "mobile-390", theme: "dark", file: "technology--mobile-390--dark.png", focus: "densidad y alineación de tarjetas, fotografías, precios, filtros y botones" },
-  { page: "JB TECH — catálogo", viewport: "desktop-1365", theme: "light", file: "technology--desktop-1365--light.png", focus: "consistencia de cuadrícula, espacios, filtros, escala de imágenes y jerarquía de tarjetas" },
+  { page: "JB TECH — catálogo", viewport: "desktop-2560", theme: "light", file: "technology--desktop-2560--light.png", focus: "uso del ancho en monitor 2K, número de columnas, escala de tarjetas, filtros y equilibrio de espacios en escritorio grande" },
   { page: "JB TECH — detalle de producto", viewport: "desktop-1365", theme: "light", file: "technology-detail--desktop-1365--light--viewport.png", focus: "protagonismo del producto, galería, espacio entre imagen e información, precio y contacto" },
   { page: "JB TECH — detalle de producto", viewport: "mobile-390", theme: "dark", file: "technology-detail--mobile-390--dark--viewport.png", focus: "galería móvil, legibilidad, orden vertical, controles y contenido que quede fuera de pantalla" },
   { page: "JB Parfums — catálogo", viewport: "mobile-390", theme: "light", file: "perfumery--mobile-390--light.png", focus: "legibilidad del banner, tarjetas, fotos de perfumes, categorías, precios y espaciado" },
-  { page: "JB Parfums — catálogo", viewport: "desktop-1365", theme: "dark", file: "perfumery--desktop-1365--dark.png", focus: "consistencia de cuadrícula, protagonismo fotográfico, jerarquía del banner y uso del espacio" },
+  { page: "JB Parfums — catálogo", viewport: "ultrawide-3440", theme: "dark", file: "perfumery--ultrawide-3440--dark.png", focus: "uso del ancho ultrawide, distribución de productos, proporciones de tarjetas, banner y espacios laterales" },
   { page: "JB Parfums — detalle de producto", viewport: "desktop-1365", theme: "dark", file: "perfumery-detail--desktop-1365--dark--viewport.png", focus: "protagonismo del frasco, galería, espacio entre imagen e información, precio y contacto" },
   { page: "JB Parfums — detalle de producto", viewport: "mobile-390", theme: "light", file: "perfumery-detail--mobile-390--light--viewport.png", focus: "tamaño del frasco, galería móvil, texto, precio, contacto y orden vertical" },
 ];
