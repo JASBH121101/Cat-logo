@@ -135,9 +135,12 @@ test("public technology catalog renders manual badges and dedicated product sect
   assert.match(technologyHtml, /id="top-gaming-grid"/);
 });
 
-test("photo color analysis forwards the base64 data URL in the format documented by Cloudflare", () => {
-  assert.match(colorApi, /image:\s*imageDataUrl/);
-  assert.doesNotMatch(colorApi, /image:\s*Array\.from\(atob/);
+test("photo color analysis forwards base64 image data to Gemini Vision without Cloudflare Meta license dependency", () => {
+  assert.match(colorApi, /GEMINI_API_KEY/);
+  assert.match(colorApi, /inline_data:\s*\{\s*mime_type:/);
+  assert.match(colorApi, /data:\s*match\[2\]/);
+  assert.match(colorApi, /x-goog-api-key/);
+  assert.doesNotMatch(colorApi, /env\.AI\.run\(isImage\s*\?\s*VISION_MODEL/);
 });
 
 
