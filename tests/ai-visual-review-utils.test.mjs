@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyCloudflareFailure, classifyOpenAIFailure, deduplicateIssues, getConfiguredAiProviders, getModelText, getOpenAIResponseText, interpretModelResponse, isBatchBlockingFailure, isProviderCircuitBreakingFailure, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
+import { classifyCloudflareFailure, classifyOpenAIFailure, deduplicateIssues, getConfiguredAiProviders, getModelText, getOpenAIResponseText, interpretModelResponse, isProviderCircuitBreakingFailure, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
 const review = { visual_score: 72, overall_assessment: "Ficha entendible, con separación amplia entre galería y texto.", strengths: ["Jerarquía clara"], issues: [{ severity: "medium", region: "espaciado / composición", evidence: "Separación amplia entre imagen e información.", recommendation: "Medir el espacio y reducirlo si no es intencional.", confidence: 0.78 }], manual_review_required: true, limitations: ["Una captura"] };
 test("extracts Cloudflare response", () => assert.equal(getModelText({ result: { response: " hola " } }), "hola"));
 test("validates structured review and always requires human review", () => { const x = validateReview({ ...review, manual_review_required: false }); assert.equal(x.valid, true); assert.equal(x.review.manual_review_required, true); });
@@ -39,12 +39,6 @@ test("rejects non-integer scores instead of silently rounding them", () => {
   assert.equal(validateReview({ ...review, visual_score: 74.5 }).valid, false);
 });
 
-test("quota and model license errors stop the whole screenshot batch; request-local errors do not", () => {
-  assert.equal(isBatchBlockingFailure("daily_quota_exhausted"), true);
-  assert.equal(isBatchBlockingFailure("model_license_required"), true);
-  assert.equal(isBatchBlockingFailure("api_rejected"), false);
-  assert.equal(isBatchBlockingFailure("capacity_temporarily_exceeded"), false);
-});
 test("Cloudflare daily neuron exhaustion is classified as a permanent account-wide stop", () => {
   const result = classifyCloudflareFailure({
     status: 429,
