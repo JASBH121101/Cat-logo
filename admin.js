@@ -1,6 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { initProviderTools } from "./admin-provider.js?v=20261029-variant-availability-validation1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
+import { initJbManagerAI } from "./admin-ai.js?v=20261030-jb-manager-ai1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -181,6 +182,11 @@ let activeCatalogType = "technology";
 let dashboardCatalogScope = "all";
 const activeCatalogSelector = $("#active-catalog-selector");
 const dashboardScopeSelector = $("#dashboard-scope-selector");
+const jbManagerAI = initJbManagerAI({
+  getSupabase: () => supabase,
+  getCurrentUser: () => currentUser,
+  getProducts: () => products
+});
 const providerTools = initProviderTools({
   getSupabase: () => supabase,
   getCurrentUser: () => currentUser,
@@ -1414,6 +1420,7 @@ function clearLoginPassword() {
 
 function showLoginScreen(statusText = "", type = "") {
   currentUser = null;
+  jbManagerAI?.clearSession();
   products = [];
   clearCatalogAdminActivityMarker();
 
@@ -2761,6 +2768,7 @@ async function showDashboard(user) {
   await confirmAdmin(user);
 
   currentUser = user;
+  jbManagerAI?.setAuthenticatedUser(user);
   refreshCatalogAdminActivityMarker();
 
   loginPanel.classList.add("hidden");
