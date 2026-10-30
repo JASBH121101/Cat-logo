@@ -1,12 +1,22 @@
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
-import { classifyCloudflareFailure, getModelText, interpretModelResponse, isBatchBlockingFailure, recoverExplicitFindings, safeText } from "./ai-visual-review-utils.mjs";
+import { classifyCloudflareFailure, classifyOpenAIFailure, getConfiguredAiProviders, getModelText, getOpenAIResponseText, interpretModelResponse, isProviderCircuitBreakingFailure, recoverExplicitFindings, safeText } from "./ai-visual-review-utils.mjs";
 import { buildExperienceAiCases, calculateExperienceScores } from "./personal-experience-qa-profile.mjs";
 
 const ACCOUNT_ID = String(process.env.CLOUDFLARE_ACCOUNT_ID || "").trim();
 const API_TOKEN = String(process.env.CLOUDFLARE_API_TOKEN || "").trim();
+const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || "").trim();
+const OPENAI_MODEL = String(process.env.OPENAI_VISION_MODEL || "gpt-5.4-mini").trim();
 const MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+const AI_PROVIDERS = getConfiguredAiProviders({
+  cloudflareAccountId: ACCOUNT_ID,
+  cloudflareApiToken: API_TOKEN,
+  openaiApiKey: OPENAI_API_KEY,
+  order: process.env.AI_PROVIDER_ORDER || "cloudflare,openai",
+});
+const providerCircuit = new Set();
+const providerEvents = [];
 const ROOT = resolve("artifacts/production-visual-audit");
 const MAX_IMAGE_BYTES = 5_200_000;
 const QA_PROFILE = String(process.env.QA_PROFILE || "ecommerce").trim();
@@ -195,7 +205,7 @@ async function prepareVisionImage(bytes) {
   throw error;
 }
 
-async function callModel(item, image, attempt, correctionReason = "", evidence = null) {
+async function callCloudflareModel(item, image, attempt, correctionReason = "", evidence = null) {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(ACCOUNT_ID)}/ai/run/${MODEL}`;
   let requestAttempts = 0;
   for (let requestAttempt = 1; requestAttempt <= 3; requestAttempt++) {
@@ -262,7 +272,7 @@ async function callModel(item, image, attempt, correctionReason = "", evidence =
         error.failureKind = "empty_model_response";
         throw error;
       }
-      return { text: output, requestAttempts };
+      return { text: output, requestAttempts, provider: "cloudflare", model: MODEL };
     } catch (error) {
       const transient = error?.name === "AbortError" || /fetch failed|ECONNRESET|ETIMEDOUT|socket|network/i.test(error?.message || "");
       if (transient && requestAttempt < 3) {
@@ -280,6 +290,78 @@ async function callModel(item, image, attempt, correctionReason = "", evidence =
   }
   const error = new Error("Cloudflare Workers AI retry budget exhausted.");
   error.failureKind = "request_retries_exhausted";
+  throw error;
+}
+
+async function callOpenAIModel(item, image, attempt, correctionReason = "", evidence = null) {
+  const endpoint = "https://api.openai.com/v1/responses";
+  let requestAttempts = 0;
+  for (let requestAttempt = 1; requestAttempt <= 3; requestAttempt++) {
+    requestAttempts++;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: OPENAI_MODEL,
+          instructions: systemPrompt,
+          input: [{
+            role: "user",
+            content: [
+              { type: "input_text", text: userPrompt(item, correctionReason, evidence) },
+              { type: "input_image", image_url: `data:${image.mimeType};base64,${image.bytes.toString("base64")}`, detail: "high" },
+            ],
+          }],
+          max_output_tokens: EXPERIENCE_PROFILE ? 1250 : 1000,
+          text: { format: { type: "json_object" } },
+        }),
+      });
+      const bodyText = await response.text();
+      let payload;
+      try { payload = JSON.parse(bodyText); } catch { payload = { raw_response: bodyText.slice(0, 2500) }; }
+      const failure = classifyOpenAIFailure({ status: response.status, payload, bodyText });
+      if (!response.ok || payload.error) {
+        const reason = safeText(payload.error?.message || bodyText || `HTTP ${response.status}`, 600);
+        if (failure.retryable && requestAttempt < 3) {
+          const retryAfter = Number(response.headers.get("retry-after"));
+          await delay(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(8000, retryAfter * 1000) : requestAttempt * 1500);
+          continue;
+        }
+        const error = new Error(`OpenAI Responses API request failed: ${reason}`);
+        error.failureKind = failure.kind;
+        throw error;
+      }
+      const output = getOpenAIResponseText(payload);
+      if (!output) {
+        if (requestAttempt < 2) { await delay(700 * requestAttempt); continue; }
+        const error = new Error("OpenAI Responses API returned no model text after retry.");
+        error.failureKind = "empty_model_response";
+        throw error;
+      }
+      return { text: output, requestAttempts, provider: "openai", model: OPENAI_MODEL };
+    } catch (error) {
+      const transient = error?.name === "AbortError" || /fetch failed|ECONNRESET|ETIMEDOUT|socket|network/i.test(error?.message || "");
+      if (transient && requestAttempt < 3) { await delay(requestAttempt * 1200); continue; }
+      if (error?.name === "AbortError") {
+        error.message = "OpenAI Responses API request timed out after 60 seconds (3 attempts maximum).";
+        error.failureKind = "timeout";
+      }
+      throw error;
+    } finally { clearTimeout(timer); }
+  }
+  const error = new Error("OpenAI Responses API retry budget exhausted.");
+  error.failureKind = "request_retries_exhausted";
+  throw error;
+}
+
+async function callProviderModel(provider, item, image, attempt, correctionReason = "", evidence = null) {
+  if (provider === "cloudflare") return callCloudflareModel(item, image, attempt, correctionReason, evidence);
+  if (provider === "openai") return callOpenAIModel(item, image, attempt, correctionReason, evidence);
+  const error = new Error(`Unknown visual-review provider: ${provider}`);
+  error.failureKind = "unknown_provider";
   throw error;
 }
 
