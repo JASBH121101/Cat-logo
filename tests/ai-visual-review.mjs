@@ -284,12 +284,30 @@ function recoverReview(text, reason) {
   };
 }
 
+function attachImagePreparation(error, sourceBytes, image) {
+  error.imagePreparation = {
+    originalBytes: sourceBytes.length,
+    preparedBytes: image.bytes.length,
+    bytesSaved: Math.max(0, sourceBytes.length - image.bytes.length),
+    optimized: image.optimized,
+    mimeType: image.mimeType,
+    width: image.width,
+    height: image.height,
+  };
+  return error;
+}
+
 async function review(item, evidenceIndex) {
   const startedAt = Date.now();
   const sourceBytes = await readFile(resolve(ROOT, item.file));
   const image = await prepareVisionImage(sourceBytes);
   const measuredEvidence = evidenceForCase(item, evidenceIndex);
-  const firstCall = await callModel(item, image, 1, "", measuredEvidence);
+  let firstCall;
+  try {
+    firstCall = await callModel(item, image, 1, "", measuredEvidence);
+  } catch (error) {
+    throw attachImagePreparation(error, sourceBytes, image);
+  }
   let text = firstCall.text;
   let parsed = interpretModelResponse(text);
   let attempts = 1;
@@ -318,6 +336,9 @@ async function review(item, evidenceIndex) {
         };
       }
     } catch (error) {
+      if (error.failureKind === "daily_quota_exhausted") {
+        throw attachImagePreparation(error, sourceBytes, image);
+      }
       retryError = safeText(error.message, 500);
     }
   }
@@ -356,7 +377,9 @@ function makeSummary() {
   const structuredReviews = count("structured");
   const recoveredReviews = count("recovered");
   const invalidResponses = count("invalid");
-  const optimized = analyses.filter(item => item.imageOptimized);
+  const imageRuns = [...analyses, ...errors];
+  const imagePreparation = item => item.imagePreparation || item;
+  const optimized = imageRuns.filter(item => imagePreparation(item).imageOptimized || imagePreparation(item).optimized);
   const successful = analyses.filter(item => item.parseStatus);
   return {
     requestedScreenshots: CASES.length,
@@ -364,7 +387,7 @@ function makeSummary() {
     structuredReviews,
     recoveredReviews,
     invalidResponses,
-    failedReviews: errors.length,
+    failedReviews: errors.filter(item => item.failureKind !== "quota_pending").length,
     reviewedScreenshots: structuredReviews + recoveredReviews,
     structuredRatePct: analyses.length ? Math.round(structuredReviews / CASES.length * 100) : 0,
     reportedIssues: analyses.reduce((sum, item) => sum + (item.review?.issues?.length || 0), 0),
@@ -373,7 +396,7 @@ function makeSummary() {
     evidenceBackedReviews: analyses.filter(item => item.measuredEvidenceAvailable).length,
     quotaExhausted: errors.some(item => item.failureKind === "daily_quota_exhausted"),
     quotaPendingScreenshots: errors.filter(item => item.failureKind === "quota_pending").length,
-    imageBytesSaved: optimized.reduce((sum, item) => sum + (item.bytesSaved || 0), 0),
+    imageBytesSaved: optimized.reduce((sum, item) => sum + (imagePreparation(item).bytesSaved || 0), 0),
     httpRetryAttempts: analyses.reduce((sum, item) => sum + Math.max(0, (item.requestAttempts || 0) - (item.attempts || 0)), 0),
     averageReviewMs: successful.length ? Math.round(successful.reduce((sum, item) => sum + (item.durationMs || 0), 0) / successful.length) : null,
     manualReviewRequired: analyses.filter(item => item.parseStatus !== "structured" || item.review?.manual_review_required !== false).length + errors.length,
@@ -515,7 +538,7 @@ if (!ACCOUNT_ID || !API_TOKEN) {
       analyses.push(await review(item, evidenceIndex));
     } catch (error) {
       const failureKind = error.failureKind || "review_failed";
-      errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, failureKind, message: safeText(error.message, 800) });
+      errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, failureKind, message: safeText(error.message, 800), ...(error.imagePreparation ? { imagePreparation: error.imagePreparation } : {}) });
       if (failureKind === "daily_quota_exhausted") {
         quotaBlocked = true;
         quotaMessage = safeText(error.message, 800);
