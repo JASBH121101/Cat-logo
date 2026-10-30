@@ -113,13 +113,15 @@ test("AI visual review routes through Cloudflare first and falls back to free-ti
   assert.ok(reviewer.includes("providerFallbacks"));
 });
 
-test("CI enables only Cloudflare and free-tier Gemini after explicit AI-review opt-in", () => {
+test("CI requires free Gemini opt-in and keeps Cloudflare disabled without explicit approval", () => {
   assert.equal((workflow.match(/AI_REVIEW_ENABLED:/g) || []).length, 2);
   assert.equal((workflow.match(/secrets.GEMINI_API_KEY != ''/g) || []).length, 2);
   assert.equal((workflow.match(/GEMINI_API_KEY: \$\{\{ secrets.GEMINI_API_KEY \}\}/g) || []).length, 2);
+  assert.equal((workflow.match(/vars.ENABLE_CLOUDFLARE_AI == 'true'/g) || []).length, 4);
   assert.ok(workflow.includes("GEMINI_VISION_MODEL"));
   assert.ok(workflow.includes("AI_PROVIDER_ORDER"));
   assert.ok(workflow.includes("vars.ENABLE_AI_VISUAL_REVIEW == 'true'"));
+  assert.ok(workflow.includes("Cloudflare AI stays disabled unless"));
   assert.ok(workflow.includes("The workflow does not configure OpenAI API or any paid provider."));
   assert.doesNotMatch(workflow, /OPENAI_API_KEY|OPENAI_VISION_MODEL/);
 });
