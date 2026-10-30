@@ -60,7 +60,7 @@ export function calculateExperienceScores(evidenceReport, aiAnalyses = []) {
   const evidence = calculateEvidenceScores(evidenceReport);
   const valid = aiAnalyses.filter(item => item?.parseStatus === "structured" && item.review);
   const average = key => {
-    const values = valid.map(item => Number(item.review[key])).filter(value => Number.isFinite(value) && value >= 0 && value <= 100);
+    const values = valid.map(item => item.review[key]).filter(value => value !== null && value !== undefined && value !== "").map(Number).filter(value => Number.isFinite(value) && value >= 0 && value <= 100);
     return values.length ? clampScore(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
   };
   const dimensions = {
