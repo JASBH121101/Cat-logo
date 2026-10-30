@@ -45,7 +45,6 @@ public class GoPartnersCaptureService extends Service {
     private static final String EXTRA_RESULT_DATA = "projection_result_data";
     private static final String CHANNEL_ID = "jb_go_partners_scan";
     private static final int NOTIFICATION_ID = 7352;
-    private static final int MAX_OBSERVATIONS = 80;
     private static final int MAX_TEXT_CHARS = 1500;
     private static final long MIN_FRAME_INTERVAL_MS = 1900L;
 
