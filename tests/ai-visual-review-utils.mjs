@@ -88,6 +88,9 @@ export function classifyCloudflareFailure({ status = 0, payload = null, bodyText
     ...errors.map(item => item?.message),
   ].filter(Boolean).join(" ").toLowerCase();
 
+  if (/meta.{0,60}license|license.{0,100}(?:agree|accept|required)|acceptable use policy|must agree to.{0,80}(?:license|terms)/.test(detail)) {
+    return { kind: "model_license_required", retryable: false };
+  }
   if (codes.includes(3036) || /daily free allocation|10,000 neurons|used up.*neurons|account limited|quota exhausted/.test(detail)) {
     return { kind: "daily_quota_exhausted", retryable: false };
   }
