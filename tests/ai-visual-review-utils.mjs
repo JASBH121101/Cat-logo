@@ -104,6 +104,10 @@ export function classifyCloudflareFailure({ status = 0, payload = null, bodyText
   return { kind: "unknown", retryable: false };
 }
 
+export function isBatchBlockingFailure(kind) {
+  return ["daily_quota_exhausted", "model_license_required"].includes(String(kind || ""));
+}
+
 export function deduplicateIssues(issues = []) {
   const seen = new Set();
   return issues.filter((issue) => {
