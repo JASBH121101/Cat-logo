@@ -52,7 +52,7 @@ test("production audit includes 2K and ultrawide desktops with controlled produc
   assert.ok(productionAudit.includes("viewport.auditDetails"));
 });
 test("AI reviewer samples real catalog screenshots at 2K and ultrawide resolutions", () => {
-  assert.ok(reviewer.includes("technology--desktop-2560--light.png"));
+  assert.ok(reviewer.includes("technology--desktop-3840--light.png"));
   assert.ok(reviewer.includes("perfumery--ultrawide-3440--dark.png"));
 });
 
