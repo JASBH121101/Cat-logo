@@ -592,3 +592,87 @@ html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-pre
     height: 34px !important;
   }
 }
+
+/* JB Manager · selector de tono circular limpio; se elimina el contenedor visual heredado. */
+html body.admin-body form#product-form .inline-color-tone-field {
+  box-sizing: border-box !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  flex: 0 0 44px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 5px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+html body.admin-body form#product-form .inline-color-tone-field > span:first-child {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
+  background: transparent !important;
+}
+html body.admin-body form#product-form .inline-color-tone-preview {
+  position: relative !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  flex: 0 0 36px !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 2px solid #f8fbff !important;
+  border-radius: 50% !important;
+  background: var(--tone-color, #242424) !important;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .62) !important;
+  cursor: pointer !important;
+}
+html body.admin-body form#product-form .inline-color-tone-preview::after {
+  content: none !important;
+  display: none !important;
+}
+html body.admin-body form#product-form .inline-color-tone-preview input[type="color"] {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: transparent !important;
+  color: transparent !important;
+  cursor: pointer !important;
+}
+@media (max-width: 650px) {
+  html body.admin-body form#product-form .inline-color-tone-field {
+    width: 42px !important;
+    min-width: 42px !important;
+    flex-basis: 42px !important;
+  }
+  html body.admin-body form#product-form .inline-color-tone-preview {
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+  }
+}
+
