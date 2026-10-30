@@ -26,6 +26,12 @@ test("model requests have bounded transient retries and a targeted validation co
   assert.ok(reviewer.includes("httpRetryAttempts"));
 });
 
+test("AI reviewer explains the one-time model license requirement without accepting terms automatically", () => {
+  assert.ok(reviewer.includes('failure.kind === "model_license_required"'));
+  assert.ok(reviewer.includes('{"prompt":"agree"}'));
+  assert.ok(reviewer.includes("will not accept legal terms automatically"));
+  assert.ok(reviewer.includes('error.failureKind = "model_license_required"'));
+});
 test("AI output contract avoids fabricated example findings and placeholder zero scores", () => {
   assert.ok(reviewer.includes("No uses 0 como marcador de puntuación"));
   assert.ok(reviewer.includes("issues como lista vacía"));
