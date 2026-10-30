@@ -5,6 +5,8 @@ import test from "node:test";
 const reviewer = readFileSync(new URL("./ai-visual-review.mjs", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("../.github/workflows/catalog-static-checks.yml", import.meta.url), "utf8");
 const productionAudit = readFileSync(new URL("./production-readonly-visual-audit.mjs", import.meta.url), "utf8");
+const technologyCss = readFileSync(new URL("../technology-visual-refresh.css", import.meta.url), "utf8");
+const perfumeryCss = readFileSync(new URL("../perfumeria.css", import.meta.url), "utf8");
 
 test("AI reviewer optimizes oversized screenshots without modifying original evidence files", () => {
   assert.ok(reviewer.includes('import sharp from "sharp"'));
@@ -51,9 +53,10 @@ test("production audit includes 2K and ultrawide desktops with controlled produc
   assert.ok(productionAudit.includes('name: "ultrawide-3440", width: 3440'));
   assert.ok(productionAudit.includes("viewport.auditDetails"));
 });
-test("AI reviewer samples real catalog screenshots at 2K and ultrawide resolutions", () => {
-  assert.ok(reviewer.includes("technology--desktop-3840--light.png"));
+test("AI reviewer labels the 4K UHD screenshot with its actual 3840px viewport", () => {
+  assert.match(reviewer, /\{ page: "JB TECH — catálogo", viewport: "desktop-3840", theme: "light", file: "technology--desktop-3840--light\.png"/);
   assert.ok(reviewer.includes("perfumery--ultrawide-3440--dark.png"));
+  assert.ok(productionAudit.includes('name: "desktop-3840", width: 3840, height: 2160'));
 });
 
 test("a quota error during the JSON correction attempt reaches the batch circuit breaker", () => {
@@ -77,7 +80,13 @@ test("4K UHD is included in responsive browser and AI review coverage", () => {
   assert.ok(productionAudit.includes('name: "desktop-3840", width: 3840'));
   assert.ok(reviewer.includes("technology--desktop-3840--light.png"));
 });
-test("both catalogs use a 3360px desktop cap and preserve card sizing", () => {
+test("both public catalogs declare the 3360px 4K content cap and expose layout measurements", () => {
   assert.ok(reviewer.includes("gridColumns"));
   assert.ok(productionAudit.includes("contentMetrics"));
+  assert.ok(technologyCss.includes("@media (min-width: 2560px)"));
+  assert.ok(technologyCss.includes("width: min(3360px"));
+  assert.ok(technologyCss.includes("max-width: 3360px"));
+  assert.ok(perfumeryCss.includes("@media (min-width: 2560px)"));
+  assert.ok(perfumeryCss.includes("width: min(3360px"));
+  assert.ok(perfumeryCss.includes("max-width: 3360px"));
 });
