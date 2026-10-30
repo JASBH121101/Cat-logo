@@ -587,3 +587,30 @@ html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-fie
     height: 48px !important;
   }
 }
+
+
+/* JB Manager · swatch de color con área visible real en Chrome móvil. */
+html body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-webkit-color-swatch-wrapper {
+  display: flex !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 4px !important;
+}
+html body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-webkit-color-swatch {
+  display: block !important;
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  border: 1px solid rgba(25, 42, 72, .22) !important;
+  border-radius: 6px !important;
+}
+html body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-moz-color-swatch {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 1px solid rgba(25, 42, 72, .22) !important;
+  border-radius: 6px !important;
+}
