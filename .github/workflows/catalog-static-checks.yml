@@ -363,3 +363,57 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
           compression-level: 6
+
+  personal-experience-audit:
+    name: Read-only personal experience QA
+    needs: validate
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_personal_experience }}
+    runs-on: ubuntu-latest
+    env:
+      AI_REVIEW_ENABLED: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}
+      EXPERIENCE_AUDIT_URL: https://jasbh121101.github.io/Declaraci-n/
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser and accessibility tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.64.1 @axe-core/playwright@4.14.0
+          npx playwright install --with-deps chromium
+      - name: Run the interactive experience in a read-only browser
+        run: node tests/personal-experience-qa.mjs
+      - name: Review experience screenshots with Cloudflare Workers AI
+        if: ${{ env.AI_REVIEW_ENABLED == 'true' }}
+        env:
+          QA_PROFILE: personal-experience
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node tests/ai-visual-review.mjs
+      - name: Generate an evidence-only scorecard when AI review is not configured
+        if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
+        env:
+          QA_PROFILE: personal-experience
+        run: node tests/ai-visual-review.mjs
+      - name: Upload personal experience QA report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: personal-experience-qa-evidence
+          path: |
+            artifacts/production-visual-audit/personal-experience-qa-report.json
+            artifacts/production-visual-audit/personal-experience-qa-report.md
+            artifacts/production-visual-audit/experience-qa-evaluation.json
+            artifacts/production-visual-audit/experience-qa-evaluation.md
+            artifacts/production-visual-audit/ai-visual-review-report.json
+            artifacts/production-visual-audit/ai-visual-review-report.md
+            artifacts/production-visual-audit/ai-visual-review-status.json
+            artifacts/production-visual-audit/ai-visual-review-status.md
+            artifacts/production-visual-audit/experience--*.png
+          if-no-files-found: warn
+          retention-days: 14
+          compression-level: 6
