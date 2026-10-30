@@ -1,48 +1,53 @@
-# JB Collections — sistema de QA visual con doble método e IA
+# JB Collections — sistema de QA visual gratuito
 
 ## Arquitectura
 
 El workflow conserva dos capas independientes:
 
-1. **QA determinista (siempre):** Playwright abre el catálogo publicado, recorre escenarios de solo lectura, toma capturas, mide responsive y carga de imágenes; las comprobaciones Axe verifican accesibilidad. Esta capa no requiere claves de IA.
-2. **Revisión visual asistida por IA (opcional):** el revisor analiza las mismas capturas junto con las mediciones del navegador. Toda respuesta debe superar el contrato JSON y sigue marcada para revisión humana. La IA no modifica código, productos ni datos de producción.
+1. **QA determinista (siempre):** Playwright recorre páginas públicas en modo solo lectura, toma capturas, comprueba responsive, navegación, carga de imágenes y accesibilidad Axe. No consume créditos de IA.
+2. **Revisión visual asistida por IA (opcional):** los modelos analizan las mismas capturas junto con las mediciones del navegador. Las respuestas deben cumplir el contrato JSON y quedan sujetas a revisión humana. Ninguna IA modifica código, productos, pedidos ni datos de producción.
 
 ## Proveedores y failover
 
-El orden predeterminado es `cloudflare,openai`.
+El orden predeterminado es `cloudflare,gemini`.
 
-- **Cloudflare Workers AI** es el proveedor primario cuando están configuradas ambas credenciales.
-- **OpenAI Responses API** es el respaldo, con visión mediante `input_image`. El modelo predeterminado es `gpt-5.4-mini`.
-- Si Cloudflare agota la cuota diaria o exige una aceptación de licencia, el circuito de Cloudflare se abre para el resto de esa ejecución y las capturas pasan a OpenAI.
-- Si OpenAI informa clave inválida, modelo no disponible o saldo/cuota agotada, ese proveedor se desactiva durante esa ejecución. El otro proveedor puede continuar.
-- Los fallos de formato reciben un segundo intento correctivo; un resultado inválido nunca se registra como una revisión limpia.
+- **Cloudflare Workers AI** es el proveedor primario si se configuran `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`. El plan Free incluye una asignación diaria; cuando se consume, la ejecución no pasa a cobro por sí sola, sino que abre el circuito y prueba Gemini.
+- **Google Gemini API — Gemini 3.1 Flash-Lite** es el respaldo. Su nivel gratuito publica entrada de texto/imagen y salida sin costo, sujeto a límites de solicitudes, tokens y disponibilidad del proyecto.
+- Si Cloudflare agota su cuota o requiere aceptación de licencia, las capturas pendientes pasan a Gemini. Si Gemini alcanza el límite gratuito, su clave es inválida o el proyecto no tiene acceso al nivel gratuito, el circuito de Gemini se abre para esa ejecución.
+- Los errores temporales tienen reintentos limitados. Los errores permanentes por proveedor no generan reintentos repetidos. Una respuesta que no cumpla el JSON esperado nunca cuenta como evaluación limpia.
 
 ## Configuración en GitHub
 
-En el repositorio, abrí **Settings → Secrets and variables → Actions**. La revisión por IA queda desactivada por defecto para evitar cargos automáticos. Para activarla, creá también la variable de repositorio `ENABLE_AI_VISUAL_REVIEW=true`. Con esa variable activa, las revisiones de IA se ejecutan en cada auditoría de producción de la rama `main`; el QA determinista de Playwright/Axe sigue ejecutándose aunque la variable esté ausente o en `false`.
+Abrí **Settings → Secrets and variables → Actions**.
 
-### Para habilitar OpenAI como respaldo
+La revisión visual por IA permanece desactivada por defecto. Para habilitarla:
 
-1. Generá una clave de API en el panel de OpenAI API Platform.
-2. En **Secrets**, creá el secreto `OPENAI_API_KEY` y pegá allí la clave.
-3. No la guardés en archivos del repositorio, HTML, JavaScript público, variables del catálogo ni mensajes de chat.
+1. En **Secrets**, creá `GEMINI_API_KEY` y guardá la clave obtenida de Google AI Studio.
+2. En **Variables**, creá `ENABLE_AI_VISUAL_REVIEW` con el valor `true`.
+3. Para conservar Cloudflare como primer proveedor, mantené la variable `CLOUDFLARE_ACCOUNT_ID` y el secreto `CLOUDFLARE_API_TOKEN`. Si no están disponibles, Gemini será el único proveedor configurado.
 
-### Variables opcionales
+Variables opcionales:
 
 | Variable | Predeterminado | Función |
 |---|---|---|
-| `ENABLE_AI_VISUAL_REVIEW` | `false` | Interruptor de consentimiento para ejecutar revisiones que consumen cuota de IA |
-| `OPENAI_VISION_MODEL` | `gpt-5.4-mini` | Modelo OpenAI con entrada visual |
-| `AI_PROVIDER_ORDER` | `cloudflare,openai` | Orden de prioridad; también se puede usar `openai,cloudflare` |
+| `ENABLE_AI_VISUAL_REVIEW` | `false` | Interruptor explícito para permitir el envío de capturas a IA |
+| `GEMINI_VISION_MODEL` | `gemini-3.1-flash-lite` | Modelo Gemini con entrada visual |
+| `AI_PROVIDER_ORDER` | `cloudflare,gemini` | Orden de prioridad; también se puede usar `gemini,cloudflare` |
 
-Para seguir usando Cloudflare se requieren la variable `CLOUDFLARE_ACCOUNT_ID` y el secreto `CLOUDFLARE_API_TOKEN`. Si solo se configura OpenAI, el flujo funciona igualmente con ese proveedor.
+El workflow **no configura OpenAI API ni proveedores pagos**. No es necesario añadir una tarjeta o vincular un proyecto de facturación para usar el nivel gratuito de Gemini. No cambies el proyecto de Google a un nivel de pago ni vincules facturación.
+
+## Límites y privacidad
+
+El nivel gratuito de Gemini tiene cuotas de uso que pueden cambiar y la disponibilidad se determina por proyecto/cuenta. Nicaragua figura en la lista de regiones disponibles para Google AI Studio y Gemini API. Si Google no habilita el nivel gratuito para un proyecto concreto, el sistema marca el proveedor como no disponible; no debe vincularse facturación para desbloquearlo.
+
+Google indica que el contenido del nivel gratuito puede utilizarse para mejorar sus productos. Este revisor únicamente debe recibir capturas de páginas públicas del catálogo. No incluyas capturas del panel administrador, credenciales, datos de clientes, conversaciones privadas ni datos personales.
+
+No se envían imágenes a un proveedor salvo que `ENABLE_AI_VISUAL_REVIEW=true` y al menos una credencial estén configuradas. La clave permanece en GitHub Actions, nunca en el frontend ni en el repositorio. Si los proveedores gratuitos agotan sus cuotas, la revisión de IA queda pendiente; el QA determinista sigue funcionando.
 
 ## Reportes
 
-Cada ejecución sube el artefacto `production-visual-audit-evidence`. El informe registra proveedor y modelo usados por captura, fallos detectados, failovers, cuotas, imágenes optimizadas, mediciones del navegador y las capturas no revisadas.
+Cada ejecución publica el artefacto `production-visual-audit-evidence`. El informe registra proveedor y modelo usados por captura, failovers, cuotas, mediciones del navegador, incidencias y capturas sin evaluar.
 
-## Costos y seguridad
+## Seguridad
 
-La clave de OpenAI se utiliza solo dentro de GitHub Actions; el navegador público nunca la recibe. Las capturas se envían a un proveedor únicamente cuando sus credenciales están configuradas. La revisión con IA consume uso de la API de OpenAI y se factura de forma separada de una suscripción de ChatGPT. Revisá los límites de gasto y el uso de la organización API antes de ejecutar auditorías numerosas.
-
-El sistema es de solo lectura respecto a JB Collections. No publica cambios automáticamente y exige revisión humana antes de corregir cualquier hallazgo.
+La auditoría es de solo lectura. La IA no corrige código automáticamente, no publica cambios y no decide por sí sola si un diseño está aprobado. Los hallazgos deben verificarse antes de modificar el catálogo.
