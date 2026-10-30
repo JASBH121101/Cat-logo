@@ -85,7 +85,7 @@ async function capture(page, viewport, state, screenId) {
   await page.waitForTimeout(180);
   const metrics = await collectMetrics(page);
   const shot = filename(state, viewport.name);
-  await page.screenshot({ path: resolve(OUT_DIR, shot), fullPage: false, animations: "disabled" });
+  await page.screenshot({ path: resolve(OUT_DIR, shot), fullPage: true, animations: "disabled" });
   let axeViolations = [];
   try {
     const axe = await new AxeBuilder({ page }).analyze();
