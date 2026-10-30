@@ -333,7 +333,7 @@ jobs:
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.audit_production) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     env:
-      AI_REVIEW_ENABLED: ${{ (secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '') || secrets.OPENAI_API_KEY != '' }}
+      AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && ((secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '') || secrets.OPENAI_API_KEY != '') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -388,7 +388,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_personal_experience }}
     runs-on: ubuntu-latest
     env:
-      AI_REVIEW_ENABLED: ${{ (secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '') || secrets.OPENAI_API_KEY != '' }}
+      AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && ((secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '') || secrets.OPENAI_API_KEY != '') }}
       EXPERIENCE_AUDIT_URL: https://jasbh121101.github.io/Declaraci-n/
     steps:
       - name: Checkout repository
