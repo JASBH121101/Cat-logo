@@ -960,7 +960,7 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     const rows = Array.isArray(scannedRows) ? scannedRows : [];
     if (!product || !rows.length) return { ok: false, message: "No se identificó el producto o la captura." };
     const hasVariants = productHasProviderVariants(product);
-    const normalizeConfig = value => normalizedText(value).replace(/\\s+/g, "");
+    const normalizeConfig = value => normalizedText(value).replace(/\s+/g, "");
     const matchedRows = [];
     if (hasVariants) {
       const variantRows = Array.from(document.querySelectorAll("#provider-review-variants [data-provider-variant-config-row]"));
