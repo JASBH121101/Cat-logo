@@ -51,6 +51,13 @@ test("Cloudflare daily quota text is detected even when no internal error code i
   assert.equal(result.kind, "daily_quota_exhausted");
   assert.equal(result.retryable, false);
 });
+test("Cloudflare model license requirements are classified as a maintainer action, not a transient failure", () => {
+  const result = classifyCloudflareFailure({
+    status: 400,
+    payload: { errors: [{ code: 1000, message: "You must agree to the Meta License and Acceptable Use Policy before using this model." }] },
+  });
+  assert.deepEqual(result, { kind: "model_license_required", retryable: false });
+});
 test("temporary Workers AI capacity errors remain retryable", () => {
   const result = classifyCloudflareFailure({
     status: 429,
