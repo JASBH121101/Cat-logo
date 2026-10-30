@@ -509,7 +509,8 @@ function makeSummary() {
     quotaPendingScreenshots: errors.filter(item => item.failureKind === "quota_pending").length,
     licenseRequired: providerEvents.some(item => item.failureKind === "model_license_required") || errors.some(item => item.failureKind === "model_license_required"),
     licensePendingScreenshots: errors.filter(item => item.failureKind === "license_pending").length,
-    openAiQuotaExhausted: providerEvents.some(item => item.provider === "openai" && item.failureKind === "billing_quota_exhausted"),
+    geminiQuotaExhausted: providerEvents.some(item => item.provider === "gemini" && item.failureKind === "free_quota_exhausted"),
+    configuredProviders: AI_PROVIDERS,
     configuredProviders: AI_PROVIDERS,
     providersUsed: [...new Set(analyses.map(item => item.provider).filter(Boolean))],
     providersDisabled: [...providerCircuit],
@@ -526,7 +527,7 @@ function markdown(report) {
   const lines = [EXPERIENCE_PROFILE ? "# Declaraci-n — revisión de experiencia personal con IA" : "# JB Collections — revisión visual con IA", "", `- Estado: **${report.status}**`, `- Proveedores configurados: \`${AI_PROVIDERS.join(", ") || "ninguno"}\``, `- Proveedores usados: \`${s.providersUsed.join(", ") || "ninguno"}\``, `- Modelos usados: \`${[...new Set(report.analyses.map(item => item.model).filter(Boolean))].join(", ") || "ninguno"}\``, `- Capturas atendidas por un proveedor de respaldo: ${s.providerFallbacks}`,
     `- Capturas solicitadas: ${s.requestedScreenshots}`, `- Respuestas API: ${s.apiResponses}`, `- JSON validados: ${s.structuredReviews}`,
     `- Recuperadas de prosa (requieren revisión): ${s.recoveredReviews}`, `- Respuestas inválidas: ${s.invalidResponses}`,
-    `- Errores de solicitud: ${s.failedReviews}`, `- Cuota diaria agotada: ${s.quotaExhausted ? "sí" : "no"}`, `- Capturas omitidas por cuota: ${s.quotaPendingScreenshots}`, `- Licencia de Meta requerida: ${s.licenseRequired ? "sí" : "no"}`, `- Capturas omitidas por licencia: ${s.licensePendingScreenshots}`, `- Cuota de OpenAI agotada: ${s.openAiQuotaExhausted ? "sí" : "no"}`, `- Proveedores desactivados: ${s.providersDisabled.join(", ") || "ninguno"}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Capturas con mediciones del navegador: ${s.evidenceBackedReviews}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
+    `- Errores de solicitud: ${s.failedReviews}`, `- Cuota diaria agotada: ${s.quotaExhausted ? "sí" : "no"}`, `- Capturas omitidas por cuota: ${s.quotaPendingScreenshots}`, `- Licencia de Meta requerida: ${s.licenseRequired ? "sí" : "no"}`, `- Capturas omitidas por licencia: ${s.licensePendingScreenshots}`, `- Cuota gratuita de Gemini agotada: ${s.geminiQuotaExhausted ? "sí" : "no"}`, `- Proveedores desactivados: ${s.providersDisabled.join(", ") || "ninguno"}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Capturas con mediciones del navegador: ${s.evidenceBackedReviews}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
     `- Capturas que requieren revisión manual: ${s.manualReviewRequired}`, "",
     "> Cero incidencias no prueba que el diseño esté perfecto. Solo respuestas JSON válidas cuentan como revisión estructurada; toda recuperación de prosa necesita revisión humana.", "", "## Detalle por captura", ""];
   if (!report.analyses.length) lines.push("No se obtuvieron respuestas de la IA.", "");
@@ -628,7 +629,7 @@ async function appendStepSummary(report) {
   await appendFile(process.env.GITHUB_STEP_SUMMARY, ["## Revisión visual con IA", "", `**Estado: ${report.status}** — proveedores: \`${s.providersUsed.join(", ") || "ninguno"}\``, "",
     "| Métrica | Resultado |", "|---|---:|", `| Capturas solicitadas | ${s.requestedScreenshots} |`, `| Respuestas API | ${s.apiResponses} |`,
     `| JSON validados | ${s.structuredReviews} |`, `| Recuperadas de prosa | ${s.recoveredReviews} |`, `| Respuestas inválidas | ${s.invalidResponses} |`,
-    `| Errores de solicitud | ${s.failedReviews} |`, `| Cuota Cloudflare agotada | ${s.quotaExhausted ? "sí" : "no"} |`, `| Cuota OpenAI agotada | ${s.openAiQuotaExhausted ? "sí" : "no"} |`, `| Proveedores usados | ${s.providersUsed.join(", ") || "ninguno"} |`, `| Failovers | ${s.providerFallbacks} |`, `| Capturas omitidas por cuota | ${s.quotaPendingScreenshots} |`, `| Licencia de Meta requerida | ${s.licenseRequired ? "sí" : "no"} |`, `| Capturas omitidas por licencia | ${s.licensePendingScreenshots} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Revisiones con mediciones del navegador | ${s.evidenceBackedReviews} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
+    `| Errores de solicitud | ${s.failedReviews} |`, `| Cuota Cloudflare agotada | ${s.quotaExhausted ? "sí" : "no"} |`, `| Cuota gratuita Gemini agotada | ${s.geminiQuotaExhausted ? "sí" : "no"} |`, `| Proveedores usados | ${s.providersUsed.join(", ") || "ninguno"} |`, `| Failovers | ${s.providerFallbacks} |`, `| Capturas omitidas por cuota | ${s.quotaPendingScreenshots} |`, `| Licencia de Meta requerida | ${s.licenseRequired ? "sí" : "no"} |`, `| Capturas omitidas por licencia | ${s.licensePendingScreenshots} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Revisiones con mediciones del navegador | ${s.evidenceBackedReviews} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
     "> El estado del job no equivale a una aprobación visual. Consultá el artefacto para evidencia por captura.", ""].join("\n") + "\n", "utf8");
 }
 
@@ -637,11 +638,11 @@ if (!AI_PROVIDERS.length) {
   const status = {
     status: "skipped",
     reason: "No visual-review AI provider is configured.",
-    required: ["OPENAI_API_KEY repository secret, or both CLOUDFLARE_ACCOUNT_ID variable and CLOUDFLARE_API_TOKEN secret"],
+    required: ["GEMINI_API_KEY repository secret for the free Gemini tier, or both CLOUDFLARE_ACCOUNT_ID variable and CLOUDFLARE_API_TOKEN secret"],
     note: "No screenshot was sent to an AI service. Browser and accessibility checks remain independent.",
   };
   await writeFile(resolve(ROOT, "ai-visual-review-status.json"), JSON.stringify(status, null, 2), "utf8");
-  await writeFile(resolve(ROOT, "ai-visual-review-status.md"), "# AI visual review\n\nStatus: **not run**. Configure `OPENAI_API_KEY` or both Cloudflare credentials. No screenshot was sent to an AI service.\n", "utf8");
+  await writeFile(resolve(ROOT, "ai-visual-review-status.md"), "# AI visual review\n\nStatus: **not run**. Configure `GEMINI_API_KEY` for the free Gemini tier or both Cloudflare credentials. No screenshot was sent to an AI service.\n", "utf8");
   console.log("AI visual review skipped: no provider credentials are configured.");
   if (EXPERIENCE_PROFILE) await writeExperienceEvaluation("not-run");
 } else {
@@ -681,7 +682,7 @@ if (!AI_PROVIDERS.length) {
     providers: [...new Set(analyses.map(item => item.provider).filter(Boolean))],
     providerOrder: AI_PROVIDERS,
     providerEvents,
-    reviewType: "advisory multimodal visual critique; read-only Playwright/Axe evidence, Cloudflare-first/OpenAI-fallback routing, provider circuit breakers, image optimization, schema validation, targeted correction retries, transient request retries, prose recovery",
+    reviewType: "advisory multimodal visual critique; read-only Playwright/Axe evidence, Cloudflare-first/free-Gemini-fallback routing, provider circuit breakers, image optimization, schema validation, targeted correction retries, transient request retries, prose recovery",
     summary, analyses, errors,
     safety: "Read-only multimodal critique; never auto-edit code. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
