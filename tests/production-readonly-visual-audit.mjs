@@ -99,6 +99,39 @@ async function auditImage(page, selector) {
   }, { selector });
 }
 
+async function loadLazyImages(page) {
+  return page.evaluate(async () => {
+    const images = Array.from(document.images);
+    const lazyImages = images.filter(image => image.loading === "lazy");
+    for (const image of lazyImages) image.loading = "eager";
+
+    const documentHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    const step = Math.max(320, Math.round(innerHeight * 0.85));
+    for (let y = 0; y < documentHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise(resolve => setTimeout(resolve, 35));
+    }
+    window.scrollTo(0, 0);
+
+    const settle = Promise.allSettled(images.map(image => {
+      if (image.complete) return image.decode?.().catch(() => undefined);
+      return new Promise(resolve => {
+        const finish = () => resolve();
+        image.addEventListener("load", finish, { once: true });
+        image.addEventListener("error", finish, { once: true });
+      });
+    }));
+    await Promise.race([settle, new Promise(resolve => setTimeout(resolve, 3500))]);
+    return {
+      total: images.length,
+      lazyPromoted: lazyImages.length,
+      loaded: images.filter(image => image.complete && image.naturalWidth > 0).length,
+      failed: images.filter(image => image.complete && image.naturalWidth === 0).length,
+      pending: images.filter(image => !image.complete).length,
+    };
+  });
+}
+
 try {
   for (const site of PAGES) {
     for (const viewport of VIEWPORTS) {
@@ -147,6 +180,7 @@ try {
         if (site.products) {
           await page.locator(site.products).first().waitFor({ state: "visible", timeout: 7000 }).catch(() => {});
         }
+        const imageLoadStats = await loadLazyImages(page);
         const actualTheme = await page.locator("html").getAttribute("data-theme");
         if (actualTheme !== theme) errors.push({ severity: "high", page: site.name, viewport: viewport.name, theme, type: "theme-not-applied", message: "El tema solicitado no quedó aplicado al documento.", evidence: "esperado=" + theme + "; observado=" + String(actualTheme) });
         const snapshot = await page.evaluate(() => {
@@ -194,7 +228,7 @@ try {
         }
         const shot = site.name+"--"+viewport.name+"--"+theme+".png";
         await page.screenshot({path:resolve(OUT_DIR,shot),fullPage:true,animations:"disabled"});
-        const record = {page:site.name,viewport:viewport.name,theme,screenshot:shot,snapshot,scenarioErrors};
+        const record = {page:site.name,viewport:viewport.name,theme,screenshot:shot,snapshot,imageLoadStats,scenarioErrors};
         results.push(record);
 
         // On actual published catalogs, open a real public product once per mobile/desktop theme.
@@ -214,6 +248,7 @@ try {
               errors.push({severity:"critical",page:site.name,viewport:viewport.name,theme,type:"real-product-detail-failed",message:"Había productos públicos, pero el primer enlace Ver producto no abrió la ficha real."});
             } else {
               await page.waitForTimeout(500);
+              const detailImageLoadStats = await loadLazyImages(page);
               const imageAudit = await auditImage(page,site.image);
               const detailSnapshot=await page.evaluate(()=>{
                 const root=document.documentElement,body=document.body;
@@ -232,7 +267,7 @@ try {
               const viewportDetailName=detailName.replace(".png","--viewport.png");
               await page.screenshot({path:resolve(OUT_DIR,detailName),fullPage:true,animations:"disabled"});
               await page.screenshot({path:resolve(OUT_DIR,viewportDetailName),fullPage:false,animations:"disabled"});
-              results.push({page:site.name+"-detail",viewport:viewport.name,theme,screenshot:detailName,viewportScreenshot:viewportDetailName,snapshot:detailSnapshot,imageOccupancy:imageAudit,imageFindings});
+              results.push({page:site.name+"-detail",viewport:viewport.name,theme,screenshot:detailName,viewportScreenshot:viewportDetailName,snapshot:detailSnapshot,imageLoadStats:detailImageLoadStats,imageOccupancy:imageAudit,imageFindings});
               if (detailSnapshot.horizontalOverflow>=24) errors.push({severity:"critical",page:site.name+"-detail",viewport:viewport.name,theme,type:"detail-horizontal-overflow",message:"La ficha real excede el viewport.",evidence:detailSnapshot.horizontalOverflow+" px"});
               if (imageAudit.status==="unavailable"||imageAudit.status==="inconclusive") {
                 errors.push({severity:"info",page:site.name+"-detail",viewport:viewport.name,theme,type:"image-analysis-inconclusive",message:"No fue posible medir la ocupación de píxeles de la fotografía real; no se contará como aprobado.",evidence:imageAudit.reason||"sin causa"});
