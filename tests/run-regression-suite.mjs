@@ -18,6 +18,7 @@ export const regressionGroups = [
   ]},
   { name: "admin-and-catalog", tests: [
     test("tests/admin-notifications.test.mjs"), test("tests/admin-panel-quality-audit.test.mjs"), test("tests/jb-manager-ai.test.mjs"),
+    test("tests/jb-gopartners-scanner.test.mjs"),
     test("tests/admin-save-regression.test.mjs"), test("tests/admin-product-form-workflow.test.mjs"),
     test("tests/admin-color-assistant.test.mjs"), test("tests/admin-mobile-menu-stability.test.mjs"),
     test("tests/admin-provider-price-sync.test.mjs"), test("tests/provider-review-variants.test.mjs"),
