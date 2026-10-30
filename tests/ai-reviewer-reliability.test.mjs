@@ -55,3 +55,9 @@ test("AI reviewer samples real catalog screenshots at 2K and ultrawide resolutio
   assert.ok(reviewer.includes("technology--desktop-2560--light.png"));
   assert.ok(reviewer.includes("perfumery--ultrawide-3440--dark.png"));
 });
+
+test("a quota error during the JSON correction attempt reaches the batch circuit breaker", () => {
+  assert.ok(reviewer.includes('if (error.failureKind === "daily_quota_exhausted")'));
+  assert.ok(reviewer.includes("attachImagePreparation(error, sourceBytes, image)"));
+  assert.ok(reviewer.includes("imageRuns = [...analyses, ...errors]"));
+});
