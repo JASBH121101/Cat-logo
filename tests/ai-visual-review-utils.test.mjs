@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { deduplicateIssues, getModelText, interpretModelResponse, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
+import { classifyCloudflareFailure, deduplicateIssues, getModelText, interpretModelResponse, recoverExplicitFindings, validateReview } from "./ai-visual-review-utils.mjs";
 const review = { visual_score: 72, overall_assessment: "Ficha entendible, con separación amplia entre galería y texto.", strengths: ["Jerarquía clara"], issues: [{ severity: "medium", region: "espaciado / composición", evidence: "Separación amplia entre imagen e información.", recommendation: "Medir el espacio y reducirlo si no es intencional.", confidence: 0.78 }], manual_review_required: true, limitations: ["Una captura"] };
 test("extracts Cloudflare response", () => assert.equal(getModelText({ result: { response: " hola " } }), "hola"));
 test("validates structured review and always requires human review", () => { const x = validateReview({ ...review, manual_review_required: false }); assert.equal(x.valid, true); assert.equal(x.review.manual_review_required, true); });
@@ -37,4 +37,28 @@ test("accepts null scores when the screenshot does not provide enough evidence",
 });
 test("rejects non-integer scores instead of silently rounding them", () => {
   assert.equal(validateReview({ ...review, visual_score: 74.5 }).valid, false);
+});
+
+test("Cloudflare daily neuron exhaustion is classified as a permanent account-wide stop", () => {
+  const result = classifyCloudflareFailure({
+    status: 429,
+    payload: { errors: [{ code: 3036, message: "You have used up your daily free allocation of 10,000 neurons." }] },
+  });
+  assert.deepEqual(result, { kind: "daily_quota_exhausted", retryable: false });
+});
+test("Cloudflare daily quota text is detected even when no internal error code is supplied", () => {
+  const result = classifyCloudflareFailure({ status: 429, bodyText: "You have used up your daily free allocation of 10,000 neurons." });
+  assert.equal(result.kind, "daily_quota_exhausted");
+  assert.equal(result.retryable, false);
+});
+test("temporary Workers AI capacity errors remain retryable", () => {
+  const result = classifyCloudflareFailure({
+    status: 429,
+    payload: { errors: [{ code: 3040, message: "Capacity temporarily exceeded, please try again." }] },
+  });
+  assert.deepEqual(result, { kind: "capacity_temporarily_exceeded", retryable: true });
+});
+test("parser prefers the fenced JSON response after explanatory model prose", () => {
+  const text = "Analysis text.\\nJSON Response:\\n\`\`\`json\\n" + JSON.stringify(review) + "\\n\`\`\`";
+  assert.equal(interpretModelResponse(text).status, "structured");
 });
