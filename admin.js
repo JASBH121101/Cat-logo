@@ -1710,7 +1710,9 @@ function variantRowMarkup(variant = {}) {
         </label>
         <label class="inline-color-tone-field" title="Personalizar el tono">
           <span>Tono</span>
-          <input data-variant-hex type="color" value="${v.color_hex}" aria-label="Personalizar el tono del color">
+          <span class="inline-color-tone-preview" data-variant-tone-preview style="--tone-color:${v.color_hex}">
+            <input data-variant-hex type="color" value="${v.color_hex}" aria-label="Personalizar el tono del color">
+          </span>
         </label>
       </div>
       <details class="inline-color-details">
@@ -1989,6 +1991,8 @@ function updateVariantRowHeadings() {
       const hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const dot = row.querySelector("[data-variant-color-dot]");
       if (dot) dot.style.setProperty("--inline-color", hex);
+      const tonePreview = row.querySelector("[data-variant-tone-preview]");
+      if (tonePreview) tonePreview.style.setProperty("--tone-color", hex);
       const removeButton = row.querySelector("[data-remove-variant]");
       if (removeButton) removeButton.setAttribute("aria-label", "Quitar " + (colorName || "color"));
     });
