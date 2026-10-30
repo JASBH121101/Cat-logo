@@ -48,10 +48,13 @@ test("AI review is grounded in browser measurements and ignores instructions emb
   assert.ok(productionAudit.includes("imageLoadStats"));
 });
 
-test("AI reviewer stops after daily quota exhaustion and marks remaining screenshots pending", () => {
-  assert.ok(reviewer.includes('failure.kind === "daily_quota_exhausted"'));
-  assert.ok(reviewer.includes('let quotaBlocked = false'));
-  assert.ok(reviewer.includes('failureKind: "quota_pending"'));
+test("AI reviewer stops the entire batch for quota or model-license blockers and reports pending captures", () => {
+  assert.ok(reviewer.includes("isBatchBlockingFailure(failureKind)"));
+  assert.ok(reviewer.includes('let batchBlockedBy = ""'));
+  assert.ok(reviewer.includes('failureKind: pendingKind'));
+  assert.ok(reviewer.includes('batchBlockedBy === "model_license_required" ? "license_required"'));
+  assert.ok(reviewer.includes('failureKind: "model_license_required"'));
+  assert.ok(reviewer.includes('licensePendingScreenshots'));
   assert.ok(reviewer.includes('status: reportStatus'));
 });
 test("production audit includes 2K and ultrawide desktops with controlled product-detail journeys", () => {
