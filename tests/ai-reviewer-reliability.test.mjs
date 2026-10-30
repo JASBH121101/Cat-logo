@@ -38,3 +38,19 @@ test("AI review is grounded in browser measurements and ignores instructions emb
   assert.ok(productionAudit.includes("async function loadLazyImages"));
   assert.ok(productionAudit.includes("imageLoadStats"));
 });
+
+test("AI reviewer stops after daily quota exhaustion and marks remaining screenshots pending", () => {
+  assert.ok(reviewer.includes('failure.kind === "daily_quota_exhausted"'));
+  assert.ok(reviewer.includes('let quotaBlocked = false'));
+  assert.ok(reviewer.includes('failureKind: "quota_pending"'));
+  assert.ok(reviewer.includes('status: reportStatus'));
+});
+test("production audit includes 2K and ultrawide desktops with controlled product-detail journeys", () => {
+  assert.ok(productionAudit.includes('name: "desktop-2560", width: 2560'));
+  assert.ok(productionAudit.includes('name: "ultrawide-3440", width: 3440'));
+  assert.ok(productionAudit.includes("viewport.auditDetails"));
+});
+test("AI reviewer samples real catalog screenshots at 2K and ultrawide resolutions", () => {
+  assert.ok(reviewer.includes("technology--desktop-2560--light.png"));
+  assert.ok(reviewer.includes("perfumery--ultrawide-3440--dark.png"));
+});
