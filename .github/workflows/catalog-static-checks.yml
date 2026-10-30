@@ -360,7 +360,7 @@ jobs:
           OPENAI_VISION_MODEL: ${{ vars.OPENAI_VISION_MODEL || 'gpt-5.4-mini' }}
           AI_PROVIDER_ORDER: ${{ vars.AI_PROVIDER_ORDER || 'cloudflare,openai' }}
         run: node tests/ai-visual-review.mjs
-      - name: Record that model review is not configured
+      - name: Record that AI visual review is disabled or not configured
         if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
         shell: bash
         run: |
@@ -370,7 +370,7 @@ jobs:
           
           Status: not run.
           
-          To enable optional screenshot review, configure the repository secret `OPENAI_API_KEY`, or configure both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. The static browser audit will still run without AI credentials. No screenshot is sent to an AI service unless at least one provider is configured.
+          To enable billable AI screenshot review, set the repository variable `ENABLE_AI_VISUAL_REVIEW` to `true` and configure `OPENAI_API_KEY`, or configure both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. The deterministic browser audit always runs. No screenshot is sent to an AI service unless the opt-in variable and at least one provider credential are configured.
           EOF
       - name: Upload production audit evidence
         if: always()
@@ -415,7 +415,7 @@ jobs:
           OPENAI_VISION_MODEL: ${{ vars.OPENAI_VISION_MODEL || 'gpt-5.4-mini' }}
           AI_PROVIDER_ORDER: ${{ vars.AI_PROVIDER_ORDER || 'cloudflare,openai' }}
         run: node tests/ai-visual-review.mjs
-      - name: Generate an evidence-only scorecard when AI review is not configured
+      - name: Generate an evidence-only scorecard when AI review is disabled
         if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
         env:
           QA_PROFILE: personal-experience
