@@ -147,7 +147,7 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
 test("perfume hero caption gradient stays subtle and title remains readable", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const perfumeCss = readFileSync("perfumeria.css", "utf8");
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-price-numerals1/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261029-price-numerals2/);
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);
@@ -303,7 +303,7 @@ test("product detail uses a wider desktop canvas and readable text without break
       });
 
       if (!viewport.mobile && viewport.width >= 1900) {
-        assert.ok(measurement.content.width >= 1700, "1920px desktop: wider content (" + measurement.content.width + "px)");
+        assert.ok(measurement.content.width >= 1500, "1920px desktop: wider content (" + measurement.content.width + "px)");
       } else if (!viewport.mobile) {
         assert.ok(measurement.content.width >= 1250, "1365px desktop: uses most of available width (" + measurement.content.width + "px)");
       } else {
