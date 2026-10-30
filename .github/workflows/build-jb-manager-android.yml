@@ -73,8 +73,16 @@ jobs:
           grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
           grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
           grep -Fq 'shared_library_match' functions/api/color-assistant.js
-          grep -Fq 'image: imageDataUrl' functions/api/color-assistant.js
+          grep -Fq 'inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace' functions/api/color-assistant.js
           echo "Latest main source includes persistent AI color knowledge, exact alias lookup, photo AI, shared library, and back-to-top controls."
+          test -s admin-gopartners-scanner.js
+          test -s admin-gopartners-scanner.css
+          test -s functions/api/jb-gopartners-scan.js
+          grep -Fq 'id="jb-gp-scanner"' admin.html
+          grep -Fq 'initGoPartnersScanner' admin.js
+          grep -Fq '/api/jb-gopartners-scan' admin-gopartners-scanner.js
+          grep -Fq 'openReviewFromScan' admin-provider.js
+          echo "Latest main source includes the JARVIS Go Partners scanner and private provider review bridge."
 
       - name: Diagnose direct and Cloudflare APK download completeness
         shell: bash
