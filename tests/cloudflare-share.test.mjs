@@ -72,7 +72,7 @@ test("renders perfume metadata using perfume_details", async () => {
   const html = await response.text();
   assert.equal(response.status, 200);
   assert.match(html, /JB Parfums · Amber Bloom/);
-  assert.match(html, /Familia: nicho/);
+  assert.match(html, /Familia: Nicho/);
   assert.match(html, /Eau de Parfum/);
   assert.match(html, /100 ml/);
   assert.match(html, /https:\/\/jb-collections\.pages\.dev\/perfumeria\/\?fragancia=/);
