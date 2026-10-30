@@ -198,6 +198,25 @@ try {
             naturalWidth:img.naturalWidth||0,naturalHeight:img.naturalHeight||0,
             renderedWidth:Math.round(img.getBoundingClientRect().width),renderedHeight:Math.round(img.getBoundingClientRect().height),
           }));
+          const contentRoot = [...document.querySelectorAll(".catalog-section, .perfume-catalog-section, #catalog-section, .perfume-category-section")].find(visible)
+            || document.querySelector("main") || body;
+          const contentRect = contentRoot.getBoundingClientRect();
+          const contentWidth = Math.round(contentRect.width);
+          const grid = [...document.querySelectorAll("#product-grid, #featured-grid, .perfume-page .product-grid, .perfume-page .featured-grid")].find(visible);
+          const gridRect = grid?.getBoundingClientRect();
+          const gridStyle = grid ? getComputedStyle(grid) : null;
+          const gridColumns = gridStyle ? gridStyle.gridTemplateColumns.split(/\\s+/).filter(Boolean).length : 0;
+          const firstCard = grid?.querySelector(".product-card");
+          const cardWidth = firstCard ? Math.round(firstCard.getBoundingClientRect().width) : null;
+          const contentMetrics = {
+            selector: contentRoot.id ? "#" + contentRoot.id : contentRoot.className || contentRoot.tagName.toLowerCase(),
+            width: contentWidth,
+            left: Math.round(contentRect.left),
+            viewportUtilizationPct: viewportWidth > 0 ? Math.round(contentWidth / viewportWidth * 100) : null,
+            gridWidth: gridRect ? Math.round(gridRect.width) : null,
+            gridColumns,
+            cardWidth,
+          };
           const regions=[...document.querySelectorAll("main > section, main > div")].filter(visible).map(el=>{
             const r=el.getBoundingClientRect(), text=(el.innerText||"").replace(/\s+/g," ").trim();
             return {selector:el.id?"#"+el.id:el.tagName.toLowerCase()+"."+String(el.className||"").trim().split(/\s+/).slice(0,2).join("."),top:Math.round(r.top+scrollY),bottom:Math.round(r.bottom+scrollY),height:Math.round(r.height),textLength:text.length};
@@ -211,7 +230,7 @@ try {
             url:location.href,title:document.title,documentWidth:width,viewportWidth,
             horizontalOverflow:Math.max(0,width-viewportWidth),
             theme:root.getAttribute("data-theme"),heading:document.querySelector("h1")?.innerText?.trim()||null,
-            visibleProductCards:cards.length,productImages:imgs,
+            visibleProductCards:cards.length,productImages:imgs,contentMetrics,
             brokenProductImages:imgs.filter(image=>!image.loaded).length,
             longBlankGaps:gaps,documentHeight:Math.max(root.scrollHeight,body.scrollHeight),
           };
