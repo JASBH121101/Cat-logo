@@ -78,6 +78,32 @@ test("renders perfume metadata using perfume_details", async () => {
   assert.match(html, /https:\/\/jb-collections\.pages\.dev\/perfumeria\/\?fragancia=/);
 });
 
+test("deduplicates perfume brand prefixes and formats family labels for social previews", async () => {
+  const product = {
+    id: PRODUCT_ID, name: "Afnan · 9 Am Dive Unisex", brand: "Afnan",
+    catalog_type: "perfumery", is_published: true,
+    price_usd: 62, price_nio: 2294,
+    image_url: "https://images.example/9am-dive.jpg"
+  };
+  globalThis.fetch = async input => {
+    const url = new URL(input);
+    if (url.pathname.endsWith("/products")) return Response.json([product]);
+    if (url.pathname.endsWith("/perfume_details")) {
+      return Response.json([{ family: "arabes", concentration: "EDP", volume_ml: 100 }]);
+    }
+    throw new Error("Unexpected Supabase table");
+  };
+  const response = await onRequest({ request: makeRequest("/api/share?catalog=perfumery&id=" + PRODUCT_ID), env: {} });
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /<title>Afnan · 9 Am Dive Unisex<\\/title>/);
+  assert.match(html, /og:title" content="Afnan · 9 Am Dive Unisex"/);
+  assert.doesNotMatch(html, /Afnan · Afnan · 9 Am Dive/);
+  assert.match(html, /Familia: Árabe/);
+  assert.doesNotMatch(html, /Familia: arabes/);
+  assert.match(html, /US\\$62/);
+});
+
 test("returns HEAD without a body", async () => {
   globalThis.fetch = async () => Response.json([{ id: PRODUCT_ID, name: "Phone X", catalog_type: "technology", is_published: true }]);
   const response = await onRequest({ request: makeRequest("/api/share?catalog=technology&id=" + PRODUCT_ID, "HEAD"), env: {} });
