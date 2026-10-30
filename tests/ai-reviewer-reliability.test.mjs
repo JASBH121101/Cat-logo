@@ -99,3 +99,30 @@ test("both public catalogs declare the 3360px 4K content cap and expose layout m
   assert.ok(perfumeryCss.includes("width: min(3360px"));
   assert.ok(perfumeryCss.includes("max-width: 3360px"));
 });
+
+
+test("AI visual review routes through Cloudflare first and falls back to OpenAI Responses vision", () => {
+  assert.ok(reviewer.includes('const OPENAI_MODEL = String(process.env.OPENAI_VISION_MODEL || "gpt-5.4-mini")'));
+  assert.ok(reviewer.includes('const endpoint = "https://api.openai.com/v1/responses"'));
+  assert.ok(reviewer.includes('{ type: "input_image", image_url:'));
+  assert.ok(reviewer.includes("getConfiguredAiProviders"));
+  assert.ok(reviewer.includes("callProviderModel(provider"));
+  assert.ok(reviewer.includes("isProviderCircuitBreakingFailure"));
+  assert.ok(reviewer.includes("providerCircuit.add(provider)"));
+  assert.ok(reviewer.includes("providerFallbacks"));
+});
+
+test("CI enables AI review when either OpenAI or a complete Cloudflare credential pair is configured", () => {
+  assert.equal((workflow.match(/AI_REVIEW_ENABLED:/g) || []).length, 2);
+  assert.equal((workflow.match(/secrets.OPENAI_API_KEY != ''/g) || []).length, 2);
+  assert.equal((workflow.match(/OPENAI_API_KEY: \$\{\{ secrets.OPENAI_API_KEY \}\}/g) || []).length, 2);
+  assert.ok(workflow.includes("OPENAI_VISION_MODEL"));
+  assert.ok(workflow.includes("AI_PROVIDER_ORDER"));
+  assert.ok(workflow.includes("No screenshot is sent to an AI service unless at least one provider is configured."));
+});
+
+test("deterministic production browser audit remains independent of optional AI credentials", () => {
+  assert.ok(workflow.includes("Audit live public pages without writing data"));
+  assert.ok(workflow.includes("Run: node tests/production-readonly-visual-audit.mjs") || workflow.includes("run: node tests/production-readonly-visual-audit.mjs"));
+  assert.ok(workflow.includes("if: ${{ env.AI_REVIEW_ENABLED == 'true' }}"));
+});
