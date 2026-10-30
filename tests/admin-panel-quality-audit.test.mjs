@@ -58,7 +58,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="light"\] body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary \.variant-config-chevron\s*\{[^}]*color:\s*#243b62\s*!important;[^}]*background-color:\s*#f1f5ff\s*!important/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261030-admin-density-typography1"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261030-admin-color-swatch1"));
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /html body\.admin-body \{[^}]*font-family:\s*"DM Sans"/);
   assert.match(accessibilityStyles, /html body\.admin-body :is\(h1,h2,h3,h4,[^}]*font-family:\s*"Manrope"/);
@@ -79,6 +79,13 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /html body\.admin-body footer\.site-footer span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.commission-summary-grid span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-updated,[\s\S]*?font-size:\s*12px\s*!important;/);
+
+  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-main \{[^}]*grid-template-columns:\s*24px minmax\(0, 1fr\) 54px 30px/);
+  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-tone-field input\[type="color"\] \{[^}]*width:\s*54px\s*!important;[^}]*height:\s*48px\s*!important;/);
+  assert.match(accessibilityStyles, /::-webkit-color-swatch-wrapper \{\s*padding:\s*0;/);
+  assert.match(accessibilityStyles, /::-webkit-color-swatch \{[^}]*border-radius:\s*7px/);
+  assert.match(accessibilityStyles, /::-moz-color-swatch \{[^}]*border-radius:\s*7px/);
+
   const storageArrowRule = accessibilityStyles.match(/html\[data-theme="dark"\] body\.admin-body select\.variant-storage-unit\s*\{[^}]*\}/)?.[0] || "";
   assert.match(storageArrowRule, /appearance:\s*none\s*!important;/);
   assert.match(storageArrowRule, /background-image:\s*url\("data:image\/svg\+xml,[\s\S]*?stroke='%23E1EAFF'/);
