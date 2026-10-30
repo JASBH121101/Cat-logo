@@ -10,6 +10,7 @@ const techHtml = readFileSync(new URL("../tecnologia/index.html", import.meta.ur
 test("JB Parfums desktop layout uses more of the available page width", () => {
   assert.match(perfCss, /@media\s*\(min-width:\s*1100px\)[\s\S]*?body\.perfume-page main\s*\{[^}]*max-width:\s*1720px/);
   assert.match(perfCss, /body\.perfume-page \.perfume-cross-promo\s*\{[^}]*width:\s*min\(1540px/);
+  assert.match(perfCss, /body\.perfume-page \.product-grid,[\\s\\S]*?justify-content:\s*center/);
   assert.match(perfCss, /body\.perfume-page \.perfume-category-section\s*\{[^}]*padding-top:\s*clamp\(28px/);
 });
 
@@ -25,5 +26,5 @@ test("JB TECH cross-catalog banner expands on desktop and remains responsive on 
   assert.match(techCss, /body\.technology-catalog \.technology-promo-banner\s*\{[^}]*width:\s*min\(1600px/);
   assert.match(techCss, /@media\s*\(max-width:\s*700px\)[\s\S]*?body\.technology-catalog \.technology-promo-banner\s*\{[^}]*width:\s*calc\(100%\s*-\s*28px\)/);
   assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-page-utilization1"));
-  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-page-utilization1"));
+  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-product-grid-centering1"));
 });
