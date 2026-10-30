@@ -254,8 +254,10 @@ const report = {
     scenarios: results.length,
     screenshots: results.length,
     journeyChecks: journeys.length,
+    journeyExpectedChecks: PERSONAL_EXPERIENCE_PROFILE.viewports.length * 9,
     journeyPassed,
     journeyFailures: journeys.length - journeyPassed,
+    journeyNotRun: Math.max(0, PERSONAL_EXPERIENCE_PROFILE.viewports.length * 9 - journeys.length),
     overflowScenarios: results.filter(item => item.metrics.horizontalOverflow >= 8).length,
     runtimeErrors: runtimeErrors.length,
     axeScans: axeScanCount,
@@ -285,7 +287,7 @@ const lines = [
   `- URL evaluada: ${report.targetUrl}`,
   `- Estados capturados: ${report.summary.screenshots}`,
   `- Viewports: ${PERSONAL_EXPERIENCE_PROFILE.viewports.map(item => item.name).join(", ")}`,
-  `- Recorridos: ${journeyPassed}/${journeys.length} correctos; ${report.summary.journeyFailures} fallidos`,
+  `- Recorridos: ${journeyPassed}/${report.summary.journeyExpectedChecks} correctos; ${report.summary.journeyFailures} fallidos; ${report.summary.journeyNotRun} no ejecutados`,
   `- Escenarios con desbordamiento: ${report.summary.overflowScenarios}`,
   `- Errores runtime: ${report.summary.runtimeErrors}`,
   `- Violaciones Axe únicas: ${report.summary.axeUniqueViolations} (${report.summary.axeViolationOccurrences} ocurrencias)`,
@@ -311,7 +313,7 @@ await writeFile(resolve(OUT_DIR, "personal-experience-qa-report.md"), lines.join
 if (process.env.GITHUB_STEP_SUMMARY) {
   await appendFile(process.env.GITHUB_STEP_SUMMARY, [
     "## Personal Experience QA — Declaraci-n", "",
-    `**Recorridos:** ${journeyPassed}/${journeys.length} · **Escenarios:** ${results.length} · **Overflow:** ${report.summary.overflowScenarios} · **Violaciones Axe:** ${axeFindings.length}`,
+    `**Recorridos:** ${journeyPassed}/${report.summary.journeyExpectedChecks} · **Escenarios:** ${results.length} · **Overflow:** ${report.summary.overflowScenarios} · **Violaciones Axe:** ${axeFindings.length}`,
     "", "| Dimensión | Método |", "|---|---|", ...dimensionRows.map(([name, source]) => `| ${name} | ${source} |`),
     "", "> La puntuación global se mantiene pendiente hasta completar el análisis visual y narrativo de IA.", "",
   ].join("\n") + "\n", "utf8");
