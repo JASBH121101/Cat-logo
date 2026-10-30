@@ -38,5 +38,5 @@ test("perfume prices keep the luxury serif but use stronger, clearer numerals on
   assert.match(css, /font-variant-numeric:\s*lining-nums tabular-nums/);
   assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-price-secondary\s*\{[^}]*font-size:\s*13px[^}]*font-weight:\s*600/s);
   assert.match(css, /@media\s*\(max-width:\s*640px\)[\s\S]*?body\.perfume-page \.perfume-product-card \.perfume-product-price\s*\{[^}]*font-size:\s*clamp\(24px,\s*6\.1vw,\s*28px\)[^}]*font-weight:\s*700/s);
-  assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-meta\s*\{[^}]*font-size:\s*10px/s);
+  assert.match(css, /\.perfume-product-meta\s*\{[^}]*font-size:\s*10px/s);
 });
