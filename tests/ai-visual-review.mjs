@@ -496,17 +496,22 @@ function makeSummary() {
     structuredReviews,
     recoveredReviews,
     invalidResponses,
-    failedReviews: errors.filter(item => !["quota_pending", "license_pending"].includes(item.failureKind)).length,
+    failedReviews: errors.filter(item => !["quota_pending", "license_pending", "provider_pending"].includes(item.failureKind)).length,
     reviewedScreenshots: structuredReviews + recoveredReviews,
     structuredRatePct: analyses.length ? Math.round(structuredReviews / CASES.length * 100) : 0,
     reportedIssues: analyses.reduce((sum, item) => sum + (item.review?.issues?.length || 0), 0),
     repeatedSentencesRemoved: analyses.reduce((sum, item) => sum + (item.duplicateSentenceCount || 0), 0),
     imageOptimizations: optimized.length,
     evidenceBackedReviews: analyses.filter(item => item.measuredEvidenceAvailable).length,
-    quotaExhausted: errors.some(item => item.failureKind === "daily_quota_exhausted"),
+    quotaExhausted: providerEvents.some(item => item.failureKind === "daily_quota_exhausted") || errors.some(item => item.failureKind === "daily_quota_exhausted"),
     quotaPendingScreenshots: errors.filter(item => item.failureKind === "quota_pending").length,
-    licenseRequired: errors.some(item => item.failureKind === "model_license_required"),
+    licenseRequired: providerEvents.some(item => item.failureKind === "model_license_required") || errors.some(item => item.failureKind === "model_license_required"),
     licensePendingScreenshots: errors.filter(item => item.failureKind === "license_pending").length,
+    openAiQuotaExhausted: providerEvents.some(item => item.provider === "openai" && item.failureKind === "billing_quota_exhausted"),
+    configuredProviders: AI_PROVIDERS,
+    providersUsed: [...new Set(analyses.map(item => item.provider).filter(Boolean))],
+    providersDisabled: [...providerCircuit],
+    providerFallbacks: analyses.filter(item => item.provider && AI_PROVIDERS.indexOf(item.provider) > 0).length,
     imageBytesSaved: optimized.reduce((sum, item) => sum + (imagePreparation(item).bytesSaved || 0), 0),
     httpRetryAttempts: analyses.reduce((sum, item) => sum + Math.max(0, (item.requestAttempts || 0) - (item.attempts || 0)), 0),
     averageReviewMs: successful.length ? Math.round(successful.reduce((sum, item) => sum + (item.durationMs || 0), 0) / successful.length) : null,
@@ -516,15 +521,15 @@ function makeSummary() {
 
 function markdown(report) {
   const s = report.summary;
-  const lines = [EXPERIENCE_PROFILE ? "# Declaraci-n — revisión de experiencia personal con IA" : "# JB Collections — revisión visual con IA", "", `- Estado: **${report.status}**`, `- Modelo: \`${MODEL}\``,
+  const lines = [EXPERIENCE_PROFILE ? "# Declaraci-n — revisión de experiencia personal con IA" : "# JB Collections — revisión visual con IA", "", `- Estado: **${report.status}**`, `- Proveedores configurados: \`${AI_PROVIDERS.join(", ") || "ninguno"}\``, `- Proveedores usados: \`${s.providersUsed.join(", ") || "ninguno"}\``, `- Modelos usados: \`${[...new Set(report.analyses.map(item => item.model).filter(Boolean))].join(", ") || "ninguno"}\``, `- Capturas atendidas por un proveedor de respaldo: ${s.providerFallbacks}`,
     `- Capturas solicitadas: ${s.requestedScreenshots}`, `- Respuestas API: ${s.apiResponses}`, `- JSON validados: ${s.structuredReviews}`,
     `- Recuperadas de prosa (requieren revisión): ${s.recoveredReviews}`, `- Respuestas inválidas: ${s.invalidResponses}`,
-    `- Errores de solicitud: ${s.failedReviews}`, `- Cuota diaria agotada: ${s.quotaExhausted ? "sí" : "no"}`, `- Capturas omitidas por cuota: ${s.quotaPendingScreenshots}`, `- Licencia de Meta requerida: ${s.licenseRequired ? "sí" : "no"}`, `- Capturas omitidas por licencia: ${s.licensePendingScreenshots}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Capturas con mediciones del navegador: ${s.evidenceBackedReviews}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
+    `- Errores de solicitud: ${s.failedReviews}`, `- Cuota diaria agotada: ${s.quotaExhausted ? "sí" : "no"}`, `- Capturas omitidas por cuota: ${s.quotaPendingScreenshots}`, `- Licencia de Meta requerida: ${s.licenseRequired ? "sí" : "no"}`, `- Capturas omitidas por licencia: ${s.licensePendingScreenshots}`, `- Cuota de OpenAI agotada: ${s.openAiQuotaExhausted ? "sí" : "no"}`, `- Proveedores desactivados: ${s.providersDisabled.join(", ") || "ninguno"}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Capturas con mediciones del navegador: ${s.evidenceBackedReviews}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
     `- Capturas que requieren revisión manual: ${s.manualReviewRequired}`, "",
     "> Cero incidencias no prueba que el diseño esté perfecto. Solo respuestas JSON válidas cuentan como revisión estructurada; toda recuperación de prosa necesita revisión humana.", "", "## Detalle por captura", ""];
   if (!report.analyses.length) lines.push("No se obtuvieron respuestas de la IA.", "");
   for (const a of report.analyses) {
-    lines.push(`### ${a.page} — ${a.viewport} — ${a.theme}`, "", `- Captura: \`${a.file}\``, `- Estado: **${a.parseStatus}**`, `- Intentos: ${a.attempts}`, "- Revisión manual requerida: **sí**");
+    lines.push(`### ${a.page} — ${a.viewport} — ${a.theme}`, "", `- Captura: \`${a.file}\``, `- Estado: **${a.parseStatus}**`, `- Proveedor / modelo: \`${a.provider || "—"} / ${a.model || "—"}\``, `- Proveedores probados: ${a.providersTried.join(", ")}`, `- Intentos: ${a.attempts}`, "- Revisión manual requerida: **sí**");
     if (a.parseReason) lines.push(`- Motivo: ${a.parseReason}`);
     if (a.retryError) lines.push(`- Error del segundo intento: ${a.retryError}`);
     if (a.review) {
@@ -570,7 +575,7 @@ async function writeExperienceEvaluation(aiStatus) {
     generatedAt: new Date().toISOString(), profile: "personal-experience",
     targetUrl: evidence.targetUrl || process.env.EXPERIENCE_AUDIT_URL || null,
     status: evaluation.complete && aiStatus === "completed" ? "completed" : "partial",
-    aiReviewStatus: aiStatus, model: MODEL, summary: evaluation, dimensions, strengths, issues,
+    aiReviewStatus: aiStatus, model: [...new Set(analyses.map(item => item.model).filter(Boolean))].join(", ") || null, providers: [...new Set(analyses.map(item => item.provider).filter(Boolean))], summary: evaluation, dimensions, strengths, issues,
     evidenceSummary: evidence.summary || {},
     limitations: [
       "El total es la media aritmética de cinco dimensiones y solo aparece cuando las cinco tienen evidencia.",
@@ -584,7 +589,7 @@ async function writeExperienceEvaluation(aiStatus) {
     "# Declaraci-n — informe de evaluación", "",
     `- Estado: **${result.status}**`,
     `- URL: ${result.targetUrl || "No registrada"}`,
-    `- Modelo: \`${MODEL}\``,
+    `- Modelos usados: \`${result.model || "sin respuesta"}\``, `- Proveedores usados: \`${result.providers.join(", ") || "ninguno"}\``,
     `- Resultado global: **${Number.isFinite(evaluation.overall) ? evaluation.overall + "/100" : "Pendiente — faltan dimensiones con evidencia"}**`,
     "", "| Dimensión | Resultado | Indicador | Fuente de evaluación |", "|---|---:|---|---|",
     ...dimensions.map(item => `| **${item.label}** | ${item.display} | ${item.bar} | ${item.source} |`),
@@ -618,19 +623,24 @@ async function writeExperienceEvaluation(aiStatus) {
 async function appendStepSummary(report) {
   if (!process.env.GITHUB_STEP_SUMMARY) return;
   const s = report.summary;
-  await appendFile(process.env.GITHUB_STEP_SUMMARY, ["## Revisión visual con IA", "", `**Estado: ${report.status}** — \`${MODEL}\``, "",
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, ["## Revisión visual con IA", "", `**Estado: ${report.status}** — proveedores: \`${s.providersUsed.join(", ") || "ninguno"}\``, "",
     "| Métrica | Resultado |", "|---|---:|", `| Capturas solicitadas | ${s.requestedScreenshots} |`, `| Respuestas API | ${s.apiResponses} |`,
     `| JSON validados | ${s.structuredReviews} |`, `| Recuperadas de prosa | ${s.recoveredReviews} |`, `| Respuestas inválidas | ${s.invalidResponses} |`,
-    `| Errores de solicitud | ${s.failedReviews} |`, `| Cuota diaria agotada | ${s.quotaExhausted ? "sí" : "no"} |`, `| Capturas omitidas por cuota | ${s.quotaPendingScreenshots} |`, `| Licencia de Meta requerida | ${s.licenseRequired ? "sí" : "no"} |`, `| Capturas omitidas por licencia | ${s.licensePendingScreenshots} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Revisiones con mediciones del navegador | ${s.evidenceBackedReviews} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
+    `| Errores de solicitud | ${s.failedReviews} |`, `| Cuota Cloudflare agotada | ${s.quotaExhausted ? "sí" : "no"} |`, `| Cuota OpenAI agotada | ${s.openAiQuotaExhausted ? "sí" : "no"} |`, `| Proveedores usados | ${s.providersUsed.join(", ") || "ninguno"} |`, `| Failovers | ${s.providerFallbacks} |`, `| Capturas omitidas por cuota | ${s.quotaPendingScreenshots} |`, `| Licencia de Meta requerida | ${s.licenseRequired ? "sí" : "no"} |`, `| Capturas omitidas por licencia | ${s.licensePendingScreenshots} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Revisiones con mediciones del navegador | ${s.evidenceBackedReviews} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
     "> El estado del job no equivale a una aprobación visual. Consultá el artefacto para evidencia por captura.", ""].join("\n") + "\n", "utf8");
 }
 
 await mkdir(ROOT, { recursive: true });
-if (!ACCOUNT_ID || !API_TOKEN) {
-  const status = { status: "skipped", reason: "AI review credentials are not configured", required: ["CLOUDFLARE_ACCOUNT_ID repository variable", "CLOUDFLARE_API_TOKEN repository secret"], note: "No screenshot was sent to an AI service." };
+if (!AI_PROVIDERS.length) {
+  const status = {
+    status: "skipped",
+    reason: "No visual-review AI provider is configured.",
+    required: ["OPENAI_API_KEY repository secret, or both CLOUDFLARE_ACCOUNT_ID variable and CLOUDFLARE_API_TOKEN secret"],
+    note: "No screenshot was sent to an AI service. Browser and accessibility checks remain independent.",
+  };
   await writeFile(resolve(ROOT, "ai-visual-review-status.json"), JSON.stringify(status, null, 2), "utf8");
-  await writeFile(resolve(ROOT, "ai-visual-review-status.md"), "# AI visual review\n\nStatus: **not run**. Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. No screenshot was sent to an AI service.\n", "utf8");
-  console.log("AI visual review skipped: credentials are not configured.");
+  await writeFile(resolve(ROOT, "ai-visual-review-status.md"), "# AI visual review\n\nStatus: **not run**. Configure `OPENAI_API_KEY` or both Cloudflare credentials. No screenshot was sent to an AI service.\n", "utf8");
+  console.log("AI visual review skipped: no provider credentials are configured.");
   if (EXPERIENCE_PROFILE) await writeExperienceEvaluation("not-run");
 } else {
   const evidenceIndex = await loadAuditEvidence();
@@ -638,7 +648,7 @@ if (!ACCOUNT_ID || !API_TOKEN) {
   let batchBlockMessage = "";
   for (const item of CASES) {
     if (batchBlockedBy) {
-      const pendingKind = batchBlockedBy === "daily_quota_exhausted" ? "quota_pending" : "license_pending";
+      const pendingKind = "provider_pending";
       const pendingMessage = batchBlockMessage || "La revisión se detuvo por un bloqueo de cuenta/modelo que afecta a todas las capturas.";
       errors.push({
         page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file,
@@ -652,8 +662,8 @@ if (!ACCOUNT_ID || !API_TOKEN) {
     } catch (error) {
       const failureKind = error.failureKind || "review_failed";
       errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, failureKind, message: safeText(error.message, 800), ...(error.imagePreparation ? { imagePreparation: error.imagePreparation } : {}) });
-      if (isBatchBlockingFailure(failureKind)) {
-        batchBlockedBy = failureKind;
+      if (providerCircuit.size >= AI_PROVIDERS.length) {
+        batchBlockedBy = "all_providers_unavailable";
         batchBlockMessage = safeText(error.message, 800);
       }
     }
@@ -661,14 +671,15 @@ if (!ACCOUNT_ID || !API_TOKEN) {
   const summary = makeSummary();
   const allStructured = summary.structuredReviews === CASES.length && errors.length === 0;
   const useful = summary.reviewedScreenshots > 0;
-  const reportStatus = batchBlockedBy === "daily_quota_exhausted" ? "quota_exhausted"
-    : batchBlockedBy === "model_license_required" ? "license_required"
+  const reportStatus = batchBlockedBy ? "provider_unavailable"
     : allStructured ? "completed" : useful ? "partial" : analyses.length ? "needs_manual_review" : "failed";
   const report = { generatedAt: new Date().toISOString(), status: reportStatus,
-    quotaMessage: batchBlockedBy === "daily_quota_exhausted" ? batchBlockMessage : null,
-    licenseMessage: batchBlockedBy === "model_license_required" ? batchBlockMessage : null,
-    model: MODEL,
-    reviewType: "advisory multimodal visual critique; license-aware batch stopping, image optimization, schema validation, targeted correction retry, transient request retries, prose recovery",
+    providerUnavailableMessage: batchBlockedBy ? batchBlockMessage : null,
+    models: [...new Set(analyses.map(item => item.model).filter(Boolean))],
+    providers: [...new Set(analyses.map(item => item.provider).filter(Boolean))],
+    providerOrder: AI_PROVIDERS,
+    providerEvents,
+    reviewType: "read-only multimodal visual critique; independent Playwright/Axe checks, Cloudflare-first/OpenAI-fallback routing, provider circuit breakers, image optimization, schema validation, targeted correction retries, transient request retries, prose recovery",
     summary, analyses, errors,
     safety: "Read-only multimodal critique; never auto-edit code. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
