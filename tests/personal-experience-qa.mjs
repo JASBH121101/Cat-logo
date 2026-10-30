@@ -6,7 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { PERSONAL_EXPERIENCE_PROFILE } from "./personal-experience-qa-profile.mjs";
 
 const BASE_URL = new URL(process.env.EXPERIENCE_AUDIT_URL || PERSONAL_EXPERIENCE_PROFILE.defaultUrl);
-if (BASE_URL.protocol !== "https:") throw new Error("Experience audit requires an HTTPS target URL.");
+if (BASE_URL.protocol !== "https:" || BASE_URL.hostname !== "jasbh121101.github.io" || BASE_URL.pathname !== "/Declaraci-n/") throw new Error("Experience audit is restricted to the canonical HTTPS Declaraci-n GitHub Pages URL.");
 const OUT_DIR = resolve("artifacts/production-visual-audit");
 const results = [];
 const journeys = [];
@@ -14,6 +14,7 @@ const findings = [];
 const runtimeErrors = [];
 const blockedWrites = [];
 const axeGroups = new Map();
+let axeScanCount = 0;
 let browser;
 
 function safeText(value, max = 700) {
@@ -85,21 +86,28 @@ async function capture(page, viewport, state, screenId) {
   const metrics = await collectMetrics(page);
   const shot = filename(state, viewport.name);
   await page.screenshot({ path: resolve(OUT_DIR, shot), fullPage: false, animations: "disabled" });
-  const axe = await new AxeBuilder({ page }).analyze();
-  for (const violation of axe.violations) {
-    const current = axeGroups.get(violation.id) || {
-      id: violation.id, impact: violation.impact || "minor", description: safeText(violation.description, 300),
-      help: safeText(violation.help, 300), helpUrl: violation.helpUrl || "", occurrences: 0,
-      affectedNodes: new Set(),
-    };
-    current.occurrences += 1;
-    for (const node of violation.nodes || []) {
-      const selector = (node.target || []).join(", ");
-      current.affectedNodes.add(selector || safeText(node.html, 180));
+  let axeViolations = [];
+  try {
+    const axe = await new AxeBuilder({ page }).analyze();
+    axeScanCount += 1;
+    axeViolations = axe.violations;
+    for (const violation of axe.violations) {
+      const current = axeGroups.get(violation.id) || {
+        id: violation.id, impact: violation.impact || "minor", description: safeText(violation.description, 300),
+        help: safeText(violation.help, 300), helpUrl: violation.helpUrl || "", occurrences: 0,
+        affectedNodes: new Set(),
+      };
+      current.occurrences += 1;
+      for (const node of violation.nodes || []) {
+        const selector = (node.target || []).join(", ");
+        current.affectedNodes.add(selector || safeText(node.html, 180));
+      }
+      axeGroups.set(violation.id, current);
     }
-    axeGroups.set(violation.id, current);
+  } catch (error) {
+    runtimeErrors.push({ viewport: viewport.name, type: "axe-scan-failed", message: safeText(error?.message || error) });
   }
-  results.push({ page: state, viewport: viewport.name, screenshot: shot, metrics, axeViolations: axe.violations.length });
+  results.push({ page: state, viewport: viewport.name, screenshot: shot, metrics, axeViolations: axeViolations.length });
   if (metrics.horizontalOverflow >= 8) {
     findings.push({ severity: metrics.horizontalOverflow >= 24 ? "high" : "medium", page: state, viewport: viewport.name,
       type: "horizontal-overflow", evidence: `La página excede el viewport por ${metrics.horizontalOverflow}px.`,
@@ -248,7 +256,7 @@ const report = {
     journeyFailures: journeys.length - journeyPassed,
     overflowScenarios: results.filter(item => item.metrics.horizontalOverflow >= 8).length,
     runtimeErrors: runtimeErrors.length,
-    axeScans: results.length,
+    axeScans: axeScanCount,
     axeUniqueViolations: axeFindings.length,
     axeViolationOccurrences: axeFindings.reduce((sum, item) => sum + item.occurrences, 0),
     axeByImpact,
