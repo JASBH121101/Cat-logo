@@ -3294,3 +3294,49 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     letter-spacing: -.02em;
   }
 }
+
+
+/* 2026-10-30 · Large desktop and ultrawide support for JB Parfums. */
+@media (min-width: 1600px) {
+  body.perfume-page main {
+    width: min(2240px, calc(100% - 96px));
+    max-width: 2240px;
+    padding-inline: clamp(36px, 2.8vw, 64px);
+  }
+
+  body.perfume-page .perfume-cross-promo {
+    width: min(2040px, calc(100% - 112px));
+  }
+
+  body.perfume-page .perfume-contact {
+    width: min(2040px, 100%);
+    margin-inline: auto;
+  }
+
+  body.perfume-page .product-grid,
+  body.perfume-page .featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 320px));
+    justify-content: center;
+    align-content: start;
+    gap: clamp(18px, 1.15vw, 28px);
+  }
+}
+
+@media (min-width: 2560px) {
+  body.perfume-page main {
+    width: min(2680px, calc(100% - 144px));
+    max-width: 2680px;
+    padding-inline: 72px;
+  }
+
+  body.perfume-page .perfume-cross-promo,
+  body.perfume-page .perfume-contact {
+    width: min(2440px, 100%);
+  }
+
+  body.perfume-page .product-grid,
+  body.perfume-page .featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 350px));
+    gap: 24px;
+  }
+}
