@@ -32,9 +32,6 @@ En el repositorio, abrí **Settings → Secrets and variables → Actions**. La 
 | Variable | Predeterminado | Función |
 |---|---|---|
 | `ENABLE_AI_VISUAL_REVIEW` | `false` | Interruptor de consentimiento para ejecutar revisiones que consumen cuota de IA |
-
-| Variable | Predeterminado | Función |
-|---|---|---|
 | `OPENAI_VISION_MODEL` | `gpt-5.4-mini` | Modelo OpenAI con entrada visual |
 | `AI_PROVIDER_ORDER` | `cloudflare,openai` | Orden de prioridad; también se puede usar `openai,cloudflare` |
 
