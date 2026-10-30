@@ -3,7 +3,6 @@ package com.jbcollections.manager.v2;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
@@ -19,10 +18,10 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 @CapacitorPlugin(name = "GoPartnersScanner")
 public class GoPartnersScannerPlugin extends Plugin {
-    private static final String PREFS = "jb_go_partners_screen_scan";
     private static final String ACTION_START = "com.jbcollections.manager.v2.GP_SCAN_START";
     private static final String ACTION_STOP = "com.jbcollections.manager.v2.GP_SCAN_STOP";
     private static final String EXTRA_RESULT_CODE = "projection_result_code";
@@ -31,7 +30,7 @@ public class GoPartnersScannerPlugin extends Plugin {
 
     @PluginMethod
     public void startScan(PluginCall call) {
-        if (isRunning()) {
+        if (GoPartnersScanSession.isRunning()) {
             JSObject state = sessionState();
             state.put("started", true);
             state.put("alreadyRunning", true);
@@ -58,7 +57,7 @@ public class GoPartnersScannerPlugin extends Plugin {
             return;
         }
         try {
-            getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+            GoPartnersScanSession.reset();
             Intent service = new Intent(getContext(), GoPartnersCaptureService.class);
             service.setAction(ACTION_START);
             service.putExtra(EXTRA_RESULT_CODE, result.getResultCode());
@@ -70,6 +69,7 @@ public class GoPartnersScannerPlugin extends Plugin {
             started.put("message", "Permiso concedido. La captura local está iniciándose.");
             call.resolve(started);
         } catch (Exception error) {
+            GoPartnersScanSession.setFlags(false, false);
             JSObject failed = new JSObject();
             failed.put("started", false);
             failed.put("message", "No se pudo iniciar el escáner: " + safeMessage(error));
@@ -90,10 +90,7 @@ public class GoPartnersScannerPlugin extends Plugin {
 
     private void resolveWhenStopped(PluginCall call, int attempt) {
         if (call == null) return;
-        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        boolean running = prefs.getBoolean("running", false);
-        boolean processing = prefs.getBoolean("processing", false);
-        if ((!running && !processing) || attempt >= 24) {
+        if ((!GoPartnersScanSession.isRunning() && !GoPartnersScanSession.isProcessing()) || attempt >= 24) {
             call.resolve(sessionState());
             return;
         }
@@ -102,49 +99,37 @@ public class GoPartnersScannerPlugin extends Plugin {
 
     @PluginMethod
     public void clearScan(PluginCall call) {
-        if (isRunning()) {
-            call.reject("Primero detené la captura antes de borrar la sesión.");
+        if (GoPartnersScanSession.isRunning() || GoPartnersScanSession.isProcessing()) {
+            call.reject("Primero detené la captura y esperá a que termine el OCR.");
             return;
         }
-        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        if (prefs.getBoolean("processing", false)) {
-            call.reject("El OCR local todavía está terminando de procesar la última pantalla.");
-            return;
-        }
-        prefs.edit().clear().apply();
+        GoPartnersScanSession.reset();
         JSObject result = new JSObject();
         result.put("cleared", true);
         call.resolve(result);
     }
 
     private void requestStop() {
+        if (!GoPartnersScanSession.isRunning() && !GoPartnersScanSession.isProcessing()) return;
         try {
             Intent stop = new Intent(getContext(), GoPartnersCaptureService.class);
             stop.setAction(ACTION_STOP);
             getContext().startService(stop);
         } catch (Exception ignored) {
             getContext().stopService(new Intent(getContext(), GoPartnersCaptureService.class));
-            getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .putBoolean("running", false).apply();
+            GoPartnersScanSession.setFlags(false, false);
         }
-    }
-
-    private boolean isRunning() {
-        return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("running", false);
     }
 
     private JSObject sessionState() {
-        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        JSONObject snapshot = GoPartnersScanSession.snapshot();
         JSObject state = new JSObject();
-        state.put("running", prefs.getBoolean("running", false));
-        state.put("processing", prefs.getBoolean("processing", false));
-        state.put("truncated", prefs.getBoolean("truncated", false));
-        state.put("observationsCount", prefs.getInt("observations_count", 0));
-        try {
-            state.put("observations", new JSONArray(prefs.getString("observations", "[]")));
-        } catch (Exception ignored) {
-            state.put("observations", new JSONArray());
-        }
+        state.put("running", snapshot.optBoolean("running", false));
+        state.put("processing", snapshot.optBoolean("processing", false));
+        state.put("truncated", snapshot.optBoolean("truncated", false));
+        state.put("observationsCount", snapshot.optInt("observationsCount", 0));
+        JSONArray observations = snapshot.optJSONArray("observations");
+        state.put("observations", observations == null ? new JSONArray() : observations);
         return state;
     }
 
