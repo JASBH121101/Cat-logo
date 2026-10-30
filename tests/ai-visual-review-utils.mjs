@@ -3,7 +3,20 @@ const str = (v, max = 1000) => typeof v === "string" ? v.trim().slice(0, max) : 
 
 export function getModelText(payload) {
   const result = payload?.result ?? payload;
-  return str(result?.response ?? result?.output_text ?? result?.result ?? (typeof result === "string" ? result : ""), 12000);
+  const candidates = [
+    result?.response,
+    result?.output_text,
+    result?.result,
+    payload?.response,
+    typeof result === "string" ? result : null,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return str(candidate, 16000);
+    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+      try { return JSON.stringify(candidate).slice(0, 16000); } catch {}
+    }
+  }
+  return "";
 }
 
 function parseJson(text) {
@@ -39,16 +52,28 @@ export function validateReview(value) {
   const issues = [];
   for (const [i, item] of value.issues.entries()) {
     if (!item || typeof item !== "object" || Array.isArray(item)) return { valid: false, reason: `issues[${i}] is not an object` };
-    const issue = { severity: str(item.severity, 20).toLowerCase(), region: str(item.region, 180), evidence: str(item.evidence, 700), recommendation: str(item.recommendation, 700), confidence: Number(item.confidence) };
+    const rawConfidence = item.confidence;
+    const confidence = rawConfidence === null || rawConfidence === undefined || rawConfidence === ""
+      ? null
+      : Number(rawConfidence);
+    const issue = {
+      severity: str(item.severity, 20).toLowerCase(),
+      region: str(item.region, 180),
+      evidence: str(item.evidence, 700),
+      recommendation: str(item.recommendation, 700),
+      confidence,
+    };
     if (!SEVERITIES.has(issue.severity)) return { valid: false, reason: `issues[${i}] has invalid severity` };
     if (!issue.region || !issue.evidence || !issue.recommendation) return { valid: false, reason: `issues[${i}] lacks region, evidence, or recommendation` };
-    if (!Number.isFinite(issue.confidence) || issue.confidence < 0 || issue.confidence > 1) return { valid: false, reason: `issues[${i}] confidence must be 0-1` };
-    issues.push({ ...issue, confidence: Math.round(issue.confidence * 100) / 100 });
+    if (confidence !== null && (!Number.isFinite(confidence) || confidence < 0 || confidence > 1)) {
+      return { valid: false, reason: `issues[${i}] confidence must be 0-1 or null` };
+    }
+    issues.push({ ...issue, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 });
   }
   const score = value.visual_score ?? value.visualScore ?? null;
-  if (score !== null && (!Number.isFinite(Number(score)) || Number(score) < 0 || Number(score) > 100)) return { valid: false, reason: "visual_score must be 0-100" };
+  if (score !== null && (!Number.isFinite(Number(score)) || !Number.isInteger(Number(score)) || Number(score) < 1 || Number(score) > 100)) return { valid: false, reason: "visual_score must be an integer from 1 to 100; use null when evidence is insufficient" };
   const narrativeScore = value.narrative_score ?? value.narrativeScore ?? null;
-  if (narrativeScore !== null && (!Number.isFinite(Number(narrativeScore)) || Number(narrativeScore) < 0 || Number(narrativeScore) > 100)) return { valid: false, reason: "narrative_score must be 0-100" };
+  if (narrativeScore !== null && (!Number.isFinite(Number(narrativeScore)) || !Number.isInteger(Number(narrativeScore)) || Number(narrativeScore) < 1 || Number(narrativeScore) > 100)) return { valid: false, reason: "narrative_score must be an integer from 1 to 100; use null when evidence is insufficient" };
   const list = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string").slice(0, 5).map((x) => str(x, 300)) : [];
   return { valid: true, review: { visual_score: score === null ? null : Number(score), narrative_score: narrativeScore === null ? null : Number(narrativeScore), overall_assessment: assessment, strengths: list(value.strengths), issues: deduplicateIssues(issues), manual_review_required: true, limitations: list(value.limitations) } };
 }
