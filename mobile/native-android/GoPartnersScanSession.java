@@ -1,0 +1,85 @@
+package com.jbcollections.manager.v2;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+
+public final class GoPartnersScanSession {
+    private static final Object LOCK = new Object();
+    private static final int MAX_OBSERVATIONS = 80;
+    private static JSONArray observations = new JSONArray();
+    private static boolean running = false;
+    private static boolean processing = false;
+    private static boolean truncated = false;
+
+    private GoPartnersScanSession() {}
+
+    public static void reset() {
+        synchronized (LOCK) {
+            observations = new JSONArray();
+            running = false;
+            processing = false;
+            truncated = false;
+        }
+    }
+
+    public static void setFlags(boolean isRunning, boolean isProcessing) {
+        synchronized (LOCK) {
+            running = isRunning;
+            processing = isProcessing;
+        }
+    }
+
+    public static boolean isRunning() {
+        synchronized (LOCK) { return running; }
+    }
+
+    public static boolean isProcessing() {
+        synchronized (LOCK) { return processing; }
+    }
+
+    public static void appendObservation(String text, long capturedAt) {
+        if (text == null || text.trim().length() < 8) return;
+        synchronized (LOCK) {
+            if (!running) return;
+            if (observations.length() >= MAX_OBSERVATIONS) {
+                truncated = true;
+                return;
+            }
+            try {
+                JSONObject item = new JSONObject();
+                item.put("index", observations.length() + 1);
+                item.put("capturedAt", isoDate(capturedAt));
+                item.put("text", text);
+                observations.put(item);
+            } catch (JSONException ignored) {
+            }
+        }
+    }
+
+    public static JSONObject snapshot() {
+        synchronized (LOCK) {
+            JSONObject result = new JSONObject();
+            try {
+                result.put("running", running);
+                result.put("processing", processing);
+                result.put("truncated", truncated);
+                result.put("observationsCount", observations.length());
+                result.put("observations", new JSONArray(observations.toString()));
+            } catch (JSONException ignored) {
+            }
+            return result;
+        }
+    }
+
+    private static String isoDate(long time) {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format.format(new Date(time));
+    }
+}
