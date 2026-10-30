@@ -20,7 +20,11 @@ export function getModelText(payload) {
 }
 
 function parseJsonCandidate(text) {
-  const source = String(text || "").trim().replace(/^\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`\s*$/i, "").trim();
+  const fence = String.fromCharCode(96).repeat(3);
+  const source = String(text || "").trim()
+    .replace(new RegExp("^" + fence + "(?:json)?\\s*", "i"), "")
+    .replace(new RegExp("\\s*" + fence + "\\s*$", "i"), "")
+    .trim();
   try {
     const value = JSON.parse(source);
     return value && typeof value === "object" && !Array.isArray(value) ? value : null;
@@ -31,7 +35,9 @@ function parseJsonCandidate(text) {
 
 function parseJson(text) {
   const source = String(text || "").trim();
-  const fenced = [...source.matchAll(/\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`/gi)];
+  const fence = String.fromCharCode(96).repeat(3);
+  const fencedPattern = new RegExp(fence + "(?:json)?\\s*([\\s\\S]*?)\\s*" + fence, "gi");
+  const fenced = [...source.matchAll(fencedPattern)];
   for (const match of fenced.reverse()) {
     const value = parseJsonCandidate(match[1]);
     if (value) return value;
