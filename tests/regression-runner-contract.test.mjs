@@ -59,3 +59,14 @@ test("workflow exposes a separate read-only Personal Experience QA profile", () 
   assert.match(workflow, /QA_PROFILE: personal-experience/);
   assert.match(workflow, /personal-experience-qa-evidence/);
 });
+
+
+test("production visual audit runs even when the ecommerce validation job fails", () => {
+  const start = workflow.indexOf("  production-visual-audit:");
+  const end = workflow.indexOf("  personal-experience-audit:", start);
+  assert.ok(start >= 0 && end > start, "production visual audit job must remain configured");
+  const section = workflow.slice(start, end);
+  assert.doesNotMatch(section, /^\s*needs:\s*validate\s*$/m);
+  assert.match(section, /Read-only production visual audit/);
+  assert.match(section, /tests\/production-readonly-visual-audit\.mjs/);
+});
