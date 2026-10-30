@@ -4174,3 +4174,63 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
     border-radius: 13px;
   }
 }
+
+
+/* 2026-10-30 · Large desktop and ultrawide support for JB TECH. */
+@media (min-width: 1200px) {
+  body.technology-catalog .catalog-section {
+    width: min(1900px, calc(100% - 64px));
+    max-width: 1900px;
+  }
+
+  body.technology-catalog .technology-promo-banner,
+  body.technology-catalog .benefit-row {
+    max-width: 1900px;
+  }
+}
+
+@media (min-width: 1600px) {
+  body.technology-catalog .catalog-section {
+    width: min(2240px, calc(100% - 96px));
+    max-width: 2240px;
+    padding-inline: clamp(36px, 2.8vw, 64px);
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(2140px, calc(100% - 112px));
+  }
+
+  body.technology-catalog .benefit-row {
+    width: min(2140px, calc(100% - 96px));
+  }
+
+  body.technology-catalog #product-grid.product-grid,
+  body.technology-catalog #featured-grid.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 330px));
+    justify-content: center;
+    align-content: start;
+    gap: clamp(18px, 1.15vw, 28px);
+  }
+}
+
+@media (min-width: 2560px) {
+  body.technology-catalog .catalog-section {
+    width: min(2680px, calc(100% - 144px));
+    max-width: 2680px;
+    padding-inline: 72px;
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(2520px, calc(100% - 160px));
+  }
+
+  body.technology-catalog .benefit-row {
+    width: min(2520px, calc(100% - 144px));
+  }
+
+  body.technology-catalog #product-grid.product-grid,
+  body.technology-catalog #featured-grid.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 350px));
+    gap: 24px;
+  }
+}
