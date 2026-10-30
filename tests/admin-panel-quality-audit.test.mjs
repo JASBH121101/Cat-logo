@@ -58,7 +58,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="light"\] body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary \.variant-config-chevron\s*\{[^}]*color:\s*#243b62\s*!important;[^}]*background-color:\s*#f1f5ff\s*!important/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261030-admin-color-swatch1"));
+  assert.ok(html.includes("admin-accessibility.css?v=20261030-inventory-refresh1"));
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /html body\.admin-body \{[^}]*font-family:\s*"DM Sans"/);
   assert.match(accessibilityStyles, /html body\.admin-body :is\(h1,h2,h3,h4,[^}]*font-family:\s*"Manrope"/);
