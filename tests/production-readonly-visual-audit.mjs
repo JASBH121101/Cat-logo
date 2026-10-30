@@ -6,9 +6,11 @@ import { analyzeImageOccupancy } from "./visual-image-quality-policy.mjs";
 const BASE_URL = new URL(process.env.VISUAL_AUDIT_BASE_URL || "https://jb-collections.pages.dev");
 const OUT_DIR = resolve("artifacts/production-visual-audit");
 const VIEWPORTS = [
-  { name: "mobile-390", width: 390, height: 844, mobile: true },
-  { name: "desktop-1365", width: 1365, height: 900, mobile: false },
-  { name: "desktop-1920", width: 1920, height: 1080, mobile: false },
+  { name: "mobile-390", width: 390, height: 844, mobile: true, auditDetails: true },
+  { name: "desktop-1365", width: 1365, height: 900, mobile: false, auditDetails: true },
+  { name: "desktop-1920", width: 1920, height: 1080, mobile: false, auditDetails: false },
+  { name: "desktop-2560", width: 2560, height: 1440, mobile: false, auditDetails: true },
+  { name: "ultrawide-3440", width: 3440, height: 1440, mobile: false, auditDetails: false },
 ];
 const THEMES = ["light", "dark"];
 const PAGES = [
@@ -233,7 +235,7 @@ try {
 
         // On actual published catalogs, open a real public product once per mobile/desktop theme.
         // All non-read HTTP requests remain intercepted, so view telemetry cannot write to the database.
-        if (site.products && viewport.width !== 1920) {
+        if (site.products && viewport.auditDetails) {
           const link = page.locator(site.products).first();
           let count = 0;
           try { await link.waitFor({state:"visible",timeout:4500}); count = await page.locator(site.products).count(); } catch {}
