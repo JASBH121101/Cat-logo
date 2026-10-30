@@ -95,8 +95,8 @@ jobs:
       - name: Verify regression runner inventory
         run: node --test tests/regression-runner-contract.test.mjs
 
-      - name: Test AI visual review parser and schema validation
-        run: node --test tests/ai-visual-review-utils.test.mjs
+      - name: Test AI visual review parser, schema and reliability safeguards
+        run: node --test tests/ai-visual-review-utils.test.mjs tests/ai-reviewer-reliability.test.mjs
 
       - name: Run automated regression suite in parallel groups
         env:
