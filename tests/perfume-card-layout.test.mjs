@@ -34,9 +34,9 @@ test("perfume cards align action buttons to one baseline and use identical dimen
 });
 
 test("perfume prices keep the luxury serif but use stronger, clearer numerals on mobile and desktop", () => {
-  assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-price\s*\{[^}]*font-family:\s*"Playfair Display"[^}]*font-size:\s*clamp\(23px,\s*1\.65vw,\s*27px\)[^}]*font-weight:\s*700/s);
+  assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-price\s*\{[^}]*font-family:\s*"Playfair Display"[^}]*font-size:\s*clamp\(25px,\s*1\.8vw,\s*29px\)[^}]*font-weight:\s*700/s);
   assert.match(css, /font-variant-numeric:\s*lining-nums tabular-nums/);
-  assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-price-secondary\s*\{[^}]*font-size:\s*12px[^}]*font-weight:\s*600/s);
-  assert.match(css, /@media\s*\(max-width:\s*640px\)[\s\S]*?body\.perfume-page \.perfume-product-card \.perfume-product-price\s*\{[^}]*font-size:\s*clamp\(21px,\s*5\.4vw,\s*25px\)[^}]*font-weight:\s*700/s);
+  assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-price-secondary\s*\{[^}]*font-size:\s*13px[^}]*font-weight:\s*600/s);
+  assert.match(css, /@media\s*\(max-width:\s*640px\)[\s\S]*?body\.perfume-page \.perfume-product-card \.perfume-product-price\s*\{[^}]*font-size:\s*clamp\(24px,\s*6\.1vw,\s*28px\)[^}]*font-weight:\s*700/s);
   assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-meta\s*\{[^}]*font-size:\s*10px/s);
 });
