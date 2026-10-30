@@ -213,40 +213,41 @@ export function safeText(value, max = 1000) { return str(value, max).replace(/[\
 export function getConfiguredAiProviders({
   cloudflareAccountId = "",
   cloudflareApiToken = "",
-  openaiApiKey = "",
-  order = "cloudflare,openai",
+  geminiApiKey = "",
+  order = "cloudflare,gemini",
 } = {}) {
   const configured = new Set();
   if (String(cloudflareAccountId).trim() && String(cloudflareApiToken).trim()) configured.add("cloudflare");
-  if (String(openaiApiKey).trim()) configured.add("openai");
-  const requested = String(order || "cloudflare,openai")
+  if (String(geminiApiKey).trim()) configured.add("gemini");
+  const requested = String(order || "cloudflare,gemini")
     .split(",")
     .map(value => value.trim().toLowerCase())
-    .filter(value => value === "cloudflare" || value === "openai");
-  return [...new Set([...requested, "cloudflare", "openai"])].filter(provider => configured.has(provider));
+    .filter(value => value === "cloudflare" || value === "gemini");
+  return [...new Set([...requested, "cloudflare", "gemini"])].filter(provider => configured.has(provider));
 }
 
-export function classifyOpenAIFailure({ status = 0, payload = null, bodyText = "" } = {}) {
+export function classifyGeminiFailure({ status = 0, payload = null, bodyText = "" } = {}) {
   const detail = [
     payload?.error?.message,
-    payload?.error?.code,
-    payload?.error?.type,
+    payload?.error?.status,
+    payload?.error?.details?.map?.(item => item?.reason || item?.message).join(" "),
     bodyText,
   ].filter(Boolean).join(" ").toLowerCase();
-  const code = String(payload?.error?.code || "").toLowerCase();
+  const code = String(payload?.error?.status || "").toUpperCase();
 
-  if (["insufficient_quota", "billing_hard_limit_reached", "credit_balance_exhausted"].includes(code)
-    || /insufficient quota|billing hard limit|credit balance exhausted|exceeded your current quota/.test(detail)) {
-    return { kind: "billing_quota_exhausted", retryable: false };
-  }
-  if (status === 401 || status === 403 || /invalid_api_key|incorrect api key|authentication/.test(detail)) {
+  if (status === 401 || /api key not valid|invalid api key|unauthenticated/.test(detail)) {
     return { kind: "authentication_error", retryable: false };
   }
-  if (status === 404 || /model_not_found|model .* not found|does not exist/.test(detail)) {
+  if (status === 403 || /permission_denied|free tier.*unavailable|project.*restricted|billing.*required|access denied/.test(detail)) {
+    return { kind: "access_restricted", retryable: false };
+  }
+  if (status === 404 || /model .* not found|not found for api version|unsupported model/.test(detail)) {
     return { kind: "model_unavailable", retryable: false };
   }
+  if (status === 429 || code === "RESOURCE_EXHAUSTED" || /quota exceeded|rate limit|resource_exhausted/.test(detail)) {
+    return { kind: "free_quota_exhausted", retryable: false };
+  }
   if (status === 408) return { kind: "timeout", retryable: true };
-  if (status === 429) return { kind: "rate_limited", retryable: true };
   if (status >= 500) return { kind: "server_error", retryable: true };
   if (status >= 400) return { kind: "api_rejected", retryable: false };
   return { kind: "unknown", retryable: false };
@@ -256,33 +257,21 @@ export function isProviderCircuitBreakingFailure(provider, failureKind) {
   if (provider === "cloudflare") {
     return ["daily_quota_exhausted", "model_license_required"].includes(String(failureKind || ""));
   }
-  if (provider === "openai") {
-    return ["billing_quota_exhausted", "authentication_error", "model_unavailable"].includes(String(failureKind || ""));
+  if (provider === "gemini") {
+    return ["free_quota_exhausted", "authentication_error", "access_restricted", "model_unavailable"].includes(String(failureKind || ""));
   }
   return false;
 }
 
-export function getOpenAIResponseText(payload) {
-  if (typeof payload?.output_text === "string" && payload.output_text.trim()) {
-    return str(payload.output_text, 16000);
-  }
-  const output = Array.isArray(payload?.output) ? payload.output : [];
+export function getGeminiResponseText(payload) {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
   const fragments = [];
-  for (const item of output) {
-    if (item?.type !== "message" || !Array.isArray(item.content)) continue;
-    for (const part of item.content) {
-      if ((part?.type === "output_text" || part?.type === "text") && typeof part.text === "string") {
-        fragments.push(part.text);
-      }
+  for (const candidate of candidates) {
+    const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [];
+    for (const part of parts) {
+      if (typeof part?.text === "string" && part.text.trim()) fragments.push(part.text);
     }
+    if (fragments.length) break;
   }
-  if (fragments.length) return str(fragments.join("\n"), 16000);
-  const choices = Array.isArray(payload?.choices) ? payload.choices : [];
-  const content = choices[0]?.message?.content;
-  if (typeof content === "string") return str(content, 16000);
-  if (Array.isArray(content)) {
-    return str(content.filter(part => typeof part?.text === "string").map(part => part.text).join("\n"), 16000);
-  }
-  return "";
+  return str(fragments.join("\n"), 16000);
 }
-
