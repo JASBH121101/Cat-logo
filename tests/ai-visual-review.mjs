@@ -500,7 +500,6 @@ if (!ACCOUNT_ID || !API_TOKEN) {
   if (EXPERIENCE_PROFILE) await writeExperienceEvaluation("not-run");
 } else {
   const evidenceIndex = await loadAuditEvidence();
-  const evidenceIndex = await loadAuditEvidence();
   let quotaBlocked = false;
   let quotaMessage = "";
   for (const item of CASES) {
