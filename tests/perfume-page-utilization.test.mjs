@@ -35,5 +35,5 @@ test("both public catalogs expand beyond 1720px on large desktop and ultrawide s
   assert.ok(perfCss.includes("@media (min-width: 2560px)"));
   assert.ok(perfCss.includes("width: min(2680px"));
   assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-desktop4k1"));
-  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-desktop4k1"));
+  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-desktop-type12"));
 });
