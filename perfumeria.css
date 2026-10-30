@@ -3340,3 +3340,27 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     gap: 24px;
   }
 }
+
+
+/* 2026-10-30 · 4K UHD and 21:9 ultrawide desktop expansion. */
+@media (min-width: 2560px) {
+  body.perfume-page main {
+    width: min(3360px, calc(100% - 144px));
+    max-width: 3360px;
+    padding-inline: 72px;
+  }
+
+  body.perfume-page .perfume-cross-promo,
+  body.perfume-page .perfume-contact {
+    width: min(3200px, calc(100% - 160px));
+    max-width: 3200px;
+  }
+
+  body.perfume-page .product-grid,
+  body.perfume-page .featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 350px));
+    justify-content: center;
+    align-content: start;
+    gap: 24px;
+  }
+}
