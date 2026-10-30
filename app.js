@@ -1455,6 +1455,9 @@ function renderProductGallery(product, images, caption = "") {
 
   return `
     <div class="dialog-gallery-main" data-inline-gallery>
+      <div class="dialog-gallery-backdrop" aria-hidden="true">
+        <img data-gallery-backdrop src="${escapeHtml(photoUrls[0])}" alt="" loading="eager" decoding="async">
+      </div>
       ${multiple ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
       <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
         <img id="dialog-main-image" class="dialog-main-image"
@@ -1814,6 +1817,8 @@ dialogContent.addEventListener("click", event => {
   const mainImage = dialogContent.querySelector("#dialog-main-image");
   if (mainImage) {
     mainImage.src = thumbnail.dataset.galleryImage;
+    const backdropImage = mainImage.closest(".dialog-gallery-main")?.querySelector("[data-gallery-backdrop]");
+    if (backdropImage) backdropImage.src = thumbnail.dataset.galleryImage;
     const productName = dialogContent.querySelector(".dialog-detail .dialog-product-title, .dialog-detail h2")?.textContent?.trim() || "Producto";
     const photoLabel = thumbnail.getAttribute("aria-label") || "";
     mainImage.alt = photoLabel ? `${productName} — ${photoLabel.toLocaleLowerCase("es")}` : productName;
