@@ -528,79 +528,67 @@ html body.admin-body .admin-form textarea {
 
 
 
-/* JB Manager · selector de tono compacto y limpio en móvil y escritorio.
-   El control nativo conserva su función; se elimina el halo circular excesivo. */
-html body.admin-body form#product-form .inline-color-main {
-  grid-template-columns: 22px minmax(0, 1fr) 42px 28px !important;
-  align-items: end !important;
-  gap: 7px !important;
-}
+/* JB Manager · muestra de tono real; el input nativo queda transparente encima. */
 html body.admin-body form#product-form .inline-color-tone-field {
-  width: 42px !important;
-  min-width: 42px !important;
+  width: 52px !important;
+  min-width: 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-self: end !important;
-  gap: 5px !important;
+  gap: 7px !important;
   text-align: center !important;
 }
-html body.admin-body form#product-form .inline-color-tone-field input[type="color"] {
-  -webkit-appearance: none !important;
-  appearance: none !important;
+html body.admin-body form#product-form .inline-color-tone-field > span:first-child {
   display: block !important;
-  box-sizing: border-box !important;
-  width: 38px !important;
-  min-width: 38px !important;
-  height: 38px !important;
-  padding: 4px !important;
-  border: 1px solid #9aabc8 !important;
-  border-radius: 10px !important;
-  background: #edf2fb !important;
-  box-shadow: none !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
+  line-height: 1.1 !important;
 }
-html body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-webkit-color-swatch-wrapper {
+html body.admin-body form#product-form .inline-color-tone-preview {
+  position: relative !important;
   display: block !important;
-  box-sizing: border-box !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  border-radius: 9px !important;
+  background: var(--tone-color, #242424) !important;
+  border: 2px solid rgba(120, 137, 165, .75) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .18), inset 0 0 0 1px rgba(255,255,255,.28) !important;
+  overflow: hidden !important;
+  cursor: pointer !important;
+}
+html body.admin-body form#product-form .inline-color-tone-preview::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 7px !important;
+  pointer-events: none !important;
+}
+html body.admin-body form#product-form .inline-color-tone-preview input[type="color"] {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
   width: 100% !important;
+  min-width: 100% !important;
   height: 100% !important;
   padding: 0 !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
 }
-html body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-webkit-color-swatch {
-  display: block !important;
-  box-sizing: border-box !important;
-  width: 100% !important;
-  height: 100% !important;
-  border: 1px solid rgba(15, 23, 42, .38) !important;
-  border-radius: 6px !important;
-  box-shadow: none !important;
-}
-html body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-moz-color-swatch {
-  box-sizing: border-box !important;
-  border: 1px solid rgba(15, 23, 42, .38) !important;
-  border-radius: 6px !important;
-  box-shadow: none !important;
-}
-html body.admin-body form#product-form .inline-color-tone-field input[type="color"]:focus-visible {
-  outline: 2px solid rgba(82, 111, 229, .48) !important;
-  outline-offset: 2px !important;
-}
-html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-field input[type="color"] {
-  border-color: #53698d !important;
-  background: #172640 !important;
-}
-html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-webkit-color-swatch,
-html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-field input[type="color"]::-moz-color-swatch {
-  border-color: rgba(255, 255, 255, .68) !important;
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-preview {
+  border-color: rgba(190, 204, 231, .8) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.22) !important;
 }
 @media (max-width: 650px) {
-  html body.admin-body form#product-form .inline-color-main {
-    grid-template-columns: 22px minmax(0, 1fr) 42px 28px !important;
-    gap: 5px !important;
+  html body.admin-body form#product-form .inline-color-tone-field {
+    width: 48px !important;
+    min-width: 48px !important;
   }
-  html body.admin-body form#product-form .inline-color-tone-field input[type="color"] {
-    width: 38px !important;
-    min-width: 38px !important;
-    height: 38px !important;
+  html body.admin-body form#product-form .inline-color-tone-preview {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
   }
 }
