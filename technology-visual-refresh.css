@@ -4139,3 +4139,38 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
   }
 }
 
+
+
+/* 2026-10-30 · Desktop space utilization: widen the cross-catalog banner without stretching product cards. */
+@media (min-width: 1100px) {
+  body.technology-catalog .benefit-row {
+    width: min(1500px, calc(100% - 72px));
+    gap: clamp(14px, 1.2vw, 20px);
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(1600px, calc(100% - 96px));
+    margin-top: clamp(30px, 2.4vw, 44px);
+    margin-bottom: 14px;
+  }
+
+  body.technology-catalog .catalog-section {
+    width: min(1500px, 100%);
+    padding-right: clamp(28px, 3.5vw, 54px);
+    padding-left: clamp(28px, 3.5vw, 54px);
+  }
+}
+
+@media (min-width: 1600px) {
+  body.technology-catalog .technology-promo-banner {
+    width: min(1660px, calc(100% - 120px));
+  }
+}
+
+@media (max-width: 700px) {
+  body.technology-catalog .technology-promo-banner {
+    width: calc(100% - 28px);
+    margin-top: 22px;
+    border-radius: 13px;
+  }
+}
