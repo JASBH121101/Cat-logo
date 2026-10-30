@@ -40,6 +40,21 @@ function normalizeCatalogType(value) {
   return ["perfumery", "perfumeria", "perfume", "fragancia", "fragancias"].includes(normalized)
     ? "perfumery" : "technology";
 }
+function perfumeFamilyLabel(value) {
+  const normalized = normalizeValue(value).replace(/[\\s_-]+/g, " ");
+  const labels = {
+    arabe: "Árabe",
+    arabes: "Árabe",
+    "perfumeria arabe": "Árabe",
+    nicho: "Nicho",
+    "perfumeria de nicho": "Nicho",
+    disenador: "Diseñador",
+    disenadora: "Diseñador",
+    "perfumeria de disenador": "Diseñador",
+    designer: "Diseñador"
+  };
+  return labels[normalized] || cleanText(value, 60);
+}
 function money(value, currency) {
   if (value === null || value === undefined || value === "") return "";
   const number = Number(value);
@@ -155,13 +170,23 @@ export async function onRequest({ request, env = {} }) {
 
     const productName = cleanText(product.name || "Producto", 140);
     const brand = cleanText(product.brand || "", 80);
-    const family = cleanText(perfumeDetail.family || "", 60);
+    const family = perfumeFamilyLabel(perfumeDetail.family || "");
     const concentration = cleanText(perfumeDetail.concentration || "", 40);
     const volume = perfumeDetail.volume_ml ? cleanText(perfumeDetail.volume_ml, 20) + " ml" : "";
     const variantLabel = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
+    const normalizedProductName = normalizeValue(productName);
+    const normalizedBrand = normalizeValue(brand);
+    const brandAlreadyInName = Boolean(normalizedBrand && (
+      normalizedProductName === normalizedBrand ||
+      normalizedProductName.startsWith(normalizedBrand + " · ") ||
+      normalizedProductName.startsWith(normalizedBrand + " ")
+    ));
+    const model = cleanText(product.model || "", 80);
+    const normalizedModel = normalizeValue(model);
+    const modelAlreadyInName = Boolean(normalizedModel && normalizedProductName.includes(normalizedModel));
     const title = catalog === "perfumery"
-      ? [brand, productName].filter(Boolean).join(" · ")
-      : [brand, product.model, productName].filter((value, index, all) => value && all.indexOf(value) === index).join(" · ");
+      ? [brandAlreadyInName ? "" : brand, productName].filter(Boolean).join(" · ")
+      : [brandAlreadyInName ? "" : brand, modelAlreadyInName ? "" : model, productName].filter(Boolean).join(" · ");
 
     const descriptionParts = [];
     if (catalog === "perfumery") {
