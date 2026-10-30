@@ -487,7 +487,7 @@ jobs:
           gradle = gradle_path.read_text(encoding="utf-8")
           dependency = "implementation 'com.google.mlkit:text-recognition:16.0.1'"
           if dependency not in gradle:
-              match = re.search(r"dependencies\s*\\{", gradle)
+              match = re.search(r"dependencies\s*\{", gradle)
               if not match:
                   raise SystemExit("Could not find app-level Gradle dependencies block for ML Kit.")
               gradle = gradle[:match.end()] + "\n    " + dependency + gradle[match.end():]
