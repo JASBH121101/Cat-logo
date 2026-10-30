@@ -41,7 +41,7 @@ function normalizeCatalogType(value) {
     ? "perfumery" : "technology";
 }
 function perfumeFamilyLabel(value) {
-  const normalized = normalizeValue(value).replace(/[\\s_-]+/g, " ");
+  const normalized = normalizeValue(value).replace(/[\s_-]+/g, " ");
   const labels = {
     arabe: "Árabe",
     arabes: "Árabe",
