@@ -333,7 +333,7 @@ jobs:
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.audit_production) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     env:
-      AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && ((secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '') || secrets.GEMINI_API_KEY != '') }}
+      AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && secrets.GEMINI_API_KEY != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -354,11 +354,12 @@ jobs:
       - name: Review production screenshots with configured AI providers
         if: ${{ env.AI_REVIEW_ENABLED == 'true' }}
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Cloudflare AI is disabled unless the owner explicitly confirms a free Workers plan.
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.ENABLE_CLOUDFLARE_AI == 'true' && vars.CLOUDFLARE_ACCOUNT_ID || '' }}
+          CLOUDFLARE_API_TOKEN: ${{ vars.ENABLE_CLOUDFLARE_AI == 'true' && secrets.CLOUDFLARE_API_TOKEN || '' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_VISION_MODEL: ${{ vars.GEMINI_VISION_MODEL || 'gemini-3.1-flash-lite' }}
-          AI_PROVIDER_ORDER: ${{ vars.AI_PROVIDER_ORDER || 'cloudflare,gemini' }}
+          AI_PROVIDER_ORDER: ${{ vars.AI_PROVIDER_ORDER || 'gemini,cloudflare' }}
         run: node tests/ai-visual-review.mjs
       - name: Record that AI visual review is disabled or not configured
         if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
@@ -370,7 +371,7 @@ jobs:
           
           Status: not run.
           
-          To enable AI screenshot review, set `ENABLE_AI_VISUAL_REVIEW` to `true` and configure `GEMINI_API_KEY` for the Google AI Studio free tier, or configure both Cloudflare credentials. The deterministic browser audit always runs. The workflow does not configure OpenAI API or any paid provider. No screenshot is sent to an AI service unless the opt-in variable and at least one provider credential are configured.
+          To enable free-tier AI screenshot review, set `ENABLE_AI_VISUAL_REVIEW` to `true` and configure `GEMINI_API_KEY`. Cloudflare AI stays disabled unless `ENABLE_CLOUDFLARE_AI` is explicitly set to `true` after confirming the account is on Workers Free. The deterministic browser audit always runs. The workflow does not configure OpenAI API or any paid provider.
           EOF
       - name: Upload production audit evidence
         if: always()
@@ -388,7 +389,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_personal_experience }}
     runs-on: ubuntu-latest
     env:
-      AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && ((secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '') || secrets.GEMINI_API_KEY != '') }}
+      AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && secrets.GEMINI_API_KEY != '' }}
       EXPERIENCE_AUDIT_URL: https://jasbh121101.github.io/Declaraci-n/
     steps:
       - name: Checkout repository
@@ -409,11 +410,12 @@ jobs:
         if: ${{ env.AI_REVIEW_ENABLED == 'true' }}
         env:
           QA_PROFILE: personal-experience
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Cloudflare AI is disabled unless the owner explicitly confirms a free Workers plan.
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.ENABLE_CLOUDFLARE_AI == 'true' && vars.CLOUDFLARE_ACCOUNT_ID || '' }}
+          CLOUDFLARE_API_TOKEN: ${{ vars.ENABLE_CLOUDFLARE_AI == 'true' && secrets.CLOUDFLARE_API_TOKEN || '' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_VISION_MODEL: ${{ vars.GEMINI_VISION_MODEL || 'gemini-3.1-flash-lite' }}
-          AI_PROVIDER_ORDER: ${{ vars.AI_PROVIDER_ORDER || 'cloudflare,gemini' }}
+          AI_PROVIDER_ORDER: ${{ vars.AI_PROVIDER_ORDER || 'gemini,cloudflare' }}
         run: node tests/ai-visual-review.mjs
       - name: Generate an evidence-only scorecard when AI review is disabled
         if: ${{ env.AI_REVIEW_ENABLED != 'true' }}
