@@ -121,7 +121,9 @@ export async function onRequestPost({ request, env }) {
   let parsed;
   try { parsed = JSON.parse(generated); } catch { return reply(502, { ok: false, error: "gemini_unstructured_response" }, origin); }
   const products = Array.isArray(parsed.products) ? parsed.products.slice(0, 120).map((item, index) => {
-    const usd = Number(item.price_usd), nio = Number(item.price_nio), confidence = Number(item.confidence);
+    const usd = item.price_usd == null || item.price_usd === "" ? null : Number(item.price_usd);
+    const nio = item.price_nio == null || item.price_nio === "" ? null : Number(item.price_nio);
+    const confidence = Number(item.confidence);
     return {
       id: "scan-" + (index + 1),
       source_observation: Number.isInteger(item.source_observation) ? item.source_observation : null,
@@ -129,8 +131,8 @@ export async function onRequestPost({ request, env }) {
       category: clean(item.category, 80),
       catalog_type: ["technology", "perfumery"].includes(item.catalog_type) ? item.catalog_type : "unknown",
       ram: clean(item.ram, 30), storage: clean(item.storage, 40), color: clean(item.color, 50),
-      price_usd: Number.isFinite(usd) && usd >= 0 && usd <= 1000000 ? usd : null,
-      price_nio: Number.isFinite(nio) && nio >= 0 && nio <= 100000000 ? nio : null,
+      price_usd: usd !== null && Number.isFinite(usd) && usd >= 0 && usd <= 1000000 ? usd : null,
+      price_nio: nio !== null && Number.isFinite(nio) && nio >= 0 && nio <= 100000000 ? nio : null,
       confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0,
       evidence: clean(item.evidence, 240),
       notes: Array.isArray(item.notes) ? item.notes.slice(0, 6).map(value => clean(value, 120)).filter(Boolean) : []
