@@ -165,6 +165,7 @@ const form = $("#product-form");
 
 let currentUser = null;
 let products = [];
+let inventoryRefreshPromise = null;
 const CATALOG_ADMIN_ACTIVITY_KEY = "cat-logo-admin-activity-v1";
 function refreshCatalogAdminActivityMarker() {
   if (!currentUser) return;
@@ -183,7 +184,8 @@ const dashboardScopeSelector = $("#dashboard-scope-selector");
 const providerTools = initProviderTools({
   getSupabase: () => supabase,
   getCurrentUser: () => currentUser,
-  getProducts: () => products
+  getProducts: () => products,
+  onRefreshCatalog: button => refreshAdminInventory(button)
 });
 window.addEventListener("jb-catalog-provider-updated", () => {
   void loadProducts();
@@ -3599,6 +3601,69 @@ async function loadProducts() {
   await loadCatalogAnalytics();
   return true;
 }
+
+/* Sincronización manual entre dispositivos: vuelve a consultar Supabase sin
+   recargar el documento ni tocar la sesión o el formulario que esté abierto. */
+async function refreshAdminInventory(triggerButton = null) {
+  if (inventoryRefreshPromise) return inventoryRefreshPromise;
+
+  if (!supabase || !currentUser) {
+    document.querySelectorAll("[data-admin-refresh-status]").forEach(node => {
+      node.textContent = "Iniciá sesión para sincronizar.";
+    });
+    if (triggerButton) triggerButton.disabled = true;
+    return false;
+  }
+
+  inventoryRefreshPromise = (async () => {
+    const buttons = Array.from(document.querySelectorAll("[data-refresh-inventory]"));
+    const statusNodes = Array.from(document.querySelectorAll("[data-admin-refresh-status]"));
+
+    buttons.forEach(button => {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      button.classList.add("is-refreshing");
+      const label = button.querySelector("[data-refresh-label]");
+      if (label) label.textContent = "Actualizando…";
+    });
+    statusNodes.forEach(node => { node.textContent = "Consultando datos guardados…"; });
+
+    try {
+      const refreshed = await loadProducts();
+      const time = new Date().toLocaleTimeString("es-NI", { hour: "2-digit", minute: "2-digit" });
+      statusNodes.forEach(node => {
+        node.textContent = refreshed ? "Sincronizado " + time : "No se pudo sincronizar";
+      });
+      return refreshed;
+    } catch (error) {
+      console.warn("No se pudo sincronizar el inventario entre dispositivos:", error);
+      statusNodes.forEach(node => { node.textContent = "Error al sincronizar · intentá de nuevo"; });
+      setStatus("No se pudo sincronizar el inventario: " + (error?.message || "error desconocido"), "error");
+      return false;
+    } finally {
+      buttons.forEach(button => {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        button.classList.remove("is-refreshing");
+        const label = button.querySelector("[data-refresh-label]");
+        if (label) label.textContent = "Actualizar";
+      });
+    }
+  })();
+
+  try {
+    return await inventoryRefreshPromise;
+  } finally {
+    inventoryRefreshPromise = null;
+  }
+}
+
+document.querySelectorAll("[data-refresh-inventory]").forEach(button => {
+  button.addEventListener("click", event => {
+    void refreshAdminInventory(event.currentTarget);
+  });
+});
+
 function formatAnalyticsCapacity(value) {
   const parsed = parseStorageValue(value);
   return parsed.amount ? formatStorageLabel(parsed.amount, parsed.unit) : "";
