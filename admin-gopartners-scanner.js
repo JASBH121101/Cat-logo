@@ -57,7 +57,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   };
   function updateControls() {
     startButton.disabled = scanning; finishButton.disabled = !scanning;
-    clearButton.disabled = scanning && scanCandidates.length === 0;
+    clearButton.disabled = !scanning && scanCandidates.length === 0;
     root.classList.toggle("is-scanning", scanning);
   }
   async function getAccessToken() {
@@ -221,10 +221,10 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     try {
       const session = await native.stopScan(); scanning = false; updateControls();
       const observations = Array.isArray(session?.observations) ? session.observations : [];
+      const wasTruncated = session?.truncated === true;
       await native.clearScan();
       if (!observations.length) { setStatus("No se reconoció texto. Comprobá que Go Partners permita capturas y repetí la sesión.", true); return; }
-      if (session?.truncated) setStatus("Se alcanzó el límite de 80 pantallas. Se analizarán las primeras 80; podés continuar con otra sesión después.");
-      else setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
+      setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
       const response = await fetch("/api/jb-gopartners-scan", {
         method: "POST", headers: { Authorization: "Bearer " + await getAccessToken(), "Content-Type": "application/json" },
         cache: "no-store", body: JSON.stringify({ observations: observations.slice(0, 80) })
@@ -237,7 +237,9 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       })) : [];
       if (!scanCandidates.length) { setStatus("No se encontraron productos con nombre o modelo legible. Mantené cada ficha visible unos segundos.", true); return; }
       renderReview();
-      setStatus("Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.");
+      setStatus(wasTruncated
+        ? "Análisis listo. Se alcanzó el límite de 80 pantallas; revisá estos resultados y, si faltan productos, iniciá otra sesión."
+        : "Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.");
     } catch (error) { setStatus(error?.message || "Falló el análisis de la sesión.", true); }
     finally { updateControls(); }
   }
