@@ -19,20 +19,80 @@ export function getModelText(payload) {
   return "";
 }
 
+function parseJsonCandidate(text) {
+  const source = String(text || "").trim().replace(/^\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`\s*$/i, "").trim();
+  try {
+    const value = JSON.parse(source);
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseJson(text) {
-  const source = String(text || "").replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-  try { return JSON.parse(source); } catch {}
+  const source = String(text || "").trim();
+  const fenced = [...source.matchAll(/\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`/gi)];
+  for (const match of fenced.reverse()) {
+    const value = parseJsonCandidate(match[1]);
+    if (value) return value;
+  }
+
+  const jsonLabel = Math.max(source.lastIndexOf("JSON Response:"), source.lastIndexOf("JSON response:"), source.lastIndexOf("JSON:"));
+  if (jsonLabel >= 0) {
+    const value = parseJsonCandidate(source.slice(jsonLabel).replace(/^JSON(?: Response)?:\s*/i, ""));
+    if (value) return value;
+  }
+
+  const direct = parseJsonCandidate(source);
+  if (direct) return direct;
+
+  const candidates = [];
   for (let start = source.indexOf("{"); start >= 0; start = source.indexOf("{", start + 1)) {
     let depth = 0, quoted = false, escaped = false;
     for (let i = start; i < source.length; i++) {
-      const c = source[i];
-      if (quoted) { if (escaped) escaped = false; else if (c === "\\") escaped = true; else if (c === '"') quoted = false; continue; }
-      if (c === '"') quoted = true;
-      else if (c === "{") depth++;
-      else if (c === "}" && --depth === 0) { try { return JSON.parse(source.slice(start, i + 1)); } catch {} break; }
+      const char = source[i];
+      if (quoted) {
+        if (escaped) escaped = false;
+        else if (char === "\\") escaped = true;
+        else if (char === '"') quoted = false;
+        continue;
+      }
+      if (char === '"') quoted = true;
+      else if (char === "{") depth++;
+      else if (char === "}") {
+        depth--;
+        if (depth === 0) {
+          const value = parseJsonCandidate(source.slice(start, i + 1));
+          if (value) candidates.push({ value, length: i - start + 1 });
+          break;
+        }
+      }
     }
   }
-  return null;
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates[0]?.value || null;
+}
+
+export function classifyCloudflareFailure({ status = 0, payload = null, bodyText = "" } = {}) {
+  const errors = Array.isArray(payload?.errors) ? payload.errors : [];
+  const codes = errors.map(item => Number(item?.code)).filter(Number.isFinite);
+  const detail = [
+    bodyText,
+    payload?.message,
+    ...errors.map(item => item?.message),
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (codes.includes(3036) || /daily free allocation|10,000 neurons|used up.*neurons|account limited|quota exhausted/.test(detail)) {
+    return { kind: "daily_quota_exhausted", retryable: false };
+  }
+  if (codes.includes(3040) || /capacity temporarily exceeded|out of capacity/.test(detail)) {
+    return { kind: "capacity_temporarily_exceeded", retryable: true };
+  }
+  if (status === 408) return { kind: "timeout", retryable: true };
+  if (status === 429) return { kind: "rate_limited", retryable: true };
+  if (status >= 500) return { kind: "server_error", retryable: true };
+  if (status >= 400) return { kind: "api_rejected", retryable: false };
+  return { kind: "unknown", retryable: false };
 }
 
 export function deduplicateIssues(issues = []) {
