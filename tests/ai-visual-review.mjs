@@ -1,5 +1,6 @@
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import sharp from "sharp";
 import { getModelText, interpretModelResponse, recoverExplicitFindings, safeText } from "./ai-visual-review-utils.mjs";
 import { buildExperienceAiCases, calculateExperienceScores } from "./personal-experience-qa-profile.mjs";
 
@@ -26,75 +27,175 @@ const CATALOG_CASES = [
 const CASES = EXPERIENCE_PROFILE ? buildExperienceAiCases() : CATALOG_CASES;
 const analyses = [];
 const errors = [];
-const schemaExample = {
-  visual_score: 0,
-  ...(EXPERIENCE_PROFILE ? { narrative_score: 0 } : {}),
-  overall_assessment: "Resumen basado en la captura.",
-  strengths: [],
-  issues: [{ severity: "medium", region: "zona concreta", evidence: "defecto visible", recommendation: "acción verificable", confidence: 0.75 }],
-  manual_review_required: true,
-  limitations: [],
-};
 const systemPrompt = EXPERIENCE_PROFILE ? [
   "Sos auditor senior de QA para experiencias narrativas e interactivas personales.",
-  "Evalúa ÚNICAMENTE lo visible en la captura y el texto que aparece en ella. No asumas estados que no se muestran ni predigas la reacción de la persona destinataria.",
-  "Puntúa visual_score por composición, jerarquía, tipografía, contraste, proporciones, espacios y legibilidad.",
-  "Puntúa narrative_score por claridad del mensaje visible, continuidad con el estado mostrado, naturalidad, respeto, autonomía de quien visita y ausencia de presión emocional. No juzgues si la persona destinataria aceptará una invitación ni atribuyas emociones.",
-  "Busca defectos concretos: contenido cortado, texto ilegible, controles ambiguos, estados confusos, espacios involuntarios, desalineación, elementos superpuestos y CTA cuyo propósito no se entienda.",
-  "No confundas espacio negativo intencional con defecto. No inventes fallos funcionales que no puedan confirmarse en la captura.",
-  "Devuelve SOLO JSON válido sin Markdown. Incluye visual_score y narrative_score de 0 a 100, overall_assessment, strengths, issues y limitations. issues=[] si no hay defecto concreto; máximo 3 incidencias distintas, sin repeticiones.",
-  "Cada incidencia requiere severity (critical/high/medium/low), region, evidence, recommendation y confidence 0-1.",
-  "Las puntuaciones son estimaciones subjetivas y requieren revisión humana. No declares que la experiencia es perfecta.",
+  "Evalúa únicamente lo visible en la captura y el texto que aparece en ella. No inventes estados ni predigas la reacción de la persona destinataria.",
+  "visual_score mide composición, jerarquía, tipografía, contraste, proporciones, espacios y legibilidad.",
+  "narrative_score mide claridad del mensaje visible, continuidad, naturalidad y tono respetuoso. Nunca predigas sentimientos ni aceptación.",
+  "No confundas espacio negativo intencional con defecto. No inventes fallos funcionales que no puedan confirmarse en la imagen.",
+  "Devuelve únicamente un objeto JSON válido, sin Markdown, encabezados, comentarios ni texto antes o después del objeto.",
+  "Claves obligatorias: visual_score (entero 1-100 o null), narrative_score (entero 1-100 o null), overall_assessment (texto breve), strengths (lista), issues (lista), manual_review_required (true), limitations (lista).",
+  "Cada issue debe incluir severity (critical/high/medium/low), region, evidence y recommendation. confidence es opcional: usa un número 0-1 solo si puedes justificarlo; de lo contrario usa null.",
+  "Si no hay un defecto demostrable, devuelve issues como lista vacía. Máximo 3 issues distintos y máximo 3 fortalezas.",
+  "No uses 0 como marcador de puntuación. Si la captura no permite evaluar una dimensión, usa null y explica por qué en limitations.",
+  "Guía de escala: 1-20 inutilizable; 21-40 problemas graves; 41-60 funciona con debilidades claras; 61-80 sólido con mejoras; 81-95 muy pulido; 96-100 excepcional y respaldado por evidencia.",
+  "overall_assessment debe tener como máximo 45 palabras. Cada evidence debe describir un hecho visible, no una impresión genérica.",
+  "Las puntuaciones son estimaciones subjetivas y requieren revisión humana. manual_review_required siempre debe ser true.",
 ].join(" ") : [
-  "Sos auditor QA visual senior de ecommerce. Evalúa ÚNICAMENTE lo visible en la captura adjunta.",
-  "Busca: hero o producto poco protagonista, espacios desproporcionados, tarjetas inconsistentes, cuadrículas demasiado densas o vacías, texto pequeño/ilegible, jerarquía confusa, alineación rota, filtros poco visibles, elementos cortados/desbordados, solapamientos y contraste insuficiente.",
-  "No confundas espacio negativo intencional con defecto. No inventes fallos funcionales, datos ocultos ni propongas cambios en base de datos.",
-  "Devuelve SOLO JSON válido sin Markdown. Usa las claves del esquema del usuario. issues=[] si no hay defecto concreto; máximo 3 incidencias distintas. Sin repeticiones. Cada incidencia requiere severity (critical/high/medium/low), region, evidence, recommendation y confidence 0-1.",
-  "Usa critical solo si bloquea claramente el uso; high si contenido esencial queda inaccesible; medium para defectos claros de jerarquía/espaciado/legibilidad; low para pulido menor.",
-  "visual_score es subjetivo, no una medición certificada. manual_review_required debe ser true. Nunca declares que todo el sitio está perfecto.",
+  "Sos auditor QA visual senior de ecommerce. Evalúa únicamente lo visible en la captura adjunta.",
+  "Revisa jerarquía visual, espacios, cuadrículas, escala y nitidez de fotos, legibilidad, alineación, filtros, elementos cortados, desbordamientos y solapamientos.",
+  "No confundas espacio negativo intencional con defecto. No inventes fallos funcionales, datos ocultos ni propongas cambios de base de datos.",
+  "Devuelve únicamente un objeto JSON válido, sin Markdown, encabezados, comentarios ni texto adicional.",
+  "Claves obligatorias: visual_score (entero 1-100 o null), overall_assessment (texto breve), strengths (lista), issues (lista), manual_review_required (true), limitations (lista).",
+  "Cada issue requiere severity (critical/high/medium/low), region, evidence y recommendation. confidence es opcional y puede ser null.",
+  "Si no hay un defecto demostrable, devuelve issues como lista vacía. Máximo 3 issues distintos y 3 fortalezas.",
+  "No uses 0 como marcador de puntuación. Si falta evidencia, usa null y explica la limitación.",
+  "Guía de escala: 1-20 inutilizable; 21-40 problemas graves; 41-60 funciona con debilidades claras; 61-80 sólido con mejoras; 81-95 muy pulido; 96-100 excepcional y respaldado por evidencia.",
+  "Usa critical solo si bloquea claramente el uso; high si contenido esencial queda inaccesible; medium para defectos claros; low para pulido menor.",
+  "overall_assessment debe tener como máximo 45 palabras. manual_review_required siempre debe ser true.",
 ].join(" ");
 
-function userPrompt(item, retry) {
+function userPrompt(item, correctionReason = "") {
   return [
-    `Audita la superficie pública ${item.page}. Estado: ${item.state || "vista general"}. Viewport ${item.viewport}; tema ${item.theme}.`,
-    `Enfoque específico: ${item.focus}.`,
+    `Audita ${item.page}. Estado: ${item.state || "vista general"}. Viewport: ${item.viewport}; tema: ${item.theme}.`,
+    `Enfoque de esta captura: ${item.focus}.`,
     EXPERIENCE_PROFILE
-      ? "Evalúa por separado la calidad visual y el texto/narrativa que realmente se ve. Considera claridad, tono respetuoso, autonomía y ausencia de presión; no hagas predicciones sobre sentimientos ni resultados personales."
-      : "Prioridad: jerarquía visual clara, fotografías nítidas y sin deformación, contenido legible, composición equilibrada y espacio útil.",
-    "No infieras lo que no puede confirmarse con una sola captura.",
-    retry ? "La respuesta anterior no fue JSON válido. Devuelve ahora únicamente un objeto JSON parseable, sin texto introductorio ni frases repetidas." : "",
-    "Esquema orientativo; usa datos reales y no copies valores de ejemplo:", JSON.stringify(schemaExample),
-  ].filter(Boolean).join("\n");
+      ? "Evalúa visual_score y narrative_score por separado, atendiendo solo al texto y estado que aparecen en esta captura."
+      : "Prioriza jerarquía visual, nitidez fotográfica, legibilidad, composición y espacio útil.",
+    "No infieras comportamiento ni contenido que no aparezca en la imagen.",
+    "Devuelve solo JSON. No escribas una introducción, explicación, lista Markdown ni bloque de código.",
+    "Si no hay problemas demostrables, issues debe ser []. No inventes defectos para llenar la lista.",
+    correctionReason
+      ? `La respuesta anterior no pasó la validación. Corrige específicamente este problema: ${correctionReason}. Vuelve a evaluar la misma imagen y responde con el objeto JSON completo.`
+      : "",
+  ].filter(Boolean).join("\\n");
 }
 
-async function callModel(item, bytes, attempt) {
-  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(ACCOUNT_ID)}/ai/run/${MODEL}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 75_000);
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST", headers: { Authorization: `Bearer ${API_TOKEN}`, "Content-Type": "application/json" }, signal: controller.signal,
-      body: JSON.stringify({
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt(item, attempt > 1) }],
-        image: `data:image/png;base64,${bytes.toString("base64")}`,
-        max_tokens: EXPERIENCE_PROFILE ? 900 : 650, temperature: 0, top_p: 0.85, repetition_penalty: 1.15, frequency_penalty: 0.45,
-        seed: 20261029 + CASES.indexOf(item),
-      }),
-    });
-    const bodyText = await response.text();
-    let payload;
-    try { payload = JSON.parse(bodyText); } catch { payload = { raw_response: bodyText.slice(0, 2500) }; }
-    if (!response.ok || payload.success === false) {
-      const reason = Array.isArray(payload.errors) ? payload.errors.map((e) => safeText(e.message || e.code || "unknown", 300)).join("; ") : `HTTP ${response.status}`;
-      throw new Error(`Cloudflare Workers AI request failed: ${reason}`);
-    }
-    const output = getModelText(payload) || safeText(payload.raw_response, 2500);
-    if (!output) throw new Error("Cloudflare response contained no model text.");
-    return output;
-  } catch (error) {
-    if (error?.name === "AbortError") throw new Error("Cloudflare Workers AI request timed out after 75 seconds.");
+const delay = ms => new Promise(resolveDelay => setTimeout(resolveDelay, ms));
+
+async function prepareVisionImage(bytes) {
+  if (!bytes?.length) {
+    const error = new Error("Screenshot is empty.");
+    error.failureKind = "empty_image";
     throw error;
-  } finally { clearTimeout(timer); }
+  }
+  if (bytes.length <= MAX_IMAGE_BYTES) {
+    const metadata = await sharp(bytes, { limitInputPixels: 120_000_000 }).metadata();
+    return {
+      bytes,
+      mimeType: "image/png",
+      originalBytes: bytes.length,
+      optimized: false,
+      width: metadata.width || null,
+      height: metadata.height || null,
+    };
+  }
+
+  const metadata = await sharp(bytes, { limitInputPixels: 120_000_000 }).metadata();
+  const variants = [
+    { width: 2048, height: 18000, quality: 86 },
+    { width: 1800, height: 16000, quality: 82 },
+    { width: 1600, height: 14000, quality: 76 },
+  ];
+  for (const variant of variants) {
+    const prepared = await sharp(bytes, { limitInputPixels: 120_000_000 })
+      .rotate()
+      .resize({ width: variant.width, height: variant.height, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: variant.quality, mozjpeg: true, chromaSubsampling: "4:2:0" })
+      .toBuffer();
+    if (prepared.length <= MAX_IMAGE_BYTES) {
+      const outputMeta = await sharp(prepared).metadata();
+      return {
+        bytes: prepared,
+        mimeType: "image/jpeg",
+        originalBytes: bytes.length,
+        optimized: true,
+        width: outputMeta.width || metadata.width || null,
+        height: outputMeta.height || metadata.height || null,
+        sourceWidth: metadata.width || null,
+        sourceHeight: metadata.height || null,
+      };
+    }
+  }
+  const error = new Error(`Screenshot remains above ${MAX_IMAGE_BYTES} bytes after safe image optimization.`);
+  error.failureKind = "image_optimization_limit";
+  throw error;
+}
+
+async function callModel(item, image, attempt, correctionReason = "") {
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(ACCOUNT_ID)}/ai/run/${MODEL}`;
+  let requestAttempts = 0;
+  for (let requestAttempt = 1; requestAttempt <= 3; requestAttempt++) {
+    requestAttempts++;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${API_TOKEN}`, "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt(item, correctionReason) },
+          ],
+          image: `data:${image.mimeType};base64,${image.bytes.toString("base64")}`,
+          max_tokens: EXPERIENCE_PROFILE ? 1050 : 850,
+          temperature: 0,
+          top_p: 0.9,
+          repetition_penalty: 1,
+          frequency_penalty: 0,
+          seed: 20261029 + CASES.indexOf(item) + (attempt * 1009) + (requestAttempt * 10007),
+        }),
+      });
+      const bodyText = await response.text();
+      let payload;
+      try { payload = JSON.parse(bodyText); } catch { payload = { raw_response: bodyText.slice(0, 2500) }; }
+
+      const retryableStatus = response.status === 408 || response.status === 429 || response.status >= 500;
+      if (!response.ok || payload.success === false) {
+        const reason = Array.isArray(payload.errors)
+          ? payload.errors.map(error => safeText(error.message || error.code || "unknown", 300)).join("; ")
+          : `HTTP ${response.status}`;
+        if (retryableStatus && requestAttempt < 3) {
+          const retryAfter = Number(response.headers.get("retry-after"));
+          await delay(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(5000, retryAfter * 1000) : requestAttempt * 1200);
+          continue;
+        }
+        const error = new Error(`Cloudflare Workers AI request failed: ${reason}`);
+        error.failureKind = response.status === 429 ? "rate_limited" : retryableStatus ? "server_error" : "api_rejected";
+        throw error;
+      }
+
+      const output = getModelText(payload) || safeText(payload.raw_response, 2500);
+      if (!output) {
+        if (requestAttempt < 2) {
+          await delay(700 * requestAttempt);
+          continue;
+        }
+        const error = new Error("Cloudflare response contained no model text after retry.");
+        error.failureKind = "empty_model_response";
+        throw error;
+      }
+      return { text: output, requestAttempts };
+    } catch (error) {
+      const transient = error?.name === "AbortError" || /fetch failed|ECONNRESET|ETIMEDOUT|socket|network/i.test(error?.message || "");
+      if (transient && requestAttempt < 3) {
+        await delay(requestAttempt * 1200);
+        continue;
+      }
+      if (error?.name === "AbortError") {
+        error.message = "Cloudflare Workers AI request timed out after 60 seconds (3 attempts maximum).";
+        error.failureKind = "timeout";
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  const error = new Error("Cloudflare Workers AI retry budget exhausted.");
+  error.failureKind = "request_retries_exhausted";
+  throw error;
 }
 
 function recoverReview(text, reason) {
@@ -112,45 +213,92 @@ function recoverReview(text, reason) {
 }
 
 async function review(item) {
-  const bytes = await readFile(resolve(ROOT, item.file));
-  if (!bytes.length) throw new Error("Screenshot is empty.");
-  if (bytes.length > MAX_IMAGE_BYTES) throw new Error(`Screenshot exceeds the ${MAX_IMAGE_BYTES} byte safeguard.`);
-  const firstText = await callModel(item, bytes, 1);
-  const first = interpretModelResponse(firstText);
-  let text = firstText, parsed = first, attempts = 1, retryError = null;
-  if (first.status !== "structured") {
+  const startedAt = Date.now();
+  const sourceBytes = await readFile(resolve(ROOT, item.file));
+  const image = await prepareVisionImage(sourceBytes);
+  const firstCall = await callModel(item, image, 1);
+  let text = firstCall.text;
+  let parsed = interpretModelResponse(text);
+  let attempts = 1;
+  let requestAttempts = firstCall.requestAttempts;
+  let retryError = null;
+
+  if (parsed.status !== "structured") {
     try {
-      const secondText = await callModel(item, bytes, 2);
+      const secondCall = await callModel(item, image, 2, parsed.reason || "El formato no coincide con el contrato de salida.");
+      requestAttempts += secondCall.requestAttempts;
       attempts = 2;
-      const second = interpretModelResponse(secondText);
-      if (second.status === "structured") { text = secondText; parsed = second; }
-      else {
-        text = secondText;
-        const recovery = recoverReview([firstText, secondText].join("\n"), `JSON inválido tras dos intentos: ${second.reason || first.reason || "formato no reconocido"}`);
-        parsed = { status: recovery.review ? "recovered" : "invalid", reason: second.reason || first.reason, review: recovery.review, duplicateSentenceCount: recovery.duplicates };
+      text = secondCall.text;
+      const second = interpretModelResponse(text);
+      if (second.status === "structured") {
+        parsed = second;
+      } else {
+        const recovery = recoverReview(
+          [firstCall.text, secondCall.text].join("\\n"),
+          `La respuesta no pasó la validación tras dos generaciones: ${second.reason || parsed.reason || "formato no reconocido"}`,
+        );
+        parsed = {
+          status: recovery.review ? "recovered" : "invalid",
+          reason: second.reason || parsed.reason,
+          review: recovery.review,
+          duplicateSentenceCount: recovery.duplicates,
+        };
       }
-    } catch (error) { retryError = safeText(error.message, 500); }
+    } catch (error) {
+      retryError = safeText(error.message, 500);
+    }
   }
+
   let recovery = null;
-  if (parsed.status !== "structured" && !parsed.review) recovery = recoverReview(text, parsed.reason || "Formato de respuesta inválido.");
+  if (parsed.status !== "structured" && !parsed.review) {
+    recovery = recoverReview(text, parsed.reason || "Formato de respuesta inválido.");
+  }
   const reviewData = parsed.review || recovery?.review || null;
   const parseStatus = parsed.status === "structured" ? "structured" : reviewData ? "recovered" : "invalid";
   return {
-    ...item, imageBytes: bytes.length, model: MODEL, parseStatus, attempts, parseReason: parseStatus === "structured" ? null : safeText(parsed.reason || "Model response was not valid JSON", 400),
-    duplicateSentenceCount: parsed.duplicateSentenceCount || recovery?.duplicates || 0, review: reviewData,
-    rawResponseExcerpt: safeText(text, 1800), ...(retryError ? { retryError } : {}),
+    ...item,
+    imageBytes: sourceBytes.length,
+    modelImageBytes: image.bytes.length,
+    imageMimeType: image.mimeType,
+    imageOptimized: image.optimized,
+    imageDimensions: { width: image.width, height: image.height },
+    bytesSaved: Math.max(0, sourceBytes.length - image.bytes.length),
+    model: MODEL,
+    parseStatus,
+    attempts,
+    requestAttempts,
+    durationMs: Date.now() - startedAt,
+    parseReason: parseStatus === "structured" ? null : safeText(parsed.reason || "Model response was not valid JSON", 400),
+    duplicateSentenceCount: parsed.duplicateSentenceCount || recovery?.duplicates || 0,
+    review: reviewData,
+    rawResponseExcerpt: safeText(text, 1800),
+    ...(retryError ? { retryError } : {}),
   };
 }
 
 function makeSummary() {
-  const count = (status) => analyses.filter((a) => a.parseStatus === status).length;
+  const count = status => analyses.filter(item => item.parseStatus === status).length;
+  const structuredReviews = count("structured");
+  const recoveredReviews = count("recovered");
+  const invalidResponses = count("invalid");
+  const optimized = analyses.filter(item => item.imageOptimized);
+  const successful = analyses.filter(item => item.parseStatus);
   return {
-    requestedScreenshots: CASES.length, apiResponses: analyses.length,
-    reviewedScreenshots: count("structured") + count("recovered"),
-    structuredReviews: count("structured"), recoveredReviews: count("recovered"), invalidResponses: count("invalid"), failedReviews: errors.length,
-    reportedIssues: analyses.reduce((sum, a) => sum + (a.review?.issues?.length || 0), 0),
-    repeatedSentencesRemoved: analyses.reduce((sum, a) => sum + (a.duplicateSentenceCount || 0), 0),
-    manualReviewRequired: analyses.filter((a) => a.parseStatus !== "structured" || a.review?.manual_review_required !== false).length,
+    requestedScreenshots: CASES.length,
+    apiResponses: analyses.length,
+    structuredReviews,
+    recoveredReviews,
+    invalidResponses,
+    failedReviews: errors.length,
+    reviewedScreenshots: structuredReviews + recoveredReviews,
+    structuredRatePct: analyses.length ? Math.round(structuredReviews / CASES.length * 100) : 0,
+    reportedIssues: analyses.reduce((sum, item) => sum + (item.review?.issues?.length || 0), 0),
+    repeatedSentencesRemoved: analyses.reduce((sum, item) => sum + (item.duplicateSentenceCount || 0), 0),
+    imageOptimizations: optimized.length,
+    imageBytesSaved: optimized.reduce((sum, item) => sum + (item.bytesSaved || 0), 0),
+    httpRetryAttempts: analyses.reduce((sum, item) => sum + Math.max(0, (item.requestAttempts || 0) - (item.attempts || 0)), 0),
+    averageReviewMs: successful.length ? Math.round(successful.reduce((sum, item) => sum + (item.durationMs || 0), 0) / successful.length) : null,
+    manualReviewRequired: analyses.filter(item => item.parseStatus !== "structured" || item.review?.manual_review_required !== false).length + errors.length,
   };
 }
 
@@ -159,7 +307,7 @@ function markdown(report) {
   const lines = [EXPERIENCE_PROFILE ? "# Declaraci-n — revisión de experiencia personal con IA" : "# JB Collections — revisión visual con IA", "", `- Estado: **${report.status}**`, `- Modelo: \`${MODEL}\``,
     `- Capturas solicitadas: ${s.requestedScreenshots}`, `- Respuestas API: ${s.apiResponses}`, `- JSON validados: ${s.structuredReviews}`,
     `- Recuperadas de prosa (requieren revisión): ${s.recoveredReviews}`, `- Respuestas inválidas: ${s.invalidResponses}`,
-    `- Errores de solicitud: ${s.failedReviews}`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
+    `- Errores de solicitud: ${s.failedReviews}`, `- Capturas optimizadas: ${s.imageOptimizations}`, `- Bytes reducidos: ${s.imageBytesSaved}`, `- Reintentos de transporte: ${s.httpRetryAttempts}`, `- Duración media por captura: ${s.averageReviewMs ?? "—"} ms`, `- Incidencias concretas: ${s.reportedIssues}`, `- Frases repetidas eliminadas: ${s.repeatedSentencesRemoved}`,
     `- Capturas que requieren revisión manual: ${s.manualReviewRequired}`, "",
     "> Cero incidencias no prueba que el diseño esté perfecto. Solo respuestas JSON válidas cuentan como revisión estructurada; toda recuperación de prosa necesita revisión humana.", "", "## Detalle por captura", ""];
   if (!report.analyses.length) lines.push("No se obtuvieron respuestas de la IA.", "");
@@ -170,13 +318,13 @@ function markdown(report) {
     if (a.review) {
       lines.push("", a.review.overall_assessment || "Sin resumen.", "", `- Puntuación visual orientativa: ${Number.isFinite(a.review.visual_score) ? a.review.visual_score + "/100" : "no validada"}`);
       if (EXPERIENCE_PROFILE) lines.push(`- Puntuación narrativa orientativa: ${Number.isFinite(a.review.narrative_score) ? a.review.narrative_score + "/100" : "no disponible"}`);
-      for (const issue of a.review.issues || []) lines.push(`- **[${issue.severity.toUpperCase()}] ${issue.region}** — ${issue.evidence} Recomendación: ${issue.recommendation} Confianza orientativa: ${Math.round(issue.confidence * 100)}%.`);
+      for (const issue of a.review.issues || []) lines.push(`- **[${issue.severity.toUpperCase()}] ${issue.region}** — ${issue.evidence} Recomendación: ${issue.recommendation} Confianza orientativa: ${Number.isFinite(issue.confidence) ? Math.round(issue.confidence * 100) + "%" : "no indicada"}.`);
       if (!a.review.issues?.length) lines.push("- La respuesta estructurada no enumera incidencias; verificar visualmente antes de darla por limpia.");
       for (const limitation of a.review.limitations || []) lines.push(`- Limitación: ${safeText(limitation, 300)}`);
     } else lines.push("", "**No se acepta como evaluación válida**; el formato no se pudo verificar y no cuenta como resultado limpio.", "", "> " + safeText(a.rawResponseExcerpt, 1200).replace(/\n/g, "\n> "));
     lines.push("");
   }
-  if (report.errors.length) lines.push("## Errores de solicitud", "", ...report.errors.map((e) => `- ${e.page} / ${e.viewport} / ${e.theme}: ${safeText(e.message, 500)}`), "");
+  if (report.errors.length) lines.push("## Capturas no evaluadas", "", ...report.errors.map((e) => `- ${e.page} / ${e.viewport} / ${e.theme} [${e.failureKind || "unknown"}]: ${safeText(e.message, 500)}`), "");
   lines.push("## Salvaguardas", "", "- Modo solo lectura: no se edita código, catálogo, pedidos ni datos de producción.", "- La IA no corrige código automáticamente ni decide por sí sola sobre calidad subjetiva.", "- Puntuación y confianza son estimaciones, no probabilidades calibradas.", "- Respuestas sin JSON válido nunca aparecen como aprobación limpia.", "");
   return lines.join("\n");
 }
@@ -231,7 +379,7 @@ async function writeExperienceEvaluation(aiStatus) {
     "", "## Lo que está funcionando", "",
     ...(strengths.length ? strengths.map(item => `- ${safeText(item, 300)}`) : ["Aún no hay fortalezas confirmadas por una respuesta estructurada de IA."]),
     "", "## Hallazgos y recomendaciones", "",
-    ...(issues.length ? issues.map(item => `- **[${item.severity.toUpperCase()}] ${safeText(item.region, 180)}** — ${safeText(item.evidence, 500)} Recomendación: ${safeText(item.recommendation, 500)} (confianza orientativa: ${Math.round(item.confidence * 100)}%; capturas: ${item.screenshots.join(", ")}).`) : ["No hay incidencias visuales/narrativas estructuradas confirmadas. La ausencia de incidencias no equivale a una aprobación automática."]),
+    ...(issues.length ? issues.map(item => `- **[${item.severity.toUpperCase()}] ${safeText(item.region, 180)}** — ${safeText(item.evidence, 500)} Recomendación: ${safeText(item.recommendation, 500)} (confianza orientativa: ${Number.isFinite(item.confidence) ? Math.round(item.confidence * 100) + "%" : "no indicada"}; capturas: ${item.screenshots.join(", ")}).`) : ["No hay incidencias visuales/narrativas estructuradas confirmadas. La ausencia de incidencias no equivale a una aprobación automática."]),
     "", "## Evidencia de funcionamiento y accesibilidad", "",
     `- Recorridos: ${evidence.summary?.journeyPassed ?? "—"}/${evidence.summary?.journeyChecks ?? "—"} correctos.`,
     `- Escenarios evaluados: ${evidence.summary?.scenarios ?? "—"}.`,
@@ -261,7 +409,7 @@ async function appendStepSummary(report) {
   await appendFile(process.env.GITHUB_STEP_SUMMARY, ["## Revisión visual con IA", "", `**Estado: ${report.status}** — \`${MODEL}\``, "",
     "| Métrica | Resultado |", "|---|---:|", `| Capturas solicitadas | ${s.requestedScreenshots} |`, `| Respuestas API | ${s.apiResponses} |`,
     `| JSON validados | ${s.structuredReviews} |`, `| Recuperadas de prosa | ${s.recoveredReviews} |`, `| Respuestas inválidas | ${s.invalidResponses} |`,
-    `| Errores de solicitud | ${s.failedReviews} |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
+    `| Errores de solicitud | ${s.failedReviews} |`, `| Capturas optimizadas | ${s.imageOptimizations} |`, `| Bytes reducidos | ${s.imageBytesSaved} |`, `| Reintentos HTTP | ${s.httpRetryAttempts} |`, `| Tasa JSON estructurado | ${s.structuredRatePct}% |`, `| Incidencias concretas | ${s.reportedIssues} |`, `| Frases duplicadas eliminadas | ${s.repeatedSentencesRemoved} |`, "",
     "> El estado del job no equivale a una aprobación visual. Consultá el artefacto para evidencia por captura.", ""].join("\n") + "\n", "utf8");
 }
 
@@ -275,15 +423,15 @@ if (!ACCOUNT_ID || !API_TOKEN) {
 } else {
   for (const item of CASES) {
     try { analyses.push(await review(item)); }
-    catch (error) { errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, message: safeText(error.message, 800) }); }
+    catch (error) { errors.push({ page: item.page, viewport: item.viewport, theme: item.theme, screenshot: item.file, failureKind: error.failureKind || "review_failed", message: safeText(error.message, 800) }); }
   }
   const summary = makeSummary();
   const allStructured = summary.structuredReviews === CASES.length && errors.length === 0;
   const useful = summary.reviewedScreenshots > 0;
   const report = { generatedAt: new Date().toISOString(), status: allStructured ? "completed" : useful ? "partial" : analyses.length ? "needs_manual_review" : "failed", model: MODEL,
-    reviewType: "advisory multimodal visual critique; JSON schema validation, one retry, repetition deduplication, safe prose recovery",
+    reviewType: "advisory multimodal visual critique; image optimization, schema validation, targeted correction retry, transient request retries, prose recovery",
     summary, analyses, errors,
-    safety: "advisory multimodal visual critique; never auto-edit code. Findings are advisory. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
+    safety: "Read-only multimodal critique. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
   await writeFile(resolve(ROOT, "ai-visual-review-report.md"), markdown(report), "utf8");
   await appendStepSummary(report);
