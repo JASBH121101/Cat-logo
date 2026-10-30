@@ -552,7 +552,7 @@ if (!ACCOUNT_ID || !API_TOKEN) {
   const report = { generatedAt: new Date().toISOString(), status: reportStatus, quotaMessage: quotaMessage || null, model: MODEL,
     reviewType: "advisory multimodal visual critique; image optimization, schema validation, targeted correction retry, transient request retries, prose recovery",
     summary, analyses, errors,
-    safety: "Read-only multimodal critique. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
+    safety: "Read-only multimodal critique; never auto-edit code. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
   await writeFile(resolve(ROOT, "ai-visual-review-report.md"), markdown(report), "utf8");
   await appendStepSummary(report);
