@@ -96,12 +96,12 @@ test("deduplicates perfume brand prefixes and formats family labels for social p
   const response = await onRequest({ request: makeRequest("/api/share?catalog=perfumery&id=" + PRODUCT_ID), env: {} });
   const html = await response.text();
   assert.equal(response.status, 200);
-  assert.match(html, /<title>Afnan · 9 Am Dive Unisex<\\/title>/);
+  assert.ok(html.includes("<title>Afnan · 9 Am Dive Unisex</title>"));
   assert.match(html, /og:title" content="Afnan · 9 Am Dive Unisex"/);
   assert.doesNotMatch(html, /Afnan · Afnan · 9 Am Dive/);
   assert.match(html, /Familia: Árabe/);
   assert.doesNotMatch(html, /Familia: arabes/);
-  assert.match(html, /US\\$62/);
+  assert.ok(html.includes("US$62"));
 });
 
 test("returns HEAD without a body", async () => {
