@@ -3209,6 +3209,14 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     padding-bottom: clamp(28px, 3vw, 42px);
   }
 
+  /* Center sparse product grids instead of leaving empty desktop tracks on the left. */
+  body.perfume-page .product-grid,
+  body.perfume-page .featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 300px));
+    justify-content: center;
+    align-content: start;
+  }
+
   body.perfume-page .perfume-cross-promo {
     width: min(1540px, calc(100% - 24px));
     gap: clamp(22px, 2.2vw, 34px);
