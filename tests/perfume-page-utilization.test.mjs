@@ -28,3 +28,10 @@ test("JB TECH cross-catalog banner expands on desktop and remains responsive on 
   assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-page-utilization1"));
   assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-product-grid-centering1"));
 });
+
+test("both public catalogs expand beyond 1720px on large desktop and ultrawide screens", () => {
+  assert.match(techCss, /@media\\s*\\(min-width:\\s*2560px\\)[\\s\\S]*?body\\.technology-catalog \\.catalog-section\\s*\\{[^}]*width:\\s*min\\(2680px/);
+  assert.match(perfCss, /@media\\s*\\(min-width:\\s*2560px\\)[\\s\\S]*?body\\.perfume-page main\\s*\\{[^}]*width:\\s*min\\(2680px/);
+  assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-ultrawide1"));
+  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-ultrawide1"));
+});
