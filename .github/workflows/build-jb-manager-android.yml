@@ -439,7 +439,8 @@ jobs:
           native_dir = Path("mobile/native-android")
           plugin_source = native_dir / "GoPartnersScannerPlugin.java"
           service_source = native_dir / "GoPartnersCaptureService.java"
-          if not plugin_source.is_file() or not service_source.is_file():
+          session_source = native_dir / "GoPartnersScanSession.java"
+          if not plugin_source.is_file() or not service_source.is_file() or not session_source.is_file():
               raise SystemExit("JARVIS screen scanner native sources are missing.")
 
           candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
@@ -456,6 +457,7 @@ jobs:
           for filename, native_file in (
               ("GoPartnersScannerPlugin.java", plugin_source),
               ("GoPartnersCaptureService.java", service_source),
+              ("GoPartnersScanSession.java", session_source),
           ):
               content = re.sub(
                   r"^package\s+[^;]+;",
@@ -906,8 +908,12 @@ jobs:
           GRADLE="mobile/android/app/build.gradle"
           PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersScannerPlugin.java"
           SERVICE="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersCaptureService.java"
+          SESSION="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersScanSession.java"
           test -s "$PLUGIN"
           test -s "$SERVICE"
+          test -s "$SESSION"
+          grep -q "GoPartnersScanSession.appendObservation" "$SERVICE"
+          ! grep -q "SharedPreferences" "$SERVICE"
           grep -q 'registerPlugin(GoPartnersScannerPlugin.class)' "$MAIN"
           grep -q 'FOREGROUND_SERVICE_MEDIA_PROJECTION' "$MANIFEST"
           grep -q 'foregroundServiceType="mediaProjection"' "$MANIFEST"
