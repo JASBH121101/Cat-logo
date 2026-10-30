@@ -679,7 +679,7 @@ if (!AI_PROVIDERS.length) {
     providers: [...new Set(analyses.map(item => item.provider).filter(Boolean))],
     providerOrder: AI_PROVIDERS,
     providerEvents,
-    reviewType: "read-only multimodal visual critique; independent Playwright/Axe checks, Cloudflare-first/OpenAI-fallback routing, provider circuit breakers, image optimization, schema validation, targeted correction retries, transient request retries, prose recovery",
+    reviewType: "advisory multimodal visual critique; read-only Playwright/Axe evidence, Cloudflare-first/OpenAI-fallback routing, provider circuit breakers, image optimization, schema validation, targeted correction retries, transient request retries, prose recovery",
     summary, analyses, errors,
     safety: "Read-only multimodal critique; never auto-edit code. Images over the payload limit are resized and encoded as JPEG for the model; original evidence screenshots remain unchanged. Invalid prose is retried and never silently counted as a clean pass. No code or production data is modified." };
   await writeFile(resolve(ROOT, "ai-visual-review-report.json"), JSON.stringify(report, null, 2), "utf8");
