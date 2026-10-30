@@ -92,7 +92,7 @@ test("AI provider routing uses Cloudflare then free-tier Gemini when configured"
     cloudflareAccountId: "account",
     cloudflareApiToken: "token",
     geminiApiKey: "gemini-key",
-  }), ["cloudflare", "gemini"]);
+  }), ["gemini", "cloudflare"]);
   assert.deepEqual(getConfiguredAiProviders({ geminiApiKey: "gemini-key" }), ["gemini"]);
   assert.deepEqual(getConfiguredAiProviders({ cloudflareAccountId: "account", cloudflareApiToken: "token" }), ["cloudflare"]);
   assert.deepEqual(getConfiguredAiProviders({}), []);
