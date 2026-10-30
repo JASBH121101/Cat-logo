@@ -40,3 +40,23 @@ test("perfume prices keep the luxury serif but use stronger, clearer numerals on
   assert.match(css, /@media\s*\(max-width:\s*640px\)[\s\S]*?body\.perfume-page \.perfume-product-card \.perfume-product-price\s*\{[^}]*font-size:\s*clamp\(24px,\s*6\.1vw,\s*28px\)[^}]*font-weight:\s*700/s);
   assert.match(css, /body\.perfume-page \.perfume-product-card \.perfume-product-meta\s*\{[^}]*font-size:\s*11px\s*!important/s);
 });
+
+
+test("on-order perfume cards retain the explicit status badge behavior", () => {
+  const statusStart = js.indexOf("function statusLabel(value)");
+  const statusEnd = js.indexOf("\n}", statusStart) + 2;
+  const statusSource = js.slice(statusStart, statusEnd);
+  assert.ok(statusSource.includes('["on_order","por pedido","order"]'));
+  assert.ok(statusSource.includes('return "Por pedido"'));
+  const cardStart = js.indexOf("function renderCard(product)");
+  const cardEnd = js.indexOf("\nfunction ", cardStart + 10);
+  const cardSource = js.slice(cardStart, cardEnd);
+  assert.ok(cardSource.includes('state === "Disponible" ? "" :'));
+  assert.ok(cardSource.includes('class="perfume-state-badge"'));
+});
+
+test("desktop perfume cards use larger metadata, order badges and action labels", () => {
+  assert.ok(css.includes("font-size:13px !important;"));
+  assert.ok(css.includes("font-size:11.5px !important;"));
+  assert.ok(css.includes("font-size:clamp(17px,1.15vw,19px) !important;"));
+});

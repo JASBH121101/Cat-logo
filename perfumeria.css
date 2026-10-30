@@ -3364,3 +3364,26 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
     gap: 24px;
   }
 }
+
+
+/* JB PARFUMS · 2026-10-30 desktop legibility correction.
+   Raises card metadata, order badges and detail labels without changing mobile sizing. */
+@media (min-width: 761px) {
+  body.perfume-page .perfume-category-heading p:not(.perfume-kicker) { font-size:14px !important; line-height:1.55 !important; }
+  body.perfume-page .perfume-category-count { font-size:12px !important; line-height:1.35 !important; }
+  body.perfume-page .perfume-product-card h3 { font-size:clamp(17px,1.15vw,19px) !important; line-height:1.24 !important; }
+  body.perfume-page .perfume-product-card .perfume-product-meta { font-size:13px !important; line-height:1.45 !important; gap:5px 8px !important; }
+  body.perfume-page .perfume-product-card .perfume-product-price-secondary { font-size:13px !important; line-height:1.35 !important; }
+  body.perfume-page .perfume-product-card .perfume-view-button { min-height:42px !important; padding:10px 12px !important; font-size:13px !important; }
+  body.perfume-page .perfume-product-card .perfume-product-badges { min-height:44px !important; padding:8px 11px !important; gap:8px !important; }
+  body.perfume-page .perfume-product-card .perfume-product-badges .perfume-featured-badge,
+  body.perfume-page .perfume-product-card .perfume-product-badges .perfume-state-badge,
+  body.perfume-page .perfume-product-card .perfume-product-badges .perfume-limited-edition-badge {
+    padding:6px 9px !important; font-size:11.5px !important; line-height:1.3 !important; letter-spacing:.025em !important;
+  }
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-facts dt { font-size:12px !important; line-height:1.35 !important; }
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-facts dd { font-size:15px !important; line-height:1.4 !important; }
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price span,
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price small { font-size:13px !important; }
+  body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-note-group li { font-size:13px !important; line-height:1.4 !important; }
+}
