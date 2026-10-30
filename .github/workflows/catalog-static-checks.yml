@@ -11,6 +11,11 @@ on:
         required: false
         type: boolean
         default: false
+      audit_personal_experience:
+        description: "Run a read-only audit against Declaraci-n using the Personal Experience QA profile"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   validate:
