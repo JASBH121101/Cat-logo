@@ -68,7 +68,7 @@ function userPrompt(item, correctionReason = "") {
     correctionReason
       ? `La respuesta anterior no pasó la validación. Corrige específicamente este problema: ${correctionReason}. Vuelve a evaluar la misma imagen y responde con el objeto JSON completo.`
       : "",
-  ].filter(Boolean).join("\\n");
+  ].filter(Boolean).join("\n");
 }
 
 const delay = ms => new Promise(resolveDelay => setTimeout(resolveDelay, ms));
@@ -234,7 +234,7 @@ async function review(item) {
         parsed = second;
       } else {
         const recovery = recoverReview(
-          [firstCall.text, secondCall.text].join("\\n"),
+          [firstCall.text, secondCall.text].join("\n"),
           `La respuesta no pasó la validación tras dos generaciones: ${second.reason || parsed.reason || "formato no reconocido"}`,
         );
         parsed = {
