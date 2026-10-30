@@ -10,7 +10,7 @@ const techHtml = readFileSync(new URL("../tecnologia/index.html", import.meta.ur
 test("JB Parfums desktop layout uses more of the available page width", () => {
   assert.match(perfCss, /@media\s*\(min-width:\s*1100px\)[\s\S]*?body\.perfume-page main\s*\{[^}]*max-width:\s*1720px/);
   assert.match(perfCss, /body\.perfume-page \.perfume-cross-promo\s*\{[^}]*width:\s*min\(1540px/);
-  assert.match(perfCss, /body\.perfume-page \.product-grid,[\\s\\S]*?justify-content:\s*center/);
+  assert.match(perfCss, /body\.perfume-page \.product-grid,[\s\S]*?justify-content:\s*center/);
   assert.match(perfCss, /body\.perfume-page \.perfume-category-section\s*\{[^}]*padding-top:\s*clamp\(28px/);
 });
 
@@ -34,6 +34,6 @@ test("both public catalogs expand beyond 1720px on large desktop and ultrawide s
   assert.ok(techCss.includes("width: min(3360px"));
   assert.ok(perfCss.includes("@media (min-width: 2560px)"));
   assert.ok(perfCss.includes("width: min(2680px"));
-  assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-ultrawide1"));
-  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-ultrawide1"));
+  assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261030-desktop4k1"));
+  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-desktop4k1"));
 });

@@ -41,8 +41,12 @@ test("parallel runner preserves module-mode flags and fails CI when any child te
   assert.match(runner, /process\.exitCode = 1/);
   assert.match(runner, /No tests were skipped/);
   assert.match(runner, /Failing test files/);
-  assert.match(workflow, /TEST_GROUP_CONCURRENCY: "4"/);
+  assert.match(workflow, /TEST_GROUP_CONCURRENCY: "2"/);
   assert.match(workflow, /node tests\/run-regression-suite\.mjs/);
+  assert.match(runner, /timeoutMs = item\.timeoutMs/);
+  assert.match(runner, /child\.kill\("SIGTERM"\)/);
+  assert.match(runner, /regression-audit-report\.json/);
+  assert.match(workflow, /name: regression-audit-report/);
 });
 
 test("CI caches Playwright browser and npm downloads between runs", () => {

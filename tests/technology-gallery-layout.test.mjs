@@ -13,7 +13,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.ok(styles.length > 0, "page should declare stylesheets");
   assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261030-desktop4k1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
-  assert.match(html, /app\.js\?v=20261029-dedicated-detail-navigation1/);
+  assert.match(html, /app\.js\?v=20261030-gallery-ambient1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);

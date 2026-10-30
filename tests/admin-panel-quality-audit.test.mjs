@@ -80,11 +80,11 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /html body\.admin-body \.commission-summary-grid span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-updated,[\s\S]*?font-size:\s*12px\s*!important;/);
 
-  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-main \{[^}]*grid-template-columns:\s*24px minmax\(0, 1fr\) 54px 30px/);
-  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-tone-field input\[type="color"\] \{[^}]*width:\s*54px\s*!important;[^}]*height:\s*48px\s*!important;/);
-  assert.match(accessibilityStyles, /::-webkit-color-swatch-wrapper \{\s*padding:\s*0;/);
-  assert.match(accessibilityStyles, /::-webkit-color-swatch \{[^}]*border-radius:\s*7px/);
-  assert.match(accessibilityStyles, /::-moz-color-swatch \{[^}]*border-radius:\s*7px/);
+  // Grid geometry is in admin-workflow.css; the circular preview/input overlay is in admin-accessibility.css.
+  assert.match(editorWorkflow, /html body\.admin-body form#product-form \.inline-color-card-body>\.inline-color-main\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) 42px\s*!important/);
+  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-tone-field\s*\{[^}]*width:\s*44px\s*!important/);
+  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-tone-preview\s*\{[^}]*width:\s*36px\s*!important[^}]*height:\s*36px\s*!important[^}]*border-radius:\s*50%\s*!important/s);
+  assert.match(accessibilityStyles, /html body\.admin-body form#product-form \.inline-color-tone-preview input\[type="color"\]\s*\{[^}]*width:\s*100%\s*!important[^}]*height:\s*100%\s*!important[^}]*opacity:\s*0\s*!important/s);
 
   const storageArrowRule = accessibilityStyles.match(/html\[data-theme="dark"\] body\.admin-body select\.variant-storage-unit\s*\{[^}]*\}/)?.[0] || "";
   assert.match(storageArrowRule, /appearance:\s*none\s*!important;/);

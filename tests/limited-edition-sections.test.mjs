@@ -35,7 +35,7 @@ test("technology limited editions have a dedicated section immediately after Exc
   assert.match(technologyHtml, /id="limited-edition-count"/);
   assert.ok(technologyHtml.indexOf('id="featured-section"') < technologyHtml.indexOf('id="limited-edition-section"'));
   assert.ok(technologyHtml.indexOf('id="limited-edition-section"') < technologyHtml.indexOf('id="high-performance-section"'));
-  assert.match(technologyHtml, /app\.js\?v=20261029-dedicated-detail-navigation1/);
+  assert.match(technologyHtml, /app\.js\?v=20261030-gallery-ambient1/);
   assert.match(technologyHtml, /technology-visual-refresh\.css\?v=20261030-desktop4k1/);
   assert.match(technologyJs, /limited_edition:\s*"▦ EDICIÓN LIMITADA"/);
   assert.match(technologyHtml, /<rect x="6\.5" y="6\.5" width="11" height="11" rx="2"\/>/);
@@ -53,7 +53,7 @@ test("JB Parfums has independent exclusive and luxury limited-edition showcases"
   assert.match(perfumeHtml, /id="perfume-limited-edition-grid"/);
   assert.ok(perfumeHtml.indexOf('id="perfume-exclusive-section"') < perfumeHtml.indexOf('id="perfume-limited-edition-section"'));
   assert.ok(perfumeHtml.indexOf('id="perfume-limited-edition-section"') < perfumeHtml.indexOf('id="category-nicho"'));
-  assert.match(perfumeHtml, /perfumeria\.js\?v=20261029-dedicated-detail-navigation1/);
+  assert.match(perfumeHtml, /perfumeria\.js\?v=20261030-gallery-ambient1/);
   assert.match(perfumeHtml, /perfumeria\.css\?v=20261030-desktop-type12/);
   assert.match(perfumeJs, /function normalizedPerfumeProductTags\(product\)/);
   assert.match(perfumeJs, /tags\.includes\("exclusive"\)/);

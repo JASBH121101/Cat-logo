@@ -100,7 +100,7 @@ jobs:
 
       - name: Run automated regression suite in parallel groups
         env:
-          TEST_GROUP_CONCURRENCY: "4"
+          TEST_GROUP_CONCURRENCY: "2"
         run: node tests/run-regression-suite.mjs
 
       - name: Check canonical URLs and public share origin
@@ -299,6 +299,16 @@ jobs:
         with:
           name: dependency-audit
           path: dependency-audit.md
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload regression audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-audit-report
+          path: |
+            regression-audit-report.md
+            regression-audit-report.json
           if-no-files-found: ignore
           retention-days: 14
 

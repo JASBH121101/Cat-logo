@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { appendFile, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 
 const test = (file, moduleMode = false) => ({
@@ -47,24 +48,50 @@ let nextGroup = 0;
 
 function runTest(groupName, item) {
   const started = performance.now();
+  const timeoutMs = item.timeoutMs || (
+    item.file === "tests/visual-audit.test.mjs" ||
+    item.file === "tests/admin-panel-quality-audit.test.mjs"
+      ? 180_000 : 120_000
+  );
   return new Promise(resolve => {
     const child = spawn(process.execPath, item.args, {
       cwd: process.cwd(), env: process.env, stdio: ["ignore", "pipe", "pipe"],
     });
-    let stdout = "", stderr = "";
-    const limit = 2_000_000;
+    let stdout = "", stderr = "", settled = false, timedOut = false, forceKillTimer;
+    const outputLimit = 1_000_000;
+    const appendBounded = (current, chunk) => {
+      const next = current + chunk;
+      if (next.length <= outputLimit) return next;
+      const head = Math.floor(outputLimit * 0.7);
+      const tail = Math.floor(outputLimit * 0.25);
+      return next.slice(0, head) + "\n...[test output truncated]...\n" + next.slice(-tail);
+    };
+    const finish = result => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      if (forceKillTimer) clearTimeout(forceKillTimer);
+      resolve(result);
+    };
+    const timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+      forceKillTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+    }, timeoutMs);
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", chunk => { if (stdout.length < limit) stdout += chunk; });
-    child.stderr.on("data", chunk => { if (stderr.length < limit) stderr += chunk; });
-    child.on("error", error => resolve({
-      group: groupName, file: item.file, ok: false,
-      ms: Math.round(performance.now() - started), output: `Unable to start test process: ${error.message}`,
+    child.stdout.on("data", chunk => { stdout = appendBounded(stdout, chunk); });
+    child.stderr.on("data", chunk => { stderr = appendBounded(stderr, chunk); });
+    child.on("error", error => finish({
+      group: groupName, file: item.file, ok: false, kind: "spawn_error",
+      ms: Math.round(performance.now() - started),
+      output: "Unable to start test process: " + error.message,
     }));
-    child.on("close", (code, signal) => resolve({
-      group: groupName, file: item.file, ok: code === 0,
-      ms: Math.round(performance.now() - started), code, signal,
-      output: [stdout.trim(), stderr.trim()].filter(Boolean).join("\n"),
+    child.on("close", (code, signal) => finish({
+      group: groupName, file: item.file, ok: code === 0 && !timedOut,
+      kind: timedOut ? "timeout" : code === 0 ? "passed" : "test_failure",
+      ms: Math.round(performance.now() - started), code, signal, timedOut,
+      timeoutMs, output: [stdout.trim(), stderr.trim()].filter(Boolean).join("\n"),
     }));
   });
 }
@@ -74,8 +101,8 @@ async function runGroup(group) {
   for (const item of group.tests) {
     const result = await runTest(group.name, item);
     results.push(result);
-    console.log(`[${result.ok ? "PASS" : "FAIL"}] ${result.file} (${(result.ms / 1000).toFixed(2)}s)`);
-    if (!result.ok) console.error(result.output || `Exit code: ${result.code ?? "unknown"}; signal: ${result.signal ?? "none"}`);
+    console.log(`[${result.ok ? "PASS" : result.kind === "timeout" ? "TIMEOUT" : "FAIL"}] ${result.file} (${(result.ms / 1000).toFixed(2)}s)`);
+    if (!result.ok) console.error(result.output || (result.kind === "timeout" ? `Exceeded per-file timeout of ${result.timeoutMs}ms; process terminated.` : `Exit code: ${result.code ?? "unknown"}; signal: ${result.signal ?? "none"}`));
     else if (result.file === "tests/visual-audit.test.mjs" && result.output) {
       const diagnostics = result.output.split(/\r?\n/).filter(line =>
         /VISUAL AUDIT:|JOURNEY (?:PASS|FAIL)|\[(?:CRITICAL|HIGH)\]/.test(line)
@@ -95,11 +122,54 @@ await Promise.all(Array.from({ length: concurrency }, async () => {
 }));
 
 const failures = results.filter(result => !result.ok);
+const report = {
+  generatedAt: new Date().toISOString(),
+  summary: {
+    files: results.length,
+    passed: results.length - failures.length,
+    failed: failures.length,
+    timedOut: failures.filter(result => result.kind === "timeout").length,
+    spawnErrors: failures.filter(result => result.kind === "spawn_error").length,
+    workerGroups: concurrency,
+    wallTimeSeconds: Number(((performance.now() - startedAt) / 1000).toFixed(2)),
+  },
+  results: results.map(({ output, ...result }) => ({
+    ...result,
+    ...(result.ok ? {} : { output: String(output || "").slice(-12_000) }),
+  })),
+};
+const reportJson = JSON.stringify(report, null, 2);
+const reportMarkdown = [
+  "# Regression audit report", "",
+  "- Generated: " + report.generatedAt,
+  "- Files: " + report.summary.files,
+  "- Passed: " + report.summary.passed,
+  "- Failed: " + report.summary.failed,
+  "- Timed out: " + report.summary.timedOut,
+  "- Spawn errors: " + report.summary.spawnErrors,
+  "- Worker groups: " + report.summary.workerGroups,
+  "- Wall time: " + report.summary.wallTimeSeconds + "s", "",
+  "## Results", "",
+  "| Group | Test file | Result | Time |",
+  "|---|---|---:|---:|",
+  ...results.map(result => `| ${result.group} | ${result.file} | ${result.kind} | ${(result.ms / 1000).toFixed(2)}s |`),
+  "",
+  failures.length ? "## Failure details" : "## Status", "",
+  ...(failures.length
+    ? failures.map(failure => "### " + failure.file + "\n\n```text\n" + (failure.output || "No child-process output.") + "\n```")
+    : ["All regression groups passed. No tests were skipped."]),
+].join("\n");
+await writeFile("regression-audit-report.json", reportJson, "utf8");
+await writeFile("regression-audit-report.md", reportMarkdown, "utf8");
+if (process.env.GITHUB_STEP_SUMMARY) {
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, reportMarkdown + "\n", "utf8");
+}
+
 console.log("\n=== REGRESSION AUDIT SUMMARY ===");
-console.log(`Files: ${results.length}; passed: ${results.length - failures.length}; failed: ${failures.length}; worker groups: ${concurrency}; wall time: ${((performance.now() - startedAt) / 1000).toFixed(2)}s`);
-for (const result of results) console.log(`- ${result.ok ? "PASS" : "FAIL"} | ${result.group} | ${result.file} | ${(result.ms / 1000).toFixed(2)}s`);
+console.log(`Files: ${report.summary.files}; passed: ${report.summary.passed}; failed: ${report.summary.failed}; timed out: ${report.summary.timedOut}; worker groups: ${concurrency}; wall time: ${report.summary.wallTimeSeconds}s`);
+for (const result of results) console.log(`- ${result.ok ? "PASS" : result.kind.toUpperCase()} | ${result.group} | ${result.file} | ${(result.ms / 1000).toFixed(2)}s`);
 if (failures.length) {
   console.error("\nFailing test files:");
-  for (const failure of failures) console.error(`- ${failure.file}`);
+  for (const failure of failures) console.error(`- ${failure.file} (${failure.kind})`);
   process.exitCode = 1;
 } else console.log("All regression groups passed. No tests were skipped.");
