@@ -213,3 +213,80 @@ export function interpretModelResponse(text) {
 }
 
 export function safeText(value, max = 1000) { return str(value, max).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ""); }
+
+export function getConfiguredAiProviders({
+  cloudflareAccountId = "",
+  cloudflareApiToken = "",
+  openaiApiKey = "",
+  order = "cloudflare,openai",
+} = {}) {
+  const configured = new Set();
+  if (String(cloudflareAccountId).trim() && String(cloudflareApiToken).trim()) configured.add("cloudflare");
+  if (String(openaiApiKey).trim()) configured.add("openai");
+  const requested = String(order || "cloudflare,openai")
+    .split(",")
+    .map(value => value.trim().toLowerCase())
+    .filter(value => value === "cloudflare" || value === "openai");
+  return [...new Set([...requested, "cloudflare", "openai"])].filter(provider => configured.has(provider));
+}
+
+export function classifyOpenAIFailure({ status = 0, payload = null, bodyText = "" } = {}) {
+  const detail = [
+    payload?.error?.message,
+    payload?.error?.code,
+    payload?.error?.type,
+    bodyText,
+  ].filter(Boolean).join(" ").toLowerCase();
+  const code = String(payload?.error?.code || "").toLowerCase();
+
+  if (["insufficient_quota", "billing_hard_limit_reached", "credit_balance_exhausted"].includes(code)
+    || /insufficient quota|billing hard limit|credit balance exhausted|exceeded your current quota/.test(detail)) {
+    return { kind: "billing_quota_exhausted", retryable: false };
+  }
+  if (status === 401 || status === 403 || /invalid_api_key|incorrect api key|authentication/.test(detail)) {
+    return { kind: "authentication_error", retryable: false };
+  }
+  if (status === 404 || /model_not_found|model .* not found|does not exist/.test(detail)) {
+    return { kind: "model_unavailable", retryable: false };
+  }
+  if (status === 408) return { kind: "timeout", retryable: true };
+  if (status === 429) return { kind: "rate_limited", retryable: true };
+  if (status >= 500) return { kind: "server_error", retryable: true };
+  if (status >= 400) return { kind: "api_rejected", retryable: false };
+  return { kind: "unknown", retryable: false };
+}
+
+export function isProviderCircuitBreakingFailure(provider, failureKind) {
+  if (provider === "cloudflare") {
+    return ["daily_quota_exhausted", "model_license_required"].includes(String(failureKind || ""));
+  }
+  if (provider === "openai") {
+    return ["billing_quota_exhausted", "authentication_error", "model_unavailable"].includes(String(failureKind || ""));
+  }
+  return false;
+}
+
+export function getOpenAIResponseText(payload) {
+  if (typeof payload?.output_text === "string" && payload.output_text.trim()) {
+    return str(payload.output_text, 16000);
+  }
+  const output = Array.isArray(payload?.output) ? payload.output : [];
+  const fragments = [];
+  for (const item of output) {
+    if (item?.type !== "message" || !Array.isArray(item.content)) continue;
+    for (const part of item.content) {
+      if ((part?.type === "output_text" || part?.type === "text") && typeof part.text === "string") {
+        fragments.push(part.text);
+      }
+    }
+  }
+  if (fragments.length) return str(fragments.join("\\n"), 16000);
+  const choices = Array.isArray(payload?.choices) ? payload.choices : [];
+  const content = choices[0]?.message?.content;
+  if (typeof content === "string") return str(content, 16000);
+  if (Array.isArray(content)) {
+    return str(content.filter(part => typeof part?.text === "string").map(part => part.text).join("\\n"), 16000);
+  }
+  return "";
+}
+
