@@ -90,6 +90,12 @@ function evidenceForCase(item, evidenceIndex) {
       documentHeight: data.documentHeight || data.document?.height || null,
       horizontalOverflow: data.horizontalOverflow ?? null,
       longBlankGaps: Array.isArray(data.longBlankGaps) ? data.longBlankGaps.slice(0, 8) : [],
+      contentWidth: data.contentMetrics?.width ?? null,
+      contentLeft: data.contentMetrics?.left ?? null,
+      viewportUtilizationPct: data.contentMetrics?.viewportUtilizationPct ?? null,
+      gridWidth: data.contentMetrics?.gridWidth ?? null,
+      gridColumns: data.contentMetrics?.gridColumns ?? null,
+      cardWidth: data.contentMetrics?.cardWidth ?? null,
     },
     content: {
       visibleProductCards: data.visibleProductCards ?? null,
