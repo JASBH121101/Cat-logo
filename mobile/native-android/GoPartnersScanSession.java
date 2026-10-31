@@ -46,7 +46,7 @@ public final class GoPartnersScanSession {
     public static void appendObservation(String text, long capturedAt) {
         if (text == null || text.trim().length() < 8) return;
         synchronized (LOCK) {
-            if (!running) return;
+            if (!running && !processing) return;
             if (observations.length() >= MAX_OBSERVATIONS) {
                 truncated = true;
                 return;
