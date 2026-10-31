@@ -332,7 +332,10 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       authenticatedUser = null;
       launcher.hidden = true;
       recognition?.abort?.();
-      if (nativeVoiceActive) void nativeVoicePlugin()?.cancelListening?.().catch?.(() => {});
+      const nativeVoice = nativeVoicePlugin();
+      if (nativeVoiceActive && nativeVoice && typeof nativeVoice.cancelListening === "function") {
+        void Promise.resolve(nativeVoice.cancelListening()).catch(() => {});
+      }
       nativeVoiceListeners.forEach(handle => handle?.remove?.());
       nativeVoiceListeners = [];
       nativeVoiceListenersReady = false;
