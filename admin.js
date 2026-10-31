@@ -1476,6 +1476,103 @@ if (rememberedLoginEmail && isRememberedSessionEnabled()) {
 }
 syncRememberControls();
 
+function nativeBiometricApi() {
+  const api = window.JBManagerBiometric;
+  return api && api.isNative === true ? api : null;
+}
+
+async function syncBiometricControls() {
+  const button = $("#biometric-auth-toggle");
+  if (!button) return;
+  const api = nativeBiometricApi();
+  if (!api) {
+    button.hidden = true;
+    return;
+  }
+  button.hidden = false;
+  try {
+    const status = await api.getStatus();
+    const enabled = Boolean(status?.enabled);
+    const label = $("#biometric-auth-toggle-label");
+    const detail = $("#biometric-auth-status");
+    button.setAttribute("aria-pressed", String(enabled));
+    if (label) label.textContent = enabled ? "Desactivar huella" : "Activar huella";
+    if (detail) {
+      detail.textContent = enabled
+        ? "Se solicitará al volver a abrir la APK."
+        : status?.available
+          ? "Protegé el acceso a JB Manager con tu huella."
+          : status?.message || "Configurá una huella en los ajustes de Android.";
+    }
+    button.title = enabled ? "Desactivar desbloqueo biométrico" : "Activar desbloqueo biométrico";
+  } catch (error) {
+    console.warn("No se pudo consultar la disponibilidad biométrica.", error);
+    const detail = $("#biometric-auth-status");
+    if (detail) detail.textContent = "No se pudo consultar el sensor biométrico.";
+  }
+}
+
+async function requireBiometricUnlockForRestoredSession() {
+  const api = nativeBiometricApi();
+  if (!api) return true;
+  try {
+    const status = await api.getStatus();
+    if (!status?.enabled) return true;
+    await api.authenticate();
+    return true;
+  } catch (error) {
+    console.info("El desbloqueo biométrico no se completó; se ofrece el acceso con contraseña.", error);
+    showLoginScreen(
+      "La sesión está recordada, pero no se desbloqueó con huella. Iniciá sesión con tu correo y contraseña para continuar.",
+      "warning"
+    );
+    return false;
+  }
+}
+
+async function handleBiometricSettingsToggle() {
+  const button = $("#biometric-auth-toggle");
+  const api = nativeBiometricApi();
+  if (!button || !api || button.disabled) return;
+  button.disabled = true;
+  try {
+    const status = await api.getStatus();
+    if (status?.enabled) {
+      await api.disable();
+      setStatus("Desbloqueo con huella desactivado.");
+      return;
+    }
+    if (!status?.available) {
+      if (String(status?.message || "").toLowerCase().includes("no hay huellas")) {
+        await api.openEnrollmentSettings();
+        setStatus("Android abrió los ajustes de seguridad. Registrá tu huella y volvé a JB Manager.");
+      } else {
+        throw new Error(status?.message || "Este dispositivo no tiene biometría compatible.");
+      }
+      return;
+    }
+    await api.enable();
+    if (!isRememberedSessionEnabled()) {
+      setRememberedSession(true, currentUser?.email || "");
+      if (!isRememberedSessionEnabled()) {
+        await api.disable();
+        throw new Error("No se pudo recordar la sesión en este dispositivo. No se activó la huella.");
+      }
+    }
+    setStatus("Huella activada. Se solicitará al volver a abrir JB Manager.");
+  } catch (error) {
+    const messageText = error?.message || "No se pudo actualizar el desbloqueo biométrico.";
+    if (error?.code === "BIOMETRIC_PASSWORD_FALLBACK" || error?.code === "BIOMETRIC_CANCELED") {
+      setStatus("No se realizaron cambios en el desbloqueo con huella.");
+    } else {
+      message("#admin-status", messageText, "error");
+    }
+  } finally {
+    button.disabled = false;
+    await syncBiometricControls();
+  }
+}
+
 function clearLoginPassword() {
   const password = $("#login-password");
 
@@ -2838,6 +2935,7 @@ async function showDashboard(user) {
 
   currentUser = user;
   jbManagerAI?.setAuthenticatedUser(user);
+  void syncBiometricControls();
   refreshCatalogAdminActivityMarker();
 
   loginPanel.classList.add("hidden");
@@ -2894,6 +2992,8 @@ async function handleSession() {
   }
 
   try {
+    const biometricUnlocked = await requireBiometricUnlockForRestoredSession();
+    if (!biometricUnlocked) return;
     await showDashboard(data.session.user);
   } catch (error) {
     await signOutLocalSafely();
@@ -2933,6 +3033,10 @@ $("#remember-user-toggle")?.addEventListener("click", () => {
       ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
       : "Dejaste de recordar este usuario. La sesión actual seguirá activa hasta que la cierres."
   );
+});
+
+$("#biometric-auth-toggle")?.addEventListener("click", () => {
+  void handleBiometricSettingsToggle();
 });
 
 $("#login-form")?.addEventListener("submit", async event => {
