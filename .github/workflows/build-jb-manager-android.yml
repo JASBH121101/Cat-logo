@@ -166,6 +166,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Run scanner and product-form regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/jb-gopartners-scanner.test.mjs \
+            tests/admin-product-form-workflow.test.mjs
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -639,6 +647,8 @@ jobs:
             assets/public/admin-workflow.css \
             assets/public/admin-bulk-import.css \
             assets/public/admin-provider.css \
+            assets/public/admin-gopartners-scanner.js \
+            assets/public/admin-gopartners-scanner.css \
             assets/public/admin-commission.css \
             assets/public/admin-desktop-typography.css \
             assets/public/admin-duplicate-detector.css \
@@ -869,6 +879,22 @@ jobs:
           }
           unzip -p "$APK" assets/public/jb-manager-system-bars.js | grep -q 'SystemBars' || {
             echo "APK Android system-bars bridge is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'onPrepareNewProduct: prepareProductDraft' || {
+            echo "APK admin.js is missing scanner-to-product-form preparation." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'onPrepareProductDraft: prepareProductDraft' || {
+            echo "APK admin.js is missing Copilot product-form preparation." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'usd.length && !usdHasMissing ? usd[0] : null' || {
+            echo "APK scanner could copy a partial supplier price across color rows." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'configuration_availability: "unknown"' || {
+            echo "APK scanner is missing explicit pending-availability protection." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.js | grep -Fq 'data-ai-color-open' || {
