@@ -71,7 +71,7 @@ test("streams the complete APK immediately with exact download headers", async (
         controller.enqueue(fakeApk());
         controller.close();
       }
-    }), {
+    }, { highWaterMark: 0 }), {
       status: 200,
       headers: {
         "Content-Type": "application/octet-stream",
