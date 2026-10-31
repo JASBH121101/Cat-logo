@@ -27,18 +27,18 @@ test("product draft and unpublished saves require a name but defer publish-only 
 });
 
 test("RAM and storage fields are reserved for categories that use those specifications", () => {
-  assert.match(admin, /function categoryUsesRamStorage[\\s\\S]*?\\["Celulares", "Tablets", "Laptops"\\]/);
-  assert.match(admin, /function categoryUsesColorOnlyVariants[\\s\\S]*?\\["Televisores", "Audio"\\]/);
-  assert.match(admin, /label\\.classList\\.toggle\\("hidden", colorOnly\\)/);
-  assert.match(admin, /const ramRaw = read\\("\\[data-group-ram\\]"\\);[\\s\\S]*?const ram = ramRaw \\?/);
-  assert.doesNotMatch(admin, /requiresConfiguration && !options\\.allowIncomplete && !ramRaw/);
+  assert.match(admin, /function categoryUsesRamStorage[\s\S]*?\["Celulares", "Tablets", "Laptops"\]/);
+  assert.match(admin, /function categoryUsesColorOnlyVariants[\s\S]*?\["Televisores", "Audio"\]/);
+  assert.match(admin, /label\.classList\.toggle\("hidden", colorOnly\)/);
+  assert.match(admin, /const ramRaw = read\("\[data-group-ram\]"\);[\s\S]*?const ram = ramRaw \?/);
+  assert.doesNotMatch(admin, /requiresConfiguration && !options\.allowIncomplete && !ramRaw/);
 });
 
 test("variant controls and specifications adapt immediately to the selected technology category", () => {
-  assert.match(admin, /addVariantButton\\.classList\\.toggle\\("hidden", colorOnly\\)/);
-  assert.match(admin, /addVariantButton\\.title = colorOnly[\\s\\S]*?Agregar otra variante de capacidad, RAM, precio y color/);
-  assert.match(admin, /label\\.classList\\.toggle\\("hidden", colorOnly\\)/);
-  assert.match(admin, /updateCategoryVariantVisibility\\(\\);[\\s\\S]*?const focusSelector = categoryUsesRamStorage\\(\\) \\?[\\s\\S]*?data-group-price-usd/);
+  assert.match(admin, /addVariantButton\.classList\.toggle\("hidden", colorOnly\)/);
+  assert.match(admin, /addVariantButton\.title = colorOnly[\s\S]*?Agregar otra variante de capacidad, RAM, precio y color/);
+  assert.match(admin, /label\.classList\.toggle\("hidden", colorOnly\)/);
+  assert.match(admin, /updateCategoryVariantVisibility\(\);[\s\S]*?const focusSelector = categoryUsesRamStorage\(\) \?[\s\S]*?data-group-price-usd/);
   assert.match(html, /id="base-color-manager" class="base-color-manager primary-config-slot"/);
 });
 
