@@ -86,3 +86,12 @@ test("JB Copilot renders missing fields as human-readable labels, not raw model 
   assert.match(assistant, /Configuración \(RAM y almacenamiento\)/);
   assert.match(assistant, /labels\[key\]/);
 });
+
+
+test("JB Copilot explains provider, session and service errors without a generic failure banner", () => {
+  assert.match(assistant, /gemini_request_failed:/);
+  assert.match(assistant, /gemini_unstructured_response:/);
+  assert.match(assistant, /admin_verification_unavailable:/);
+  assert.match(assistant, /No se hizo ningún cambio/);
+  assert.match(assistant, /setStatus\(error\?\.message/);
+});
