@@ -46,3 +46,11 @@ test("a stopped in-memory capture session can still be resumed for review", () =
   assert.ok(source.includes("state?.running || count > 0"));
   assert.ok(source.includes("La captura ya se detuvo"));
 });
+
+test("an interrupted Android capture is surfaced while retaining partial OCR for review", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.ok(source.includes("state?.interrupted === true"));
+  assert.ok(source.includes("Captura interrumpida por Android"));
+  assert.ok(source.includes("session?.interrupted === true"));
+  assert.ok(source.includes("interruptionReason"));
+});
