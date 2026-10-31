@@ -596,6 +596,18 @@ jobs:
           set -euo pipefail
           KEYSTORE="$HOME/.android/debug.keystore"
           APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions "$APK" | grep -q 'android.permission.RECORD_AUDIO' || {
+            echo "APK is missing Android's runtime microphone permission."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-ai.js | grep -Fq 'nativeVoicePlugin()' || {
+            echo "APK is missing the native JB Manager voice-input client."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'admin-ai.js?v=20261031-native-voice1' || {
+            echo "APK admin.js does not load the updated native voice-input module."
+            exit 1
+          }
           EXPECTED="$(keytool -list -v -keystore "$KEYSTORE" -storepass android -alias androiddebugkey 2>/dev/null | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           ACTUAL="$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | awk -F': ' '/certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           if [ -z "$EXPECTED" ] || [ -z "$ACTUAL" ]; then
