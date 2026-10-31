@@ -277,8 +277,10 @@ export async function onRequestPost({ request, env }) {
   let selectedModel = "";
   let lastGeminiError = null;
   let attempts = 0;
+  const attemptedModels = [];
 
   for (const candidate of modelPlan) {
+    attemptedModels.push(candidate.name);
     attempts += 1;
     const url = "https://generativelanguage.googleapis.com/v1beta/models/" +
       candidate.name + ":generateContent";
@@ -362,7 +364,15 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (!geminiResponse) {
-    return response(503, { ok: false, error: "gemini_temporarily_unavailable" }, origin);
+    return response(503, {
+      ok: false,
+      error: "gemini_temporarily_unavailable",
+      detail: [
+        lastGeminiError?.apiStatus,
+        lastGeminiError?.message,
+        "Modelos intentados: " + attemptedModels.join(", ")
+      ].filter(Boolean).join(": ").slice(0, 480)
+    }, origin);
   }
   let result;
   try { result = await geminiResponse.json(); } catch {
@@ -414,7 +424,7 @@ export async function onRequestPost({ request, env }) {
         lastGeminiError?.model || selectedModel,
         apiStatus,
         apiMessage,
-        "Modelos intentados: " + modelPlan.slice(0, Math.min(modelPlan.length, attempts)).map(item => item.name).join(", ")
+        "Modelos intentados: " + attemptedModels.join(", ")
       ].filter(Boolean).join(": ").slice(0, 480)
     }, origin);
   }
