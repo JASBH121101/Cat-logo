@@ -143,8 +143,11 @@ public class GoPartnersOverlayService extends Service {
                 stopSelf();
             })
             .create();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && dialog.getWindow() != null) {
-            dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+        if (dialog.getWindow() != null) {
+            int dialogType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                : WindowManager.LayoutParams.TYPE_PHONE;
+            dialog.getWindow().setType(dialogType);
         }
         try { dialog.show(); }
         catch (Exception ignored) { dialog.dismiss(); }
