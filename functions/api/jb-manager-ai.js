@@ -239,35 +239,61 @@ export async function onRequestPost({ request, env }) {
     "Devolvé exclusivamente el objeto JSON solicitado."
   ].join(" ");
 
-  const geminiResponse = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": env.GEMINI_API_KEY
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents: [{
-          role: "user",
-          parts: [{
-            text: "Catálogo disponible (datos administrativos limitados): " + JSON.stringify(context) +
-              "\n\nSolicitud del administrador: " + prompt
-          }]
-        }],
-        generationConfig: {
-          responseFormat: {
-            text: {
-              mimeType: "APPLICATION_JSON",
-              schema: responseSchema
-            }
-          },
-          maxOutputTokens: 1800
+  const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+  const geminiHeaders = {
+    "Content-Type": "application/json",
+    "x-goog-api-key": env.GEMINI_API_KEY
+  };
+  const geminiContents = {
+    systemInstruction: { parts: [{ text: systemInstruction }] },
+    contents: [{
+      role: "user",
+      parts: [{
+        text: "Catálogo disponible (datos administrativos limitados): " + JSON.stringify(context) +
+          "\n\nSolicitud del administrador: " + prompt
+      }]
+    }]
+  };
+  const structuredBody = {
+    ...geminiContents,
+    generationConfig: {
+      responseFormat: {
+        text: {
+          mimeType: "APPLICATION_JSON",
+          schema: responseSchema
         }
-      })
+      },
+      maxOutputTokens: 1800
     }
-  );
+  };
+
+  let geminiResponse = await fetch(geminiUrl, {
+    method: "POST",
+    headers: geminiHeaders,
+    body: JSON.stringify(structuredBody)
+  });
+
+  // A normal greeting or lookup must not fail merely because Gemini rejects
+  // the rich product-draft schema. Retry once using the documented JSON mode,
+  // then validate and normalize the returned object below before exposing it.
+  if (!geminiResponse.ok && geminiResponse.status === 400) {
+    let firstError = {};
+    try { firstError = await geminiResponse.clone().json(); } catch {}
+    const firstMessage = cleanText(firstError?.error?.message, 320);
+    console.warn("[JB Copilot] Structured JSON schema rejected; retrying JSON mode", firstMessage);
+    const fallbackBody = {
+      ...geminiContents,
+      generationConfig: {
+        responseMimeType: "application/json",
+        maxOutputTokens: 1800
+      }
+    };
+    geminiResponse = await fetch(geminiUrl, {
+      method: "POST",
+      headers: geminiHeaders,
+      body: JSON.stringify(fallbackBody)
+    });
+  }
 
   let result;
   try { result = await geminiResponse.json(); } catch {
