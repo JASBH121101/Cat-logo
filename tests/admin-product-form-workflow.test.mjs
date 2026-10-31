@@ -358,3 +358,12 @@ test("compact TV/audio variants preserve the shared price, availability and colo
   assert.match(admin, /data-variant-color-list/);
   assert.match(admin, /categoryUsesRamStorage\(\$\("#product-category"\)\?\.value \|\| ""\)/);
 });
+
+
+test("TV and audio product specifications use category-specific guidance", () => {
+  assert.match(html, /id="product-specs-label"/);
+  assert.match(admin, /label: "Características del televisor"/);
+  assert.match(admin, /Tamaño de pantalla, resolución, LED \/ QLED \/ OLED/);
+  assert.match(admin, /label: "Características de audio"/);
+  assert.match(admin, /Tipo de equipo, potencia, Bluetooth \/ Wi-Fi/);
+});
