@@ -1220,20 +1220,14 @@ function renderProducts() {
   );
   const featured = hasFilters ? [] : list.filter(isExclusiveProduct);
   const limitedEdition = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("limited_edition"));
-  const highPerformance = hasFilters ? [] : list.filter(product => {
-    const tags = normalizedProductTags(product);
-    return tags.includes("high_performance") && !isExclusiveProduct(product);
-  });
+  // Tag highlights are independent: a product can be exclusive and high-performance.
+  const highPerformance = hasFilters ? [] : list.filter(product =>
+    normalizedProductTags(product).includes("high_performance")
+  );
   const qualityPrice = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("quality_price"));
   const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
-  const regularProducts = hasFilters ? list : list.filter(product => {
-    const tags = normalizedProductTags(product);
-    return !isExclusiveProduct(product) &&
-      !tags.includes("limited_edition") &&
-      !tags.includes("high_performance") &&
-      !tags.includes("quality_price") &&
-      !tags.includes("top_gaming");
-  });
+  // Highlight sections are additional discovery paths, not exclusions from the general catalog.
+  const regularProducts = list;
   if (highPerformanceSection && highPerformanceGrid) {
     highPerformanceSection.classList.toggle("hidden", highPerformance.length === 0);
     highPerformanceGrid.innerHTML = highPerformance.map(renderCard).join("");
