@@ -287,3 +287,12 @@ test("Go Partners scanner controls are embedded in the Copilot conversation", ()
   assert.equal((html.match(/id="jb-gp-scanner"/g) || []).length, 1);
   assert.equal((html.match(/id="jb-gp-scan-start"/g) || []).length, 1);
 });
+
+
+test("APK scanner sends OCR text to the authenticated Cloudflare endpoint, not local WebView routes", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const endpoint = readFileSync(new URL("../functions/api/jb-gopartners-scan.js", import.meta.url), "utf8");
+  assert.match(source, /fetch\("https:\/\/jb-collections\.pages\.dev\/api\/jb-gopartners-scan"/);
+  assert.match(endpoint, /https:\/\/localhost/);
+  assert.match(endpoint, /Authorization: "Bearer " \+ token/);
+});
