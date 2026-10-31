@@ -243,3 +243,490 @@ html[data-theme="dark"] body.admin-body .admin-photo-upload-progress[data-state=
 .admin-image-badge {
   display: none;
 }
+
+
+/* Compact perfume-note editor and publication-review summary. */
+/* Place the optional perfume-note editor across the form width instead of leaving
+   a large empty grid cell beneath the audience selector. */
+html body.admin-body .product-perfume-notes-fields {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: start;
+  gap: 9px 12px;
+  min-width: 0;
+  margin: 2px 0 0;
+  padding: 12px;
+  border: 1px solid var(--admin-border, #d7deec);
+  border-radius: 12px;
+  background: var(--admin-card, #f8faff);
+}
+html body.admin-body .product-perfume-notes-fields > h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.35;
+}
+html body.admin-body .product-perfume-notes-fields > label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  color: var(--admin-text, #25334c);
+  font-size: .78rem;
+  font-weight: 700;
+}
+html body.admin-body .product-perfume-notes-fields input,
+html body.admin-body .product-perfume-notes-fields textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid var(--admin-border, #d6deeb);
+  border-radius: 8px;
+  color: var(--admin-text, #1f2937);
+  background: var(--admin-input, #fff);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 450;
+}
+html body.admin-body .product-perfume-notes-fields textarea {
+  min-height: 58px;
+  resize: vertical;
+  line-height: 1.4;
+}
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields {
+  border-color: #35496b;
+  background: #121d34;
+}
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields > label {
+  color: #d4e0f5;
+}
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields input,
+html[data-theme="dark"] body.admin-body .product-perfume-notes-fields textarea {
+  border-color: #334768;
+  color: #e9f0fc;
+  background: #0d172b;
+}
+
+/* A wider, denser confirmation keeps the extra olfactory details readable without
+   turning this review step into a tall modal on desktop. */
+.publish-review-dialog {
+  width: min(820px, calc(100vw - 24px));
+  max-width: 820px;
+  max-height: min(86vh, 820px);
+}
+.publish-review-shell {
+  max-height: min(86vh, 820px);
+}
+.publish-review-header {
+  padding: 15px 20px;
+}
+.publish-review-body {
+  padding: 12px 20px;
+}
+.publish-review-body > p {
+  margin-bottom: 10px;
+}
+.publish-review-row {
+  gap: 12px;
+  padding: 8px 12px;
+}
+.publish-review-variants p {
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.publish-review-notes {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.publish-review-notes p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  font-size: .86rem;
+}
+.publish-review-notes p strong {
+  color: var(--admin-text, #26334b);
+  font-weight: 750;
+}
+.publish-review-notes-empty {
+  color: var(--admin-muted, #697386);
+}
+.publish-review-section {
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+.publish-review-footer {
+  gap: 8px;
+  padding: 11px 20px;
+}
+@media (max-width: 900px) {
+  html body.admin-body .product-perfume-notes-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 560px) {
+  html body.admin-body .product-perfume-notes-fields {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .publish-review-header,
+  .publish-review-body {
+    padding: 13px 14px;
+  }
+  .publish-review-footer {
+    padding: 11px 14px;
+  }
+}
+
+ 
+/* Stable, compact variant editor: native grid sizing instead of calculated masonry spans. */
+html body.admin-body form#product-form .variant-color-list{
+  grid-auto-rows:auto!important;
+  grid-auto-flow:row!important;
+  align-items:start!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-color-list>[data-variant-row]{
+  grid-row:auto!important;
+  grid-row-end:auto!important;
+  align-self:start!important;
+  min-height:0!important;
+}
+html body.admin-body form#product-form .variant-color-list>.variants-empty-hint{grid-column:1/-1!important}
+html body.admin-body form#product-form details.variant-config-collapse{
+  display:block!important;
+  padding:0!important;
+  overflow:hidden;
+  border:1px solid rgba(119,143,220,.34);
+  border-radius:13px;
+  background:rgba(89,112,194,.055);
+  min-width:0;
+}
+html[data-theme="light"] body.admin-body form#product-form details.variant-config-collapse{
+  background:#fff;border-color:#d7deeb;
+}
+html[data-theme="dark"] body.admin-body form#product-form details.variant-config-collapse{
+  background:rgba(17,30,53,.72);border-color:#344968;
+}
+html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-width:0;
+  padding:12px 13px;
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+  border-radius:inherit;
+}
+html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary::-webkit-details-marker{display:none}
+html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary::marker{content:""}
+html body.admin-body form#product-form .variant-config-summary-copy{display:grid;gap:4px;min-width:0}
+html body.admin-body form#product-form .variant-config-summary-copy strong{
+  color:var(--ink,#dbe6fb);font-size:14px;line-height:1.3;overflow-wrap:anywhere;
+}
+html body.admin-body form#product-form .variant-config-summary-copy small{
+  color:var(--muted,#96a9cb);font-size:11px;line-height:1.4;overflow-wrap:anywhere;
+}
+html body.admin-body form#product-form .variant-config-chevron{
+  display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;
+  border:1px solid rgba(119,143,220,.35);border-radius:8px;
+  color:var(--ink,#dbe6fb);font-size:17px;line-height:1;
+  transition:transform .16s ease;
+}
+html body.admin-body form#product-form details.variant-config-collapse[open]>.variant-config-summary{
+  border-bottom:1px solid rgba(119,143,220,.22);border-radius:0;
+}
+html body.admin-body form#product-form details.variant-config-collapse[open]>.variant-config-summary .variant-config-chevron{transform:rotate(180deg)}
+html body.admin-body form#product-form .variant-config-body{padding:10px 12px 12px;min-width:0}
+html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading{
+  align-items:center;margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid rgba(119,143,220,.2);
+}
+html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading small{
+  color:var(--muted,#96a9cb);font-size:11px;line-height:1.4;
+}
+html body.admin-body form#product-form .variant-config-body>.variant-config-fields{margin:0 0 12px}
+html body.admin-body form#product-form .variant-config-body>.variant-color-section{margin-top:0;padding-top:8px}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-summary-copy strong{color:#263653}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-summary-copy small{color:#64748b}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-chevron{color:#263653;background:#f8faff;border-color:#d7deeb}
+@media(max-width:560px){
+  html body.admin-body form#product-form details.variant-config-collapse{margin-bottom:9px}
+  html body.admin-body form#product-form .variant-config-collapse>.variant-config-summary{padding:10px;gap:8px}
+  html body.admin-body form#product-form .variant-config-body{padding:9px}
+  html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading{align-items:flex-start;flex-direction:row}
+  html body.admin-body form#product-form .variant-config-body>.variant-config-group-heading .admin-mini-button{width:auto;max-width:45%;white-space:normal}
+}
+
+
+/* Fold the entire color editor card, not only its availability/photo subpanel. */
+html body.admin-body form#product-form details.inline-color-card-collapse{
+  display:block!important;
+  min-width:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  align-self:start!important;
+  grid-row:auto!important;
+}
+html body.admin-body form#product-form .inline-color-card-collapse>.inline-color-card-summary{
+  display:grid!important;
+  grid-template-columns:22px minmax(0,1fr) auto 18px!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-width:0!important;
+  min-height:48px!important;
+  padding:9px 10px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:inherit!important;
+  list-style:none!important;
+  cursor:pointer!important;
+  user-select:none!important;
+  background:transparent!important;
+}
+html body.admin-body form#product-form .inline-color-card-collapse>.inline-color-card-summary::-webkit-details-marker{display:none!important}
+html body.admin-body form#product-form .inline-color-card-collapse>.inline-color-card-summary::marker{content:""!important}
+html body.admin-body form#product-form .inline-color-card-summary-copy{
+  display:grid!important;gap:3px!important;min-width:0!important;
+}
+html body.admin-body form#product-form .inline-color-card-summary-copy strong{
+  min-width:0!important;color:var(--ink,#e6edfc)!important;font-size:12px!important;line-height:1.3!important;overflow-wrap:anywhere!important;
+}
+html body.admin-body form#product-form .inline-color-card-summary-copy small{
+  color:var(--muted,#96a9cb)!important;font-size:10px!important;line-height:1.3!important;overflow-wrap:anywhere!important;
+}
+html body.admin-body form#product-form .inline-color-card-collapse .inline-color-dot{
+  width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;
+}
+html body.admin-body form#product-form .inline-color-card-collapse .inline-color-remove{
+  width:29px!important;min-width:29px!important;max-width:29px!important;height:29px!important;min-height:29px!important;
+  padding:0!important;align-self:center!important;
+}
+html body.admin-body form#product-form .inline-color-card-chevron{
+  display:grid!important;place-items:center!important;width:18px!important;height:22px!important;
+  color:var(--muted,#96a9cb)!important;font-size:16px!important;line-height:1!important;transition:transform .16s ease!important;
+}
+html body.admin-body form#product-form details.inline-color-card-collapse[open]>.inline-color-card-summary{
+  border-bottom:1px solid rgba(116,143,207,.22)!important;border-radius:0!important;
+}
+html body.admin-body form#product-form details.inline-color-card-collapse[open]>.inline-color-card-summary .inline-color-card-chevron{transform:rotate(180deg)!important}
+html body.admin-body form#product-form .inline-color-card-body{
+  display:grid!important;gap:7px!important;min-width:0!important;padding:9px!important;
+}
+html body.admin-body form#product-form .inline-color-card-body>.inline-color-main{
+  grid-template-columns:minmax(0,1fr) 42px!important;gap:8px!important;align-items:end!important;
+}
+html body.admin-body form#product-form .inline-color-card-body .inline-color-name-field,
+html body.admin-body form#product-form .inline-color-card-body .inline-color-tone-field{min-width:0!important}
+html body.admin-body form#product-form .inline-color-card-collapse:focus-within{
+  outline:2px solid rgba(99,132,255,.45);outline-offset:1px;
+}
+html[data-theme="light"] body.admin-body form#product-form .inline-color-card-summary-copy strong{color:#25324a!important}
+html[data-theme="light"] body.admin-body form#product-form .inline-color-card-summary-copy small{color:#64748b!important}
+@media(max-width:650px){
+  html body.admin-body form#product-form .inline-color-card-collapse>.inline-color-card-summary{grid-template-columns:20px minmax(0,1fr) 27px 16px!important;gap:6px!important;padding:8px!important;min-height:44px!important}
+  html body.admin-body form#product-form .inline-color-card-body{padding:7px!important}
+  html body.admin-body form#product-form .inline-color-card-body>.inline-color-main{grid-template-columns:minmax(0,1fr) 38px!important;gap:6px!important}
+}
+
+
+/* Mobile fix: each color is its own stacked card; never let grid auto-placement
+   overlap multiple color editors when one configuration contains several colors. */
+html body.admin-body form#product-form .variant-color-section {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-color-list {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-auto-flow:row!important;
+  grid-auto-rows:max-content!important;
+  gap:8px!important;
+  align-items:start!important;
+  justify-items:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-color-list > details[data-variant-row] {
+  display:block!important;
+  position:relative!important;
+  grid-column:1/-1!important;
+  grid-row:auto!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  align-self:start!important;
+  margin:0!important;
+}
+html body.admin-body form#product-form .variant-color-list > details[data-variant-row] > .inline-color-card-body {
+  position:relative!important;
+  width:100%!important;
+  min-width:0!important;
+}
+html body.admin-body form#product-form .variant-config-collapse > .variant-config-body[hidden] {
+  display:none!important;
+}
+
+/* Compact color cards keep nested editor surfaces legible in the dark theme. */
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-section,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-card-body {
+  color:#e6edfc!important;
+  background-color:transparent!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-admin-row,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-card-collapse {
+  color:#e9efff!important;
+  border-color:#3a4c70!important;
+  background:linear-gradient(145deg,#17233a 0%,#121d31 100%)!important;
+  box-shadow:0 3px 0 rgba(2,7,17,.25),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-details {
+  color:#e6edfc!important;
+  border-color:#344566!important;
+  background-color:#101a2f!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-tools {
+  color:#d5e1fa!important;
+  border-color:#344566!important;
+  background-color:#13213a!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields > label,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-tools > label,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-name-field,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-tone-field {
+  color:#d5e1fa!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields input:not([type="file"]):not([type="color"]),
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-fields select,
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-tools input:not([type="file"]):not([type="color"]) {
+  border-color:#3b4d70!important;
+  color:#edf2ff!important;
+  background-color:#0d162a!important;
+  color-scheme:dark;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-color-library-actions button,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-remove {
+  border-color:#405577!important;
+  color:#e6edfc!important;
+  background:#1b2948!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-details > summary {
+  color:#a9c9ff!important;
+}
+
+
+/* Complete dark/light theme contract for the mobile variant editor.
+   Keep all variant fields readable, including RAM/storage/price controls and destructive actions. */
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-collapse,
+html[data-theme="dark"] body.admin-body form#product-form .variant-admin-row {
+  color:#eaf0ff!important;
+  background-color:#142139!important;
+  border-color:#405477!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-group-heading,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields label,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body label {
+  color:#e1eaff!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-summary-copy small,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body small,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body .muted,
+html[data-theme="dark"] body.admin-body form#product-form .inline-color-card-summary-copy small {
+  color:#b5c6e5!important;
+  opacity:1!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields input:not([type="file"]):not([type="color"]),
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields select,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields textarea,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body input:not([type="file"]):not([type="color"]),
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body select,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body textarea {
+  color:#f3f6ff!important;
+  background:#0d172b!important;
+  border-color:#53688e!important;
+  color-scheme:dark;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields input::placeholder,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body input::placeholder,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body textarea::placeholder {
+  color:#a7b8d8!important;
+  opacity:1!important;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body button,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-fields button {
+  color:#eaf0ff;
+}
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body button[class*="remove"],
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body button[class*="delete"],
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body .danger,
+html[data-theme="dark"] body.admin-body form#product-form .variant-config-body .btn-danger {
+  color:#ffd9df!important;
+  background:#452332!important;
+  border-color:#92516a!important;
+}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields label,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body label {
+  color:#25324a!important;
+}
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields input:not([type="file"]):not([type="color"]),
+html[data-theme="light"] body.admin-body form#product-form .variant-config-fields select,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body input:not([type="file"]):not([type="color"]),
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body select,
+html[data-theme="light"] body.admin-body form#product-form .variant-config-body textarea {
+  color:#18243a!important;
+  background:#fff!important;
+  border-color:#c6d1e3!important;
+  color-scheme:light;
+}
+
+
+/* Mobile reliability: draw the variant collapse indicator with CSS rather than
+   a font glyph, which can render as an empty outlined square on some devices. */
+html body.admin-body form#product-form .variant-config-chevron {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: currentColor !important;
+}
+html body.admin-body form#product-form .variant-config-chevron::before {
+  content: "" !important;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 2px solid currentColor !important;
+  border-bottom: 2px solid currentColor !important;
+  transform: translateY(-2px) rotate(45deg) !important;
+  box-sizing: border-box !important;
+}
+
+
+/* Keep the CSS-drawn icon high-contrast; currentColor alone can inherit a dark
+   brand token on dark cards and make the new indicator look blank. */
+html[data-theme="dark"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary .variant-config-chevron {
+  color: #f4f7ff !important;
+  background-color: #2c4268 !important;
+  border-color: #8ba7dc !important;
+  box-shadow: 0 0 0 1px rgba(139, 167, 220, .22), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+}
+
+html[data-theme="light"] body.admin-body form#product-form details.variant-config-collapse > .variant-config-summary .variant-config-chevron {
+  color: #243b62 !important;
+  background-color: #f1f5ff !important;
+  border-color: #9aafd6 !important;
+  box-shadow: 0 0 0 1px rgba(91, 119, 170, .10) !important;
+}
