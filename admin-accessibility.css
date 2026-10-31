@@ -980,3 +980,28 @@ html[data-theme="dark"] body.admin-body #product-taxonomy-fields .product-tag-gr
     min-height: 44px !important;
   }
 }
+
+
+/* The word "meses" is a unit suffix, not an editable/active field. */
+html body.admin-body #product-warranty-field .admin-input-unit {
+  min-height: 48px;
+}
+html body.admin-body #product-warranty-field .admin-input-unit > .admin-input-unit-suffix {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 9px;
+  border-left: 1px solid var(--admin-taxonomy-border, #d9e2f7);
+  border-radius: 0 7px 7px 0;
+  color: var(--admin-taxonomy-muted, #65738e) !important;
+  background: transparent !important;
+  font-size: 12.5px !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+  user-select: none;
+  pointer-events: none;
+}
+html[data-theme="dark"] body.admin-body #product-warranty-field .admin-input-unit > .admin-input-unit-suffix {
+  border-left-color: rgba(106, 139, 208, .38);
+  color: #a8bce2 !important;
+}
