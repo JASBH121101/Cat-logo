@@ -181,7 +181,9 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const card = document.createElement("article"); card.className = "jb-gp-product-card";
       const heading = document.createElement("h4"); heading.textContent = candidate.product_name || candidate.model || "Producto sin nombre";
       const specs = document.createElement("p");
-      specs.textContent = [candidate.brand, candidate.model, candidate.ram, candidate.storage, candidate.color].filter(Boolean).join(" · ") || "Características insuficientes";
+      specs.textContent = [candidate.brand, candidate.model, candidate.ram, candidate.storage, candidate.color,
+        ({ available: "Disponible", on_request: "Bajo pedido", unavailable: "No disponible", unknown: "" })[candidate.availability] || ""]
+        .filter(Boolean).join(" · ") || "Características insuficientes";
       const price = document.createElement("p");
       const amounts = [candidate.price_usd != null ? "US$ " + Number(candidate.price_usd).toFixed(2) : "",
         candidate.price_nio != null ? "C$ " + Number(candidate.price_nio).toFixed(2) : ""].filter(Boolean);
@@ -194,7 +196,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       evidence.textContent = candidate.evidence ? "Fragmento OCR verificado: " + candidate.evidence : "Sin fragmento OCR verificable.";
       const warning = document.createElement("small");
       warning.className = "jb-gp-candidate-warning";
-      const fieldLabels = { product_name: "nombre", brand: "marca", model: "modelo", category: "categoría", ram: "RAM", storage: "almacenamiento", color: "color", price_usd: "precio USD", price_nio: "precio NIO" };
+      const fieldLabels = { product_name: "nombre", brand: "marca", model: "modelo", category: "categoría", ram: "RAM", storage: "almacenamiento", color: "color", price_usd: "precio USD", price_nio: "precio NIO", availability: "disponibilidad" };
       const unverifiedFields = Array.isArray(candidate.unverified_fields) ? candidate.unverified_fields : [];
       const approximateFields = Array.isArray(candidate.approximate_fields) ? candidate.approximate_fields : [];
       const warningParts = [];
@@ -223,6 +225,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         ["ram", "RAM", "text"],
         ["storage", "Almacenamiento", "text"],
         ["color", "Color", "text"],
+        ["availability", "Disponibilidad", "text"],
         ["price_usd", "Precio proveedor · USD", "number"],
         ["price_nio", "Precio proveedor · NIO", "number"]
       ];
@@ -318,11 +321,14 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
               storage: group.storage,
               price_usd: usd.length && !usdHasMissing ? usd[0] : null,
               price_nio: nio.length && !nioHasMissing ? nio[0] : null,
-              configuration_availability: "unknown",
+              configuration_availability: (() => {
+                const states = [...new Set(group.rows.map(row => row.availability || "unknown"))];
+                return states.length === 1 ? states[0] : "unknown";
+              })(),
               colors: group.rows.filter(row => String(row.color || "").trim()).map(row => ({
                 color: String(row.color).trim(),
                 color_hex: "",
-                availability: "unknown"
+                availability: row.availability || "unknown"
               }))
             });
           }
