@@ -713,11 +713,11 @@ test("high-confidence local product search returns grounded price and variant in
 });
 
 test("Copilot uses a smaller JSON schema and output budget for normal questions but retains full draft capacity", () => {
-  assert.match(endpoint, /responseSchemaForRequest\\(prepareProductRequested\\)/);
-  assert.match(endpoint, /product_draft: \\{ type: \\["object", "null"\\] \\}/);
-  assert.match(endpoint, /responseTokenBudget = prepareProductRequested \|\| complexRequest \? 1800 : providerPriceRequested \? 1200 : productSearchRequested \? 900 : 1200/);
-  assert.match(endpoint, /if \\(prepareProductRequested\\) systemInstruction\\.push/);
-  assert.match(endpoint, /const systemInstructionText = systemInstruction\\.join\\(" "\\)/);
-  assert.match(endpoint, /text: systemInstructionText/);
-  assert.match(endpoint, /model;dur=/);
+  assert.ok(endpoint.includes("responseSchemaForRequest(prepareProductRequested)"));
+  assert.ok(endpoint.includes('product_draft: { type: ["object", "null"] }'));
+  assert.ok(endpoint.includes("responseTokenBudget = prepareProductRequested || complexRequest ? 1800 : providerPriceRequested ? 1200 : productSearchRequested ? 900 : 1200"));
+  assert.ok(endpoint.includes("if (prepareProductRequested) systemInstruction.push"));
+  assert.ok(endpoint.includes('const systemInstructionText = systemInstruction.join(" ")'));
+  assert.ok(endpoint.includes("text: systemInstructionText"));
+  assert.ok(endpoint.includes("model;dur="));
 });
