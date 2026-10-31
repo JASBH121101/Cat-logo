@@ -7,6 +7,8 @@ import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
+import android.net.Uri;
 
 import androidx.activity.result.ActivityResult;
 
@@ -29,7 +31,49 @@ public class GoPartnersScannerPlugin extends Plugin {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @PluginMethod
+    public void hasOverlayPermission(PluginCall call) {
+        JSObject result = new JSObject();
+        boolean granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            Settings.canDrawOverlays(getContext());
+        result.put("granted", granted);
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void requestOverlayPermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(getContext())) {
+            JSObject result = new JSObject();
+            result.put("opened", false);
+            result.put("granted", true);
+            call.resolve(result);
+            return;
+        }
+        try {
+            Intent settings = new Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + getContext().getPackageName())
+            );
+            getActivity().startActivity(settings);
+            JSObject result = new JSObject();
+            result.put("opened", true);
+            result.put("granted", false);
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("No se pudieron abrir los permisos de ventana flotante: " + safeMessage(error),
+                "OVERLAY_SETTINGS_UNAVAILABLE");
+        }
+    }
+
+    @PluginMethod
     public void startScan(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getContext())) {
+            JSObject permission = new JSObject();
+            permission.put("started", false);
+            permission.put("overlayPermissionRequired", true);
+            permission.put("message", "Primero habilitá Mostrar sobre otras aplicaciones para usar el control flotante de JARVIS.");
+            call.resolve(permission);
+            return;
+        }
         if (GoPartnersScanSession.isRunning()) {
             JSObject state = sessionState();
             state.put("started", true);
@@ -64,9 +108,12 @@ public class GoPartnersScannerPlugin extends Plugin {
             service.putExtra(EXTRA_RESULT_DATA, result.getData());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(service);
             else getContext().startService(service);
+            Intent overlay = new Intent(getContext(), GoPartnersOverlayService.class);
+            overlay.setAction(GoPartnersOverlayService.ACTION_SHOW);
+            getContext().startService(overlay);
             JSObject started = new JSObject();
             started.put("started", true);
-            started.put("message", "Permiso concedido. La captura local está iniciándose.");
+            started.put("message", "Permiso concedido. La captura local y el control flotante están iniciándose.");
             call.resolve(started);
         } catch (Exception error) {
             GoPartnersScanSession.setFlags(false, false);
@@ -85,7 +132,21 @@ public class GoPartnersScannerPlugin extends Plugin {
     @PluginMethod
     public void stopScan(PluginCall call) {
         requestStop();
+        hideOverlayControls();
         resolveWhenStopped(call, 0);
+    }
+
+    @PluginMethod
+    public void hideOverlayControls(PluginCall call) {
+        hideOverlayControls();
+        JSObject result = new JSObject();
+        result.put("hidden", true);
+        call.resolve(result);
+    }
+
+    private void hideOverlayControls() {
+        try { getContext().stopService(new Intent(getContext(), GoPartnersOverlayService.class)); }
+        catch (Exception ignored) {}
     }
 
     private void resolveWhenStopped(PluginCall call, int attempt) {
@@ -104,6 +165,7 @@ public class GoPartnersScannerPlugin extends Plugin {
             return;
         }
         GoPartnersScanSession.reset();
+        hideOverlayControls();
         JSObject result = new JSObject();
         result.put("cleared", true);
         call.resolve(result);
@@ -128,6 +190,7 @@ public class GoPartnersScannerPlugin extends Plugin {
         state.put("processing", snapshot.optBoolean("processing", false));
         state.put("truncated", snapshot.optBoolean("truncated", false));
         state.put("interrupted", snapshot.optBoolean("interrupted", false));
+        state.put("finishRequested", snapshot.optBoolean("finishRequested", false));
         state.put("interruptionReason", snapshot.optString("interruptionReason", ""));
         state.put("observationsCount", snapshot.optInt("observationsCount", 0));
         JSONArray observations = snapshot.optJSONArray("observations");
