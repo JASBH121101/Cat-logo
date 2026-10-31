@@ -648,6 +648,27 @@ if (!adminHtml.includes("data-jb-manager-updater")) {
   adminHtml = adminHtml.slice(0, bodyEnd) + updateChecker + "\n" + adminHtml.slice(bodyEnd);
 }
 
+// Bundle the optional Android biometric bridge. The web catalog remains independent;
+// the generated APK alone receives this Capacitor-native bridge.
+const biometricBundlePath = join(webDir, "jb-manager-biometric-auth.js");
+await build({
+  entryPoints: [join(mobileDir, "biometric-auth.js")],
+  outfile: biometricBundlePath,
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  target: ["es2020"],
+  minify: true,
+  legalComments: "none"
+});
+if (!adminHtml.includes('src="./jb-manager-biometric-auth.js"')) {
+  const adminModule = adminHtml.indexOf('<script type="module" src="admin.js');
+  if (adminModule < 0) throw new Error("Could not locate the admin module to install the native biometric bridge.");
+  adminHtml = adminHtml.slice(0, adminModule)
+    + '<script src="./jb-manager-biometric-auth.js"></script>\\n'
+    + adminHtml.slice(adminModule);
+}
+
 // The app's first screen is the administration panel. Keep both routes available.
 await writeFile(adminPath, adminHtml, "utf8");
 await writeFile(join(webDir, "index.html"), adminHtml, "utf8");
