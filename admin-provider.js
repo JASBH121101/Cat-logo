@@ -959,6 +959,12 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     const product = activeProducts().find(item => String(item.id) === String(productId));
     const rows = Array.isArray(scannedRows) ? scannedRows : [];
     if (!product || !rows.length) return { ok: false, message: "No se identificó el producto o la captura." };
+
+    // The review dialog renders the selected product's configuration rows.
+    // Open it before querying those rows; otherwise a previous/empty dialog
+    // could cause a false "variant not found" result.
+    openReview(productId);
+
     const hasVariants = productHasProviderVariants(product);
     const normalizeConfig = value => normalizedText(value).replace(/\s+/g, "");
     const matchedRows = [];
@@ -979,7 +985,6 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
         matchedRows.push({ row: matches[0], scanned });
       }
     }
-    openReview(productId);
     if (hasVariants) {
       for (const item of matchedRows) {
         if (item.scanned.price_usd != null) {
