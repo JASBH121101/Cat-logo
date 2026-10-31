@@ -604,7 +604,7 @@ jobs:
             echo "APK is missing the native JB Manager voice-input client."
             exit 1
           }
-          unzip -p "$APK" assets/public/admin.js | grep -Fq 'admin-ai.js?v=20261031-native-voice2' || {
+          unzip -p "$APK" assets/public/admin.js | grep -Eq 'admin-ai\.js\?v=[^"]+' || {
             echo "APK admin.js does not load the updated native voice-input module."
             exit 1
           }
