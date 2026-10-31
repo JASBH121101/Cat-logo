@@ -310,3 +310,15 @@ test("JB Copilot classifies Gemini upstream access, billing and quota failures",
     globalThis.fetch = originalFetch;
   }
 });
+
+test("JB Copilot recovers its send controls and releases requests that never return", () => {
+  assert.match(assistant, /function withRequestDeadline\(promise, timeoutMs, message\)/);
+  assert.match(assistant, /supabase\.auth\.getSession\(\),\s*12000/);
+  assert.match(assistant, /requestTimer = window\.setTimeout\(/);
+  assert.match(assistant, /requestTimedOut = true/);
+  assert.match(assistant, /requestController\?\.abort\(\)/);
+  assert.match(assistant, /finally\s*\{[\s\S]{0,180}setBusy\(false\)/);
+  assert.match(assistant, /La consulta tardó más de 45 segundos/);
+  assert.match(assistant, /setBusy\(false\);\s*resizeInput\(\);/);
+  assert.match(assistant, /clearSession\(\)\s*\{[\s\S]{0,120}setBusy\(false\)/);
+});
