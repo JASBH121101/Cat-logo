@@ -256,7 +256,7 @@ test("OCR preview exposes the exact locally recognized screen text without HTML 
   assert.match(html, /id="jb-gp-scan-ocr-preview"/);
   assert.match(html, /id="jb-gp-scan-ocr-content"/);
   assert.match(source, /function renderOcrPreview\(observations\)/);
-  assert.match(source, /text\\.textContent = item\\.text/);
+  assert.match(source, /text\.textContent = item\.text/);
   assert.match(source, /Ver texto reconocido/);
 });
 
