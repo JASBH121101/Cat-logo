@@ -218,6 +218,6 @@ html[data-theme="dark"] body.admin-body .jb-gp-product-card small.jb-gp-candidat
   word-break: break-word;
   max-height: 260px;
   overflow: auto;
-  font: 500 .78rem/1.5 inherit;
+  font-family: inherit;\n  font-size: .78rem;\n  font-weight: 500;\n  line-height: 1.5;
   color: var(--text-primary, #e5ebf5);
 }
