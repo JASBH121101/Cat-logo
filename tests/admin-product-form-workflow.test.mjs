@@ -327,3 +327,15 @@ test("manual tags are grouped in aligned responsive grids on all device widths",
   assert.match(accessibilityCss, /max-width:\s*380px/);
   assert.match(accessibilityCss, /product-tag-option\s*\{[\s\S]*?width:\s*100% !important/);
 });
+
+
+test("authenticated startup initializes the blank product form baseline before enabling reload protection", () => {
+  assert.match(admin, /await loadProducts\(\);\s*\/\/ Establish the initial empty editor baseline[\s\S]*?markEditorClean\(\);\s*await checkLocalRecoveryDraft\(\);/);
+  assert.match(admin, /function markEditorClean\(\)\s*\{\s*editorBaseline = getEditorSnapshot\(\);\s*editorIsDirty = false;/);
+});
+
+test("the warranty unit suffix is decorative and cannot be mistaken for an active input", () => {
+  assert.match(html, /id="product-warranty"[\s\S]*?class="admin-input-unit-suffix" aria-hidden="true">meses/);
+  assert.match(accessibilityCss, /admin-input-unit-suffix[\s\S]*?user-select:\s*none/);
+  assert.match(accessibilityCss, /admin-input-unit-suffix[\s\S]*?pointer-events:\s*none/);
+});
