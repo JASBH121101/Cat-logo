@@ -136,4 +136,8 @@ test("scanner opens the selected product review before matching rendered configu
   assert.match(bridge, /El color .*no existe exactamente en JB Collections/);
   assert.match(bridge, /return failReview\(/);
   assert.match(bridge, /say\(reviewMessage, message, "error"\)/);
+  assert.match(bridge, /const pricesByConfiguration = new Map\(\)/);
+  assert.match(bridge, /priceSet\.usd\.size > 1 \|\| priceSet\.nio\.size > 1/);
+  assert.match(bridge, /precio por configuración RAM\/almacenamiento, no por color/);
+  assert.match(bridge, /No se aplicó ningún precio automáticamente/);
 });
