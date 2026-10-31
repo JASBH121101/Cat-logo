@@ -392,3 +392,9 @@ test("native biometric plugin delegates matching to Android and stores only an e
   assert.doesNotMatch(biometricPlugin, /fingerprintTemplate|fingerprintImage|rawFingerprint/i);
   assert.match(biometricPlugin, /openEnrollmentSettings/);
 });
+
+
+test("disabling remembered sessions also disables the optional biometric app lock", () => {
+  assert.match(admin, /if \(!nextEnabled && biometric\) \{[\s\S]*?if \(status\?\.enabled\) await biometric\.disable\(\)/);
+  assert.match(admin, /El desbloqueo con huella también quedó desactivado/);
+});
