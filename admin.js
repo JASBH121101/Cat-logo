@@ -4850,12 +4850,13 @@ function requestRecoveryBeforeExit() {
   if (!hasUnsavedEditorChanges()) return false;
   clearTimeout(recoveryTimer);
   /*
-    Iniciar el guardado antes de que el navegador muestre su confirmación nativa.
-    El respaldo automático ya viene escribiéndose durante la edición; esta llamada
-    fuerza además una última escritura del estado más reciente.
+    Guardamos también los cambios cuando el formulario está oculto, pero solo
+    bloqueamos una recarga si el usuario sigue dentro de Añadir producto.
+    Así se evita el aviso nativo en las listas y demás secciones del panel.
   */
   void saveLocalRecoveryDraft();
-  return true;
+  const addPanel = document.querySelector('[data-admin-panel="add"]');
+  return Boolean(addPanel && !addPanel.classList.contains("hidden"));
 }
 
 window.addEventListener("beforeunload", event => {
@@ -5455,12 +5456,10 @@ activeCatalogSelector?.addEventListener("change", () => {
   const requested = normalizeCatalogType(activeCatalogSelector.value);
   if (requested === activeCatalogType) return;
 
-  const hasOpenProduct = Boolean($("#product-id")?.value);
-  if (hasOpenProduct || editorIsDirty) {
+  updateEditorDirtyState();
+  if (editorIsDirty) {
     const requestedLabel = requested === "perfumery" ? "JB Parfums · Perfumería" : "JB TECH · Tecnología";
-    const warning = hasOpenProduct
-      ? "Hay un producto abierto en edición. Si cambiás de catálogo ahora, se descartarán los cambios que no hayas guardado. ¿Querés continuar a " + requestedLabel + "?"
-      : "Hay cambios sin guardar en el formulario. Si cambiás de catálogo, se descartarán. ¿Querés continuar a " + requestedLabel + "?";
+    const warning = "Hay cambios sin guardar en el formulario. Si cambiás de catálogo, se descartarán. ¿Querés continuar a " + requestedLabel + "?";
 
     if (!window.confirm(warning)) {
       activeCatalogSelector.value = activeCatalogType;
