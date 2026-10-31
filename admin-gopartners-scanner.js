@@ -486,7 +486,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       }
       recoverableSession = true;
       setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
-      const response = await fetch("/api/jb-gopartners-scan", {
+      const response = await fetch("https://jb-collections.pages.dev/api/jb-gopartners-scan", {
         method: "POST", headers: { Authorization: "Bearer " + await getAccessToken(), "Content-Type": "application/json" },
         cache: "no-store", body: JSON.stringify({ observations: observations.slice(0, 80) })
       });
