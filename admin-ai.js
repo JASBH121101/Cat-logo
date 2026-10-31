@@ -53,10 +53,52 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   let nativeVoiceActive = false;
   let nativeVoiceListenersReady = false;
   let nativeVoiceListeners = [];
+  let voiceSettingsAction = null;
+
+  function clearVoiceSettingsAction() {
+    voiceSettingsAction?.remove();
+    voiceSettingsAction = null;
+  }
 
   function setStatus(text, error = false) {
+    clearVoiceSettingsAction();
     status.textContent = text;
     status.classList.toggle("is-error", error);
+  }
+
+  function showVoiceSettingsAction(native) {
+    if (!native || typeof native.openAppSettings !== "function") return;
+    clearVoiceSettingsAction();
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "jb-ai-permission-settings";
+    action.textContent = "Abrir permisos del micrófono";
+    action.addEventListener("click", async () => {
+      action.disabled = true;
+      try {
+        await native.openAppSettings();
+        setStatus("Se abrieron los ajustes de JB Manager. Activá Micrófono y regresá a la app.");
+      } catch (error) {
+        action.disabled = false;
+        setStatus(error?.message || "No se pudieron abrir los ajustes de la aplicación.", true);
+        showVoiceSettingsAction(native);
+      }
+    });
+    status.append(" ", action);
+    voiceSettingsAction = action;
+  }
+
+  function withTimeout(promise, timeoutMs, message) {
+    let timer = null;
+    const timeout = new Promise((resolve, reject) => {
+      timer = window.setTimeout(() => {
+        const error = new Error(message);
+        error.code = "VOICE_PERMISSION_TIMEOUT";
+        reject(error);
+      }, timeoutMs);
+    });
+    return Promise.race([Promise.resolve(promise), timeout])
+      .finally(() => window.clearTimeout(timer));
   }
 
   function resizeInput() {
@@ -287,16 +329,39 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   }
 
   async function startNativeVoice(native) {
-    const current = await native.checkPermission();
+    const current = await withTimeout(
+      native.checkPermission(),
+      8000,
+      "Android no respondió al consultar el permiso del micrófono."
+    );
     let permission = current;
     if (!current?.granted) {
+      if (current?.permanentlyDenied) {
+        setStatus("Android ya no muestra la solicitud del micrófono. Abrí los permisos de JB Manager y habilitá Micrófono.", true);
+        showVoiceSettingsAction(native);
+        return;
+      }
       setStatus("Android solicitará permiso para usar el micrófono…");
-      permission = await native.requestPermission();
+      try {
+        permission = await withTimeout(
+          native.requestPermission(),
+          12000,
+          "Android no respondió a la solicitud del permiso del micrófono."
+        );
+      } catch (error) {
+        if (error?.code === "VOICE_PERMISSION_TIMEOUT") {
+          setStatus("No llegó la respuesta del permiso. Abrí los ajustes de JB Manager y habilitá Micrófono.", true);
+          showVoiceSettingsAction(native);
+          return;
+        }
+        throw error;
+      }
     }
     if (!permission?.granted) {
       setStatus(permission?.permanentlyDenied
-        ? "El permiso del micrófono está bloqueado. Abrí Información de la aplicación → Permisos → Micrófono y habilitalo."
-        : "No se concedió el permiso del micrófono. Podés volver a tocar el botón para solicitarlo nuevamente.", true);
+        ? "El permiso del micrófono está bloqueado. Habilitalo desde los ajustes de JB Manager."
+        : "No se concedió el permiso del micrófono. Podés habilitarlo desde los ajustes de JB Manager.", true);
+      showVoiceSettingsAction(native);
       return;
     }
     await attachNativeVoiceListeners(native);
