@@ -233,9 +233,9 @@ export async function onRequestPost({ request, env }) {
 
   const prompt = cleanText(body?.message, 3000);
   if (!prompt) return response(400, { ok: false, error: "message_required" }, origin);
-  const prepareProductRequested = /(?:\\b(?:agreg|añad|anad|registr|crea|prepara|alta|incorpora)\\w*\\b.{0,50}\\bproducto\\b|\\bproducto\\b.{0,50}\\b(?:nuevo|alta|registr|prepar|crea)\\b)/i.test(prompt);
-  const providerPriceRequested = /(?:\\b(?:revis|actualiz|cambia|modific)\\w*\\s+(?:el\\s+)?precio\\b|\\bprecio\\s+de\\s+proveedor\\b)/i.test(prompt);
-  const productSearchRequested = /(?:\\b(?:busca|buscá|buscar|mostrame|mostrá|mostrar|encontra|encontrá|lista|listar)\\b|\\b(?:tenemos|tenés|hay)\\b.{0,60}\\b(?:producto|celular|iphone|samsung|laptop|tablet|perfume)\\b)/i.test(prompt);
+  const prepareProductRequested = /(?:\b(?:agreg|añad|anad|registr|crea|prepara|alta|incorpora)\w*\b.{0,50}\bproducto\b|\bproducto\b.{0,50}\b(?:nuevo|alta|registr|prepar|crea)\b)/i.test(prompt);
+  const providerPriceRequested = /(?:\b(?:revis|actualiz|cambia|modific)\w*\s+(?:el\s+)?precio\b|\bprecio\s+de\s+proveedor\b)/i.test(prompt);
+  const productSearchRequested = /(?:\b(?:busca|buscá|buscar|mostrame|mostrá|mostrar|encontra|encontrá|lista|listar)\b|\b(?:tenemos|tenés|hay)\b.{0,60}\b(?:producto|celular|iphone|samsung|laptop|tablet|perfume)\b)/i.test(prompt);
   const responseTokenBudget = prepareProductRequested ? 1800 : providerPriceRequested ? 1100 : productSearchRequested ? 850 : 800;
 
   // Greetings are a core chat interaction and should not depend on model
@@ -308,7 +308,7 @@ export async function onRequestPost({ request, env }) {
     "x-goog-api-key": env.GEMINI_API_KEY
   };
   const geminiContents = {
-    systemInstruction: { parts: [{ text: systemInstruction }] },
+    systemInstruction: { parts: [{ text: systemInstructionText }] },
     contents: [{
       role: "user",
       parts: [{
