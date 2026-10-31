@@ -2775,6 +2775,11 @@ async function showDashboard(user) {
   dashboard.classList.remove("hidden");
   document.body.classList.add("admin-dashboard-active");
   setMobileSidebarOpen(false);
+  try {
+    setDesktopSidebarCollapsed(window.localStorage.getItem("jb-manager-sidebar-collapsed") === "1");
+  } catch {
+    setDesktopSidebarCollapsed(false);
+  }
   const requestedSection = new URLSearchParams(window.location.search).get("open");
   showAdminSection(requestedSection === "messages" ? "messages" : "home");
 
