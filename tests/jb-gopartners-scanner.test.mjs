@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups } from "../admin-gopartners-scanner.js";
+import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups, scannerSessionReviewable, scannerSessionStatus } from "../admin-gopartners-scanner.js";
 
 test("normaliza modelos, RAM y almacenamiento", () => {
   assert.equal(normalizeScannerKey("12 GB"), "12gb");
@@ -45,4 +45,39 @@ test("a stopped in-memory capture session can still be resumed for review", () =
   assert.ok(source.includes("function restoreSessionState(state)"));
   assert.ok(source.includes("state?.running || count > 0"));
   assert.ok(source.includes("La captura ya se detuvo"));
+});
+
+
+test("Android interruption preserves partial OCR observations for review", () => {
+  const state = {
+    running: false, processing: false, interrupted: true,
+    interruptionReason: "Android detuvo o revocó el permiso de captura.",
+    observationsCount: 3
+  };
+  assert.equal(scannerSessionReviewable(state), true);
+  const message = scannerSessionStatus(state);
+  assert.match(message, /Captura interrumpida por Android/);
+  assert.match(message, /3 pantalla\(s\) parcial\(es\)/);
+  assert.match(message, /revocó el permiso/);
+});
+
+test("stopped sessions with OCR observations remain reviewable without interruption", () => {
+  assert.equal(scannerSessionReviewable({ running: false, processing: false, observationsCount: 2 }), true);
+  assert.match(scannerSessionStatus({ running: false, observationsCount: 2 }), /listas para revisar/);
+  assert.equal(scannerSessionReviewable({ running: false, processing: false, observationsCount: 0 }), false);
+});
+
+test("scanner listens for interrupted native sessions after returning from Go Partners", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(source, /state\?\.interrupted === true/);
+  assert.match(source, /session\?\.interrupted === true/);
+  assert.match(source, /interruptionReason/);
+  assert.match(source, /if \(!native\) return;/);
+});
+
+test("scanner surfaces explicit light and dark theme tokens", () => {
+  const css = readFileSync(new URL("../admin-gopartners-scanner.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-theme="light"\] body\.admin-body \.jb-gp-scanner/);
+  assert.match(css, /html\[data-theme="dark"\] body\.admin-body \.jb-gp-scanner/);
+  assert.match(css, /\.jb-gp-scanner select/);
 });
