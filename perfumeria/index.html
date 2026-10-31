@@ -3,7 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="canonical" href="https://jasbh121101.github.io/Cat-logo/perfumeria/">
+  <link rel="canonical" href="https://jb-collections.pages.dev/perfumeria/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="JB Collections">
+  <meta property="og:title" content="JB Parfums | Fragancias árabes, nicho y diseñador">
+  <meta property="og:description" content="Descubrí fragancias árabes, de nicho y de diseñador. Consultá presentaciones, precios y disponibilidad por WhatsApp.">
+  <meta property="og:url" content="https://jb-collections.pages.dev/perfumeria/">
+  <meta property="og:image" content="https://jb-collections.pages.dev/img/perfume-showcase/supremacy-pour-femme.webp?v=20261025-carousel-photos2">
+  <meta property="og:image:alt" content="Afnan Supremacy Pour Femme, fragancia destacada de JB Parfums">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="JB Parfums | Fragancias árabes, nicho y diseñador">
+  <meta name="twitter:description" content="Explorá fragancias árabes, de nicho y de diseñador; consultá precios y disponibilidad por WhatsApp.">
+  <meta name="twitter:image" content="https://jb-collections.pages.dev/img/perfume-showcase/supremacy-pour-femme.webp?v=20261025-carousel-photos2">
   <meta name="theme-color" content="#f8f6f0">
   <meta name="description" content="JB Parfums: descubrí fragancias árabes, de nicho y de diseñador. Consultá presentaciones, familias olfativas, precios y disponibilidad por WhatsApp.">
   <title>JB Parfums | Fragancias árabes, nicho y diseñador</title>
@@ -11,16 +22,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css?v=20261025-luxe-controls1">
-  <link rel="stylesheet" href="../theme-ui.css?v=20261024-final-responsive-audit1">
-  <link rel="stylesheet" href="../perfumeria.css?v=20261026-luxe-category-icons2">
-  <link rel="stylesheet" href="../brand-refresh.css?v=20261025-badge-row1">
-  <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261026-luxe-concierge1">
-  <link rel="stylesheet" href="../catalog-performance.css?v=20261025-luxe-perf1">
-  <link rel="stylesheet" href="../responsive-layout.css?v=20261026-responsive-layout1">
-  <script src="../config.js"></script>
-  <script type="module" src="../perfumeria.js?v=20261026-luxe-concierge1"></script>
-  <script src="../ui.js?v=20261024-auto-close3" defer></script>
+  <link rel="stylesheet" href="../styles.css?v=20261027-audit-cascade1">
+  <link rel="stylesheet" href="../ai-assistant.css?v=20261030-ai-icon-bubble2">
+  <link rel="stylesheet" href="../chat-return.css?v=20261029-resume1">
+  <link rel="stylesheet" href="../theme-ui.css?v=20261028-limited-edition-icons1">
+  <link rel="stylesheet" href="../brand-refresh.css?v=20261027-audit-cascade1">
+  <link rel="stylesheet" href="../dark-theme-redesign.css?v=20261027-audit-cascade1">
+  <link rel="stylesheet" href="../catalog-performance.css?v=20261027-audit-cascade1">
+  <link rel="stylesheet" href="../perfumeria.css?v=20261030-desktop-type12">
+  <link rel="stylesheet" href="../contact-channels.css?v=20261029-theme-contrast1">
+  <script src="../config.js?v=20261029-admin-webpush3"></script>
+  <script src="../chat-return.js?v=20261029-resume1" defer></script>
+  <script type="module" src="../perfumeria.js?v=20261029-dedicated-detail-navigation1"></script>
+  <script src="../ui.js?v=20261027-audit-cascade1" defer></script>
+  <script src="../ai-assistant.js?v=20261029-ai-compact-launcher1" defer></script>
 </head>
 <body class="perfume-page">
   <header class="site-header perfume-header">
@@ -44,7 +59,6 @@
         <p class="perfume-kicker"><span></span> PERFUMERÍA · SELECCIÓN DE FRAGANCIAS</p>
         <h1>Una fragancia.<br><em>Una firma personal.</em></h1>
         <p class="perfume-hero-description">Descubrí fragancias árabes, de nicho y de diseñador. Compará presentaciones y precios, y escribinos para consultar disponibilidad y opciones de pago.</p>
-        <div class="perfume-hero-actions"><a class="perfume-primary-link" href="#coleccion">Explorar perfumería <span aria-hidden="true">↗</span></a></div>
         <div class="perfume-hero-notes"><span>AROMAS CON IDENTIDAD</span><i></i><span>SELECCIÓN ESPECIAL</span></div>
       </div>
       <section class="perfume-hero-art perfume-hero-carousel" id="perfume-hero-carousel" role="region" aria-roledescription="carrusel" aria-label="Selección de fragancias">
@@ -110,6 +124,7 @@
           <input id="concierge-budget" type="number" min="0" step="5" inputmode="decimal" placeholder="Sin límite definido">
         </label>
         <button class="perfume-primary-link perfume-concierge-submit" type="submit">Descubrir mi selección <span aria-hidden="true">↗</span></button>
+        <button class="perfume-outline-link perfume-concierge-clear" id="perfume-concierge-clear" type="button">Limpiar selección</button>
       </form>
       <div id="perfume-concierge-results" class="perfume-concierge-results" aria-live="polite" hidden></div>
     </section>
@@ -163,6 +178,30 @@
         <div><p class="perfume-kicker" id="catalog-results-eyebrow">DESCUBRÍ</p><h2 id="catalog-results-title">Toda la colección</h2></div>
         <span id="catalog-status" role="status" aria-live="polite">Cargando fragancias…</span>
       </div>
+
+      <section id="perfume-exclusive-section" class="perfume-featured-section perfume-featured-section--exclusive hidden" aria-labelledby="perfume-exclusive-title">
+        <div class="perfume-featured-heading">
+          <div>
+            <p class="perfume-kicker"><span aria-hidden="true">♛</span> SELECCIÓN DE COLECCIÓN</p>
+            <h2 id="perfume-exclusive-title">Exclusivos</h2>
+            <p class="perfume-featured-description">Fragancias y sets seleccionados por su presentación, identidad y carácter especial.</p>
+          </div>
+          <span id="perfume-exclusive-count" class="perfume-featured-count"></span>
+        </div>
+        <div id="perfume-exclusive-grid" class="featured-grid perfume-product-grid perfume-highlight-grid"></div>
+      </section>
+
+      <section id="perfume-limited-edition-section" class="perfume-featured-section perfume-featured-section--limited-edition hidden" aria-labelledby="perfume-limited-edition-title">
+        <div class="perfume-featured-heading">
+          <div>
+            <p class="perfume-kicker"><span aria-hidden="true">♛</span> PIEZAS DE COLECCIÓN</p>
+            <h2 id="perfume-limited-edition-title">Ediciones limitadas</h2>
+            <p class="perfume-featured-description">Presentaciones especiales y lanzamientos de colección que destacan por su carácter distintivo.</p>
+          </div>
+          <span id="perfume-limited-edition-count" class="perfume-featured-count"></span>
+        </div>
+        <div id="perfume-limited-edition-grid" class="featured-grid perfume-product-grid perfume-highlight-grid"></div>
+      </section>
 
       <section class="perfume-category-section" id="category-nicho" data-category-section="nicho" aria-labelledby="category-nicho-title">
         <div class="perfume-category-heading">
