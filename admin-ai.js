@@ -329,11 +329,21 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   }
 
   async function startNativeVoice(native) {
-    const current = await withTimeout(
-      native.checkPermission(),
-      8000,
-      "Android no respondió al consultar el permiso del micrófono."
-    );
+    let current;
+    try {
+      current = await withTimeout(
+        native.checkPermission(),
+        8000,
+        "Android no respondió al consultar el permiso del micrófono."
+      );
+    } catch (error) {
+      if (error?.code === "VOICE_PERMISSION_TIMEOUT") {
+        setStatus("No se pudo consultar el permiso. Abrí los ajustes de JB Manager y habilitá Micrófono.", true);
+        showVoiceSettingsAction(native);
+        return;
+      }
+      throw error;
+    }
     let permission = current;
     if (!current?.granted) {
       if (current?.permanentlyDenied) {
