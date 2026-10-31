@@ -1221,9 +1221,10 @@ function renderProducts() {
   const featured = hasFilters ? [] : list.filter(isExclusiveProduct);
   const limitedEdition = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("limited_edition"));
   // Tag highlights are independent: a product can be exclusive and high-performance.
-  const highPerformance = hasFilters ? [] : list.filter(product =>
-    normalizedProductTags(product).includes("high_performance")
-  );
+  const highPerformance = hasFilters ? [] : list.filter(product => {
+    const tags = normalizedProductTags(product);
+    return tags.includes("high_performance");
+  });
   const qualityPrice = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("quality_price"));
   const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
   // Highlight sections are additional discovery paths, not exclusions from the general catalog.
