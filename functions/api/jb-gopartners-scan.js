@@ -166,7 +166,8 @@ export function groundScannerProducts(rawProducts, observations) {
       if (raw === null || raw === undefined || raw === "") return null;
       attemptedFields.push(field);
       const amount = Number(raw);
-      if (hasOcrPriceEvidence(evidence, amount, currency)) {
+      const maximum = currency === "USD" ? 1000000 : 100000000;
+      if (Number.isFinite(amount) && amount >= 0 && amount <= maximum && hasOcrPriceEvidence(evidence, amount, currency)) {
         groundedFields.push(field);
         return amount;
       }
