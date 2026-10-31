@@ -156,8 +156,18 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         candidate.price_nio != null ? "C$ " + Number(candidate.price_nio).toFixed(2) : ""].filter(Boolean);
       price.textContent = "Precio detectado: " + (amounts.join(" · ") || "No identificado");
       const confidence = document.createElement("small");
-      confidence.textContent = "Confianza de lectura: " + Math.round((candidate.confidence || 0) * 100) + "% · Captura " + (candidate.source_observation || "—");
-      const evidence = document.createElement("small"); evidence.textContent = candidate.evidence ? "Evidencia: " + candidate.evidence : "Sin evidencia OCR.";
+      const attemptedCount = Array.isArray(candidate.attempted_fields) ? candidate.attempted_fields.length : 8;
+      const groundedCount = Array.isArray(candidate.grounded_fields) ? candidate.grounded_fields.length : 0;
+      confidence.textContent = "Respaldo OCR comprobado: " + groundedCount + "/" + attemptedCount + " dato(s) · Captura " + (candidate.source_observation || "—");
+      const evidence = document.createElement("small");
+      evidence.textContent = candidate.evidence ? "Fragmento OCR verificado: " + candidate.evidence : "Sin fragmento OCR verificable.";
+      const warning = document.createElement("small");
+      warning.className = "jb-gp-candidate-warning";
+      const fieldLabels = { product_name: "nombre", brand: "marca", model: "modelo", category: "categoría", ram: "RAM", storage: "almacenamiento", color: "color", price_usd: "precio USD", price_nio: "precio NIO" };
+      const unverifiedFields = Array.isArray(candidate.unverified_fields) ? candidate.unverified_fields : [];
+      warning.textContent = unverifiedFields.length
+        ? "Se dejaron en blanco por falta de respaldo OCR: " + unverifiedFields.map(field => fieldLabels[field] || field).join(", ") + "."
+        : "Los datos detectados tienen respaldo en el fragmento OCR mostrado.";
 
       const corrections = document.createElement("details");
       corrections.className = "jb-gp-corrections";
@@ -341,7 +351,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         line.textContent = "Datos preparados. Confirmá los campos y guardá desde la revisión del proveedor.";
         setStatus("Revisión preparada para " + (chosen.name || "el producto") + ". No se guardó ningún cambio todavía.");
       });
-      card.append(heading, specs, price, confidence, evidence, corrections, matchSelect, prepare, line);
+      card.append(heading, specs, price, confidence, evidence, warning, corrections, matchSelect, prepare, line);
       productList.append(card);
     });
     duplicateReview.querySelectorAll(".jb-gp-duplicate-decision").forEach(select => {
