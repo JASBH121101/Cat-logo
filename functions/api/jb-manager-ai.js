@@ -224,7 +224,7 @@ export async function onRequestPost({ request, env }) {
   }
   if (!user) return response(403, { ok: false, error: "admin_only" }, origin);
   const authDurationMs = Date.now() - authStartedAt;
-  const geminiStartedAt = Date.now();
+  const processingStartedAt = Date.now();
 
   let body;
   try {
@@ -240,7 +240,7 @@ export async function onRequestPost({ request, env }) {
   const prepareProductRequested = /(?:\b(?:agreg|añad|anad|registr|crea|prepara|alta|incorpora)\w*\b.{0,50}\bproducto\b|\bproducto\b.{0,50}\b(?:nuevo|alta|registr|prepar|crea)\b)/i.test(prompt);
   const providerPriceRequested = /(?:\b(?:revis|actualiz|cambia|modific)\w*\s+(?:el\s+)?precio\b|\bprecio\s+de\s+proveedor\b)/i.test(prompt);
   const productSearchRequested = /(?:\b(?:busca|buscá|buscar|mostrame|mostrá|mostrar|encontra|encontrá|lista|listar)\b|\b(?:tenemos|tenés|hay)\b.{0,60}\b(?:producto|celular|iphone|samsung|laptop|tablet|perfume)\b)/i.test(prompt);
-  const complexRequest = /\\b(?:detallad|paso a paso|compara|compará|analiza|analizá|audita|investiga|investigá|desarrolla|desarrollá|plan completo)\\w*\\b/i.test(prompt);
+  const complexRequest = /\b(?:detallad|paso a paso|compara|compará|analiza|analizá|audita|investiga|investigá|desarrolla|desarrollá|plan completo)\w*\b/i.test(prompt);
   const responseTokenBudget = prepareProductRequested || complexRequest ? 1800 : providerPriceRequested ? 1200 : productSearchRequested ? 900 : 1200;
 
   // Greetings are a core chat interaction and should not depend on model
@@ -342,6 +342,7 @@ export async function onRequestPost({ request, env }) {
     return { ...geminiContents, generationConfig };
   }
 
+  const modelStartedAt = Date.now();
   const modelPlan = [
     { name: "gemini-3.8-flash", useSchema: true },
     { name: "gemini-3.6-flash", useSchema: false },
@@ -648,7 +649,7 @@ export async function onRequestPost({ request, env }) {
     }
   }, origin);
   successResponse.headers.set("Server-Timing",
-    "auth;dur=" + authDurationMs + ", gemini;dur=" + (Date.now() - geminiStartedAt) +
+    "auth;dur=" + authDurationMs + ", processing;dur=" + (Date.now() - processingStartedAt) + ", model;dur=" + (Date.now() - modelStartedAt) +
     ", total;dur=" + (Date.now() - requestStartedAt));
   return successResponse;
 }
