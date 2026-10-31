@@ -8,6 +8,7 @@ name: Build JB Manager Collections APK
 # Re-run after synchronizing the Copilot regression assertions with the current prompt.
 # Trigger update-compatible rebuild with trust-card alignment, chat data policy, and admin theme fixes.
 # Rebuild after confirming the background DownloadManager UX and recovery flow.
+# Rebuild APK with Gemini APPLICATION_JSON enum fix and visible Google diagnostics.
 
 concurrency:
   group: jb-manager-android-${{ github.ref }}
