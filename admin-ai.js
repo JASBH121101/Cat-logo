@@ -249,8 +249,13 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       if (!response.ok) {
         const errors = {
           gemini_not_configured: "El servicio de Gemini todavía no está configurado en Cloudflare. La consulta no se procesó.",
+          gemini_billing_required: "El proyecto de Google AI Studio necesita una cuenta de facturación activa para usar Gemini. Revisá la facturación del proyecto asociado a la clave.",
+          gemini_api_access_denied: "Google rechazó el acceso a Gemini. Revisá que la clave siga activa, no esté bloqueada y que Gemini API esté habilitada en el proyecto.",
+          gemini_model_unavailable: "El modelo Gemini configurado no está disponible para este proyecto. La consulta no se procesó.",
+          gemini_invalid_request: "Gemini rechazó el formato de la solicitud. El diagnóstico ya identificó el tipo de error; no se modificó el catálogo.",
+          gemini_temporarily_unavailable: "Gemini está temporalmente indisponible. Esperá un momento y volvé a intentarlo.",
           gemini_quota_exhausted: "Gemini alcanzó su cuota disponible. Esperá un momento y volvé a intentarlo.",
-          gemini_request_failed: "Gemini no pudo completar la consulta. Revisá la conexión o intentá nuevamente en unos minutos.",
+          gemini_request_failed: "Gemini no pudo completar la consulta. Revisá el diagnóstico del servicio e intentá nuevamente.",
           gemini_invalid_response: "Gemini respondió con un formato que JB Copilot no pudo leer. Probá reformulando la instrucción.",
           gemini_unstructured_response: "La respuesta de Gemini no llegó en el formato esperado. No se hizo ningún cambio; podés repetir la consulta.",
           admin_verification_unavailable: "No se pudo verificar tu cuenta administradora con Supabase. Revisá tu conexión e intentá otra vez.",
