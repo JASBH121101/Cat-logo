@@ -10,6 +10,17 @@ function catalogContext(products) {
     id: safeText(item.id, 80),
     name: safeText(item.name, 140),
     brand: safeText(item.brand, 80),
+    model: safeText(item.model, 100),
+    category: safeText(item.category, 80),
+    subcategory: safeText(item.subcategory, 80),
+    description: safeText(item.description, 180),
+    specifications: safeText(typeof item.specifications === "string" ? item.specifications : JSON.stringify(item.specifications || {}), 420),
+    perfume_details: item.perfume_details ? {
+      family: safeText(item.perfume_details.family, 40),
+      concentration: safeText(item.perfume_details.concentration, 50),
+      volume_ml: item.perfume_details.volume_ml == null ? null : Number(item.perfume_details.volume_ml),
+      audience: safeText(item.perfume_details.audience, 30)
+    } : null,
     catalog_type: item.catalog_type === "perfumery" ? "perfumery" : "technology",
     price_usd: item.price_usd == null ? null : Number(item.price_usd),
     price_nio: item.price_nio == null ? null : Number(item.price_nio),
@@ -23,7 +34,7 @@ function catalogContext(products) {
   }));
 }
 
-export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
+export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPrepareProductDraft }) {
   const page = $(".jb-manager-ai-page");
   const launcher = $("#jb-ai-floating-launcher");
   const form = $("#jb-ai-form");
@@ -64,6 +75,40 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     const paragraph = document.createElement("p");
     paragraph.textContent = text;
     article.append(paragraph);
+    if (meta && meta.intent === "add_product" && meta.product_draft &&
+        typeof meta.product_draft === "object" && String(meta.product_draft.name || "").trim()) {
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "jb-ai-prefill-action";
+      action.textContent = "✦ Rellenar formulario";
+      action.addEventListener("click", async () => {
+        if (typeof onPrepareProductDraft !== "function") {
+          setStatus("No se pudo abrir el formulario de producto desde Copilot.", true);
+          return;
+        }
+        action.disabled = true;
+        action.textContent = "Preparando formulario…";
+        try {
+          const prepared = await onPrepareProductDraft(meta.product_draft);
+          if (prepared) {
+            action.textContent = "✓ Formulario preparado";
+            action.classList.add("is-complete");
+          } else {
+            action.disabled = false;
+            action.textContent = "✦ Rellenar formulario";
+          }
+        } catch (error) {
+          action.disabled = false;
+          action.textContent = "✦ Rellenar formulario";
+          setStatus(error?.message || "No se pudo preparar el formulario.", true);
+        }
+      });
+      article.append(action);
+      const safetyNote = document.createElement("small");
+      safetyNote.className = "jb-ai-prefill-note";
+      safetyNote.textContent = "Solo completa el formulario; no guarda, publica ni añade fotografías.";
+      article.append(safetyNote);
+    }
     if (meta && meta.intent && meta.intent !== "question" && meta.intent !== "unknown") {
       const tag = document.createElement("small");
       tag.className = "jb-manager-ai-intent";
