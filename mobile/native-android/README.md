@@ -49,7 +49,5 @@ The APK workflow copies these Java sources into the generated Capacitor Android 
 - The APK is checked for package ID, version, full byte count and signing-certificate match before the installer can be opened. Android still requires the administrator to confirm installation; JB Manager does not silently replace itself.
 - This guarantee applies to leaving/minimizing the app or removing its task from Recents. Android system restrictions, loss of network, insufficient storage or explicitly force-stopping/disabling system download components can still interrupt a transfer.
 
-- The floating JARVIS control is started with the MediaProjection session and must remain visible while Go Partners is being captured. Creating the foreground notification channel must not stop the overlay; the capture service removes the overlay only during its shutdown path.
 
-
-- The current JB Copilot build exposes a local OCR transcript for every captured observation, recovers a candidate against its verified source observation when the model returns an incorrect observation index, and allows only bounded product-identity OCR corrections. Supplier prices still require exact numeric and currency evidence in the same OCR context. The web/API assets are assembled from the latest `main` during the APK workflow.
+- Screen-change detection is based on the recognized OCR text rather than a sparse 18×18 pixel hash. The capture service still samples at a bounded interval, and exact duplicate OCR text is filtered after ML Kit. This avoids skipping a new product name, variant or price that changes in a small region outside the former pixel sample grid.
