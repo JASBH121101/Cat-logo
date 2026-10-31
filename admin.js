@@ -199,7 +199,8 @@ const goPartnersScanner = initGoPartnersScanner({
   getSupabase: () => supabase,
   getCurrentUser: () => currentUser,
   getProducts: () => products,
-  providerTools
+  providerTools,
+  onPrepareNewProduct: prepareProductDraft
 });
 window.addEventListener("jb-catalog-provider-updated", () => {
   void loadProducts();
