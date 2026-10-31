@@ -2791,6 +2791,12 @@ async function showDashboard(user) {
 
   await syncSharedColorLibrary({ migrateLocal: true });
   await loadProducts();
+
+  // Establish the initial empty editor baseline after catalog/form setup.
+  // Without this, editorBaseline stays "" and the first snapshot is always
+  // interpreted as a user change, even when every field is blank.
+  markEditorClean();
+
   await checkLocalRecoveryDraft();
 }
 
