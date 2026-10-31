@@ -11,15 +11,22 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=20261024-workflow-perfume-type4">
-  <link rel="stylesheet" href="theme-ui.css?v=20261024-light-preview-contrast1">
-  <link rel="stylesheet" href="admin-workflow.css?v=20261025-publication-safety2">
+  <link rel="stylesheet" href="styles.css?v=20261027-audit-cascade1">
+  <link rel="stylesheet" href="theme-ui.css?v=20261028-limited-edition-icons1">
+  <link rel="stylesheet" href="admin-workflow.css?v=20261029-mobile-chevron1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
-  <link rel="stylesheet" href="responsive-layout.css?v=20261026-responsive-layout1">
+  <link rel="stylesheet" href="admin-provider.css?v=20261029-variant-availability-validation1">
+  <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
+  <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
+  <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
+  <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
+  <link rel="stylesheet" href="admin-accessibility.css?v=20261030-inventory-refresh1">
+  <link rel="stylesheet" href="admin-ai.css?v=20261030-jb-manager-ai1">
+  <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-theme-sync1">
 
-  <script src="config.js?v=20261022-0233"></script>
-  <script type="module" src="admin.js?v=20261026-perfume-clean-form1"></script>
-  <script src="ui.js?v=20261023-dual-filter-menus1" defer></script>
+  <script src="config.js?v=20261029-admin-webpush3"></script>
+  <script type="module" src="admin.js?v=20261031-jarvis-fixes10"></script>
+  <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
 <body class="admin-body">
@@ -35,7 +42,7 @@
     </a>
     <div class="admin-header-context" aria-hidden="true">
       <strong>Panel de control</strong>
-      <small>TECNOLOGÍA · PERFUMERÍA</small>
+      <small>JB TECH · JB PARFUMS</small>
     </div>
   </header>
 
@@ -149,28 +156,49 @@
           <button type="button" class="admin-nav-button" data-admin-section="trash">
             <span class="admin-nav-icon" aria-hidden="true">▱</span><span class="admin-nav-label" id="admin-nav-trash-label">Papelera</span><span class="admin-nav-count" id="trash-nav-count">0</span>
           </button>
+          <button type="button" class="admin-nav-button" data-admin-section="provider">
+            <span class="admin-nav-icon" aria-hidden="true">↻</span><span class="admin-nav-label">Por revisar</span><span class="admin-nav-count" id="provider-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="reviewed">
+            <span class="admin-nav-icon" aria-hidden="true">✓</span><span class="admin-nav-label">Revisados</span><span class="admin-nav-count" id="reviewed-nav-count">0</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="ai">
+            <span class="admin-nav-icon" aria-hidden="true">✦</span><span class="admin-nav-label">JB Manager AI</span><span class="admin-nav-ai-tag">AI</span>
+          </button>
+          <button type="button" class="admin-nav-button" data-admin-section="messages" aria-label="Abrir mensajería privada">
+            <span class="admin-nav-icon" aria-hidden="true">✉</span><span class="admin-nav-label">Mensajería</span><span class="admin-nav-count" id="private-chat-nav-count">0</span>
+          </button>
         </nav>
 
-        <div class="admin-sidebar-catalog-links" aria-label="Accesos a los catálogos públicos">
-          <a href="./tecnologia/" class="admin-sidebar-catalog-link" data-admin-catalog-link="technology" aria-label="Ver catálogo tecnológico">
-            <span aria-hidden="true">⌘</span>
-            <span>Ver catálogo tecnológico</span>
-          </a>
-          <a href="./perfumeria/" class="admin-sidebar-catalog-link" data-admin-catalog-link="perfumery" aria-label="Ver catálogo de perfumería">
-            <span aria-hidden="true">✦</span>
-            <span>Ver catálogo de perfumería</span>
-          </a>
+        <div class="admin-settings-wrap admin-sidebar-settings">
+          <button id="admin-settings-toggle" class="admin-settings-toggle" type="button"
+                  aria-label="Abrir ajustes" title="Ajustes" aria-controls="admin-settings-menu" aria-expanded="false">
+            <span class="admin-settings-toggle-icon" aria-hidden="true">⚙</span>
+            <span class="admin-settings-toggle-label">Ajustes</span>
+            <span class="admin-settings-toggle-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="admin-settings-menu" class="admin-settings-menu" role="menu" aria-label="Ajustes de administración" hidden>
+            <p class="admin-settings-menu-title">Ajustes</p>
+            <button type="button" class="admin-settings-item" data-admin-section="updates" role="menuitem">
+              <span class="admin-settings-item-icon" aria-hidden="true">⇄</span>
+              <span><strong>Actualizar catálogo</strong><small>Importar cambios mediante JSON o CSV</small></span>
+            </button>
+            <div class="admin-settings-divider"></div>
+            <button id="remember-user-toggle" class="admin-settings-item" type="button" role="menuitem" aria-pressed="false">
+              <span class="admin-settings-item-icon" aria-hidden="true">◉</span>
+              <span><strong id="remember-user-toggle-label">Recordar sesión en este dispositivo</strong><small>Preferencia de este dispositivo</small></span>
+            </button>
+            <button id="logout-button" class="admin-settings-item is-danger" type="button" role="menuitem">
+              <span class="admin-settings-item-icon" aria-hidden="true">↪</span>
+              <span><strong>Cerrar sesión</strong><small>Salir de JB Manager</small></span>
+            </button>
+          </div>
         </div>
 
-        <button id="remember-user-toggle" class="admin-sidebar-remember" type="button" aria-pressed="false">
-          <span aria-hidden="true">◉</span>
-          <span id="remember-user-toggle-label">Recordar sesión en este dispositivo</span>
-        </button>
-
-        <button id="logout-button" class="admin-sidebar-logout" type="button">
-          <span aria-hidden="true">↪</span>
-          <span>Cerrar sesión</span>
-        </button>
+        <a href="./" class="admin-sidebar-catalog-link">
+          <span aria-hidden="true">↗</span>
+          <span>Ver catálogo</span>
+        </a>
 
 
         <div class="admin-sidebar-footer">
@@ -183,7 +211,7 @@
       <section class="admin-welcome" aria-label="Resumen del panel">
         <div class="admin-welcome-copy">
           <p class="admin-welcome-kicker">CENTRO DE CONTROL</p>
-          <h2>Tu inventario, <span>en orden.</span></h2>
+          <h2>Tus catálogos, <span>en orden.</span></h2>
           <p>
             Actualizá productos, administrá configuraciones y mantené tu
             catálogo listo para tus clientes.
@@ -248,6 +276,7 @@
             <button type="button" class="dashboard-quick-action" data-dashboard-action="add"><span class="quick-action-icon">＋</span><span><strong>Añadir producto</strong><small id="dashboard-add-product-description">Registrar un equipo nuevo</small></span><span>›</span></button>
             <button type="button" class="dashboard-quick-action" data-dashboard-action="published"><span class="quick-action-icon">✓</span><span><strong>Ver publicados</strong><small>Administrar el catálogo visible</small></span><span>›</span></button>
             <button type="button" class="dashboard-quick-action" data-dashboard-action="drafts"><span class="quick-action-icon">◷</span><span><strong>Ver no publicados</strong><small>Continuar productos pendientes</small></span><span>›</span></button>
+             <button type="button" class="dashboard-quick-action" data-dashboard-action="messages"><span class="quick-action-icon">✉</span><span><strong>Mensajería de clientes</strong><small>Revisar solicitudes y responder personalmente</small></span><span id="dashboard-private-chat-shortcut-count">0</span><span>›</span></button>
             <a class="dashboard-public-link" href="./tecnologia/" target="_blank" rel="noopener"><span>↗</span> Abrir catálogo público</a>
           </article>
 
@@ -289,6 +318,39 @@
 
             <div class="dashboard-interest-products-heading"><h4 id="dashboard-interest-products-title">Productos con más interés</h4><span>Visitas / WhatsApp</span></div>
             <div class="dashboard-top-products" id="dashboard-top-products"><p class="dashboard-empty-state">Aún no hay datos de visitas.</p></div>
+          </article>
+          <article class="dashboard-widget dashboard-department-widget" aria-labelledby="dashboard-department-title">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">UBICACIÓN APROXIMADA</p><h3 id="dashboard-department-title">Visitas por departamento</h3></div><span class="dashboard-widget-icon" aria-hidden="true">⌖</span></div>
+            <p class="dashboard-widget-note">Ubicación aproximada por conexión de red; no usa GPS ni guarda la IP. Las visitas son cargas de página, no personas únicas; registros anteriores pueden no incluir ubicación.</p>
+            <div id="dashboard-department-breakdown" class="dashboard-department-breakdown" aria-live="polite"><p class="dashboard-empty-state">El desglose aparecerá cuando se registren nuevas visitas.</p></div>
+          </article>
+          <article class="dashboard-widget dashboard-commission-widget" aria-labelledby="commission-widget-title">
+            <div class="dashboard-widget-heading"><div><p class="dashboard-eyebrow">GANANCIA DEL NEGOCIO</p><h3 id="commission-widget-title">Mis comisiones</h3></div><span class="dashboard-widget-icon" aria-hidden="true">C$</span></div>
+            <p class="dashboard-widget-note">Registrá únicamente lo que te corresponde ganar. No se guardan precios del producto ni costos del proveedor.</p>
+            <div class="commission-summary-grid">
+              <div><span>Comisiones confirmadas</span><strong id="commission-total-confirmed">—</strong></div><div><span>Pendientes de recibir</span><strong id="commission-total-pending">—</strong></div>
+              <div><span>Ya recibidas</span><strong id="commission-total-received">—</strong></div><div><span>Por confirmar</span><strong id="commission-total-unconfirmed">—</strong></div>
+            </div>
+                        <details class="commission-editor-details" id="commission-editor-details"><summary id="commission-form-summary">＋ Registrar comisión</summary>
+              <form id="commission-form" class="commission-form">
+                <input id="commission-id" type="hidden">
+                <label><span>Catálogo</span><select id="commission-catalog" required><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+                <label><span>Producto del catálogo (opcional)</span><select id="commission-product-select"><option value="">Sin producto vinculado</option></select></label>
+                <label class="commission-form-wide"><span>Producto o referencia</span><input id="commission-product-name" type="text" maxlength="180"  required></label>
+                <label><span>Departamento de entrega</span><select id="commission-department"><option value="">Sin especificar</option><option>Boaco</option><option>Carazo</option><option>Chinandega</option><option>Chontales</option><option>Estelí</option><option>Granada</option><option>Jinotega</option><option>León</option><option>Madriz</option><option>Managua</option><option>Masaya</option><option>Matagalpa</option><option>Nueva Segovia</option><option>Río San Juan</option><option>Rivas</option><option>Costa Caribe Norte</option><option>Costa Caribe Sur</option><option>Fuera de Nicaragua</option></select></label>
+                <label><span>Canal</span><select id="commission-channel"><option value="whatsapp">WhatsApp</option><option value="messenger">Messenger</option><option value="other">Otro</option></select></label>
+                <label><span>Mi comisión</span><input id="commission-amount" type="number" min="0" step="0.01" inputmode="decimal" ></label>
+                <label><span>Moneda de la comisión</span><select id="commission-currency"><option value="NIO">Córdobas (C$)</option><option value="USD">Dólares (US$)</option></select></label>
+                <label><span>Estado</span><select id="commission-status"><option value="pending_confirmation">Por confirmar</option><option value="confirmed_pending_payment">Confirmada · pendiente de recibir</option><option value="received">Recibida</option><option value="cancelled">Cancelada</option></select></label>
+                <label><span>Fecha de operación</span><input id="commission-operation-date" type="date" required></label>
+                <label><span>Referencia de pedido (opcional)</span><input id="commission-order-reference" type="text" maxlength="140" ></label>
+                <label class="commission-form-wide"><span>Notas (opcional)</span><textarea id="commission-notes" rows="2" maxlength="1200"></textarea></label>
+                <div class="commission-form-actions commission-form-wide"><button class="button button-primary" id="commission-save-button" type="submit">Guardar registro</button><button class="button" id="commission-cancel-edit" type="button" hidden>Cancelar edición</button></div>
+                <p id="commission-form-status" class="form-status commission-form-wide" role="status" aria-live="polite"></p>
+              </form>
+            </details>
+            <div class="commission-records-heading"><h4>Últimos registros</h4><button type="button" id="commission-refresh-button" class="commission-refresh-button">Actualizar</button></div>
+            <div id="commission-records" class="commission-records"><p class="dashboard-empty-state">Cargando comisiones…</p></div>
           </article>
         </div>
       </section>
@@ -339,11 +401,34 @@
                 <input id="product-model" maxlength="100">
               </label>
 
+              <section id="product-duplicate-panel" class="product-duplicate-panel" aria-labelledby="product-duplicate-title" aria-live="polite" hidden>
+                <div class="product-duplicate-heading">
+                  <span class="product-duplicate-heading-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5M8 10.8h5.6M10.8 8v5.6"></path></svg>
+                  </span>
+                  <div class="product-duplicate-heading-copy">
+                    <h3 id="product-duplicate-title">Posibles coincidencias de esta marca</h3>
+                    <p id="product-duplicate-summary">Comparando nombre, modelo y características con productos ya registrados.</p>
+                  </div>
+                  <span id="product-duplicate-count" class="product-duplicate-count" hidden></span>
+                </div>
+                <div id="product-duplicate-results" class="product-duplicate-results"></div>
+              </section>
+
               <label id="product-category-field">
                 Categoría <span class="required-mark" aria-hidden="true">*</span>
                 <select id="product-category" required>
                   <option value="" disabled selected>Seleccionar categoría…</option>
                 </select>
+              </label>
+
+              <label id="product-subcategory-field">
+                Subcategoría
+                <select id="product-subcategory" aria-label="Subcategoría del producto">
+                  <option value="" selected>Seleccionar subcategoría…</option>
+                  <option value="__custom__">Otra (escribir…)</option>
+                </select>
+                <input id="product-subcategory-custom" type="text" maxlength="80" placeholder="Escribí la subcategoría" aria-label="Subcategoría personalizada" hidden>
               </label>
 
               <label class="span-2">
@@ -399,7 +484,7 @@
                     </select>
                   </label>
                   <section class="product-perfume-notes-fields" aria-labelledby="product-perfume-notes-title">
-                    <h3 id="product-perfume-notes-title">Perfil y notas olfativas <span class="optional-mark">Opcional</span></h3>
+                    <h3 id="product-perfume-notes-title">Perfil y notas olfativas</h3>
                     <label>
                       Familia olfativa específica
                       <input id="product-perfume-scent-family" type="text">
@@ -460,6 +545,45 @@
                 <textarea id="product-shipping"
                           rows="2"></textarea>
               </label>
+
+              <section id="product-taxonomy-fields" class="span-2 product-taxonomy-fields" aria-labelledby="product-tags-title">
+                <div class="product-taxonomy-heading">
+                  <h3 id="product-tags-title">Etiquetas manuales</h3>
+                  <p id="product-tags-description">Elegí solo las que correspondan; no se asignan automáticamente por marca.</p>
+                </div>
+                <div class="product-collection-tag-options" aria-label="Etiquetas de colección">
+                  <label class="product-tag-option product-tag-option--exclusive">
+                    <input type="checkbox" data-product-tag value="exclusive" id="product-tag-exclusive">
+                    <span>✦ Exclusivo</span>
+                  </label>
+                  <label class="product-tag-option product-tag-option--limited-edition">
+                    <input type="checkbox" data-product-tag value="limited_edition" id="product-tag-limited-edition">
+                    <span class="product-tag-option-label">
+                      <svg class="product-tag-option-icon product-tag-option-icon--tech" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M9 1.5v3M15 1.5v3M9 19.5v3M15 19.5v3M1.5 9h3M1.5 15h3M19.5 9h3M19.5 15h3M10 10h4v4h-4z"/></svg>
+                      <span class="product-tag-option-icon product-tag-option-icon--perfume" aria-hidden="true">♛</span>
+                      Edición limitada
+                    </span>
+                  </label>
+                </div>
+                <div class="product-tech-tag-options" id="product-tech-tag-options">
+                  <div class="product-tag-options">
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-high-performance" value="high_performance"><span>⚡ Alto rendimiento</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-quality-price" value="quality_price"><span>💎 Calidad-precio</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-top-gaming" value="top_gaming"><span>🎮 Top Gaming</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-best-seller" value="best_seller"><span>Más vendido</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-new-arrival" value="new_arrival"><span>Nuevo ingreso</span></label>
+                    <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-offer" value="offer"><span>Oferta</span></label>
+                  </div>
+                  <label class="product-custom-tags-field">
+                    Etiquetas personalizadas
+                    <div class="product-custom-tags-entry">
+                      <div id="product-custom-tags-chips" class="product-custom-tags-chips" aria-live="polite" hidden></div>
+                      <input id="product-custom-tags" type="text" maxlength="300" autocomplete="off" enterkeyhint="done" placeholder="Escribí una etiqueta y presioná Enter" aria-describedby="product-custom-tags-help">
+                    </div>
+                    <small id="product-custom-tags-help">Presioná Enter para guardar cada etiqueta por separado. También podés pegar varias separadas por comas o punto y coma.</small>
+                  </label>
+                </div>
+              </section>
 <input id="product-featured" type="checkbox" hidden aria-hidden="true">
               <input id="product-active" type="checkbox" hidden aria-hidden="true">
               <input id="product-exclusive" type="checkbox" hidden aria-hidden="true">
@@ -477,11 +601,11 @@
                     <h3 id="variants-editor-title">Variantes, capacidades y precios</h3>
                   </div>
                   <div class="variants-editor-actions" aria-label="Acciones para variantes">
-                    <button id="add-variant-button" class="button button-outline" type="button">+ RAM / almacenamiento</button>
+                    <button id="add-variant-button" class="button button-outline" type="button" aria-label="Agregar variante de RAM y almacenamiento" title="Agregar otra combinación de RAM y almacenamiento">+ Agregar variante</button>
                   </div>
                 </div>
 
-                <div id="base-color-manager" class="primary-config-slot" aria-label="Configuración principal"></div>
+                <div id="base-color-manager" class="base-color-manager primary-config-slot" aria-label="Configuración principal"></div>
 
                 <div id="product-variants-list" class="product-variants-list">
                 </div>
@@ -549,7 +673,12 @@
 
       <section id="admin-section-published" class="admin-nav-panel hidden" data-admin-panel="published">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="published-section-title">Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div></div>
+          <div class="card-heading"><div><h2 id="published-section-title">Productos publicados</h2><p id="published-count">Consultando productos publicados…</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados" placeholder="Buscar producto publicado"></label>
           <div id="published-product-list" class="admin-product-list"></div>
         </section>
@@ -557,7 +686,12 @@
 
       <section id="admin-section-unpublished" class="admin-nav-panel hidden" data-admin-panel="unpublished">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="unpublished-section-title">Productos no publicados</h2><p id="unpublished-count">Consultando productos…</p></div></div>
+          <div class="card-heading"><div><h2 id="unpublished-section-title">Productos no publicados</h2><p id="unpublished-count">Consultando productos…</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="unpublished-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
           <div id="unpublished-product-list" class="admin-product-list"></div>
         </section>
@@ -565,7 +699,12 @@
 
       <section id="admin-section-drafts" class="admin-nav-panel hidden" data-admin-panel="drafts">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="draft-section-title">Borradores de tecnología</h2><p id="draft-count">Consultando borradores…</p></div></div>
+          <div class="card-heading"><div><h2 id="draft-section-title">Borradores de tecnología</h2><p id="draft-count">Consultando borradores…</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar borradores" placeholder="Buscar borrador"></label>
           <div id="draft-product-list" class="admin-product-list"></div>
         </section>
@@ -582,7 +721,12 @@
 
       <section id="admin-section-trash" class="admin-nav-panel hidden" data-admin-panel="trash">
         <section class="admin-card product-list-card">
-          <div class="card-heading"><div><h2 id="trash-section-title">Papelera de tecnología</h2><p id="trash-count">Los productos se conservan durante 15 días antes de eliminarse definitivamente.</p></div></div>
+          <div class="card-heading"><div><h2 id="trash-section-title">Papelera de tecnología</h2><p id="trash-count">Los productos se conservan durante 15 días antes de eliminarse definitivamente.</p></div><div class="admin-list-refresh-control">
+            <button type="button" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar inventario desde la nube" title="Traer cambios guardados desde otro dispositivo">
+              <span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span>
+            </button>
+            <small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small>
+          </div></div>
           <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="trash-search" type="search" aria-label="Buscar productos en la papelera" placeholder="Buscar en papelera"></label>
           <div id="trash-product-list" class="admin-product-list"></div>
         </section>
@@ -648,8 +792,254 @@
         <p id="import-status" class="form-status" role="status"></p>
       </section>
       </div>
+
+      <section id="admin-section-provider" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="provider">
+        <header class="provider-page-heading">
+          <div><p class="eyebrow">DROPSHIPPING · PRIMERA COMPROBACIÓN</p><h2>Productos por revisar</h2>
+            <p>Aquí aparecen únicamente los productos que todavía no tienen una revisión manual. Al guardar la primera comprobación, el producto pasa a <strong>Revisados</strong> junto con su historial, sin cambiar el precio público.</p></div>
+          <div class="admin-list-refresh-control"><button type="button" id="provider-refresh" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar catálogo y revisiones" title="Sincronizar los productos y las revisiones desde la nube"><span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span></button><small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small></div>
+        </header>
+        <section class="provider-metrics" aria-label="Resumen de revisiones">
+          <article class="provider-metric"><span>Sin revisar</span><strong id="provider-count-missing">0</strong><small>Productos pendientes de primera comprobación</small></article>
+          <article class="provider-metric"><span>Necesitan revisión</span><strong id="provider-count-overdue">0</strong><small>Ya revisados, con 7 días o más</small></article>
+          <article class="provider-metric"><span>Al día</span><strong id="provider-count-current">0</strong><small>Revisados durante los últimos 7 días</small></article>
+        </section>
+        <section class="admin-card provider-list-card">
+          <div class="provider-toolbar provider-toolbar-pending">
+            <label class="provider-field"><span>Catálogo</span><select id="provider-catalog-filter"><option value="all">Ambos catálogos</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-search" type="search" placeholder="Nombre, marca o modelo…" autocomplete="off"></label>
+          </div>
+          <div id="provider-product-list" class="provider-product-list" aria-live="polite"><p class="provider-empty-state">Cargando productos pendientes…</p></div>
+        </section>
+        <p id="provider-status-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="admin-section-reviewed" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="reviewed">
+        <header class="provider-page-heading">
+          <div><p class="eyebrow">HISTORIAL PRIVADO · SEGUIMIENTO MANUAL</p><h2>Productos revisados</h2>
+            <p>Todos los productos que ya tienen una revisión guardada se administran aquí. Podés ver precios y disponibilidad del proveedor, actualizar revisiones vencidas y consultar el historial completo de cada producto.</p></div>
+          <div class="admin-list-refresh-control"><button type="button" id="provider-refresh-reviewed" class="button button-outline admin-inventory-refresh-button" data-refresh-inventory aria-label="Actualizar catálogo y revisiones" title="Sincronizar los productos y las revisiones desde la nube"><span class="admin-refresh-icon" aria-hidden="true">↻</span><span data-refresh-label>Actualizar</span></button><small class="admin-refresh-status" data-admin-refresh-status role="status" aria-live="polite">Sincroniza cambios de otros dispositivos</small></div>
+        </header>
+        <section class="provider-metrics" aria-label="Resumen de productos revisados">
+          <article class="provider-metric"><span>Total revisados</span><strong id="provider-reviewed-count">0</strong><small>Con al menos una revisión guardada</small></article>
+          <article class="provider-metric"><span>Necesitan revisión</span><strong id="provider-reviewed-overdue">0</strong><small>Última revisión hace 7 días o más</small></article>
+          <article class="provider-metric"><span>Al día</span><strong id="provider-reviewed-current">0</strong><small>Revisados durante los últimos 7 días</small></article>
+        </section>
+        <section class="admin-card provider-list-card">
+          <div class="provider-toolbar">
+            <label class="provider-field"><span>Catálogo</span><select id="provider-reviewed-catalog-filter"><option value="all">Ambos catálogos</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+            <label class="provider-field"><span>Estado</span><select id="provider-reviewed-filter"><option value="all">Todos los revisados</option><option value="overdue">Necesitan revisión</option><option value="current">Al día</option></select></label>
+            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-reviewed-search" type="search" placeholder="Nombre, marca o modelo…" autocomplete="off"></label>
+          </div>
+          <div id="provider-reviewed-list" class="provider-product-list" aria-live="polite"><p class="provider-empty-state">Cargando productos revisados…</p></div>
+        </section>
+        <p id="provider-reviewed-status-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+
+      <section id="admin-section-ai" class="admin-nav-panel hidden jb-manager-ai-page" data-admin-panel="ai">
+        <header class="jb-manager-ai-heading">
+          <div>
+            <p class="eyebrow">COPILOTO ADMINISTRATIVO · JB COLLECTIONS</p>
+            <h2>JB Manager <span>AI</span></h2>
+            <p>Un asistente para consultar tu catálogo, preparar revisiones de precios y agilizar el registro de productos.</p>
+          </div>
+          <div class="jb-manager-ai-status"><i></i><span>Sesión protegida</span></div>
+        </header>
+        <div class="jb-manager-ai-workspace">
+          <aside class="jb-manager-ai-aside">
+            <div class="jb-manager-ai-aside-mark">✦</div>
+            <h3>Tu centro de operaciones</h3>
+            <p>Dictá o escribí lo que necesitás. JB Manager AI te ayudará a organizar la información antes de cualquier cambio.</p>
+            <div class="jb-manager-ai-capability"><span>01</span><div><strong>Precios de proveedor</strong><small>Preparar revisiones de GoPartner.</small></div></div>
+            <div class="jb-manager-ai-capability"><span>02</span><div><strong>Alta de productos</strong><small>Recopilar datos y crear borradores.</small></div></div>
+            <div class="jb-manager-ai-capability"><span>03</span><div><strong>Consultas del catálogo</strong><small>Buscar productos y configuraciones.</small></div></div>
+            <p class="jb-manager-ai-privacy">La IA no guarda ni publica cambios. Toda acción administrativa requiere tu aprobación.</p>
+          </aside>
+          <section class="jb-manager-ai-chat" aria-label="Conversación con JB Manager AI">
+            <div class="jb-manager-ai-chat-head"><div><span class="jb-manager-ai-avatar">✦</span><div><strong>JB Copilot</strong><small>Asistente administrativo</small></div></div><button type="button" id="jb-ai-clear" aria-label="Limpiar conversación" title="Nueva conversación">↻</button></div>
+            <div id="jb-ai-messages" class="jb-manager-ai-messages" aria-live="polite">
+              <article class="jb-manager-ai-message is-assistant"><strong>Hola, estoy listo.</strong><p>Podés decirme, por ejemplo: “Quiero revisar el precio del POCO X8 Pro Max; el proveedor ahora lo ofrece a 245 dólares”.</p></article>
+            </div>
+            <div class="jb-manager-ai-prompts">
+              <button type="button" data-jb-ai-prompt="Quiero revisar un precio de proveedor.">Revisar un precio</button>
+              <button type="button" data-jb-ai-prompt="Ayudame a preparar un producto nuevo para JB TECH.">Añadir producto</button>
+              <button type="button" data-jb-ai-prompt="Buscá un producto en mis catálogos.">Buscar producto</button>
+            </div>
+            <form id="jb-ai-form" class="jb-manager-ai-form">
+              <button type="button" id="jb-ai-voice" class="jb-ai-voice" aria-label="Dictar mensaje" title="Dictar mensaje">🎙</button>
+              <textarea id="jb-ai-input" rows="1" maxlength="3000" placeholder="Escribí o dictá una instrucción…" aria-label="Mensaje para JB Manager AI"></textarea>
+              <button type="submit" id="jb-ai-send" class="jb-ai-send" aria-label="Enviar mensaje">➤</button>
+            </form>
+            <p id="jb-ai-status" class="jb-manager-ai-statusline" role="status">El dictado solicita permiso al sistema. Android puede procesar el audio con el servicio de voz configurado; JARVIS recibe el texto solo cuando presionás Enviar.</p>
+          </section>
+        </div>
+
+        <section class="jb-gp-scanner" id="jb-gp-scanner" aria-labelledby="jb-gp-scanner-title">
+          <div class="jb-gp-scanner-heading">
+            <div>
+              <p class="jb-gp-scanner-kicker">JARVIS · PROVEEDOR</p>
+              <h3 id="jb-gp-scanner-title">Scanner de Go Partners</h3>
+              <p class="jb-gp-scanner-description">Navegá manualmente por Go Partners mientras JARVIS lee el texto de cada pantalla. Al finalizar, identificará productos, variantes, precios y posibles repeticiones.</p>
+            </div>
+            <span class="jb-manager-ai-status"><i></i><span>Revisión antes de guardar</span></span>
+          </div>
+          <div class="jb-gp-scanner-actions">
+            <button type="button" class="button button-primary" id="jb-gp-scan-start">Iniciar escaneo</button>
+            <button type="button" class="button button-outline" id="jb-gp-scan-finish" disabled>Finalizar y revisar</button>
+            <button type="button" class="button button-ghost" id="jb-gp-scan-clear" disabled>Descartar sesión</button>
+          </div>
+          <p id="jb-gp-scan-status" class="jb-gp-scan-status" role="status" aria-live="polite">Disponible en la APK Android. El navegador no puede capturar otras aplicaciones.</p>
+          <p class="jb-gp-scanner-privacy">Privacidad: Android pedirá permiso de captura en cada sesión. Las imágenes se procesan localmente para OCR y se descartan; no se guarda vídeo ni capturas. Al finalizar, JARVIS envía únicamente el texto reconocido a la IA para estructurarlo. Mientras escaneás, evitá mostrar chats, pedidos privados o información personal.</p>
+          <div id="jb-gp-scan-results" class="jb-gp-scan-results" hidden>
+            <div id="jb-gp-scan-summary" class="jb-gp-scan-summary"></div>
+            <div id="jb-gp-scan-duplicates" class="jb-gp-scan-duplicates"></div>
+            <div id="jb-gp-scan-products" class="jb-gp-scan-products"></div>
+          </div>
+        </section>
+      </section>
+      <button type="button" id="jb-ai-floating-launcher" class="jb-ai-floating-launcher" aria-label="Abrir JB Manager AI" title="Abrir JB Manager AI"><span aria-hidden="true">✦</span></button>
+      <section id="admin-section-messages" class="admin-nav-panel hidden private-chat-admin-panel" data-admin-panel="messages">
+        <header class="provider-page-heading private-chat-admin-heading">
+          <div>
+            <p class="eyebrow">ATENCIÓN PRIVADA · JB COLLECTIONS</p>
+            <h2>Mensajería de clientes</h2>
+            <p>Atendé solicitudes, tomá una conversación y respondé personalmente. Los enlaces de clientes son temporales; el historial se conserva hasta 7 días.</p>
+          </div>
+          <div class="private-chat-admin-header-actions">
+            <button id="private-chat-refresh" type="button" class="button button-outline">Actualizar</button>
+            <button id="private-chat-enable-notifications" type="button" class="button button-secondary">Activar notificaciones</button>
+          </div>
+        </header>
+        <p id="private-chat-admin-status" class="form-status private-chat-admin-feedback" role="status" aria-live="polite"></p>
+        <div class="private-chat-admin-layout">
+          <aside class="private-chat-admin-inbox" aria-label="Lista de conversaciones">
+            <div class="private-chat-admin-inbox-heading">
+              <strong>Conversaciones</strong>
+              <span id="private-chat-admin-inbox-count" class="private-chat-admin-count">0</span>
+            </div>
+            <div class="private-chat-admin-filters" role="group" aria-label="Filtrar conversaciones">
+              <button type="button" class="private-chat-admin-filter is-active" data-private-chat-filter="pending" aria-pressed="true"><span>Pendientes</span><b data-private-chat-filter-count="pending">0</b></button>
+              <button type="button" class="private-chat-admin-filter" data-private-chat-filter="active" aria-pressed="false"><span>Atendiendo</span><b data-private-chat-filter-count="active">0</b></button>
+              <button type="button" class="private-chat-admin-filter" data-private-chat-filter="closed" aria-pressed="false"><span>Finalizados</span><b data-private-chat-filter-count="closed">0</b></button>
+            </div>
+            <div id="private-chat-conversation-list" class="private-chat-conversation-list" aria-live="polite">
+              <p class="provider-empty-state">Cargando conversaciones…</p>
+            </div>
+          </aside>
+          <section id="private-chat-admin-thread" class="private-chat-admin-thread" aria-label="Conversación seleccionada" hidden>
+            <div id="private-chat-admin-selected" class="private-chat-admin-selected" hidden>
+              <header class="private-chat-admin-thread-header">
+                <button id="private-chat-admin-back" class="private-chat-admin-back" type="button">← Bandeja</button>
+                <div>
+                  <p id="private-chat-admin-thread-kicker" class="eyebrow">CONVERSACIÓN</p>
+                  <h3 id="private-chat-admin-thread-title">Cliente</h3>
+                  <p id="private-chat-admin-thread-meta"></p>
+                </div>
+                <a id="private-chat-admin-product-link" class="private-chat-admin-product-link" href="https://jb-collections.pages.dev/" target="_blank" rel="noopener noreferrer">Ver producto ↗</a>
+              </header>
+              <div id="private-chat-admin-actions" class="private-chat-admin-actions">
+                <button id="private-chat-admin-claim" class="button button-primary" type="button" hidden>Tomar conversación</button>
+                <button id="private-chat-admin-purchase" class="button button-secondary" type="button" hidden>Compra confirmada · 30 min más</button>
+                <button id="private-chat-admin-close" class="button button-outline" type="button" hidden>Cerrar chat</button>
+              </div>
+              <div id="private-chat-admin-messages" class="private-chat-admin-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+              <form id="private-chat-admin-reply-form" class="private-chat-admin-reply-form" hidden>
+                <label class="visually-hidden" for="private-chat-admin-reply">Tu respuesta</label>
+                <textarea id="private-chat-admin-reply" rows="2" maxlength="1200" placeholder="Escribí tu respuesta…" autocomplete="off"></textarea>
+                <button id="private-chat-admin-send" class="button button-primary" type="submit">Enviar respuesta</button>
+              </form>
+              <p class="private-chat-admin-security-note">Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular. No solicités contraseñas, PIN, códigos de seguridad ni números completos de tarjetas o cuentas bancarias. El historial se conserva hasta 7 días.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="admin-section-updates" class="admin-nav-panel hidden provider-tools-panel" data-admin-panel="updates">
+        <header class="provider-page-heading">
+          <div><p class="eyebrow">ACTUALIZACIONES SEGURAS</p><h2>Importar cambios del proveedor</h2>
+            <p>Compará un archivo JSON o CSV con tus productos existentes. Primero verás una vista previa; no se crea ni publica ningún producto automáticamente.</p></div>
+          <button type="button" id="provider-import-download-template" class="button button-outline">Descargar plantilla JSON</button>
+        </header>
+        <section class="admin-card provider-import-card">
+          <div class="provider-import-explainer">
+            <h3>¿Cómo funcionará?</h3>
+            <p>Guardá o convertí los datos que recibas de GoPartner a la plantilla. El sistema intentará identificar productos por ID del proveedor, clave del catálogo o una combinación única de marca y modelo/nombre. Las coincidencias ambiguas se omiten para que no se actualice el producto equivocado.</p>
+            <p><strong>Importante:</strong> <code>provider_price_usd</code> y <code>provider_price_nio</code> son los precios de referencia del proveedor, no tu comisión ni el precio público. Para cambiar el precio que ve el cliente, el archivo debe incluir expresamente <code>catalog_price_usd</code> o <code>catalog_price_nio</code>.</p>
+            <p>Las fotografías, la publicación, los productos destacados/exclusivos y el estado de borrador se conservan. Solo se actualizan campos que estén en el archivo y que hayas habilitado abajo.</p>
+          </div>
+          <div class="provider-import-controls">
+            <label class="provider-field"><span>Catálogo si el archivo no especifica uno</span><select id="provider-import-catalog"><option value="all">Ambos / usar tipo por producto</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
+            <label class="file-button provider-import-file-button">Seleccionar JSON o CSV<input id="provider-import-file" type="file" accept="application/json,.json,text/csv,.csv"></label>
+          </div>
+          <fieldset class="provider-import-options">
+            <legend>Qué datos permitir actualizar</legend>
+            <label><input id="provider-import-update-catalog" type="checkbox" checked> <span><strong>Datos del catálogo</strong><small>Solo columnas explícitas como <code>catalog_price_usd</code>, <code>catalog_availability</code>, <code>catalog_name</code> y equivalentes.</small></span></label>
+            <label><input id="provider-import-update-description" type="checkbox"> <span><strong>Descripción comercial</strong><small>Actualizar el texto de la ficha únicamente si el archivo incluye <code>catalog_description</code>.</small></span></label>
+            <label><input id="provider-import-update-variants" type="checkbox"> <span><strong>Precios, disponibilidad y configuraciones de variantes</strong><small>Solo con la columna <code>catalog_variants</code> o <code>variants</code> como arreglo JSON. Las galerías de fotos existentes se preservan.</small></span></label>
+            <label><input id="provider-import-update-perfume" type="checkbox"> <span><strong>Detalles de perfumería</strong><small>Actualiza familia, concentración, volumen, público y notas solo para productos de JB Parfums.</small></span></label>
+          </fieldset>
+          <div class="provider-import-preview-heading"><div><h3>Vista previa de coincidencias</h3><p id="provider-import-summary">Seleccioná un archivo para comparar los datos.</p></div><button id="provider-import-apply" type="button" class="button button-primary" disabled>Aplicar actualizaciones</button></div>
+          <div id="provider-import-preview" class="provider-import-preview"></div>
+          <p id="provider-import-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+
     </section>
   </main>
+
+  <dialog id="provider-review-dialog" class="provider-dialog" aria-labelledby="provider-review-title">
+    <form id="provider-review-form" class="provider-dialog-shell">
+      <header class="provider-dialog-header"><div><p class="eyebrow">COMPROBACIÓN MANUAL</p><h2 id="provider-review-title">Registrar revisión</h2><p id="provider-review-product-title" class="provider-dialog-product-title"></p><p id="provider-review-product-subtitle" class="provider-dialog-product-subtitle"></p></div><button class="admin-product-preview-close" type="button" data-provider-dialog-close aria-label="Cerrar">×</button></header>
+      <section class="provider-review-current-card" aria-label="Datos actuales del producto">
+        <h3>Producto registrado en JB Collections</h3>
+        <div id="provider-review-product-details" class="provider-review-product-details"></div>
+        <h3>Comparación de precios</h3>
+        <div id="provider-review-price-comparison" class="provider-review-price-comparison"></div>
+        <h3>Validación de diferencias</h3>
+        <div id="provider-review-validation-summary" class="provider-review-validation-summary" aria-live="polite">
+          <p class="provider-validation-line is-pending">Sin datos para comparar.</p>
+        </div>
+        <section id="provider-review-variants-section" class="provider-review-variants-section" aria-labelledby="provider-review-variants-title" hidden>
+          <div class="provider-review-variants-heading">
+            <div><h3 id="provider-review-variants-title">Configuraciones y colores en GoPartner</h3>
+              <p>Actualizá el estado de cada configuración y color.</p></div>
+          </div>
+          <div id="provider-review-variants" class="provider-review-variants"></div>
+        </section>
+        <p id="provider-review-variant-validation" class="provider-variant-validation is-pending" role="status" aria-live="polite">Confirmá disponibilidad, configuraciones y colores.</p>
+        <details class="provider-review-sync-details">
+          <summary>Aplicar precios y disponibilidad al catálogo al confirmar <span aria-hidden="true">⌄</span></summary>
+          <div class="provider-review-sync-details-body">
+            <label class="provider-review-sync-option">
+              <input id="provider-review-sync-catalog-availability" type="checkbox" checked>
+              <span><small>Sincroniza el estado general, cada configuración, cada color y los precios ingresados. Si un precio de variante queda vacío, conserva el actual. No modifica fotos ni publicación.</small></span>
+            </label>
+            <p class="provider-review-sync-note">La revisión guarda una instantánea privada del estado del proveedor en el historial.</p>
+          </div>
+        </details>
+      </section>
+      <div class="provider-dialog-fields">
+        <label><span>Proveedor</span><input id="provider-review-name" type="text" maxlength="100" value="GoPartner" required></label>
+        <label id="provider-review-price-usd-field"><span>Precio indicado por proveedor (US$)</span><input id="provider-review-price-usd" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label id="provider-review-price-nio-field"><span>Precio indicado por proveedor (C$)</span><input id="provider-review-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label id="provider-review-availability-field" class="provider-dialog-wide"><span>Disponibilidad general confirmada en el proveedor</span><select id="provider-review-availability"><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
+        <p id="provider-review-variant-overview-note" class="provider-review-variant-overview-note provider-dialog-wide" hidden>En este producto, el precio general se toma de la configuración con menor RAM y almacenamiento (la referencia más económica). La disponibilidad general se calcula a partir de las configuraciones y colores confirmados.</p>
+        <label class="provider-dialog-wide"><span>Notas de la revisión</span><textarea id="provider-review-notes" rows="3" maxlength="2000" placeholder="Cambios detectados, condiciones, fecha estimada…"></textarea></label>
+      </div>
+      <p id="provider-review-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
+      <p class="provider-private-note"><span aria-hidden="true">🔒</span> Estos datos se guardan en tablas privadas de administración. No se publican en las fichas del catálogo ni calculan automáticamente tu comisión.</p>
+      <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cancelar</button><button type="button" id="provider-review-save" class="button button-primary" disabled>Confirmar revisión</button></footer>
+      <input id="provider-review-product-id" type="hidden">
+    </form>
+  </dialog>
+
+  <dialog id="provider-history-dialog" class="provider-dialog provider-history-dialog" aria-labelledby="provider-history-title">
+    <div class="provider-dialog-shell"><header class="provider-dialog-header"><div><p class="eyebrow">HISTORIAL PRIVADO</p><h2 id="provider-history-title">Cambios del proveedor</h2></div><button class="admin-product-preview-close" type="button" data-provider-dialog-close aria-label="Cerrar">×</button></header>
+      <div id="provider-history-content" class="provider-history-content"></div>
+      <footer class="provider-dialog-actions"><button type="button" class="button button-outline" data-provider-dialog-close>Cerrar</button></footer>
+    </div>
+  </dialog>
 
   <dialog id="publish-review-dialog" class="publish-review-dialog" aria-labelledby="publish-review-title">
     <div class="publish-review-shell">
