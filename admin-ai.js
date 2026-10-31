@@ -226,7 +226,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       const started = await native.startListening({ language: "es-NI" });
       if (started?.started === false) throw new Error(started.message || "Android no pudo iniciar el reconocimiento.");
       nativeVoiceActive = true;
-      setStatus("Escuchando… Hablá ahora. El dictado no se enviará hasta que presionés Enviar.");
+      setStatus("Escuchando… El servicio de voz de Android puede procesar el audio según su configuración. JARVIS no recibirá el texto hasta que presionés Enviar.");
     } catch (error) {
       finishVoiceUI();
       throw error;
@@ -245,7 +245,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     recognition.continuous = false;
     recognition.onstart = () => {
       setVoiceListening(true);
-      setStatus("Escuchando… El dictado no se enviará hasta que presionés Enviar.");
+      setStatus("Escuchando… El servicio de voz del dispositivo puede procesar el audio según su configuración. JARVIS no recibirá el texto hasta que presionés Enviar.");
     };
     recognition.onresult = event => {
       let transcript = "";
@@ -332,7 +332,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       authenticatedUser = null;
       launcher.hidden = true;
       recognition?.abort?.();
-      if (nativeVoiceActive) void nativeVoicePlugin()?.stopListening?.().catch?.(() => {});
+      if (nativeVoiceActive) void nativeVoicePlugin()?.cancelListening?.().catch?.(() => {});
       nativeVoiceListeners.forEach(handle => handle?.remove?.());
       nativeVoiceListeners = [];
       nativeVoiceListenersReady = false;
