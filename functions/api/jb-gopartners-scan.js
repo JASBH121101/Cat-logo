@@ -211,9 +211,7 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
     .filter(item => Number.isInteger(item?.index) && typeof item?.text === "string" && item.text.trim().length >= 8);
   const observationByIndex = new Map(sources.map(item => [item.index, item]));
   // Normalize each unique source once; candidate matching reuses these character maps.
-  const sourceMatchers = new Map(
-    [...observationByIndex.entries()].map(([index, item]) => [index, normalizedOcrSource(item.text)])
-  );
+  const sourceMatchers = new Map(sources.map(item => [item, normalizedOcrSource(item.text)]));
   const counters = {
     candidates_received: Array.isArray(rawProducts) ? rawProducts.length : 0,
     products_grounded: 0,
@@ -237,7 +235,7 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
     let matchedSource = null;
     let evidence = "";
     for (const source of orderedSources) {
-      const candidateEvidence = findScannerEvidence(source.text, item, sourceMatchers.get(source.index));
+      const candidateEvidence = findScannerEvidence(source.text, item, sourceMatchers.get(source));
       if (candidateEvidence) {
         matchedSource = source;
         evidence = candidateEvidence;
