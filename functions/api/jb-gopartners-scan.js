@@ -279,9 +279,16 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
       return null;
     };
 
-    const availability = /\bno\s+disponible\b/i.test(evidence) ? "unavailable"
-      : /\bbajo\s+pedido\b/i.test(evidence) ? "on_request"
-      : /\bdisponible\b/i.test(evidence) ? "available" : "unknown";
+    const identity = [item?.model, item?.product_name].map(value => clean(value, 160))
+      .filter(Boolean).sort((a, b) => normalizeOcrMatch(b).length - normalizeOcrMatch(a).length)[0] || "";
+    const identitySpan = findOcrMatch(evidence, identity);
+    const availabilityMarkers = [...evidence.matchAll(/no\\s+disponible|bajo\\s+pedido|disponible/ig)];
+    const nearestAvailability = availabilityMarkers.sort((a, b) =>
+      Math.abs(a.index - (identitySpan?.start ?? 0)) - Math.abs(b.index - (identitySpan?.start ?? 0))
+    )[0]?.[0]?.toLowerCase() || "";
+    const availability = /no\\s+disponible/.test(nearestAvailability) ? "unavailable"
+      : /bajo\\s+pedido/.test(nearestAvailability) ? "on_request"
+      : /disponible/.test(nearestAvailability) ? "available" : "unknown";
     if (availability !== "unknown") {
       attemptedFields.push("availability");
       groundedFields.push("availability");
@@ -400,7 +407,7 @@ export async function onRequestPost({ request, env }) {
     "No fusiones observaciones repetidas: conserva el índice de cada aparición para que la interfaz detecte duplicados.",
     "No inventés marca, modelo, RAM, almacenamiento, color ni precio. Si no aparece, devolvé cadena vacía o null.",
     "Solo extraé precio del proveedor. No calculés comisión, impuesto, margen, precio público ni conversión de moneda.",
-    "Usá price_usd solo si aparece US$, USD o dólares inequívocamente; price_nio solo si aparece C$, NIO o córdobas. Si la moneda es ambigua, dejá ambos precios null y explicalo en notes.",
+    "Usá price_usd si aparece US$, USD, dólares o el símbolo $ aislado (nunca confundas C$ con USD); price_nio si aparece C$, NIO o córdobas. Si la moneda es ambigua, dejá ambos precios null y explicalo en notes.",
     "Si una pantalla contiene varias configuraciones con precios propios, devolvé una fila por configuración y repetí los datos comunes.",
     "Ignorá menús, botones, anuncios, navegación, notificaciones del sistema, mensajes personales, datos de cuenta, teléfonos y textos ajenos al producto.",
     "Si una sesión contiene primero una lista general y después una ficha de detalle del mismo producto, priorizá la ficha de detalle para memoria, color, precio y disponibilidad. No conviertas el texto de notificaciones en productos.",
