@@ -99,7 +99,7 @@ test("starting a new scan never clears a pending interrupted OCR session", () =>
 test("OCR observations remain in native memory until a successful review is rendered", () => {
   const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
   const finish = source.indexOf("  async function finish()");
-  const api = source.indexOf('fetch("/api/jb-gopartners-scan"', finish);
+  const api = source.indexOf('fetch("https://jb-collections.pages.dev/api/jb-gopartners-scan"', finish);
   const render = source.indexOf("renderReview();", api);
   const clearAfterReview = source.indexOf("const cleared = await native.clearScan()", render);
   assert.ok(finish >= 0 && api > finish && render > api);
