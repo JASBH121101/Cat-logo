@@ -26,3 +26,99 @@
 .jb-gp-correction-field span{font-size:.76rem;font-weight:650;color:var(--text-muted,#8993a7)}
 .jb-gp-correction-field input{width:100%;min-width:0;min-height:40px;padding:8px 10px;border:1px solid var(--border-color,#8a93a6);border-radius:9px;background:var(--input-bg,transparent);color:var(--text-color,inherit);font:inherit;font-size:.88rem}
 @media(max-width:420px){.jb-gp-correction-grid{grid-template-columns:1fr}}
+
+
+/* JARVIS scanner theme contract: its own surfaces must follow the selected admin theme. */
+html[data-theme="light"] body.admin-body .jb-gp-scanner {
+  color:#17243f;
+  background:#ffffff;
+  border-color:#d7dfec;
+}
+html[data-theme="light"] body.admin-body .jb-gp-scanner h3,
+html[data-theme="light"] body.admin-body .jb-gp-scanner h4,
+html[data-theme="light"] body.admin-body .jb-gp-scanner .jb-gp-product-card strong {
+  color:#17243f;
+}
+html[data-theme="light"] body.admin-body .jb-gp-scanner-description,
+html[data-theme="light"] body.admin-body .jb-gp-duplicate-card p,
+html[data-theme="light"] body.admin-body .jb-gp-product-card p,
+html[data-theme="light"] body.admin-body .jb-gp-product-card small,
+html[data-theme="light"] body.admin-body .jb-gp-correction-field span {
+  color:#596981;
+}
+html[data-theme="light"] body.admin-body .jb-gp-scanner-privacy {
+  color:#53647d;
+  background:#f0f3f8;
+}
+html[data-theme="light"] body.admin-body .jb-gp-duplicate-card,
+html[data-theme="light"] body.admin-body .jb-gp-product-card {
+  color:#17243f;
+  background:#fbfcfe;
+  border-color:#d9e1ee;
+}
+html[data-theme="light"] body.admin-body .jb-gp-scanner select,
+html[data-theme="light"] body.admin-body .jb-gp-scanner input {
+  color:#17243f;
+  background:#ffffff;
+  border-color:#cbd6e6;
+}
+html[data-theme="light"] body.admin-body .jb-gp-scan-status.is-error { color:#b84e5d; }
+html[data-theme="light"] body.admin-body .jb-gp-scan-status.is-success { color:#16835c; }
+
+html[data-theme="dark"] body.admin-body .jb-gp-scanner {
+  color:#edf3ff;
+  background:#151d2b;
+  border-color:#35445e;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner h3,
+html[data-theme="dark"] body.admin-body .jb-gp-scanner h4,
+html[data-theme="dark"] body.admin-body .jb-gp-product-card strong {
+  color:#f0f4ff;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner-description,
+html[data-theme="dark"] body.admin-body .jb-gp-duplicate-card p,
+html[data-theme="dark"] body.admin-body .jb-gp-product-card p,
+html[data-theme="dark"] body.admin-body .jb-gp-product-card small,
+html[data-theme="dark"] body.admin-body .jb-gp-correction-field span {
+  color:#aab8d0;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner-privacy {
+  color:#aebbd2;
+  background:#202b3e;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-duplicate-card,
+html[data-theme="dark"] body.admin-body .jb-gp-product-card {
+  color:#edf3ff;
+  background:#1b2638;
+  border-color:#3b4b66;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-duplicate-card { border-color:#80683d; }
+html[data-theme="dark"] body.admin-body .jb-gp-scanner select,
+html[data-theme="dark"] body.admin-body .jb-gp-scanner input {
+  color:#edf3ff;
+  background:#101827;
+  border-color:#465875;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner select option {
+  color:#edf3ff;
+  background:#101827;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scan-status.is-error { color:#f18b96; }
+html[data-theme="dark"] body.admin-body .jb-gp-scan-status.is-success { color:#63d4a4; }
+html[data-theme="dark"] body.admin-body .jb-gp-scanner button:disabled {
+  color:#8794aa;
+  background:#303a4c;
+  border-color:#3b465c;
+  opacity:.8;
+}
+
+html[data-theme="light"] body.admin-body #provider-review-variants .provider-variant-color-row.is-jb-scanner-match {
+  border-color:#466fd7;
+  background:#edf3ff;
+  box-shadow:0 0 0 2px rgba(70,111,215,.13);
+}
+html[data-theme="dark"] body.admin-body #provider-review-variants .provider-variant-color-row.is-jb-scanner-match {
+  border-color:#8aa2ff;
+  background:#25365b;
+  box-shadow:0 0 0 2px rgba(138,162,255,.18);
+}
