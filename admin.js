@@ -1613,10 +1613,8 @@ function normalizeVariants(value) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
 
-      availability: normalizeVariantAvailability(
-        item.availability
-      ),
-      configuration_availability: normalizeVariantAvailability(item.configuration_availability),
+      availability: item.availability === "pending" ? "pending" : normalizeVariantAvailability(item.availability),
+      configuration_availability: item.configuration_availability === "pending" ? "pending" : normalizeVariantAvailability(item.configuration_availability),
 
       images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
       image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
@@ -1912,7 +1910,7 @@ function renderVariantRows(variants = []) {
         byName.set(key, {
           color: name,
           color_hex: validHex(variant.color_hex || variant.hex),
-          availability: normalizeVariantAvailability(variant.availability),
+          availability: variant.availability === "pending" ? "pending" : normalizeVariantAvailability(variant.availability),
           images: [...new Set(images)],
           image_url: images[0] || ""
         });
