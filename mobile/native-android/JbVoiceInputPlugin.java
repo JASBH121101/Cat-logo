@@ -14,13 +14,11 @@ import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
-import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
 @CapacitorPlugin(
     name = "JbVoiceInput",
@@ -153,6 +151,9 @@ public class JbVoiceInputPlugin extends Plugin implements RecognitionListener {
         if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) return "no_match";
         if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) return "busy";
         if (error == SpeechRecognizer.ERROR_SERVER || error == SpeechRecognizer.ERROR_CLIENT) return "unavailable";
+        if (android.os.Build.VERSION.SDK_INT >= 31 &&
+            (error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
+             error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE)) return "unavailable";
         return "unknown";
     }
 
