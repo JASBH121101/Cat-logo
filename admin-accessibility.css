@@ -1005,3 +1005,40 @@ html[data-theme="dark"] body.admin-body #product-warranty-field .admin-input-uni
   border-left-color: rgba(106, 139, 208, .38);
   color: #a8bce2 !important;
 }
+
+
+/* Category-aware variant editor for TVs and audio products.
+   Storage/RAM are hidden, while common price, stock state and color data remain. */
+html body.admin-body #technology-variants-section.is-color-only .variants-editor-description {
+  margin: 5px 0 0;
+  color: var(--admin-taxonomy-muted, #65738e);
+  font-size: 13px;
+  line-height: 1.5;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-config-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-config-fields > label:nth-child(3) {
+  grid-column: 1;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-config-fields > label:nth-child(4) {
+  grid-column: 2;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-config-fields > label:nth-child(5) {
+  grid-column: 1 / -1;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-color-section {
+  margin-top: 8px;
+}
+html[data-theme="dark"] body.admin-body #technology-variants-section.is-color-only .variants-editor-description {
+  color: #aebfdf;
+}
+@media (max-width: 760px) {
+  html body.admin-body #technology-variants-section.is-color-only .variant-config-fields {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  html body.admin-body #technology-variants-section.is-color-only .variant-config-fields > label:nth-child(n) {
+    grid-column: 1;
+  }
+}
