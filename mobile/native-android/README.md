@@ -48,3 +48,6 @@ The APK workflow copies these Java sources into the generated Capacitor Android 
 - The download ID, target version and app-scoped destination filename are persisted in native preferences. When JB Manager is opened again, the panel queries Android's DownloadManager and restores the current progress, pause/failure state or completed APK.
 - The APK is checked for package ID, version, full byte count and signing-certificate match before the installer can be opened. Android still requires the administrator to confirm installation; JB Manager does not silently replace itself.
 - This guarantee applies to leaving/minimizing the app or removing its task from Recents. Android system restrictions, loss of network, insufficient storage or explicitly force-stopping/disabling system download components can still interrupt a transfer.
+
+
+- Screen-change detection is based on the recognized OCR text rather than a sparse 18×18 pixel hash. The capture service still samples at a bounded interval, and exact duplicate OCR text is filtered after ML Kit. This avoids skipping a new product name, variant or price that changes in a small region outside the former pixel sample grid.

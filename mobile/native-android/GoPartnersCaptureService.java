@@ -36,7 +36,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.zip.CRC32;
 
 public class GoPartnersCaptureService extends Service {
     private static final String ACTION_START = "com.jbcollections.manager.v2.GP_SCAN_START";
@@ -58,7 +57,6 @@ public class GoPartnersCaptureService extends Service {
     private volatile boolean stopping = false;
     private boolean shutdownFinished = false;
     private long lastFrameAt = 0L;
-    private long lastFrameHash = -1L;
     private String lastRecognizedText = "";
 
     @Override
@@ -196,12 +194,9 @@ public class GoPartnersCaptureService extends Service {
         }
         if (bitmap == null) return;
 
-        long hash = bitmapHash(bitmap);
-        if (hash == lastFrameHash) {
-            bitmap.recycle();
-            return;
-        }
-        lastFrameHash = hash;
+        // Do not skip frames based on a sparse pixel hash. Product names, variant labels,
+        // and prices can change in small areas outside a coarse sample grid. OCR runs at
+        // a bounded interval and duplicate recognized text is filtered after ML Kit.
         lastFrameAt = now;
         processing = true;
         GoPartnersScanSession.setFlags(true, true);
@@ -255,21 +250,6 @@ public class GoPartnersCaptureService extends Service {
             return scaled;
         }
         return cropped;
-    }
-
-    private long bitmapHash(Bitmap bitmap) {
-        CRC32 crc = new CRC32();
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        for (int y = 0; y < height; y += Math.max(1, height / 18)) {
-            for (int x = 0; x < width; x += Math.max(1, width / 18)) {
-                int color = bitmap.getPixel(x, y);
-                crc.update((color >> 16) & 0xff);
-                crc.update((color >> 8) & 0xff);
-                crc.update(color & 0xff);
-            }
-        }
-        return crc.getValue();
     }
 
     private synchronized void appendObservation(Text recognized, long capturedAt) {
