@@ -17,7 +17,7 @@ const techCss = read("technology-visual-refresh.css");
 const perfumeCss = read("perfumeria.css");
 
 test("technology and perfumery detail URLs behave as same-tab page routes and preserve catalog state", () => {
-  assert.match(techHtml, /technology-visual-refresh\.css\?v=20261030-desktop4k1/);
+  assert.match(techHtml, /technology-visual-refresh\.css\?v=20261031-limited-edition-vertical-card1/);
   assert.match(perfumeHtml, /perfumeria\.css\?v=20261030-desktop-type12/);
   assert.match(techJs, /searchParams\.set\("producto", String\(product\.id\)\)/);
   assert.match(perfumeJs, /searchParams\.set\("fragancia", String\(product\.id\)\)/);
