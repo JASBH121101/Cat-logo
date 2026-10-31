@@ -461,7 +461,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     if (!scanning || finishing) return;
     finishing = true;
     const native = plugin();
-    if (!native) { setStatus("No se encontró el servicio nativo de captura.", true); return; }
+    if (!native) { finishing = false; setStatus("No se encontró el servicio nativo de captura.", true); return; }
     finishButton.disabled = true; setStatus("Finalizando captura y recuperando texto OCR…");
     let recoverableSession = false;
     try {
