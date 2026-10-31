@@ -483,7 +483,7 @@ jobs:
                   if registration not in source:
                       source = source.replace(
                           "super.onCreate(savedInstanceState);",
-                          registration + ";\\n        super.onCreate(savedInstanceState);",
+                          registration + ";" + chr(10) + "        super.onCreate(savedInstanceState);",
                           1
                       )
               main_path.write_text(source, encoding="utf-8")
