@@ -23,6 +23,15 @@ The scanner is a native Capacitor plugin used by the JB Manager Android APK.
 - OCR observations exist only in process memory. Clearing the session or terminating the app process discards them.
 - A session is capped at 80 observations. The UI reports when the cap is reached so the user can run another session.
 
+## JB Copilot voice input
+
+- The `JbVoiceInput` Capacitor plugin checks `RECORD_AUDIO` and requests the Android runtime permission only when the administrator taps the microphone.
+- A denied first request can be retried from the microphone button. The interface points to Android app settings only after the permission is permanently blocked.
+- Speech recognition uses Android's configured `SpeechRecognizer` service with partial and final transcript callbacks. It is push-to-talk; the app does not run continuous background listening.
+- Android's default speech-recognition implementation may process audio remotely. JB Manager does not persist or upload raw microphone audio itself; it receives the recognized text locally in the WebView, and the text is sent to JB Copilot only after the administrator presses Enviar.
+- If the system speech service is unavailable, denied, offline, or does not support the requested Spanish locale, the interface reports the specific failure and retains the text-entry fallback.
+- The native plugin destroys its `SpeechRecognizer` instance when the Capacitor bridge is destroyed and cancels active listening on administrator logout.
+
 ## Build integration
 
-The APK workflow copies these Java sources into the generated Capacitor Android package, registers `GoPartnersScannerPlugin` in `MainActivity`, installs the media-projection foreground service and permission declarations, and adds the bundled ML Kit text-recognition dependency. The workflow separately verifies that the installed app ID and persistent update signing certificate have not changed.
+The APK workflow copies these Java sources into the generated Capacitor Android package, registers `GoPartnersScannerPlugin` and `JbVoiceInputPlugin` in `MainActivity`, installs the media-projection foreground service, microphone permission and Android 11+ speech-service visibility query, and adds the bundled ML Kit text-recognition dependency. The workflow separately verifies that the installed app ID and persistent update signing certificate have not changed.
