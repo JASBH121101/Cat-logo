@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups, scannerSessionReviewable, scannerSessionStatus } from "../admin-gopartners-scanner.js";
-import { groundScannerProducts } from "../functions/api/jb-gopartners-scan.js";
+import { groundScannerProducts, onRequestPost as handleScannerPost } from "../functions/api/jb-gopartners-scan.js";
 
 test("normaliza modelos, RAM y almacenamiento", () => {
   assert.equal(normalizeScannerKey("12 GB"), "12gb");
@@ -295,4 +295,179 @@ test("APK scanner sends OCR text to the authenticated Cloudflare endpoint, not l
   assert.match(source, /fetch\("https:\/\/jb-collections\.pages\.dev\/api\/jb-gopartners-scan"/);
   assert.match(endpoint, /https:\/\/localhost/);
   assert.match(endpoint, /Authorization: "Bearer " \+ token/);
+});
+
+
+test("capture service does not stop the overlay while creating its notification channel", () => {
+  const source = readFileSync(new URL("../mobile/native-android/GoPartnersCaptureService.java", import.meta.url), "utf8");
+  const channelStart = source.indexOf("private void createNotificationChannel()");
+  const channelEnd = source.indexOf("private Notification buildNotification()", channelStart);
+  const shutdownStart = source.indexOf("private synchronized void finishShutdown()");
+  const shutdownEnd = source.indexOf("@Override", shutdownStart);
+  const channelBlock = source.slice(channelStart, channelEnd);
+  const shutdownBlock = source.slice(shutdownStart, shutdownEnd);
+  assert.ok(channelStart >= 0 && channelEnd > channelStart);
+  assert.doesNotMatch(channelBlock, /stopService\(new Intent\(this, GoPartnersOverlayService\.class\)\)/);
+  assert.match(shutdownBlock, /stopService\(new Intent\(this, GoPartnersOverlayService\.class\)\)/);
+});
+
+test("scanner uses current Gemini 3.8 structured output and retries without schema if Google rejects it", async () => {
+  const originalFetch = globalThis.fetch;
+  const evidence = "POCO X8 Pro Max | 12 GB RAM | 256 GB | Negro | US$ 245.00";
+  const attempts = [];
+  const generated = {
+    products: [{
+      source_observation: 1,
+      product_name: "POCO X8 Pro Max",
+      brand: "POCO",
+      model: "X8 Pro Max",
+      category: "",
+      catalog_type: "technology",
+      ram: "12 GB",
+      storage: "256 GB",
+      color: "Negro",
+      price_usd: 245,
+      price_nio: null,
+      confidence: 1,
+      evidence,
+      notes: []
+    }],
+    session_notes: []
+  };
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "scanner-admin" }), { status: 200 });
+    }
+    if (url.includes("/rest/v1/admin_users")) {
+      return new Response(JSON.stringify([{ user_id: "scanner-admin" }]), { status: 200 });
+    }
+    if (url.includes("generativelanguage.googleapis.com")) {
+      attempts.push({ url, headers: init.headers, body: JSON.parse(init.body) });
+      if (attempts.length === 1) {
+        return new Response(JSON.stringify({
+          error: { status: "INVALID_ARGUMENT", message: "Test schema rejection" }
+        }), { status: 400 });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(generated) }] } }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected scanner request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-gopartners-scan", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer scanner-test-token",
+        "Content-Type": "application/json",
+        "CF-Connecting-IP": "192.0.2.101"
+      },
+      body: JSON.stringify({ observations: [{ index: 1, capturedAt: "2026-10-31T14:00:00Z", text: evidence }] })
+    });
+    const response = await handleScannerPost({ request, env: { GEMINI_API_KEY: "scanner-test-key" } });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.products[0].price_usd, 245);
+    assert.equal(attempts.length, 2);
+    assert.match(attempts[0].url, /models\/gemini-3\.8-flash:generateContent$/);
+    assert.equal(attempts[0].headers["x-goog-api-key"], "scanner-test-key");
+    assert.doesNotMatch(attempts[0].url, /[?&]key=/);
+    assert.equal(attempts[0].body.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
+    assert.equal(attempts[1].body.generationConfig.responseMimeType, "application/json");
+    assert.equal(attempts[1].body.generationConfig.responseFormat, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("scanner falls back to Gemini 3.6 when Gemini 3.8 is temporarily unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  const evidence = "Samsung Galaxy A56 | 8 GB RAM | 256 GB | US$ 310";
+  const calls = [];
+  const generated = { products: [], session_notes: [] };
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "scanner-admin" }), { status: 200 });
+    }
+    if (url.includes("/rest/v1/admin_users")) {
+      return new Response(JSON.stringify([{ user_id: "scanner-admin" }]), { status: 200 });
+    }
+    if (url.includes("generativelanguage.googleapis.com")) {
+      calls.push({ url, body: JSON.parse(init.body) });
+      if (url.includes("gemini-3.8-flash")) {
+        return new Response(JSON.stringify({
+          error: { status: "UNAVAILABLE", message: "Model temporarily unavailable" }
+        }), { status: 503 });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(generated) }] } }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected scanner request: " + url);
+  };
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-gopartners-scan", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer scanner-test-token",
+        "Content-Type": "application/json",
+        "CF-Connecting-IP": "192.0.2.102"
+      },
+      body: JSON.stringify({ observations: [{ index: 1, text: evidence }] })
+    });
+    const response = await handleScannerPost({ request, env: { GEMINI_API_KEY: "scanner-test-key" } });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, true);
+    assert.equal(calls.length, 2);
+    assert.match(calls[0].url, /gemini-3\.8-flash/);
+    assert.match(calls[1].url, /gemini-3\.6-flash/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("scanner classifies Gemini access failures and returns a safe diagnostic", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async input => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "scanner-admin" }), { status: 200 });
+    }
+    if (url.includes("/rest/v1/admin_users")) {
+      return new Response(JSON.stringify([{ user_id: "scanner-admin" }]), { status: 200 });
+    }
+    if (url.includes("generativelanguage.googleapis.com")) {
+      return new Response(JSON.stringify({
+        error: { status: "PERMISSION_DENIED", message: "API key was rejected" }
+      }), { status: 403 });
+    }
+    throw new Error("Unexpected scanner request: " + url);
+  };
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-gopartners-scan", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer scanner-test-token",
+        "Content-Type": "application/json",
+        "CF-Connecting-IP": "192.0.2.103"
+      },
+      body: JSON.stringify({ observations: [{ index: 1, text: "POCO X8 Pro Max 12 GB RAM 256 GB" }] })
+    });
+    const response = await handleScannerPost({ request, env: { GEMINI_API_KEY: "scanner-test-key" } });
+    const payload = await response.json();
+    assert.equal(response.status, 503);
+    assert.equal(payload.error, "gemini_api_access_denied");
+    assert.match(payload.detail, /HTTP 403/);
+    assert.match(payload.detail, /PERMISSION_DENIED/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
