@@ -4807,7 +4807,7 @@ async function prepareProductDraft(draft) {
         price_nio: group.price_nio,
         configuration_availability: ["available", "on_order", "out_of_stock"].includes(group.configuration_availability)
           ? group.configuration_availability
-          : "available"
+          : "pending"
       };
       const colors = Array.isArray(group.colors) ? group.colors.slice(0, 16) : [];
       if (colors.length) {
@@ -4819,7 +4819,7 @@ async function prepareProductDraft(draft) {
             color_hex: /^#[0-9a-fA-F]{6}$/.test(String(color.color_hex || "")) ? color.color_hex : "#242424",
             availability: ["available", "on_order", "out_of_stock"].includes(color.availability)
               ? color.availability
-              : "available"
+              : "pending"
           });
         });
       } else if (base.ram || base.storage) {
