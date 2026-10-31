@@ -21,13 +21,20 @@ test("JB Manager AI is a reachable authenticated admin workspace", () => {
   assert.match(css, /\.jb-ai-floating-launcher/);
 });
 
-test("JB Manager AI voice is push-to-talk with text fallback and no automatic submission", () => {
+test("JB Manager AI requests the native Android microphone permission and keeps a text fallback", () => {
+  assert.match(assistant, /nativeVoicePlugin\(\)/);
+  assert.match(assistant, /native\.checkPermission\(\)/);
+  assert.match(assistant, /native\.requestPermission\(\)/);
+  assert.match(assistant, /native\.startListening\(\{ language: "es-NI" \}\)/);
+  assert.match(assistant, /native\.addListener\("partialResult"/);
+  assert.match(assistant, /native\.addListener\("result"/);
   assert.match(assistant, /window\.SpeechRecognition \|\| window\.webkitSpeechRecognition/);
   assert.match(assistant, /recognition\.lang = "es-NI"/);
   assert.match(assistant, /recognition\.onresult/);
   assert.match(assistant, /Dictado listo\. Revisá el texto y presioná enviar/);
   assert.match(assistant, /form\.addEventListener\("submit"/);
   assert.doesNotMatch(assistant, /recognition\.onresult[\s\S]{0,800}sendMessage\(/);
+  assert.doesNotMatch(assistant, /native\.addListener\(["']result["'][\s\S]{0,400}sendMessage\(/);
 });
 
 test("Gemini endpoint verifies Supabase identity and admin membership before calling the model", () => {
