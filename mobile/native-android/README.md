@@ -35,3 +35,12 @@ The scanner is a native Capacitor plugin used by the JB Manager Android APK.
 ## Build integration
 
 The APK workflow copies these Java sources into the generated Capacitor Android package, registers `GoPartnersScannerPlugin` and `JbVoiceInputPlugin` in `MainActivity`, installs the media-projection foreground service, microphone permission and Android 11+ speech-service visibility query, and adds the bundled ML Kit text-recognition dependency. The workflow separately verifies that the installed app ID and persistent update signing certificate have not changed.
+
+
+## APK updates in the background
+
+- APK downloads are enqueued with Android's system `DownloadManager`; they are not streamed by the WebView or by a JavaScript timer. Android owns the transfer, so minimizing JB Manager or closing its screen from the recent-apps list does not cancel an accepted download.
+- Android displays the system download notification while the transfer is running and after it completes. Metered/mobile data is allowed; roaming is disabled.
+- The download ID, target version and app-scoped destination filename are persisted in native preferences. When JB Manager is opened again, the panel queries Android's DownloadManager and restores the current progress, pause/failure state or completed APK.
+- The APK is checked for package ID, version, full byte count and signing-certificate match before the installer can be opened. Android still requires the administrator to confirm installation; JB Manager does not silently replace itself.
+- This guarantee applies to leaving/minimizing the app or removing its task from Recents. Android system restrictions, loss of network, insufficient storage or explicitly force-stopping/disabling system download components can still interrupt a transfer.
