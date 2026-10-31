@@ -267,15 +267,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const session = await native.stopScan(); scanning = false; updateControls();
       const observations = Array.isArray(session?.observations) ? session.observations : [];
       const wasTruncated = session?.truncated === true;
-      const wasInterrupted = session?.interrupted === true;
-      const interruptionReason = String(session?.interruptionReason || "").trim();
       await native.clearScan();
-      if (!observations.length) {
-        setStatus(wasInterrupted
-          ? "Android interrumpió la captura antes de reconocer pantallas. " + (interruptionReason || "Revisá el permiso y repetí la sesión.")
-          : "No se reconoció texto. Comprobá que Go Partners permita capturas y repetí la sesión.", true);
-        return;
-      }
+      if (!observations.length) { setStatus("No se reconoció texto. Comprobá que Go Partners permita capturas y repetí la sesión.", true); return; }
       setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
       const response = await fetch("/api/jb-gopartners-scan", {
         method: "POST", headers: { Authorization: "Bearer " + await getAccessToken(), "Content-Type": "application/json" },
@@ -289,13 +282,9 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       })) : [];
       if (!scanCandidates.length) { setStatus("No se encontraron productos con nombre o modelo legible. Mantené cada ficha visible unos segundos.", true); return; }
       renderReview();
-      const warnings = [];
-      if (wasInterrupted) warnings.push("Android interrumpió la captura" + (interruptionReason ? ": " + interruptionReason : "; los resultados pueden estar incompletos") + ".");
-      if (wasTruncated) warnings.push("Se alcanzó el límite de 80 pantallas.");
-      setStatus(warnings.length
-        ? "Análisis parcial. " + warnings.join(" ") + " Revisá cada resultado antes de preparar actualizaciones; si faltan productos, repetí la sesión."
-        : "Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.",
-        warnings.length > 0);
+      setStatus(wasTruncated
+        ? "Análisis listo. Se alcanzó el límite de 80 pantallas; revisá estos resultados y, si faltan productos, iniciá otra sesión."
+        : "Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.");
     } catch (error) { setStatus(error?.message || "Falló el análisis de la sesión.", true); }
     finally { updateControls(); }
   }
@@ -311,37 +300,18 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   clearButton.addEventListener("click", () => { void clearSession(); });
   function restoreSessionState(state) {
     const count = Number(state?.observationsCount || 0);
-    const running = state?.running === true;
-    const interrupted = state?.interrupted === true;
-    const reason = String(state?.interruptionReason || "").trim();
-    if (running || count > 0) {
-      // "scanning" means the session still needs final review, even if Android
-      // stopped the projection while the user was navigating another app.
+    if (state?.running || count > 0) {
       scanning = true;
-      if (interrupted) {
-        setStatus("Captura interrumpida por Android" + (reason ? ": " + reason : ".") +
-          " Se conservaron " + count + " pantalla(s). Finalizá para revisar los datos parciales o descartá la sesión.", true);
-      } else if (running) {
-        setStatus("La captura sigue activa. Se han leído " + count + " pantallas. Podés continuar o finalizar.");
-      } else {
-        setStatus("La captura ya se detuvo. Hay " + count + " pantallas en memoria listas para revisar.");
-      }
-      updateControls();
-      return;
-    }
-    if (scanning) {
-      scanning = false;
-      setStatus(interrupted
-        ? "Android interrumpió la captura y no quedaron pantallas para revisar. Volvé a conceder el permiso e iniciá otra sesión."
-        : "La captura se detuvo sin observaciones guardadas. Revisá el permiso de Android y repetí la sesión.", true);
+      setStatus(state.running
+        ? "La captura sigue activa. Se han leído " + count + " pantallas. Podés continuar o finalizar."
+        : "La captura ya se detuvo. Hay " + count + " pantallas en memoria listas para revisar.");
       updateControls();
     }
   }
   window.addEventListener("focus", async () => {
     const native = plugin();
-    if (!native) return;
-    try { restoreSessionState(await native.getScanState()); }
-    catch { setStatus("No se pudo verificar el estado del permiso de captura. Finalizá o descartá la sesión antes de volver a iniciar.", true); }
+    if (!native || scanning) return;
+    try { restoreSessionState(await native.getScanState()); } catch {}
   });
   const native = plugin();
   if (!native) setStatus("Disponible en la APK Android. El navegador no puede capturar otras aplicaciones.");
