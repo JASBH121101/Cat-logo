@@ -249,3 +249,11 @@ test("mixed inventory cards identify whether each item belongs to JB TECH or JB 
   assert.match(admin, /admin-product-category-pill/);
   assert.match(html, /id="draft-section-title">Borradores/);
 });
+
+
+test("dashboard pending-publication count and shortcut include both unpublished records and drafts", () => {
+  assert.match(html, /Productos pendientes de publicación/);
+  assert.match(html, /Revisar no publicados/);
+  assert.match(admin, /\["draft", "unpublished"\]\.includes\(getWorkflowStatus\(product\)\)/);
+  assert.match(admin, /const targetSection = target && getWorkflowStatus\(target\) === "draft" \? "drafts" : "unpublished"/);
+});
