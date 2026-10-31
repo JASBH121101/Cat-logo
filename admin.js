@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
-import { initJbManagerAI } from "./admin-ai.js?v=20261031-auto-grow3";
+import { initJbManagerAI } from "./admin-ai.js?v=20261031-copilot-input-errors4";
 import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-ocr-retry3";
 
 /* =========================================================
