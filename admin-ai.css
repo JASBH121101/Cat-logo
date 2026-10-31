@@ -66,3 +66,25 @@ html[data-theme="dark"] .jb-manager-ai-missing strong { color:#edf2ff; }
 .jb-ai-prefill-action.is-complete { border-color:#3d9b79; background:#e8f7f0; color:#246e53; cursor:default; }
 .jb-ai-prefill-note { display:block; margin-top:7px; color:var(--text-muted,#718096); font-size:10px; line-height:1.45; }
 html[data-theme="dark"] .jb-ai-prefill-action.is-complete { border-color:#357b65; background:#18382f; color:#a7e2c9; }
+
+
+.jb-ai-permission-settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  margin: 8px 4px 0 0;
+  padding: 6px 10px;
+  border: 1px solid #7789eb99;
+  border-radius: 9px;
+  background: #596bd81a;
+  color: var(--text-color, #34415a);
+  font: 700 11px/1.25 "DM Sans", sans-serif;
+  cursor: pointer;
+}
+.jb-ai-permission-settings:disabled { opacity: .6; cursor: wait; }
+html[data-theme="dark"] .jb-ai-permission-settings {
+  border-color: #8795ff88;
+  background: #6677e51c;
+  color: #dbe3ff;
+}
