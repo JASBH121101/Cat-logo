@@ -130,7 +130,7 @@ test("unmatched Go Partners candidates can prepare a grouped new-product draft o
   assert.match(source, /hasExistingMatch/);
   assert.match(source, /Preparar producto nuevo/);
   assert.match(source, /duplicate\.decision !== "same"/);
-  assert.match(source, /price_usd: usd\.length \? usd\[0\] : null/);
+  assert.match(source, /price_usd: usd\.length && !usdHasMissing \? usd\[0\] : null/);
   assert.match(source, /color_hex: ""/);
   assert.match(source, /availability: "unknown"/);
   assert.match(source, /onPrepareNewProduct\(draft\)/);
