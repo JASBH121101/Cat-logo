@@ -184,6 +184,13 @@ public class JbVoiceInputPlugin extends Plugin implements RecognitionListener {
 
     @Override public void onResults(Bundle results) {
         listening = false;
+        ArrayList<String> matches = results == null
+            ? null
+            : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        if (matches == null || matches.isEmpty() || matches.get(0) == null || matches.get(0).trim().isEmpty()) {
+            notifyListeners("result", new JSObject());
+            return;
+        }
         emitTranscript("result", results);
     }
 
