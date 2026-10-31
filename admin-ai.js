@@ -11,6 +11,12 @@ function formatCopilotText(value) {
     .replace(/\bintent\b/gi, "tipo de solicitud");
 }
 
+export function normalizeCopilotMissingFieldKey(value) {
+  return String(value ?? "").toLowerCase().trim()
+    .replace(/[\s-]+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
 function appendInlineFormatting(target, text) {
   const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\x60[^\x60]+\x60)/g;
   let cursor = 0;
@@ -248,7 +254,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
           .map(value => String(value ?? "").trim())
           .filter(Boolean)
           .map(value => {
-            const key = value.toLowerCase().trim().replace(/[\s-]+/g, "_").replace(/[^a-z0-9_]/g, "");
+            const key = normalizeCopilotMissingFieldKey(value);
             return labels[key] || value.replace(/[_-]+/g, " ").replace(/\\b\\w/g, letter => letter.toUpperCase());
           }))];
         if (displayFields.length) {
