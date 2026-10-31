@@ -490,6 +490,12 @@ jobs:
 
           manifest_path = Path("mobile/android/app/src/main/AndroidManifest.xml")
           manifest = manifest_path.read_text(encoding="utf-8")
+          speech_query = (
+              '<queries><intent><action android:name="android.speech.RecognitionService" />'
+              '</intent></queries>'
+          )
+          if "android.speech.RecognitionService" not in manifest:
+              manifest = manifest.replace("<application", speech_query + "\\n    <application", 1)
           permissions = [
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />',
@@ -626,6 +632,7 @@ jobs:
             assets/public/admin-duplicate-detector.css \
             assets/public/responsive-layout.css \
             assets/public/admin.js \
+            assets/public/admin-ai.js \
             assets/public/admin-notifications.mjs \
             assets/public/admin-provider.js \
             assets/public/app.js \
@@ -944,6 +951,7 @@ jobs:
           test -s "$VOICE"
           grep -q 'registerPlugin(JbVoiceInputPlugin.class)' "$MAIN"
           grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"
+          grep -q 'android.speech.RecognitionService' "$MANIFEST"
           grep -q 'requestPermissionForAlias("microphone"' "$VOICE"
           grep -q 'SpeechRecognizer.createSpeechRecognizer' "$VOICE"
           grep -q 'notifyListeners("result"' "$VOICE"
