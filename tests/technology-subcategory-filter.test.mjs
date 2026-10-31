@@ -10,7 +10,7 @@ test("public technology catalog exposes an accessible subcategory selector", () 
   assert.match(html, /id="subcategory-filter"/);
   assert.match(html, /class="subcategory-filter-bar"/);
   assert.match(html, /technology-visual-refresh\.css\?v=20261030-desktop4k1/);
-  assert.match(html, /app\.js\?v=20261030-gallery-ambient1/);
+  assert.match(html, /app\.js\?v=20261030-gallery-ambient2/);
 });
 
 test("subcategory options come from the existing product subcategory field", () => {
