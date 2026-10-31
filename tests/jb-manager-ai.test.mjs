@@ -322,3 +322,76 @@ test("JB Copilot recovers its send controls and releases requests that never ret
   assert.match(assistant, /setBusy\(false\);\s*resizeInput\(\);/);
   assert.match(assistant, /clearSession\(\)\s*\{[\s\S]{0,120}setBusy\(false\)/);
 });
+
+
+test("JB Copilot retries simple JSON mode when Gemini rejects the full product schema", async () => {
+  const originalFetch = globalThis.fetch;
+  const geminiBodies = [];
+  const assistantResult = {
+    message: "¡Hola! Estoy listo para ayudarte.",
+    intent: "question",
+    product_query: "",
+    provider_price_usd: null,
+    provider_price_nio: null,
+    catalog_type: "technology",
+    missing_fields: [],
+    product_draft: null
+  };
+
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    }
+    if (url.includes("/rest/v1/admin_users")) {
+      return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    }
+    if (url.includes("generativelanguage.googleapis.com")) {
+      const body = JSON.parse(init.body);
+      geminiBodies.push(body);
+      if (geminiBodies.length === 1) {
+        return new Response(JSON.stringify({
+          error: {
+            code: 400,
+            status: "INVALID_ARGUMENT",
+            message: "Response schema is not supported for this request."
+          }
+        }), { status: 400 });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{
+          content: { parts: [{ text: JSON.stringify(assistantResult) }] }
+        }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected test request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola" })
+    });
+    const response = await jbAiEndpoint.onRequestPost({
+      request,
+      env: { GEMINI_API_KEY: "test-only-key" }
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.assistant.message, assistantResult.message);
+    assert.equal(geminiBodies.length, 2);
+    assert.equal(geminiBodies[0].generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
+    assert.ok(geminiBodies[0].generationConfig.responseFormat.text.schema);
+    assert.equal(geminiBodies[1].generationConfig.responseMimeType, "application/json");
+    assert.equal(geminiBodies[1].generationConfig.responseFormat, undefined);
+    assert.equal(geminiBodies[1].generationConfig.responseSchema, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
