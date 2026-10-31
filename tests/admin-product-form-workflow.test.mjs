@@ -14,6 +14,10 @@ const publicApp = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const advisorCss = readFileSync(new URL("../ai-assistant.css", import.meta.url), "utf8");
 const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
 const accessibilityCss = readFileSync(new URL("../admin-accessibility.css", import.meta.url), "utf8");
+const biometricPlugin = readFileSync(new URL("../mobile/native-android/JbBiometricAuthPlugin.java", import.meta.url), "utf8");
+const biometricBridge = readFileSync(new URL("../mobile/biometric-auth.js", import.meta.url), "utf8");
+const prepareWeb = readFileSync(new URL("../mobile/prepare-web.mjs", import.meta.url), "utf8");
+
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
   assert.match(admin, /if \(!name\) throw new Error\("Escribí el nombre del producto\."\);/);
@@ -366,4 +370,25 @@ test("TV and audio product specifications use category-specific guidance", () =>
   assert.match(admin, /Tamaño de pantalla, resolución, LED \/ QLED \/ OLED/);
   assert.match(admin, /label: "Características de audio"/);
   assert.match(admin, /Tipo de equipo, potencia, Bluetooth \/ Wi-Fi/);
+});
+
+
+test("biometric unlock is optional, Android-only, and preserves password fallback", () => {
+  assert.match(html, /id="biometric-auth-toggle"[^>]*hidden/);
+  assert.match(admin, /function nativeBiometricApi\(\)/);
+  assert.match(admin, /requireBiometricUnlockForRestoredSession/);
+  assert.match(admin, /Iniciá sesión con tu correo y contraseña/);
+  assert.match(admin, /handleBiometricSettingsToggle/);
+  assert.match(biometricBridge, /Capacitor\.getPlatform\(\) === "android"/);
+  assert.match(biometricBridge, /registerPlugin\("JbBiometricAuth"\)/);
+  assert.match(prepareWeb, /jb-manager-biometric-auth\.js/);
+});
+
+test("native biometric plugin delegates matching to Android and stores only an enabled preference", () => {
+  assert.match(biometricPlugin, /BiometricManager\.Authenticators\.BIOMETRIC_STRONG/);
+  assert.match(biometricPlugin, /new BiometricPrompt/);
+  assert.match(biometricPlugin, /putBoolean\(KEY_ENABLED, true\)/);
+  assert.match(biometricPlugin, /getSharedPreferences\(PREFS/);
+  assert.doesNotMatch(biometricPlugin, /fingerprintTemplate|fingerprintImage|rawFingerprint|password/i);
+  assert.match(biometricPlugin, /openEnrollmentSettings/);
 });
