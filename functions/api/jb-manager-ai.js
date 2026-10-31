@@ -239,7 +239,6 @@ export async function onRequestPost({ request, env }) {
     "Devolvé exclusivamente el objeto JSON solicitado."
   ].join(" ");
 
-  const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
   const geminiHeaders = {
     "Content-Type": "application/json",
     "x-goog-api-key": env.GEMINI_API_KEY
@@ -254,47 +253,89 @@ export async function onRequestPost({ request, env }) {
       }]
     }]
   };
-  const structuredBody = {
-    ...geminiContents,
-    generationConfig: {
-      responseFormat: {
-        text: {
-          mimeType: "APPLICATION_JSON",
-          schema: responseSchema
+
+  function geminiRequestBody(useSchema) {
+    const generationConfig = useSchema
+      ? {
+          responseMimeType: "application/json",
+          responseSchema,
+          maxOutputTokens: 1800
         }
-      },
-      maxOutputTokens: 1800
-    }
-  };
-
-  let geminiResponse = await fetch(geminiUrl, {
-    method: "POST",
-    headers: geminiHeaders,
-    body: JSON.stringify(structuredBody)
-  });
-
-  // A normal greeting or lookup must not fail merely because Gemini rejects
-  // the rich product-draft schema. Retry once using the documented JSON mode,
-  // then validate and normalize the returned object below before exposing it.
-  if (!geminiResponse.ok && geminiResponse.status === 400) {
-    let firstError = {};
-    try { firstError = await geminiResponse.clone().json(); } catch {}
-    const firstMessage = cleanText(firstError?.error?.message, 320);
-    console.warn("[JB Copilot] Structured JSON schema rejected; retrying JSON mode", firstMessage);
-    const fallbackBody = {
-      ...geminiContents,
-      generationConfig: {
-        responseMimeType: "application/json",
-        maxOutputTokens: 1800
-      }
-    };
-    geminiResponse = await fetch(geminiUrl, {
-      method: "POST",
-      headers: geminiHeaders,
-      body: JSON.stringify(fallbackBody)
-    });
+      : {
+          responseMimeType: "application/json",
+          maxOutputTokens: 1800
+        };
+    return { ...geminiContents, generationConfig };
   }
 
+  const modelPlan = [
+    { name: "gemini-3.8-flash", useSchema: true },
+    { name: "gemini-3.6-flash", useSchema: false },
+    { name: "gemini-3.5-flash-lite", useSchema: false }
+  ];
+  let geminiResponse = null;
+  let selectedModel = "";
+  let lastGeminiError = null;
+  let attempts = 0;
+
+  for (const candidate of modelPlan) {
+    attempts += 1;
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" +
+      candidate.name + ":generateContent";
+    let candidateResponse = await fetch(url, {
+      method: "POST",
+      headers: geminiHeaders,
+      body: JSON.stringify(geminiRequestBody(candidate.useSchema))
+    });
+
+    // The full catalogue schema is optional. If it is rejected, retry this
+    // model once in plain JSON mode before switching models.
+    if (!candidateResponse.ok && candidateResponse.status === 400 && candidate.useSchema) {
+      let schemaError = {};
+      try { schemaError = await candidateResponse.clone().json(); } catch {}
+      console.warn("[JB Copilot] Structured response schema rejected; retrying JSON mode",
+        cleanText(schemaError?.error?.message, 240));
+      attempts += 1;
+      candidateResponse = await fetch(url, {
+        method: "POST",
+        headers: geminiHeaders,
+        body: JSON.stringify(geminiRequestBody(false))
+      });
+    }
+
+    if (candidateResponse.ok) {
+      geminiResponse = candidateResponse;
+      selectedModel = candidate.name;
+      break;
+    }
+
+    let candidateError = {};
+    try { candidateError = await candidateResponse.clone().json(); } catch {}
+    const apiError = candidateError?.error && typeof candidateError.error === "object"
+      ? candidateError.error
+      : {};
+    lastGeminiError = {
+      httpStatus: candidateResponse.status,
+      apiStatus: cleanText(apiError.status, 80),
+      message: cleanText(apiError.message, 500),
+      model: candidate.name
+    };
+
+    const transient = [500, 502, 503, 504].includes(candidateResponse.status) ||
+      (candidateResponse.status === 404 && /model|not found/i.test(lastGeminiError.message));
+    if (transient && modelPlan.indexOf(candidate) < modelPlan.length - 1) {
+      console.warn("[JB Copilot] Model unavailable; switching to fallback",
+        JSON.stringify({ model: candidate.name, httpStatus: candidateResponse.status, apiStatus: lastGeminiError.apiStatus }));
+      continue;
+    }
+
+    geminiResponse = candidateResponse;
+    break;
+  }
+
+  if (!geminiResponse) {
+    return response(503, { ok: false, error: "gemini_temporarily_unavailable" }, origin);
+  }
   let result;
   try { result = await geminiResponse.json(); } catch {
     console.error("[JB Copilot] Gemini returned a non-JSON response", geminiResponse.status);
@@ -302,8 +343,8 @@ export async function onRequestPost({ request, env }) {
   }
   if (!geminiResponse.ok) {
     const apiError = result?.error && typeof result.error === "object" ? result.error : {};
-    const apiStatus = cleanText(apiError.status, 80);
-    const apiMessage = cleanText(apiError.message, 500);
+    const apiStatus = cleanText(apiError.status, 80) || lastGeminiError?.apiStatus || "";
+    const apiMessage = cleanText(apiError.message, 500) || lastGeminiError?.message || "";
     const normalizedMessage = apiMessage.toLowerCase();
     let error = "gemini_request_failed";
     let status = 502;
@@ -332,6 +373,8 @@ export async function onRequestPost({ request, env }) {
     }
 
     console.error("[JB Copilot] Gemini request failed", JSON.stringify({
+      model: lastGeminiError?.model || selectedModel || "unknown",
+      attempts,
       httpStatus: geminiResponse.status,
       apiStatus,
       message: apiMessage.slice(0, 240)
