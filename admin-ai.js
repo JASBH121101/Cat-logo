@@ -173,7 +173,7 @@ function isBroadCatalogRequest(message) {
 }
 
 function needsCatalogContext(message) {
-  return /\b(?:catalogo|producto|celular|telefono|smartphone|iphone|samsung|xiaomi|poco|redmi|laptop|tablet|computadora|televisor|tv|consola|gaming|perfume|fragancia|precio|proveedor|variante|ram|almacenamiento|stock|disponibilidad|registrar|agregar|anadir|crear|nuevo)\b/i
+  return /\b(?:catalogo|producto|productos?|celular|telefono|smartphone|iphone|samsung|xiaomi|poco|redmi|laptop|tablet|computadora|televisor|tv|consola|gaming|perfume|fragancia|precio|proveedor|variante|ram|almacenamiento|stock|disponibilidad|registrar|agregar|anadir|crear|nuevo)\b/i
     .test(normalizeCopilotSearchText(message));
 }
 
@@ -483,6 +483,8 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
         appendMessage("assistant", fastResult.message, { intent: "search_product", local_search: true });
         setStatus("Búsqueda local lista. No se modificó el catálogo.");
         speak(fastResult.message);
+        resizeInput();
+        input.focus();
         return;
       }
     }
