@@ -196,9 +196,19 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       warning.className = "jb-gp-candidate-warning";
       const fieldLabels = { product_name: "nombre", brand: "marca", model: "modelo", category: "categoría", ram: "RAM", storage: "almacenamiento", color: "color", price_usd: "precio USD", price_nio: "precio NIO" };
       const unverifiedFields = Array.isArray(candidate.unverified_fields) ? candidate.unverified_fields : [];
-      warning.textContent = unverifiedFields.length
-        ? "Se dejaron en blanco por falta de respaldo OCR: " + unverifiedFields.map(field => fieldLabels[field] || field).join(", ") + "."
-        : "Los datos detectados tienen respaldo en el fragmento OCR mostrado.";
+      const approximateFields = Array.isArray(candidate.approximate_fields) ? candidate.approximate_fields : [];
+      const warningParts = [];
+      if (unverifiedFields.length) {
+        warningParts.push("Se dejaron en blanco por falta de respaldo OCR: " +
+          unverifiedFields.map(field => fieldLabels[field] || field).join(", ") + ".");
+      }
+      if (approximateFields.length) {
+        warningParts.push("Coincidencia aproximada por un posible error de lectura en: " +
+          approximateFields.map(field => fieldLabels[field] || field).join(", ") +
+          ". Confirmá estos valores visualmente.");
+      }
+      warning.textContent = warningParts.join(" ") ||
+        "Los datos detectados tienen respaldo en el fragmento OCR mostrado.";
 
       const corrections = document.createElement("details");
       corrections.className = "jb-gp-corrections";
