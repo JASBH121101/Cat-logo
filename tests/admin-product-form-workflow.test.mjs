@@ -257,3 +257,24 @@ test("dashboard pending-publication count and shortcut include both unpublished 
   assert.match(admin, /\["draft", "unpublished"\]\.includes\(getWorkflowStatus\(product\)\)/);
   assert.match(admin, /const targetSection = target && getWorkflowStatus\(target\) === "draft" \? "drafts" : "unpublished"/);
 });
+
+
+test("changing only the product catalog selector does not mark the editor dirty", () => {
+  assert.match(admin, /f\.id === "product-catalog-type"/);
+  assert.match(admin, /function updateEditorDirtyState\(\)/);
+  assert.match(admin, /if \(hasOpenProduct \|\| editorIsDirty\)/);
+});
+
+test("desktop sidebar has an accessible collapse control and compact layout", () => {
+  assert.match(admin, /function setDesktopSidebarCollapsed\(collapsed\)/);
+  assert.match(admin, /jb-manager-sidebar-collapsed/);
+  assert.match(admin, /admin-sidebar-collapsed/);
+  assert.match(workflowCss, /admin-sidebar-collapsed/);
+  assert.match(workflowCss, /min-width: 761px/);
+});
+
+test("successful save and discard return to the top of the product form", () => {
+  assert.match(admin, /function scrollProductFormToTop\(\)/);
+  assert.match(admin, /clearEditor\(\);\s*scrollProductFormToTop\(\);/);
+  assert.match(admin, /await loadProducts\(\);\s*clearEditor\(\);\s*scrollProductFormToTop\(\);/);
+});
