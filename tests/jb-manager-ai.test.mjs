@@ -706,9 +706,9 @@ test("high-confidence local product search returns grounded price and variant in
   const result = buildFastCatalogAnswer(products, "Apple iPhone 18 Pro Max Esim");
   assert.ok(result);
   assert.match(result.message, /Apple iPhone 18 Pro Max Esim/);
-  assert.match(result.message, /US\\$ 1,649/);
-  assert.match(result.message, /C\\$ 61,013/);
-  assert.match(result.message, /256 GB \\/ Glacier/);
+  assert.match(result.message, /US\$ 1,649/);
+  assert.match(result.message, /C\$ 61,013/);
+  assert.match(result.message, /256 GB \/ Glacier/);
   assert.equal(buildFastCatalogAnswer(products, "producto inexistente"), null);
 });
 
