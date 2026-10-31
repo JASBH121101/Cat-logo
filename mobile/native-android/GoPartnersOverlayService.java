@@ -88,6 +88,7 @@ public class GoPartnersOverlayService extends Service {
         layoutParams.y = 0;
 
         touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
+        bubble.setOnClickListener(view -> showFinishConfirmation());
         bubble.setOnTouchListener(this::handleBubbleTouch);
         try {
             windowManager.addView(bubble, layoutParams);
@@ -118,10 +119,7 @@ public class GoPartnersOverlayService extends Service {
                 }
                 return true;
             case MotionEvent.ACTION_UP:
-                if (!moved) {
-                    view.performClick();
-                    showFinishConfirmation();
-                }
+                if (!moved) view.performClick();
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 return true;
