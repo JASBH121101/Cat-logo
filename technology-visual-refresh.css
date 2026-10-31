@@ -1,0 +1,4264 @@
+/* =========================================================
+   JB TECH · ELECTRIC SHOWROOM
+   Visual proposal isolated to tecnologia/index.html.
+   Theme-aware; keeps the existing product, filter and detail logic.
+   ========================================================= */
+
+body.technology-catalog {
+  --tech-page: #f3f7fd;
+  --tech-ink: #14243d;
+  --tech-muted: #647792;
+  --tech-line: #dce6f4;
+  --tech-card: #ffffff;
+  --tech-card-soft: #f6f9ff;
+  --tech-blue: #315ee8;
+  --tech-blue-deep: #2446bd;
+  --tech-cyan: #049fce;
+  --tech-violet: #7957ee;
+  --tech-accent-soft: #eaf1ff;
+  --tech-shadow: 0 14px 35px rgba(26, 52, 102, .075);
+  --tech-shadow-hover: 0 20px 42px rgba(26, 52, 102, .14);
+  color: var(--tech-ink);
+  background:
+    radial-gradient(ellipse at 7% 0%, rgba(49,94,232,.085), transparent 28%),
+    radial-gradient(ellipse at 93% 18%, rgba(3,169,221,.065), transparent 26%),
+    var(--tech-page);
+}
+html[data-theme="light"] body.technology-catalog {
+  --tech-page: #f3f7fd;
+  --tech-ink: #14243d;
+  --tech-muted: #647792;
+  --tech-line: #dce6f4;
+  --tech-card: #ffffff;
+  --tech-card-soft: #f6f9ff;
+  --tech-blue: #315ee8;
+  --tech-blue-deep: #2446bd;
+  --tech-cyan: #049fce;
+  --tech-violet: #7957ee;
+  --tech-accent-soft: #eaf1ff;
+  --tech-shadow: 0 14px 35px rgba(26, 52, 102, .075);
+  --tech-shadow-hover: 0 20px 42px rgba(26, 52, 102, .14);
+  color-scheme: light;
+}
+html[data-theme="dark"] body.technology-catalog {
+  --tech-page: #070d19;
+  --tech-ink: #f1f6ff;
+  --tech-muted: #a4b5d2;
+  --tech-line: rgba(105, 142, 204, .25);
+  --tech-card: #0d1729;
+  --tech-card-soft: #101f36;
+  --tech-blue: #4389ff;
+  --tech-blue-deep: #1666dc;
+  --tech-cyan: #4be2ff;
+  --tech-violet: #a38aff;
+  --tech-accent-soft: rgba(55, 103, 184, .18);
+  --tech-shadow: 0 16px 36px rgba(0, 0, 0, .24);
+  --tech-shadow-hover: 0 22px 46px rgba(0, 0, 0, .35), 0 0 23px rgba(58, 150, 255, .08);
+  color: var(--tech-ink);
+  background:
+    radial-gradient(ellipse at 6% 0%, rgba(27,104,236,.14), transparent 29%),
+    radial-gradient(ellipse at 98% 23%, rgba(121,70,238,.10), transparent 28%),
+    var(--tech-page);
+  color-scheme: dark;
+}
+
+/* Header — compact, crisp and brand-first. */
+body.technology-catalog .site-header {
+  position: relative;
+  z-index: 100;
+  min-height: 76px;
+  padding-inline: clamp(18px, 4vw, 62px);
+  border-bottom: 1px solid var(--tech-line);
+  background: color-mix(in srgb, var(--tech-card) 92%, transparent);
+  box-shadow: 0 6px 24px rgba(23, 43, 83, .045);
+  backdrop-filter: blur(14px);
+}
+body.technology-catalog .brand-logo-image {
+  max-height: 43px;
+  width: auto;
+  object-fit: contain;
+}
+body.technology-catalog .theme-toggle {
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid var(--tech-line);
+  border-radius: 999px;
+  color: var(--tech-ink);
+  background: var(--tech-card);
+  font-weight: 750;
+  box-shadow: 0 4px 13px rgba(22, 45, 89, .07);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+body.technology-catalog .theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--tech-blue);
+  box-shadow: 0 7px 18px rgba(49,94,232,.13);
+}
+html[data-theme="dark"] body.technology-catalog .site-header {
+  border-bottom-color: rgba(75, 214, 255, .23);
+  background: rgba(7, 13, 25, .92);
+  box-shadow: 0 8px 28px rgba(0,0,0,.22), 0 1px 0 rgba(124,77,255,.12);
+}
+html[data-theme="dark"] body.technology-catalog .site-header::after {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #38dfff 24%, #4f84ff 59%, #9870ff 82%, transparent);
+  opacity: .85;
+}
+html[data-theme="dark"] body.technology-catalog .theme-toggle {
+  border-color: rgba(75,214,255,.38);
+  color: #e7f9ff;
+  background: linear-gradient(135deg,#10233e,#171b3a);
+}
+
+/* Hero — more energy, but the copy and CTA stay clear. */
+body.technology-catalog .hero {
+  position: relative;
+  isolation: isolate;
+  min-height: clamp(440px, 40vw, 555px);
+  padding: clamp(48px, 6vw, 82px) clamp(22px, 7vw, 100px);
+  gap: clamp(28px, 4vw, 62px);
+  background:
+    radial-gradient(ellipse at 88% 16%, rgba(65,132,255,.14), transparent 34%),
+    radial-gradient(ellipse at 68% 95%, rgba(0,178,220,.09), transparent 35%),
+    linear-gradient(115deg,#f7faff 0%,#edf4ff 57%,#edf8ff 100%);
+}
+body.technology-catalog .hero::before {
+  right: -110px;
+  bottom: -195px;
+  width: 400px;
+  height: 400px;
+  border: 1px solid rgba(49,94,232,.18);
+  box-shadow: 0 0 0 24px rgba(49,94,232,.025), 0 0 0 54px rgba(0,170,220,.02);
+}
+body.technology-catalog .hero-copy { max-width: 620px; }
+body.technology-catalog .hero .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 17px;
+  color: var(--tech-blue);
+  font-size: 11px;
+  letter-spacing: .17em;
+}
+body.technology-catalog .eyebrow-dot {
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  background: var(--tech-cyan);
+  box-shadow: 0 0 0 5px rgba(4,159,206,.12), 0 0 15px rgba(4,159,206,.24);
+}
+body.technology-catalog .hero h1 {
+  max-width: 620px;
+  margin-bottom: 22px;
+  color: #14243d;
+  font-size: clamp(42px, 5.1vw, 69px);
+  line-height: 1.035;
+  letter-spacing: -.058em;
+}
+body.technology-catalog .hero h1 span {
+  background: linear-gradient(95deg,#2457e6 0%,#168fdc 53%,#7555ed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+body.technology-catalog .hero-description {
+  max-width: 515px;
+  margin-bottom: 25px;
+  color: #536783;
+  font-size: clamp(15px,1.2vw,17px);
+  line-height: 1.8;
+}
+body.technology-catalog .hero-ctas { margin-top: 24px; }
+body.technology-catalog .hero-ctas .button-primary,
+body.technology-catalog .button-primary,
+body.technology-catalog .catalog-help-button {
+  min-height: 48px;
+  padding: 13px 20px;
+  border: 1px solid rgba(43,91,223,.55);
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(110deg,#2858df,#347de8 58%,#6555e9);
+  box-shadow: 0 6px 0 rgba(31,64,151,.12), 0 11px 25px rgba(49,94,232,.20);
+  font-size: 14px;
+  font-weight: 800;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+body.technology-catalog .hero-ctas .button-primary:hover,
+body.technology-catalog .button-primary:hover,
+body.technology-catalog .catalog-help-button:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.08);
+  box-shadow: 0 8px 0 rgba(31,64,151,.09), 0 15px 30px rgba(49,94,232,.25);
+}
+body.technology-catalog .hero-trust {
+  gap: 9px;
+  margin-top: 22px;
+  color: #536985;
+  font-size: 12px;
+}
+body.technology-catalog .hero-trust > span {
+  padding: 8px 11px;
+  border-color: #d3e0f2;
+  border-radius: 999px;
+  background: rgba(255,255,255,.78);
+}
+body.technology-catalog .hero-art.hero-visual { min-height: 390px; }
+body.technology-catalog .hero-image-frame {
+  inset: 0 -2% 0 0;
+  border: 1px solid rgba(61,119,221,.25);
+  border-radius: 26px;
+  background: #d8eaff;
+  box-shadow: 0 20px 45px rgba(31,60,115,.17), inset 0 0 0 5px rgba(255,255,255,.23);
+  transform: none;
+}
+body.technology-catalog .hero-showcase-image {
+  object-position: center;
+  filter: saturate(1.05) contrast(1.015);
+}
+body.technology-catalog .hero-image-frame::after {
+  background: linear-gradient(120deg,rgba(13,38,88,.03),transparent 55%,rgba(23,91,178,.11));
+}
+body.technology-catalog .hero-image-glow {
+  right: -3%;
+  bottom: -9%;
+  width: 56%;
+  height: 36%;
+  background: rgba(31,133,255,.23);
+  filter: blur(38px);
+}
+html[data-theme="dark"] body.technology-catalog .hero {
+  color: #f1f6ff;
+  background:
+    radial-gradient(ellipse at 82% 12%,rgba(38,148,255,.23),transparent 34%),
+    radial-gradient(ellipse at 75% 100%,rgba(126,74,255,.18),transparent 37%),
+    radial-gradient(ellipse at 0% 10%,rgba(0,207,241,.10),transparent 32%),
+    linear-gradient(120deg,#070d1b 0%,#0b1830 52%,#11132a 100%);
+}
+html[data-theme="dark"] body.technology-catalog .hero::before {
+  border-color: rgba(66,210,255,.24);
+  box-shadow: 0 0 0 24px rgba(66,210,255,.025),0 0 0 54px rgba(138,88,255,.025);
+}
+html[data-theme="dark"] body.technology-catalog .hero .eyebrow,
+html[data-theme="dark"] body.technology-catalog .hero-trust { color: #a9c9e7; }
+html[data-theme="dark"] body.technology-catalog .hero h1 { color: #f3f7ff; }
+html[data-theme="dark"] body.technology-catalog .hero h1 span {
+  background: linear-gradient(100deg,#45e6ff 0%,#66b8ff 47%,#b097ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html[data-theme="dark"] body.technology-catalog .hero-description { color: #b2c3dd; }
+html[data-theme="dark"] body.technology-catalog .hero-trust > span {
+  border-color: rgba(116,161,219,.27);
+  color: #d9e8fa;
+  background: rgba(10,24,44,.78);
+}
+html[data-theme="dark"] body.technology-catalog .hero-image-frame {
+  border-color: rgba(67,213,255,.33);
+  background: linear-gradient(145deg,#112849,#171735);
+  box-shadow: 0 24px 52px rgba(0,0,0,.36), 0 0 28px rgba(49,158,255,.10),inset 0 0 0 5px rgba(255,255,255,.035);
+}
+html[data-theme="dark"] body.technology-catalog .hero-image-glow { background: rgba(0,188,255,.25); }
+
+/* Three benefit tiles — discreet, consistent and easier to scan. */
+body.technology-catalog .benefit-row {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 13px;
+  width: min(1240px,calc(100% - 44px));
+  margin: -18px auto 0;
+  padding: 0;
+}
+body.technology-catalog .benefit-row > div {
+  min-width: 0;
+  gap: 12px;
+  padding: 17px 18px;
+  border: 1px solid var(--tech-line);
+  border-radius: 15px;
+  background: var(--tech-card);
+  box-shadow: var(--tech-shadow);
+}
+body.technology-catalog .benefit-icon {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  color: var(--tech-blue);
+  background: var(--tech-accent-soft);
+  font-size: 20px;
+}
+body.technology-catalog .benefit-row > div:nth-child(2) .benefit-icon {
+  color: var(--tech-cyan);
+  background: color-mix(in srgb,var(--tech-cyan) 12%,var(--tech-card));
+}
+body.technology-catalog .benefit-row > div:nth-child(3) .benefit-icon {
+  color: var(--tech-violet);
+  background: color-mix(in srgb,var(--tech-violet) 12%,var(--tech-card));
+}
+body.technology-catalog .benefit-row b {
+  color: var(--tech-ink);
+  font-size: 14px;
+  line-height: 1.4;
+}
+body.technology-catalog .benefit-row small { color: var(--tech-muted); font-size: 12px; line-height: 1.5; }
+html[data-theme="dark"] body.technology-catalog .benefit-row > div {
+  border-color: var(--tech-line);
+  background: linear-gradient(140deg,#101e34,#0c1627);
+  box-shadow: 0 12px 28px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025);
+}
+html[data-theme="dark"] body.technology-catalog .benefit-row b { color: #eff5ff; }
+html[data-theme="dark"] body.technology-catalog .benefit-row small { color: #9fb2d0; }
+
+/* Cross-catalog promotion: visible, but not louder than JB TECH itself. */
+body.technology-catalog .technology-promo-banner {
+  width: min(1240px,calc(100% - 44px));
+  margin: 32px auto 10px;
+  overflow: hidden;
+  border: 1px solid var(--tech-line);
+  border-radius: 17px;
+  background: var(--tech-card);
+  box-shadow: 0 10px 28px rgba(26,52,102,.06);
+}
+html[data-theme="dark"] body.technology-catalog .technology-promo-banner {
+  border-color: rgba(68,192,246,.25);
+  background: linear-gradient(110deg,#0d1b31,#17162f);
+  box-shadow: 0 12px 30px rgba(0,0,0,.20);
+}
+
+/* Main catalog: defined max-width and clear information hierarchy. */
+body.technology-catalog .catalog-section,
+body.technology-catalog .shipping-section {
+  color: var(--tech-ink);
+  background: transparent;
+}
+body.technology-catalog .catalog-section {
+  width: min(1380px,100%);
+  margin-inline: auto;
+  padding: clamp(54px,6vw,82px) clamp(20px,3.2vw,42px) 56px;
+}
+body.technology-catalog .section-heading {
+  align-items: end;
+  gap: 28px;
+  margin-bottom: 24px;
+}
+body.technology-catalog .section-heading .eyebrow,
+body.technology-catalog .catalog-results-heading .eyebrow {
+  color: var(--tech-blue);
+  font-size: 10px;
+  letter-spacing: .18em;
+}
+body.technology-catalog .section-heading h2,
+body.technology-catalog .catalog-results-heading h2 {
+  color: var(--tech-ink);
+  font-size: clamp(28px,3.1vw,43px);
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.12;
+}
+body.technology-catalog .section-heading .heading-accent { color: var(--tech-blue); }
+body.technology-catalog .section-subtitle,
+body.technology-catalog .catalog-status {
+  color: var(--tech-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+body.technology-catalog .search-box {
+  min-height: 50px;
+  border: 1px solid var(--tech-line);
+  border-radius: 14px;
+  background: var(--tech-card);
+  box-shadow: 0 6px 18px rgba(25,48,93,.05);
+}
+body.technology-catalog .search-box:focus-within {
+  border-color: var(--tech-blue);
+  outline: 3px solid color-mix(in srgb,var(--tech-blue) 14%,transparent);
+  box-shadow: 0 9px 24px rgba(49,94,232,.09);
+}
+body.technology-catalog .search-box > span { color: var(--tech-blue); }
+body.technology-catalog .search-box input {
+  color: var(--tech-ink);
+  font-size: 14px;
+}
+body.technology-catalog .search-box input::placeholder { color: var(--tech-muted); opacity:.82; }
+body.technology-catalog .search-box kbd {
+  border: 1px solid var(--tech-line);
+  border-radius: 7px;
+  color: var(--tech-muted);
+  background: var(--tech-card-soft);
+}
+html[data-theme="dark"] body.technology-catalog .section-heading .eyebrow,
+html[data-theme="dark"] body.technology-catalog .catalog-results-heading .eyebrow { color: var(--tech-cyan); }
+html[data-theme="dark"] body.technology-catalog .section-heading h2,
+html[data-theme="dark"] body.technology-catalog .catalog-results-heading h2 { color: #f0f6ff; }
+html[data-theme="dark"] body.technology-catalog .section-subtitle,
+html[data-theme="dark"] body.technology-catalog .catalog-status { color: #a5b8d7; }
+html[data-theme="dark"] body.technology-catalog .search-box {
+  border-color: rgba(103,146,209,.28);
+  background: linear-gradient(135deg,#0d192d,#0b1425);
+  box-shadow: 0 8px 20px rgba(0,0,0,.18);
+}
+html[data-theme="dark"] body.technology-catalog .search-box input { color:#eff6ff; }
+html[data-theme="dark"] body.technology-catalog .search-box input::placeholder { color:#8199bc; }
+
+/* Category chips — electric selected state, neutral inactive states. */
+body.technology-catalog .filter-row {
+  gap: 9px;
+  margin: 23px 0 17px;
+}
+body.technology-catalog .filter-chip {
+  min-height: 40px;
+  padding: 9px 15px;
+  border: 1px solid var(--tech-line);
+  border-radius: 999px;
+  color: var(--tech-muted);
+  background: var(--tech-card);
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 750;
+}
+body.technology-catalog .filter-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--tech-blue);
+  color: var(--tech-blue);
+  background: var(--tech-accent-soft);
+}
+body.technology-catalog .filter-chip.active {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(105deg,#2d5fe6,#317ce7 54%,#7154ec);
+  box-shadow: 0 5px 13px rgba(49,94,232,.18);
+}
+html[data-theme="dark"] body.technology-catalog .filter-chip {
+  border-color: rgba(102,139,201,.26);
+  color: #b3c4df;
+  background: #0d192b;
+}
+html[data-theme="dark"] body.technology-catalog .filter-chip:hover {
+  border-color: rgba(65,220,255,.58);
+  color: #dffaff;
+  background: rgba(23,87,140,.24);
+}
+html[data-theme="dark"] body.technology-catalog .filter-chip.active {
+  border-color: rgba(72,219,255,.62);
+  color: #051522;
+  background: linear-gradient(105deg,#31d7f6,#4cafff 55%,#a28aff);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset, 0 6px 18px rgba(23,159,255,.16);
+}
+
+/* Brand/sort filters as a single purposeful control surface. */
+body.technology-catalog .catalog-extra-filters {
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 17px;
+  border: 1px solid var(--tech-line);
+  border-radius: 16px;
+  background: var(--tech-card);
+  box-shadow: 0 8px 22px rgba(26,52,102,.045);
+}
+body.technology-catalog .catalog-control-field {
+  gap: 7px;
+  color: var(--tech-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+body.technology-catalog .catalog-control-field > span {
+  color: var(--tech-muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+body.technology-catalog .catalog-control-field input,
+body.technology-catalog .catalog-control-field select,
+body.technology-catalog .brand-filter-toggle,
+body.technology-catalog .brand-filter-search {
+  min-height: 46px;
+  padding: 10px 13px;
+  border: 1px solid var(--tech-line);
+  border-radius: 11px;
+  color: var(--tech-ink);
+  background: var(--tech-card-soft);
+  font-size: 14px;
+  box-shadow: none;
+}
+body.technology-catalog .catalog-control-field input:focus,
+body.technology-catalog .catalog-control-field select:focus,
+body.technology-catalog .brand-filter-toggle:focus-visible,
+body.technology-catalog .brand-filter-search:focus-visible {
+  border-color: var(--tech-blue);
+  outline: 3px solid color-mix(in srgb,var(--tech-blue) 15%,transparent);
+  outline-offset: 1px;
+}
+body.technology-catalog .brand-filter-menu {
+  border: 1px solid var(--tech-line);
+  border-radius: 13px;
+  color: var(--tech-ink);
+  background: var(--tech-card);
+  box-shadow: 0 18px 42px rgba(14,33,74,.18);
+}
+body.technology-catalog .brand-filter-option {
+  border-bottom-color: var(--tech-line);
+  color: var(--tech-ink);
+}
+body.technology-catalog .brand-filter-option:hover,
+body.technology-catalog .brand-filter-option[aria-selected="true"] {
+  color: var(--tech-blue);
+  background: var(--tech-accent-soft);
+}
+html[data-theme="dark"] body.technology-catalog .catalog-extra-filters {
+  border-color: rgba(103,146,209,.25);
+  background: linear-gradient(135deg,#0d192c,#0b1424);
+  box-shadow: 0 9px 24px rgba(0,0,0,.16);
+}
+html[data-theme="dark"] body.technology-catalog .catalog-control-field > span { color:#a7bbd9; }
+html[data-theme="dark"] body.technology-catalog .catalog-control-field input,
+html[data-theme="dark"] body.technology-catalog .catalog-control-field select,
+html[data-theme="dark"] body.technology-catalog .brand-filter-toggle,
+html[data-theme="dark"] body.technology-catalog .brand-filter-search {
+  border-color: rgba(103,146,209,.30);
+  color: #eef6ff;
+  background: #091426;
+  color-scheme: dark;
+}
+html[data-theme="dark"] body.technology-catalog .brand-filter-menu {
+  border-color: rgba(91,194,244,.3);
+  color:#eff6ff;
+  background:#0c1729;
+}
+
+/* Price range, results heading and featured selection. */
+body.technology-catalog .budget-filter-bar {
+  gap: 14px;
+  margin: 0 0 30px;
+  padding: 15px 17px;
+  border: 1px solid var(--tech-line);
+  border-radius: 15px;
+  color: var(--tech-muted);
+  background: linear-gradient(105deg,var(--tech-card),var(--tech-card-soft));
+  box-shadow: 0 8px 22px rgba(26,52,102,.045);
+}
+body.technology-catalog .budget-filter-heading strong {
+  color: var(--tech-ink);
+  font-size: 16px;
+  font-weight: 850;
+}
+body.technology-catalog .budget-filter-heading small { color: var(--tech-muted); font-size: 11px; }
+body.technology-catalog .budget-price-field { color: var(--tech-muted); font-size: 12px; font-weight: 750; }
+body.technology-catalog .budget-price-input-wrap {
+  min-height: 42px;
+  border: 1px solid var(--tech-line);
+  border-radius: 10px;
+  color: var(--tech-blue);
+  background: var(--tech-card);
+}
+body.technology-catalog .budget-price-input-wrap input {
+  color: var(--tech-ink);
+  font-size: 14px;
+}
+body.technology-catalog .budget-clear-button {
+  min-height: 42px;
+  border: 1px solid var(--tech-line);
+  border-radius: 10px;
+  color: var(--tech-muted);
+  background: var(--tech-card);
+}
+body.technology-catalog .budget-clear-button:hover:not(:disabled) {
+  border-color: var(--tech-blue);
+  color: var(--tech-blue);
+}
+html[data-theme="dark"] body.technology-catalog .budget-filter-bar {
+  border-color: rgba(103,146,209,.25);
+  background: linear-gradient(110deg,#0d1b30,#111a30);
+}
+html[data-theme="dark"] body.technology-catalog .budget-filter-heading strong { color:#f0f6ff; }
+html[data-theme="dark"] body.technology-catalog .budget-price-input-wrap { border-color:rgba(103,146,209,.32); background:#091426; }
+html[data-theme="dark"] body.technology-catalog .budget-price-input-wrap input { color:#eef6ff; }
+html[data-theme="dark"] body.technology-catalog .budget-clear-button { border-color:rgba(103,146,209,.28); color:#b6c6e0; background:#101e34; }
+
+body.technology-catalog .featured-section {
+  position: relative;
+  isolation: isolate;
+  margin: 24px 0 34px;
+  padding: clamp(22px,3vw,36px);
+  overflow: hidden;
+  border: 1px solid #a9c6f4;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 100% 0%,rgba(55,121,241,.16),transparent 40%),
+    linear-gradient(135deg,#fff 0%,#f0f5ff 62%,#eefaff 100%);
+  box-shadow: 0 18px 42px rgba(35,73,151,.095);
+}
+body.technology-catalog .featured-exclusive-badge {
+  top: 16px;
+  right: 16px;
+  left: auto;
+  padding: 7px 10px;
+  border: 1px solid #dbc68e;
+  border-radius: 999px;
+  color: #6b521d;
+  background: linear-gradient(110deg,#fff4ce,#e8d29a);
+  font-size: 10px;
+  letter-spacing: .09em;
+  box-shadow: 0 4px 11px rgba(95,70,20,.08);
+}
+body.technology-catalog .featured-section-heading { gap:18px; margin-bottom:22px; }
+body.technology-catalog .featured-section-heading .eyebrow { color:var(--tech-blue); font-size:10px; letter-spacing:.17em; }
+body.technology-catalog .featured-section-heading h2 {
+  color:var(--tech-ink);
+  font-size:clamp(29px,3.4vw,44px);
+  letter-spacing:-.05em;
+}
+body.technology-catalog .featured-section-heading .section-subtitle { color:var(--tech-muted); font-size:14px; line-height:1.65; }
+body.technology-catalog .featured-count {
+  padding:7px 11px;
+  border:1px solid var(--tech-line);
+  border-radius:999px;
+  color:var(--tech-muted);
+  background:var(--tech-card);
+  font-size:11px;
+}
+html[data-theme="dark"] body.technology-catalog .featured-section {
+  border-color:rgba(78,210,255,.36);
+  background:
+    radial-gradient(ellipse at 100% 0%,rgba(28,119,255,.21),transparent 40%),
+    radial-gradient(ellipse at 0% 100%,rgba(111,58,237,.16),transparent 44%),
+    linear-gradient(135deg,#0e1a30 0%,#0a1425 63%,#12132b 100%);
+  box-shadow:0 20px 48px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035);
+}
+html[data-theme="dark"] body.technology-catalog .featured-section-heading h2 { color:#f2f7ff; }
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .eyebrow { color:#60e7ff; }
+html[data-theme="dark"] body.technology-catalog .featured-section-heading .section-subtitle { color:#a7bddc; }
+html[data-theme="dark"] body.technology-catalog .featured-count {
+  border-color:rgba(80,207,255,.28);
+  color:#b5daef;
+  background:rgba(8,20,38,.75);
+}
+
+/* Product cards — more visible images, specifications and price hierarchy. */
+body.technology-catalog #product-grid.product-grid,
+body.technology-catalog #featured-grid.featured-grid {
+  align-items: stretch;
+  gap: clamp(14px,1.6vw,22px);
+}
+body.technology-catalog .catalog-category-grid { gap: clamp(14px,1.6vw,22px); }
+body.technology-catalog .product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--tech-line);
+  border-radius: 18px;
+  color: var(--tech-ink);
+  background: var(--tech-card);
+  box-shadow: 0 8px 22px rgba(23,48,96,.055);
+  transition: transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+body.technology-catalog .product-card::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 12%;
+  left: 12%;
+  height: 2px;
+  border-radius: 0 0 99px 99px;
+  background: linear-gradient(90deg,transparent,var(--tech-blue),var(--tech-cyan),var(--tech-violet),transparent);
+  opacity: .72;
+  pointer-events: none;
+}
+body.technology-catalog .product-card:hover,
+body.technology-catalog .product-card:focus-within {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb,var(--tech-blue) 52%,var(--tech-line));
+  box-shadow: var(--tech-shadow-hover);
+}
+body.technology-catalog .product-image {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-bottom: 1px solid var(--tech-line);
+  background:
+    radial-gradient(ellipse at 50% 38%,rgba(51,114,240,.10),transparent 62%),
+    linear-gradient(145deg,#f1f6ff,#f8fbff 70%,#edf6ff);
+}
+body.technology-catalog .product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  object-fit: contain;
+  object-position: center;
+  mix-blend-mode: multiply;
+  transition: transform .22s ease;
+}
+body.technology-catalog .product-card:hover .product-image img { transform: scale(1.025); }
+body.technology-catalog .product-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 0;
+  margin-bottom: 8px;
+}
+body.technology-catalog .product-badge {
+  top: 12px;
+  left: 12px;
+  padding: 6px 9px;
+  border: 1px solid var(--tech-line);
+  border-radius: 8px;
+  color: var(--tech-muted);
+  background: var(--tech-card);
+  box-shadow: 0 4px 11px rgba(20,43,80,.075);
+  font-size: 10px;
+  font-weight: 850;
+}
+body.technology-catalog .product-badge.featured-badge {
+  border-color:#d7c181;
+  color:#654914;
+  background:linear-gradient(110deg,#fff3c9,#e5ca83);
+}
+body.technology-catalog .product-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  gap: 8px;
+  padding: 17px;
+}
+body.technology-catalog .product-category {
+  margin: 0 0 1px;
+  color: var(--tech-blue);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  line-height: 1.45;
+}
+body.technology-catalog .product-card h3 {
+  min-height: 0;
+  margin: 0;
+  color: var(--tech-ink);
+  font-size: clamp(16px,1.3vw,19px);
+  font-weight: 800;
+  line-height: 1.32;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+body.technology-catalog .product-description {
+  min-height: 0;
+  margin: 0 0 2px;
+  color: var(--tech-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+body.technology-catalog .product-card-capacity {
+  width: fit-content;
+  max-width: 100%;
+  margin: 1px 0 0;
+  padding: 6px 9px;
+  border: 1px solid var(--tech-line);
+  border-radius: 8px;
+  color: var(--tech-ink);
+  background: var(--tech-card-soft);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+body.technology-catalog .product-card-color-slot {
+  min-height: 0;
+  margin: 1px 0 0;
+}
+body.technology-catalog .product-card-color-slot.is-empty { display:none; }
+body.technology-catalog .product-card-color-list { gap: 6px 10px; }
+body.technology-catalog .product-card-color-option { gap: 6px; }
+body.technology-catalog .product-card-color-name {
+  color: var(--tech-muted);
+  font-size: 11px;
+}
+body.technology-catalog .product-price-label {
+  margin-top: auto;
+  padding-top: 12px;
+  color: var(--tech-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+body.technology-catalog .product-price {
+  margin-top: 0;
+  color: var(--tech-blue-deep);
+  font-size: clamp(23px,1.8vw,28px);
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+body.technology-catalog .product-price-secondary {
+  margin-top: -2px;
+  color: var(--tech-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+body.technology-catalog .product-financing {
+  margin-top: 5px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb,var(--tech-blue) 22%,var(--tech-line));
+  border-radius: 10px;
+  color: var(--tech-blue-deep);
+  background: var(--tech-accent-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+body.technology-catalog .product-actions {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+body.technology-catalog .product-view-button,
+body.technology-catalog .buy-button.product-view-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 45px;
+  padding: 11px 13px;
+  border: 1px solid rgba(49,94,232,.42);
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(105deg,#285ce0,#327fe8 56%,#6854e8);
+  box-shadow: 0 5px 0 rgba(36,69,153,.10),0 7px 15px rgba(49,94,232,.13);
+  font-size: 13px;
+  font-weight: 850;
+  text-align: left;
+  text-decoration: none;
+  transition: transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+body.technology-catalog .product-view-button:hover,
+body.technology-catalog .buy-button.product-view-button:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.08);
+  box-shadow: 0 6px 0 rgba(36,69,153,.08),0 11px 20px rgba(49,94,232,.20);
+}
+body.technology-catalog .product-view-button span[aria-hidden="true"] {
+  display: inline-grid;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 8px;
+  background: rgba(255,255,255,.13);
+}
+html[data-theme="dark"] body.technology-catalog .product-card {
+  border-color: rgba(103,146,209,.23);
+  color: #eff6ff;
+  background: linear-gradient(160deg,#101d32 0%,#0b1424 100%);
+  box-shadow: 0 10px 26px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025);
+}
+html[data-theme="dark"] body.technology-catalog .product-card::before { opacity:.95; }
+html[data-theme="dark"] body.technology-catalog .product-card:hover,
+html[data-theme="dark"] body.technology-catalog .product-card:focus-within {
+  border-color: rgba(69,208,255,.46);
+  box-shadow: 0 19px 40px rgba(0,0,0,.30),0 0 22px rgba(36,137,255,.09);
+}
+html[data-theme="dark"] body.technology-catalog .product-image {
+  border-bottom-color: rgba(103,146,209,.21);
+  background:
+    radial-gradient(ellipse at 50% 35%,rgba(43,120,243,.19),transparent 62%),
+    linear-gradient(145deg,#0d1b30,#12152b);
+}
+html[data-theme="dark"] body.technology-catalog .product-image img {
+  mix-blend-mode: normal;
+}
+html[data-theme="dark"] body.technology-catalog .product-card h3 { color:#f1f6ff; }
+html[data-theme="dark"] body.technology-catalog .product-category { color:#67ddff; }
+html[data-theme="dark"] body.technology-catalog .product-description,
+html[data-theme="dark"] body.technology-catalog .product-price-label,
+html[data-theme="dark"] body.technology-catalog .product-price-secondary { color:#9eb3d3; }
+html[data-theme="dark"] body.technology-catalog .product-card-capacity {
+  border-color: rgba(87,164,227,.26);
+  color:#d6e9ff;
+  background:rgba(24,54,91,.42);
+}
+html[data-theme="dark"] body.technology-catalog .product-card-color-name { color:#b4c7e3; }
+html[data-theme="dark"] body.technology-catalog .product-price { color:#62e4ff; }
+html[data-theme="dark"] body.technology-catalog .product-financing {
+  border-color:rgba(75,210,255,.25);
+  color:#bdefff;
+  background:rgba(18,71,112,.26);
+}
+html[data-theme="dark"] body.technology-catalog .product-view-button,
+html[data-theme="dark"] body.technology-catalog .buy-button.product-view-button {
+  border-color:rgba(73,213,255,.48);
+  color:#071624;
+  background:linear-gradient(105deg,#37d7f4,#4caeff 55%,#a08aff);
+  box-shadow:0 5px 0 rgba(0,0,0,.18),0 0 18px rgba(40,165,255,.10);
+}
+html[data-theme="dark"] body.technology-catalog .product-view-button span[aria-hidden="true"] {
+  border-color:rgba(7,22,36,.16);
+  background:rgba(7,22,36,.08);
+}
+html[data-theme="dark"] body.technology-catalog .product-badge {
+  border-color:rgba(115,158,213,.32);
+  color:#d4e5fb;
+  background:#172944;
+}
+
+/* Featured cards use the same visual language, with a little more breathing room. */
+body.technology-catalog .featured-grid .product-card { border-radius:16px; }
+body.technology-catalog .featured-grid .product-image { aspect-ratio: 1 / 1; height:auto; }
+body.technology-catalog .featured-grid .product-card-content { padding:16px; }
+body.technology-catalog .featured-grid .product-card h3 { font-size:clamp(17px,1.4vw,20px); }
+html[data-theme="light"] body.technology-catalog .featured-grid .product-card {
+  border-color:#d1dcf3;
+  background:linear-gradient(165deg,#fff,#f5f8ff);
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-card {
+  border-color:rgba(77,196,255,.27);
+  background:linear-gradient(155deg,#13233d,#0a1424);
+}
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price { color:#75eaff; }
+html[data-theme="dark"] body.technology-catalog .featured-grid .product-price-label { color:#a7bedb; }
+
+/* Category dividers and status labels are consistent with the new palette. */
+body.technology-catalog .catalog-category-section + .catalog-category-section {
+  margin-top: clamp(30px,3.4vw,44px);
+  padding-top: clamp(22px,2.5vw,32px);
+  border-top-color: var(--tech-line);
+}
+body.technology-catalog .catalog-category-heading {
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 17px;
+  padding-bottom: 14px;
+  border-bottom-color: var(--tech-line);
+}
+body.technology-catalog .catalog-category-heading-mark {
+  flex-basis: 5px;
+  width: 5px;
+  min-height: 42px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,var(--tech-cyan),var(--tech-blue),var(--tech-violet));
+  box-shadow: 0 0 16px color-mix(in srgb,var(--tech-blue) 24%,transparent);
+}
+body.technology-catalog .catalog-category-eyebrow {
+  margin-bottom: 4px;
+  color: var(--tech-muted);
+  font-size: 10px;
+  letter-spacing: .15em;
+}
+body.technology-catalog .catalog-category-heading h3 {
+  color: var(--tech-ink);
+  font-size: clamp(22px,2vw,29px);
+  letter-spacing: -.04em;
+}
+body.technology-catalog .catalog-category-count {
+  padding: 7px 11px;
+  border: 1px solid var(--tech-line);
+  border-radius: 999px;
+  color: var(--tech-muted);
+  background: var(--tech-card);
+  font-size: 11px;
+}
+html[data-theme="dark"] body.technology-catalog .catalog-category-heading h3 { color:#f0f6ff; }
+html[data-theme="dark"] body.technology-catalog .catalog-category-count {
+  border-color:rgba(91,167,234,.28);
+  color:#b4d5ef;
+  background:#101d32;
+}
+body.technology-catalog .catalog-results-heading {
+  margin: 32px 0 12px;
+}
+body.technology-catalog .catalog-results-heading h2 { line-height:1.12; }
+body.technology-catalog .catalog-status {
+  padding: 12px 0;
+}
+
+/* Help/WhatsApp CTA and shipping section. */
+body.technology-catalog .catalog-help-cta {
+  gap: 20px;
+  margin: 42px 0 8px;
+  padding: clamp(22px,3vw,34px);
+  border: 1px solid #c7d8f6;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 0% 50%,rgba(64,125,237,.12),transparent 43%),
+    linear-gradient(115deg,#ffffff,#eef5ff 68%,#eaf8ff);
+  box-shadow: 0 14px 34px rgba(33,66,130,.075);
+}
+body.technology-catalog .catalog-help-mark {
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(145deg,#2859df,#247ddf 53%,#7654ef);
+  box-shadow: 0 8px 20px rgba(49,94,232,.20);
+}
+body.technology-catalog .catalog-help-copy h2 {
+  color:#14243d;
+  font-size:clamp(22px,2.4vw,30px);
+  letter-spacing:-.04em;
+}
+body.technology-catalog .catalog-help-copy > p:last-child { color:#5f7290; line-height:1.65; }
+body.technology-catalog .catalog-help-cta .eyebrow { color:var(--tech-blue); }
+html[data-theme="dark"] body.technology-catalog .catalog-help-cta {
+  border-color:rgba(66,193,255,.28);
+  color:#ecf6ff;
+  background:
+    radial-gradient(ellipse at 0% 50%,rgba(39,129,255,.19),transparent 46%),
+    radial-gradient(ellipse at 100% 0%,rgba(122,75,240,.13),transparent 40%),
+    linear-gradient(115deg,#0e1c32,#11172b 70%,#13152b);
+  box-shadow:0 18px 40px rgba(0,0,0,.22);
+}
+html[data-theme="dark"] body.technology-catalog .catalog-help-copy h2 { color:#f1f6ff; }
+html[data-theme="dark"] body.technology-catalog .catalog-help-copy > p:last-child { color:#a9bedc; }
+html[data-theme="dark"] body.technology-catalog .catalog-help-cta .eyebrow { color:#61dfff; }
+body.technology-catalog .shipping-section {
+  width:min(1380px,100%);
+  margin-inline:auto;
+  padding:38px clamp(20px,3.2vw,42px) 64px;
+}
+body.technology-catalog .shipping-section .section-heading h2 { color:var(--tech-ink); }
+body.technology-catalog .shipping-section .section-heading .eyebrow { color:var(--tech-blue); }
+html[data-theme="dark"] body.technology-catalog .shipping-section .section-heading h2 { color:#f1f6ff; }
+html[data-theme="dark"] body.technology-catalog .shipping-section .section-heading .eyebrow { color:var(--tech-cyan); }
+
+/* Product detail overlay — make variant selection and purchase actions feel like one flow. */
+body.technology-catalog #product-detail-page:not(.hidden) {
+  background: var(--tech-page);
+  color: var(--tech-ink);
+}
+body.technology-catalog #product-detail-page #dialog-content { width:min(1180px,100%); }
+body.technology-catalog .dialog-layout {
+  gap: clamp(22px,3vw,38px);
+  padding: clamp(18px,3vw,34px);
+  border: 1px solid var(--tech-line);
+  border-radius: 22px;
+  background: var(--tech-card);
+  box-shadow: var(--tech-shadow);
+}
+body.technology-catalog .dialog-image {
+  overflow: hidden;
+  border: 1px solid var(--tech-line);
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 50% 30%,rgba(49,94,232,.11),transparent 62%),
+    var(--tech-card-soft);
+}
+body.technology-catalog .dialog-gallery-main {
+  overflow:hidden;
+  border-radius:12px;
+}
+body.technology-catalog .dialog-image .dialog-main-image {
+  padding:20px;
+  object-fit:contain;
+}
+body.technology-catalog .dialog-image-zoom {
+  border-radius:12px;
+}
+body.technology-catalog .dialog-detail {
+  min-width:0;
+  color:var(--tech-ink);
+}
+body.technology-catalog .dialog-detail h2,
+body.technology-catalog .dialog-detail h3 {
+  color:var(--tech-ink);
+  letter-spacing:-.035em;
+}
+body.technology-catalog .dialog-detail h2 { font-size:clamp(28px,3vw,40px); line-height:1.13; }
+body.technology-catalog .dialog-detail p,
+body.technology-catalog .dialog-detail .dialog-product-description,
+body.technology-catalog .dialog-specs { color:var(--tech-muted); line-height:1.7; }
+body.technology-catalog .dialog-detail .product-category { color:var(--tech-blue); }
+body.technology-catalog .dialog-detail .product-price {
+  color:var(--tech-blue-deep);
+  font-size:clamp(28px,3vw,38px);
+  line-height:1.15;
+}
+body.technology-catalog .variant-option-group {
+  padding:15px;
+  border:1px solid var(--tech-line);
+  border-radius:14px;
+  background:var(--tech-card-soft);
+}
+body.technology-catalog .variant-option-group h3 {
+  margin-bottom:10px;
+  color:var(--tech-ink);
+  font-size:14px;
+}
+body.technology-catalog .variant-choice {
+  border:1px solid var(--tech-line);
+  border-radius:10px;
+  color:var(--tech-ink);
+  background:var(--tech-card);
+}
+body.technology-catalog .variant-choice:hover,
+body.technology-catalog .variant-choice.selected {
+  border-color:var(--tech-blue);
+  color:var(--tech-blue-deep);
+  background:var(--tech-accent-soft);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--tech-blue) 12%,transparent);
+}
+body.technology-catalog .product-contact-actions { gap:10px; }
+body.technology-catalog .dialog-buy-button {
+  min-height:48px;
+  border-radius:12px;
+}
+body.technology-catalog .dialog-payment-toggle,
+body.technology-catalog .payment-choice-button {
+  min-height:44px;
+  border:1px solid var(--tech-line);
+  border-radius:11px;
+  color:var(--tech-ink);
+  background:var(--tech-card-soft);
+}
+body.technology-catalog .dialog-payment-toggle:hover,
+body.technology-catalog .payment-choice-button:hover {
+  border-color:var(--tech-blue);
+  color:var(--tech-blue);
+}
+html[data-theme="dark"] body.technology-catalog .dialog-layout {
+  border-color:rgba(103,146,209,.28);
+  background:linear-gradient(145deg,#101d32,#0b1425);
+}
+html[data-theme="dark"] body.technology-catalog .dialog-image {
+  border-color:rgba(103,146,209,.24);
+  background:
+    radial-gradient(ellipse at 50% 30%,rgba(47,128,255,.18),transparent 62%),
+    linear-gradient(145deg,#0c1a2e,#11152a);
+}
+html[data-theme="dark"] body.technology-catalog .dialog-detail h2,
+html[data-theme="dark"] body.technology-catalog .dialog-detail h3 { color:#f0f6ff; }
+html[data-theme="dark"] body.technology-catalog .dialog-detail p,
+html[data-theme="dark"] body.technology-catalog .dialog-detail .dialog-product-description,
+html[data-theme="dark"] body.technology-catalog .dialog-specs { color:#a9bedb; }
+html[data-theme="dark"] body.technology-catalog .dialog-detail .product-price { color:#61e5ff; }
+html[data-theme="dark"] body.technology-catalog .variant-option-group {
+  border-color:rgba(103,146,209,.27);
+  background:#0c1729;
+}
+html[data-theme="dark"] body.technology-catalog .variant-option-group h3 { color:#dcecff; }
+html[data-theme="dark"] body.technology-catalog .variant-choice {
+  border-color:rgba(103,146,209,.29);
+  color:#c5d6ec;
+  background:#12213a;
+}
+html[data-theme="dark"] body.technology-catalog .variant-choice:hover,
+html[data-theme="dark"] body.technology-catalog .variant-choice.selected {
+  border-color:#4ddfff;
+  color:#e8fbff;
+  background:rgba(22,107,158,.27);
+}
+html[data-theme="dark"] body.technology-catalog .dialog-payment-toggle,
+html[data-theme="dark"] body.technology-catalog .payment-choice-button {
+  border-color:rgba(103,146,209,.3);
+  color:#d9e8fb;
+  background:#13223a;
+}
+
+/* Footer and focus styles. */
+body.technology-catalog .site-footer {
+  border-top:1px solid var(--tech-line);
+  color:var(--tech-muted);
+  background:var(--tech-card);
+}
+html[data-theme="dark"] body.technology-catalog .site-footer {
+  border-top-color:rgba(82,132,204,.25);
+  color:#9db1cf;
+  background:#080f1d;
+}
+body.technology-catalog :focus-visible {
+  outline-color: var(--tech-cyan);
+  outline-offset: 3px;
+}
+
+/* Responsive layout: preserve the two-column mobile product scan and touch targets. */
+@media (min-width: 761px) and (max-width: 1199px) {
+  body.technology-catalog .catalog-category-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  body.technology-catalog #product-grid:not(.is-categorized) { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  body.technology-catalog #featured-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  body.technology-catalog .hero { padding-inline:clamp(28px,4vw,54px); }
+  body.technology-catalog .catalog-section,
+  body.technology-catalog .shipping-section { padding-inline:clamp(22px,3vw,34px); }
+}
+@media (max-width: 760px) {
+  body.technology-catalog .site-header { min-height:66px; padding-inline:12px; }
+  body.technology-catalog .brand-logo-image { max-height:36px; max-width:min(58vw,225px); }
+  body.technology-catalog .hero {
+    grid-template-columns:minmax(0,1fr);
+    gap:24px;
+    min-height:0;
+    padding:40px 18px 33px;
+  }
+  body.technology-catalog .hero-copy { max-width:100%; }
+  body.technology-catalog .hero h1 { max-width:580px; font-size:clamp(39px,9.8vw,56px); line-height:1.04; letter-spacing:-.055em; }
+  body.technology-catalog .hero-description { font-size:15px; line-height:1.7; margin-bottom:20px; }
+  body.technology-catalog .hero-trust { gap:7px; margin-top:18px; font-size:11px; }
+  body.technology-catalog .hero-trust > span { padding:7px 9px; }
+  body.technology-catalog .hero-art.hero-visual { min-height:clamp(250px,72vw,390px); }
+  body.technology-catalog .hero-image-frame { inset:0; border-radius:19px; }
+  body.technology-catalog .benefit-row {
+    width:calc(100% - 28px);
+    grid-template-columns:1fr;
+    gap:9px;
+    margin-top:13px;
+  }
+  body.technology-catalog .benefit-row > div { padding:13px 14px; border-radius:13px; }
+  body.technology-catalog .benefit-icon { flex-basis:38px; width:38px; height:38px; }
+  body.technology-catalog .technology-promo-banner { width:calc(100% - 28px); margin-top:23px; border-radius:13px; }
+  body.technology-catalog .catalog-section,
+  body.technology-catalog .shipping-section { padding:42px 14px 40px; }
+  body.technology-catalog .section-heading { align-items:stretch; gap:14px; margin-bottom:17px; }
+  body.technology-catalog .section-heading h2,
+  body.technology-catalog .catalog-results-heading h2 { font-size:clamp(26px,6.7vw,34px); }
+  body.technology-catalog .section-subtitle { font-size:13px; }
+  body.technology-catalog .search-box { min-height:48px; }
+  body.technology-catalog .filter-row {
+    display:flex;
+    flex-wrap:nowrap;
+    gap:8px;
+    margin:18px 0 14px;
+    padding:2px 1px 9px;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    scrollbar-width:thin;
+    -webkit-overflow-scrolling:touch;
+  }
+  body.technology-catalog .filter-chip { flex:0 0 auto; min-height:39px; padding:9px 13px; }
+  body.technology-catalog .catalog-extra-filters { grid-template-columns:minmax(0,1fr); gap:12px; padding:13px; border-radius:13px; }
+  body.technology-catalog .catalog-control-field input,
+  body.technology-catalog .catalog-control-field select,
+  body.technology-catalog .brand-filter-toggle { min-height:46px; }
+  body.technology-catalog .budget-filter-bar { gap:10px; margin-bottom:23px; padding:13px; border-radius:13px; }
+  body.technology-catalog .featured-section { margin:20px 0 26px; padding:19px 12px 13px; border-radius:17px; }
+  body.technology-catalog .featured-exclusive-badge { top:11px; right:11px; padding:6px 8px; font-size:9px; }
+  body.technology-catalog .featured-section-heading { padding-top:19px; }
+  body.technology-catalog .featured-section-heading h2 { font-size:clamp(25px,6.4vw,33px); }
+  body.technology-catalog .featured-section-heading .section-subtitle { font-size:12px; }
+  body.technology-catalog #featured-grid,
+  body.technology-catalog #product-grid.product-grid.is-categorized .catalog-category-grid,
+  body.technology-catalog #product-grid:not(.is-categorized) {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  body.technology-catalog .catalog-category-heading { gap:9px; margin-bottom:12px; padding-bottom:11px; }
+  body.technology-catalog .catalog-category-heading h3 { font-size:clamp(19px,5.2vw,24px); }
+  body.technology-catalog .catalog-category-eyebrow { font-size:8.5px; }
+  body.technology-catalog .catalog-category-count { padding:5px 7px; font-size:10px; }
+  body.technology-catalog .product-card { border-radius:14px; }
+  body.technology-catalog .product-image { aspect-ratio:1 / 1; height:auto; }
+  body.technology-catalog .product-image img { padding:10px; }
+  body.technology-catalog .product-card-content { gap:6px; padding:11px 10px 12px; }
+  body.technology-catalog .product-card-badges { gap:4px; margin-bottom:4px; }
+  body.technology-catalog .product-card h3 { font-size:clamp(13px,3.5vw,16px); line-height:1.3; }
+  body.technology-catalog .product-category { font-size:9px; letter-spacing:.08em; }
+  body.technology-catalog .product-card-capacity { padding:5px 7px; font-size:10px; }
+  body.technology-catalog .product-card-color-name { font-size:10px; }
+  body.technology-catalog .product-price-label { padding-top:8px; font-size:9px; }
+  body.technology-catalog .product-price { font-size:clamp(18px,4.8vw,24px); }
+  body.technology-catalog .product-price-secondary { font-size:10.5px; }
+  body.technology-catalog .product-view-button { min-height:41px; padding:9px 9px; font-size:11.5px; border-radius:10px; }
+  body.technology-catalog .catalog-help-cta { grid-template-columns:40px minmax(0,1fr); gap:12px; margin-top:28px; padding:17px; border-radius:15px; }
+  body.technology-catalog .catalog-help-mark { width:40px; height:40px; font-size:16px; }
+  body.technology-catalog .catalog-help-copy h2 { font-size:clamp(20px,5.4vw,26px); }
+  body.technology-catalog .catalog-help-cta .catalog-help-button { grid-column:1/-1; width:100%; }
+  body.technology-catalog .dialog-layout { grid-template-columns:minmax(0,1fr); gap:18px; padding:13px; border-radius:16px; }
+  body.technology-catalog .dialog-image { min-height:0; max-height:none; border-radius:13px; }
+  body.technology-catalog .dialog-gallery-main { min-height:240px; max-height:380px; }
+  body.technology-catalog .dialog-image .dialog-main-image { max-height:380px; padding:14px; }
+  body.technology-catalog .dialog-detail { padding:5px 2px 10px; }
+  body.technology-catalog .dialog-detail h2 { font-size:clamp(25px,6.6vw,34px); }
+  body.technology-catalog .variant-option-group { padding:12px; border-radius:12px; }
+}
+@media (max-width:390px) {
+  body.technology-catalog .hero { padding-inline:14px; }
+  body.technology-catalog .catalog-section,
+  body.technology-catalog .shipping-section { padding-inline:10px; }
+  body.technology-catalog #featured-grid,
+  body.technology-catalog #product-grid.product-grid.is-categorized .catalog-category-grid,
+  body.technology-catalog #product-grid:not(.is-categorized) { gap:8px; }
+  body.technology-catalog .product-card-content { padding:9px 8px 10px; }
+  body.technology-catalog .product-image img { padding:7px; }
+  body.technology-catalog .product-price { font-size:clamp(17px,5vw,20px); }
+}
+@media (hover:none), (max-width:760px) {
+  body.technology-catalog .product-card:hover { transform:none; }
+  body.technology-catalog .product-card:hover .product-image img { transform:none; }
+  body.technology-catalog .product-view-button:hover { transform:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.technology-catalog .theme-toggle,
+  body.technology-catalog .product-card,
+  body.technology-catalog .product-image img,
+  body.technology-catalog .product-view-button,
+  body.technology-catalog .button-primary,
+  body.technology-catalog .filter-chip { transition:none !important; }
+}
+
+
+/* HEADER FIX · marca visible + control de tema persistente al desplazar. */
+html { scroll-padding-top: 90px; }
+body.technology-catalog .site-header {
+  position:sticky !important;
+  top:0 !important;
+  z-index:1200 !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) !important;
+  grid-template-rows:minmax(70px,auto) !important;
+  align-items:center !important;
+  gap:12px !important;
+  min-height:72px !important;
+  height:auto !important;
+  padding:9px clamp(16px,4vw,58px) !important;
+  overflow:visible !important;
+  isolation:isolate;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+body.technology-catalog .site-header > .tech-header-brand {
+  grid-column:2 !important;
+  grid-row:1 !important;
+  justify-self:center !important;
+  align-self:center !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:11px !important;
+  width:max-content !important;
+  max-width:min(100%,390px) !important;
+  min-width:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  color:var(--tech-ink) !important;
+  text-decoration:none !important;
+  white-space:nowrap !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  z-index:2;
+}
+body.technology-catalog .tech-header-monogram {
+  display:grid !important;
+  flex:0 0 44px !important;
+  place-items:center !important;
+  width:44px !important;
+  height:44px !important;
+  border:1px solid rgba(65,204,255,.58);
+  border-radius:14px;
+  color:#f5fcff;
+  background:linear-gradient(145deg,#06182e 0%,#1749a7 52%,#6c42e8 100%);
+  box-shadow:0 0 0 3px rgba(49,94,232,.08),0 7px 18px rgba(30,91,204,.23),inset 0 1px 0 rgba(255,255,255,.28);
+  font-family:"Space Grotesk",Manrope,sans-serif;
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:-1.5px;
+  line-height:1;
+}
+body.technology-catalog .tech-header-wordmark {
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:center !important;
+  gap:2px !important;
+  min-width:0 !important;
+}
+body.technology-catalog .tech-header-name {
+  display:block;
+  color:var(--tech-ink);
+  font-family:"Space Grotesk",Manrope,sans-serif;
+  font-size:clamp(18px,1.65vw,23px);
+  font-weight:850;
+  letter-spacing:-.055em;
+  line-height:1.05;
+}
+body.technology-catalog .tech-header-name strong {
+  color:var(--tech-blue);
+  font-weight:950;
+}
+body.technology-catalog .tech-header-wordmark small {
+  display:block;
+  color:var(--tech-muted);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.13em;
+  line-height:1.4;
+  text-transform:uppercase;
+}
+html[data-theme="dark"] body.technology-catalog .tech-header-name { color:#f3f7ff; }
+html[data-theme="dark"] body.technology-catalog .tech-header-name strong {
+  color:#52e4ff;
+  text-shadow:0 0 18px rgba(60,202,255,.14);
+}
+html[data-theme="dark"] body.technology-catalog .tech-header-wordmark small { color:#93b0d6; }
+html[data-theme="dark"] body.technology-catalog .tech-header-monogram {
+  border-color:rgba(75,223,255,.68);
+  background:linear-gradient(145deg,#07182b 0%,#145db5 50%,#7045e6 100%);
+  box-shadow:0 0 0 3px rgba(63,160,255,.09),0 0 22px rgba(30,164,255,.17),inset 0 1px 0 rgba(255,255,255,.15);
+}
+body.technology-catalog .site-header > [data-theme-toggle] {
+  grid-column:3 !important;
+  grid-row:1 !important;
+  justify-self:end !important;
+  align-self:center !important;
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  z-index:3;
+}
+body.technology-catalog .site-header > .product-detail-header-back:not([hidden]) {
+  grid-column:1 !important;
+  grid-row:1 !important;
+  justify-self:start !important;
+  align-self:center !important;
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  z-index:3;
+}
+@media (max-width:760px) {
+  body.technology-catalog .site-header {
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) !important;
+    grid-template-rows:66px !important;
+    min-height:66px !important;
+    height:66px !important;
+    padding:6px 10px !important;
+    gap:5px !important;
+  }
+  body.technology-catalog .site-header > .tech-header-brand {
+    gap:7px !important;
+    max-width:100% !important;
+  }
+  body.technology-catalog .tech-header-monogram {
+    flex-basis:34px !important;
+    width:34px !important;
+    height:34px !important;
+    border-radius:11px;
+    font-size:14px;
+  }
+  body.technology-catalog .tech-header-name { font-size:clamp(14px,4vw,18px); }
+  body.technology-catalog .tech-header-wordmark small {
+    font-size:7px;
+    letter-spacing:.07em;
+  }
+  body.technology-catalog .site-header > [data-theme-toggle] {
+    min-height:34px !important;
+    padding:6px 8px !important;
+    gap:4px !important;
+    font-size:10px !important;
+  }
+  body.technology-catalog .site-header > .product-detail-header-back:not([hidden]) {
+    width:32px;
+    min-width:32px;
+    height:32px;
+    padding:0;
+  }
+}
+@media (max-width:380px) {
+  body.technology-catalog .site-header > .tech-header-brand { gap:5px !important; }
+  body.technology-catalog .tech-header-monogram {
+    flex-basis:29px !important;
+    width:29px !important;
+    height:29px !important;
+    border-radius:9px;
+    font-size:12px;
+  }
+  body.technology-catalog .tech-header-name { font-size:13px; }
+  body.technology-catalog .tech-header-wordmark small { font-size:6px; }
+  body.technology-catalog .site-header > [data-theme-toggle] { padding-inline:6px !important; }
+}
+
+
+/* =========================================================
+   JB TECH · PRODUCT DETAIL GALLERY FIX
+   Uses the real DOM (.product-detail-page), not legacy .product-dialog selectors.
+   ========================================================= */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  align-items:stretch !important;
+  gap:clamp(18px,2.4vw,32px) !important;
+  overflow:visible !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  grid-template-rows:minmax(0,1fr) auto !important;
+  align-content:stretch !important;
+  align-items:stretch !important;
+  justify-items:stretch !important;
+  gap:10px !important;
+  width:100% !important;
+  height:clamp(390px,56vh,610px) !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:12px !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  border:1px solid var(--tech-line) !important;
+  border-radius:16px !important;
+  background:
+    radial-gradient(ellipse at 50% 34%,rgba(49,94,232,.10),transparent 65%),
+    var(--tech-card-soft) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image:not(:has(.dialog-gallery-thumbs)) {
+  grid-template-rows:minmax(0,1fr) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+  display:grid !important;
+  grid-template-columns:36px minmax(0,1fr) 36px !important;
+  grid-template-rows:minmax(0,1fr) !important;
+  align-items:stretch !important;
+  justify-items:stretch !important;
+  gap:6px !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+  box-sizing:border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) {
+  grid-template-columns:minmax(0,1fr) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-image-zoom {
+  display:grid !important;
+  grid-column:2 !important;
+  grid-row:1 !important;
+  place-items:center !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  border:0 !important;
+  border-radius:10px !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  cursor:zoom-in;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-zoom {
+  grid-column:1 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:clamp(6px,1.2vw,16px) !important;
+  box-sizing:border-box !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+  mix-blend-mode:multiply;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  mix-blend-mode:normal !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumbs {
+  display:flex !important;
+  flex:0 0 48px !important;
+  flex-wrap:nowrap !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  width:100% !important;
+  height:48px !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-height:48px !important;
+  margin:0 !important;
+  padding:2px 3px !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  overscroll-behavior-x:contain;
+  box-sizing:border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb {
+  display:grid !important;
+  flex:0 0 44px !important;
+  place-items:center !important;
+  width:44px !important;
+  min-width:44px !important;
+  max-width:44px !important;
+  height:44px !important;
+  min-height:44px !important;
+  max-height:44px !important;
+  margin:0 !important;
+  padding:3px !important;
+  overflow:hidden !important;
+  border:1px solid var(--tech-line) !important;
+  border-radius:9px !important;
+  background:var(--tech-card) !important;
+  box-sizing:border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb.active {
+  border:2px solid var(--tech-blue) !important;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--tech-blue) 15%,transparent) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  mix-blend-mode:multiply;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb img {
+  mix-blend-mode:normal !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-nav {
+  position:static !important;
+  grid-row:1 !important;
+  align-self:center !important;
+  justify-self:center !important;
+  display:grid !important;
+  place-items:center !important;
+  width:32px !important;
+  min-width:32px !important;
+  height:32px !important;
+  min-height:32px !important;
+  margin:0 !important;
+  padding:0 0 2px !important;
+  border:1px solid var(--tech-line) !important;
+  border-radius:50% !important;
+  color:var(--tech-blue) !important;
+  background:var(--tech-card) !important;
+  box-shadow:0 3px 9px rgba(15,35,75,.08) !important;
+  font-size:22px !important;
+  line-height:1 !important;
+  transform:none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-prev { grid-column:1 !important; }
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-next { grid-column:3 !important; }
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-nav {
+  border-color:rgba(75,214,255,.30) !important;
+  color:#5de5ff !important;
+  background:#10213a !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-image-load-error {
+  grid-column:2;
+  grid-row:1;
+  align-self:center;
+  justify-self:center;
+  max-width:220px;
+  padding:12px 14px;
+  border:1px dashed var(--tech-line);
+  border-radius:12px;
+  color:var(--tech-muted);
+  background:var(--tech-card);
+  text-align:center;
+  font-size:13px;
+  line-height:1.5;
+}
+@media (max-width:760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:14px !important;
+    padding:12px !important;
+    border-radius:16px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    grid-template-rows:minmax(0,1fr) 44px !important;
+    gap:6px !important;
+    height:clamp(300px,43svh,390px) !important;
+    min-height:0 !important;
+    max-height:390px !important;
+    padding:8px !important;
+    border-radius:13px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image:not(:has(.dialog-gallery-thumbs)) {
+    grid-template-rows:minmax(0,1fr) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+    grid-template-columns:28px minmax(0,1fr) 28px !important;
+    height:100% !important;
+    min-height:0 !important;
+    max-height:100% !important;
+    gap:4px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-zoom {
+    grid-column:1 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-nav {
+    width:27px !important;
+    min-width:27px !important;
+    height:27px !important;
+    min-height:27px !important;
+    font-size:20px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumbs {
+    flex-basis:44px !important;
+    height:44px !important;
+    max-height:44px !important;
+    justify-content:flex-start !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb {
+    flex-basis:38px !important;
+    width:38px !important;
+    min-width:38px !important;
+    max-width:38px !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+    padding:4px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    min-width:0;
+    padding:8px 3px 16px !important;
+  }
+}
+@media (max-width:390px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height:clamp(280px,41svh,350px) !important;
+  }
+}
+
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main:not(:has(.dialog-gallery-nav)) .dialog-image-load-error {
+  grid-column:1 !important;
+}
+
+
+/* Hero cleanup: remove the redundant scroll CTA and reclaim vertical space. */
+body.technology-catalog .hero {
+  min-height:clamp(400px,36vw,500px);
+}
+body.technology-catalog .hero-description {
+  margin-bottom:12px;
+}
+body.technology-catalog .hero-trust {
+  margin-top:12px;
+}
+@media(max-width:760px) {
+  body.technology-catalog .hero {
+    min-height:0;
+    padding-top:34px;
+    padding-bottom:30px;
+  }
+  body.technology-catalog .hero-description {
+    margin-bottom:10px;
+  }
+  body.technology-catalog .hero-trust {
+    margin-top:10px;
+  }
+}
+
+/* Payment-options CTA: explicit contrast on both themes, independent of generic button styles. */
+body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle {
+  color: #17305f;
+  -webkit-text-fill-color: #17305f;
+  background: linear-gradient(110deg, #e8f0ff 0%, #dce8ff 58%, #eee8ff 100%);
+  border: 1px solid #8aa8ed;
+  box-shadow: 0 3px 0 rgba(37, 70, 150, .14);
+  font-weight: 800;
+  opacity: 1;
+  text-shadow: none;
+}
+body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle:hover {
+  color: #10265a;
+  -webkit-text-fill-color: #10265a;
+  background: linear-gradient(110deg, #dbe7ff 0%, #ccdcff 58%, #e5dcff 100%);
+  border-color: #5479dc;
+}
+body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle:focus-visible {
+  outline: 3px solid rgba(49, 94, 232, .38);
+  outline-offset: 3px;
+}
+body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle:disabled,
+body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle[aria-disabled="true"] {
+  color: #475569;
+  -webkit-text-fill-color: #475569;
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
+html[data-theme="dark"] body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle {
+  color: #e8f2ff;
+  -webkit-text-fill-color: #e8f2ff;
+  background: linear-gradient(110deg, #172b4c 0%, #1b3152 58%, #2a244d 100%);
+  border-color: #526fa5;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .25);
+}
+html[data-theme="dark"] body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle:hover {
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  background: linear-gradient(110deg, #203d69 0%, #25466e 58%, #3a3066 100%);
+  border-color: #7ea4f2;
+}
+html[data-theme="dark"] body.technology-catalog .product-contact-actions > #dialog-payment-options-toggle.dialog-payment-toggle:focus-visible {
+  outline-color: rgba(95, 170, 255, .58);
+}
+
+
+/* JB TECH header — explicit light/dark palette and stable mobile grid. */
+body.technology-catalog .site-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  visibility: visible !important;
+  isolation: isolate !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1200 !important;
+}
+body.technology-catalog .site-header > .product-detail-header-back:not([hidden]) {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: start !important;
+  align-self: center !important;
+  display: grid !important;
+  place-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+body.technology-catalog .site-header > .tech-header-brand {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+body.technology-catalog .site-header > [data-theme-toggle] {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+html[data-theme="light"] body.technology-catalog .site-header {
+  color: #172541 !important;
+  background: rgba(248, 250, 255, .98) !important;
+  border-bottom: 1px solid #dce4f3 !important;
+  box-shadow: 0 3px 14px rgba(31, 48, 96, .08) !important;
+}
+html[data-theme="light"] body.technology-catalog .tech-header-name {
+  color: #172541 !important;
+}
+html[data-theme="light"] body.technology-catalog .tech-header-name strong {
+  color: #375fdf !important;
+  text-shadow: none !important;
+}
+html[data-theme="light"] body.technology-catalog .tech-header-wordmark small {
+  color: #63728f !important;
+}
+html[data-theme="light"] body.technology-catalog .site-header > [data-theme-toggle] {
+  color: #263b78 !important;
+  border-color: #c8d5ed !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 0 #dce5f5, 0 4px 10px rgba(31, 48, 96, .08) !important;
+}
+html[data-theme="light"] body.technology-catalog .site-header > .product-detail-header-back:not([hidden]) {
+  color: #263b78 !important;
+  border-color: #d0dbef !important;
+  background: #eef3ff !important;
+}
+html[data-theme="dark"] body.technology-catalog .site-header {
+  color: #f3f7ff !important;
+  background: rgba(7, 13, 25, .96) !important;
+  border-bottom-color: rgba(75, 214, 255, .23) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .22), 0 1px 0 rgba(124, 77, 255, .12) !important;
+}
+html[data-theme="dark"] body.technology-catalog .tech-header-name { color: #f3f7ff !important; }
+html[data-theme="dark"] body.technology-catalog .tech-header-name strong { color: #52e4ff !important; }
+html[data-theme="dark"] body.technology-catalog .tech-header-wordmark small { color: #93b0d6 !important; }
+@media (max-width: 760px) {
+  body.technology-catalog .site-header {
+    min-height: 66px !important;
+    height: 66px !important;
+    grid-template-rows: 66px !important;
+    padding: 6px 10px !important;
+    gap: 5px !important;
+  }
+  body.technology-catalog .site-header > .tech-header-brand {
+    min-width: 0 !important;
+    max-width: calc(100vw - 110px) !important;
+    gap: 7px !important;
+  }
+  body.technology-catalog .tech-header-monogram {
+    flex-basis: 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+  body.technology-catalog .tech-header-name { font-size: clamp(14px, 4vw, 18px) !important; }
+  body.technology-catalog .tech-header-wordmark small { font-size: 7px !important; }
+}
+
+
+/* JB TECH · section-specific card palettes and compact product information.
+   Product photography stays the same size; density is improved below the image. */
+body.technology-catalog .product-card-content {
+  gap: 5px;
+  padding: 12px 13px 13px;
+}
+body.technology-catalog .product-card-badges {
+  gap: 4px;
+  margin-bottom: 2px;
+}
+body.technology-catalog .product-badge {
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 9px;
+  line-height: 1.25;
+}
+body.technology-catalog .product-category {
+  font-size: 9px;
+  line-height: 1.3;
+  letter-spacing: .09em;
+}
+body.technology-catalog .product-card h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 0;
+  max-height: 2.64em;
+  font-size: clamp(14px, 1.12vw, 17px);
+  line-height: 1.32;
+}
+body.technology-catalog .product-card-capacity {
+  margin-top: 0;
+  padding: 4px 7px;
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+body.technology-catalog .product-card-color-slot { margin-top: 0; }
+body.technology-catalog .product-card-color-list { gap: 4px 7px; }
+body.technology-catalog .product-card-color-option { gap: 4px; }
+body.technology-catalog .product-card-color-swatch {
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+}
+body.technology-catalog .product-card-color-name { font-size: 9px; line-height: 1.2; }
+body.technology-catalog .product-price-label {
+  padding-top: 5px;
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+body.technology-catalog .product-price {
+  font-size: clamp(20px, 1.55vw, 25px);
+  line-height: 1.12;
+}
+body.technology-catalog .product-price-secondary {
+  margin-top: -2px;
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+body.technology-catalog .product-actions { margin-top: auto; padding-top: 5px; }
+body.technology-catalog .product-view-button,
+body.technology-catalog .buy-button.product-view-button {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+/* Individual cards follow the section palette; the same product can keep a
+   different, appropriate palette when it appears in another curated section. */
+body.technology-catalog #featured-grid > .product-card,
+body.technology-catalog .product-card-tag-exclusive {
+  --card-tag-rgb: 13, 148, 136;
+  border-color: rgba(13,148,136,.42);
+  background: linear-gradient(160deg, rgba(204,251,241,.92), rgba(240,253,250,.98) 56%, #ffffff);
+  box-shadow: 0 7px 22px rgba(13,148,136,.10);
+}
+body.technology-catalog #featured-grid > .product-card::before,
+body.technology-catalog .product-card-tag-exclusive::before {
+  background: linear-gradient(90deg,transparent,#2dd4bf,#0f766e,transparent);
+  opacity: 1;
+}
+body.technology-catalog #high-performance-grid > .product-card,
+body.technology-catalog .product-card-tag-high_performance {
+  border-color: rgba(37,99,235,.40);
+  background: linear-gradient(160deg, rgba(219,234,254,.95), rgba(239,246,255,.98) 56%, #ffffff);
+  box-shadow: 0 7px 22px rgba(37,99,235,.10);
+}
+body.technology-catalog #high-performance-grid > .product-card::before,
+body.technology-catalog .product-card-tag-high_performance::before {
+  background: linear-gradient(90deg,transparent,#60a5fa,#22d3ee,transparent);
+  opacity: 1;
+}
+body.technology-catalog #top-gaming-grid > .product-card,
+body.technology-catalog .product-card-tag-top_gaming {
+  border-color: rgba(124,58,237,.42);
+  background: linear-gradient(160deg, rgba(237,233,254,.96), rgba(250,245,255,.98) 56%, #ffffff);
+  box-shadow: 0 7px 22px rgba(124,58,237,.10);
+}
+body.technology-catalog #top-gaming-grid > .product-card::before,
+body.technology-catalog .product-card-tag-top_gaming::before {
+  background: linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent);
+  opacity: 1;
+}
+body.technology-catalog #quality-price-grid > .product-card,
+body.technology-catalog .product-card-tag-quality_price {
+  border-color: rgba(5,150,105,.40);
+  background: linear-gradient(160deg, rgba(209,250,229,.96), rgba(236,253,245,.98) 56%, #ffffff);
+  box-shadow: 0 7px 22px rgba(5,150,105,.10);
+}
+body.technology-catalog #quality-price-grid > .product-card::before,
+body.technology-catalog .product-card-tag-quality_price::before {
+  background: linear-gradient(90deg,transparent,#34d399,#047857,transparent);
+  opacity: 1;
+}
+html[data-theme="dark"] body.technology-catalog #featured-grid > .product-card,
+html[data-theme="dark"] body.technology-catalog .product-card-tag-exclusive {
+  border-color: rgba(45,212,191,.45);
+  background: linear-gradient(160deg, rgba(13,78,74,.78), rgba(10,35,44,.98) 64%, rgba(8,19,32,.99));
+  box-shadow: 0 8px 25px rgba(20,184,166,.11);
+}
+html[data-theme="dark"] body.technology-catalog #high-performance-grid > .product-card,
+html[data-theme="dark"] body.technology-catalog .product-card-tag-high_performance {
+  border-color: rgba(96,165,250,.48);
+  background: linear-gradient(160deg, rgba(26,55,104,.82), rgba(13,30,57,.98) 64%, rgba(8,19,32,.99));
+  box-shadow: 0 8px 25px rgba(59,130,246,.12);
+}
+html[data-theme="dark"] body.technology-catalog #top-gaming-grid > .product-card,
+html[data-theme="dark"] body.technology-catalog .product-card-tag-top_gaming {
+  border-color: rgba(167,139,250,.48);
+  background: linear-gradient(160deg, rgba(66,35,117,.80), rgba(32,20,60,.98) 64%, rgba(8,19,32,.99));
+  box-shadow: 0 8px 25px rgba(139,92,246,.13);
+}
+html[data-theme="dark"] body.technology-catalog #quality-price-grid > .product-card,
+html[data-theme="dark"] body.technology-catalog .product-card-tag-quality_price {
+  border-color: rgba(52,211,153,.46);
+  background: linear-gradient(160deg, rgba(14,78,57,.82), rgba(10,39,33,.98) 64%, rgba(8,19,32,.99));
+  box-shadow: 0 8px 25px rgba(16,185,129,.12);
+}
+html[data-theme="dark"] body.technology-catalog .product-card-tag-exclusive::before,
+html[data-theme="dark"] body.technology-catalog #featured-grid > .product-card::before { background: linear-gradient(90deg,transparent,#5eead4,#14b8a6,transparent); }
+html[data-theme="dark"] body.technology-catalog .product-card-tag-high_performance::before,
+html[data-theme="dark"] body.technology-catalog #high-performance-grid > .product-card::before { background: linear-gradient(90deg,transparent,#60a5fa,#22d3ee,transparent); }
+html[data-theme="dark"] body.technology-catalog .product-card-tag-top_gaming::before,
+html[data-theme="dark"] body.technology-catalog #top-gaming-grid > .product-card::before { background: linear-gradient(90deg,transparent,#c4b5fd,#8b5cf6,transparent); }
+html[data-theme="dark"] body.technology-catalog .product-card-tag-quality_price::before,
+html[data-theme="dark"] body.technology-catalog #quality-price-grid > .product-card::before { background: linear-gradient(90deg,transparent,#6ee7b7,#10b981,transparent); }
+
+@media (max-width: 760px) {
+  body.technology-catalog .product-card-content { gap: 4px; padding: 10px 9px 10px; }
+  body.technology-catalog .product-card-badges { gap: 3px; }
+  body.technology-catalog .product-badge { padding: 3px 5px; font-size: 8px; }
+  body.technology-catalog .product-category { font-size: 8px; letter-spacing: .06em; }
+  body.technology-catalog .product-card h3 { font-size: clamp(12.5px, 3.5vw, 15px); }
+  body.technology-catalog .product-card-capacity { padding: 4px 6px; font-size: 9.5px; }
+  body.technology-catalog .product-card-color-list { gap: 4px 5px; }
+  body.technology-catalog .product-card-color-swatch { width: 11px; height: 11px; min-width: 11px; }
+  body.technology-catalog .product-card-color-name { font-size: 8px; }
+  body.technology-catalog .product-price-label { padding-top: 4px; font-size: 8px; }
+  body.technology-catalog .product-price { font-size: clamp(17px, 4.7vw, 22px); }
+  body.technology-catalog .product-price-secondary { font-size: 9.5px; }
+  body.technology-catalog .product-view-button,
+  body.technology-catalog .buy-button.product-view-button { min-height: 35px; padding: 7px 8px; font-size: 11px; }
+}
+@media (max-width: 380px) {
+  body.technology-catalog .product-card-content { padding: 8px 7px 9px; }
+  body.technology-catalog .product-card h3 { font-size: 12px; }
+  body.technology-catalog .product-price { font-size: 16px; }
+}
+
+
+/* Detail route: the body is scroll-locked, so a sticky header would scroll out of view.
+   Pin it to the viewport so the back arrow and light/dark toggle remain accessible. */
+body.technology-catalog.product-detail-active .site-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  z-index: 1200 !important;
+}
+
+
+/* Availability for each RAM/storage configuration, separate from its color status. */
+body.technology-catalog .variant-choice-status {
+  display:inline-flex; align-items:center; margin-left:5px; padding:3px 6px;
+  border-radius:999px; font-size:10px; line-height:1.2; font-weight:800; white-space:nowrap;
+  background:#e5edf9; color:#40516b;
+}
+body.technology-catalog .variant-choice-status.status-order { background:#fff1d6; color:#8b4d08; }
+body.technology-catalog .variant-choice-status.status-out_of_stock { background:#fee2e2; color:#991b1b; }
+html[data-theme="dark"] body.technology-catalog .variant-choice-status { background:#24334e; color:#cbd8ee; }
+html[data-theme="dark"] body.technology-catalog .variant-choice-status.status-order { background:#4b3518; color:#ffdda1; }
+html[data-theme="dark"] body.technology-catalog .variant-choice-status.status-out_of_stock { background:#4a202a; color:#ffc2ca; }
+@media (max-width:760px) { body.technology-catalog .variant-choice-status { margin-left:3px; padding:2px 4px; font-size:9px; } }
+
+
+/* Dynamic subcategory filter — follows the existing light/dark control system. */
+body.technology-catalog .subcategory-filter-bar { display:flex; justify-content:flex-start; margin:-3px 0 17px; }
+body.technology-catalog .subcategory-filter-field { width:min(100%,360px); }
+body.technology-catalog .subcategory-filter-field select { width:100%; min-height:44px; padding:10px 38px 10px 13px; border:1px solid var(--tech-line); border-radius:11px; color:var(--tech-ink); background:var(--tech-card-soft); font:inherit; font-size:14px; }
+body.technology-catalog .subcategory-filter-field select:disabled { cursor:not-allowed; opacity:.62; }
+body.technology-catalog .subcategory-filter-field select:focus-visible { outline:2px solid var(--tech-blue); outline-offset:2px; }
+@media (max-width:600px) { body.technology-catalog .subcategory-filter-bar { margin:0 0 14px; } body.technology-catalog .subcategory-filter-field { width:100%; } }
+
+
+
+/* Section-level badges: icons belong to each curated section, not individual product cards. */
+body.technology-catalog .section-tag-badge {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 18px;
+  padding: 7px 11px;
+  border: 1px solid var(--section-badge-border, rgba(148,163,184,.45));
+  border-radius: 999px;
+  color: var(--section-badge-ink, #334155);
+  background: var(--section-badge-bg, rgba(248,250,252,.94));
+  box-shadow: 0 4px 11px rgba(15,23,42,.08);
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: .09em;
+}
+body.technology-catalog .section-tag-badge > svg {
+  display: block;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body.technology-catalog .section-tag-badge--exclusive {
+  --section-badge-border: #dbc68e;
+  --section-badge-ink: #6b521d;
+  --section-badge-bg: linear-gradient(110deg,#fff4ce,#e8d29a);
+}
+body.technology-catalog .section-tag-badge--performance {
+  --section-badge-border: rgba(37,99,235,.36);
+  --section-badge-ink: #1d4ed8;
+  --section-badge-bg: rgba(219,234,254,.9);
+}
+body.technology-catalog .section-tag-badge--quality-price {
+  --section-badge-border: rgba(5,150,105,.36);
+  --section-badge-ink: #047857;
+  --section-badge-bg: rgba(209,250,229,.9);
+}
+body.technology-catalog .section-tag-badge--gaming {
+  --section-badge-border: rgba(124,58,237,.36);
+  --section-badge-ink: #6d28d9;
+  --section-badge-bg: rgba(237,233,254,.92);
+}
+html[data-theme="dark"] body.technology-catalog .section-tag-badge {
+  box-shadow: 0 4px 14px rgba(0,0,0,.2);
+}
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--exclusive {
+  --section-badge-border: rgba(222,193,127,.65);
+  --section-badge-ink: #f1d79a;
+  --section-badge-bg: rgba(34,28,27,.92);
+}
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--performance {
+  --section-badge-border: rgba(96,165,250,.48);
+  --section-badge-ink: #bfdbfe;
+  --section-badge-bg: rgba(26,55,104,.88);
+}
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--quality-price {
+  --section-badge-border: rgba(52,211,153,.46);
+  --section-badge-ink: #a7f3d0;
+  --section-badge-bg: rgba(14,78,57,.88);
+}
+html[data-theme="dark"] body.technology-catalog .section-tag-badge--gaming {
+  --section-badge-border: rgba(167,139,250,.48);
+  --section-badge-ink: #ddd6fe;
+  --section-badge-bg: rgba(66,35,117,.88);
+}
+body.technology-catalog .featured-section .featured-exclusive-badge {
+  margin-bottom: 18px;
+}
+body.technology-catalog .featured-section-heading { padding-top: 0; }
+@media (max-width: 760px) {
+  body.technology-catalog .section-tag-badge {
+    gap: 5px;
+    margin-bottom: 13px;
+    padding: 6px 9px;
+    font-size: 9px;
+  }
+  body.technology-catalog .section-tag-badge > svg { width: 15px; height: 15px; }
+  body.technology-catalog .featured-section .featured-exclusive-badge { top: auto; right: auto; }
+  body.technology-catalog .featured-section-heading { padding-top: 0; }
+}
+
+
+/* Keep section names accessible without repeating the visible badges. */
+body.technology-catalog .section-accessible-title {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* JB TECH · tipografía por identidad de sección.
+   Alcance exclusivo a los cuatro subtítulos señalados; no altera colores, tamaños ni tarjetas. */
+body.technology-catalog .top-gaming-heading .section-subtitle {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  line-height: 1.7;
+}
+body.technology-catalog .quality-price-heading .section-subtitle {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 500;
+  letter-spacing: .005em;
+  line-height: 1.7;
+}
+body.technology-catalog .high-performance-heading .section-subtitle {
+  font-family: Manrope, sans-serif;
+  font-weight: 600;
+  letter-spacing: -.015em;
+  line-height: 1.7;
+}
+body.technology-catalog .featured-section-heading .section-subtitle {
+  font-family: Manrope, sans-serif;
+  font-weight: 500;
+  letter-spacing: .012em;
+  line-height: 1.75;
+}
+
+
+/* JB TECH · limited editions: technical graphite, electric blue and a collection insignia. */
+body.technology-catalog .limited-edition-section {
+  position:relative;
+  isolation:isolate;
+  margin:24px 0 32px;
+  padding:clamp(17px,2.6vw,29px);
+  overflow:hidden;
+  border:1px solid rgba(59,130,246,.34);
+  border-radius:22px;
+  background:
+    radial-gradient(ellipse at 100% 0,rgba(37,99,235,.14),transparent 48%),
+    linear-gradient(135deg,rgba(13,25,47,.98),rgba(12,20,37,.98));
+  box-shadow:0 18px 46px rgba(7,18,42,.13),inset 0 1px 0 rgba(255,255,255,.035);
+}
+body.technology-catalog .limited-edition-section.hidden { display:none!important; }
+body.technology-catalog .limited-edition-heading {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:20px;
+}
+body.technology-catalog .limited-edition-kicker {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin-bottom:9px;
+  color:#7cc4ff;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.17em;
+}
+body.technology-catalog .limited-edition-kicker svg {
+  width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}
+body.technology-catalog .limited-edition-heading h2 {
+  margin:0;
+  color:#f2f7ff;
+  font-size:clamp(26px,3.4vw,40px);
+  font-weight:800;
+  letter-spacing:-.045em;
+}
+body.technology-catalog .limited-edition-heading .section-subtitle {
+  max-width:680px;
+  margin:9px 0 0;
+  color:#b3c6e4;
+  font-size:13px;
+  line-height:1.7;
+}
+body.technology-catalog .limited-edition-section .featured-count {
+  flex:0 0 auto;
+  border-color:rgba(93,166,255,.35);
+  color:#c5e4ff;
+  background:rgba(30,64,115,.42);
+}
+body.technology-catalog #limited-edition-grid > .product-card,
+body.technology-catalog .product-card-tag-limited_edition {
+  border-color:rgba(59,130,246,.5);
+  box-shadow:0 9px 28px rgba(37,99,235,.1);
+}
+body.technology-catalog #limited-edition-grid > .product-card::before,
+body.technology-catalog .product-card-tag-limited_edition::before {
+  background:linear-gradient(90deg,transparent,#60a5fa,#22d3ee,transparent);
+  opacity:.92;
+}
+body.technology-catalog .product-tag-badge.tag-limited_edition {
+  border-color:#2563eb;
+  color:#f1f8ff;
+  background:linear-gradient(115deg,#153c86,#12658a);
+}
+html[data-theme="dark"] body.technology-catalog .limited-edition-section {
+  border-color:rgba(96,165,250,.45);
+  background:radial-gradient(ellipse at 100% 0,rgba(37,99,235,.2),transparent 48%),linear-gradient(135deg,#0b1427,#101d35);
+  box-shadow:0 22px 52px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.035);
+}
+html[data-theme="dark"] body.technology-catalog .limited-edition-heading .section-subtitle { color:#b4c9e8; }
+@media(max-width:600px) {
+  body.technology-catalog .limited-edition-section { padding:15px 12px; border-radius:16px; }
+  body.technology-catalog .limited-edition-heading { align-items:flex-start; flex-direction:column; gap:10px; margin-bottom:15px; }
+  body.technology-catalog .limited-edition-heading h2 { font-size:clamp(24px,7vw,30px); }
+  body.technology-catalog .limited-edition-heading .section-subtitle { font-size:12px; }
+}
+
+
+/* Mobile compact pass: reduce empty space throughout the technology product detail. */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  gap: 12px !important;
+  padding: 10px !important;
+  border-radius: 14px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+  padding: 4px 2px 10px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail h2 {
+  margin: 4px 0 12px !important;
+  font-size: clamp(23px, 5.8vw, 30px) !important;
+  line-height: 1.12 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail h3 {
+  margin: 0 0 7px !important;
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+  line-height: 1.48 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+  padding: 9px !important;
+  margin: 0 0 9px !important;
+  border-radius: 11px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+  display: inline-flex !important;
+  flex: 0 1 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  white-space: normal !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+  margin-left: 0 !important;
+  padding: 2px 5px !important;
+  font-size: 9px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-color-group .variant-choice-list {
+  gap: 7px 10px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice.color-choice {
+  justify-content: flex-start !important;
+  min-height: 34px !important;
+  padding: 4px 6px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .product-price {
+  font-size: clamp(25px, 5.5vw, 32px) !important;
+  line-height: 1.1 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .product-contact-actions {
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .contact-channel-button,
+body.technology-catalog.product-detail-active #product-detail-page .payment-channel-button {
+  min-height: 42px !important;
+  padding: 8px !important;
+  font-size: 11px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .payment-choice-panel {
+  gap: 8px !important;
+  margin: 8px 0 12px !important;
+  padding: 10px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+  margin-top: 8px !important;
+  padding-left: 18px !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(230px, 31svh, 285px) !important;
+    max-height: 285px !important;
+    grid-template-rows: minmax(0,1fr) 38px !important;
+    gap: 5px !important;
+    padding: 6px !important;
+    border-radius: 11px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image:not(:has(.dialog-gallery-thumbs)) {
+    grid-template-rows: minmax(0,1fr) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumbs {
+    flex-basis: 38px !important;
+    height: 38px !important;
+    max-height: 38px !important;
+    gap: 5px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-thumb {
+    flex-basis: 32px !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+    padding: 2px !important;
+  }
+}
+@media (max-width: 390px) {
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+    padding: 7px 8px !important;
+    font-size: 11px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(215px, 29svh, 260px) !important;
+  }
+}
+
+
+/* JB TECH · final readability pass for every product card and product detail. */
+body.technology-catalog .product-card {
+  border-radius: 13px;
+}
+body.technology-catalog .product-card-content {
+  gap: 4px;
+  padding: 10px 10px 11px;
+}
+body.technology-catalog .product-card-badges {
+  gap: 3px;
+  margin-bottom: 1px;
+}
+body.technology-catalog .product-badge {
+  padding: 3px 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+}
+body.technology-catalog .product-card h3 {
+  margin: 0;
+  font-size: clamp(13px, 1.02vw, 16px);
+  line-height: 1.28;
+  letter-spacing: -.018em;
+}
+body.technology-catalog .product-card-capacity {
+  padding: 4px 6px;
+  font-size: 10px;
+}
+body.technology-catalog .product-price-label {
+  padding-top: 4px;
+  font-size: 8.5px;
+}
+body.technology-catalog .product-price {
+  font-size: clamp(19px, 1.42vw, 23px);
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+body.technology-catalog .product-price-secondary {
+  font-size: 10px;
+  line-height: 1.2;
+}
+body.technology-catalog .product-actions {
+  padding-top: 3px;
+}
+body.technology-catalog .product-view-button,
+body.technology-catalog .buy-button.product-view-button {
+  min-height: 35px;
+  padding: 7px 9px;
+  font-size: 11px;
+  border-radius: 9px;
+}
+body.technology-catalog .dialog-detail {
+  gap: 8px;
+}
+body.technology-catalog .dialog-detail h2 {
+  margin: 2px 0 8px;
+  font-size: clamp(23px, 2.4vw, 31px);
+  line-height: 1.12;
+}
+body.technology-catalog .dialog-detail h3 {
+  margin: 10px 0 6px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+body.technology-catalog .dialog-detail p,
+body.technology-catalog .dialog-specs {
+  margin-top: 5px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.48;
+}
+body.technology-catalog .dialog-product-description {
+  margin: 7px 0 10px !important;
+  color: var(--tech-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+body.technology-catalog .commercial-copy-blocks {
+  display: grid;
+  gap: 6px;
+  max-width: 72ch;
+}
+body.technology-catalog .commercial-copy-blocks p,
+body.technology-catalog .commercial-copy-empty {
+  margin: 0 !important;
+  color: var(--tech-muted);
+  font-size: 12.5px !important;
+  line-height: 1.52 !important;
+  text-wrap: pretty;
+}
+body.technology-catalog .commercial-copy-blocks .commercial-copy-lead {
+  color: var(--tech-ink);
+  font-weight: 600;
+}
+body.technology-catalog .commercial-copy-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0 0 0 17px;
+  color: var(--tech-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+body.technology-catalog .commercial-copy-list li {
+  padding-left: 2px;
+  overflow-wrap: anywhere;
+}
+body.technology-catalog .dialog-specs {
+  display: grid;
+  gap: 4px;
+  padding-left: 17px;
+}
+@media (max-width: 760px) {
+  body.technology-catalog .product-card {
+    border-radius: 11px;
+  }
+  body.technology-catalog .product-image {
+    aspect-ratio: 1 / .94;
+  }
+  body.technology-catalog .product-card-content {
+    gap: 3px;
+    padding: 8px 8px 9px;
+  }
+  body.technology-catalog .product-badge {
+    padding: 3px 5px;
+    font-size: 8px;
+  }
+  body.technology-catalog .product-card h3 {
+    font-size: clamp(12px, 3.25vw, 14px);
+    line-height: 1.25;
+    max-height: 2.5em;
+  }
+  body.technology-catalog .product-card-capacity {
+    padding: 3px 5px;
+    font-size: 9px;
+  }
+  body.technology-catalog .product-price-label {
+    padding-top: 3px;
+    font-size: 8px;
+  }
+  body.technology-catalog .product-price {
+    font-size: clamp(16px, 4.4vw, 20px);
+  }
+  body.technology-catalog .product-price-secondary {
+    font-size: 9px;
+  }
+  body.technology-catalog .product-view-button,
+  body.technology-catalog .buy-button.product-view-button {
+    min-height: 33px;
+    padding: 6px 7px;
+    font-size: 10.5px;
+  }
+  body.technology-catalog .dialog-product-description,
+  body.technology-catalog .commercial-copy-blocks p,
+  body.technology-catalog .commercial-copy-empty {
+    font-size: 12px !important;
+    line-height: 1.48 !important;
+  }
+  body.technology-catalog .commercial-copy-list {
+    font-size: 11.5px;
+  }
+}
+@media (max-width: 380px) {
+  body.technology-catalog .product-card-content { padding: 7px 6px 8px; }
+  body.technology-catalog .product-card h3 { font-size: 11.5px; }
+  body.technology-catalog .product-price { font-size: 15.5px; }
+}
+
+
+/* Compact variant selector chips with explicit availability cues. */
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+  padding: 8px !important;
+  margin: 0 0 7px !important;
+  border-radius: 10px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group h3 {
+  margin: 0 0 6px !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+  display: inline-flex !important;
+  flex: 0 1 auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 5px 7px !important;
+  border-radius: 8px !important;
+  font-size: 10.5px !important;
+  line-height: 1.15 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 3px 5px !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-available {
+  color: #075d46 !important;
+  background: #c9f3e1 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-order {
+  color: #8b202d !important;
+  background: #ffe0e3 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-out_of_stock {
+  color: #4b5563 !important;
+  background: #e5e7eb !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-available {
+  color: #b9f7d9 !important;
+  background: #155443 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-order {
+  color: #ffd0d5 !important;
+  background: #692731 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-out_of_stock {
+  color: #d1d5db !important;
+  background: #374151 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-color-group .variant-choice-list {
+  gap: 5px 9px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice.color-choice {
+  min-height: 31px !important;
+  padding: 4px 5px !important;
+  gap: 5px !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+    padding: 7px !important;
+    margin-bottom: 6px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+    min-height: 30px !important;
+    padding: 4px 6px !important;
+    gap: 4px !important;
+    font-size: 10px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+    padding: 3px 4px !important;
+    font-size: 7.5px !important;
+  }
+}
+
+
+/* Final mobile pass: compact configuration chips and unmistakable stock states. */
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+  padding: 6px !important;
+  margin-bottom: 5px !important;
+  border-radius: 8px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group h3 {
+  margin-bottom: 5px !important;
+  font-size: 12px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list {
+  gap: 4px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+  width: max-content !important;
+  max-width: 100% !important;
+  min-height: 27px !important;
+  gap: 4px !important;
+  padding: 4px 6px !important;
+  border-radius: 7px !important;
+  font-size: 9.5px !important;
+  font-weight: 750 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+  gap: 4px !important;
+  padding: 2px 4px !important;
+  border-radius: 999px !important;
+  font-size: 7px !important;
+  letter-spacing: -.01em !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-available {
+  color: #075d46 !important;
+  background: #d8f6e8 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-order {
+  color: #7c4a03 !important;
+  background: #fff0c2 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-out_of_stock {
+  color: #4b5563 !important;
+  background: #e5e7eb !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-available {
+  color: #b9f7d9 !important;
+  background: #155443 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-order {
+  color: #ffe2a0 !important;
+  background: #5a4017 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status.status-out_of_stock {
+  color: #d1d5db !important;
+  background: #374151 !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+    padding: 6px !important;
+    margin-bottom: 5px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+    min-height: 26px !important;
+    padding: 3px 5px !important;
+    gap: 3px !important;
+    font-size: 9px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+    padding: 2px 3px !important;
+    font-size: 6.8px !important;
+  }
+}
+
+
+/* Conversion trust strip: concise, scannable, and scoped exclusively to JB TECH. */
+body.technology-catalog .hero-description {
+  max-width: 500px;
+  margin-bottom: 15px;
+  line-height: 1.62;
+}
+body.technology-catalog .hero-trust {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 10px;
+  max-width: 560px;
+  margin-top: 15px;
+  color: #243b5b;
+  font-size: 12px;
+}
+body.technology-catalog .hero-trust-item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid rgba(91, 133, 196, .28);
+  border-radius: 13px;
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 5px 16px rgba(27, 63, 114, .055);
+}
+body.technology-catalog .hero-trust-icon {
+  display: block;
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  color: #2366c8;
+}
+body.technology-catalog .hero-trust-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+body.technology-catalog .hero-trust-copy strong {
+  color: #172a45;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+body.technology-catalog .hero-trust-copy small {
+  display: block;
+  color: #526884;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+html[data-theme="dark"] body.technology-catalog .hero-trust-item {
+  border-color: rgba(116, 161, 219, .3);
+  background: rgba(8, 22, 41, .82);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .15);
+}
+html[data-theme="dark"] body.technology-catalog .hero-trust-icon { color: #71d9ff; }
+html[data-theme="dark"] body.technology-catalog .hero-trust-copy strong { color: #eef6ff; }
+html[data-theme="dark"] body.technology-catalog .hero-trust-copy small { color: #aec2dd; }
+@media (max-width: 760px) {
+  body.technology-catalog .hero {
+    gap: 19px;
+    padding-top: 34px;
+    padding-bottom: 28px;
+  }
+  body.technology-catalog .hero-description {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  body.technology-catalog .hero-trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 11px;
+  }
+  body.technology-catalog .hero-trust-item {
+    gap: 7px;
+    padding: 10px 9px;
+    border-radius: 12px;
+  }
+  body.technology-catalog .hero-trust-icon {
+    flex-basis: 17px;
+    width: 17px;
+    height: 17px;
+  }
+  body.technology-catalog .hero-trust-copy strong {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  body.technology-catalog .hero-trust-copy small {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+@media (max-width: 360px) {
+  body.technology-catalog .hero-trust-item { padding: 9px 8px; gap: 6px; }
+  body.technology-catalog .hero-trust-copy strong { font-size: 10.5px; }
+  body.technology-catalog .hero-trust-copy small { font-size: 9.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.technology-catalog .hero-trust-item { transition: none !important; }
+}
+
+/* Legacy chip selectors must never turn the current trust-copy span into an oval pill. */
+body.technology-catalog .hero-trust-copy,
+body.technology-catalog .hero-trust-copy strong,
+body.technology-catalog .hero-trust-copy small {
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body.technology-catalog .hero-trust-copy {
+  flex:1 1 auto;
+  align-self:stretch;
+  overflow-wrap:anywhere;
+}
+
+
+/* Accessibility audit fix: body text must retain WCAG AA contrast on the light catalog surface. */
+html[data-theme="light"] body.technology-catalog .section-subtitle,
+html[data-theme="light"] body.technology-catalog .catalog-results-heading .section-subtitle {
+  color:#4b5d75!important;
+}
+
+
+/* Accessibility audit fix: loading/empty catalog status must meet WCAG AA on the light page. */
+html[data-theme="light"] body.technology-catalog .catalog-status {
+  color:#4b5d75!important;
+}
+
+
+/* JB TECH · distribución uniforme de todas las vitrinas, tomando Exclusivos como referencia. */
+@media (min-width: 761px) and (hover: hover) and (pointer: fine) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    display:grid !important;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)) !important;
+    align-items:stretch !important;
+    gap:18px !important;
+    width:100% !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    display:grid !important;
+    grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr) !important;
+    align-items:stretch !important;
+    min-width:0 !important;
+    min-height:300px !important;
+    height:auto !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image {
+    grid-column:1 !important;
+    align-self:stretch !important;
+    width:100% !important;
+    height:300px !important;
+    min-width:0 !important;
+    min-height:300px !important;
+    max-height:300px !important;
+    aspect-ratio:auto !important;
+    overflow:hidden !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image img {
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    max-height:300px !important;
+    padding:5px !important;
+    box-sizing:border-box !important;
+    object-fit:contain !important;
+    object-position:center !important;
+    transform:none !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-card-content {
+    grid-column:2 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    align-items:stretch !important;
+    align-self:stretch !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:300px !important;
+    box-sizing:border-box !important;
+    padding:clamp(13px,1.2vw,20px) !important;
+    gap:7px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-card h3,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-card h3,
+  body.technology-catalog #high-performance-grid.featured-grid .product-card h3,
+  body.technology-catalog #quality-price-grid.featured-grid .product-card h3,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-card h3 {
+    font-size:clamp(16px,1.25vw,21px) !important;
+    line-height:1.3 !important;
+    overflow-wrap:anywhere !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-price,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-price,
+  body.technology-catalog #high-performance-grid.featured-grid .product-price,
+  body.technology-catalog #quality-price-grid.featured-grid .product-price,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-price {
+    font-size:clamp(19px,1.6vw,25px) !important;
+    line-height:1.2 !important;
+    overflow-wrap:anywhere !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-actions,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-actions,
+  body.technology-catalog #high-performance-grid.featured-grid .product-actions,
+  body.technology-catalog #quality-price-grid.featured-grid .product-actions,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-actions {
+    display:flex !important;
+    width:100% !important;
+    margin-top:auto !important;
+    padding-top:8px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-view-button,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-view-button,
+  body.technology-catalog #high-performance-grid.featured-grid .product-view-button,
+  body.technology-catalog #quality-price-grid.featured-grid .product-view-button,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
+    display:flex !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:42px !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding:10px 12px !important;
+    font-size:12px !important;
+    white-space:normal !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-badge,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-badge,
+  body.technology-catalog #high-performance-grid.featured-grid .product-badge,
+  body.technology-catalog #quality-price-grid.featured-grid .product-badge,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-badge {
+    max-width:100% !important;
+    white-space:normal !important;
+    overflow-wrap:anywhere !important;
+  }
+}
+
+
+/* JB TECH · subir la legibilidad de las vitrinas sin alterar su identidad visual. */
+body.technology-catalog .featured-section-heading .section-subtitle,
+body.technology-catalog .limited-edition-heading .section-subtitle,
+body.technology-catalog .high-performance-heading .section-subtitle,
+body.technology-catalog .quality-price-heading .section-subtitle,
+body.technology-catalog .top-gaming-heading .section-subtitle {
+  font-size:clamp(14px,1vw,16px) !important;
+  line-height:1.65 !important;
+}
+body.technology-catalog .section-tag-badge {
+  font-size:11.5px;
+  line-height:1.25;
+}
+body.technology-catalog .limited-edition-kicker {
+  font-size:11.5px;
+  letter-spacing:.13em;
+}
+body.technology-catalog .limited-edition-section .featured-count,
+body.technology-catalog .featured-section .featured-count,
+body.technology-catalog .high-performance-section .featured-count,
+body.technology-catalog .quality-price-section .featured-count,
+body.technology-catalog .top-gaming-section .featured-count {
+  font-size:12px !important;
+  line-height:1.3 !important;
+  padding:8px 12px !important;
+}
+body.technology-catalog #featured-grid.featured-grid .product-badge,
+body.technology-catalog #limited-edition-grid.featured-grid .product-badge,
+body.technology-catalog #high-performance-grid.featured-grid .product-badge,
+body.technology-catalog #quality-price-grid.featured-grid .product-badge,
+body.technology-catalog #top-gaming-grid.featured-grid .product-badge,
+body.technology-catalog #featured-grid.featured-grid .product-tag-badge,
+body.technology-catalog #limited-edition-grid.featured-grid .product-tag-badge,
+body.technology-catalog #high-performance-grid.featured-grid .product-tag-badge,
+body.technology-catalog #quality-price-grid.featured-grid .product-tag-badge,
+body.technology-catalog #top-gaming-grid.featured-grid .product-tag-badge {
+  font-size:10px !important;
+  line-height:1.35 !important;
+  padding:4px 7px !important;
+}
+body.technology-catalog #featured-grid.featured-grid .product-card-capacity,
+body.technology-catalog #limited-edition-grid.featured-grid .product-card-capacity,
+body.technology-catalog #high-performance-grid.featured-grid .product-card-capacity,
+body.technology-catalog #quality-price-grid.featured-grid .product-card-capacity,
+body.technology-catalog #top-gaming-grid.featured-grid .product-card-capacity {
+  font-size:11.5px !important;
+  line-height:1.35 !important;
+}
+body.technology-catalog #featured-grid.featured-grid .product-price-label,
+body.technology-catalog #limited-edition-grid.featured-grid .product-price-label,
+body.technology-catalog #high-performance-grid.featured-grid .product-price-label,
+body.technology-catalog #quality-price-grid.featured-grid .product-price-label,
+body.technology-catalog #top-gaming-grid.featured-grid .product-price-label {
+  font-size:10.5px !important;
+  line-height:1.35 !important;
+  letter-spacing:.055em;
+}
+body.technology-catalog #featured-grid.featured-grid .product-price-secondary,
+body.technology-catalog #limited-edition-grid.featured-grid .product-price-secondary,
+body.technology-catalog #high-performance-grid.featured-grid .product-price-secondary,
+body.technology-catalog #quality-price-grid.featured-grid .product-price-secondary,
+body.technology-catalog #top-gaming-grid.featured-grid .product-price-secondary {
+  font-size:11.5px !important;
+  line-height:1.4 !important;
+}
+body.technology-catalog #featured-grid.featured-grid .product-view-button,
+body.technology-catalog #limited-edition-grid.featured-grid .product-view-button,
+body.technology-catalog #high-performance-grid.featured-grid .product-view-button,
+body.technology-catalog #quality-price-grid.featured-grid .product-view-button,
+body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
+  font-size:13.5px !important;
+  min-height:44px !important;
+}
+
+/* Keep the same legibility lift on narrow screens while preserving compact cards. */
+@media (max-width:760px) {
+  body.technology-catalog .section-tag-badge { font-size:10.5px; }
+  body.technology-catalog .limited-edition-kicker { font-size:10.5px; }
+  body.technology-catalog .limited-edition-section .featured-count,
+  body.technology-catalog .featured-section .featured-count,
+  body.technology-catalog .high-performance-section .featured-count,
+  body.technology-catalog .quality-price-section .featured-count,
+  body.technology-catalog .top-gaming-section .featured-count {
+    font-size:11px !important;
+    padding:7px 10px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-badge,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-badge,
+  body.technology-catalog #high-performance-grid.featured-grid .product-badge,
+  body.technology-catalog #quality-price-grid.featured-grid .product-badge,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-badge,
+  body.technology-catalog #featured-grid.featured-grid .product-tag-badge,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-tag-badge,
+  body.technology-catalog #high-performance-grid.featured-grid .product-tag-badge,
+  body.technology-catalog #quality-price-grid.featured-grid .product-tag-badge,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-tag-badge {
+    font-size:9.5px !important;
+    padding:3px 6px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-card-capacity,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-card-capacity,
+  body.technology-catalog #high-performance-grid.featured-grid .product-card-capacity,
+  body.technology-catalog #quality-price-grid.featured-grid .product-card-capacity,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-card-capacity {
+    font-size:10.5px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-price-label,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-price-label,
+  body.technology-catalog #high-performance-grid.featured-grid .product-price-label,
+  body.technology-catalog #quality-price-grid.featured-grid .product-price-label,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-price-label {
+    font-size:9.5px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-price-secondary,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-price-secondary,
+  body.technology-catalog #high-performance-grid.featured-grid .product-price-secondary,
+  body.technology-catalog #quality-price-grid.featured-grid .product-price-secondary,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-price-secondary {
+    font-size:10.5px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid .product-view-button,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-view-button,
+  body.technology-catalog #high-performance-grid.featured-grid .product-view-button,
+  body.technology-catalog #quality-price-grid.featured-grid .product-view-button,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
+    font-size:12px !important;
+    min-height:42px !important;
+  }
+}
+
+
+/* JB TECH · escritorio: más ancho útil y etiquetas legibles sin alargar las tarjetas. */
+@media (min-width:1200px) {
+  body.technology-catalog .catalog-section {
+    width:min(1580px,calc(100% - 40px)) !important;
+    max-width:1580px !important;
+    padding:clamp(44px,4vw,62px) clamp(18px,1.8vw,30px) 54px !important;
+  }
+  body.technology-catalog #featured-section,
+  body.technology-catalog #limited-edition-section,
+  body.technology-catalog #high-performance-section,
+  body.technology-catalog #quality-price-section,
+  body.technology-catalog #top-gaming-section {
+    padding:22px !important;
+    margin:22px 0 28px !important;
+  }
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)) !important;
+    gap:14px !important;
+  }
+  body.technology-catalog #featured-grid .product-card-badges,
+  body.technology-catalog #limited-edition-grid .product-card-badges,
+  body.technology-catalog #high-performance-grid .product-card-badges,
+  body.technology-catalog #quality-price-grid .product-card-badges,
+  body.technology-catalog #top-gaming-grid .product-card-badges {
+    gap:4px 5px !important;
+    margin-bottom:1px !important;
+  }
+  body.technology-catalog #featured-grid .product-badge,
+  body.technology-catalog #limited-edition-grid .product-badge,
+  body.technology-catalog #high-performance-grid .product-badge,
+  body.technology-catalog #quality-price-grid .product-badge,
+  body.technology-catalog #top-gaming-grid .product-badge,
+  body.technology-catalog #featured-grid .product-tag-badge,
+  body.technology-catalog #limited-edition-grid .product-tag-badge,
+  body.technology-catalog #high-performance-grid .product-tag-badge,
+  body.technology-catalog #quality-price-grid .product-tag-badge,
+  body.technology-catalog #top-gaming-grid .product-tag-badge {
+    font-size:11.5px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    padding:4px 7px !important;
+    letter-spacing:0 !important;
+    white-space:nowrap !important;
+    overflow-wrap:normal !important;
+  }
+  body.technology-catalog #featured-grid .product-card-capacity,
+  body.technology-catalog #limited-edition-grid .product-card-capacity,
+  body.technology-catalog #high-performance-grid .product-card-capacity,
+  body.technology-catalog #quality-price-grid .product-card-capacity,
+  body.technology-catalog #top-gaming-grid .product-card-capacity {
+    font-size:12.5px !important;
+    line-height:1.3 !important;
+    padding:4px 7px !important;
+  }
+  body.technology-catalog #featured-grid .product-price-label,
+  body.technology-catalog #limited-edition-grid .product-price-label,
+  body.technology-catalog #high-performance-grid .product-price-label,
+  body.technology-catalog #quality-price-grid .product-price-label,
+  body.technology-catalog #top-gaming-grid .product-price-label {
+    font-size:11.5px !important;
+    line-height:1.3 !important;
+    padding-top:3px !important;
+  }
+  body.technology-catalog #featured-grid .product-price-secondary,
+  body.technology-catalog #limited-edition-grid .product-price-secondary,
+  body.technology-catalog #high-performance-grid .product-price-secondary,
+  body.technology-catalog #quality-price-grid .product-price-secondary,
+  body.technology-catalog #top-gaming-grid .product-price-secondary {
+    font-size:12.5px !important;
+    line-height:1.25 !important;
+  }
+  body.technology-catalog #featured-grid .product-view-button,
+  body.technology-catalog #limited-edition-grid .product-view-button,
+  body.technology-catalog #high-performance-grid .product-view-button,
+  body.technology-catalog #quality-price-grid .product-view-button,
+  body.technology-catalog #top-gaming-grid .product-view-button {
+    font-size:14px !important;
+    min-height:42px !important;
+    padding:9px 12px !important;
+  }
+}
+
+
+/* JB TECH · Auditoría de espacio público (2026-10-29).
+   Acerca el hero al catálogo sin tocar los controles ni la lógica de datos.
+   Ajustes limitados a ritmo vertical y espacio lateral de la página de listado. */
+@media (min-width: 761px) {
+  body.technology-catalog .catalog-section {
+    padding-top: clamp(38px, 4.2vw, 58px);
+    padding-bottom: 44px;
+  }
+  body.technology-catalog .technology-promo-banner {
+    margin-top: 24px;
+    margin-bottom: 0;
+  }
+  body.technology-catalog .section-heading {
+    margin-bottom: 18px;
+  }
+  body.technology-catalog .filter-row {
+    margin-top: 18px;
+    margin-bottom: 13px;
+  }
+  body.technology-catalog .budget-filter-bar {
+    margin-bottom: 22px;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog .catalog-section {
+    padding: 30px 16px 34px;
+  }
+  body.technology-catalog .section-heading {
+    gap: 14px;
+    margin-bottom: 15px;
+  }
+  body.technology-catalog .filter-row {
+    gap: 7px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+  body.technology-catalog .filter-chip {
+    min-height: 36px;
+    padding: 7px 12px;
+  }
+  body.technology-catalog .catalog-extra-filters {
+    gap: 11px;
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+  body.technology-catalog .budget-filter-bar {
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 12px;
+  }
+  body.technology-catalog .catalog-results-heading {
+    margin-top: 16px;
+  }
+}
+@media (min-width: 1200px) {
+  /* Override the existing desktop padding shorthand that intentionally uses !important. */
+  body.technology-catalog .catalog-section {
+    padding: clamp(38px, 3.6vw, 54px) clamp(18px, 1.8vw, 30px) 44px !important;
+  }
+}
+
+
+/* JB TECH · ficha de producto ancha y legible (2026-10-29).
+   Los estilos de detalle compactos anteriores también alcanzaban escritorio.
+   Esta capa restablece una escala legible y usa el ancho real disponible. */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  width: auto !important;
+  max-width: none !important;
+  padding: clamp(18px, 2.2vw, 36px) clamp(22px, 3.2vw, 64px) 48px !important;
+  box-sizing: border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+  width: min(1760px, 100%) !important;
+  max-width: 1760px !important;
+  min-width: 0 !important;
+  margin-inline: auto !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr) !important;
+  gap: clamp(22px, 2.2vw, 40px) !important;
+  padding: clamp(20px, 2vw, 38px) !important;
+  border-radius: 20px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  height: clamp(430px, 52vh, 650px) !important;
+  min-height: 420px !important;
+  padding: clamp(14px, 1.5vw, 24px) !important;
+  border-radius: 17px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+  min-width: 0 !important;
+  padding: clamp(22px, 2.2vw, 42px) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail h2 {
+  margin: 6px 0 20px !important;
+  font-size: clamp(30px, 2.1vw, 42px) !important;
+  line-height: 1.16 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail h3,
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group h3 {
+  margin-bottom: 10px !important;
+  font-size: clamp(15px, .9vw, 18px) !important;
+  line-height: 1.35 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+  font-size: clamp(15.5px, .9vw, 18px) !important;
+  line-height: 1.68 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .product-price-label {
+  font-size: clamp(13px, .75vw, 15px) !important;
+  line-height: 1.4 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .product-price {
+  font-size: clamp(34px, 2.35vw, 46px) !important;
+  line-height: 1.12 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+  padding: 14px 16px !important;
+  margin: 0 0 12px !important;
+  border-radius: 13px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list {
+  gap: 8px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+  min-height: 40px !important;
+  padding: 9px 12px !important;
+  gap: 6px !important;
+  font-size: clamp(12.5px, .8vw, 15px) !important;
+  line-height: 1.3 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+  padding: 3px 6px !important;
+  font-size: 10.5px !important;
+  line-height: 1.25 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .product-contact-actions {
+  gap: 12px !important;
+  margin: 22px 0 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .contact-channel-button,
+body.technology-catalog.product-detail-active #product-detail-page .payment-channel-button {
+  min-height: 46px !important;
+  padding: 10px 14px !important;
+  font-size: 13.5px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .payment-choice-panel {
+  gap: 10px !important;
+  margin: 12px 0 18px !important;
+  padding: 14px !important;
+}
+
+/* Mobile keeps one column, readable controls, and a shorter image stage. */
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    padding: 12px 12px max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(250px, 40svh, 360px) !important;
+    min-height: 0 !important;
+    max-height: 360px !important;
+    padding: 8px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 16px clamp(10px, 3vw, 22px) 22px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail h2 {
+    margin: 4px 0 14px !important;
+    font-size: clamp(24px, 6.2vw, 32px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail h3,
+  body.technology-catalog.product-detail-active #product-detail-page .variant-option-group h3 {
+    margin-bottom: 8px !important;
+    font-size: 14px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: 14px !important;
+    line-height: 1.62 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .product-price-label {
+    font-size: 12.5px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .product-price {
+    font-size: clamp(29px, 7.5vw, 36px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-option-group {
+    padding: 10px !important;
+    margin-bottom: 9px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list {
+    gap: 6px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+    min-height: 36px !important;
+    padding: 7px 9px !important;
+    font-size: 12px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+    padding: 2px 4px !important;
+    font-size: 9px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .contact-channel-button,
+  body.technology-catalog.product-detail-active #product-detail-page .payment-channel-button {
+    min-height: 44px !important;
+    padding: 9px 10px !important;
+    font-size: 12px !important;
+  }
+}
+@media (max-width: 390px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(230px, 36svh, 300px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-list .variant-choice {
+    font-size: 11.5px !important;
+    padding: 6px 7px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .variant-choice-status {
+    font-size: 8.5px !important;
+  }
+}
+
+
+/* JB TECH · galería persistente en escritorio (2026-10-29).
+   Evita que el área de imagen desaparezca al recorrer una descripción larga
+   y deje una columna izquierda vacía. En móvil la página sigue el flujo normal. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    align-items: start !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    position: sticky !important;
+    top: 14px !important;
+    align-self: start !important;
+    z-index: 2 !important;
+    height: min(clamp(430px, 52vh, 650px), calc(100vh - 124px)) !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 124px) !important;
+  }
+}
+
+
+/* JB TECH · galería de producto más grande (prueba 2026-10-29).
+   Aumenta el espacio útil de la fotografía sin recortar ni deformar el archivo.
+   En móvil no modifica las alturas compactas ya definidas. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: min(clamp(560px, 70vh, 780px), calc(100vh - 124px)) !important;
+    max-height: calc(100vh - 124px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+    padding: clamp(4px, .65vw, 10px) !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+}
+
+
+/* JB TECH · dedicated product page in normal document flow (same-tab route). */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: calc(100svh - 76px) !important;
+  margin: 0 !important;
+  padding: clamp(22px, 2.8vw, 42px) clamp(20px, 3.4vw, 68px) 68px !important;
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+  box-sizing: border-box !important;
+  background: var(--tech-page) !important;
+}
+body.technology-catalog.product-detail-active main > :not(#product-detail-page) {
+  display: none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+  width: min(1760px, 100%) !important;
+  max-width: 1760px !important;
+  margin-inline: auto !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr) !important;
+  align-items: start !important;
+  gap: clamp(28px, 3.2vw, 58px) !important;
+  padding: 0 0 42px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  position: sticky !important;
+  top: 92px !important;
+  align-self: start !important;
+  z-index: 2 !important;
+  height: min(clamp(500px, 66vh, 760px), calc(100vh - 124px)) !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 124px) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+  padding: clamp(18px, 2vw, 34px) clamp(8px, 1.4vw, 22px) 32px !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    min-height: calc(100svh - 68px) !important;
+    padding: 12px 12px 38px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+    padding: 0 0 24px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    position: static !important;
+    top: auto !important;
+    height: clamp(250px, 40svh, 360px) !important;
+    min-height: 0 !important;
+    max-height: 360px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 10px 4px 20px !important;
+  }
+}
+
+
+/* Dedicated detail header must stay in document flow instead of acting as an overlay. */
+html body.technology-catalog.product-detail-active .site-header {
+  position: sticky !important;
+  inset: auto !important;
+  top: 0 !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 1200 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+  margin: 6px 0 20px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(30px, 2.1vw, 42px) !important;
+  font-weight: 800 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -.025em !important;
+  overflow-wrap: anywhere !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #d2dced !important;
+}
+@media (max-width: 760px) {
+  html body.technology-catalog.product-detail-active .site-header {
+    height: 68px !important;
+    min-height: 68px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+    margin: 4px 0 14px !important;
+    font-size: clamp(24px, 6.2vw, 32px) !important;
+  }
+}
+
+
+/* Clear heading hierarchy for the full product page; keep variant labels compact. */
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+  margin: 0 0 10px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(15px, .9vw, 18px) !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+  margin: 24px 0 12px !important;
+  color: var(--tech-ink) !important;
+  font-size: clamp(18px, 1.15vw, 22px) !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail p,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p {
+  color: #d2dced !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+    font-size: 14px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+    margin-top: 18px !important;
+    font-size: 17px !important;
+  }
+}
+
+
+/* Specification bullets must remain readable on the dedicated product page. */
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
+  color: #42516b !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-specs li {
+  color: #d2dced !important;
+}
+
+
+/* Fully neutralize legacy overlay offsets on the full-page technology route. */
+html body.technology-catalog.product-detail-active > main.is-product-detail-view {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
+html body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
+
+
+/* DESKTOP DETAIL DENSITY FIX — use the viewport in dedicated product-page mode. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active > main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    width: 100% !important;
+    max-width: none !important;
+    padding: clamp(22px, 2.7vw, 40px) clamp(24px, 4vw, 74px) 64px !important;
+    box-sizing: border-box !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: min(1760px, 100%) !important;
+    max-width: 1760px !important;
+    min-width: 0 !important;
+    margin-inline: auto !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    width: 100% !important;
+    grid-template-columns: minmax(0, .96fr) minmax(0, 1.04fr) !important;
+    gap: clamp(24px, 3vw, 54px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail > p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: clamp(15.5px, .9vw, 18px) !important;
+    line-height: 1.62 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+    font-size: clamp(15px, 1vw, 18px) !important;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+  }
+}
+
+
+/* JB TECH · compactación final de ficha y protección de resolución (2026-10-30).
+   Las imágenes se ajustan al espacio disponible sin ampliarse por encima de su tamaño nativo. */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr) !important;
+  gap: clamp(20px, 2.1vw, 38px) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .product-contact-actions {
+  margin-block: 15px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+  margin-block: 20px 10px !important;
+}
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: min(clamp(460px, 64vh, 700px), calc(100dvh - 112px)) !important;
+    max-height: calc(100dvh - 112px) !important;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    gap: 12px !important;
+    padding-bottom: 18px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 6px 0 16px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .product-contact-actions {
+    margin-block: 12px !important;
+  }
+}
+
+
+/* JB TECH · ficha compacta y balanceada (2026-10-29).
+   Reglas finales separadas por viewport: reduce el espacio sobrante sin sacrificar
+   legibilidad, galería, variantes ni calidad nativa de las fotografías. */
+@media (min-width: 761px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    padding: clamp(18px, 1.8vw, 28px) clamp(24px, 3vw, 52px) 40px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: min(1760px, 100%) !important;
+    max-width: 1760px !important;
+    margin-inline: auto !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, .96fr) minmax(0, 1.04fr) !important;
+    gap: clamp(22px, 2vw, 32px) !important;
+    padding: 0 0 28px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: min(clamp(400px, 56vh, 620px), calc(100dvh - 140px)) !important;
+    max-height: calc(100dvh - 140px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 0 4px 20px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+    margin: 4px 0 12px !important;
+    font-size: clamp(30px, 2.15vw, 38px) !important;
+    line-height: 1.12 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail > p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    line-height: 1.52 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description {
+    margin: 8px 0 10px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+    margin: 16px 0 8px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group {
+    padding: 11px 12px !important;
+    margin: 0 0 8px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group .variant-section-title {
+    margin-bottom: 8px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-choice-list {
+    gap: 6px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .product-contact-actions {
+    gap: 9px !important;
+    margin: 12px 0 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .contact-channel-button,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .payment-channel-button {
+    min-height: 44px !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+  }
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    padding: 10px 10px max(28px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 0 0 16px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(280px, 38svh, 340px) !important;
+    max-height: 340px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 2px 0 16px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+    margin: 2px 0 10px !important;
+    font-size: clamp(25px, 6.4vw, 31px) !important;
+    line-height: 1.12 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: 14px !important;
+    line-height: 1.52 !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-section-title {
+    margin: 16px 0 8px !important;
+    font-size: 17px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group {
+    padding: 10px !important;
+    margin-bottom: 8px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .product-contact-actions {
+    gap: 8px !important;
+    margin: 10px 0 !important;
+  }
+}
+@media (max-width: 390px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(250px, 34svh, 300px) !important;
+    max-height: 300px !important;
+  }
+}
+/* Do not enlarge a low-resolution product photo just to fill the gallery stage. */
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+
+/* JB TECH · ficha de producto: proporción, jerarquía y densidad (2026-10-30).
+   Última capa deliberada para reemplazar ajustes acumulados de la ficha.
+   Mantiene la galería sin recortar ni ampliar artificialmente las fotografías. */
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+  padding: clamp(16px, 2vw, 30px) clamp(16px, 3vw, 48px) 36px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-content {
+  width: min(1600px, 100%) !important;
+  max-width: 1600px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) !important;
+  gap: clamp(20px, 2.4vw, 36px) !important;
+  padding-bottom: 20px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  height: min(clamp(400px, 58vh, 620px), calc(100dvh - 132px)) !important;
+  padding: clamp(12px, 1.4vw, 20px) !important;
+  border: 1px solid var(--tech-line) !important;
+  border-radius: 18px !important;
+  background:
+    radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--tech-blue) 10%, transparent), transparent 68%),
+    var(--tech-card) !important;
+  box-sizing: border-box !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-image-zoom {
+  display: flex !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-main-image {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+  padding: 0 0 18px !important;
+  min-width: 0 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+  margin: 2px 0 12px !important;
+  font-size: clamp(28px, 2.2vw, 38px) !important;
+  line-height: 1.12 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description {
+  margin: 8px 0 12px !important;
+  line-height: 1.55 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .variant-option-group {
+  padding: 10px 12px !important;
+  margin-bottom: 8px !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .product-contact-actions {
+  margin: 12px 0 !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) {
+    padding: 10px 10px max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page:not(.hidden) .dialog-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding-bottom: 14px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    position: static !important;
+    height: clamp(250px, 34svh, 310px) !important;
+    max-height: 310px !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail {
+    padding: 0 2px 14px !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-title {
+    margin: 2px 0 9px !important;
+    font-size: clamp(24px, 6.3vw, 30px) !important;
+  }
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-detail .dialog-product-description p,
+  body.technology-catalog.product-detail-active #product-detail-page .dialog-specs {
+    font-size: 14px !important;
+    line-height: 1.52 !important;
+  }
+}
+
+/* JB TECH · galería móvil más protagonista con fondo ambiental sin recorte. */
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  background: var(--tech-card, #eef2f8) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-backdrop {
+  position: absolute !important;
+  inset: -18px !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: var(--tech-card, #eef2f8) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-backdrop img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: .28 !important;
+  filter: blur(24px) saturate(.88) brightness(.94) !important;
+  transform: scale(1.12) !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main .dialog-image-zoom {
+  position: relative !important;
+  z-index: 1 !important;
+}
+body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-main .dialog-gallery-nav {
+  position: relative !important;
+  z-index: 2 !important;
+}
+html[data-theme="dark"] body.technology-catalog.product-detail-active #product-detail-page #dialog-image .dialog-gallery-backdrop img {
+  opacity: .34 !important;
+  filter: blur(26px) saturate(.78) brightness(.52) !important;
+}
+@media (max-width: 760px) {
+  body.technology-catalog.product-detail-active #product-detail-page #dialog-image {
+    height: clamp(280px, 42svh, 360px) !important;
+    max-height: 360px !important;
+  }
+}
+
+
+
+/* 2026-10-30 · Desktop space utilization: widen the cross-catalog banner without stretching product cards. */
+@media (min-width: 1100px) {
+  body.technology-catalog .benefit-row {
+    width: min(1500px, calc(100% - 72px));
+    gap: clamp(14px, 1.2vw, 20px);
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(1600px, calc(100% - 96px));
+    margin-top: clamp(30px, 2.4vw, 44px);
+    margin-bottom: 14px;
+  }
+
+  body.technology-catalog .catalog-section {
+    width: min(1500px, 100%);
+    padding-right: clamp(28px, 3.5vw, 54px);
+    padding-left: clamp(28px, 3.5vw, 54px);
+  }
+}
+
+@media (min-width: 1600px) {
+  body.technology-catalog .technology-promo-banner {
+    width: min(1660px, calc(100% - 120px));
+  }
+}
+
+@media (max-width: 700px) {
+  body.technology-catalog .technology-promo-banner {
+    width: calc(100% - 28px);
+    margin-top: 22px;
+    border-radius: 13px;
+  }
+}
+
+
+/* 2026-10-30 · Large desktop and ultrawide support for JB TECH. */
+@media (min-width: 1200px) {
+  body.technology-catalog .catalog-section {
+    width: min(1900px, calc(100% - 64px));
+    max-width: 1900px;
+  }
+
+  body.technology-catalog .technology-promo-banner,
+  body.technology-catalog .benefit-row {
+    max-width: 1900px;
+  }
+}
+
+@media (min-width: 1600px) {
+  body.technology-catalog .catalog-section {
+    width: min(2240px, calc(100% - 96px));
+    max-width: 2240px;
+    padding-inline: clamp(36px, 2.8vw, 64px);
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(2140px, calc(100% - 112px));
+  }
+
+  body.technology-catalog .benefit-row {
+    width: min(2140px, calc(100% - 96px));
+  }
+
+  body.technology-catalog #product-grid.product-grid,
+  body.technology-catalog #featured-grid.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 330px));
+    justify-content: center;
+    align-content: start;
+    gap: clamp(18px, 1.15vw, 28px);
+  }
+}
+
+@media (min-width: 2560px) {
+  body.technology-catalog .catalog-section {
+    width: min(2680px, calc(100% - 144px));
+    max-width: 2680px;
+    padding-inline: 72px;
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(2520px, calc(100% - 160px));
+  }
+
+  body.technology-catalog .benefit-row {
+    width: min(2520px, calc(100% - 144px));
+  }
+
+  body.technology-catalog #product-grid.product-grid,
+  body.technology-catalog #featured-grid.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 350px));
+    gap: 24px;
+  }
+}
+
+
+/* 2026-10-30 · 4K UHD and 21:9 ultrawide desktop expansion. */
+@media (min-width: 2560px) {
+  body.technology-catalog .catalog-section {
+    width: min(3360px, calc(100% - 144px));
+    max-width: 3360px;
+    padding-inline: 72px;
+  }
+
+  body.technology-catalog .technology-promo-banner {
+    width: min(3200px, calc(100% - 160px));
+    max-width: 3200px;
+  }
+
+  body.technology-catalog .benefit-row {
+    width: min(3200px, calc(100% - 144px));
+    max-width: 3200px;
+  }
+
+  body.technology-catalog #product-grid.product-grid,
+  body.technology-catalog #featured-grid.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 350px));
+    justify-content: center;
+    align-content: start;
+    gap: 24px;
+  }
+}
