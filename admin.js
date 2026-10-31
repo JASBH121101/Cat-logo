@@ -181,7 +181,7 @@ window.addEventListener("focus", refreshCatalogAdminActivityMarker);
 let editorRecordExists = false;
 let activeCatalogType = "technology";
 let dashboardCatalogScope = "all";
-const activeCatalogSelector = $("#active-catalog-selector");
+const activeCatalogSelector = $("#product-catalog-type");
 const dashboardScopeSelector = $("#dashboard-scope-selector");
 const jbManagerAI = initJbManagerAI({
   getSupabase: () => supabase,
@@ -560,6 +560,10 @@ function splitPerfumeNotes(value) {
 
 function updateProductFormMode() {
   const isPerfume = activeCatalogType === "perfumery";
+  if (activeCatalogSelector) {
+    activeCatalogSelector.value = activeCatalogType;
+    activeCatalogSelector.disabled = Boolean($("#product-id")?.value);
+  }
   document.body.classList.toggle("admin-catalog-perfumery", isPerfume);
   const category = $("#product-category");
   if (category) {
@@ -654,33 +658,18 @@ function updateProductFormMode() {
   if (formTitle && !editing) formTitle.textContent = isPerfume ? ($("#product-type")?.value === "set" ? "Registrar set de perfumes" : "Registrar fragancia") : "Agregar producto";
   if (saveButton && !editing) { saveButton.setAttribute("aria-label", "Guardar producto sin publicar"); saveButton.title = "Guardar producto sin publicar"; }
 
-  const contextDescription = $("#admin-context-description");
-  if (contextDescription) contextDescription.textContent = isPerfume
-    ? "Gestioná fragancias, familias olfativas, presentaciones y precios."
-    : "Gestioná equipos, configuraciones técnicas, colores, galerías y precios.";
-  const contextHint = $("#admin-context-hint");
-  if (contextHint) contextHint.textContent = isPerfume
-    ? "Listas y formularios de JB Parfums. La vista del dashboard se elige por separado."
-    : "Listas y formularios de JB TECH. La vista del dashboard se elige por separado.";
   updateDashboardScopeLabels();
   const dynamicLabels = {
-    "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto",
-    "admin-nav-published-label": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "admin-nav-unpublished-label": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
-    "admin-nav-drafts-label": isPerfume ? "Borradores de perfumería" : "Borradores de tecnología",
-    "published-section-title": isPerfume ? "Fragancias publicadas" : "Productos publicados",
-    "unpublished-section-title": isPerfume ? "Fragancias no publicadas" : "Productos no publicados",
-    "draft-section-title": isPerfume ? "Borradores de perfumería" : "Borradores de tecnología",
-    "trash-section-title": isPerfume ? "Papelera de perfumería" : "Papelera de tecnología"
+    "admin-nav-add-label": isPerfume ? "Añadir fragancia" : "Añadir producto"
   };
   for (const [id, label] of Object.entries(dynamicLabels)) {
     const node = document.getElementById(id);
     if (node) node.textContent = label;
   }
   const dashboardAddDescription = $("#dashboard-add-product-description");
-  if (dashboardAddDescription) dashboardAddDescription.textContent = isPerfume ? "Registrar una fragancia nueva" : "Registrar un equipo nuevo";
+  if (dashboardAddDescription) dashboardAddDescription.textContent = "Registrar un producto nuevo";
   const dashboardQuickAdd = document.querySelector('[data-dashboard-action="add"] .quick-action-icon');
-  if (dashboardQuickAdd) dashboardQuickAdd.textContent = isPerfume ? "✦" : "＋";
+  if (dashboardQuickAdd) dashboardQuickAdd.textContent = "＋";
 
   const publicLink = document.querySelector(".dashboard-public-link");
   if (publicLink) publicLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
@@ -4066,16 +4055,10 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
     const action = button.dataset.dashboardAction;
 
     if (action === "drafts") {
-      const scopedDrafts = getDashboardProducts().filter(product => !product.is_published);
+      const scopedDrafts = getDashboardProducts().filter(product => ["draft", "unpublished"].includes(getWorkflowStatus(product)));
       const target = scopedDrafts.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
         || scopedDrafts[0];
-
-      // Dashboard can summarize both catalogs; the task must open the catalog
-      // that actually contains drafts rather than an empty list in the current catalog.
-      if (target) {
-        const targetCatalog = normalizeCatalogType(target.catalog_type);
-        if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
-      }
+      if (target) setAdminListFilters({ catalog: normalizeCatalogType(target.catalog_type), taxonomy: "all" });
       showAdminSection("drafts");
       return;
     }
@@ -4087,9 +4070,12 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
 
       if (target) {
         const targetCatalog = normalizeCatalogType(target.catalog_type);
-        if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
+        setAdminListFilters({ catalog: targetCatalog, taxonomy: "all" });
 
-        const targetSection = target.is_published ? "published" : "drafts";
+        const targetStatus = getWorkflowStatus(target);
+        const targetSection = targetStatus === "published" ? "published"
+          : targetStatus === "draft" ? "drafts"
+          : targetStatus === "unpublished" ? "unpublished" : "trash";
         showAdminSection(targetSection);
         const search = document.getElementById(targetSection === "published" ? "published-search" : "draft-search");
         if (search) {
@@ -4436,49 +4422,220 @@ function getWorkflowStatus(product) {
   if (["draft", "unpublished", "published", "trash", "deleting"].includes(product?.workflow_status)) return product.workflow_status;
   return product?.is_published ? "published" : "unpublished";
 }
-function renderAdminList() {
-  const items=getActiveCatalogProducts();
-  const searchable=p=>[p.name,p.brand,p.model,p.category,p.perfume_details&&p.perfume_details.scent_family].join(" ").toLocaleLowerCase("es");
-  const byStatus=s=>items.filter(p=>getWorkflowStatus(p)===s);
-  const published=byStatus("published"), unpublished=byStatus("unpublished"), drafts=byStatus("draft");
-  const trash=items.filter(p=>["trash","deleting"].includes(getWorkflowStatus(p)));
-  const filter=(rows,selector)=>{const q=($(selector)?.value||"").trim().toLocaleLowerCase("es");return rows.filter(p=>searchable(p).includes(q));};
-  const svg={
-    view:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
-    edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"></path></svg>',
-    trash:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 10v6M14 10v6"></path></svg>',
-    restore:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 0 3-6.7L3 7"></path><path d="M3 3v4h4M12 7v5l3 2"></path></svg>',
-    delete:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"></path></svg>',
-    star:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>'
-  };
-  const cards=(rows,empty,isTrash)=>rows.map(p=>{
-    const image=getImages(p)[0], thumb=image?'<img class="admin-product-thumb" src="'+escapeHtml(image)+'" alt="" loading="lazy">':'<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>';
-    const variants=normalizeVariants(p.variants), perfume=p.catalog_type==="perfumery", d=p.perfume_details||{};
-    const variantLabel=perfume?[d.family?perfumeFamilyLabel(d.family):"",d.concentration,d.volume_ml?d.volume_ml+" ml":""].filter(Boolean).join(" · "):variants.length?variants.length+" variante"+(variants.length===1?"":"s"):"";
-    const price=minimumPrice(variants,"price_usd")??p.price_usd, priceLabel=price===null||price===undefined||price===""?"Consultar":"US"+Number(price).toLocaleString("en-US",{maximumFractionDigits:2});
-    const isExclusive = Boolean(p.is_exclusive || p.featured);
-    const productTypeLabel = p.catalog_type === "perfumery" ? (p.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia") : "";
-    const status=getWorkflowStatus(p), statusLabel=status==="published"?"Publicado":status==="draft"?"Borrador":status==="deleting"?"Limpieza pendiente":status==="trash"?"En papelera":"No publicado";
-    let actions="";
-    if(isTrash){
-      actions=(status==="deleting"?'':'<button class="admin-mini-button admin-icon-button" type="button" data-restore-product="'+escapeHtml(p.id)+'" aria-label="Restaurar producto" title="Restaurar producto">'+svg.restore+'</button>')+'<button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="'+escapeHtml(p.id)+'" aria-label="'+(status==="deleting"?"Reintentar limpieza":"Eliminar definitivamente")+'" title="'+(status==="deleting"?"Reintentar limpieza de Storage":"Eliminar definitivamente")+'">'+svg.delete+'</button>';
-    }else{
-      actions='<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="'+escapeHtml(p.id)+'" aria-label="Ver producto" title="Ver producto">'+svg.view+'</button><button class="admin-mini-button admin-icon-button" type="button" data-edit="'+escapeHtml(p.id)+'" aria-label="Editar producto" title="Editar producto">'+svg.edit+'</button><button class="admin-mini-button admin-icon-button'+(isExclusive?' is-exclusive':'')+'" type="button" data-exclusive-product="'+escapeHtml(p.id)+'" aria-label="'+(isExclusive?'Quitar de destacados/exclusivos':'Destacar en el catálogo')+'" title="'+(isExclusive?'Quitar de destacados/exclusivos':'Destacar en el catálogo')+'">'+svg.star+'</button><button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="'+escapeHtml(p.id)+'" aria-label="Mover a papelera" title="Mover a papelera">'+svg.trash+'</button>';
-    }
-    const expiry=p.deleted_at?" · vence "+new Date(new Date(p.deleted_at).getTime()+15*86400000).toLocaleDateString("es-NI"):"";
-    return '<article class="admin-product-row">'+thumb+'<div><p class="admin-product-name">'+escapeHtml(p.name||"Borrador sin nombre")+'</p><div class="admin-product-meta">'+escapeHtml(p.category||"Sin categoría")+' · '+escapeHtml(priceLabel)+(productTypeLabel?" · "+escapeHtml(productTypeLabel):"")+' · '+statusLabel+(isExclusive?" · Destacado / exclusivo":"")+(variantLabel?" · "+escapeHtml(variantLabel):"")+escapeHtml(expiry)+'</div><div class="admin-product-buttons">'+actions+'</div></div></article>';
-  }).join("")||'<p class="form-status">'+empty+'</p>';
-  $("#published-product-list").innerHTML=cards(filter(published,"#published-search"),"Todavía no hay productos publicados.");
-  $("#unpublished-product-list").innerHTML=cards(filter(unpublished,"#unpublished-search"),"No hay productos completos pendientes de publicar.");
-  $("#draft-product-list").innerHTML=cards(filter(drafts,"#draft-search"),"No hay borradores guardados.");
-  $("#trash-product-list").innerHTML=cards(filter(trash,"#trash-search"),"La papelera está vacía.",true);
-  $("#published-count").textContent=published.length+" producto"+(published.length===1?"":"s")+" publicados";
-  $("#unpublished-count").textContent=unpublished.length+" producto"+(unpublished.length===1?"":"s")+" sin publicar";
-  $("#draft-count").textContent=drafts.length+" borrador"+(drafts.length===1?"":"es");
-  $("#trash-count").textContent=trash.length+" producto"+(trash.length===1?"":"s")+" en papelera · se eliminan tras 15 días";
-  $("#published-nav-count").textContent=published.length; $("#unpublished-nav-count").textContent=unpublished.length;
-  $("#draft-nav-count").textContent=drafts.length; $("#trash-nav-count").textContent=trash.length;
+const adminListFilterState = { catalog: "all", taxonomy: "all" };
+const TECHNOLOGY_LIST_CATEGORIES = [
+  "Celulares", "Laptops", "Tablets", "Gaming", "Consolas",
+  "Televisores", "Audio", "Accesorios", "Otros"
+];
+const PERFUMERY_LIST_FAMILIES = [
+  { value: "arabes", label: "Árabes" },
+  { value: "nicho", label: "Nicho" },
+  { value: "disenador", label: "Diseñador" }
+];
+
+function listTaxonomyOptions(catalog = adminListFilterState.catalog) {
+  const options = [];
+  if (catalog === "all" || catalog === "technology") {
+    TECHNOLOGY_LIST_CATEGORIES.forEach(category => {
+      options.push({ value: "technology:" + category, label: category, group: "JB TECH · Tecnología" });
+    });
+  }
+  if (catalog === "all" || catalog === "perfumery") {
+    PERFUMERY_LIST_FAMILIES.forEach(family => {
+      options.push({ value: "perfumery:" + family.value, label: family.label, group: "JB Parfums · Perfumería" });
+    });
+  }
+  return options;
 }
+
+function syncAdminListFilterControls() {
+  const available = listTaxonomyOptions().map(option => option.value);
+  if (adminListFilterState.taxonomy !== "all" && !available.includes(adminListFilterState.taxonomy)) {
+    adminListFilterState.taxonomy = "all";
+  }
+  document.querySelectorAll("[data-admin-catalog-filter]").forEach(select => {
+    select.value = adminListFilterState.catalog;
+  });
+  document.querySelectorAll("[data-admin-taxonomy-filter]").forEach(select => {
+    const options = [new Option("Todas las categorías y familias", "all")];
+    let currentGroup = "";
+    let groupNode = null;
+    listTaxonomyOptions().forEach(option => {
+      if (option.group !== currentGroup) {
+        currentGroup = option.group;
+        groupNode = document.createElement("optgroup");
+        groupNode.label = currentGroup;
+        options.push(groupNode);
+      }
+      groupNode.append(new Option(option.label, option.value));
+    });
+    select.replaceChildren(...options);
+    select.value = adminListFilterState.taxonomy;
+  });
+}
+
+function setAdminListFilters({ catalog, taxonomy } = {}) {
+  if (catalog === "all" || catalog === "technology" || catalog === "perfumery") {
+    adminListFilterState.catalog = catalog;
+  }
+  if (typeof taxonomy === "string") adminListFilterState.taxonomy = taxonomy;
+  syncAdminListFilterControls();
+  renderAdminList();
+}
+
+function matchesAdminListFilters(product) {
+  const productCatalog = normalizeCatalogType(product.catalog_type);
+  if (adminListFilterState.catalog !== "all" && productCatalog !== adminListFilterState.catalog) return false;
+  if (adminListFilterState.taxonomy === "all") return true;
+  const separator = adminListFilterState.taxonomy.indexOf(":");
+  const taxonomyType = adminListFilterState.taxonomy.slice(0, separator);
+  const taxonomyValue = adminListFilterState.taxonomy.slice(separator + 1);
+  if (taxonomyType === "technology") {
+    const category = normalizeTechnologyCategory(product.category || "Otros") || "Otros";
+    return category.toLocaleLowerCase("es") === taxonomyValue.toLocaleLowerCase("es");
+  }
+  if (taxonomyType === "perfumery") {
+    return String(product.perfume_details?.family || "").trim().toLowerCase() === taxonomyValue;
+  }
+  return true;
+}
+
+function getAdminProductTaxonomy(product) {
+  if (normalizeCatalogType(product.catalog_type) === "perfumery") {
+    const family = product.perfume_details?.family;
+    return family ? perfumeFamilyLabel(family) : "Familia sin especificar";
+  }
+  return normalizeTechnologyCategory(product.category || "Otros") || "Otros";
+}
+
+function summarizeAdminList(rows, visibleRows, pluralLabel, singularLabel, searchValue = "") {
+  const technology = rows.filter(product => normalizeCatalogType(product.catalog_type) === "technology").length;
+  const perfumery = rows.length - technology;
+  const totalLabel = rows.length + " " + (rows.length === 1 ? singularLabel : pluralLabel);
+  const breakdown = technology + " tecnología · " + perfumery + " perfumería";
+  const filtered = visibleRows.length !== rows.length || adminListFilterState.catalog !== "all" ||
+    adminListFilterState.taxonomy !== "all" || Boolean(String(searchValue || "").trim());
+  return (filtered ? "Mostrando " + visibleRows.length + " de " + totalLabel : totalLabel) +
+    (rows.length ? " · " + breakdown : "");
+}
+
+function renderAdminList() {
+  syncAdminListFilterControls();
+  const items = products;
+  const searchable = product => [
+    product.name, product.brand, product.model, product.category,
+    product.perfume_details?.family ? perfumeFamilyLabel(product.perfume_details.family) : "",
+    product.perfume_details?.scent_family
+  ].filter(Boolean).join(" ").toLocaleLowerCase("es");
+  const byStatus = status => items.filter(product => getWorkflowStatus(product) === status);
+  const published = byStatus("published");
+  const unpublished = byStatus("unpublished");
+  const drafts = byStatus("draft");
+  const trash = items.filter(product => ["trash", "deleting"].includes(getWorkflowStatus(product)));
+  const filtered = (rows, selector) => {
+    const query = ($(selector)?.value || "").trim().toLocaleLowerCase("es");
+    return rows.filter(product => matchesAdminListFilters(product) && searchable(product).includes(query));
+  };
+  const svg = {
+    view: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"></path></svg>',
+    trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 10v6M14 10v6"></path></svg>',
+    restore: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 0 3-6.7L3 7"></path><path d="M3 3v4h4M12 7v5l3 2"></path></svg>',
+    delete: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"></path></svg>',
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>'
+  };
+  const cards = (rows, empty, isTrash) => rows.map(product => {
+    const image = getImages(product)[0];
+    const thumb = image
+      ? '<img class="admin-product-thumb" src="' + escapeHtml(image) + '" alt="" loading="lazy">'
+      : '<div class="admin-product-thumb" style="display:grid;place-items:center;color:#9aa6b9">▧</div>';
+    const variants = normalizeVariants(product.variants);
+    const perfume = normalizeCatalogType(product.catalog_type) === "perfumery";
+    const detail = product.perfume_details || {};
+    const variantLabel = perfume
+      ? [detail.family ? perfumeFamilyLabel(detail.family) : "", detail.concentration, detail.volume_ml ? detail.volume_ml + " ml" : ""].filter(Boolean).join(" · ")
+      : variants.length ? variants.length + " variante" + (variants.length === 1 ? "" : "s") : "";
+    const price = minimumPrice(variants, "price_usd") ?? product.price_usd;
+    const priceLabel = price === null || price === undefined || price === ""
+      ? "Consultar"
+      : "US" + Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 });
+    const isExclusive = Boolean(product.is_exclusive || product.featured);
+    const catalogLabel = perfume ? "JB PARFUMS" : "JB TECH";
+    const taxonomyLabel = getAdminProductTaxonomy(product);
+    const status = getWorkflowStatus(product);
+    const statusLabel = status === "published" ? "Publicado"
+      : status === "draft" ? "Borrador"
+      : status === "deleting" ? "Limpieza pendiente"
+      : status === "trash" ? "En papelera" : "No publicado";
+    const productTypeLabel = perfume ? (product.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia") : "";
+    let actions = "";
+    if (isTrash) {
+      actions = (status === "deleting" ? "" :
+        '<button class="admin-mini-button admin-icon-button" type="button" data-restore-product="' + escapeHtml(product.id) + '" aria-label="Restaurar producto" title="Restaurar producto">' + svg.restore + '</button>') +
+        '<button class="admin-mini-button admin-icon-button danger" type="button" data-delete-product="' + escapeHtml(product.id) + '" aria-label="' +
+        (status === "deleting" ? "Reintentar limpieza" : "Eliminar definitivamente") + '" title="' +
+        (status === "deleting" ? "Reintentar limpieza de Storage" : "Eliminar definitivamente") + '">' + svg.delete + '</button>';
+    } else {
+      actions =
+        '<button class="admin-mini-button admin-icon-button admin-preview-open-button" type="button" data-preview-product="' + escapeHtml(product.id) + '" aria-label="Ver producto" title="Ver producto">' + svg.view + '</button>' +
+        '<button class="admin-mini-button admin-icon-button" type="button" data-edit="' + escapeHtml(product.id) + '" aria-label="Editar producto" title="Editar producto">' + svg.edit + '</button>' +
+        '<button class="admin-mini-button admin-icon-button' + (isExclusive ? " is-exclusive" : "") + '" type="button" data-exclusive-product="' + escapeHtml(product.id) + '" aria-label="' +
+        (isExclusive ? "Quitar de destacados/exclusivos" : "Destacar en el catálogo") + '" title="' +
+        (isExclusive ? "Quitar de destacados/exclusivos" : "Destacar en el catálogo") + '">' + svg.star + '</button>' +
+        '<button class="admin-mini-button admin-icon-button danger" type="button" data-trash-product="' + escapeHtml(product.id) + '" aria-label="Mover a papelera" title="Mover a papelera">' + svg.trash + '</button>';
+    }
+    const expiry = product.deleted_at
+      ? " · vence " + new Date(new Date(product.deleted_at).getTime() + 15 * 86400000).toLocaleDateString("es-NI")
+      : "";
+    return '<article class="admin-product-row">' + thumb +
+      '<div><p class="admin-product-name">' + escapeHtml(product.name || "Borrador sin nombre") + '</p>' +
+      '<div class="admin-product-taxonomy">' +
+      '<span class="admin-product-catalog-pill ' + (perfume ? "is-perfumery" : "is-technology") + '">' + catalogLabel + '</span>' +
+      '<span class="admin-product-category-pill">' + escapeHtml(taxonomyLabel) + '</span></div>' +
+      '<div class="admin-product-meta">' + escapeHtml(priceLabel) +
+      (productTypeLabel ? " · " + escapeHtml(productTypeLabel) : "") + " · " + statusLabel +
+      (isExclusive ? " · Destacado / exclusivo" : "") +
+      (variantLabel ? " · " + escapeHtml(variantLabel) : "") + escapeHtml(expiry) +
+      '</div><div class="admin-product-buttons">' + actions + '</div></div></article>';
+  }).join("") || '<p class="form-status">' + empty + '</p>';
+
+  const visiblePublished = filtered(published, "#published-search");
+  const visibleUnpublished = filtered(unpublished, "#unpublished-search");
+  const visibleDrafts = filtered(drafts, "#draft-search");
+  const visibleTrash = filtered(trash, "#trash-search");
+  $("#published-product-list").innerHTML = cards(visiblePublished, "No hay productos publicados que coincidan con estos filtros.");
+  $("#unpublished-product-list").innerHTML = cards(visibleUnpublished, "No hay productos no publicados que coincidan con estos filtros.");
+  $("#draft-product-list").innerHTML = cards(visibleDrafts, "No hay borradores que coincidan con estos filtros.");
+  $("#trash-product-list").innerHTML = cards(visibleTrash, "La papelera no tiene productos que coincidan con estos filtros.", true);
+
+  $("#published-count").textContent = summarizeAdminList(published, visiblePublished, "productos publicados", "producto publicado", $("#published-search")?.value);
+  $("#unpublished-count").textContent = summarizeAdminList(unpublished, visibleUnpublished, "productos no publicados", "producto no publicado", $("#unpublished-search")?.value);
+  $("#draft-count").textContent = summarizeAdminList(drafts, visibleDrafts, "borradores", "borrador", $("#draft-search")?.value);
+  $("#trash-count").textContent = summarizeAdminList(trash, visibleTrash, "productos en papelera", "producto en papelera", $("#trash-search")?.value) +
+    (trash.length ? " · se eliminan tras 15 días" : " · los productos se conservan durante 15 días antes de eliminarse definitivamente");
+
+  // Navigation counters always show the complete inventory across both catalogs.
+  $("#published-nav-count").textContent = published.length;
+  $("#unpublished-nav-count").textContent = unpublished.length;
+  $("#draft-nav-count").textContent = drafts.length;
+  $("#trash-nav-count").textContent = trash.length;
+}
+
+document.querySelectorAll("[data-admin-catalog-filter]").forEach(select => {
+  select.addEventListener("change", () => {
+    adminListFilterState.catalog = ["technology", "perfumery"].includes(select.value) ? select.value : "all";
+    syncAdminListFilterControls();
+    renderAdminList();
+  });
+});
+document.querySelectorAll("[data-admin-taxonomy-filter]").forEach(select => {
+  select.addEventListener("change", () => {
+    adminListFilterState.taxonomy = select.value || "all";
+    syncAdminListFilterControls();
+    renderAdminList();
+  });
+});
+
 ["#published-search","#unpublished-search","#draft-search","#trash-search"].forEach(s=>$(s)?.addEventListener("input",renderAdminList));
 document.querySelectorAll("#published-product-list,#unpublished-product-list,#draft-product-list,#trash-product-list").forEach(list=>list.addEventListener("click",async event=>{
   const preview=event.target.closest("[data-preview-product]"), edit=event.target.closest("[data-edit]");
@@ -5031,12 +5188,11 @@ initializeCustomProductTagInput();
 
 function fillEditor(product) {
   activeCatalogType = normalizeCatalogType(product.catalog_type);
+  $("#product-id").value = product.id || "";
+  editorRecordExists = true;
   if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
   if ($("#product-type")) $("#product-type").value = activeCatalogType === "perfumery" ? (product.product_type === "set" ? "set" : "perfume") : "standard";
   updateProductFormMode();
-
-  $("#product-id").value = product.id || "";
-  editorRecordExists=true;
   $("#catalog-key").value = product.catalog_key || "";
   $("#product-name").value = product.name || "";
   $("#product-brand").value = product.brand || "";
