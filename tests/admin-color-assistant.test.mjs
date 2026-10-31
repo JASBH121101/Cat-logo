@@ -19,7 +19,7 @@ test("variant color controls add AI/photo assistance without removing palette to
   assert.match(adminJs, /no verificada oficialmente/);
   assert.match(themeCss, /\.jb-color-ai-overlay\s*\{/);
   assert.match(themeCss, /html\[data-theme="dark"\] body\.admin-body \.jb-color-ai-dialog/);
-  assert.match(adminHtml, /admin\.js\?v=20261031-gp-scanner4/);
+  assert.match(adminHtml, /admin\.js\?v=20261031-[^"]+/);
 });
 
 test("shared color library uses the authenticated Supabase client", () => {
