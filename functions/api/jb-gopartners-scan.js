@@ -293,14 +293,10 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
       price_usd: verifiedPrice("price_usd", "USD"),
       price_nio: verifiedPrice("price_nio", "NIO"),
       availability: (() => {
-        const raw = String(item.availability || "").trim().toLowerCase();
-        if (raw === "unknown") return raw;
-        const markers = {
-          available: /\bdisponible\b/i,
-          on_request: /\bbajo\s+pedido\b/i,
-          unavailable: /\bno\s+disponible\b/i
-        };
-        return markers[raw]?.test(evidence) ? raw : "unknown";
+        if (/\bno\s+disponible\b/i.test(evidence)) return "unavailable";
+        if (/\bbajo\s+pedido\b/i.test(evidence)) return "on_request";
+        if (/\bdisponible\b/i.test(evidence)) return "available";
+        return "unknown";
       })(),
       confidence: attemptedFields.length ? groundedFields.length / attemptedFields.length : 0,
       grounded_fields: groundedFields,
@@ -381,7 +377,7 @@ export async function onRequestPost({ request, env }) {
   let body;
   try {
     const raw = await request.text();
-    if (raw.length > 180000) return reply(413, { ok: false, error: "request_too_large" }, origin);
+    if (raw.length > 220000) return reply(413, { ok: false, error: "request_too_large" }, origin);
     body = JSON.parse(raw);
   } catch { return reply(400, { ok: false, error: "invalid_json" }, origin); }
   if (!env.GEMINI_API_KEY) return reply(503, { ok: false, error: "gemini_not_configured" }, origin);
@@ -393,7 +389,7 @@ export async function onRequestPost({ request, env }) {
     captured_at: clean(item?.capturedAt, 40), text: cleanOcrText(item?.text, 2200)
   })).filter(item => item.text.length >= 8);
   const total = observations.reduce((sum, item) => sum + item.text.length, 0);
-  if (!observations.length || total > 100000) return reply(400, { ok: false, error: "insufficient_or_excessive_ocr_text" }, origin);
+  if (!observations.length || total > 160000) return reply(400, { ok: false, error: "insufficient_or_excessive_ocr_text" }, origin);
 
   const instruction = [
     "Sos el extractor OCR del escáner JARVIS de JB Collections.",
