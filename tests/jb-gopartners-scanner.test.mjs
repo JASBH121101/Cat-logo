@@ -629,3 +629,11 @@ test("scanner timing diagnostics report authorization, Gemini and OCR-grounding 
   assert.match(source, /grounding: groundingMs/);
   assert.match(source, /timings_ms: timingsMs/);
 });
+
+
+test("scanner review exposes server, Gemini and OCR-grounding timings", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(source, /geminiSeconds = Number\(timings\.gemini\) \/ 1000/);
+  assert.match(source, /groundingMs = Number\(timings\.grounding\)/);
+  assert.match(source, /validación OCR/);
+});
