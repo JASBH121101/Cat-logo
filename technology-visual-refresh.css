@@ -4264,6 +4264,21 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
 }
 
 
+/* Keep the limited-edition tag at its natural content width in both themes. */
+body.technology-catalog .product-tag-badge.tag-limited_edition {
+  display:inline-flex !important;
+  flex:0 0 auto !important;
+  align-self:flex-start !important;
+  width:fit-content !important;
+  min-width:0 !important;
+  max-width:max-content !important;
+  height:auto !important;
+  white-space:nowrap !important;
+}
+body.technology-catalog #limited-edition-grid .product-card-badges {
+  align-items:flex-start !important;
+}
+
 /* JB TECH · Ediciones limitadas: champagne gold in light mode, electric graphite in dark mode. */
 html:not([data-theme="dark"]) body.technology-catalog .limited-edition-section {
   border:1px solid #d9bd83 !important;
