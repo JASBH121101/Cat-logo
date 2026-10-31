@@ -49,9 +49,7 @@ function normalizeOcrMatch(value) {
     .toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function findOcrSpan(source, value) {
-  const needle = normalizeOcrMatch(value);
-  if (needle.length < 3) return null;
+function normalizedOcrSource(source) {
   let normalized = "";
   const starts = [], ends = [];
   let rawIndex = 0;
@@ -65,13 +63,73 @@ function findOcrSpan(source, value) {
     }
     rawIndex += character.length;
   }
-  const offset = normalized.indexOf(needle);
+  return { normalized, starts, ends };
+}
+
+function findOcrSpan(source, value) {
+  const needle = normalizeOcrMatch(value);
+  if (needle.length < 3) return null;
+  const mapped = normalizedOcrSource(source);
+  const offset = mapped.normalized.indexOf(needle);
   if (offset < 0) return null;
-  return { start: starts[offset], end: ends[offset + needle.length - 1] };
+  return { start: mapped.starts[offset], end: mapped.ends[offset + needle.length - 1], exact: true };
+}
+
+function boundedEditDistance(left, right, maximum) {
+  if (Math.abs(left.length - right.length) > maximum) return maximum + 1;
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let row = 1; row <= left.length; row += 1) {
+    const current = [row];
+    let rowMinimum = row;
+    for (let column = 1; column <= right.length; column += 1) {
+      const cost = left[row - 1] === right[column - 1] ? 0 : 1;
+      current[column] = Math.min(
+        current[column - 1] + 1,
+        previous[column] + 1,
+        previous[column - 1] + cost
+      );
+      rowMinimum = Math.min(rowMinimum, current[column]);
+    }
+    if (rowMinimum > maximum) return maximum + 1;
+    previous = current;
+  }
+  return previous[right.length];
+}
+
+function findFuzzyOcrSpan(source, value) {
+  const needle = normalizeOcrMatch(value);
+  if (needle.length < 10) return null;
+  const mapped = normalizedOcrSource(source);
+  if (!mapped.normalized) return null;
+  const maximum = needle.length >= 24 ? 2 : 1;
+  let best = null;
+  for (let start = 0; start < mapped.normalized.length; start += 1) {
+    const minLength = Math.max(needle.length - maximum, 1);
+    const maxLength = Math.min(needle.length + maximum, mapped.normalized.length - start);
+    for (let length = minLength; length <= maxLength; length += 1) {
+      const candidate = mapped.normalized.slice(start, start + length);
+      const distance = boundedEditDistance(needle, candidate, maximum);
+      if (distance <= maximum && (!best || distance < best.distance)) {
+        best = {
+          start: mapped.starts[start],
+          end: mapped.ends[start + length - 1],
+          distance,
+          exact: false
+        };
+        if (distance === 0) return { ...best, exact: true };
+      }
+    }
+    if (best?.distance === 0) break;
+  }
+  return best;
+}
+
+function findOcrMatch(source, value) {
+  return findOcrSpan(source, value) || findFuzzyOcrSpan(source, value);
 }
 
 function ocrContains(source, value) {
-  return Boolean(findOcrSpan(source, value));
+  return Boolean(findOcrMatch(source, value));
 }
 
 function findScannerEvidence(source, item) {
@@ -81,12 +139,13 @@ function findScannerEvidence(source, item) {
   if (!identities.length) return "";
 
   const suppliedQuote = clean(item?.evidence, 240);
-  const suppliedSpan = findOcrSpan(source, suppliedQuote);
-  if (suppliedSpan && identities.some(identity => ocrContains(suppliedQuote, identity))) {
-    return clean(String(source).slice(suppliedSpan.start, suppliedSpan.end), 240);
+  const suppliedSpan = findOcrMatch(source, suppliedQuote);
+  if (suppliedSpan) {
+    const quote = String(source).slice(suppliedSpan.start, suppliedSpan.end);
+    if (identities.some(identity => ocrContains(quote, identity))) return clean(quote, 240);
   }
 
-  const anchor = identities.map(identity => findOcrSpan(source, identity)).find(Boolean);
+  const anchor = identities.map(identity => findOcrMatch(source, identity)).find(Boolean);
   if (!anchor) return "";
   const start = Math.max(0, anchor.start - 55);
   const end = Math.min(String(source).length, Math.max(anchor.end + 180, start + 240));
@@ -134,28 +193,59 @@ function hasOcrPriceEvidence(source, amount, currency) {
   });
 }
 
-export function groundScannerProducts(rawProducts, observations) {
-  const observationByIndex = new Map(
-    (Array.isArray(observations) ? observations : [])
-      .filter(item => Number.isInteger(item?.index) && typeof item?.text === "string")
-      .map(item => [item.index, item.text])
-  );
-  return (Array.isArray(rawProducts) ? rawProducts : []).slice(0, 120).map((item, index) => {
-    if (!item || typeof item !== "object") return null;
-    const sourceObservation = Number.isInteger(item.source_observation) ? item.source_observation : null;
-    const sourceText = sourceObservation === null ? "" : observationByIndex.get(sourceObservation);
-    if (!sourceText) return null;
+export function groundScannerProducts(rawProducts, observations, diagnostics = null) {
+  const sources = (Array.isArray(observations) ? observations : [])
+    .filter(item => Number.isInteger(item?.index) && typeof item?.text === "string" && item.text.trim().length >= 8);
+  const observationByIndex = new Map(sources.map(item => [item.index, item]));
+  const counters = {
+    candidates_received: Array.isArray(rawProducts) ? rawProducts.length : 0,
+    products_grounded: 0,
+    rejected_without_identity: 0,
+    rejected_without_ocr_evidence: 0,
+    source_index_recovered: 0,
+    approximate_identity_matches: 0
+  };
 
-    const evidence = findScannerEvidence(sourceText, item);
-    if (!evidence) return null;
+  const products = (Array.isArray(rawProducts) ? rawProducts : []).slice(0, 120).map((item, index) => {
+    if (!item || typeof item !== "object") {
+      counters.rejected_without_identity += 1;
+      return null;
+    }
 
-    const groundedFields = [], attemptedFields = [], unverifiedFields = [];
+    const requestedIndex = Number.isInteger(item.source_observation) ? item.source_observation : null;
+    const orderedSources = [
+      ...(requestedIndex !== null && observationByIndex.has(requestedIndex) ? [observationByIndex.get(requestedIndex)] : []),
+      ...sources.filter(source => source.index !== requestedIndex)
+    ];
+    let matchedSource = null;
+    let evidence = "";
+    for (const source of orderedSources) {
+      const candidateEvidence = findScannerEvidence(source.text, item);
+      if (candidateEvidence) {
+        matchedSource = source;
+        evidence = candidateEvidence;
+        break;
+      }
+    }
+    if (!matchedSource || !evidence) {
+      counters.rejected_without_ocr_evidence += 1;
+      return null;
+    }
+    if (requestedIndex !== matchedSource.index) counters.source_index_recovered += 1;
+
+    const groundedFields = [], attemptedFields = [], unverifiedFields = [], approximateFields = [];
     const verifiedText = (field, maxLength) => {
       const value = clean(item[field], maxLength);
       if (!value) return "";
       attemptedFields.push(field);
-      if (ocrContains(evidence, value)) {
+      const exact = findOcrSpan(evidence, value);
+      const approximate = exact ? null : findFuzzyOcrSpan(evidence, value);
+      if (exact || approximate) {
         groundedFields.push(field);
+        if (approximate) {
+          approximateFields.push(field);
+          counters.approximate_identity_matches += 1;
+        }
         return value;
       }
       unverifiedFields.push(field);
@@ -167,7 +257,8 @@ export function groundScannerProducts(rawProducts, observations) {
       attemptedFields.push(field);
       const amount = Number(raw);
       const maximum = currency === "USD" ? 1000000 : 100000000;
-      if (Number.isFinite(amount) && amount >= 0 && amount <= maximum && hasOcrPriceEvidence(evidence, amount, currency)) {
+      if (Number.isFinite(amount) && amount >= 0 && amount <= maximum &&
+          hasOcrPriceEvidence(evidence, amount, currency)) {
         groundedFields.push(field);
         return amount;
       }
@@ -177,7 +268,7 @@ export function groundScannerProducts(rawProducts, observations) {
 
     const product = {
       id: "scan-" + (index + 1),
-      source_observation: sourceObservation,
+      source_observation: matchedSource.index,
       product_name: verifiedText("product_name", 160),
       brand: verifiedText("brand", 80),
       model: verifiedText("model", 100),
@@ -192,16 +283,28 @@ export function groundScannerProducts(rawProducts, observations) {
       grounded_fields: groundedFields,
       attempted_fields: attemptedFields,
       unverified_fields: unverifiedFields,
+      approximate_fields: approximateFields,
       evidence,
-      notes: unverifiedFields.map(field =>
-        "Se descartó " + (SCANNER_FIELD_LABELS[field] || field) + " porque no aparece respaldado en el texto OCR."
-      )
+      notes: [
+        ...unverifiedFields.map(field =>
+          "Se descartó " + (SCANNER_FIELD_LABELS[field] || field) + " porque no aparece respaldado en el texto OCR."
+        ),
+        ...approximateFields.map(field =>
+          "La lectura de " + (SCANNER_FIELD_LABELS[field] || field) + " tiene una pequeña diferencia OCR; confirmala visualmente antes de usarla."
+        )
+      ]
     };
-    if (!product.product_name && !product.model) return null;
+    if (!product.product_name && !product.model) {
+      counters.rejected_without_identity += 1;
+      return null;
+    }
+    counters.products_grounded += 1;
     return product;
   }).filter(Boolean);
-}
 
+  if (diagnostics && typeof diagnostics === "object") Object.assign(diagnostics, counters);
+  return products;
+}
 const responseSchema = {
   type: "object",
   properties: {
@@ -278,7 +381,12 @@ export async function onRequestPost({ request, env }) {
     "Usá price_usd solo si aparece US$, USD o dólares inequívocamente; price_nio solo si aparece C$, NIO o córdobas. Si la moneda es ambigua, dejá ambos precios null y explicalo en notes.",
     "Si una pantalla contiene varias configuraciones con precios propios, devolvé una fila por configuración y repetí los datos comunes.",
     "Ignorá menús, botones, anuncios, navegación, datos de cuenta, teléfonos y textos ajenos al producto.",
-    "confidence debe estar entre 0 y 1. evidence debe ser una cita breve del OCR que respalde el producto o precio."
+    "Cada texto OBSERVACIÓN lleva un índice entero de 1 a N. source_observation debe copiar exactamente ese índice; nunca uses cero ni inventes un índice.",
+    "Transcribí product_name, brand, model y las variantes tal como aparecen. No normalices ni corrijas silenciosamente la ortografía del OCR.",
+    "Incluí una fila si la identidad del producto es legible aunque falten precio, RAM, almacenamiento o color. No descartes un producto solo por carecer de precio.",
+    "Leé líneas consecutivas como parte de la misma ficha cuando la pantalla muestre un título, modelo, configuración y precio distribuidos verticalmente.",
+    "evidence debe ser una cita literal y breve de la observación correspondiente, idealmente incluyendo el nombre/modelo y la línea de configuración si aparecen.",
+    "confidence debe estar entre 0 y 1. No infieras una marca o modelo a partir de una categoría genérica."
   ].join(" ");
   const content = observations.map(item => "OBSERVACIÓN " + item.index + " (" + item.captured_at + "):\n" + item.text).join("\n\n---\n\n");
   const geminiHeaders = {
@@ -448,9 +556,10 @@ export async function onRequestPost({ request, env }) {
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
   let parsed;
   try { parsed = JSON.parse(generated); } catch { return reply(502, { ok: false, error: "gemini_unstructured_response" }, origin); }
-  const products = groundScannerProducts(parsed.products, observations);
+  const diagnostics = {};
+  const products = groundScannerProducts(parsed.products, observations, diagnostics);
   return reply(200, {
-    ok: true, products,
+    ok: true, products, diagnostics,
     session_notes: Array.isArray(parsed.session_notes) ? parsed.session_notes.slice(0, 12).map(value => clean(value, 180)).filter(Boolean) : [],
     observations_processed: observations.length, screenshots_uploaded: false
   }, origin);
