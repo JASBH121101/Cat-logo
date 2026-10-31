@@ -214,9 +214,9 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       permission = await native.requestPermission();
     }
     if (!permission?.granted) {
-      setStatus(permission?.shouldShowRationale
-        ? "No se concedió el permiso del micrófono. Podés volver a tocar el botón para intentarlo."
-        : "El permiso del micrófono está bloqueado. Abrí Información de la aplicación → Permisos → Micrófono y habilitalo.", true);
+      setStatus(permission?.permanentlyDenied
+        ? "El permiso del micrófono está bloqueado. Abrí Información de la aplicación → Permisos → Micrófono y habilitalo."
+        : "No se concedió el permiso del micrófono. Podés volver a tocar el botón para solicitarlo nuevamente.", true);
       return;
     }
     await attachNativeVoiceListeners(native);
