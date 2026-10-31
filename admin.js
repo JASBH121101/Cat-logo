@@ -3056,6 +3056,7 @@ window.addEventListener("resize", () => {
 });
 
 function showAdminSection(section) {
+  document.body.dataset.adminActiveSection = section;
   if (!window.matchMedia("(max-width: 760px)").matches) {
     const toggle = document.getElementById("admin-menu-toggle");
     const collapsed = document.body.classList.contains("admin-sidebar-collapsed");
@@ -4847,16 +4848,25 @@ function hasUnsavedEditorChanges() {
 }
 
 function requestRecoveryBeforeExit() {
+  const addPanel = document.querySelector('[data-admin-panel="add"]');
+  const isProductEditorActive =
+    document.body.dataset.adminActiveSection === "add" &&
+    Boolean(addPanel && !addPanel.classList.contains("hidden") && addPanel.getClientRects().length);
+
+  // A background editor may still contain unsaved data. Persist it locally,
+  // but only warn when Add Product is the panel currently being used.
+  if (!isProductEditorActive) {
+    if (hasUnsavedEditorChanges()) {
+      clearTimeout(recoveryTimer);
+      void saveLocalRecoveryDraft();
+    }
+    return false;
+  }
+
   if (!hasUnsavedEditorChanges()) return false;
   clearTimeout(recoveryTimer);
-  /*
-    Guardamos también los cambios cuando el formulario está oculto, pero solo
-    bloqueamos una recarga si el usuario sigue dentro de Añadir producto.
-    Así se evita el aviso nativo en las listas y demás secciones del panel.
-  */
   void saveLocalRecoveryDraft();
-  const addPanel = document.querySelector('[data-admin-panel="add"]');
-  return Boolean(addPanel && !addPanel.classList.contains("hidden"));
+  return true;
 }
 
 window.addEventListener("beforeunload", event => {
