@@ -279,3 +279,15 @@ test("successful save and discard return to the top of the product form", () => 
   assert.match(admin, /clearEditor\(\);\s*scrollProductFormToTop\(\);/);
   assert.match(admin, /await loadProducts\(\);\s*clearEditor\(\);\s*scrollProductFormToTop\(\);/);
 });
+
+
+test("native reload warning is shown only while the Add Product panel is visible", () => {
+  assert.match(admin, /const addPanel = document\.querySelector\('\[data-admin-panel="add"\]'\)/);
+  assert.match(admin, /return Boolean\(addPanel && !addPanel\.classList\.contains\("hidden"\)\)/);
+  assert.match(admin, /void saveLocalRecoveryDraft\(\);[\s\S]*?const addPanel/);
+});
+
+test("switching catalogs does not prompt for a clean form or an unchanged open product", () => {
+  assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change", \(\) => \{\s*const requested = normalizeCatalogType\(activeCatalogSelector\.value\);\s*if \(requested === activeCatalogType\) return;\s*updateEditorDirtyState\(\);\s*if \(editorIsDirty\)/);
+  assert.doesNotMatch(admin, /const hasOpenProduct = Boolean\(\$\("#product-id"\)\?\.value\);\s*if \(hasOpenProduct \|\| editorIsDirty\)/);
+});
