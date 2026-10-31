@@ -1987,7 +1987,8 @@ function updateVariantRowHeadings() {
     const summary = group.querySelector("[data-variant-group-summary]");
     if (summary) {
       const colors = group.querySelectorAll("[data-variant-row]").length;
-      const availability = normalizeVariantAvailability(group.querySelector("[data-group-availability]")?.value || "");
+      const rawAvailability = group.querySelector("[data-group-availability]")?.value || "";
+      const availability = rawAvailability ? normalizeVariantAvailability(rawAvailability) : "";
       const availabilityLabel = availability === "available" ? "Disponible"
         : availability === "order" || availability === "on_order" ? "Por pedido"
         : availability === "out_of_stock" ? "Agotado" : "Disponibilidad pendiente";
@@ -1999,12 +2000,13 @@ function updateVariantRowHeadings() {
       if (rowHeading) rowHeading.textContent = colorName || "Color " + (index + 1);
       const cardSummary = row.querySelector("[data-variant-color-summary]");
       if (cardSummary) cardSummary.textContent = colorName || "Color " + (index + 1);
-      const colorAvailability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value || "");
+      const rawColorAvailability = row.querySelector("[data-variant-availability]")?.value || "";
+      const colorAvailability = rawColorAvailability ? normalizeVariantAvailability(rawColorAvailability) : "";
       const availabilitySummary = row.querySelector("[data-variant-summary-availability]");
       if (availabilitySummary) availabilitySummary.textContent = "Estado: " + (
         colorAvailability === "available" ? "Disponible"
         : colorAvailability === "order" || colorAvailability === "on_order" ? "Por pedido"
-        : colorAvailability === "out_of_stock" ? "Agotado" : "Sin confirmar"
+        : colorAvailability === "out_of_stock" ? "Agotado" : "Pendiente de confirmar"
       );
       const hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const dot = row.querySelector("[data-variant-color-dot]");
