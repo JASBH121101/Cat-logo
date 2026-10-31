@@ -123,3 +123,14 @@ test("Product preparation uses the existing editor and never submits or writes d
   assert.match(preparation, /scheduleProductDuplicateCheck\(\{ immediate: true \}\)/);
   assert.doesNotMatch(preparation, /\.submit\(|supabase\.from\(["']products["']\)/);
 });
+
+
+test("JB Copilot allows the Capacitor Android origin and handles blocked microphone requests", () => {
+  assert.match(endpoint, /"https:\/\/localhost"/);
+  assert.match(endpoint, /export async function onRequestOptions/);
+  assert.match(endpoint, /export async function onRequestPost/);
+  assert.match(assistant, /VOICE_PERMISSION_TIMEOUT/);
+  assert.match(assistant, /native\.openAppSettings\(\)/);
+  assert.match(assistant, /Abrir permisos del micrófono/);
+  assert.match(css, /\.jb-ai-permission-settings/);
+});
