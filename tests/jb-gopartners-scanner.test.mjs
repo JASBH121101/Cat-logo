@@ -516,3 +516,13 @@ test("scanner classifies Gemini access failures and returns a safe diagnostic", 
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("Android OCR does not discard changed screens using a sparse pixel hash", () => {
+  const source = readFileSync(new URL("../mobile/native-android/GoPartnersCaptureService.java", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /bitmapHash|lastFrameHash|CRC32/);
+  assert.match(source, /MIN_FRAME_INTERVAL_MS/);
+  assert.match(source, /recognizer\.process\(InputImage\.fromBitmap\(frame, 0\)\)/);
+  assert.match(source, /normalized\.equals\(lastRecognizedText\)/);
+  assert.match(source, /Duplicate recognized text is filtered after ML Kit/);
+});
