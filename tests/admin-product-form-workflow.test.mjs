@@ -339,3 +339,22 @@ test("the warranty unit suffix is decorative and cannot be mistaken for an activ
   assert.match(accessibilityCss, /admin-input-unit-suffix[\s\S]*?user-select:\s*none/);
   assert.match(accessibilityCss, /admin-input-unit-suffix[\s\S]*?pointer-events:\s*none/);
 });
+
+
+test("TV and audio categories use compact price-availability-color variants", () => {
+  assert.match(admin, /function categoryUsesColorOnlyVariants\(category[\s\S]*?\["Televisores", "Audio"\]/);
+  assert.match(admin, /addVariantButton\.classList\.toggle\("hidden", colorOnly\)/);
+  assert.match(admin, /label\.classList\.toggle\("hidden", colorOnly\)/);
+  assert.match(admin, /variantsTitle = colorOnly \? "Precios y colores"/);
+  assert.match(admin, /Configuración principal · precio, disponibilidad y colores/);
+  assert.match(html, /id="variants-editor-description"/);
+  assert.match(accessibilityCss, /technology-variants-section\.is-color-only[\s\S]*?grid-template-columns/);
+});
+
+test("compact TV/audio variants preserve the shared price, availability and color fields", () => {
+  assert.match(admin, /data-group-price-usd/);
+  assert.match(admin, /data-group-price-nio/);
+  assert.match(admin, /data-group-availability/);
+  assert.match(admin, /data-variant-color-list/);
+  assert.match(admin, /categoryUsesRamStorage\(\$\("#product-category"\)\?\.value \|\| ""\)/);
+});
