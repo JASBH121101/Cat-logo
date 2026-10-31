@@ -173,3 +173,129 @@ test("JB Copilot POST handler is reached and returns authentication_required, no
   assert.equal(payload.error, "authentication_required");
   assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://localhost");
 });
+
+
+test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authentication", async () => {
+  assert.match(endpoint, /gemini-3\.8-flash:generateContent/);
+  assert.match(endpoint, /"x-goog-api-key": env\.GEMINI_API_KEY/);
+  assert.doesNotMatch(endpoint, /gemini-2\.5-flash/);
+  assert.doesNotMatch(endpoint, /temperature:\s*0\.2/);
+
+  const originalFetch = globalThis.fetch;
+  let geminiRequest;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    }
+    if (url.includes("/rest/v1/admin_users")) {
+      return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    }
+    if (url.includes("generativelanguage.googleapis.com")) {
+      geminiRequest = { url, headers: init.headers, body: JSON.parse(init.body) };
+      return new Response(JSON.stringify({
+        candidates: [{
+          content: {
+            parts: [{
+              text: JSON.stringify({
+                message: "¡Hola! Estoy listo.",
+                intent: "question",
+                product_query: "",
+                provider_price_usd: null,
+                provider_price_nio: null,
+                catalog_type: "technology",
+                missing_fields: [],
+                product_draft: null
+              })
+            }]
+          }
+        }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected test request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola bro" })
+    });
+    const response = await jbAiEndpoint.onRequestPost({
+      request,
+      env: { GEMINI_API_KEY: "test-only-key" }
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.assistant.message, "¡Hola! Estoy listo.");
+    assert.match(geminiRequest.url, /models\/gemini-3\.8-flash:generateContent$/);
+    assert.doesNotMatch(geminiRequest.url, /[?&]key=/);
+    assert.equal(geminiRequest.headers["x-goog-api-key"], "test-only-key");
+    assert.equal(geminiRequest.body.generationConfig.temperature, undefined);
+    assert.equal(geminiRequest.body.generationConfig.responseMimeType, "application/json");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("JB Copilot classifies Gemini upstream access, billing and quota failures", async () => {
+  const originalFetch = globalThis.fetch;
+  const cases = [
+    {
+      status: 403,
+      body: { error: { status: "PERMISSION_DENIED", message: "API key was rejected" } },
+      expected: "gemini_api_access_denied"
+    },
+    {
+      status: 400,
+      body: { error: { status: "FAILED_PRECONDITION", message: "Billing is required for this project free tier" } },
+      expected: "gemini_billing_required"
+    },
+    {
+      status: 429,
+      body: { error: { status: "RESOURCE_EXHAUSTED", message: "Quota exceeded" } },
+      expected: "gemini_quota_exhausted"
+    }
+  ];
+
+  try {
+    for (const item of cases) {
+      globalThis.fetch = async input => {
+        const url = String(input);
+        if (url.includes("/auth/v1/user")) {
+          return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+        }
+        if (url.includes("/rest/v1/admin_users")) {
+          return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+        }
+        if (url.includes("generativelanguage.googleapis.com")) {
+          return new Response(JSON.stringify(item.body), { status: item.status });
+        }
+        throw new Error("Unexpected test request: " + url);
+      };
+
+      const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+        method: "POST",
+        headers: {
+          Origin: "https://localhost",
+          Authorization: "Bearer test-admin-token",
+          "Content-Type": "application/json",
+          "CF-Connecting-IP": "192.0.2.99"
+        },
+        body: JSON.stringify({ message: "Hola bro" })
+      });
+      const response = await jbAiEndpoint.onRequestPost({
+        request,
+        env: { GEMINI_API_KEY: "test-only-key" }
+      });
+      const payload = await response.json();
+      assert.equal(payload.error, item.expected, "HTTP " + item.status);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
