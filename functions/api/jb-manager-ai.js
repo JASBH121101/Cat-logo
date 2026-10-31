@@ -33,6 +33,35 @@ function cleanText(value, maxLength = 3000) {
     .slice(0, maxLength);
 }
 
+
+function isSimpleGreeting(value) {
+  const normalized = String(value ?? "")
+    .normalize("NFD")
+    .replace(/\\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[¿?¡!.,;:]/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+  return /^(hola(?:\\s+(?:bro|banda|amigo|amiga))?(?:\\s+como estas)?|buenas(?:\\s+(?:tardes|noches))?|buenos dias|que onda(?:\\s+(?:bro|banda))?|hey|hello|hi)$/.test(normalized);
+}
+
+function emptyAssistantResult(message, model = "local") {
+  return {
+    ok: true,
+    assistant: {
+      message,
+      intent: "question",
+      product_query: "",
+      provider_price_usd: null,
+      provider_price_nio: null,
+      catalog_type: "unknown",
+      missing_fields: [],
+      product_draft: null,
+      model_used: model
+    }
+  };
+}
+
 function rateLimited(request) {
   const now = Date.now();
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -193,6 +222,15 @@ export async function onRequestPost({ request, env }) {
 
   const prompt = cleanText(body?.message, 3000);
   if (!prompt) return response(400, { ok: false, error: "message_required" }, origin);
+
+  // Greetings are a core chat interaction and should not depend on model
+  // availability, quotas, or schema support.
+  if (isSimpleGreeting(prompt)) {
+    return response(200, emptyAssistantResult(
+      "¡Hola! Todo bien por acá. ¿Qué necesitás gestionar hoy en JB Manager? Puedo ayudarte a buscar productos, preparar altas o revisar precios de proveedor."
+    ), origin);
+  }
+
   if (!env.GEMINI_API_KEY) return response(503, { ok: false, error: "gemini_not_configured" }, origin);
 
   const context = Array.isArray(body?.products) ? body.products.slice(0, 80).map(item => ({
@@ -257,8 +295,12 @@ export async function onRequestPost({ request, env }) {
   function geminiRequestBody(useSchema) {
     const generationConfig = useSchema
       ? {
-          responseMimeType: "application/json",
-          responseSchema,
+          responseFormat: {
+            text: {
+              mimeType: "APPLICATION_JSON",
+              schema: responseSchema
+            }
+          },
           maxOutputTokens: 1800
         }
       : {
@@ -429,14 +471,89 @@ export async function onRequestPost({ request, env }) {
     }, origin);
   }
 
-  const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
-  let parsed;
-  try { parsed = JSON.parse(generated); } catch {
-    return response(502, { ok: false, error: "gemini_unstructured_response" }, origin);
+  const candidate = result?.candidates?.[0] || null;
+  const generated = candidate?.content?.parts
+    ?.filter(part => typeof part?.text === "string" && !part.thought)
+    .map(part => part.text)
+    .join("")
+    .trim() || "";
+  let parsed = null;
+  let parseError = null;
+
+  if (generated) {
+    const candidates = [generated];
+    const fenced = generated.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/i);
+    if (fenced?.[1]) candidates.push(fenced[1].trim());
+    const firstBrace = generated.indexOf("{");
+    const lastBrace = generated.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      candidates.push(generated.slice(firstBrace, lastBrace + 1));
+    }
+
+    for (const candidateText of candidates) {
+      try {
+        parsed = JSON.parse(candidateText);
+        break;
+      } catch (error) {
+        parseError = error;
+      }
+    }
+  }
+
+  const productActionRequested = /(?:\\b(?:agreg|añad|anad|registr|crea|prepara|alta|incorpora)\\w*\\b.{0,50}\\bproducto\\b|\\bproducto\\b.{0,50}\\b(?:nuevo|alta|registr|prepar|crea)\\b|\\b(?:revis|actualiz)\\w*\\s+(?:el\\s+)?precio\\b|\\bprecio\\s+de\\s+proveedor\\b|\\b(?:busca|buscá|buscar)\\s+(?:un\\s+)?producto\\b)/i.test(prompt);
+
+  if (typeof parsed === "string" && parsed.trim()) {
+    parsed = { message: parsed.trim(), intent: "question" };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    if (generated && !productActionRequested) {
+      parsed = { message: generated, intent: "question" };
+    } else {
+      const reason = cleanText(candidate?.finishReason || result?.promptFeedback?.blockReason || "", 80);
+      console.error("[JB Copilot] Gemini response could not be parsed", JSON.stringify({
+        model: selectedModel,
+        finishReason: reason,
+        generatedLength: generated.length,
+        parseError: cleanText(parseError?.message, 180)
+      }));
+      return response(502, {
+        ok: false,
+        error: "gemini_unstructured_response",
+        detail: [reason, "Google no devolvió un objeto interpretable."].filter(Boolean).join(": ")
+      }, origin);
+    }
+  }
+
+  const assistantMessage = cleanText(
+    parsed.message ?? parsed.reply ?? parsed.answer ?? parsed.response ?? parsed.text ??
+    parsed.output ?? parsed.assistant?.message ?? parsed.result?.message,
+    1800
+  );
+  if (!assistantMessage) {
+    const reason = cleanText(candidate?.finishReason || "", 80);
+    const keys = Object.keys(parsed).slice(0, 20).join(", ");
+    console.error("[JB Copilot] Gemini JSON was missing the assistant message", JSON.stringify({
+      model: selectedModel,
+      keys,
+      finishReason: reason
+    }));
+    return response(502, {
+      ok: false,
+      error: "gemini_unstructured_response",
+      detail: [
+        "Modelo: " + (selectedModel || "desconocido"),
+        "Campos recibidos: " + (keys || "ninguno"),
+        reason
+      ].filter(Boolean).join("; ").slice(0, 320)
+    }, origin);
   }
 
   const allowedIntents = new Set(["question", "search_product", "provider_price_update", "add_product", "unknown"]);
-  const intent = allowedIntents.has(parsed.intent) ? parsed.intent : "unknown";
+  const inferredIntent = parsed.product_draft ? "add_product"
+    : parsed.product_query ? "search_product"
+    : parsed.provider_price_usd != null || parsed.provider_price_nio != null ? "provider_price_update"
+    : "question";
+  const intent = allowedIntents.has(parsed.intent) ? parsed.intent : inferredIntent;
   const cleanNullableNumber = value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value))
     ? null
     : Number(value);
@@ -487,14 +604,15 @@ export async function onRequestPost({ request, env }) {
   return response(200, {
     ok: true,
     assistant: {
-      message: cleanText(parsed.message, 1800) || "No pude interpretar esa solicitud. ¿Podés explicarla de otra manera?",
+      message: assistantMessage,
       intent,
       product_query: cleanText(parsed.product_query, 160),
       provider_price_usd: Number.isFinite(parsed.provider_price_usd) ? parsed.provider_price_usd : null,
       provider_price_nio: Number.isFinite(parsed.provider_price_nio) ? parsed.provider_price_nio : null,
       catalog_type: ["technology", "perfumery"].includes(parsed.catalog_type) ? parsed.catalog_type : "unknown",
       missing_fields: Array.isArray(parsed.missing_fields) ? parsed.missing_fields.slice(0, 16).map(value => cleanText(value, 80)) : [],
-      product_draft: productDraft && productDraft.name ? productDraft : null
+      product_draft: productDraft && productDraft.name ? productDraft : null,
+      model_used: selectedModel
     }
   }, origin);
 }
