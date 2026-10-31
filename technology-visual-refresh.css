@@ -4262,3 +4262,65 @@ html[data-theme="dark"] body.technology-catalog.product-detail-active #product-d
     gap: 24px;
   }
 }
+
+
+/* JB TECH · Ediciones limitadas: champagne gold in light mode, electric graphite in dark mode. */
+html:not([data-theme="dark"]) body.technology-catalog .limited-edition-section {
+  border:1px solid #d9bd83 !important;
+  background:
+    radial-gradient(ellipse at 100% 0,rgba(194,155,82,.13),transparent 48%),
+    linear-gradient(135deg,#fbf7ed 0%,#f3ead7 56%,#eee1c5 100%) !important;
+  box-shadow:0 18px 42px rgba(104,78,35,.11),inset 0 1px 0 rgba(255,255,255,.9) !important;
+  color:#49361c !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog .limited-edition-kicker {
+  color:#98712f !important;
+  letter-spacing:.11em !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog .limited-edition-heading h2 {
+  color:#49361c !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog .limited-edition-heading .section-subtitle {
+  color:#78694f !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog .limited-edition-section .featured-count {
+  border:1px solid #d6bb85 !important;
+  color:#7c5c27 !important;
+  background:#fffaf0 !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid > .product-card,
+html:not([data-theme="dark"]) body.technology-catalog .product-card-tag-limited_edition {
+  border-color:#d9bd83 !important;
+  box-shadow:0 8px 22px rgba(137,103,44,.10) !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid > .product-card::before,
+html:not([data-theme="dark"]) body.technology-catalog .product-card-tag-limited_edition::before {
+  background:linear-gradient(90deg,transparent,#c9a45e,#ead8ad,transparent) !important;
+  opacity:.9 !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog .product-tag-badge.tag-limited_edition {
+  display:inline-flex !important;
+  flex:0 0 auto !important;
+  align-self:flex-start !important;
+  width:fit-content !important;
+  min-width:0 !important;
+  max-width:max-content !important;
+  height:auto !important;
+  padding:4px 8px !important;
+  border:1px solid #c7a15b !important;
+  border-radius:7px !important;
+  color:#76551f !important;
+  background:linear-gradient(120deg,#f5e5bd,#e5c987) !important;
+  font-size:10px !important;
+  font-weight:850 !important;
+  line-height:1.25 !important;
+  letter-spacing:0 !important;
+  white-space:nowrap !important;
+  text-transform:uppercase;
+}
+html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid .product-card-badges {
+  align-items:flex-start !important;
+}
+html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid .product-tag-badge.tag-limited_edition {
+  justify-self:start !important;
+}
