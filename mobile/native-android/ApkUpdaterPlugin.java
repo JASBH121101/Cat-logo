@@ -224,9 +224,11 @@ public class ApkUpdaterPlugin extends Plugin {
         if (dest.exists() && !dest.delete()) { call.reject("No se pudo reemplazar un APK anterior. Revisá el espacio disponible."); return; }
         try {
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-            request.setTitle("JB Manager Collections · v" + version);
-            request.setDescription("Descargando actualización oficial…");
+            request.setTitle("JB Manager · Actualización v" + version);
+            request.setDescription("Descarga en segundo plano. Podés salir de JB Manager; Android continuará y avisará al terminar.");
             request.setMimeType(MIME);
+            // DownloadManager owns the transfer in Android's system process. It
+            // continues independently of the WebView/Activity lifecycle.
             request.setAllowedOverMetered(true);
             request.setAllowedOverRoaming(false);
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
