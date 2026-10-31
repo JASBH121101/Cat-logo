@@ -265,7 +265,7 @@ jobs:
           set -euo pipefail
           # The APK must package the same business logic, Supabase config, and styles
           # as the browser panel. Only the HTML shell/native bridges are platform-specific.
-          for file in admin.js admin-notifications.mjs admin-provider.js admin-gopartners-scanner.js admin-gopartners-scanner.css app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
+          for file in admin.js admin-ai.js admin-notifications.mjs admin-provider.js admin-gopartners-scanner.js admin-gopartners-scanner.css app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
             if ! cmp -s "$file" "mobile/www/$file"; then
               echo "Shared source and APK bundle differ: $file" >&2
               diff -u "$file" "mobile/www/$file" || true
@@ -440,8 +440,11 @@ jobs:
           plugin_source = native_dir / "GoPartnersScannerPlugin.java"
           service_source = native_dir / "GoPartnersCaptureService.java"
           session_source = native_dir / "GoPartnersScanSession.java"
+          voice_source = native_dir / "JbVoiceInputPlugin.java"
           if not plugin_source.is_file() or not service_source.is_file() or not session_source.is_file():
               raise SystemExit("JARVIS screen scanner native sources are missing.")
+          if not voice_source.is_file():
+              raise SystemExit("JARVIS native voice input source is missing.")
 
           candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
           if len(candidates) != 1:
@@ -458,6 +461,7 @@ jobs:
               ("GoPartnersScannerPlugin.java", plugin_source),
               ("GoPartnersCaptureService.java", service_source),
               ("GoPartnersScanSession.java", session_source),
+              ("JbVoiceInputPlugin.java", voice_source),
           ):
               content = re.sub(
                   r"^package\s+[^;]+;",
@@ -468,11 +472,20 @@ jobs:
               )
               (package_dir / filename).write_text(content, encoding="utf-8")
 
-          if "registerPlugin(GoPartnersScannerPlugin.class)" not in source:
-              registration = "registerPlugin(GoPartnersScannerPlugin.class);\n        "
+          registrations = [
+              "registerPlugin(GoPartnersScannerPlugin.class)",
+              "registerPlugin(JbVoiceInputPlugin.class)",
+          ]
+          if any(registration not in source for registration in registrations):
               if "super.onCreate(savedInstanceState);" not in source:
-                  raise SystemExit("Android MainActivity has no onCreate hook for scanner registration.")
-              source = source.replace("super.onCreate(savedInstanceState);", registration + "super.onCreate(savedInstanceState);", 1)
+                  raise SystemExit("Android MainActivity has no onCreate hook for native plugin registration.")
+              for registration in registrations:
+                  if registration not in source:
+                      source = source.replace(
+                          "super.onCreate(savedInstanceState);",
+                          registration + ";\\n        super.onCreate(savedInstanceState);",
+                          1
+                      )
               main_path.write_text(source, encoding="utf-8")
 
           manifest_path = Path("mobile/android/app/src/main/AndroidManifest.xml")
@@ -480,6 +493,7 @@ jobs:
           permissions = [
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />',
+              '<uses-permission android:name="android.permission.RECORD_AUDIO" />',
           ]
           for permission in permissions:
               if permission not in manifest:
@@ -503,7 +517,7 @@ jobs:
               gradle = gradle[:match.end()] + "\n    " + dependency + gradle[match.end():]
               gradle_path.write_text(gradle, encoding="utf-8")
 
-          print("Installed JARVIS MediaProjection foreground service, Android plugin, and bundled ML Kit OCR.")
+          print("Installed JARVIS MediaProjection/OCR scanner and native Android microphone/voice recognition plugin.")
           PY
 
       - name: Set Android app version
@@ -926,7 +940,15 @@ jobs:
           grep -q 'com.google.mlkit:text-recognition:16.0.1' "$GRADLE"
           grep -q 'TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)' "$SERVICE"
           grep -q 'MAX_OBSERVATIONS = 80' "$SESSION"
-          echo "JARVIS screen scanner, MediaProjection foreground service, and bundled on-device OCR are wired into the APK."
+          VOICE="mobile/android/app/src/main/java/com/jbcollections/manager/v2/JbVoiceInputPlugin.java"
+          test -s "$VOICE"
+          grep -q 'registerPlugin(JbVoiceInputPlugin.class)' "$MAIN"
+          grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"
+          grep -q 'requestPermissionForAlias("microphone"' "$VOICE"
+          grep -q 'SpeechRecognizer.createSpeechRecognizer' "$VOICE"
+          grep -q 'notifyListeners("result"' "$VOICE"
+          grep -q 'notifyListeners("partialResult"' "$VOICE"
+          echo "JARVIS scanner, local OCR, native microphone permission, and Android speech recognition are wired into the APK."
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
