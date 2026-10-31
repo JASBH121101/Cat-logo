@@ -2,7 +2,9 @@ package com.jbcollections.manager.v2;
 
 import android.Manifest;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -41,14 +43,48 @@ public class JbVoiceInputPlugin extends Plugin implements RecognitionListener {
             call.resolve(permissionState());
             return;
         }
-        getContext().getSharedPreferences("jb_voice_input", android.content.Context.MODE_PRIVATE)
-            .edit().putBoolean("microphone_prompted", true).apply();
-        requestPermissionForAlias("microphone", call, "microphonePermissionCallback");
+        getActivity().runOnUiThread(() -> {
+            try {
+                requestPermissionForAlias("microphone", call, "microphonePermissionCallback");
+            } catch (Exception error) {
+                call.reject("Android no pudo abrir la solicitud del micrófono: " + safeMessage(error),
+                    "MICROPHONE_PERMISSION_REQUEST_FAILED");
+            }
+        });
     }
 
     @PermissionCallback
     private void microphonePermissionCallback(PluginCall call) {
+        boolean granted = getPermissionState("microphone") == PermissionState.GRANTED;
+        android.content.SharedPreferences preferences = getContext()
+            .getSharedPreferences("jb_voice_input", android.content.Context.MODE_PRIVATE);
+        if (granted) {
+            preferences.edit().putInt("microphone_request_count", 0).apply();
+        } else {
+            int attempts = preferences.getInt("microphone_request_count", 0) + 1;
+            preferences.edit().putInt("microphone_request_count", attempts).apply();
+        }
         if (call != null) call.resolve(permissionState());
+    }
+
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            try {
+                Intent intent = new Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getContext().getPackageName())
+                );
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(intent);
+                JSObject result = new JSObject();
+                result.put("opened", true);
+                call.resolve(result);
+            } catch (Exception error) {
+                call.reject("No se pudieron abrir los ajustes de JB Manager: " + safeMessage(error),
+                    "APP_SETTINGS_UNAVAILABLE");
+            }
+        });
     }
 
     private JSObject permissionState() {
@@ -58,13 +94,13 @@ public class JbVoiceInputPlugin extends Plugin implements RecognitionListener {
             rationale = ActivityCompat.shouldShowRequestPermissionRationale(
                 getActivity(), Manifest.permission.RECORD_AUDIO);
         } catch (Exception ignored) {}
-        boolean promptedBefore = getContext()
+        int attempts = getContext()
             .getSharedPreferences("jb_voice_input", android.content.Context.MODE_PRIVATE)
-            .getBoolean("microphone_prompted", false);
+            .getInt("microphone_request_count", 0);
         JSObject result = new JSObject();
         result.put("granted", granted);
         result.put("shouldShowRationale", rationale);
-        result.put("permanentlyDenied", !granted && promptedBefore && !rationale);
+        result.put("permanentlyDenied", !granted && attempts >= 2 && !rationale);
         return result;
     }
 
