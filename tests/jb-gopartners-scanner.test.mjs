@@ -100,7 +100,7 @@ test("OCR observations remain in native memory until a successful review is rend
   const finish = source.indexOf("  async function finish()");
   const api = source.indexOf('fetch("/api/jb-gopartners-scan"', finish);
   const render = source.indexOf("renderReview();", api);
-  const clearAfterReview = source.indexOf("await native.clearScan().catch(() => {})", render);
+  const clearAfterReview = source.indexOf("const cleared = await native.clearScan()", render);
   assert.ok(finish >= 0 && api > finish && render > api);
   assert.ok(clearAfterReview > render, "OCR must only be cleared after analysis and review rendering succeed");
   assert.match(source, /recoverableSession = true/);
