@@ -883,3 +883,82 @@ html[data-theme="dark"] body.admin-body .admin-product-category-pill {
     gap: 5px;
   }
 }
+
+
+/* JB Manager · sidebar collapsible on desktop, preserving the mobile drawer. */
+@media (min-width: 761px) {
+  body.admin-body.admin-dashboard-active .admin-menu-toggle {
+    display: inline-flex !important;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed {
+    --admin-sidebar-width: 76px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar {
+    align-items: center;
+    padding: 18px 9px 14px;
+    gap: 16px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-brand {
+    justify-content: center;
+    width: 100%;
+    padding: 0 0 14px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-brand-copy,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-section-label,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-nav-label,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-settings-toggle-label,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-settings-toggle-chevron,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-footer,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-settings-menu {
+    display: none !important;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-section-nav {
+    gap: 8px !important;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-nav-button {
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 8px 5px !important;
+    min-height: 43px !important;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-nav-button > .admin-nav-icon {
+    flex-basis: 30px;
+    width: 30px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-nav-count,
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-nav-ai-tag {
+    display: none !important;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-settings {
+    padding-top: 8px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar .admin-settings-toggle {
+    justify-content: center;
+    padding: 9px 4px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-catalog-link {
+    justify-content: center;
+    padding: 10px 4px;
+    font-size: 0;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-sidebar-catalog-link > span:first-child {
+    font-size: 17px;
+  }
+  body.admin-body.admin-dashboard-active.admin-sidebar-collapsed .admin-main {
+    padding-left: calc(var(--admin-sidebar-width) + clamp(18px, 2.4vw, 40px));
+  }
+}
+@media (max-width: 760px) {
+  body.admin-body.admin-dashboard-active .admin-menu-toggle {
+    display: inline-flex !important;
+  }
+}
+
+/* Catalog selector is context, not product data: switching it must never mark
+   an otherwise empty editor as modified or trigger a discard confirmation. */
+body.admin-body #product-catalog-type {
+  scroll-margin-top: calc(var(--admin-header-height, 76px) + 18px);
+}
+body.admin-body #form-title {
+  scroll-margin-top: calc(var(--admin-header-height, 76px) + 18px);
+}
