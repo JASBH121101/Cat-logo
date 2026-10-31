@@ -1,4 +1,8 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
+import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
+import { initJbManagerAI } from "./admin-ai.js?v=20261031-native-voice2";
+import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-ocr-retry3";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -6,6 +10,8 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
    ========================================================= */
 
 const CONFIG = window.CATALOG_CONFIG || {};
+// Custom technology tags are kept as separate chips while editing a product.
+let customProductTags = [];
 
 const configured = Boolean(
   CONFIG.supabaseUrl &&
@@ -15,9 +21,9 @@ const configured = Boolean(
 );
 
 /*
-  «Recordar mi sesión» mantiene la sesión autenticada de Supabase en este
-  dispositivo. La contraseña nunca se guarda. Sin esa opción, la sesión es
-  temporal y se limpia durante una recarga.
+  «Recordar mi sesión» conserva la sesión autenticada de Supabase en este
+  dispositivo, sin guardar la contraseña. Si está desactivado, se usa
+  sessionStorage y una recarga vuelve a pedir autenticación.
 */
 const REMEMBER_SESSION_KEY = "cat-logo-remember-admin-session-v1";
 const REMEMBER_EMAIL_KEY = "cat-logo-remember-admin-email-v1";
@@ -105,16 +111,19 @@ const supabase = configured
     })
   : null;
 
-/* Vercel deployments are test previews: block product writes and Storage mutations. */
-const IS_READ_ONLY_VERCEL_PREVIEW = /\.vercel\.app$/i.test(window.location.hostname);
-if (supabase && IS_READ_ONLY_VERCEL_PREVIEW) {
+/* Preview deployments are read-only: protect production data while testing Vercel/Cloudflare previews. */
+const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
+const IS_READ_ONLY_PREVIEW =
+  /\.vercel\.app$/i.test(adminHostname) ||
+  (/\.pages\.dev$/i.test(adminHostname) && adminHostname !== "jb-collections.pages.dev");
+if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalFrom = supabase.from.bind(supabase);
   supabase.from = table => {
     const query = originalFrom(table);
     for (const method of ["insert", "update", "upsert", "delete"]) {
       if (typeof query[method] === "function") {
         query[method] = () => {
-          throw new Error("Vista previa segura: no se permiten cambios en la base de datos desde Vercel.");
+          throw new Error("Vista previa segura: no se permiten cambios en la base de datos desde un despliegue de prueba.");
         };
       }
     }
@@ -126,7 +135,7 @@ if (supabase && IS_READ_ONLY_VERCEL_PREVIEW) {
     for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl", "createSignedUrls"]) {
       if (typeof storageApi[method] === "function") {
         storageApi[method] = async () => {
-          throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde Vercel.");
+          throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde un despliegue de prueba.");
         };
       }
     }
@@ -158,6 +167,7 @@ const form = $("#product-form");
 
 let currentUser = null;
 let products = [];
+let inventoryRefreshPromise = null;
 const CATALOG_ADMIN_ACTIVITY_KEY = "cat-logo-admin-activity-v1";
 function refreshCatalogAdminActivityMarker() {
   if (!currentUser) return;
@@ -173,6 +183,26 @@ let activeCatalogType = "technology";
 let dashboardCatalogScope = "all";
 const activeCatalogSelector = $("#active-catalog-selector");
 const dashboardScopeSelector = $("#dashboard-scope-selector");
+const jbManagerAI = initJbManagerAI({
+  getSupabase: () => supabase,
+  getCurrentUser: () => currentUser,
+  getProducts: () => products
+});
+const providerTools = initProviderTools({
+  getSupabase: () => supabase,
+  getCurrentUser: () => currentUser,
+  getProducts: () => products,
+  onRefreshCatalog: button => refreshAdminInventory(button)
+});
+const goPartnersScanner = initGoPartnersScanner({
+  getSupabase: () => supabase,
+  getCurrentUser: () => currentUser,
+  getProducts: () => products,
+  providerTools
+});
+window.addEventListener("jb-catalog-provider-updated", () => {
+  void loadProducts();
+});
 
 function normalizeCatalogType(value) {
   return value === "perfumery" ? "perfumery" : "technology";
@@ -186,6 +216,299 @@ function getDashboardProducts() {
   if (dashboardCatalogScope === "all") return products;
   return products.filter(product => normalizeCatalogType(product.catalog_type) === dashboardCatalogScope);
 }
+
+
+/* =========================================================
+   DETECTOR INTELIGENTE DE COINCIDENCIAS
+   Solo compara la misma marca y el mismo catálogo. Es una
+   ayuda de revisión: nunca bloquea ni guarda por su cuenta.
+   ========================================================= */
+let productDuplicateCheckTimer = 0;
+
+function normalizeDuplicateText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/\+/g, " plus ")
+    .replace(/\bproplus\b/g, "pro plus")
+    .replace(/\bpro\s+plus\b/g, "pro plus")
+    .replace(/\b(?:incorporated|corporation|electronics|technology|technologies|company|limited|ltd|inc|llc|s\.a\.|sa)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function duplicateTokens(value) {
+  return new Set(normalizeDuplicateText(value).split(" ").filter(token => token.length > 1));
+}
+
+function duplicateTokenSimilarity(left, right) {
+  const a = duplicateTokens(left), b = duplicateTokens(right);
+  if (!a.size || !b.size) return 0;
+  let overlap = 0;
+  a.forEach(token => { if (b.has(token)) overlap += 1; });
+  return overlap / (a.size + b.size - overlap);
+}
+
+function duplicateBigramSimilarity(left, right) {
+  const toBigrams = value => {
+    const normalized = " " + normalizeDuplicateText(value) + " ";
+    const result = new Set();
+    for (let i = 0; i < normalized.length - 1; i += 1) result.add(normalized.slice(i, i + 2));
+    return result;
+  };
+  const a = toBigrams(left), b = toBigrams(right);
+  if (!a.size || !b.size) return 0;
+  let overlap = 0;
+  a.forEach(pair => { if (b.has(pair)) overlap += 1; });
+  return (2 * overlap) / (a.size + b.size);
+}
+
+function duplicateTextSimilarity(left, right) {
+  const a = normalizeDuplicateText(left), b = normalizeDuplicateText(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  const containment = longer.includes(shorter) ? shorter.length / longer.length : 0;
+  const overlap = duplicateTokenSimilarity(a, b);
+  const bigrams = duplicateBigramSimilarity(a, b);
+  const blended = overlap * 0.58 + bigrams * 0.42;
+  return Math.max(blended, containment >= 0.48 ? 0.68 + containment * 0.24 : 0);
+}
+
+function getDuplicateVariantProfilesFromForm() {
+  return Array.from(form?.querySelectorAll("[data-variant-group]") || [])
+    .map(group => ({
+      ram: String(group.querySelector("[data-group-ram]")?.value || "").trim(),
+      storage: String(group.querySelector("[data-group-storage]")?.value || "").trim(),
+      unit: String(group.querySelector("[data-group-storage-unit]")?.value || "GB").trim()
+    }))
+    .filter(item => item.ram || item.storage);
+}
+
+function getDuplicateVariantProfiles(product) {
+  return normalizeVariants(product?.variants).map(variant => ({
+    ram: String(variant.ram || "").trim(),
+    storage: String(variant.storage || "").trim()
+  })).filter(item => item.ram || item.storage);
+}
+
+function duplicateVariantLabel(variant) {
+  const parts = [];
+  if (variant.ram) parts.push(variant.ram + " RAM");
+  if (variant.storage) {
+    const storage = String(variant.storage).trim();
+    parts.push(/\b(?:gb|tb)\b/i.test(storage) ? storage : storage + " " + (variant.unit || "GB"));
+  }
+  return parts.join(" · ");
+}
+
+function scoreProductDuplicate(candidate, query) {
+  const candidateName = String(candidate.name || "");
+  const candidateModel = String(candidate.model || "");
+  const nameSimilarity = duplicateTextSimilarity(query.name, candidateName);
+  const modelSimilarity = duplicateTextSimilarity(query.model, candidateModel);
+  const queryModelAgainstName = query.model ? duplicateTextSimilarity(query.model, candidateName) : 0;
+  const queryNameAgainstModel = candidateModel ? duplicateTextSimilarity(query.name, candidateModel) : 0;
+  const primary = Math.max(
+    nameSimilarity,
+    modelSimilarity,
+    queryModelAgainstName * 0.96,
+    queryNameAgainstModel * 0.92
+  );
+  const tokenScore = Math.max(
+    duplicateTokenSimilarity(query.name, candidateName),
+    query.model && candidateModel ? duplicateTokenSimilarity(query.model, candidateModel) : 0,
+    query.model ? duplicateTokenSimilarity(query.model, candidateName) * 0.95 : 0
+  );
+  const exactName = normalizeDuplicateText(query.name) === normalizeDuplicateText(candidateName);
+  const exactModel = Boolean(query.model && candidateModel &&
+    normalizeDuplicateText(query.model) === normalizeDuplicateText(candidateModel));
+  const queryCategory = normalizeDuplicateText(query.category);
+  const candidateCategory = normalizeDuplicateText(candidate.category);
+  const categoryMatch = Boolean(queryCategory && candidateCategory && queryCategory === candidateCategory);
+  const categoryConflict = Boolean(queryCategory && candidateCategory && queryCategory !== candidateCategory);
+  const queryProfiles = query.profiles || [];
+  const candidateProfiles = getDuplicateVariantProfiles(candidate);
+  const matchingProfile = queryProfiles.some(current => candidateProfiles.some(existing =>
+    (!current.ram || !existing.ram || normalizeDuplicateText(current.ram) === normalizeDuplicateText(existing.ram)) &&
+    (!current.storage || !existing.storage || normalizeDuplicateText(current.storage) === normalizeDuplicateText(existing.storage))
+  ));
+  const isPerfume = query.catalogType === "perfumery";
+  const currentPerfume = query.perfumeDetails || {};
+  const savedPerfume = candidate.perfume_details || {};
+  const sameVolume = isPerfume && currentPerfume.volume &&
+    savedPerfume.volume_ml != null && Number(currentPerfume.volume) === Number(savedPerfume.volume_ml);
+  const sameConcentration = isPerfume && currentPerfume.concentration && savedPerfume.concentration &&
+    normalizeDuplicateText(currentPerfume.concentration) === normalizeDuplicateText(savedPerfume.concentration);
+
+  let score = primary * 0.66 + tokenScore * 0.20;
+  if (categoryMatch) score += 0.055;
+  if (exactName) score += 0.08;
+  if (exactModel) score += 0.09;
+  if (matchingProfile) score += 0.025;
+  if (sameVolume) score += 0.025;
+  if (sameConcentration) score += 0.025;
+  if (categoryConflict) score -= 0.045;
+  return Math.max(0, Math.min(1, score));
+}
+
+function getProductDuplicateStatusLabel(product) {
+  const status = getWorkflowStatus(product);
+  return status === "published" ? "Publicado"
+    : status === "draft" ? "Borrador"
+    : status === "trash" ? "En papelera"
+    : status === "deleting" ? "En eliminación"
+    : "No publicado";
+}
+
+function getProductDuplicateDetails(product, query) {
+  const details = [];
+  const savedModel = String(product.model || "").trim();
+  if (savedModel) details.push("Modelo: " + savedModel);
+  if (product.category) details.push("Categoría: " + product.category);
+  if (product.catalog_type === "perfumery") {
+    const perfume = product.perfume_details || {};
+    if (perfume.concentration) details.push(perfume.concentration);
+    if (perfume.volume_ml) details.push(perfume.volume_ml + " ml");
+    if (perfume.family) details.push(perfumeFamilyLabel(perfume.family));
+  } else {
+    const profiles = getDuplicateVariantProfiles(product);
+    if (profiles.length) {
+      const visible = profiles.slice(0, 3).map(duplicateVariantLabel).filter(Boolean);
+      details.push(profiles.length + " configuración" + (profiles.length === 1 ? "" : "es") +
+        (visible.length ? ": " + visible.join(" / ") : "") +
+        (profiles.length > visible.length ? " / …" : ""));
+    }
+  }
+  const currentModel = normalizeDuplicateText(query.model);
+  if (currentModel && savedModel && currentModel === normalizeDuplicateText(savedModel)) {
+    details.push("El modelo coincide");
+  } else if (query.model && savedModel) {
+    details.push("Compará el modelo");
+  }
+  return details;
+}
+
+function renderProductDuplicateSuggestions() {
+  const panel = $("#product-duplicate-panel");
+  const results = $("#product-duplicate-results");
+  const summary = $("#product-duplicate-summary");
+  const count = $("#product-duplicate-count");
+  if (!panel || !results || !summary || !count) return;
+
+  const name = String($("#product-name")?.value || "").trim();
+  const brand = String($("#product-brand")?.value || "").trim();
+  if (name.length < 3 || normalizeDuplicateText(brand).length < 2) {
+    panel.hidden = true;
+    results.replaceChildren();
+    return;
+  }
+
+  const query = {
+    name: name,
+    brand: brand,
+    model: String($("#product-model")?.value || "").trim(),
+    category: activeCatalogType === "perfumery" ? "Perfumería" : String($("#product-category")?.value || "").trim(),
+    catalogType: normalizeCatalogType(activeCatalogType),
+    profiles: getDuplicateVariantProfilesFromForm(),
+    perfumeDetails: {
+      volume: String($("#product-perfume-volume")?.value || "").trim(),
+      concentration: String($("#product-perfume-concentration")?.value || "").trim()
+    }
+  };
+  const brandKey = normalizeDuplicateText(brand);
+  const currentId = String($("#product-id")?.value || "").trim();
+
+  const matches = products
+    .filter(product => {
+      if (currentId && String(product.id) === currentId) return false;
+      if (normalizeCatalogType(product.catalog_type) !== query.catalogType) return false;
+      if (normalizeDuplicateText(product.brand) !== brandKey) return false;
+      if (!String(product.name || "").trim()) return false;
+      if (["trash", "deleting"].includes(getWorkflowStatus(product))) return false;
+      return true;
+    })
+    .map(product => ({ product: product, score: scoreProductDuplicate(product, query) }))
+    .filter(match => match.score >= 0.39)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+
+  panel.hidden = false;
+  summary.textContent = "Buscando dentro de " + brand + " y comparando nombre, modelo, categoría" +
+    (query.catalogType === "perfumery" ? ", concentración y ml" : ", RAM, almacenamiento y variantes") + ".";
+  count.hidden = matches.length === 0;
+  count.textContent = matches.length + " posible" + (matches.length === 1 ? "" : "s");
+
+  if (!matches.length) {
+    results.innerHTML = '<p class="product-duplicate-empty">No encontramos coincidencias probables para <strong>' +
+      escapeHtml(name) + "</strong> en la marca " + escapeHtml(brand) +
+      ". La búsqueda incluye productos publicados, no publicados y borradores.</p>";
+    return;
+  }
+
+  results.innerHTML = matches.map(({ product, score }) => {
+    const percent = Math.round(score * 100);
+    const label = percent >= 78 ? "Coincidencia alta" : percent >= 58 ? "Coincidencia probable" : "Nombre parecido";
+    const tagClass = percent >= 78 ? "is-high" : "is-medium";
+    const details = getProductDuplicateDetails(product, query);
+    const status = getProductDuplicateStatusLabel(product);
+    return '<article class="product-duplicate-result">' +
+      '<div class="product-duplicate-main">' +
+        '<p class="product-duplicate-name">' + escapeHtml(product.name || "Producto sin nombre") + '</p>' +
+        '<p class="product-duplicate-meta">' + escapeHtml(product.brand || brand) +
+          (product.model ? " · " + escapeHtml(product.model) : "") + " · " + escapeHtml(status) + '</p>' +
+        '<div class="product-duplicate-tags">' +
+          '<span class="product-duplicate-tag ' + tagClass + '">' + label + '</span>' +
+          details.map(detail => '<span class="product-duplicate-tag">' + escapeHtml(detail) + '</span>').join("") +
+        '</div>' +
+      '</div>' +
+      '<button class="product-duplicate-open" type="button" data-duplicate-edit="' + escapeHtml(product.id) +
+        '" aria-label="Abrir producto existente ' + escapeHtml(product.name || "") + '">Ver existente ↗</button>' +
+    '</article>';
+  }).join("");
+}
+
+function scheduleProductDuplicateCheck(options = {}) {
+  window.clearTimeout(productDuplicateCheckTimer);
+  if (options.immediate) {
+    renderProductDuplicateSuggestions();
+    return;
+  }
+  productDuplicateCheckTimer = window.setTimeout(renderProductDuplicateSuggestions, 180);
+}
+
+form?.addEventListener("input", event => {
+  if (event.target.matches(
+    "#product-name, #product-brand, #product-model, #product-category, #product-subcategory, #product-perfume-concentration, #product-perfume-volume, [data-group-storage], [data-group-ram], [data-group-storage-unit]"
+  )) scheduleProductDuplicateCheck();
+});
+form?.addEventListener("change", event => {
+  if (event.target.matches(
+    "#product-name, #product-brand, #product-model, #product-category, #product-subcategory, #product-perfume-concentration, #product-perfume-volume, [data-group-storage], [data-group-ram], [data-group-storage-unit]"
+  )) scheduleProductDuplicateCheck({ immediate: true });
+});
+$("#product-duplicate-results")?.addEventListener("click", event => {
+  const button = event.target.closest("[data-duplicate-edit]");
+  if (!button) return;
+  const product = products.find(item => String(item.id) === String(button.dataset.duplicateEdit));
+  if (!product) {
+    message("#product-form-status", "Ese producto ya no está disponible en la lista. Actualizá el inventario y volvé a intentarlo.", "error");
+    return;
+  }
+  const currentId = String($("#product-id")?.value || "").trim();
+  const hasUnsavedEntry = Boolean(
+    String($("#product-name")?.value || "").trim() ||
+    String($("#product-brand")?.value || "").trim()
+  );
+  if (hasUnsavedEntry && currentId !== String(product.id) &&
+      !window.confirm('Vas a abrir "' + product.name + '". Los datos que estás escribiendo no se guardarán. ¿Querés continuar?')) return;
+  showAdminSection("add");
+  fillEditor(product);
+  scheduleProductDuplicateCheck({ immediate: true });
+});
 
 function updateDashboardScopeLabels() {
   const isAll = dashboardCatalogScope === "all";
@@ -235,9 +558,10 @@ function splitPerfumeNotes(value) {
 
 function updateProductFormMode() {
   const isPerfume = activeCatalogType === "perfumery";
+  document.body.classList.toggle("admin-catalog-perfumery", isPerfume);
   const category = $("#product-category");
   if (category) {
-    const previous = category.value;
+    const previous = isPerfume ? category.value : normalizeTechnologyCategory(category.value);
     const options = isPerfume
       ? [{ value: "Perfumería", label: "Perfumería" }]
       : [
@@ -246,11 +570,18 @@ function updateProductFormMode() {
           { value: "Laptops", label: "Laptops" },
           { value: "Tablets", label: "Tablets" },
           { value: "Gaming", label: "Gaming" },
+          { value: "Consolas", label: "Consolas" },
           { value: "Televisores", label: "Televisores" },
           { value: "Audio", label: "Audio" },
           { value: "Accesorios", label: "Accesorios" },
           { value: "Otros", label: "Otros" }
         ];
+    if (previous && !options.some(option => option.value === previous)) {
+      options.push({ value: previous, label: previous + " (categoría existente)" });
+    }
+    if (previous && !options.some(option => option.value === previous)) {
+      options.push({ value: previous, label: previous + " (categoría existente)" });
+    }
     category.replaceChildren(...options.map(option => {
       const node = document.createElement("option");
       node.value = option.value;
@@ -279,6 +610,23 @@ function updateProductFormMode() {
   $("#technology-variants-section")?.classList.toggle("hidden", isPerfume);
   $("#product-financing-field")?.classList.toggle("hidden", isPerfume);
   $("#technology-import-card")?.classList.toggle("hidden", isPerfume);
+  $("#product-taxonomy-fields")?.classList.remove("hidden");
+  $("#product-tech-tag-options")?.classList.toggle("hidden", isPerfume);
+  $("#product-subcategory-field")?.classList.toggle("hidden", isPerfume);
+  const tagTitle = $("#product-tags-title");
+  const tagDescription = $("#product-tags-description");
+  if (tagTitle) tagTitle.textContent = isPerfume ? "Colección y edición especial" : "Etiquetas manuales";
+  if (tagDescription) tagDescription.textContent = isPerfume
+    ? "Destacá fragancias o sets que sean realmente exclusivos o de edición limitada."
+    : "Elegí solo las etiquetas que correspondan; no se asignan automáticamente por marca.";
+  if (isPerfume) {
+    $("#product-subcategory").value = "";
+    $("#product-subcategory-custom").value = "";
+    $("#product-subcategory-custom").hidden = true;
+    $("#product-custom-tags").value = "";
+    customProductTags = [];
+    renderCustomProductTagChips();
+  }
 
   // Exclusivity/featured is a technology-only control. Keep it out of JB Parfums.
   const exclusiveToggle = $("#toggle-product-exclusive");
@@ -334,10 +682,57 @@ function updateProductFormMode() {
 
   const publicLink = document.querySelector(".dashboard-public-link");
   if (publicLink) publicLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
-  document.querySelectorAll("[data-admin-catalog-link]").forEach(link => {
-    const targetCatalog = normalizeCatalogType(link.dataset.adminCatalogLink);
-    link.href = targetCatalog === "perfumery" ? "./perfumeria/" : "./tecnologia/";
+  const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
+  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
+}
+
+function normalizeTechnologyCategory(value = "") {
+  const original = String(value || "").trim();
+  const normalized = original
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (["celular", "celulares", "smartphone", "smartphones", "telefono", "telefonos", "movil", "moviles", "mobile", "mobiles"].includes(normalized)) return "Celulares";
+  if (["laptop", "laptops", "portatil", "portatiles", "notebook", "notebooks"].includes(normalized)) return "Laptops";
+  if (["tablet", "tablets", "tableta", "tabletas"].includes(normalized)) return "Tablets";
+  if (["consola", "consolas", "console", "consoles", "videojuego", "videojuegos", "gaming console", "gaming consoles"].includes(normalized)) return "Consolas";
+  return original;
+}
+
+function categoryUsesRamStorage(category = $("#product-category")?.value || "") {
+  return ["Celulares", "Tablets", "Laptops"].includes(normalizeTechnologyCategory(category));
+}
+
+function updateCategoryVariantVisibility() {
+  const category = normalizeTechnologyCategory($("#product-category")?.value || "");
+  const usesRamStorage = categoryUsesRamStorage(category);
+  baseColorManager?.classList.toggle("is-ram-storage", usesRamStorage);
+  const addVariantButton = $("#add-variant-button");
+
+  // Todas las categorías tecnológicas pueden tener variantes de capacidad,
+  // RAM, precio y color. Estos campos son opcionales; la categoría solo define
+  // qué datos son obligatorios al publicar ciertos productos.
+  addVariantButton?.classList.remove("hidden");
+  if (addVariantButton) {
+    addVariantButton.textContent = "+ Agregar variante";
+    addVariantButton.title = "Agregar otra variante de capacidad, RAM, precio y color";
+    addVariantButton.setAttribute("aria-label", "Agregar variante de capacidad, RAM, precio y color");
+  }
+
+  form?.querySelectorAll("[data-variant-group]").forEach(group => {
+    group.querySelectorAll(".variant-storage-label, [data-group-ram]").forEach(field => {
+      const wrapper = field.matches("label") ? field : field.closest("label");
+      wrapper?.classList.remove("hidden");
+    });
   });
+  const title = $("#variants-editor-title");
+  if (title) title.textContent = "Variantes, capacidades y precios";
+  const sectionTitle = $("#product-form-section-title-2");
+  if (sectionTitle) sectionTitle.textContent = "Variantes, capacidades y precios";
 }
 
 function setActiveCatalogType(value) {
@@ -345,6 +740,7 @@ function setActiveCatalogType(value) {
   if (activeCatalogSelector) activeCatalogSelector.value = activeCatalogType;
   updateProductFormMode();
   syncProductFormSectionAvailability();
+  updateCategoryVariantVisibility();
   setProductFormStep(1, { scroll: false });
   renderAdminList();
   renderDashboardOverview();
@@ -614,10 +1010,14 @@ function saveColorToLibrary(color) {
   if (!name || !hex) return { ok: false, message: "Ingresá un nombre y un código HEX válido antes de guardar." };
   const data = readColorLibraryData(), identity = colorIdentity({ name, hex });
   const existing = data.items.find(item => colorIdentity(item) === identity);
+  const incomingAliases = [...new Set((Array.isArray(color?.aliases) ? color.aliases : []).map(value => String(value || "").trim()).filter(Boolean))].slice(0, 20);
   const sameName = data.items.find(item => normalizeColorSearch(item.name) === normalizeColorSearch(name) && item.hex !== hex.toUpperCase());
   if (sameName) return { ok: false, message: "Ya existe ese nombre con otro HEX. Usá un nombre más específico para distinguir los tonos." };
-  if (!existing) data.items.unshift({ name, hex: hex.toUpperCase(), aliases: [], favorite: false, updatedAt: Date.now() });
-  else existing.updatedAt = Date.now();
+  if (!existing) data.items.unshift({ name, hex: hex.toUpperCase(), aliases: incomingAliases, favorite: false, updatedAt: Date.now() });
+  else {
+    existing.aliases = [...new Set([...(existing.aliases || []), ...incomingAliases])].slice(0, 20);
+    existing.updatedAt = Date.now();
+  }
   if (!writeColorLibraryData(data)) return { ok: false, message: "El navegador no permitió guardar la biblioteca local." };
   ensureColorInPalette({ name, hex });
   return { ok: true, message: name + " quedó guardado en la biblioteca de este navegador." };
@@ -694,6 +1094,145 @@ function applyColorToRow(row, color, options = {}) {
   updateVariantRowHeadings();
   syncColorLibraryRowControls(row);
   updateEditorDirtyState();
+}
+
+function sharedColorNameKey(value) { return normalizeColorSearch(value).replace(/\s+/g, " ").trim(); }
+async function persistColorLibraryEntry(color, options = {}) {
+  const name = String(color?.name || "").trim(), hex = validHex(color?.hex, "").toUpperCase(), name_key = sharedColorNameKey(name);
+  if (!name || !hex || !name_key) return {ok:false, message:"Nombre o HEX inválido."};
+  if (!supabase || !currentUser?.id) return {ok:false, message:"No hay sesión para sincronizar."};
+  try {
+    const lookup = await supabase.from("color_library").select("id,name,name_key,hex,aliases,is_favorite").eq("name_key", name_key).maybeSingle();
+    if (lookup.error) throw lookup.error;
+    const existing = lookup.data || null;
+    if (existing && String(existing.hex || "").toUpperCase() !== hex) return {ok:false, message:"Ese nombre ya está registrado con otro HEX. Usá un nombre más específico."};
+    const aliases = [...new Set([...(existing?.aliases || []), ...(color?.aliases || []), ...(options.aliases || [])].map(v=>String(v||"").trim()).filter(Boolean))].slice(0,20);
+    const favorite = typeof options.favorite === "boolean" ? options.favorite : Boolean(existing?.is_favorite || color?.favorite);
+    const {error} = await supabase.from("color_library").upsert({name,name_key,hex,aliases,is_favorite:favorite,updated_by:currentUser.id,updated_at:new Date().toISOString()},{onConflict:"name_key"});
+    if (error) throw error;
+    return {ok:true,message:"Color sincronizado con la biblioteca compartida."};
+  } catch (error) {
+    console.warn("No se pudo sincronizar la biblioteca compartida de colores.",error);
+    return {ok:false,message:"Quedó en este dispositivo, pero no se pudo sincronizar con Supabase."};
+  }
+}
+async function syncSharedColorLibrary(options = {}) {
+  if (!supabase || !currentUser?.id) return false;
+  try {
+    let result = await supabase.from("color_library").select("id,name,name_key,hex,aliases,is_favorite,updated_at").order("updated_at",{ascending:false}).limit(500);
+    if (result.error) throw result.error;
+    let rows = Array.isArray(result.data) ? result.data : [];
+    const local = readColorLibraryData(), remote = new Map(rows.map(v=>[v.name_key || sharedColorNameKey(v.name),v]));
+    if (options.migrateLocal !== false) {
+      for (const item of local.items) {
+        const key = sharedColorNameKey(item.name), existing = remote.get(key);
+        if (!existing) {
+          const saved = await persistColorLibraryEntry(item,{favorite:Boolean(item.favorite),aliases:item.aliases||[]});
+          if (saved.ok) remote.set(key,{name:item.name,name_key:key,hex:item.hex,aliases:item.aliases||[],is_favorite:Boolean(item.favorite)});
+        } else if (String(existing.hex||"").toUpperCase() === String(item.hex||"").toUpperCase()) {
+          const aliases = [...new Set([...(existing.aliases||[]),...(item.aliases||[])])], favorite = Boolean(existing.is_favorite||item.favorite);
+          if (aliases.length !== (existing.aliases||[]).length || favorite !== Boolean(existing.is_favorite)) await persistColorLibraryEntry({...item,aliases},{favorite,aliases});
+        }
+      }
+      result = await supabase.from("color_library").select("id,name,name_key,hex,aliases,is_favorite,updated_at").order("updated_at",{ascending:false}).limit(500);
+      if (result.error) throw result.error;
+      rows = Array.isArray(result.data) ? result.data : [];
+    }
+    const merged = new Map();
+    rows.forEach(item=>{ const name=String(item.name||"").trim(), hex=validHex(item.hex,"").toUpperCase(); if(name&&hex) merged.set(sharedColorNameKey(name),{name,hex,aliases:Array.isArray(item.aliases)?item.aliases:[],favorite:Boolean(item.is_favorite),updatedAt:item.updated_at?Date.parse(item.updated_at)||0:0}); });
+    for (const item of local.items) if (!merged.has(sharedColorNameKey(item.name))) merged.set(sharedColorNameKey(item.name),item);
+    const data=readColorLibraryData();
+    data.items=[...merged.values()].sort((a,b)=>Number(b.updatedAt||0)-Number(a.updatedAt||0)).slice(0,500);
+    writeColorLibraryData(data); data.items.forEach(ensureColorInPalette); renderColorLibraryDatalist();
+    if (typeof renderQuickColorPalette==="function") renderQuickColorPalette(typeof quickColorSearch!=="undefined"?quickColorSearch?.value||"":"");
+    form?.querySelectorAll("[data-variant-row]").forEach(syncColorLibraryRowControls);
+    return true;
+  } catch(error) { console.warn("No se pudo cargar la biblioteca compartida de colores.",error); return false; }
+}
+async function colorImageToDataUrl(file) {
+  if (!file || !String(file.type||"").startsWith("image/")) throw new Error("Elegí una fotografía válida del producto.");
+  if (file.size > 18*1024*1024) throw new Error("La imagen es demasiado grande. Elegí una de menos de 18 MB.");
+  let bitmap; try { bitmap=await createImageBitmap(file); } catch { throw new Error("No se pudo abrir la imagen. Probá con JPG, PNG o WebP."); }
+  try {
+    const scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height)), canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale)); canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    const context=canvas.getContext("2d"); if(!context) throw new Error("No se pudo procesar la fotografía.");
+    context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+    const url=canvas.toDataURL("image/jpeg",0.82); if(url.length>5600000) throw new Error("La imagen todavía pesa demasiado. Elegí otra fotografía.");
+    return url;
+  } finally { bitmap.close?.(); }
+}
+function openColorAssistant(row) {
+  if(!row) return;
+  document.getElementById("jb-color-ai-overlay")?.remove();
+  const overlay=document.createElement("div"); overlay.id="jb-color-ai-overlay"; overlay.className="jb-color-ai-overlay";
+  overlay.innerHTML=
+    '<section class="jb-color-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="jb-color-ai-title">'+
+    '<header class="jb-color-ai-header"><div><p class="jb-color-ai-eyebrow">JB COLLECTIONS · COLOR LAB</p><h2 id="jb-color-ai-title">Identificar color con IA</h2></div><button type="button" class="jb-color-ai-close" data-color-ai-close aria-label="Cerrar">×</button></header>'+
+    '<p class="jb-color-ai-intro">Consultá por código o referencia, o adjuntá una foto. La sugerencia no confirma un color oficial.</p>'+
+    '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180" placeholder="Ej. Samsung Galaxy S25 Ultra"></label>'+
+    '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320" placeholder="Ej. Titanium Jadegreen, código X..."></label>'+
+    '<label class="jb-color-ai-field">Alias o código exacto para recordar (opcional)<input type="text" data-color-ai-library-alias maxlength="80" placeholder="Ej. SM-S938B Titanium Jadegreen"><span class="jb-color-ai-file-note">Se guardará como referencia de búsqueda solo si pulsás «Guardar en biblioteca».</span></label>'+
+    '<label class="jb-color-ai-field">Fotografía del producto (opcional)<input type="file" data-color-ai-image accept="image/jpeg,image/png,image/webp,image/avif"><span class="jb-color-ai-file-note" data-color-ai-file-note>La foto solo se usa en esta consulta.</span></label>'+
+    '<div class="jb-color-ai-preview" data-color-ai-preview hidden><img alt="Vista previa"><span data-color-ai-file-name></span></div>'+
+    '<div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-primary" data-color-ai-analyze>Analizar color</button></div>'+
+    '<p class="jb-color-ai-status" data-color-ai-status role="status" aria-live="polite"></p>'+
+    '<section class="jb-color-ai-result" data-color-ai-result hidden><div class="jb-color-ai-result-main"><span class="jb-color-ai-result-swatch" data-color-ai-swatch></span><div><h3 data-color-ai-name></h3><code data-color-ai-hex></code></div></div><p data-color-ai-basis></p><p data-color-ai-explanation></p><div class="jb-color-ai-aliases" data-color-ai-aliases></div><div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-secondary" data-color-ai-save>Guardar en biblioteca</button><button type="button" class="jb-color-ai-primary" data-color-ai-apply>Aplicar a esta variante</button></div></section>'+
+    '<p class="jb-color-ai-disclaimer">El HEX de una foto es aproximado por la iluminación, reflejos y acabado. Los códigos por texto no se verifican contra el fabricante en tiempo real.</p></section>';
+  document.body.append(overlay);
+  const productInput=overlay.querySelector("[data-color-ai-product]"), queryInput=overlay.querySelector("[data-color-ai-query]"), libraryAliasInput=overlay.querySelector("[data-color-ai-library-alias]"), imageInput=overlay.querySelector("[data-color-ai-image]");
+  const fileNote=overlay.querySelector("[data-color-ai-file-note]"), preview=overlay.querySelector("[data-color-ai-preview]"), previewImage=preview.querySelector("img"), fileName=overlay.querySelector("[data-color-ai-file-name]");
+  const status=overlay.querySelector("[data-color-ai-status]"), resultPanel=overlay.querySelector("[data-color-ai-result]"), analyzeButton=overlay.querySelector("[data-color-ai-analyze]");
+  const saveButton=overlay.querySelector("[data-color-ai-save]"), applyButton=overlay.querySelector("[data-color-ai-apply]");
+  let colorResult=null, previewUrl="";
+  productInput.value=[$("#product-brand")?.value||"",$("#product-model")?.value||"",$("#product-name")?.value||""].filter(Boolean).join(" ").slice(0,180);
+  const activeName=row.querySelector("[data-variant-color]")?.value.trim()||""; if(activeName) queryInput.value=activeName;
+  function close(){if(previewUrl)URL.revokeObjectURL(previewUrl);overlay.remove();document.removeEventListener("keydown",onKeyDown,true);}
+  function onKeyDown(event){if(event.key==="Escape")close();}
+  overlay.querySelector("[data-color-ai-close]").addEventListener("click",close);
+  overlay.addEventListener("click",event=>{if(event.target===overlay)close();});
+  document.addEventListener("keydown",onKeyDown,true);
+  imageInput.addEventListener("change",()=>{const file=imageInput.files?.[0];if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl="";if(!file){preview.hidden=true;return;}previewUrl=URL.createObjectURL(file);previewImage.src=previewUrl;fileName.textContent=file.name;preview.hidden=false;fileNote.textContent="Fotografía preparada para analizar.";});
+  analyzeButton.addEventListener("click",async()=>{
+    const query=queryInput.value.trim(), productContext=productInput.value.trim(), file=imageInput.files?.[0]||null;
+    if(!query&&!file){status.textContent="Escribí una referencia/pregunta o adjuntá una foto.";status.dataset.state="error";return;}
+    if(!supabase||!currentUser?.id){status.textContent="Volvé a iniciar sesión como administrador.";status.dataset.state="error";return;}
+    analyzeButton.disabled=true;analyzeButton.textContent="Analizando…";status.textContent=file?"Analizando la fotografía…":"Consultando la referencia…";status.dataset.state="busy";resultPanel.hidden=true;colorResult=null;
+    try{
+      const session=await supabase.auth.getSession(), token=session.data?.session?.access_token||"";if(!token)throw new Error("La sesión expiró. Volvé a iniciar sesión.");
+      const imageDataUrl=file?await colorImageToDataUrl(file):"", apiBase=String(CONFIG.publicCatalogUrl||"https://jb-collections.pages.dev").replace(/\/+$/,"");
+      const response=await fetch(apiBase+"/api/color-assistant",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({query,productContext,imageDataUrl})});
+      const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.message||"No se pudo analizar el color (HTTP "+response.status+").");
+      if(!payload.name||!/^#[0-9a-f]{6}$/i.test(String(payload.hex||"")))throw new Error("La IA no encontró un color claro. Probá otra foto o agregá el modelo exacto.");
+      colorResult={name:String(payload.name).trim(),hex:String(payload.hex).toUpperCase(),aliases:Array.isArray(payload.aliases)?payload.aliases.map(v=>String(v||"").trim()).filter(Boolean).slice(0,8):[],favorite:false};
+      overlay.querySelector("[data-color-ai-swatch]").style.background=colorResult.hex;
+      overlay.querySelector("[data-color-ai-name]").textContent=colorResult.name;
+      overlay.querySelector("[data-color-ai-hex]").textContent=colorResult.hex;
+      overlay.querySelector("[data-color-ai-basis]").textContent=payload.basis==="visual_estimate"?"Estimación visual basada en la fotografía.":payload.basis==="shared_library_match"?"Coincidencia exacta con la biblioteca compartida; no equivale a verificación oficial.":"Sugerencia por texto/código; no verificada oficialmente.";
+      overlay.querySelector("[data-color-ai-explanation]").textContent=String(payload.explanation||payload.note||"Confirmá el nombre con la ficha del fabricante antes de publicarlo.");
+      const aliases=overlay.querySelector("[data-color-ai-aliases]");aliases.replaceChildren();colorResult.aliases.forEach(alias=>{const chip=document.createElement("span");chip.textContent=alias;aliases.append(chip);});
+      resultPanel.hidden=false;status.textContent="Resultado listo. Guardalo en la biblioteca o aplicalo a esta variante.";status.dataset.state="success";
+    }catch(error){status.textContent=error.message||"No se pudo analizar el color.";status.dataset.state="error";}
+    finally{analyzeButton.disabled=false;analyzeButton.textContent="Analizar color";}
+  });
+  saveButton.addEventListener("click",async()=>{
+    if(!colorResult)return;
+    const savedAlias=String(libraryAliasInput?.value||"").trim();
+    const colorToSave={...colorResult,aliases:[...new Set([...(colorResult.aliases||[]),savedAlias].filter(Boolean))]};
+    const local=saveColorToLibrary(colorToSave);if(!local.ok){status.textContent=local.message;status.dataset.state="error";return;}
+    const shared=await persistColorLibraryEntry(colorToSave);
+    status.textContent=(shared.ok?local.message+" Sincronizado en todos los dispositivos.":local.message+" "+shared.message)+(savedAlias?" Alias guardado: "+savedAlias+".":"");
+    status.dataset.state=shared.ok?"success":"warning";
+    renderColorLibraryDatalist();if(typeof renderQuickColorPalette==="function")renderQuickColorPalette(typeof quickColorSearch!=="undefined"?quickColorSearch?.value||"":"");
+    form?.querySelectorAll("[data-variant-row]").forEach(syncColorLibraryRowControls);
+  });
+  applyButton.addEventListener("click",()=>{
+    if(!colorResult)return;applyColorToRow(row,colorResult);
+    const search=row.querySelector("[data-variant-library-search]");if(search)search.value=colorResult.name;
+    const rowStatus=row.querySelector("[data-variant-status]");if(rowStatus){rowStatus.textContent="Color sugerido por IA aplicado al formulario. Guardá el producto para persistir la variante.";rowStatus.dataset.state="success";}
+    close();
+  });
+  overlay.querySelector("[data-color-ai-close]").focus();
 }
 hydrateColorLibraryPalette();
 
@@ -803,47 +1342,6 @@ function clearLocalAuthStorage() {
   }
 }
 
-function syncRememberControls() {
-  const enabled = isRememberedSessionEnabled();
-  const checkbox = $("#login-remember-user");
-  if (checkbox) checkbox.checked = enabled;
-  const button = $("#remember-user-toggle");
-  const label = $("#remember-user-toggle-label");
-  if (button) {
-    button.setAttribute("aria-pressed", String(enabled));
-    button.setAttribute("aria-label", enabled ? "Dejar de recordar este usuario" : "Recordar mi sesión en este dispositivo");
-  }
-  if (label) label.textContent = enabled ? "Dejar de recordar usuario" : "Recordar sesión en este dispositivo";
-}
-
-function setRememberedSession(enabled, email = "") {
-  const key = authStorageKey();
-  const normalizedEmail = String(email || "").trim();
-  try {
-    const currentToken = key
-      ? (window.sessionStorage.getItem(key) || window.localStorage.getItem(key))
-      : null;
-    if (enabled) {
-      window.localStorage.setItem(REMEMBER_SESSION_KEY, "true");
-      if (normalizedEmail) window.localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
-      if (key && currentToken) {
-        window.localStorage.setItem(key, currentToken);
-        window.sessionStorage.removeItem(key);
-      }
-    } else {
-      // Keep a live session usable until logout, but make it temporary again.
-      if (key && currentToken) window.sessionStorage.setItem(key, currentToken);
-      if (key) window.localStorage.removeItem(key);
-      window.localStorage.removeItem(REMEMBER_SESSION_KEY);
-      window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
-    }
-  } catch (error) {
-    console.warn("No se pudo actualizar la preferencia para recordar la sesión.", error);
-    message("#login-status", "No se pudo actualizar la preferencia en este dispositivo. Revisá el almacenamiento disponible.", "error");
-  }
-  syncRememberControls();
-}
-
 async function signOutLocalSafely() {
   try {
     if (supabase) {
@@ -868,6 +1366,56 @@ async function signOutLocalSafely() {
   }
 }
 
+function syncRememberControls() {
+  const enabled = isRememberedSessionEnabled();
+  const checkbox = $("#login-remember-user");
+  if (checkbox) checkbox.checked = enabled;
+  const button = $("#remember-user-toggle");
+  const label = $("#remember-user-toggle-label");
+  if (button) {
+    button.setAttribute("aria-pressed", String(enabled));
+    button.setAttribute("aria-label", enabled ? "Dejar de recordar este usuario" : "Recordar mi sesión en este dispositivo");
+    button.title = enabled ? "Desactivar sesión recordada" : "Recordar sesión";
+  }
+  if (label) label.textContent = enabled ? "Desactivar recordar sesión" : "Recordar sesión en este dispositivo";
+}
+
+function setRememberedSession(enabled, email = "") {
+  const key = authStorageKey();
+  const normalizedEmail = String(email || "").trim();
+  try {
+    const currentToken = key
+      ? (window.sessionStorage.getItem(key) || window.localStorage.getItem(key))
+      : null;
+
+    if (enabled) {
+      window.localStorage.setItem(REMEMBER_SESSION_KEY, "true");
+      if (normalizedEmail) window.localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
+      if (key && currentToken) {
+        window.localStorage.setItem(key, currentToken);
+        window.sessionStorage.removeItem(key);
+      }
+    } else {
+      // Keep a current login active until logout, but stop persisting it across app restarts.
+      if (key && currentToken) window.sessionStorage.setItem(key, currentToken);
+      if (key) window.localStorage.removeItem(key);
+      window.localStorage.removeItem(REMEMBER_SESSION_KEY);
+      window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    }
+  } catch (error) {
+    console.warn("No se pudo actualizar la preferencia para recordar la sesión.", error);
+    message("#login-status", "No se pudo actualizar esta preferencia en el dispositivo. Revisá el almacenamiento disponible.", "error");
+  }
+  syncRememberControls();
+}
+
+// Restore the saved email and visible state whenever the admin module loads.
+const rememberedLoginEmail = $("#login-email");
+if (rememberedLoginEmail && isRememberedSessionEnabled()) {
+  rememberedLoginEmail.value = getRememberedAdminEmail();
+}
+syncRememberControls();
+
 function clearLoginPassword() {
   const password = $("#login-password");
 
@@ -879,6 +1427,7 @@ function clearLoginPassword() {
 
 function showLoginScreen(statusText = "", type = "") {
   currentUser = null;
+  jbManagerAI?.clearSession();
   products = [];
   clearCatalogAdminActivityMarker();
 
@@ -905,25 +1454,46 @@ function showLoginScreen(statusText = "", type = "") {
    ESPECIFICACIONES E IMÁGENES
    ========================================================= */
 
+function isGeneratedSpecificationLabel(label) {
+  return /^dato(?:\s+\d+)?$/i.test(String(label || "").trim());
+}
+
+function cleanSpecificationLine(value) {
+  let line = String(value ?? "").trim();
+  line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
+  line = line.replace(/^Dato\s*\d+\s*:\s*/i, "");
+  line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
+  return line.trim();
+}
+
 function parseSpecs(text) {
-  const result = {};
-
-  String(text || "")
+  const lines = String(text || "")
     .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .forEach(line => {
+    .map(cleanSpecificationLine)
+    .filter(Boolean);
+
+  if (!lines.length) return {};
+
+  const allLinesHaveLabels = lines.every(line => {
+    const colon = line.indexOf(":");
+    return colon > 0 && !isGeneratedSpecificationLabel(line.slice(0, colon));
+  });
+
+  if (allLinesHaveLabels) {
+    const result = {};
+    lines.forEach(line => {
       const colon = line.indexOf(":");
-
-      if (colon > 0) {
-        result[line.slice(0, colon).trim()] =
-          line.slice(colon + 1).trim();
-      } else {
-        result[`Dato ${Object.keys(result).length + 1}`] = line;
-      }
+      result[line.slice(0, colon).trim()] = cleanSpecificationLine(line.slice(colon + 1));
     });
+    return result;
+  }
 
-  return result;
+  return lines.map(line => {
+    const colon = line.indexOf(":");
+    return colon > 0 && isGeneratedSpecificationLabel(line.slice(0, colon))
+      ? cleanSpecificationLine(line.slice(colon + 1))
+      : line;
+  });
 }
 
 function specsText(specs) {
@@ -931,21 +1501,22 @@ function specsText(specs) {
 
   if (Array.isArray(specs)) {
     return specs.map(item => {
-      if (typeof item === "string") {
-        return item;
-      }
-
+      if (typeof item === "string") return cleanSpecificationLine(item);
       if (item && typeof item === "object") {
-        return `${item.label || item.name || "Dato"}: ${item.value || ""}`;
+        const label = String(item.label || item.name || "").trim();
+        const value = cleanSpecificationLine(item.value || "");
+        return !label || isGeneratedSpecificationLabel(label) ? value : `${label}: ${value}`;
       }
-
-      return String(item ?? "");
-    }).join("\n");
+      return cleanSpecificationLine(item);
+    }).filter(Boolean).join("\n");
   }
 
   if (specs && typeof specs === "object") {
     return Object.entries(specs)
-      .map(([key, value]) => `${key}: ${value}`)
+      .map(([key, value]) => isGeneratedSpecificationLabel(key)
+        ? cleanSpecificationLine(value)
+        : `${key}: ${cleanSpecificationLine(value)}`)
+      .filter(Boolean)
       .join("\n");
   }
 
@@ -1043,6 +1614,7 @@ function normalizeVariants(value) {
       availability: normalizeVariantAvailability(
         item.availability
       ),
+      configuration_availability: normalizeVariantAvailability(item.configuration_availability),
 
       images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
       image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
@@ -1072,6 +1644,7 @@ function legacyVariants(product) {
     price_usd: product?.price_usd ?? null,
     price_nio: product?.price_nio ?? null,
     availability: color.type,
+    configuration_availability: "available",
     image_url: color.image_url,
     images: color.image_url ? [color.image_url] : []
   }));
@@ -1135,18 +1708,28 @@ function variantRowMarkup(variant = {}) {
   const libraryFavorite = isColorFavorite({ name: v.color, hex: v.color_hex });
 
   return `
-    <article class="variant-admin-row inline-color-card" data-variant-row>
-      <div class="inline-color-main">
+    <details class="variant-admin-row inline-color-card inline-color-card-collapse" data-variant-row>
+      <summary class="inline-color-card-summary">
         <span class="inline-color-dot" data-variant-color-dot style="--inline-color:${v.color_hex}" aria-hidden="true"></span>
+        <span class="inline-color-card-summary-copy">
+          <strong data-variant-color-summary>${escapeHtml(v.color || "Color sin nombre")}</strong>
+          <small data-variant-summary-availability>Estado: ${v.availability === "available" ? "Disponible" : v.availability === "order" ? "Por pedido" : "Agotado"}</small>
+        </span>
+        <button class="admin-mini-button danger inline-color-remove" type="button" data-remove-variant aria-label="Quitar color" title="Quitar color">×</button>
+        <span class="inline-color-card-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="inline-color-card-body">
+      <div class="inline-color-main">
         <label class="inline-color-name-field">
           <span>Nombre del color</span>
           <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color" placeholder="Ej. Gris titanio">
         </label>
         <label class="inline-color-tone-field" title="Personalizar el tono">
           <span>Tono</span>
-          <input data-variant-hex type="color" value="${v.color_hex}" aria-label="Personalizar el tono del color">
+          <span class="inline-color-tone-preview" data-variant-tone-preview style="--tone-color:${v.color_hex}">
+            <input data-variant-hex type="color" value="${v.color_hex}" aria-label="Personalizar el tono del color">
+          </span>
         </label>
-        <button class="admin-mini-button danger inline-color-remove" type="button" data-remove-variant aria-label="Quitar color" title="Quitar color">×</button>
       </div>
       <details class="inline-color-details">
         <summary>Disponibilidad y fotografías</summary>
@@ -1158,6 +1741,7 @@ function variantRowMarkup(variant = {}) {
             <div class="variant-color-library-actions">
               <button class="admin-mini-button" type="button" data-save-color-library aria-pressed="${String(librarySaved)}">${librarySaved ? "✓ Biblioteca" : "＋ Biblioteca"}</button>
               <button class="admin-mini-button" type="button" data-toggle-color-favorite aria-pressed="${String(libraryFavorite)}">${libraryFavorite ? "★ Favorito" : "☆ Favorito"}</button>
+              <button class="admin-mini-button jb-color-ai-trigger" type="button" data-ai-color-open aria-label="Identificar color con IA o fotografía" title="Identificar color con IA o fotografía">✦ IA / foto</button>
             </div>
           </div>
           <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
@@ -1178,7 +1762,8 @@ function variantRowMarkup(variant = {}) {
         <input data-variant-image-url type="hidden" value="${escapeHtml(v.image_url)}">
         <p class="color-row-status" data-variant-status role="status"></p>
       </details>
-    </article>`;
+      </div>
+    </details>`;
 }
 
 function variantGroupKey(variant) {
@@ -1194,21 +1779,19 @@ function scheduleVariantColorLayout() {
   variantColorLayoutFrame = window.requestAnimationFrame(() => {
     variantColorLayoutFrame = 0;
     document.querySelectorAll("[data-variant-color-list]").forEach(list => {
-      const rowGap = parseFloat(getComputedStyle(list).rowGap) || 12;
-      const autoRow = 4;
-      const cards = Array.from(list.querySelectorAll("[data-variant-row]"));
-      /* Measure without the previous span so a collapsed card can shrink again. */
-      cards.forEach(card => { card.style.gridRowEnd = "auto"; });
-      const measured = cards.map(card => Math.max(1, card.scrollHeight + 2));
-      cards.forEach((card, index) => {
-        const span = Math.max(1, Math.ceil((measured[index] + rowGap) / (autoRow + rowGap)));
-        card.style.gridRowEnd = "span " + span;
+      // Native CSS grid sizing is stable as fonts, controls, and photo previews load.
+      // Never assign masonry row spans: delayed content reflow used to overlap color cards.
+      list.style.gridAutoRows = "auto";
+      list.style.gridAutoFlow = "row";
+      list.querySelectorAll("[data-variant-row]").forEach(card => {
+        card.style.gridRowEnd = "auto";
+        card.style.alignSelf = "start";
       });
     });
   });
 }
 form?.addEventListener("toggle", event => {
-  if (event.target.matches?.(".inline-color-details")) scheduleVariantColorLayout();
+  if (event.target.matches?.(".inline-color-details, .variant-config-collapse, .inline-color-card-collapse")) scheduleVariantColorLayout();
 }, true);
 window.addEventListener("resize", scheduleVariantColorLayout);
 if (form && "MutationObserver" in window) {
@@ -1242,6 +1825,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const storage = parsedStorage.amount;
   const storageUnit = parsedStorage.unit;
   const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
+  const configurationAvailability = normalizeVariantAvailability(v.configuration_availability);
   const title = isBase
     ? "Configuración principal"
     : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
@@ -1250,20 +1834,52 @@ function variantGroupMarkup(v = {}, isBase = false) {
     <div class="variant-color-list" data-variant-color-list></div>
     <button class="admin-mini-button variant-add-color" type="button" data-add-group-color aria-label="Añadir color a esta configuración">+ Color</button>
   </div>`;
-
-  return `<section class="variant-config-group ${isBase ? "variant-base-group" : ""}" data-variant-group data-base-group="${isBase ? "true" : "false"}">
-    <div class="variant-config-group-heading">
-      <div><strong data-variant-group-title>${escapeHtml(title)}</strong><small>${isBase ? "Definí RAM, almacenamiento, precio y colores de la configuración principal." : "Definí el precio y los colores de esta configuración."}</small></div>
-      ${isBase ? "" : '<button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>'}
-    </div>
-    <div class="variant-config-fields">
+  const fields = `<div class="variant-config-fields">
       <label class="variant-storage-label"><span class="variant-storage-label-row"><select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"><option value="GB" ${storageUnit === "GB" ? "selected" : ""}>GB</option><option value="TB" ${storageUnit === "TB" ? "selected" : ""}>TB</option></select><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
       <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
       <label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_usd ?? "")}"></span></label>
       <label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_nio ?? "")}"></span></label>
+      <label class="variant-configuration-availability-field">Disponibilidad de la variante
+        <select data-group-availability aria-label="Disponibilidad de esta configuración">
+          <option value="available" ${configurationAvailability === "available" ? "selected" : ""}>Disponible</option>
+          <option value="order" ${configurationAvailability === "order" ? "selected" : ""}>Bajo pedido</option>
+          <option value="out_of_stock" ${configurationAvailability === "out_of_stock" ? "selected" : ""}>Agotado</option>
+        </select>
+      </label>
+    </div>`;
+
+  if (isBase) {
+    return `<details class="variant-config-group variant-config-collapse variant-base-group" data-variant-group data-base-group="true">
+      <summary class="variant-config-summary">
+        <span class="variant-config-summary-copy">
+          <strong data-variant-group-title>${escapeHtml(title)}</strong>
+          <small data-variant-group-summary>Configuración principal · expandí para editar precio, disponibilidad y colores</small>
+        </span>
+        <span class="variant-config-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div class="variant-config-body">
+${fields}
+        ${colorControls}
+      </div>
+    </details>`;
+  }
+
+  return `<details class="variant-config-group variant-config-collapse" data-variant-group data-base-group="false">
+    <summary class="variant-config-summary">
+      <span class="variant-config-summary-copy">
+        <strong data-variant-group-title>${escapeHtml(title)}</strong>
+        <small data-variant-group-summary>Configuración plegada · expandí para editar precio, disponibilidad y colores</small>
+      </span>
+      <span class="variant-config-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="variant-config-body">
+      <div class="variant-config-group-heading">
+        <button class="admin-mini-button danger" type="button" data-remove-group>Eliminar configuración</button>
+      </div>
+      ${fields}
+      ${colorControls}
     </div>
-    ${colorControls}
-  </section>`;
+  </details>`;
 }
 
 function renderVariantRows(variants = []) {
@@ -1344,12 +1960,15 @@ function addVariantRow(variant = {}, targetGroup = null, options = {}) {
     container.querySelector(".variants-empty-hint")?.remove();
     container.insertAdjacentHTML("beforeend", variantGroupMarkup(variant, false));
     group = container.lastElementChild;
+    if (group?.matches("details.variant-config-collapse")) group.open = true;
   }
   const list = group.querySelector("[data-variant-color-list]");
   if (!list) return;
   list.querySelector(".variants-empty-hint")?.remove();
   list.insertAdjacentHTML("beforeend", variantRowMarkup(variant));
-  renderVariantImagePreview(list.lastElementChild);
+  const newColorRow = list.lastElementChild;
+  if (newColorRow?.matches("details.inline-color-card-collapse")) newColorRow.open = true;
+  renderVariantImagePreview(newColorRow);
   updateVariantRowHeadings();
   const rows = list.querySelectorAll("[data-variant-row]");
   if (options.focus !== false) rows.item(rows.length - 1)?.querySelector("[data-variant-color]")?.focus();
@@ -1363,13 +1982,33 @@ function updateVariantRowHeadings() {
     const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || (group.dataset.baseGroup === "true" ? "Configuración principal" : "Nueva configuración");
     const heading = group.querySelector("[data-variant-group-title]");
     if (heading) heading.textContent = title;
+    const summary = group.querySelector("[data-variant-group-summary]");
+    if (summary) {
+      const colors = group.querySelectorAll("[data-variant-row]").length;
+      const availability = normalizeVariantAvailability(group.querySelector("[data-group-availability]")?.value || "");
+      const availabilityLabel = availability === "available" ? "Disponible"
+        : availability === "order" || availability === "on_order" ? "Por pedido"
+        : availability === "out_of_stock" ? "Agotado" : "Disponibilidad pendiente";
+      summary.textContent = colors + " color(es) · " + availabilityLabel + " · tocá para desplegar";
+    }
     group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
       const colorName = row.querySelector("[data-variant-color]")?.value.trim();
       const rowHeading = row.querySelector("[data-variant-row-heading]");
       if (rowHeading) rowHeading.textContent = colorName || "Color " + (index + 1);
+      const cardSummary = row.querySelector("[data-variant-color-summary]");
+      if (cardSummary) cardSummary.textContent = colorName || "Color " + (index + 1);
+      const colorAvailability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value || "");
+      const availabilitySummary = row.querySelector("[data-variant-summary-availability]");
+      if (availabilitySummary) availabilitySummary.textContent = "Estado: " + (
+        colorAvailability === "available" ? "Disponible"
+        : colorAvailability === "order" || colorAvailability === "on_order" ? "Por pedido"
+        : colorAvailability === "out_of_stock" ? "Agotado" : "Sin confirmar"
+      );
       const hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const dot = row.querySelector("[data-variant-color-dot]");
       if (dot) dot.style.setProperty("--inline-color", hex);
+      const tonePreview = row.querySelector("[data-variant-tone-preview]");
+      if (tonePreview) tonePreview.style.setProperty("--tone-color", hex);
       const removeButton = row.querySelector("[data-remove-variant]");
       if (removeButton) removeButton.setAttribute("aria-label", "Quitar " + (colorName || "color"));
     });
@@ -1521,7 +2160,7 @@ function photoEntryIsCurrent(entry,token){
 function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   const item=entry?.item;
   if(!item||item.kind!=="new"||!item.file)return Promise.resolve({ok:item?.kind==="existing"});
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     item.uploadState = "";
     item.uploadStage = "preview-only";
     item.uploadProgress = 0;
@@ -1635,7 +2274,7 @@ mainImagesInput?.addEventListener("change",()=>{
   added.forEach(item=>void queueBackgroundPhotoUpload({source:"main",item}));
 });
 retryMainImagesButton?.addEventListener("click",async()=>{
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     message("#product-form-status", "Vista previa segura: la subida a Storage está deshabilitada en Vercel.", "error");
     return;
   }
@@ -1861,25 +2500,31 @@ $("#add-variant-button")?.addEventListener("click", event => {
     message("#product-form-status", "No se pudo crear la configuración. Recargá el panel e intentá nuevamente.", "error");
     return;
   }
+  updateCategoryVariantVisibility();
   updateVariantRowHeadings();
-  newGroup.querySelector("[data-group-storage]")?.focus();
+  const focusSelector = categoryUsesRamStorage() ? "[data-group-storage]" : "[data-group-price-usd]";
+  newGroup.querySelector(focusSelector)?.focus();
   updateEditorDirtyState();
 });
 
-form?.addEventListener("click", event => {
+form?.addEventListener("click", async event => {
+  const aiColorButton = event.target.closest("[data-ai-color-open]");
+  if (aiColorButton) { openColorAssistant(aiColorButton.closest("[data-variant-row]")); return; }
   const saveLibraryButton = event.target.closest("[data-save-color-library]");
   if (saveLibraryButton) {
     const row = saveLibraryButton.closest("[data-variant-row]");
     const color = { name: row?.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row?.querySelector("[data-variant-hex]")?.value, "") };
     const result = saveColorToLibrary(color);
     const status = row?.querySelector("[data-variant-status]");
+    if (result.ok) {
+      const shared = await persistColorLibraryEntry(color);
+      result.message += shared.ok ? " Sincronizado en todos los dispositivos." : " " + shared.message;
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+    }
     if (status) {
       status.textContent = result.message;
       status.dataset.state = result.ok ? "success" : "error";
-    }
-    if (result.ok) {
-      renderColorLibraryDatalist();
-      renderQuickColorPalette(quickColorSearch?.value || "");
     }
     syncColorLibraryRowControls(row);
     return;
@@ -1891,13 +2536,15 @@ form?.addEventListener("click", event => {
     const color = { name: row?.querySelector("[data-variant-color]")?.value.trim() || "", hex: validHex(row?.querySelector("[data-variant-hex]")?.value, "") };
     const result = toggleColorFavorite(color);
     const status = row?.querySelector("[data-variant-status]");
+    if (result.ok) {
+      const shared = await persistColorLibraryEntry(color, { favorite: result.favorite });
+      result.message += shared.ok ? " Favorito sincronizado." : " " + shared.message;
+      renderColorLibraryDatalist();
+      renderQuickColorPalette(quickColorSearch?.value || "");
+    }
     if (status) {
       status.textContent = result.message;
       status.dataset.state = result.ok ? "success" : "error";
-    }
-    if (result.ok) {
-      renderColorLibraryDatalist();
-      renderQuickColorPalette(quickColorSearch?.value || "");
     }
     syncColorLibraryRowControls(row);
     return;
@@ -1952,6 +2599,7 @@ form?.addEventListener("click", event => {
 
   const remove = event.target.closest("[data-remove-variant]");
   if (!remove) return;
+  event.preventDefault();
   const group = remove.closest("[data-variant-group]");
   const isBaseGroup = group?.dataset.baseGroup === "true";
   remove.closest("[data-variant-row]")?.remove();
@@ -2127,14 +2775,15 @@ async function showDashboard(user) {
   await confirmAdmin(user);
 
   currentUser = user;
+  jbManagerAI?.setAuthenticatedUser(user);
   refreshCatalogAdminActivityMarker();
-  syncRememberControls();
 
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
   document.body.classList.add("admin-dashboard-active");
   setMobileSidebarOpen(false);
-  showAdminSection("home");
+  const requestedSection = new URLSearchParams(window.location.search).get("open");
+  showAdminSection(requestedSection === "messages" ? "messages" : "home");
 
   const greeting = $("#admin-greeting");
   if (greeting) greeting.textContent = "¡Bienvenido de nuevo, Steven! 👋";
@@ -2142,6 +2791,7 @@ async function showDashboard(user) {
   setStatus("Sesión iniciada");
   window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
 
+  await syncSharedColorLibrary({ migrateLocal: true });
   await loadProducts();
   await checkLocalRecoveryDraft();
 }
@@ -2167,9 +2817,6 @@ async function handleSession() {
     clearCatalogAdminActivityMarker();
     loginPanel.classList.remove("hidden");
     dashboard.classList.add("hidden");
-    const emailInput = $("#login-email");
-    if (emailInput) emailInput.value = getRememberedAdminEmail();
-    syncRememberControls();
     return;
   }
 
@@ -2207,11 +2854,11 @@ $("#login-remember-user")?.addEventListener("change", event => {
 
 $("#remember-user-toggle")?.addEventListener("click", () => {
   const nextEnabled = !isRememberedSessionEnabled();
-  setRememberedSession(nextEnabled, currentUser?.email || "");
+  setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminEmail());
   setStatus(
     nextEnabled
-      ? "Se recordará la sesión en este dispositivo hasta que lo desactivés o cierres sesión."
-      : "Dejaste de recordar este usuario. La sesión actual seguirá activa hasta que la cerrés."
+      ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
+      : "Dejaste de recordar este usuario. La sesión actual seguirá activa hasta que la cierres."
   );
 });
 
@@ -2241,7 +2888,7 @@ $("#login-form")?.addEventListener("submit", async event => {
   try {
     const loginEmail = $("#login-email").value.trim();
     const rememberSession = Boolean($("#login-remember-user")?.checked);
-    // Pick the auth storage before Supabase writes the authenticated session.
+    // Select session storage before Supabase persists the successful login.
     setRememberedSession(rememberSession, loginEmail);
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -2326,19 +2973,46 @@ function minimumPrice(variants, field) {
 }
 
 function setMobileSidebarOpen(open) {
+  const body = document.body;
+  const root = document.documentElement;
   const toggle = document.getElementById("admin-menu-toggle");
   const backdrop = document.getElementById("admin-sidebar-backdrop");
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const wasOpen = body.classList.contains("admin-sidebar-open");
   const shouldOpen = Boolean(open && isMobile);
 
-  document.body.classList.toggle("admin-sidebar-open", shouldOpen);
+  // Save the document scroll position once, before locking the page behind the drawer.
+  if (shouldOpen && !wasOpen) {
+    const currentScrollY = Math.max(
+      0,
+      Number(window.scrollY) || Number(root.scrollTop) || Number(body.scrollTop) || 0
+    );
+    body.dataset.adminSidebarScrollY = String(currentScrollY);
+  }
+
+  body.classList.toggle("admin-sidebar-open", shouldOpen);
+  root.classList.toggle("admin-sidebar-scroll-locked", shouldOpen);
+  body.classList.toggle("admin-sidebar-scroll-locked", shouldOpen);
+
   if (toggle) {
     toggle.setAttribute("aria-expanded", String(shouldOpen));
     toggle.setAttribute("aria-label", shouldOpen ? "Cerrar menú de administración" : "Abrir menú de administración");
     toggle.setAttribute("title", shouldOpen ? "Cerrar menú" : "Abrir menú");
-    toggle.querySelector("span").textContent = shouldOpen ? "×" : "☰";
+    const icon = toggle.querySelector("span");
+    if (icon) icon.textContent = shouldOpen ? "×" : "☰";
   }
   if (backdrop) backdrop.hidden = !shouldOpen;
+
+  // Restore the exact scroll position on close; don't leave a new panel halfway down.
+  if (!shouldOpen && wasOpen) {
+    const savedScrollY = Number(body.dataset.adminSidebarScrollY);
+    delete body.dataset.adminSidebarScrollY;
+    if (Number.isFinite(savedScrollY)) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: savedScrollY, left: 0, behavior: "auto" });
+      });
+    }
+  }
 }
 
 document.getElementById("admin-menu-toggle")?.addEventListener("click", () => {
@@ -2360,9 +3034,538 @@ function showAdminSection(section) {
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  const dashboard = document.getElementById("dashboard");
+  dashboard?.classList.toggle("admin-section-focused", section !== "home");
   setMobileSidebarOpen(false);
+  // Navigation can be triggered while the page is scrolled far down. Reset the
+  // document scroll so the sticky admin header never covers the selected panel title.
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  if (section === "messages") void loadPrivateChatInbox();
 }
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
+
+
+/* =========================================================
+   MENSAJERÍA PRIVADA · bandeja segura del asesor
+   ========================================================= */
+let privateChatConversations = [];
+let privateChatSelectedId = "";
+let privateChatActiveFilter = "pending";
+let privateChatBaselineReady = false;
+let privateChatKnownConversationStates = new Map();
+let privateChatInboxLoading = false;
+let privateChatMessagesLoading = false;
+let privateChatActionInFlight = false;
+
+const privateChatStatusEl = document.getElementById("private-chat-admin-status");
+const privateChatListEl = document.getElementById("private-chat-conversation-list");
+const privateChatMessagesEl = document.getElementById("private-chat-admin-messages");
+const privateChatSelectedPanel = document.getElementById("private-chat-admin-selected");
+const privateChatEmptyPanel = document.getElementById("private-chat-admin-empty");
+const privateChatThreadEl = document.getElementById("private-chat-admin-thread");
+const privateChatLayoutEl = document.querySelector(".private-chat-admin-layout");
+const privateChatReplyForm = document.getElementById("private-chat-admin-reply-form");
+const privateChatReplyInput = document.getElementById("private-chat-admin-reply");
+const privateChatNavCount = document.getElementById("private-chat-nav-count");
+
+function privateChatEscape(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[character]);
+}
+function privateChatDate(value, withDate = false) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  try {
+    return new Intl.DateTimeFormat("es-NI", withDate
+      ? { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }
+      : { hour:"2-digit", minute:"2-digit" }).format(date);
+  } catch { return ""; }
+}
+function privateChatStatusLabel(status) {
+  return ({
+    pending_consent:"Pendiente de consentimiento",
+    pending_advisor:"Nueva solicitud",
+    advisor_active:"En atención",
+    declined_pending_delete:"Rechazó · cierre en curso",
+    closed:"Cerrado"
+  })[status] || "En revisión";
+}
+function privateChatTopicLabel(topic) {
+  return ({product:"Producto",financing:"Financiamiento",credit_card:"Tarjeta de crédito",other:"Consulta"})[topic] || "Consulta";
+}
+function privateChatRouteLabel(route) {
+  return route === "support" ? "Atención al cliente" : route === "buy" ? "Quiero comprar" : "Sin elegir";
+}
+function privateChatSelectedConversation() {
+  return privateChatConversations.find(item => String(item.id) === String(privateChatSelectedId)) || null;
+}
+function privateChatSetStatus(message, kind = "") {
+  if (!privateChatStatusEl) return;
+  privateChatStatusEl.textContent = message || "";
+  privateChatStatusEl.dataset.kind = kind;
+}
+function privateChatShowNotification(title, body, conversationId) {
+  return showAdminNotification(title, body, conversationId).then(result => {
+    if (!result.ok && result.reason === "display-failed") {
+      console.warn("No se pudo mostrar la notificación de JB Manager:", result.message || "Error del navegador.");
+    }
+    return result;
+  });
+}
+function privateChatBucket(item) {
+  const status = String(item?.status || "");
+  if (status === "advisor_active") return "active";
+  if (status === "closed" || status === "declined_pending_delete") return "closed";
+  return "pending";
+}
+function privateChatRenderInbox() {
+  if (!privateChatListEl) return;
+  const counts = {
+    pending: privateChatConversations.filter(item => privateChatBucket(item) === "pending").length,
+    active: privateChatConversations.filter(item => privateChatBucket(item) === "active").length,
+    closed: privateChatConversations.filter(item => privateChatBucket(item) === "closed").length
+  };
+  document.querySelectorAll("[data-private-chat-filter]").forEach(button => {
+    const key = String(button.dataset.privateChatFilter || "pending");
+    const active = key === privateChatActiveFilter;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+    const count = button.querySelector("[data-private-chat-filter-count]");
+    if (count) count.textContent = String(counts[key] || 0);
+  });
+  const items = privateChatConversations.filter(item => privateChatBucket(item) === privateChatActiveFilter);
+  if (privateChatSelectedId && !items.some(item => String(item.id) === String(privateChatSelectedId))) privateChatSelectedId = "";
+  const inboxCount = document.getElementById("private-chat-admin-inbox-count");
+  if (inboxCount) inboxCount.textContent = String(items.length);
+  if (!items.length) {
+    const emptyCopy = {pending:"No hay conversaciones pendientes.",active:"No hay conversaciones en atención.",closed:"Todavía no hay conversaciones finalizadas."}[privateChatActiveFilter] || "No hay conversaciones.";
+    privateChatListEl.innerHTML = '<p class="provider-empty-state private-chat-filter-empty">' + privateChatEscape(emptyCopy) + '</p>';
+    return;
+  }
+  const selected = privateChatSelectedId;
+  privateChatListEl.innerHTML = items.map(item => {
+    const id = String(item.id || "");
+    const isSelected = id === selected;
+    const status = String(item.status || "");
+    const statusClass = status === "pending_advisor" || status === "pending_consent" ? "is-pending"
+      : status === "advisor_active" ? "is-active"
+      : status === "declined_pending_delete" || status === "closed" ? "is-declined" : "";
+    const route = privateChatRouteLabel(item.contact_route);
+    const catalog = item.catalog_type === "perfumery" ? "JB Parfums" : item.catalog_type === "technology" ? "JB TECH" : "JB Collections";
+    const title = item.product_name || "Consulta general";
+    return '<button class="private-chat-admin-item' + (isSelected ? ' is-selected' : '') + '" type="button" data-private-chat-select="' + privateChatEscape(id) + '" aria-pressed="' + String(isSelected) + '">' +
+      '<span class="private-chat-admin-item-top"><span class="private-chat-admin-item-title">' + privateChatEscape(title) + '</span><time class="private-chat-admin-item-time">' + privateChatEscape(privateChatDate(item.last_message_at || item.created_at)) + '</time></span>' +
+      '<span class="private-chat-admin-item-meta"><span class="private-chat-pill ' + statusClass + '">' + privateChatEscape(privateChatStatusLabel(status)) + '</span><span class="private-chat-pill">' + privateChatEscape(catalog) + '</span><span class="private-chat-pill">' + privateChatEscape(route) + '</span></span>' +
+      '</button>';
+  }).join("");
+}
+function privateChatRenderMessages(messages) {
+  if (!privateChatMessagesEl) return;
+  const list = (Array.isArray(messages) ? messages : []).filter(item => {
+    if (item.sender_type !== "assistant") return true;
+    const content = String(item.content || "");
+    // Hide obsolete system notices that tell customers not to share the exact
+    // identity/contact details needed by the Go Partners order-registration flow.
+    return !/^Antes de continuar con una compra:/i.test(content) &&
+      !(/^¡Hola! Este es el canal privado de JB Collections\./i.test(content) &&
+        /No compartás aquí cédula, teléfono, correo ni datos de pago/i.test(content));
+  });
+  const selected = privateChatSelectedConversation();
+  const previous = privateChatMessagesEl.dataset.signature || "";
+  const signature = list.map(item => String(item.id) + ":" + String(item.content)).join("|");
+  if (signature === previous) return;
+  const nearBottom = privateChatMessagesEl.scrollHeight - privateChatMessagesEl.scrollTop - privateChatMessagesEl.clientHeight < 100;
+  privateChatMessagesEl.dataset.signature = signature;
+  privateChatMessagesEl.replaceChildren();
+  if (!list.length) {
+    const empty = document.createElement("p");
+    empty.className = "provider-empty-state";
+    empty.textContent = "Todavía no hay mensajes en esta conversación.";
+    privateChatMessagesEl.appendChild(empty);
+    return;
+  }
+  for (const item of list) {
+    const sender = String(item.sender_type || "assistant");
+    const bubble = document.createElement("article");
+    bubble.className = "private-chat-admin-message " + (sender === "customer" ? "is-customer" : sender === "advisor" ? "is-advisor" : "is-assistant");
+    const text = document.createElement("p");
+    text.textContent = String(item.content || "");
+    const time = document.createElement("time");
+    time.dateTime = String(item.created_at || "");
+    time.textContent = (sender === "customer" ? "Cliente" : sender === "advisor" ? "Vos · Asesor" : "Sistema") + (item.created_at ? " · " + privateChatDate(item.created_at, true) : "");
+    bubble.append(text, time);
+    privateChatMessagesEl.appendChild(bubble);
+  }
+  if (nearBottom) privateChatMessagesEl.scrollTop = privateChatMessagesEl.scrollHeight;
+}
+function privateChatRenderSelected() {
+  const item = privateChatSelectedConversation();
+  if (!item) {
+    privateChatSelectedPanel.hidden = true;
+    privateChatSelectedPanel.style.display = "none";
+    if (privateChatEmptyPanel) {
+      privateChatEmptyPanel.hidden = true;
+      privateChatEmptyPanel.style.display = "none";
+    }
+    if (privateChatThreadEl) {
+      privateChatThreadEl.hidden = true;
+      privateChatThreadEl.style.display = "none";
+      privateChatThreadEl.style.height = "auto";
+      privateChatThreadEl.style.minHeight = "0";
+    }
+    privateChatLayoutEl?.classList.remove("has-selection");
+    privateChatReplyForm.hidden = true;
+    privateChatRenderMessages([]);
+    return;
+  }
+  privateChatSelectedPanel.hidden = false;
+  privateChatSelectedPanel.style.display = "";
+  privateChatSelectedPanel.style.flex = "0 0 auto";
+  privateChatSelectedPanel.style.minHeight = "0";
+  privateChatSelectedPanel.style.height = "auto";
+  if (privateChatEmptyPanel) {
+    privateChatEmptyPanel.hidden = true;
+    privateChatEmptyPanel.style.display = "none";
+  }
+  if (privateChatThreadEl) {
+    privateChatThreadEl.hidden = false;
+    privateChatThreadEl.style.display = "";
+    privateChatThreadEl.style.height = "auto";
+    privateChatThreadEl.style.minHeight = "0";
+    privateChatThreadEl.style.maxHeight = "none";
+    privateChatThreadEl.style.justifyContent = "flex-start";
+  }
+  privateChatLayoutEl?.classList.add("has-selection");
+  const status = String(item.status || "");
+  const canClaim = status === "pending_advisor" && !item.claimed_by;
+  const ownActive = status === "advisor_active" && String(item.claimed_by || "") === String(currentUser?.id || "");
+  const canClose = status !== "closed" && (!item.claimed_by || String(item.claimed_by) === String(currentUser?.id || ""));
+  const canExtend = ownActive && item.contact_route === "buy" && item.consent_choice === "yes" && !item.purchase_confirmed_at;
+  document.getElementById("private-chat-admin-thread-kicker").textContent = privateChatStatusLabel(status).toLocaleUpperCase("es");
+  document.getElementById("private-chat-admin-thread-title").textContent = item.product_name || "Consulta general";
+  document.getElementById("private-chat-admin-thread-meta").textContent =
+    (item.catalog_type === "perfumery" ? "JB Parfums" : item.catalog_type === "technology" ? "JB TECH" : "JB Collections") +
+    " · " + privateChatRouteLabel(item.contact_route) +
+    " · " + privateChatTopicLabel(item.payment_topic) +
+    " · Creado " + privateChatDate(item.created_at, true);
+  const productLink = document.getElementById("private-chat-admin-product-link");
+  const safeProductUrl = /^https:\/\/(jb-collections\.pages\.dev|jasbh121101\.github\.io)(\/|$)/i.test(String(item.product_url || ""))
+    ? item.product_url : "https://jb-collections.pages.dev/";
+  productLink.href = safeProductUrl;
+  productLink.hidden = !item.product_id;
+  const claimButton = document.getElementById("private-chat-admin-claim");
+  const purchaseButton = document.getElementById("private-chat-admin-purchase");
+  const closeButton = document.getElementById("private-chat-admin-close");
+  claimButton.hidden = !canClaim;
+  claimButton.style.display = canClaim ? "" : "none";
+  purchaseButton.hidden = !canExtend;
+  purchaseButton.style.display = canExtend ? "" : "none";
+  closeButton.hidden = !canClose;
+  closeButton.style.display = canClose ? "" : "none";
+  privateChatReplyForm.hidden = !ownActive;
+  privateChatReplyForm.style.display = ownActive ? "" : "none";
+  productLink.style.display = item.product_id ? "" : "none";
+
+  const actionsPanel = document.getElementById("private-chat-admin-actions");
+  if (actionsPanel) {
+    actionsPanel.style.display = [canClaim, canExtend, canClose].some(Boolean) ? "flex" : "none";
+  }
+  const messagesPanel = document.getElementById("private-chat-admin-messages");
+  if (messagesPanel) {
+    messagesPanel.style.flex = "0 1 auto";
+    messagesPanel.style.minHeight = "0";
+    messagesPanel.style.height = "auto";
+    messagesPanel.style.maxHeight = "260px";
+  }
+  if (status === "pending_consent") {
+    privateChatSetStatus("La conversación está pendiente de que el cliente elija atención o autorice continuar con una compra.");
+  } else if (status === "declined_pending_delete") {
+    privateChatSetStatus("El cliente rechazó continuar. No envíes mensajes comerciales; el chat está programado para eliminarse.");
+  } else if (status === "pending_advisor") {
+    privateChatSetStatus("Solicitud pendiente. Tomala para responder personalmente.");
+  } else if (status === "advisor_active" && !ownActive) {
+    privateChatSetStatus("Esta conversación ya está tomada por otro asesor.");
+  } else if (status === "closed") {
+    privateChatSetStatus("Esta conversación está cerrada. El historial se conserva conforme al plazo de retención.");
+  } else if (ownActive) {
+    privateChatSetStatus("Estás atendiendo esta conversación. Las respuestas se envían solo cuando pulsás «Enviar respuesta».");
+  }
+}
+async function loadPrivateChatMessages(silent = false) {
+  if (!supabase || !currentUser || !privateChatSelectedId || privateChatMessagesLoading) return;
+  privateChatMessagesLoading = true;
+  try {
+    const { data, error } = await supabase
+      .from("private_chat_messages")
+      .select("id,conversation_id,sender_type,content,created_at")
+      .eq("conversation_id", privateChatSelectedId)
+      .order("created_at", { ascending: false })
+      .limit(150);
+    if (error) throw error;
+    privateChatRenderMessages((data || []).reverse());
+  } catch (error) {
+    if (!silent) privateChatSetStatus("No se pudieron cargar los mensajes: " + String(error.message || "Error"), "error");
+  } finally {
+    privateChatMessagesLoading = false;
+  }
+}
+async function loadPrivateChatInbox(options = {}) {
+  if (!supabase || !currentUser || !dashboard || dashboard.classList.contains("hidden") || privateChatInboxLoading) return;
+  privateChatInboxLoading = true;
+  const silent = Boolean(options.silent);
+  try {
+    const { data, error } = await supabase
+      .from("private_chat_conversations")
+      .select("id,catalog_type,product_id,product_name,product_url,payment_topic,status,contact_route,consent_choice,claimed_by,claimed_at,created_at,last_message_at,session_expires_at,delete_after,purchase_confirmed_at")
+      .order("last_message_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    privateChatConversations = data || [];
+
+    const { data: recentMessages, error: messagesError } = await supabase
+      .from("private_chat_messages")
+      .select("id,conversation_id,sender_type,content,created_at")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (messagesError) throw messagesError;
+    const latestByConversation = new Map();
+    for (const message of recentMessages || []) {
+      const id = String(message.conversation_id);
+      if (!latestByConversation.has(id)) latestByConversation.set(id, message);
+    }
+    privateChatConversations = privateChatConversations.map(item => ({
+      ...item,
+      _latestMessage: latestByConversation.get(String(item.id)) || null
+    }));
+    const pendingCount = privateChatConversations.filter(item => privateChatBucket(item) === "pending").length;
+    if (privateChatNavCount) privateChatNavCount.textContent = String(pendingCount);
+    const dashboardChatCount = document.getElementById("dashboard-private-chat-shortcut-count");
+    if (dashboardChatCount) dashboardChatCount.textContent = String(pendingCount);
+    const inboxCount = document.getElementById("private-chat-admin-inbox-count");
+    if (inboxCount) inboxCount.textContent = String(privateChatConversations.length);
+
+    const notificationDelta = detectPrivateChatNotificationEvents({
+      conversations: privateChatConversations,
+      previousStates: privateChatKnownConversationStates,
+      baselineReady: privateChatBaselineReady
+    });
+    privateChatKnownConversationStates = notificationDelta.nextStates;
+    if (!privateChatBaselineReady) privateChatBaselineReady = true;
+    for (const notification of notificationDelta.events) {
+      void privateChatShowNotification(notification.title, notification.body, notification.id);
+      privateChatSetStatus(
+        notification.kind === "request"
+          ? "Nueva solicitud lista para atención."
+          : "Nuevo mensaje recibido del cliente.",
+        "success"
+      );
+    }
+
+    if (privateChatSelectedId && !privateChatConversations.some(item => String(item.id) === String(privateChatSelectedId))) {
+      privateChatSelectedId = "";
+    }
+    privateChatRenderInbox();
+    privateChatRenderSelected();
+    if (privateChatSelectedId) await loadPrivateChatMessages(true);
+    if (!silent && !privateChatConversations.length) privateChatSetStatus("Todavía no hay conversaciones de clientes.");
+    else if (!silent && privateChatStatusEl?.dataset.kind === "error") privateChatSetStatus("");
+  } catch (error) {
+    if (!silent) privateChatSetStatus("No se pudo cargar la mensajería: " + String(error.message || "Error"), "error");
+  } finally {
+    privateChatInboxLoading = false;
+  }
+}
+async function privateChatRunAdminAction(action) {
+  if (privateChatActionInFlight) return;
+  const item = privateChatSelectedConversation();
+  if (!item || !supabase || !currentUser) return;
+  privateChatActionInFlight = true;
+  const buttonIds = {
+    claim: "private-chat-admin-claim",
+    purchase: "private-chat-admin-purchase",
+    close: "private-chat-admin-close"
+  };
+  const button = document.getElementById(buttonIds[action]);
+  if (button) button.disabled = true;
+  privateChatSetStatus("Actualizando conversación…");
+  try {
+    const rpcName = action === "claim" ? "private_chat_admin_claim"
+      : action === "purchase" ? "private_chat_admin_extend_after_purchase"
+      : "private_chat_admin_close";
+    const { data, error } = await supabase.rpc(rpcName, { p_conversation_id: item.id });
+    if (error) throw error;
+    if (data?.ok === false) {
+      if (action === "claim" && data.code === "conversation_already_claimed_or_not_pending") {
+        await loadPrivateChatInbox({ silent: true });
+        privateChatSetStatus("Esta solicitud ya no está pendiente o fue tomada por otro asesor. Revisá las conversaciones pendientes para continuar.", "info");
+        return;
+      }
+      throw new Error("No se pudo aplicar el cambio.");
+    }
+    privateChatSetStatus(action === "claim" ? "Tomaste la conversación; ya podés responder." :
+      action === "purchase" ? "Compra confirmada. El acceso del cliente se extendió 30 minutos." : "Conversación cerrada.");
+    await loadPrivateChatInbox({ silent: true });
+    if (privateChatSelectedId) await loadPrivateChatMessages(true);
+  } catch (error) {
+    const message = String(error?.message || error || "No se pudo completar la acción.");
+    if (action === "claim" && /conversation_already_claimed_or_not_pending/i.test(message)) {
+      // The inbox may be stale if another advisor or tab claimed this request.
+      // Refresh authoritative state so the Claim action disappears instead of inviting retries.
+      await loadPrivateChatInbox({ silent: true });
+      privateChatSetStatus("Esta solicitud ya no está pendiente o fue tomada por otro asesor. Se intentó actualizar la bandeja; revisá el estado antes de continuar.", "info");
+    } else {
+      privateChatSetStatus(message, "error");
+    }
+  } finally {
+    privateChatActionInFlight = false;
+    if (button) button.disabled = false;
+  }
+}
+async function privateChatSendAdminReply(event) {
+  event.preventDefault();
+  if (!privateChatSelectedId || !currentUser) return;
+  const item = privateChatSelectedConversation();
+  if (!item || item.status !== "advisor_active" || String(item.claimed_by) !== String(currentUser.id)) {
+    privateChatSetStatus("Tomá la conversación antes de responder.", "error");
+    return;
+  }
+  const content = String(privateChatReplyInput.value || "").trim();
+  if (!content) return;
+  const send = document.getElementById("private-chat-admin-send");
+  send.disabled = true;
+  privateChatSetStatus("Enviando respuesta…");
+  try {
+    const { error } = await supabase.rpc("private_chat_admin_send", {
+      p_conversation_id: privateChatSelectedId,
+      p_content: content
+    });
+    if (error) {
+      if (/personal_data_not_allowed/i.test(String(error.message || ""))) {
+        throw new Error("Podés recibir nombre completo, cédula y celular para registrar la operación de Go Partners. No solicités contraseñas, PIN, códigos de seguridad ni números completos de tarjetas o cuentas bancarias.");
+      }
+      throw error;
+    }
+    privateChatReplyInput.value = "";
+    privateChatReplyInput.style.height = "auto";
+    privateChatSetStatus("Respuesta enviada.");
+    await loadPrivateChatInbox({ silent: true });
+    await loadPrivateChatMessages(true);
+    privateChatReplyInput.focus();
+  } catch (error) {
+    privateChatSetStatus(String(error.message || "No se pudo enviar la respuesta."), "error");
+  } finally {
+    send.disabled = false;
+  }
+}
+
+document.getElementById("private-chat-refresh")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (button) button.disabled = true;
+  try {
+    await loadPrivateChatInbox();
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+document.getElementById("private-chat-enable-notifications")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (button) button.disabled = true;
+  privateChatSetStatus("Comprobando permisos y preparando las notificaciones…");
+  try {
+    const result = await enableAdminNotifications({
+      supabase,
+      currentUser,
+      publicKey: CONFIG.adminPushPublicKey
+    });
+    if (result.ok) {
+      if (button) {
+        button.textContent = "Probar notificaciones";
+        button.title = "Mostrar una notificación de prueba en este dispositivo";
+      }
+      if (result.mode === "native-local") {
+        privateChatSetStatus(
+          "Permiso nativo concedido y notificación de prueba mostrada. En esta APK las alertas se generan mientras JB Manager esté abierto y pueda consultar la bandeja. Para recibir avisos con la app en segundo plano o cerrada hace falta configurar push nativo (FCM).",
+          "success"
+        );
+      } else {
+        privateChatSetStatus(
+          "Push registrado en este dispositivo. Se mostró la prueba; las alertas de solicitudes de compra pueden llegar aunque la pestaña no esté abierta, siempre que el navegador y el sistema permitan notificaciones.",
+          "success"
+        );
+      }
+    } else if (result.reason === "unsupported") {
+      privateChatSetStatus("Este navegador o contenedor no admite notificaciones. Si abriste JB Manager desde una APK o ventana integrada, abrí el panel directamente en Google Chrome: https://jb-collections.pages.dev/admin.html. Android WebView no admite PushManager; dentro de la APK las alertas push no se pueden activar con esta función.", "error");
+    } else if (result.reason === "insecure-context") {
+      privateChatSetStatus("Las notificaciones requieren HTTPS o localhost. Abrí JB Manager desde su dirección segura.", "error");
+    } else if (result.reason === "permission-denied") {
+      if (window.Capacitor?.isNativePlatform?.()) {
+        privateChatSetStatus("Android bloqueó las notificaciones de JB Manager. Abrí Ajustes del teléfono → Aplicaciones → JB Manager Collections → Notificaciones y habilitalas; después regresá y probá otra vez.", "error");
+      } else {
+        privateChatSetStatus("El permiso está bloqueado por el navegador. Habilitá las notificaciones del sitio en los ajustes del navegador y volvé a probar.", "error");
+      }
+    } else if (result.reason === "permission-not-granted") {
+      privateChatSetStatus("No se concedió permiso para notificaciones. Podés seguir revisando la bandeja manualmente.", "error");
+    } else if (result.reason === "native-notifications-unavailable") {
+      privateChatSetStatus("Esta APK todavía no incluye el módulo nativo de notificaciones. Actualizá JB Manager cuando se publique la nueva versión.", "error");
+    } else if (result.reason === "push-unsupported") {
+      privateChatSetStatus("Este navegador no admite Web Push en segundo plano. Si estás usando JB Manager dentro de una APK o ventana integrada, abrí https://jb-collections.pages.dev/admin.html directamente en Google Chrome y activá las notificaciones allí.", "error");
+    } else if (result.reason === "admin-session-required") {
+      privateChatSetStatus("Tu sesión administrativa no está lista. Cerrá sesión, volvé a entrar y activá las notificaciones.", "error");
+    } else if (result.reason === "push-config-missing" || result.reason === "invalid-public-key") {
+      privateChatSetStatus("Falta configuración válida de Web Push para este entorno. No se guardó como activado; revisá la configuración de despliegue.", "error");
+    } else if (result.reason === "push-setup-failed") {
+      privateChatSetStatus(String(result.message || "No se pudo registrar el dispositivo para avisos en segundo plano."), "error");
+    } else {
+      privateChatSetStatus("No se pudo mostrar la notificación de prueba: " + String(result.message || result.reason || "error desconocido") + ". Revisá los permisos del navegador e intentá de nuevo.", "error");
+    }
+  } catch (error) {
+    privateChatSetStatus("No se pudo activar la notificación: " + String(error?.message || error || "error desconocido"), "error");
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener("message", event => {
+    if (event.data?.type === "JB_MANAGER_OPEN_MESSAGES" && currentUser && dashboard && !dashboard.classList.contains("hidden")) {
+      showAdminSection("messages");
+    }
+  });
+}
+document.querySelectorAll("[data-private-chat-filter]").forEach(button => {
+  button.addEventListener("click", () => {
+    const next = String(button.dataset.privateChatFilter || "pending");
+    if (!["pending", "active", "closed"].includes(next)) return;
+    privateChatActiveFilter = next;
+    privateChatRenderInbox();
+    privateChatRenderSelected();
+  });
+});
+document.getElementById("private-chat-admin-back")?.addEventListener("click", () => {
+  privateChatSelectedId = "";
+  privateChatRenderInbox();
+  privateChatRenderSelected();
+});
+privateChatListEl?.addEventListener("click", event => {
+  const button = event.target.closest("[data-private-chat-select]");
+  if (!button) return;
+  privateChatSelectedId = String(button.dataset.privateChatSelect || "");
+  privateChatRenderInbox();
+  privateChatRenderSelected();
+  void loadPrivateChatMessages();
+});
+document.getElementById("private-chat-admin-claim")?.addEventListener("click", () => void privateChatRunAdminAction("claim"));
+document.getElementById("private-chat-admin-purchase")?.addEventListener("click", () => void privateChatRunAdminAction("purchase"));
+document.getElementById("private-chat-admin-close")?.addEventListener("click", () => {
+  if (window.confirm("¿Cerrar esta conversación? El acceso del cliente se revocará y el historial seguirá sujeto al plazo de conservación.")) {
+    void privateChatRunAdminAction("close");
+  }
+});
+privateChatReplyForm?.addEventListener("submit", event => void privateChatSendAdminReply(event));
+window.setInterval(() => {
+  if (currentUser && dashboard && !dashboard.classList.contains("hidden")) void loadPrivateChatInbox({ silent: true });
+}, 15000);
 
 async function loadProducts() {
   if (!supabase || !currentUser) return false;
@@ -2405,12 +3608,77 @@ async function loadProducts() {
     }
   }
 
+  await providerTools.refresh();
+
   updateProductFormMode();
   renderAdminList();
   renderDashboardOverview();
   await loadCatalogAnalytics();
   return true;
 }
+
+/* Sincronización manual entre dispositivos: vuelve a consultar Supabase sin
+   recargar el documento ni tocar la sesión o el formulario que esté abierto. */
+async function refreshAdminInventory(triggerButton = null) {
+  if (inventoryRefreshPromise) return inventoryRefreshPromise;
+
+  if (!supabase || !currentUser) {
+    document.querySelectorAll("[data-admin-refresh-status]").forEach(node => {
+      node.textContent = "Iniciá sesión para sincronizar.";
+    });
+    if (triggerButton) triggerButton.disabled = true;
+    return false;
+  }
+
+  inventoryRefreshPromise = (async () => {
+    const buttons = Array.from(document.querySelectorAll("[data-refresh-inventory]"));
+    const statusNodes = Array.from(document.querySelectorAll("[data-admin-refresh-status]"));
+
+    buttons.forEach(button => {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      button.classList.add("is-refreshing");
+      const label = button.querySelector("[data-refresh-label]");
+      if (label) label.textContent = "Actualizando…";
+    });
+    statusNodes.forEach(node => { node.textContent = "Consultando datos guardados…"; });
+
+    try {
+      const refreshed = await loadProducts();
+      const time = new Date().toLocaleTimeString("es-NI", { hour: "2-digit", minute: "2-digit" });
+      statusNodes.forEach(node => {
+        node.textContent = refreshed ? "Sincronizado " + time : "No se pudo sincronizar";
+      });
+      return refreshed;
+    } catch (error) {
+      console.warn("No se pudo sincronizar el inventario entre dispositivos:", error);
+      statusNodes.forEach(node => { node.textContent = "Error al sincronizar · intentá de nuevo"; });
+      setStatus("No se pudo sincronizar el inventario: " + (error?.message || "error desconocido"), "error");
+      return false;
+    } finally {
+      buttons.forEach(button => {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        button.classList.remove("is-refreshing");
+        const label = button.querySelector("[data-refresh-label]");
+        if (label) label.textContent = "Actualizar";
+      });
+    }
+  })();
+
+  try {
+    return await inventoryRefreshPromise;
+  } finally {
+    inventoryRefreshPromise = null;
+  }
+}
+
+document.querySelectorAll("[data-refresh-inventory]").forEach(button => {
+  button.addEventListener("click", event => {
+    void refreshAdminInventory(event.currentTarget);
+  });
+});
+
 function formatAnalyticsCapacity(value) {
   const parsed = parseStorageValue(value);
   return parsed.amount ? formatStorageLabel(parsed.amount, parsed.unit) : "";
@@ -2481,7 +3749,50 @@ function renderAnalyticsPie(node, legendNode, totalNode, rows) {
   }).join("");
 }
 
+function renderDepartmentAnalytics(events) {
+  const target = document.getElementById("dashboard-department-breakdown");
+  if (!target) return;
+  if (!events.length) {
+    target.innerHTML = '<p class="dashboard-empty-state">Todavía no hay eventos. El desglose empezará a llenarse con nuevas visitas.</p>';
+    return;
+  }
+  const groups = new Map();
+  for (const event of events) {
+    const country = String(event.visitor_country || "").trim().toUpperCase();
+    const department = String(event.visitor_department || "").trim();
+    let label, key;
+    if (country === "NI" && department) { label = department; key = "department:" + department.toLocaleLowerCase("es"); }
+    else if (country && country !== "NI") { label = "Fuera de Nicaragua (" + country + ")"; key = "country:" + country; }
+    else { label = "Sin ubicación registrada"; key = "unknown"; }
+    const row = groups.get(key) || { label, catalogVisits: 0, views: 0, contacts: 0 };
+    if (event.event_type === "catalog_view") row.catalogVisits += 1;
+    if (event.event_type === "view") row.views += 1;
+    if (event.event_type === "whatsapp_click") row.contacts += 1;
+    groups.set(key, row);
+  }
+  const rows = Array.from(groups.values())
+    .sort((a, b) => (b.catalogVisits + b.views + b.contacts) - (a.catalogVisits + a.views + a.contacts) || a.label.localeCompare(b.label, "es"))
+    .slice(0, 12);
+  const maxValue = Math.max(1, ...rows.map(row => Math.max(row.catalogVisits, row.views, row.contacts)));
+  target.innerHTML = rows.map(row => {
+    const catalogWidth = Math.round(row.catalogVisits / maxValue * 100);
+    const viewsWidth = Math.round(row.views / maxValue * 100);
+    const contactsWidth = Math.round(row.contacts / maxValue * 100);
+    return '<div class="department-stat-row">' +
+      '<div class="department-stat-name">' + escapeHtml(row.label) + '</div>' +
+      '<div class="department-stat-bars">' +
+        '<div class="department-stat-bar" title="Visitas al catálogo"><span style="width:' + catalogWidth + '%"></span></div>' +
+        '<div class="department-stat-bar" title="Aperturas de fichas"><span style="width:' + viewsWidth + '%"></span></div>' +
+        '<div class="department-stat-bar is-contact" title="Clics de WhatsApp"><span style="width:' + contactsWidth + '%"></span></div>' +
+      '</div>' +
+      '<div class="department-stat-metrics"><span>Catálogo</span><strong>' + row.catalogVisits.toLocaleString("es-NI") + '</strong><span>Fichas</span><strong>' + row.views.toLocaleString("es-NI") + '</strong><span>WhatsApp</span><strong>' + row.contacts.toLocaleString("es-NI") + '</strong></div>' +
+    '</div>';
+  }).join("") +
+  '<div class="department-stat-legend"><span><i></i> Visitas al catálogo</span><span><i></i> Fichas de productos</span><span><i class="contact-dot"></i> Clics de WhatsApp</span></div>';
+}
+
 async function loadCatalogAnalytics() {
+  if (typeof loadCommissionDashboard === "function") void loadCommissionDashboard();
   const note = document.getElementById("dashboard-analytics-note");
   const topNode = document.getElementById("dashboard-top-products");
   const familyNode = document.getElementById("dashboard-interest-colors");
@@ -2514,7 +3825,7 @@ async function loadCatalogAnalytics() {
   if (!supabase || !currentUser) return;
 
   const { data, error } = await supabase.from("catalog_events")
-    .select("product_id,event_type,created_at,variant_color,variant_ram,variant_storage")
+    .select("*")
     .order("created_at", { ascending: false }).limit(10000);
   if (error) {
     setText("dashboard-views-total", "—");
@@ -2529,7 +3840,8 @@ async function loadCatalogAnalytics() {
   }
 
   const catalogIds = new Set(catalogProducts.map(product => String(product.id)));
-  const events = (data || []).filter(event => catalogIds.has(String(event.product_id)));
+  const events = (data || []).filter(event => event.event_type === "catalog_view" ? (isAllCatalogs || event.catalog_type === dashboardCatalogScope) : catalogIds.has(String(event.product_id)));
+  renderDepartmentAnalytics(events);
   const views = events.filter(event => event.event_type === "view");
   const clicks = events.filter(event => event.event_type === "whatsapp_click");
   setText("dashboard-views-total", views.length.toLocaleString("es-NI"));
@@ -2538,7 +3850,7 @@ async function loadCatalogAnalytics() {
   if (note) {
     const scopeLabel = isAllCatalogs ? "ambos catálogos" : isPerfumeCatalog ? "JB Parfums" : "JB TECH";
     note.textContent = events.length
-      ? "Eventos registrados para " + scopeLabel + ". Las visitas son aperturas de fichas, no personas únicas. Los clics expresan intención de consulta, no ventas confirmadas."
+      ? "Eventos registrados para " + scopeLabel + ". Las visitas al catálogo son cargas de página y las visitas a fichas son aperturas de productos; no representan personas únicas. Los clics de WhatsApp indican intención de consulta, no ventas confirmadas."
       : catalogProducts.length
         ? "Todavía no hay eventos para " + scopeLabel + ". Las estadísticas comenzarán cuando los clientes abran fichas o pulsen WhatsApp."
         : "Agregá productos a " + scopeLabel + " para comenzar a medir visitas y consultas.";
@@ -2949,7 +4261,11 @@ function previewOpenProduct(product) {
             variant.image_url
           ]);
           const swatch = validHex(variant.color_hex);
-          const status = previewAvailability(variant.availability);
+          const colorAvailability = normalizeVariantAvailability(variant.availability);
+          const configurationAvailability = normalizeVariantAvailability(variant.configuration_availability);
+          const status = previewAvailability(colorAvailability === "out_of_stock" || configurationAvailability === "out_of_stock"
+            ? "out_of_stock"
+            : colorAvailability === "order" || configurationAvailability === "order" ? "on_order" : "available");
           const statusClass = status === "Disponible" ? "available" : status === "Por pedido" ? "order" : "unavailable";
           const priceUSD = previewMoney(variant.price_usd ?? product.price_usd, "USD");
           const priceNIO = previewMoney(variant.price_nio ?? product.price_nio, "NIO");
@@ -3213,7 +4529,7 @@ let editorIsDirty = false;
 function getEditorSnapshot(){
  if(!form)return "";
  const fields=Array.from(form.elements).map(f=>{if(!f||(!f.name&&!f.id&&!f.matches?.("[data-variant-row],[data-variant-group]")))return null;if(f.type==="file")return [f.id||f.getAttribute("data-variant-image")||"file",Array.from(f.files||[]).map(x=>[x.name,x.size,x.lastModified])];if(f.type==="checkbox"||f.type==="radio")return [f.id||f.name,f.checked];return [f.id||f.name||f.getAttribute("data-variant-color")||f.getAttribute("data-group-storage")||f.getAttribute("data-group-ram")||f.getAttribute("data-group-price-usd")||f.getAttribute("data-group-price-nio")||f.getAttribute("data-variant-availability")||f.getAttribute("data-variant-image-url")||f.tagName,f.value];}).filter(Boolean);
- const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({base:g.dataset.baseGroup==="true",storage:g.querySelector("[data-group-storage]")?.value||"",unit:g.querySelector("[data-group-storage-unit]")?.value||"GB",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||"",images:(r._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}))}));
+ const variants=Array.from(form.querySelectorAll("[data-variant-group]")).map(g=>({base:g.dataset.baseGroup==="true",storage:g.querySelector("[data-group-storage]")?.value||"",unit:g.querySelector("[data-group-storage-unit]")?.value||"GB",ram:g.querySelector("[data-group-ram]")?.value||"",usd:g.querySelector("[data-group-price-usd]")?.value||"",nio:g.querySelector("[data-group-price-nio]")?.value||"",availability:g.querySelector("[data-group-availability]")?.value||"available",colors:Array.from(g.querySelectorAll("[data-variant-row]")).map(r=>({color:r.querySelector("[data-variant-color]")?.value||"",hex:r.querySelector("[data-variant-hex]")?.value||"",availability:r.querySelector("[data-variant-availability]")?.value||"",url:r.querySelector("[data-variant-image-url]")?.value||"",images:(r._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}))}));
  const mainGallery=mainImageItems.map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}));
  const variantGalleries=Array.from(form.querySelectorAll("[data-variant-row]")).map(row=>({color:row.querySelector("[data-variant-color]")?.value||"",images:(row._variantImageItems||[]).map(i=>({id:i.id,kind:i.kind,url:i.url||"",name:i.file?.name||"",size:i.file?.size||0,lastModified:i.file?.lastModified||0}))}));
  return JSON.stringify({fields,variants,mainGallery,variantGalleries});
@@ -3265,7 +4581,7 @@ async function recoveryAction(mode, action) {
   }
 }
 function recoveryItem(i) { return {id:i.id,kind:i.kind,url:i.url||'',name:i.file?.name||'',type:i.file?.type||'',lastModified:i.file?.lastModified||0,blob:i.kind==='new'&&i.file?i.file:null,uploadError:i.uploadError||''}; }
-function recoveryVariantState() { return Array.from(form.querySelectorAll('[data-variant-group]')).map(g=>({base:g.dataset.baseGroup==='true',storage:g.querySelector('[data-group-storage]')?.value||'',unit:g.querySelector('[data-group-storage-unit]')?.value||'GB',ram:g.querySelector('[data-group-ram]')?.value||'',usd:g.querySelector('[data-group-price-usd]')?.value||'',nio:g.querySelector('[data-group-price-nio]')?.value||'',colors:Array.from(g.querySelectorAll('[data-variant-row]')).map(r=>({color:r.querySelector('[data-variant-color]')?.value||'',hex:r.querySelector('[data-variant-hex]')?.value||'',availability:r.querySelector('[data-variant-availability]')?.value||'available',images:(r._variantImageItems||[]).map(recoveryItem)}))})); }
+function recoveryVariantState() { return Array.from(form.querySelectorAll('[data-variant-group]')).map(g=>({base:g.dataset.baseGroup==='true',storage:g.querySelector('[data-group-storage]')?.value||'',unit:g.querySelector('[data-group-storage-unit]')?.value||'GB',ram:g.querySelector('[data-group-ram]')?.value||'',usd:g.querySelector('[data-group-price-usd]')?.value||'',nio:g.querySelector('[data-group-price-nio]')?.value||'',availability:g.querySelector('[data-group-availability]')?.value||'available',colors:Array.from(g.querySelectorAll('[data-variant-row]')).map(r=>({color:r.querySelector('[data-variant-color]')?.value||'',hex:r.querySelector('[data-variant-hex]')?.value||'',availability:r.querySelector('[data-variant-availability]')?.value||'available',images:(r._variantImageItems||[]).map(recoveryItem)}))})); }
 async function saveLocalRecoveryDraft() { if(restoringRecovery||!form||!dashboard||dashboard.classList.contains('hidden'))return; const hasData=Boolean(editorIsDirty||$('#product-id')?.value||$('#product-name')?.value.trim()||mainImageItems.length||Array.from(form.querySelectorAll('[data-variant-row]')).some(r=>r.querySelector('[data-variant-color]')?.value.trim())); if(!hasData)return; const fields=Array.from(form.elements).filter(f=>f&&f.id&&f.type!=='file'&&!['password','submit','button','reset'].includes(f.type)).map(f=>({id:f.id,value:(f.type==='checkbox'||f.type==='radio')?null:f.value,checked:(f.type==='checkbox'||f.type==='radio')?f.checked:null})); const draft={key:RECOVERY_KEY,savedAt:new Date().toISOString(),fields,variants:recoveryVariantState(),mainGallery:mainImageItems.map(recoveryItem)}; try{await recoveryAction('readwrite',s=>s.put(draft));const st=$('#local-recovery-status');if(st)st.textContent='Borrador local guardado automáticamente: '+new Date(draft.savedAt).toLocaleString();const rb=$('#restore-local-draft');if(rb)rb.hidden=false;const db=$('#delete-local-draft');if(db)db.hidden=false;}catch(e){console.warn('No se pudo guardar el borrador local.',e);const st=$('#local-recovery-status');if(st)st.textContent='No se pudo guardar el borrador local. Revisá el almacenamiento del navegador.';} }
 function scheduleLocalRecoverySave(delay = 120) {
   if (restoringRecovery) return;
@@ -3275,7 +4591,7 @@ function scheduleLocalRecoverySave(delay = 120) {
   }, Math.max(0, delay));
 }
 async function recoveryRestoreItem(i){if(i.kind!=='new'||!i.blob)return{id:i.id||imageId(),kind:'existing',url:i.url||''};const file=new File([i.blob],i.name||'imagen-pendiente',{type:i.type||i.blob.type||'application/octet-stream',lastModified:i.lastModified||Date.now()});return{id:i.id||imageId(),kind:'new',file,previewUrl:URL.createObjectURL(file),uploadError:i.uploadError||''};}
-async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').setAttribute('aria-label',$('#product-id').value?'Guardar cambios':'Guardar producto sin publicar');$('#save-product-button').title=$('#product-id').value?'Guardar cambios sin publicar':'Guardar producto sin publicar';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
+async function restoreLocalRecoveryDraft(){let d;try{d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));}catch(e){message('#product-form-status',e.message||'No se pudo leer el borrador.','error');return;}if(!d){const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';return;}if(!confirm('Hay un borrador local guardado el '+new Date(d.savedAt).toLocaleString()+'. ¿Deseás recuperarlo?'))return;restoringRecovery=true;try{clearEditor();for(const f of d.fields||[]){const n=document.getElementById(f.id);if(!n||n.type==='file')continue;if(n.type==='checkbox'||n.type==='radio')n.checked=Boolean(f.checked);else if(f.value!==null)n.value=f.value;}const vs=[];for(const g of d.variants||[])for(const c of g.colors||[])vs.push({storage:g.base?'':formatStorageLabel(g.storage,g.unit),ram:g.base?'':(g.ram?g.ram+' GB':''),price_usd:g.usd===''?null:Number(g.usd),price_nio:g.nio===''?null:Number(g.nio),color:c.color,color_hex:c.hex,availability:c.availability,configuration_availability:g.availability||'available',images:(c.images||[]).filter(i=>i.kind==='existing'&&i.url).map(i=>i.url),image_url:(c.images||[]).find(i=>i.kind==='existing'&&i.url)?.url||''});renderVariantRows(vs);mainImageItems=[];for(const i of d.mainGallery||[])mainImageItems.push(await recoveryRestoreItem(i));renderMainImagePreviews();const rows=Array.from(form.querySelectorAll('[data-variant-row]')),saved=(d.variants||[]).flatMap(g=>g.colors||[]);for(let x=0;x<rows.length&&x<saved.length;x++){const items=[];for(const i of saved[x].images||[])items.push(await recoveryRestoreItem(i));rows[x]._variantImageItems=items;syncVariantImageFields(rows[x]);renderVariantImagePreview(rows[x]);}$('#form-title').textContent=$('#product-id').value?'Continuar edición recuperada':'Continuar borrador recuperado';$('#save-product-button').setAttribute('aria-label',$('#product-id').value?'Guardar cambios':'Guardar producto sin publicar');$('#save-product-button').title=$('#product-id').value?'Guardar cambios sin publicar':'Guardar producto sin publicar';message('#product-form-status','Borrador recuperado. Revisá los datos y las fotografías antes de guardar.','success');showAdminSection('add');markEditorClean();updateEditorDirtyState();window.scrollTo({top:0,behavior:'smooth'});}catch(e){console.error('No se pudo restaurar el borrador.',e);message('#product-form-status','El borrador no se pudo restaurar por completo: '+(e.message||'error desconocido'),'error');}finally{restoringRecovery=false;}}
 async function deleteLocalRecoveryDraft(){if(!confirm('¿Eliminar el borrador local? Esto no elimina productos guardados en la base de datos.'))return;try{await recoveryAction('readwrite',s=>s.delete(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent='No hay borrador local guardado.';$('#restore-local-draft').hidden=true;$('#delete-local-draft').hidden=true;}catch(e){const st=$('#local-recovery-status');if(st)st.textContent=e.message||'No se pudo eliminar el borrador.';}}
 async function checkLocalRecoveryDraft(){try{const d=await recoveryAction('readonly',s=>s.get(RECOVERY_KEY));const st=$('#local-recovery-status');if(st)st.textContent=d?'Borrador local disponible desde '+new Date(d.savedAt).toLocaleString()+'.':'No hay borrador local guardado.';if($('#restore-local-draft'))$('#restore-local-draft').hidden=!d;if($('#delete-local-draft'))$('#delete-local-draft').hidden=!d;}catch(e){console.warn('No se pudo comprobar el borrador local.',e);}}
 
@@ -3359,6 +4675,14 @@ function clearEditor() {
   cancelQueuedPhotoUploadsForEditor();
   editorRecordExists=false;
   form.reset();
+  $("#product-subcategory").value = "";
+  $("#product-subcategory-custom").value = "";
+  $("#product-subcategory-custom").hidden = true;
+
+  // A fresh product must not inherit custom tags from the previous editor.
+  // Do not call setProductTags here: clearEditor can run before its const set is initialized.
+  customProductTags = [];
+  renderCustomProductTagChips();
 
   $("#product-id").value = "";
   $("#catalog-key").value = "";
@@ -3379,6 +4703,7 @@ function clearEditor() {
   renderMainImagePreviews();
 
   renderVariantRows([]);
+  updateCategoryVariantVisibility();
 
   $("#product-perfume-family").value = "";
   if ($("#product-type")) $("#product-type").value = activeCatalogType === "perfumery" ? "perfume" : "standard";
@@ -3399,7 +4724,182 @@ function clearEditor() {
   syncProductFormSectionAvailability();
   setProductFormStep(1, { scroll: false });
   markEditorClean();
+  scheduleProductDuplicateCheck({ immediate: true });
 }
+
+const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
+  "Gaming": ["Consolas"],
+  "Celulares": ["Gaming", "Fotografía", "Batería de larga duración", "Gama alta", "Gama media", "Económicos"],
+  "Laptops": ["Gaming", "Trabajo / Oficina", "Estudio", "Arquitectura / Ingeniería", "Creación de contenido / Diseño", "Uso general"],
+  "Tablets": ["Estudio", "Trabajo / Oficina", "Diseño / Ilustración", "Gaming", "Uso general"],
+  "Consolas": ["PlayStation 5", "PlayStation", "Xbox", "Nintendo"],
+  "Televisores": ["Smart TV", "4K / UHD", "OLED", "QLED", "Uso comercial"],
+  "Audio": ["Audífonos", "Bocinas", "Gaming", "Profesional"],
+  "Accesorios": ["Cargadores", "Fundas", "Protección", "Conectividad", "Gaming", "Periféricos"],
+  "Otros": ["Uso general"]
+};
+const CUSTOM_PRODUCT_SUBCATEGORY_VALUE = "__custom__";
+
+function updateProductSubcategorySuggestions(preferredValue) {
+  const select = $("#product-subcategory");
+  const customInput = $("#product-subcategory-custom");
+  if (!select) return;
+
+  const currentValue = preferredValue !== undefined
+    ? String(preferredValue || "").trim()
+    : select.value === CUSTOM_PRODUCT_SUBCATEGORY_VALUE
+      ? String(customInput?.value || "").trim()
+      : String(select.value || "").trim();
+  const category = normalizeTechnologyCategory($("#product-category")?.value || "");
+  const suggestions = [...new Set(PRODUCT_SUBCATEGORY_SUGGESTIONS[category] || [])];
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Seleccionar subcategoría…";
+  select.replaceChildren(placeholder);
+  suggestions.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.append(option);
+  });
+  const customOption = document.createElement("option");
+  customOption.value = CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+  customOption.textContent = "Otra (escribir…)";
+  select.append(customOption);
+
+  const matchingSuggestion = suggestions.find(value =>
+    value.toLocaleLowerCase("es") === currentValue.toLocaleLowerCase("es")
+  );
+  if (matchingSuggestion) {
+    select.value = matchingSuggestion;
+    if (customInput) customInput.value = "";
+  } else if (currentValue) {
+    select.value = CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+    if (customInput) customInput.value = currentValue;
+  } else {
+    select.value = "";
+    if (customInput) customInput.value = "";
+  }
+  if (customInput) customInput.hidden = select.value !== CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+}
+
+function getSelectedProductSubcategory() {
+  const select = $("#product-subcategory");
+  if (!select) return "";
+  if (select.value === CUSTOM_PRODUCT_SUBCATEGORY_VALUE) {
+    return String($("#product-subcategory-custom")?.value || "").trim();
+  }
+  return String(select.value || "").trim();
+}
+
+const PREDEFINED_PRODUCT_TAGS = new Set(["exclusive", "limited_edition", "high_performance", "quality_price", "top_gaming", "best_seller", "new_arrival", "offer"]);
+
+function parseCustomProductTagTokens(value) {
+  return String(value || "")
+    .split(/[,;\n]+/)
+    .map(tag => tag.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+}
+
+function renderCustomProductTagChips() {
+  const container = $("#product-custom-tags-chips");
+  if (!container) return;
+  container.replaceChildren();
+  container.hidden = customProductTags.length === 0;
+
+  customProductTags.forEach((tag, index) => {
+    const chip = document.createElement("span");
+    chip.className = "product-custom-tag-chip";
+
+    const label = document.createElement("span");
+    label.className = "product-custom-tag-label";
+    label.textContent = tag;
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "product-custom-tag-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `Quitar etiqueta ${tag}`);
+    remove.addEventListener("click", () => {
+      customProductTags.splice(index, 1);
+      renderCustomProductTagChips();
+      $("#product-custom-tags")?.focus();
+    });
+
+    chip.append(label, remove);
+    container.append(chip);
+  });
+}
+
+function addCustomProductTags(tags) {
+  const seen = new Set(customProductTags.map(tag => tag.toLocaleLowerCase("es")));
+  for (const value of tags) {
+    const tag = String(value || "").trim().replace(/\s+/g, " ");
+    if (!tag) continue;
+    const key = tag.toLocaleLowerCase("es");
+    if (seen.has(key)) continue;
+    customProductTags.push(tag);
+    seen.add(key);
+  }
+  renderCustomProductTagChips();
+}
+
+function commitCustomProductTags() {
+  const input = $("#product-custom-tags");
+  if (!input) return;
+  const tokens = parseCustomProductTagTokens(input.value);
+  if (!tokens.length) return;
+  addCustomProductTags(tokens);
+  input.value = "";
+}
+
+function initializeCustomProductTagInput() {
+  const input = $("#product-custom-tags");
+  if (!input || input.dataset.customTagInputReady === "true") return;
+  input.dataset.customTagInputReady = "true";
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
+      event.preventDefault();
+      commitCustomProductTags();
+      return;
+    }
+    if (event.key === ",") {
+      event.preventDefault();
+      commitCustomProductTags();
+    }
+  });
+  // Committing on blur also supports tapping Save without pressing Enter.
+  input.addEventListener("blur", () => {
+    if (input.value.trim()) commitCustomProductTags();
+  });
+}
+
+function selectedProductTags() {
+  const predefined = Array.from(document.querySelectorAll("[data-product-tag]:checked"))
+    .map(input => String(input.value || "").trim().toLowerCase()).filter(Boolean);
+  const custom = [...customProductTags, ...parseCustomProductTagTokens($("#product-custom-tags")?.value || "")];
+  const result = [...predefined];
+  const seen = new Set(result.map(tag => tag.toLocaleLowerCase("es")));
+  for (const tag of custom) {
+    const key = tag.toLocaleLowerCase("es");
+    if (!seen.has(key)) { result.push(tag); seen.add(key); }
+  }
+  return result;
+}
+
+function setProductTags(tags) {
+  const values = (Array.isArray(tags) ? tags : []).map(tag => String(tag || "").trim()).filter(tag => tag && tag.toLocaleLowerCase("es") !== "recommended");
+  const selected = new Set(values.map(tag => tag.toLocaleLowerCase("es")));
+  document.querySelectorAll("[data-product-tag]").forEach(input => { input.checked = selected.has(input.value); });
+  customProductTags = values.filter(tag => !PREDEFINED_PRODUCT_TAGS.has(tag.toLowerCase()));
+  const input = $("#product-custom-tags");
+  if (input) input.value = "";
+  renderCustomProductTagChips();
+}
+
+initializeCustomProductTagInput();
 
 function fillEditor(product) {
   activeCatalogType = normalizeCatalogType(product.catalog_type);
@@ -3413,7 +4913,9 @@ function fillEditor(product) {
   $("#product-name").value = product.name || "";
   $("#product-brand").value = product.brand || "";
   $("#product-model").value = product.model || "";
-  $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : (product.category || "Otros");
+  $("#product-category").value = activeCatalogType === "perfumery" ? "Perfumería" : normalizeTechnologyCategory(product.category || "Otros");
+  updateProductSubcategorySuggestions(activeCatalogType === "perfumery" ? "" : (product.subcategory || ""));
+  setProductTags(product.tags || []);
   $("#product-description").value = product.description || "";
   $("#product-availability").value = normalizeProductAvailability(product.availability);
   $("#product-price-usd").value = product.price_usd ?? "";
@@ -3437,6 +4939,7 @@ function fillEditor(product) {
   $("#product-images").value = "";
   setExistingMainImages(getImages(product));
   renderVariantRows(activeCatalogType === "perfumery" ? [] : legacyVariants(product));
+  updateCategoryVariantVisibility();
   if (activeCatalogType !== "perfumery") {
     const primaryGroup = baseColorManager?.querySelector('[data-variant-group][data-base-group="true"]');
     const primaryUSD = primaryGroup?.querySelector("[data-group-price-usd]");
@@ -3446,8 +4949,10 @@ function fillEditor(product) {
   }
 
   const productIsFeatured = activeCatalogType !== "perfumery" && Boolean(product.featured || product.is_exclusive);
+  if (productIsFeatured) $("#product-tag-high-performance").checked = false;
   $("#product-featured").checked = productIsFeatured;
   $("#product-exclusive").checked = productIsFeatured;
+  $("#product-tag-exclusive").checked = productIsFeatured;
   $("#product-active").checked = Boolean(product.is_published);
   $("#toggle-product-exclusive")?.setAttribute("aria-pressed",String(productIsFeatured));
   $("#toggle-product-exclusive")?.setAttribute("aria-label", productIsFeatured ? "Destacado / exclusivo activado" : "Destacar en el catálogo");
@@ -3464,6 +4969,7 @@ function fillEditor(product) {
 
   window.scrollTo({ top: 0, behavior: "smooth" });
   markEditorClean();
+  scheduleProductDuplicateCheck({ immediate: true });
 }
 async function discardEditorChanges() {
   if (editorIsDirty && !window.confirm("¿Descartar los cambios sin guardar? No se guardará ningún producto.")) return;
@@ -3480,6 +4986,10 @@ function setExclusiveToggleUI(value) {
   const featuredField = $("#product-featured");
   if (field) field.checked = Boolean(value);
   if (featuredField) featuredField.checked = Boolean(value);
+  const exclusiveTag = $("#product-tag-exclusive");
+  const highPerformanceTag = $("#product-tag-high-performance");
+  if (exclusiveTag) exclusiveTag.checked = Boolean(value);
+  if (highPerformanceTag && value) highPerformanceTag.checked = false;
   exclusiveToggleButton?.setAttribute("aria-pressed", String(Boolean(value)));
   exclusiveToggleButton?.setAttribute("aria-label", value ? "Exclusividad activada" : "Marcar como exclusivo");
   if (exclusiveToggleButton) exclusiveToggleButton.title = value
@@ -3497,6 +5007,15 @@ function updateExclusiveBaseline(value) {
   } catch {}
   updateEditorDirtyState();
 }
+document.querySelectorAll("[data-product-tag]").forEach(input => input.addEventListener("change", () => {
+  if (input.value === "exclusive") setExclusiveToggleUI(input.checked);
+  if (input.value === "high_performance" && input.checked) {
+    // High performance and Exclusive are alternative primary labels.
+    setExclusiveToggleUI(false);
+    updateEditorDirtyState();
+    scheduleLocalRecoverySave();
+  }
+}));
 exclusiveToggleButton?.addEventListener("click", async () => {
   if (activeCatalogType === "perfumery") {
     setExclusiveToggleUI(false);
@@ -3758,7 +5277,7 @@ async function recoverUploadedImageUrl(bucket, path) {
 }
 
 async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían a Supabase.");
   }
   const {data,error:sessionError}=await supabase.auth.getSession();
@@ -3907,17 +5426,22 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const ram = ramRaw ? `${ramRaw} GB` : "";
     const hasConfiguration = Boolean(storageRaw || ramRaw);
     const key = variantGroupKey({storage,ram});
-
-    if (!isBase && !hasConfiguration) {
-      throw new Error(`Indicá almacenamiento o RAM en la configuración ${groupIndex + 1}.`);
-    }
+    const requiresConfiguration = categoryUsesRamStorage($("#product-category")?.value || "");
 
     const rows = Array.from(group.querySelectorAll("[data-variant-row]"));
-    // An untouched blank primary group is optional; configured groups need at least one color.
-    if (isBase && !hasConfiguration && !rows.length) continue;
-    if (hasConfiguration && !rows.length) {
-      throw new Error(`Añadí al menos un color a la configuración ${groupIndex + 1}.`);
+    // Empty rows/groups are placeholders, not configured variants.
+    const rowsWithColor = rows.filter(row => Boolean(row.querySelector("[data-variant-color]")?.value.trim()));
+    if (!hasConfiguration && !rowsWithColor.length) continue;
+
+    // Storage identifies the purchasable configuration; RAM is optional because some
+    // manufacturers (notably Apple) do not officially specify it for every device.
+    if (requiresConfiguration && !options.allowIncomplete && !storageRaw) {
+      throw new Error(`Indicá el almacenamiento en la configuración ${groupIndex + 1}.`);
     }
+    if (hasConfiguration && !rowsWithColor.length && !options.allowIncomplete) {
+      throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
+    }
+    if (options.allowIncomplete && !rowsWithColor.length) continue;
     if (hasConfiguration && seenConfigurations.has(key)) {
       throw new Error("Hay una configuración repetida de almacenamiento y RAM.");
     }
@@ -3925,10 +5449,9 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
 
     const colors = [];
 
-    for (let colorIndex = 0; colorIndex < rows.length; colorIndex++) {
-      const row = rows[colorIndex];
+    for (let colorIndex = 0; colorIndex < rowsWithColor.length; colorIndex++) {
+      const row = rowsWithColor[colorIndex];
       const color = row.querySelector("[data-variant-color]")?.value.trim() || "";
-      if (!color) throw new Error(`Completá el nombre del color ${colorIndex + 1} de la configuración ${groupIndex + 1}.`);
       const color_hex = validHex(row.querySelector("[data-variant-hex]")?.value);
       const availability = normalizeVariantAvailability(row.querySelector("[data-variant-availability]")?.value);
       initVariantImageItems(row);
@@ -3978,6 +5501,9 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       colors.push({color,color_hex,availability,images:[...new Set(urls)],image_url:urls[0]||"",row});
     }
 
+    if (hasConfiguration && !colors.length && !options.allowIncomplete) {
+      throw new Error("Añadí al menos un color a la configuración " + (groupIndex + 1) + ".");
+    }
     const seenColors = new Set();
     colors.forEach(item => {
       const key = item.color.toLocaleLowerCase("es");
@@ -3989,8 +5515,13 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
       storage, ram,
       price_usd: toOptionalNumber(read("[data-group-price-usd]"), `Precio en dólares de configuración ${groupIndex + 1}`),
       price_nio: toOptionalNumber(read("[data-group-price-nio]"), `Precio en córdobas de configuración ${groupIndex + 1}`),
+      configuration_availability: normalizeVariantAvailability(read("[data-group-availability]")),
       colors, isBase
     });
+  }
+
+  if (categoryUsesRamStorage($("#product-category")?.value || "") && !options.allowIncomplete && !configs.length) {
+    throw new Error("Agregá al menos una variante con almacenamiento y color antes de publicar.");
   }
 
   return configs.flatMap(config => config.colors.map(color => ({
@@ -4000,6 +5531,7 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     color_hex: color.color_hex,
     price_usd: config.price_usd,
     price_nio: config.price_nio,
+    configuration_availability: config.configuration_availability,
     availability: color.availability,
     images: color.images,
     image_url: color.image_url
@@ -4127,6 +5659,8 @@ async function buildPublishReview() {
   const brand = $("#product-brand")?.value.trim() || "";
   const isPerfume = activeCatalogType === "perfumery";
   const family = isPerfume ? perfumeFamilyLabel($("#product-perfume-family")?.value) : ($("#product-category")?.value || "Sin categoría");
+  const subcategory = isPerfume ? "" : getSelectedProductSubcategory();
+  const tags = selectedProductTags();
   const warnings = [], missingPhotos = [], candidates = [], variantSummary = [];
   const priceSamples = { usd: [], nio: [] };
   mainImageItems.forEach((item, index) => {
@@ -4192,17 +5726,49 @@ async function buildPublishReview() {
   const mainImageStatus = mainImageItems.length
     ? mainImageItems.length + " fotografía(s) generales · " + savedCount + " guardada(s) · " + pendingCount + " pendiente(s) de subir"
     : "Sin fotografía general";
-  return { name: name, brand: brand, family: family, variants: variantSummary, mainImageStatus: mainImageStatus,
+  const perfumeNotes = isPerfume ? {
+    scentFamily: $("#product-perfume-scent-family")?.value.trim() || "",
+    top: $("#product-perfume-top-notes")?.value.trim() || "",
+    heart: $("#product-perfume-heart-notes")?.value.trim() || "",
+    base: $("#product-perfume-base-notes")?.value.trim() || ""
+  } : null;
+  return { name: name, brand: brand, family: family, subcategory: subcategory, tags: tags, isPerfume: isPerfume,
+    variants: variantSummary, mainImageStatus: mainImageStatus, perfumeNotes: perfumeNotes,
     warnings: [...new Set(warnings)], missingPhotos: missingPhotos, blockingIssues: blockingIssues };
 }
 function renderPublishReview(review) {
+  const perfumeNoteEntries = review.perfumeNotes ? [
+    ["Familia olfativa específica", review.perfumeNotes.scentFamily],
+    ["Salida", review.perfumeNotes.top],
+    ["Corazón", review.perfumeNotes.heart],
+    ["Fondo", review.perfumeNotes.base]
+  ].filter(([, value]) => String(value || "").trim()) : null;
+  const perfumeNotesMarkup = perfumeNoteEntries
+    ? '<div class="publish-review-row publish-review-notes-row"><span>Notas olfativas</span><div class="publish-review-notes">' +
+      (perfumeNoteEntries.length
+        ? perfumeNoteEntries.map(([label, value]) => '<p><strong>' + escapeHtml(label) + ':</strong> ' + escapeHtml(value) + '</p>').join("")
+        : '<p class="publish-review-notes-empty">Sin notas olfativas registradas.</p>') +
+      '</div></div>'
+    : "";
+  const reviewTagLabels = {
+    exclusive: "Exclusivo", limited_edition: "Edición limitada", high_performance: "Alto rendimiento", quality_price: "Calidad-precio",
+    top_gaming: "Top Gaming", best_seller: "Más vendido", new_arrival: "Nuevo ingreso", offer: "Oferta"
+  };
+  const tagSummary = (Array.isArray(review.tags) ? review.tags : [])
+    .map(tag => reviewTagLabels[String(tag || "").toLowerCase()] || String(tag || "").trim())
+    .filter(Boolean).join(" · ") || "Sin etiquetas manuales";
+  const taxonomyReviewMarkup = (review.isPerfume ? "" :
+    '<div class="publish-review-row"><span>Subcategoría</span><strong>' + escapeHtml(review.subcategory || "Sin subcategoría") + '</strong></div>') +
+    '<div class="publish-review-row"><span>' + (review.isPerfume ? "Colección" : "Etiquetas manuales") + '</span><strong>' + escapeHtml(tagSummary) + '</strong></div>';
   $("#publish-review-summary").innerHTML =
     '<div class="publish-review-row"><span>Producto</span><strong>' + escapeHtml(review.name || "Sin nombre") + '</strong></div>' +
     '<div class="publish-review-row"><span>Marca</span><strong>' + escapeHtml(review.brand || "Sin marca indicada") + '</strong></div>' +
     '<div class="publish-review-row"><span>Categoría / familia</span><strong>' + escapeHtml(review.family) + '</strong></div>' +
+    taxonomyReviewMarkup +
     '<div class="publish-review-row"><span>Fotografías generales</span><strong>' + escapeHtml(review.mainImageStatus) + '</strong></div>' +
     '<div class="publish-review-row publish-review-variants"><span>Variantes, colores y precios</span><div>' +
-    review.variants.map(item => '<p>' + escapeHtml(item) + '</p>').join("") + '</div></div>';
+    review.variants.map(item => '<p>' + escapeHtml(item) + '</p>').join("") + '</div></div>' +
+    perfumeNotesMarkup;
   $("#publish-review-warnings-section").hidden = !review.warnings.length;
   $("#publish-review-warnings").innerHTML = review.warnings.map(item => '<li>' + escapeHtml(item) + '</li>').join("");
   $("#publish-review-issues-section").hidden = !review.blockingIssues.length;
@@ -4471,9 +6037,21 @@ form?.addEventListener("click", event => {
   if (previous) setProductFormStep(previous.dataset.productFormPrev);
 });
 
+$("#product-category")?.addEventListener("change", () => {
+  updateCategoryVariantVisibility();
+  updateProductSubcategorySuggestions();
+});
+$("#product-subcategory")?.addEventListener("change", () => {
+  const customInput = $("#product-subcategory-custom");
+  if (!customInput) return;
+  const isCustom = $("#product-subcategory").value === CUSTOM_PRODUCT_SUBCATEGORY_VALUE;
+  customInput.hidden = !isCustom;
+  if (isCustom) customInput.focus();
+});
 $("#new-product-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 $("#cancel-edit-button")?.addEventListener("click", () => setProductFormStep(1, { scroll: false }));
 syncProductFormSectionAvailability();
+updateCategoryVariantVisibility();
 setProductFormStep(1, { scroll: false });
 
 /* =========================================================
@@ -4488,7 +6066,7 @@ form?.addEventListener("click", event => {
 form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
-  if (IS_READ_ONLY_VERCEL_PREVIEW) {
+  if (IS_READ_ONLY_PREVIEW) {
     message("#product-form-status", "Vista previa segura de Vercel: los cambios no se guardan. Usá esta vista para probar el importador sin modificar producción.", "error");
     return;
   }
@@ -4533,12 +6111,16 @@ form?.addEventListener("submit", async event => {
       return groupValues || rowValues;
     });
     const draftHasContent = Boolean(name || $("#product-brand").value.trim() || $("#product-description").value.trim() || $("#product-price-usd").value.trim() || $("#product-price-nio").value.trim() || $("#product-perfume-family").value || $("#product-perfume-scent-family").value.trim() || $("#product-perfume-top-notes").value.trim() || $("#product-perfume-heart-notes").value.trim() || $("#product-perfume-base-notes").value.trim() || $("#product-specs").value.trim() || mainImageItems.length || draftVariantContent);
-    if (targetStatus === "draft" && !draftHasContent) throw new Error("Añadí al menos un dato o una fotografía antes de guardar el borrador; así evitamos crear borradores vacíos.");
-    if(targetStatus!=="draft") { if(!name) throw new Error("Escribí el nombre del producto."); if(!isPerfume&&!$("#product-category").value) throw new Error("Seleccioná la categoría del producto."); if(!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad."); if(isPerfume&&!$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume."); }
+    if (!name) throw new Error("Escribí el nombre del producto.");
+    if (targetStatus === "published") {
+      if (!isPerfume && !$("#product-category").value) throw new Error("Seleccioná la categoría del producto antes de publicar.");
+      if (!$("#product-availability").value) throw new Error("Seleccioná la disponibilidad antes de publicar.");
+      if (isPerfume && !$("#product-perfume-family").value) throw new Error("Seleccioná la familia del perfume antes de publicar.");
+    }
 
     const rawVolume = $("#product-perfume-volume").value.trim();
     const perfumeVolume = isPerfume && rawVolume ? toOptionalNumber(rawVolume, "Contenido en ml") : null;
-    if (isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
+    if (targetStatus === "published" && isPerfume && perfumeVolume !== null && perfumeVolume <= 0) throw new Error("El contenido en ml debe ser mayor que cero.");
 
     const id = $("#product-id").value || crypto.randomUUID();
     const existingProduct = products.find(product => String(product.id) === String(id));
@@ -4552,7 +6134,7 @@ form?.addEventListener("submit", async event => {
       message("#product-form-status","Subiendo "+pendingPhotosBeforeSave.length+" fotografía(s) pendiente(s) en segundo plano antes de guardar…");
       await uploadPendingPhotosInBackground({retryFailed:true});
     }
-    const variants = isPerfume ? [] : await collectVariants(id, existingProduct?.variants || [], imageUploadErrors, {skipPendingUploads:true});
+    const variants = isPerfume ? [] : await collectVariants(id, existingProduct?.variants || [], imageUploadErrors, {skipPendingUploads:true, allowIncomplete: targetStatus !== "published"});
 
     const uploadedMainImages = [];
     for (const item of mainImageItems) {
@@ -4588,7 +6170,9 @@ form?.addEventListener("submit", async event => {
       name: name || null,
       brand: $("#product-brand").value.trim() || null,
       model: isPerfume ? null : ($("#product-model").value.trim() || null),
-      category: isPerfume ? "Perfumería" : $("#product-category").value,
+      category: isPerfume ? "Perfumería" : ($("#product-category").value.trim() || null),
+      subcategory: isPerfume ? (existingProduct?.subcategory ?? null) : (getSelectedProductSubcategory() || null),
+      tags: selectedProductTags(),
       availability: normalizeProductAvailability($("#product-availability").value),
       price_usd: priceUSD,
       price_nio: priceNIO,
@@ -4604,8 +6188,8 @@ form?.addEventListener("submit", async event => {
         ""
       ),
       shipping_note: $("#product-shipping").value.trim() || null,
-      featured: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked),
-      is_exclusive: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked),
+      featured: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked || $("#product-tag-exclusive").checked),
+      is_exclusive: !isPerfume && Boolean($("#product-featured").checked || $("#product-exclusive").checked || $("#product-tag-exclusive").checked),
       product_type: isPerfume ? ($("#product-type").value === "set" ? "set" : "perfume") : "standard",
       workflow_status: targetStatus,
       deleted_at: null,
@@ -4853,10 +6437,6 @@ $("#import-json-file")?.addEventListener("change", async event => {
    INICIALIZACIÓN DEL PANEL
    ========================================================= */
 
-const initialLoginEmail = $("#login-email");
-if (initialLoginEmail) initialLoginEmail.value = getRememberedAdminEmail();
-syncRememberControls();
-
 handleSession().catch(async error => {
   await signOutLocalSafely();
 
@@ -4865,3 +6445,244 @@ handleSession().catch(async error => {
     "error"
   );
 });
+
+/* JB Manager · control privado de comisiones. Solo registra la comisión propia, nunca el precio del producto. */
+const commissionNode = id => document.getElementById(id);
+const commissionForm = commissionNode("commission-form");
+const commissionRecordsNode = commissionNode("commission-records");
+const commissionStatusLabels = {
+  pending_confirmation: "Por confirmar",
+  confirmed_pending_payment: "Confirmada · pendiente de recibir",
+  received: "Recibida",
+  cancelled: "Cancelada"
+};
+const commissionCatalogLabels = { technology: "JB TECH", perfumery: "JB Parfums" };
+let commissionRecords = [];
+let commissionLoadToken = 0;
+
+function commissionMoney(amount, currency) {
+  if (amount === null || amount === undefined || amount === "" || !Number.isFinite(Number(amount))) return "Por definir";
+  return (currency === "USD" ? "US$ " : "C$ ") +
+    Number(amount).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function commissionTotal(rows, states) {
+  const totals = { NIO: 0, USD: 0 };
+  for (const row of rows) {
+    if (!states.includes(row.status) || row.commission_amount == null) continue;
+    totals[row.commission_currency === "USD" ? "USD" : "NIO"] += Number(row.commission_amount) || 0;
+  }
+  const result = [];
+  if (totals.NIO) result.push(commissionMoney(totals.NIO, "NIO"));
+  if (totals.USD) result.push(commissionMoney(totals.USD, "USD"));
+  return result.length ? result.join(" · ") : "C$ 0.00";
+}
+function visibleCommissionRows() {
+  return dashboardCatalogScope === "all"
+    ? commissionRecords
+    : commissionRecords.filter(row => row.catalog_type === dashboardCatalogScope);
+}
+function setCommissionMessage(text, state = "") {
+  const node = commissionNode("commission-form-status");
+  if (node) { node.textContent = text; node.dataset.state = state; }
+}
+function populateCommissionProducts(selectedId = "") {
+  const select = commissionNode("commission-product-select");
+  const catalog = commissionNode("commission-catalog");
+  if (!select || !catalog) return;
+  const options = products.filter(product => normalizeCatalogType(product.catalog_type) === catalog.value);
+  select.innerHTML = '<option value="">Sin producto vinculado</option>' + options.map(product =>
+    '<option value="' + escapeHtml(String(product.id)) + '">' +
+    escapeHtml(product.name || "Producto sin nombre") + '</option>'
+  ).join("");
+  select.value = selectedId && options.some(product => String(product.id) === String(selectedId)) ? String(selectedId) : "";
+}
+function renderCommissionSummary(rows) {
+  commissionNode("commission-total-confirmed").textContent = commissionTotal(rows, ["confirmed_pending_payment", "received"]);
+  commissionNode("commission-total-pending").textContent = commissionTotal(rows, ["confirmed_pending_payment"]);
+  commissionNode("commission-total-received").textContent = commissionTotal(rows, ["received"]);
+  commissionNode("commission-total-unconfirmed").textContent = rows
+    .filter(row => row.status === "pending_confirmation").length.toLocaleString("es-NI");
+}
+function renderCommissionRecords() {
+  const target = commissionRecordsNode;
+  if (!target) return;
+  const rows = visibleCommissionRows().slice()
+    .sort((a, b) => String(b.operation_date || b.created_at || "").localeCompare(String(a.operation_date || a.created_at || "")))
+    .slice(0, 20);
+  if (!rows.length) {
+    target.innerHTML = '<div class="commission-empty-state">Todavía no hay comisiones registradas. Usá «Registrar comisión» cuando tengas una operación que quieras seguir.</div>';
+    return;
+  }
+  target.innerHTML = rows.map(row => {
+    const date = row.operation_date ? new Date(row.operation_date + "T12:00:00").toLocaleDateString("es-NI") : "Sin fecha";
+    const channel = row.channel === "messenger" ? "Messenger" : row.channel === "other" ? "Otro canal" : "WhatsApp";
+    const reference = row.order_reference ? " · Referencia: " + escapeHtml(row.order_reference) : "";
+    return '<article class="commission-record-row">' +
+      '<div class="commission-record-main"><h5 class="commission-record-title">' + escapeHtml(row.product_name || "Operación sin nombre") + '</h5>' +
+      '<div class="commission-record-meta">' + escapeHtml(commissionCatalogLabels[row.catalog_type] || "Catálogo") + ' · ' +
+      escapeHtml(row.department || "Departamento sin especificar") + ' · ' + date + ' · ' + channel + reference + '</div>' +
+      '<span class="commission-status-pill" data-status="' + escapeHtml(row.status) + '">' + escapeHtml(commissionStatusLabels[row.status] || "Sin estado") + '</span>' +
+      (row.notes ? '<div class="commission-record-meta">' + escapeHtml(row.notes) + '</div>' : '') +
+      '</div><div class="commission-record-amount">' + escapeHtml(commissionMoney(row.commission_amount, row.commission_currency)) + '</div>' +
+      '<div class="commission-record-actions"><button type="button" data-commission-edit="' + escapeHtml(row.id) + '">Editar</button>' +
+      '<button type="button" class="is-danger" data-commission-delete="' + escapeHtml(row.id) + '">Eliminar</button></div></article>';
+  }).join("");
+}
+async function loadCommissionDashboard() {
+  if (!supabase || !currentUser || !commissionRecordsNode) return;
+  const token = ++commissionLoadToken;
+  const { data, error } = await supabase.from("commission_records")
+    .select("*").order("operation_date", { ascending: false }).limit(200);
+  if (token !== commissionLoadToken) return;
+  if (error) {
+    commissionRecordsNode.innerHTML = '<div class="commission-empty-state">No se pudieron cargar las comisiones. Verificá que esté aplicada la migración <code>20261026194000_commission_tracking_and_visitor_departments.sql</code> en Supabase.</div>';
+    ["commission-total-confirmed", "commission-total-pending", "commission-total-received", "commission-total-unconfirmed"]
+      .forEach(id => { commissionNode(id).textContent = "—"; });
+    console.warn("No se pudieron cargar las comisiones:", error.message);
+    return;
+  }
+  commissionRecords = Array.isArray(data) ? data : [];
+  renderCommissionSummary(visibleCommissionRows());
+  renderCommissionRecords();
+}
+function resetCommissionForm() {
+  if (!commissionForm) return;
+  commissionForm.reset();
+  commissionNode("commission-id").value = "";
+  commissionNode("commission-catalog").value = dashboardCatalogScope === "perfumery" ? "perfumery" : "technology";
+  commissionNode("commission-operation-date").value = new Date().toLocaleDateString("en-CA");
+  commissionNode("commission-status").value = "pending_confirmation";
+  commissionNode("commission-currency").value = "NIO";
+  commissionNode("commission-channel").value = "whatsapp";
+  populateCommissionProducts();
+  commissionNode("commission-form-summary").textContent = "＋ Registrar comisión";
+  commissionNode("commission-save-button").textContent = "Guardar registro";
+  commissionNode("commission-cancel-edit").hidden = true;
+  commissionNode("commission-editor-details").open = false;
+  commissionNode("commission-amount").required = false;
+  setCommissionMessage("");
+}
+function editCommissionRecord(row) {
+  if (!row || !commissionForm) return;
+  commissionNode("commission-editor-details").open = true;
+  commissionNode("commission-id").value = row.id || "";
+  commissionNode("commission-catalog").value = row.catalog_type || "technology";
+  populateCommissionProducts(row.product_id || "");
+  commissionNode("commission-product-name").value = row.product_name || "";
+  commissionNode("commission-department").value = row.department || "";
+  commissionNode("commission-channel").value = row.channel || "whatsapp";
+  commissionNode("commission-amount").value = row.commission_amount ?? "";
+  commissionNode("commission-currency").value = row.commission_currency || "NIO";
+  commissionNode("commission-status").value = row.status || "pending_confirmation";
+  commissionNode("commission-operation-date").value = row.operation_date || new Date().toLocaleDateString("en-CA");
+  commissionNode("commission-order-reference").value = row.order_reference || "";
+  commissionNode("commission-notes").value = row.notes || "";
+  commissionNode("commission-form-summary").textContent = "Editando comisión";
+  commissionNode("commission-save-button").textContent = "Guardar cambios";
+  commissionNode("commission-cancel-edit").hidden = false;
+  commissionNode("commission-amount").required = ["confirmed_pending_payment", "received"].includes(row.status);
+  setCommissionMessage("Editando un registro existente.");
+  commissionForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+commissionNode("commission-catalog")?.addEventListener("change", () => populateCommissionProducts());
+commissionNode("commission-product-select")?.addEventListener("change", event => {
+  const product = products.find(item => String(item.id) === String(event.currentTarget.value));
+  if (!product) return;
+  commissionNode("commission-product-name").value = product.name || "";
+  commissionNode("commission-catalog").value = normalizeCatalogType(product.catalog_type);
+  populateCommissionProducts(String(product.id));
+});
+commissionNode("commission-status")?.addEventListener("change", event => {
+  commissionNode("commission-amount").required = ["confirmed_pending_payment", "received"].includes(event.currentTarget.value);
+});
+commissionNode("commission-cancel-edit")?.addEventListener("click", resetCommissionForm);
+commissionNode("commission-refresh-button")?.addEventListener("click", () => { void loadCommissionDashboard(); });
+commissionForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!supabase || !currentUser) { setCommissionMessage("Iniciá sesión para registrar comisiones.", "error"); return; }
+  if (!commissionForm.reportValidity()) return;
+  const id = commissionNode("commission-id").value.trim();
+  const productId = commissionNode("commission-product-select").value || null;
+  const product = products.find(item => String(item.id) === String(productId));
+  const productName = commissionNode("commission-product-name").value.trim() || product?.name || "";
+  const status = commissionNode("commission-status").value;
+  const rawAmount = commissionNode("commission-amount").value.trim();
+  const amount = rawAmount === "" ? null : Number(rawAmount);
+  if (!productName) { setCommissionMessage("Indicá el producto o la referencia de la operación.", "error"); return; }
+  if (amount !== null && (!Number.isFinite(amount) || amount < 0)) { setCommissionMessage("La comisión debe ser un importe válido y no negativo.", "error"); return; }
+  if (["confirmed_pending_payment", "received"].includes(status) && amount === null) {
+    setCommissionMessage("Indicá el importe de la comisión para confirmar el registro.", "error"); return;
+  }
+  const payload = {
+    catalog_type: commissionNode("commission-catalog").value,
+    product_id: productId,
+    product_name: productName,
+    department: commissionNode("commission-department").value || null,
+    channel: commissionNode("commission-channel").value,
+    commission_amount: amount,
+    commission_currency: commissionNode("commission-currency").value,
+    status,
+    operation_date: commissionNode("commission-operation-date").value,
+    received_date: status === "received" ? new Date().toLocaleDateString("en-CA") : null,
+    order_reference: commissionNode("commission-order-reference").value.trim() || null,
+    notes: commissionNode("commission-notes").value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  const button = commissionNode("commission-save-button");
+  const editing = Boolean(id);
+  button.disabled = true;
+  button.textContent = "Guardando…";
+  try {
+    const result = editing
+      ? await supabase.from("commission_records").update(payload).eq("id", id)
+      : await supabase.from("commission_records").insert({ ...payload, created_by: currentUser.id });
+    if (result.error) throw result.error;
+    await loadCommissionDashboard();
+    resetCommissionForm();
+    commissionNode("commission-editor-details").open = true;
+    setCommissionMessage("Registro guardado.", "success");
+  } catch (error) {
+    setCommissionMessage("No se pudo guardar. Verificá la migración y los permisos del administrador.", "error");
+    console.warn("Error al guardar comisión:", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = editing ? "Guardar cambios" : "Guardar registro";
+  }
+});
+commissionRecordsNode?.addEventListener("click", async event => {
+  const target = event.target instanceof Element ? event.target : null;
+  const editButton = target?.closest("[data-commission-edit]");
+  const deleteButton = target?.closest("[data-commission-delete]");
+  if (editButton) {
+    const row = commissionRecords.find(item => String(item.id) === String(editButton.dataset.commissionEdit));
+    if (row) editCommissionRecord(row);
+    return;
+  }
+  if (deleteButton) {
+    const row = commissionRecords.find(item => String(item.id) === String(deleteButton.dataset.commissionDelete));
+    if (!row || !window.confirm("¿Eliminar este registro de comisión? No se modificarán productos ni precios.")) return;
+    const { error } = await supabase.from("commission_records").delete().eq("id", row.id);
+    if (error) { window.alert("No se pudo eliminar el registro. Revisá los permisos de administrador."); return; }
+    await loadCommissionDashboard();
+  }
+});
+resetCommissionForm();
+
+// Header settings dropdown: reuses current controls without changing authentication or data behavior.
+(() => {
+  const toggle = document.getElementById("admin-settings-toggle");
+  const menu = document.getElementById("admin-settings-menu");
+  if (!toggle || !menu) return;
+  const closeMenu = () => { menu.hidden = true; toggle.setAttribute("aria-expanded", "false"); };
+  toggle.addEventListener("click", event => {
+    event.stopPropagation();
+    const willOpen = menu.hidden;
+    menu.hidden = !willOpen;
+    toggle.setAttribute("aria-expanded", String(willOpen));
+  });
+  menu.addEventListener("click", event => { if (event.target.closest("[data-admin-section]")) closeMenu(); });
+  document.addEventListener("click", event => { if (!event.target.closest(".admin-settings-wrap")) closeMenu(); });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !menu.hidden) { closeMenu(); toggle.focus(); }
+  });
+})();
