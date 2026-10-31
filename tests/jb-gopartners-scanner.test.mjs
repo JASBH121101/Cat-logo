@@ -616,8 +616,8 @@ test("JARVIS review evidence labels stay compact and scanner controls use equal 
 
 test("OCR grounding reuses one normalized character map per observation and evidence excerpt", () => {
   const source = readFileSync(new URL("../functions/api/jb-gopartners-scan.js", import.meta.url), "utf8");
-  assert.match(source, /const sourceMatchers = new Map\([\s\S]*normalizedOcrSource\(item\.text\)/);
-  assert.match(source, /findScannerEvidence\(source\.text, item, sourceMatchers\.get\(source\.index\)\)/);
+  assert.match(source, /const sourceMatchers = new Map\(sources\.map\(item => \[item, normalizedOcrSource\(item\.text\)\]\)\)/);
+  assert.match(source, /findScannerEvidence\(source\.text, item, sourceMatchers\.get\(source\)\)/);
   assert.match(source, /const evidenceMatcher = normalizedOcrSource\(evidence\)/);
   assert.match(source, /findFuzzyOcrSpan\(evidence, value, evidenceMatcher\)/);
 });
