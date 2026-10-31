@@ -156,7 +156,7 @@ export function rankCatalogProducts(products, query, limit = 24) {
         }
       }
       const phrase = normalizedQuery.length >= 4 &&
-        (haystacks.identity.includes(normalizedQuery) || haystacks.all.includes(normalizedQuery));
+        haystacks.identity.includes(normalizedQuery);
       if (phrase) score += 40;
       const coverage = matched / tokens.length;
       return { product, score, coverage, phrase };
@@ -205,13 +205,13 @@ export function buildFastCatalogAnswer(products, query) {
       return config ? "    · " + config + (price ? " — " + price : "") : "";
     }).filter(Boolean) : [];
     return "- **" + name + "**" + (category ? " · " + category : "") +
-      (usd || nio ? "\\n  Precio: " + [usd, nio].filter(Boolean).join(" · ") : "") +
-      (variants.length ? "\\n  Configuraciones:\\n" + variants.join("\\n") : "");
+      (usd || nio ? "\n  Precio: " + [usd, nio].filter(Boolean).join(" · ") : "") +
+      (variants.length ? "\n  Configuraciones:\n" + variants.join("\n") : "");
   });
   return {
     message: matches.length === 1
-      ? "Encontré este producto en el catálogo:\\n\\n" + lines[0]
-      : "Encontré " + matches.length + " coincidencias relevantes en el catálogo:\\n\\n" + lines.join("\\n\\n"),
+      ? "Encontré este producto en el catálogo:\n\n" + lines[0]
+      : "Encontré " + matches.length + " coincidencias relevantes en el catálogo:\n\n" + lines.join("\n\n"),
     results: matches.map(item => item.product)
   };
 }
