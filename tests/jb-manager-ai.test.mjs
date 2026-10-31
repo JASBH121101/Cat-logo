@@ -237,7 +237,13 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
     assert.equal(geminiRequest.headers["x-goog-api-key"], "test-only-key");
     assert.equal(geminiRequest.body.generationConfig.temperature, undefined);
     assert.equal(geminiRequest.body.generationConfig.responseFormat.text.mimeType, "application/json");
-    assert.equal(geminiRequest.body.generationConfig.responseFormat.text.schema.type, "OBJECT");
+    const schema = geminiRequest.body.generationConfig.responseFormat.text.schema;
+    assert.equal(schema.type, "object");
+    assert.deepEqual(schema.properties.provider_price_usd.type, ["number", "null"]);
+    assert.deepEqual(schema.properties.product_draft.type, ["object", "null"]);
+    assert.equal(schema.properties.product_draft.properties.variants.type, "array");
+    assert.doesNotMatch(endpoint, /nullable\\s*:/);
+    assert.doesNotMatch(endpoint, /type:\\s*"[A-Z]+"/);
     assert.equal(geminiRequest.body.generationConfig.responseSchema, undefined);
     assert.equal(geminiRequest.body.generationConfig.responseMimeType, undefined);
   } finally {
