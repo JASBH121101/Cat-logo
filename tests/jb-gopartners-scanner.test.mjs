@@ -526,3 +526,77 @@ test("Android OCR does not discard changed screens using a sparse pixel hash", (
   assert.match(source, /normalized\.equals\(lastRecognizedText\)/);
   assert.match(source, /duplicate recognized text is filtered after ML Kit/i);
 });
+
+
+test("OCR grounding reads configuration and price far below the product title on a detail screen", () => {
+  const source = [
+    "Go Partners",
+    "Notificación: recibimos tu récord policial; el equipo lo revisa en 1 a 2 días",
+    "Apple iPhone 18 Pro Max Esim",
+    ...Array.from({ length: 14 }, (_, index) => "Información adicional de la ficha " + (index + 1)),
+    "MEMORIA",
+    "256GB",
+    "COLOR",
+    "Glacier",
+    "PRECIO",
+    "$1649",
+    "C$ 61,013",
+    "DISPONIBLE"
+  ].join("\\n");
+  const [product] = groundScannerProducts([{
+    source_observation: 1,
+    product_name: "Apple iPhone 18 Pro Max Esim",
+    brand: "Apple",
+    model: "iPhone 18 Pro Max Esim",
+    category: "",
+    catalog_type: "technology",
+    ram: "",
+    storage: "256GB",
+    color: "Glacier",
+    price_usd: 1649,
+    price_nio: 61013,
+    availability: "available",
+    confidence: 1,
+    evidence: "Apple iPhone 18 Pro Max Esim"
+  }], [{ index: 1, text: source }]);
+  assert.ok(product);
+  assert.equal(product.storage, "256GB");
+  assert.equal(product.color, "Glacier");
+  assert.equal(product.price_usd, 1649);
+  assert.equal(product.price_nio, 61013);
+  assert.equal(product.availability, "available");
+});
+
+test("OCR grounding distinguishes Bajo pedido from Disponible and does not invent a price", () => {
+  const source = "Apple iPhone 18 Pro Max Esim\\n512GB\\nGlacier\\nBAJO PEDIDO\\nA confirmar";
+  const [product] = groundScannerProducts([{
+    source_observation: 1,
+    product_name: "Apple iPhone 18 Pro Max Esim",
+    brand: "Apple",
+    model: "iPhone 18 Pro Max Esim",
+    storage: "512GB",
+    color: "Glacier",
+    price_usd: null,
+    price_nio: null,
+    availability: "on_request",
+    evidence: "Apple iPhone 18 Pro Max Esim"
+  }], [{ index: 1, text: source }]);
+  assert.ok(product);
+  assert.equal(product.availability, "on_request");
+  assert.equal(product.price_usd, null);
+  assert.equal(product.price_nio, null);
+});
+
+test("OCR grounding prioritizes No disponible over the substring Disponible", () => {
+  const source = "Apple iPhone 18 Pro Max Esim\\n256GB\\nNo disponible";
+  const [product] = groundScannerProducts([{
+    source_observation: 1,
+    product_name: "Apple iPhone 18 Pro Max Esim",
+    model: "iPhone 18 Pro Max Esim",
+    storage: "256GB",
+    availability: "available",
+    evidence: "Apple iPhone 18 Pro Max Esim"
+  }], [{ index: 1, text: source }]);
+  assert.ok(product);
+  assert.equal(product.availability, "unavailable");
+});
