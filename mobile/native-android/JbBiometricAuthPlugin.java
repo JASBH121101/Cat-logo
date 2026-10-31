@@ -10,6 +10,7 @@ import android.provider.Settings;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -132,12 +133,13 @@ public class JbBiometricAuthPlugin extends Plugin {
     }
 
     private void authenticate(PluginCall call, boolean enableAfterSuccess) {
-        Activity activity = getActivity();
-        if (activity == null || activity.isFinishing()) {
+        Activity hostActivity = getActivity();
+        if (!(hostActivity instanceof FragmentActivity) || hostActivity.isFinishing()) {
             call.reject("JB Manager no está en primer plano para solicitar la huella.", "BIOMETRIC_ACTIVITY_UNAVAILABLE");
             return;
         }
 
+        FragmentActivity activity = (FragmentActivity) hostActivity;
         activity.runOnUiThread(() -> {
             try {
                 Executor executor = ContextCompat.getMainExecutor(activity);
