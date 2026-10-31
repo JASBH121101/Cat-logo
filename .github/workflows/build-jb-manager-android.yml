@@ -921,7 +921,7 @@ jobs:
           grep -q 'GoPartnersCaptureService' "$MANIFEST"
           grep -q 'com.google.mlkit:text-recognition:16.0.1' "$GRADLE"
           grep -q 'TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)' "$SERVICE"
-          grep -q 'MAX_OBSERVATIONS = 80' "$SERVICE"
+          grep -q 'MAX_OBSERVATIONS = 80' "$SESSION"
           echo "JARVIS screen scanner, MediaProjection foreground service, and bundled on-device OCR are wired into the APK."
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
