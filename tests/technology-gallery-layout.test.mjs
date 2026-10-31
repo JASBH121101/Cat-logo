@@ -45,6 +45,15 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
 });
 
+test("limited edition showcase uses champagne gold in light mode and keeps its label compact", () => {
+  assert.match(css, /Ediciones limitadas: champagne gold in light mode/);
+  assert.match(css, /html:not\\(\\[data-theme="dark"\\]\\) body\\.technology-catalog \\.limited-edition-section[\\s\\S]*?linear-gradient\\(135deg,#fbf7ed 0%,#f3ead7 56%,#eee1c5 100%\\)/);
+  assert.match(css, /html\\[data-theme="dark"\\] body\\.technology-catalog \\.limited-edition-section/);
+  assert.match(css, /product-tag-badge\\.tag-limited_edition[\\s\\S]*?width:fit-content !important/);
+  assert.match(css, /product-tag-badge\\.tag-limited_edition[\\s\\S]*?flex:0 0 auto !important/);
+  assert.match(css, /product-tag-badge\\.tag-limited_edition[\\s\\S]*?white-space:nowrap !important/);
+});
+
 test("all technology showcases share the Exclusivos horizontal card layout on desktop", () => {
   const start = css.indexOf("JB TECH · distribución uniforme de todas las vitrinas");
   assert.ok(start >= 0, "shared showcase layout block should exist");
