@@ -240,10 +240,13 @@ export async function onRequestPost({ request, env }) {
   ].join(" ");
 
   const geminiResponse = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(env.GEMINI_API_KEY),
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": env.GEMINI_API_KEY
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{
@@ -254,7 +257,6 @@ export async function onRequestPost({ request, env }) {
           }]
         }],
         generationConfig: {
-          temperature: 0.2,
           responseMimeType: "application/json",
           responseSchema,
           maxOutputTokens: 1800
@@ -265,14 +267,46 @@ export async function onRequestPost({ request, env }) {
 
   let result;
   try { result = await geminiResponse.json(); } catch {
+    console.error("[JB Copilot] Gemini returned a non-JSON response", geminiResponse.status);
     return response(502, { ok: false, error: "gemini_invalid_response" }, origin);
   }
   if (!geminiResponse.ok) {
-    const status = geminiResponse.status === 429 ? 429 : 502;
-    return response(status, {
-      ok: false,
-      error: geminiResponse.status === 429 ? "gemini_quota_exhausted" : "gemini_request_failed"
-    }, origin);
+    const apiError = result?.error && typeof result.error === "object" ? result.error : {};
+    const apiStatus = cleanText(apiError.status, 80);
+    const apiMessage = cleanText(apiError.message, 500);
+    const normalizedMessage = apiMessage.toLowerCase();
+    let error = "gemini_request_failed";
+    let status = 502;
+
+    if (geminiResponse.status === 429) {
+      error = "gemini_quota_exhausted";
+      status = 429;
+    } else if (
+      geminiResponse.status === 402 ||
+      (apiStatus === "FAILED_PRECONDITION" && /billing|payment|prepay|free tier/.test(normalizedMessage))
+    ) {
+      error = "gemini_billing_required";
+      status = 503;
+    } else if (geminiResponse.status === 401 || geminiResponse.status === 403) {
+      error = "gemini_api_access_denied";
+      status = 503;
+    } else if (geminiResponse.status === 404) {
+      error = "gemini_model_unavailable";
+      status = 503;
+    } else if (geminiResponse.status === 400) {
+      error = "gemini_invalid_request";
+      status = 502;
+    } else if ([408, 500, 502, 503, 504].includes(geminiResponse.status)) {
+      error = "gemini_temporarily_unavailable";
+      status = 503;
+    }
+
+    console.error("[JB Copilot] Gemini request failed", JSON.stringify({
+      httpStatus: geminiResponse.status,
+      apiStatus,
+      message: apiMessage.slice(0, 240)
+    }));
+    return response(status, { ok: false, error }, origin);
   }
 
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
