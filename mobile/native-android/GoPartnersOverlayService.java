@@ -48,12 +48,16 @@ public class GoPartnersOverlayService extends Service {
     private void showBubble() {
         if (bubble != null) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            GoPartnersScanSession.setOverlayError("Android no concedió el permiso para mostrar sobre otras aplicaciones.");
+            android.util.Log.w("JBGoPartnersOverlay", "Overlay permission is not granted");
             stopSelf();
             return;
         }
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (windowManager == null) {
+            GoPartnersScanSession.setOverlayError("Android no entregó el administrador de ventanas.");
+            android.util.Log.e("JBGoPartnersOverlay", "WindowManager unavailable");
             stopSelf();
             return;
         }
@@ -92,8 +96,13 @@ public class GoPartnersOverlayService extends Service {
         bubble.setOnTouchListener(this::handleBubbleTouch);
         try {
             windowManager.addView(bubble, layoutParams);
+            GoPartnersScanSession.setOverlayVisible(true);
         } catch (Exception error) {
             bubble = null;
+            String message = error.getMessage() == null ? "Android rechazó la ventana flotante." :
+                error.getMessage().substring(0, Math.min(160, error.getMessage().length()));
+            GoPartnersScanSession.setOverlayError(message);
+            android.util.Log.e("JBGoPartnersOverlay", "Could not display JARVIS floating control", error);
             stopSelf();
         }
     }
@@ -195,6 +204,7 @@ public class GoPartnersOverlayService extends Service {
         }
         bubble = null;
         windowManager = null;
+        GoPartnersScanSession.setOverlayVisible(false);
         super.onDestroy();
     }
 
