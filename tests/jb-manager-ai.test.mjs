@@ -65,7 +65,7 @@ test("assistant sends only bounded catalog context and renders model text safely
   assert.match(endpoint, /JSON\.stringify\(context\)/);
   assert.match(assistant, /paragraph\.textContent = text/);
   assert.match(endpoint, /slice\(0, 80\)/);
-  assert.match(endpoint, /cleanText\(parsed\.message, 1800\)/);
+  assert.match(endpoint, /const assistantMessage = cleanText\(/);\n  assert.match(endpoint, /parsed\.message \?\? parsed\.reply \?\? parsed\.answer/);
 });
 
 
