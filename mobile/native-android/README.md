@@ -48,3 +48,5 @@ The APK workflow copies these Java sources into the generated Capacitor Android 
 - The download ID, target version and app-scoped destination filename are persisted in native preferences. When JB Manager is opened again, the panel queries Android's DownloadManager and restores the current progress, pause/failure state or completed APK.
 - The APK is checked for package ID, version, full byte count and signing-certificate match before the installer can be opened. Android still requires the administrator to confirm installation; JB Manager does not silently replace itself.
 - This guarantee applies to leaving/minimizing the app or removing its task from Recents. Android system restrictions, loss of network, insufficient storage or explicitly force-stopping/disabling system download components can still interrupt a transfer.
+
+- The floating JARVIS control is started with the MediaProjection session and must remain visible while Go Partners is being captured. Creating the foreground notification channel must not stop the overlay; the capture service removes the overlay only during its shutdown path.
