@@ -79,11 +79,12 @@ function appendFormattedAssistantText(container, value) {
 const COPILOT_SEARCH_STOPWORDS = new Set([
   "quiero", "necesito", "busca", "buscame", "buscar", "buscá", "encontra", "encontrá",
   "mostrame", "mostra", "mostrá", "muestra", "mostrar", "listar", "lista", "listame",
-  "tenes", "tenés", "tenemos", "hay", "dame", "favor", "porfa", "por", "favor",
+  "tenes", "tenés", "tenemos", "tienen", "tiene", "hay", "dame", "favor", "porfa", "por",
+  "podrias", "podés", "podria", "quisiera", "saber", "decime", "decir", "me", "si", "favor",
   "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "al", "en",
   "para", "con", "que", "cual", "cuál", "cuales", "cuáles", "mi", "mis", "me",
   "producto", "productos", "catalogo", "catálogo", "catalog", "precio", "precios",
-  "modelo", "marca", "disponible", "disponibles", "hay", "tienen", "tiene"
+  "modelo", "marca", "color", "colores", "precio", "precios", "disponible", "disponibles"
 ]);
 
 export function normalizeCopilotSearchText(value) {
@@ -232,8 +233,10 @@ function catalogContext(products, message) {
   const rows = Array.isArray(products) ? products.filter(item => item && !["trash", "deleting"].includes(item.workflow_status)) : [];
   const broad = isBroadCatalogRequest(message);
   const ranked = rankCatalogProducts(rows, message, broad ? 80 : 24);
-  const selected = broad ? ranked.map(item => item.product) : ranked.map(item => item.product).slice(0, 24);
-  const contextRows = selected.length ? selected : (needsCatalogContext(message) ? rows.slice(0, 12) : []);
+  const selected = broad
+    ? (ranked.length ? ranked.map(item => item.product) : rows)
+    : ranked.map(item => item.product).slice(0, 24);
+  const contextRows = selected;
   return contextRows.slice(0, 80).map(item => ({
     id: safeText(item.id, 80),
     name: safeText(item.name, 140),
