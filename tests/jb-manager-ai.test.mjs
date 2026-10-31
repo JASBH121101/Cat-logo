@@ -176,7 +176,7 @@ test("JB Copilot POST handler is reached and returns authentication_required, no
 
 
 test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authentication", async () => {
-  assert.match(endpoint, /name: "gemini-3\\.8-flash"/);
+  assert.ok(endpoint.includes('name: "gemini-3.8-flash"'));
   assert.match(endpoint, /"x-goog-api-key": env\.GEMINI_API_KEY/);
   assert.doesNotMatch(endpoint, /gemini-2\.5-flash/);
   assert.doesNotMatch(endpoint, /temperature:\s*0\.2/);
