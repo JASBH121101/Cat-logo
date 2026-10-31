@@ -674,6 +674,7 @@ test("JB Copilot extracts common explicit product-search commands without guessi
   assert.equal(extractFastCatalogQuery("¿Tenés el POCO X8 Pro Max?"), "POCO X8 Pro Max");
   assert.equal(extractFastCatalogQuery("Mostrame la Samsung Galaxy Tab A11"), "Samsung Galaxy Tab A11");
   assert.equal(extractFastCatalogQuery("Quiero mejorar el catálogo"), "");
+  assert.equal(extractFastCatalogQuery("Buscá laptops"), "laptops");
   assert.equal(normalizeCopilotSearchText("Xiaomi Redmi Note 15 Pro"), "xiaomi redmi note 15 pro");
 });
 
@@ -688,6 +689,7 @@ test("local catalog retrieval ranks exact product identity and excludes deleted 
   assert.equal(ranked[0].product.id, "iphone");
   assert.equal(ranked.some(item => item.product.id === "deleted"), false);
   assert.ok(ranked[0].coverage >= 0.85);
+  assert.equal(rankCatalogProducts([{ id: "laptop", name: "Dell Inspiron", category: "Laptops" }], "laptops")[0].product.id, "laptop");
 });
 
 test("high-confidence local product search returns grounded price and variant information immediately", () => {
@@ -713,9 +715,9 @@ test("high-confidence local product search returns grounded price and variant in
 test("Copilot uses a smaller JSON schema and output budget for normal questions but retains full draft capacity", () => {
   assert.match(endpoint, /responseSchemaForRequest\\(prepareProductRequested\\)/);
   assert.match(endpoint, /product_draft: \\{ type: \\["object", "null"\\] \\}/);
-  assert.match(endpoint, /responseTokenBudget = prepareProductRequested \\? 1800 : providerPriceRequested \\? 1100 : productSearchRequested \\? 850 : 800/);
+  assert.match(endpoint, /responseTokenBudget = prepareProductRequested \|\| complexRequest \? 1800 : providerPriceRequested \? 1200 : productSearchRequested \? 900 : 1200/);
   assert.match(endpoint, /if \\(prepareProductRequested\\) systemInstruction\\.push/);
   assert.match(endpoint, /const systemInstructionText = systemInstruction\\.join\\(" "\\)/);
   assert.match(endpoint, /text: systemInstructionText/);
-  assert.match(endpoint, /gemini;dur=/);
+  assert.match(endpoint, /model;dur=/);
 });
