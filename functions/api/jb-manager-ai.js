@@ -259,7 +259,7 @@ export async function onRequestPost({ request, env }) {
         generationConfig: {
           responseFormat: {
             text: {
-              mimeType: "application/json",
+              mimeType: "APPLICATION_JSON",
               schema: responseSchema
             }
           },
@@ -310,7 +310,11 @@ export async function onRequestPost({ request, env }) {
       apiStatus,
       message: apiMessage.slice(0, 240)
     }));
-    return response(status, { ok: false, error }, origin);
+    return response(status, {
+      ok: false,
+      error,
+      detail: [apiStatus, apiMessage].filter(Boolean).join(": ").slice(0, 320)
+    }, origin);
   }
 
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
