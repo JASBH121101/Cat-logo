@@ -13,14 +13,14 @@
 
   <link rel="stylesheet" href="styles.css?v=20261027-audit-cascade1">
   <link rel="stylesheet" href="theme-ui.css?v=20261028-limited-edition-icons1">
-  <link rel="stylesheet" href="admin-workflow.css?v=20261031-sidebar-form-flow1">
+  <link rel="stylesheet" href="admin-workflow.css?v=20261031-form-sticky-actions1">
   <link rel="stylesheet" href="admin-bulk-import.css?v=20261026-perfume-notes-form2">
   <link rel="stylesheet" href="admin-provider.css?v=20261029-variant-availability-validation1">
   <link rel="stylesheet" href="admin-commission.css?v=20261026-commission-colors3">
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
   <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
-  <link rel="stylesheet" href="admin-accessibility.css?v=20261030-inventory-refresh1">
+  <link rel="stylesheet" href="admin-accessibility.css?v=20261031-device-typography1">
   <link rel="stylesheet" href="admin-ai.css?v=20261031-chat-ui1">
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
 
@@ -643,24 +643,29 @@
                       class="workflow-action workflow-action-save" aria-label="Guardar producto sin publicar"
                       title="Guardar producto sin publicar">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"></path><path d="M4 7.5 12 12l8-4.5M12 12v9"></path><path d="m8.5 14.5 2 2 4-4"></path></svg>
+                <span class="workflow-action-label">Guardar</span>
               </button>
               <button type="submit" id="publish-product-button" data-save-action="published"
                       class="workflow-action workflow-action-publish" aria-label="Guardar y publicar en catálogo"
                       title="Guardar y publicar en el catálogo">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg>
+                <span class="workflow-action-label">Publicar</span>
               </button>
               <button type="submit" id="save-draft-button" data-save-action="draft"
                       class="workflow-action workflow-action-draft" aria-label="Guardar borrador incompleto"
                       title="Guardar borrador incompleto">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z"></path><path d="M15 3v5h4M9 13h6M9 17h3"></path><path d="m14.5 16.5 4.5-4.5 2 2-4.5 4.5-3 1z"></path></svg>
+                <span class="workflow-action-label">Borrador</span>
               </button>
               <button type="button" id="toggle-product-exclusive" class="workflow-action workflow-action-exclusive"
                       aria-label="Marcar o desmarcar exclusividad" aria-pressed="false" title="Marcar o desmarcar exclusividad">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>
+                <span class="workflow-action-label">Destacar</span>
               </button>
               <button type="button" id="cancel-edit-button" class="workflow-action workflow-action-cancel"
                       aria-label="Cancelar" title="Cancelar">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+                <span class="workflow-action-label">Cancelar</span>
               </button>
             </div><div id="product-photo-validation-issues" class="product-photo-validation-issues" aria-live="polite" hidden></div>
             <p class="form-status" id="product-form-status" role="status"></p>
