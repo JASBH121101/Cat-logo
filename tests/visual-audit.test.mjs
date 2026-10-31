@@ -493,7 +493,11 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   imageLeft: imageRect ? Math.round(imageRect.left) : null,
                   imageRight: imageRect ? Math.round(imageRect.right) : null,
                   imageTop: imageRect ? Math.round(imageRect.top) : null,
+                  imageWidth: imageRect ? Math.round(imageRect.width) : null,
+                  imageHeight: imageRect ? Math.round(imageRect.height) : null,
                   contentLeft: contentRect ? Math.round(contentRect.left) : null,
+                  contentTop: contentRect ? Math.round(contentRect.top) : null,
+                  contentWidth: contentRect ? Math.round(contentRect.width) : null,
                   contentTop: contentRect ? Math.round(contentRect.top) : null,
                   contentWidth: contentRect ? Math.round(contentRect.width) : null
                 };
@@ -714,7 +718,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
           });
         }
         if (site.name === "technology" && !viewport.mobile) {
-          const expectedGridIds = ["featured-grid", "limited-edition-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid"];
+          const expectedGridIds = ["featured-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid", "limited-edition-grid"];
           for (const gridId of expectedGridIds) {
             const layout = snapshot.showcaseLayouts.find(item => item.id === gridId);
             if (!layout || layout.cardCount === 0) {
@@ -723,9 +727,27 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 element: "#" + gridId,
                 message: "Falta una vitrina sintética para validar el diseño de tarjetas",
                 evidence: "La prueba no encontró una tarjeta visible en esta sección destacada.",
-                recommendation: "Asegurar que las cinco vitrinas tengan fixtures y que rendericen dentro del grid esperado.",
+                recommendation: "Asegurar que las vitrinas tengan fixtures y rendericen dentro del grid esperado.",
                 blocking: true,
               });
+              continue;
+            }
+            if (gridId === "limited-edition-grid") {
+              const verticalCard = layout.cardDisplay === "flex" &&
+                layout.cardWidth <= 320 &&
+                Math.abs((layout.imageWidth || 0) - (layout.imageHeight || 0)) <= 24 &&
+                layout.contentTop >= layout.imageTop + layout.imageHeight - 8 &&
+                layout.contentWidth >= layout.cardWidth * 0.8;
+              if (!verticalCard) {
+                addFinding({
+                  severity: "high", page: site.name, theme, viewport: viewport.name,
+                  element: "#" + gridId,
+                  message: "La tarjeta de Ediciones limitadas debe conservar el formato vertical compacto",
+                  evidence: `display=${layout.cardDisplay}; ancho=${layout.cardWidth}px; imagen=${layout.imageWidth}×${layout.imageHeight}px; contenido inicia en ${layout.contentTop}.`,
+                  recommendation: "Mantener tarjetas de hasta 300px, fotografía cuadrada completa y detalles debajo de la imagen.",
+                  blocking: true,
+                });
+              }
               continue;
             }
             const horizontalCard = layout.cardDisplay === "grid" && layout.cardColumnCount === 2 &&
@@ -738,7 +760,7 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                 element: "#" + gridId,
                 message: "La tarjeta de la vitrina no comparte el diseño horizontal de Exclusivos",
                 evidence: `display=${layout.cardDisplay}; columnas=${layout.cardGridColumns}; imagen [${layout.imageLeft}, ${layout.imageRight}] y datos empiezan en ${layout.contentLeft}.`,
-                recommendation: "Aplicar la estructura común a las cinco vitrinas de tecnología: fotografía a la izquierda, información a la derecha y grid auto-fit con ancho mínimo compartido.",
+                recommendation: "Mantener la estructura horizontal de fotografía a la izquierda e información a la derecha para las vitrinas principales.",
                 blocking: true,
               });
             }
