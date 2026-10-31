@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups, scannerSessionReviewable, scannerSessionStatus } from "../admin-gopartners-scanner.js";
-import { groundScannerProducts } from "../functions/api/jb-gopartners-scan.js";
+import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups, scannerSessionReviewable, scannerSessionStatus, scannerErrorMessage } from "../admin-gopartners-scanner.js";
+import { classifyGeminiUpstreamError, groundScannerProducts } from "../functions/api/jb-gopartners-scan.js";
 
 test("normaliza modelos, RAM y almacenamiento", () => {
   assert.equal(normalizeScannerKey("12 GB"), "12gb");
@@ -295,4 +295,62 @@ test("APK scanner sends OCR text to the authenticated Cloudflare endpoint, not l
   assert.match(source, /fetch\("https:\/\/jb-collections\.pages\.dev\/api\/jb-gopartners-scan"/);
   assert.match(endpoint, /https:\/\/localhost/);
   assert.match(endpoint, /Authorization: "Bearer " \+ token/);
+});
+
+
+test("capture notification setup does not destroy the JARVIS overlay before it can appear", () => {
+  const capture = readFileSync(new URL("../mobile/native-android/GoPartnersCaptureService.java", import.meta.url), "utf8");
+  const channelStart = capture.indexOf("private void createNotificationChannel()");
+  const channelEnd = capture.indexOf("private Notification buildNotification()", channelStart);
+  const shutdownStart = capture.indexOf("private synchronized void finishShutdown()");
+  const shutdownEnd = capture.indexOf("@Override", shutdownStart);
+  assert.ok(channelStart >= 0 && channelEnd > channelStart);
+  assert.ok(shutdownStart >= 0 && shutdownEnd > shutdownStart);
+  const channelBlock = capture.slice(channelStart, channelEnd);
+  const shutdownBlock = capture.slice(shutdownStart, shutdownEnd);
+  assert.doesNotMatch(channelBlock, /stopService\(new Intent\(this,\s*GoPartnersOverlayService\.class\)\)/);
+  assert.match(shutdownBlock, /stopService\(new Intent\(this,\s*GoPartnersOverlayService\.class\)\)/);
+});
+
+test("Android overlay publishes visible state and reports addView failures", () => {
+  const overlay = readFileSync(new URL("../mobile/native-android/GoPartnersOverlayService.java", import.meta.url), "utf8");
+  const session = readFileSync(new URL("../mobile/native-android/GoPartnersScanSession.java", import.meta.url), "utf8");
+  const plugin = readFileSync(new URL("../mobile/native-android/GoPartnersScannerPlugin.java", import.meta.url), "utf8");
+  const scanner = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(overlay, /GoPartnersScanSession\.setOverlayVisible\(true\)/);
+  assert.match(overlay, /GoPartnersScanSession\.setOverlayError\(message\)/);
+  assert.match(session, /result\.put\("overlayVisible", overlayVisible\)/);
+  assert.match(plugin, /state\.put\("overlayVisible"/);
+  assert.match(scanner, /nativeState\?\.overlayVisible !== true/);
+  assert.match(scanner, /Finalizar aquí/);
+});
+
+test("Gemini upstream errors are classified and provider diagnostics redact API keys", () => {
+  const invalid = classifyGeminiUpstreamError(400, { error: {
+    code: 400, status: "INVALID_ARGUMENT", message: "Invalid response schema."
+  }});
+  const denied = classifyGeminiUpstreamError(403, { error: {
+    code: 403, status: "PERMISSION_DENIED", message: "API key not valid: AIza123456789012345678901234567890"
+  }});
+  const quota = classifyGeminiUpstreamError(429, { error: { status: "RESOURCE_EXHAUSTED", message: "Quota exceeded." }});
+  const unavailable = classifyGeminiUpstreamError(503, { error: { status: "UNAVAILABLE", message: "Try again." }});
+  assert.equal(invalid.error, "gemini_invalid_request");
+  assert.equal(invalid.provider_status, "INVALID_ARGUMENT");
+  assert.equal(denied.error, "gemini_authentication_failed");
+  assert.doesNotMatch(denied.provider_message, /AIza[0-9A-Za-z_-]{20,}/);
+  assert.equal(quota.error, "gemini_quota_exhausted");
+  assert.equal(unavailable.error, "gemini_temporarily_unavailable");
+});
+
+test("Copilot scanner error messages explain Gemini failures without exposing machine codes", () => {
+  const message = scannerErrorMessage({
+    error: "gemini_invalid_request",
+    provider_code: 400,
+    provider_status: "INVALID_ARGUMENT",
+    provider_message: "Invalid response schema."
+  }, 502);
+  assert.match(message, /Gemini rechazó el formato/);
+  assert.match(message, /Invalid response schema/);
+  assert.doesNotMatch(message, /gemini_invalid_request/);
+  assert.match(scannerErrorMessage({ error: "gemini_quota_exhausted" }, 429), /límite de solicitudes o cuota/);
 });

@@ -1,4 +1,25 @@
 const $ = selector => document.querySelector(selector);
+export function scannerErrorMessage(payload, httpStatus) {
+  const code = String(payload?.error || "");
+  const providerStatus = String(payload?.provider_status || "").trim();
+  const providerMessage = String(payload?.provider_message || "").trim();
+  const detail = providerMessage ? " Detalle de Gemini: " + providerMessage : "";
+  const statusDetail = Number.isFinite(Number(payload?.provider_code || httpStatus))
+    ? " (HTTP " + Number(payload?.provider_code || httpStatus) + ")" : "";
+  if (code === "gemini_quota_exhausted") return "Gemini alcanzó su límite de solicitudes o cuota disponible. El texto OCR se conservó; esperá un poco y volvé a revisar." + statusDetail + detail;
+  if (code === "gemini_authentication_failed") return "Gemini rechazó la autenticación del servicio. Hay que revisar la clave de Gemini configurada en Cloudflare." + statusDetail + detail;
+  if (code === "gemini_model_unavailable") return "El modelo Gemini configurado no está disponible para esta clave o proyecto." + statusDetail + detail;
+  if (code === "gemini_invalid_request") return "Gemini rechazó el formato de la solicitud del escáner. Se conservó el OCR para reintentar después de corregirlo." + statusDetail + detail;
+  if (code === "gemini_temporarily_unavailable") return "Gemini presenta un fallo temporal. El OCR sigue guardado en el dispositivo; podés volver a intentar." + statusDetail + detail;
+  if (code === "gemini_unreachable") return "JB Manager no pudo conectar con Gemini. Revisá la conexión y volvé a intentar.";
+  if (code === "gemini_not_configured") return "Falta configurar la clave de Gemini en el servicio del escáner de Cloudflare.";
+  if (code === "admin_verification_unavailable") return "No se pudo validar la sesión administrativa con Supabase. Volvé a iniciar sesión y reintentá.";
+  if (code === "authentication_required" || code === "admin_only") return "La sesión administrativa venció o no tiene permisos. Iniciá sesión nuevamente.";
+  if (code === "origin_not_allowed") return "El servicio de escaneo rechazó el origen de la aplicación. La APK necesita actualizar su configuración de conexión.";
+  if (code.startsWith("gemini_")) return "Gemini no pudo completar el análisis." + statusDetail + (providerStatus ? " Estado del proveedor: " + providerStatus + "." : "") + detail;
+  return code || "No se pudo analizar el catálogo. El texto OCR se conservó para volver a intentarlo.";
+}
+
 export function normalizeScannerKey(value) {
   return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -433,7 +454,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       }
       pendingOverlayPermission = false;
       let nativeState = await native.getScanState();
-      for (let attempt = 0; attempt < 5 && !nativeState?.running && !scannerSessionReviewable(nativeState); attempt += 1) {
+      for (let attempt = 0; attempt < 8 && (!nativeState?.running && !scannerSessionReviewable(nativeState) ||
+        nativeState?.running && !nativeState?.overlayVisible && !nativeState?.overlayError); attempt += 1) {
         await new Promise(resolve => setTimeout(resolve, 400));
         nativeState = await native.getScanState();
       }
@@ -448,7 +470,14 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       }
       scanning = true;
       root.hidden = false;
-      setStatus("Escaneo activo. Navegá por Go Partners; el control flotante de JARVIS te permitirá finalizar y volver automáticamente para revisar los resultados.");
+      if (nativeState?.overlayVisible !== true) {
+        const overlayDetail = String(nativeState?.overlayError || "").trim();
+        setStatus("La captura está activa, pero Android no confirmó el control flotante de JARVIS. " +
+          (overlayDetail ? "Detalle: " + overlayDetail + " " : "") +
+          "Podés usar «Finalizar aquí» en JB Copilot o detener desde la notificación de Android.", true);
+      } else {
+        setStatus("Escaneo activo. Navegá por Go Partners; el control flotante de JARVIS te permitirá finalizar y volver automáticamente para revisar los resultados.");
+      }
     } catch (error) {
       pendingOverlayPermission = false;
       setStatus(error?.message || "No se pudo iniciar el escaneo.", true);
@@ -491,7 +520,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         cache: "no-store", body: JSON.stringify({ observations: observations.slice(0, 80) })
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.ok) throw new Error(payload.error || "No se pudo analizar el catálogo.");
+      if (!response.ok || !payload.ok) throw new Error(scannerErrorMessage(payload, response.status));
       scanCandidates = Array.isArray(payload.products) ? payload.products.map(item => ({
         ...item, price_usd: item.price_usd == null ? null : Number(item.price_usd),
         price_nio: item.price_nio == null ? null : Number(item.price_nio)
