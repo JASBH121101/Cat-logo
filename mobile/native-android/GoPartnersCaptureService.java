@@ -267,7 +267,7 @@ public class GoPartnersCaptureService extends Service {
     }
 
     private synchronized void appendObservation(Text recognized, long capturedAt) {
-        if (stopping || recognized == null) return;
+        if (recognized == null) return;
         String text = recognized.getText();
         if (text == null) return;
         text = text.replaceAll("[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]", " ")
