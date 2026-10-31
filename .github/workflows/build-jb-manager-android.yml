@@ -542,6 +542,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import os
+          import re
           from pathlib import Path
 
           path = Path("mobile/android/app/build.gradle")
@@ -553,9 +554,8 @@ jobs:
           source = source.replace(old_code, "versionCode " + os.environ["VERSION_CODE"], 1)
           source = source.replace(old_name, 'versionName "' + os.environ["VERSION_NAME"] + '"', 1)
 
-          # Explicitly pin the debug build to the persistent cached key.
-          # The generated Capacitor project must not silently create a fresh
-          # project-local debug certificate for every APK.
+          # Keep the persistent certificate for both build types so Android accepts updates.
+          # The optimized release variant enables R8 and resource shrinking.
           android_open = "android {"
           signing_block = """android {
               signingConfigs {
@@ -572,11 +572,44 @@ jobs:
           source = source.replace(android_open, signing_block, 1)
 
           build_types = "    buildTypes {"
-          debug_signing = '        debug {\n            signingConfig signingConfigs.debug\n        }\n'
+          debug_signing = '        debug {\\n            signingConfig signingConfigs.debug\\n        }\\n'
           if build_types not in source:
               raise SystemExit("Could not locate Android buildTypes.")
-          source = source.replace(build_types, build_types + "\n" + debug_signing, 1)
-          path.write_text(source)
+          source = source.replace(build_types, build_types + "\\n" + debug_signing, 1)
+
+          release_start = source.find("        release {", source.find(build_types))
+          if release_start < 0:
+              raise SystemExit("Could not locate the generated Android release build type.")
+          release_end = source.find("\\n        }", release_start)
+          if release_end < 0:
+              raise SystemExit("Could not locate the end of the release build type.")
+          release_block = source[release_start:release_end]
+          if "minifyEnabled" not in release_block:
+              raise SystemExit("Generated release build type has no minifyEnabled setting.")
+          release_block = re.sub(r"minifyEnabled\\s+(?:true|false)", "minifyEnabled true", release_block, count=1)
+          if "shrinkResources" in release_block:
+              release_block = re.sub(r"shrinkResources\\s+(?:true|false)", "shrinkResources true", release_block, count=1)
+          else:
+              release_block += "\\n            shrinkResources true"
+          if "signingConfig" in release_block:
+              release_block = re.sub(r"signingConfig\\s+signingConfigs\\.\\w+", "signingConfig signingConfigs.debug", release_block, count=1)
+          else:
+              release_block += "\\n            signingConfig signingConfigs.debug"
+          if "proguardFiles" in release_block:
+              release_block = re.sub(r"proguardFiles\\s+.*", "proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'", release_block, count=1)
+          else:
+              release_block += "\\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'"
+          source = source[:release_start] + release_block + source[release_end:]
+
+          rules = Path("mobile/android/app/proguard-rules.pro")
+          rules.write_text("""-keepattributes *Annotation*
+          -keep class * extends com.getcapacitor.Plugin { *; }
+          -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+          -keep class com.jbcollections.manager.v2.GoPartnersCaptureService { *; }
+          -keep class com.jbcollections.manager.v2.GoPartnersScanSession { *; }
+          """, encoding="utf-8")
+
+                    path.write_text(source)
           print("Configured Android version", os.environ["VERSION_NAME"])
           print("Pinned the debug APK signing config to ~/.android/debug.keystore.")
           PY
@@ -594,16 +627,16 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
-      - name: Build debug APK
+      - name: Build optimized release APK
         working-directory: mobile/android
-        run: ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon assembleRelease
 
       - name: Verify APK uses persistent update-compatible signing key
         shell: bash
         run: |
           set -euo pipefail
           KEYSTORE="$HOME/.android/debug.keystore"
-          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions "$APK" | grep -q 'android.permission.RECORD_AUDIO' || {
             echo "APK is missing Android's runtime microphone permission."
             exit 1
@@ -633,7 +666,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
           for asset in \
             assets/public/index.html \
             assets/public/admin.html \
@@ -1001,7 +1034,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: JB-Manager-Collections-APK
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -1010,7 +1043,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk JB-Manager-Collections.apk
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk JB-Manager-Collections.apk
           TAG="jb-manager-v1.0.$GITHUB_RUN_NUMBER"
           gh release create "$TAG" JB-Manager-Collections.apk \
             --title "JB Manager Collections v1.0.$GITHUB_RUN_NUMBER" \
@@ -1068,8 +1101,8 @@ jobs:
           {
             echo "## JB Manager Collections"
             echo ""
-            echo "The Android debug APK was built successfully."
+            echo "The optimized Android release APK was built successfully with the persistent update-compatible signing key."
             echo ""
             echo "Download the **JB-Manager-Collections-APK** artifact from this workflow run."
-            echo "The APK is unsigned for store distribution but can be installed directly on a personal Android device."
+            echo "This signed personal-use APK is not a Play Store production signing release."
           } >> "$GITHUB_STEP_SUMMARY"
