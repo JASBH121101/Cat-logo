@@ -225,6 +225,22 @@ export async function onRequestOptions({ request }) {
     "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Max-Age": "86400", "Vary": "Origin"
   }});
 }
+export function classifyGeminiUpstreamError(status, result) {
+  const upstreamError = result && typeof result.error === "object" ? result.error : {};
+  const providerCode = Number.isInteger(upstreamError.code) ? upstreamError.code : status;
+  const providerStatus = clean(upstreamError.status, 80);
+  const providerMessage = clean(upstreamError.message, 220)
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[redacted]")
+    .replace(/([?&]key=)[^&\s]+/gi, "$1[redacted]");
+  let error = "gemini_request_failed";
+  if (status === 400) error = "gemini_invalid_request";
+  else if (status === 401 || status === 403) error = "gemini_authentication_failed";
+  else if (status === 404) error = "gemini_model_unavailable";
+  else if (status === 429) error = "gemini_quota_exhausted";
+  else if (status >= 500) error = "gemini_temporarily_unavailable";
+  return { ok: false, error, provider_code: providerCode, provider_status: providerStatus, provider_message: providerMessage };
+}
+
 export async function onRequestPost({ request, env }) {
   const origin = request.headers.get("Origin") || "";
   if (!ALLOWED_ORIGINS.has(origin)) return reply(403, { ok: false, error: "origin_not_allowed" }, origin);
@@ -279,9 +295,15 @@ export async function onRequestPost({ request, env }) {
   } catch { return reply(502, { ok: false, error: "gemini_unreachable" }, origin); }
   let result;
   try { result = await upstream.json(); } catch { return reply(502, { ok: false, error: "gemini_invalid_response" }, origin); }
-  if (!upstream.ok) return reply(upstream.status === 429 ? 429 : 502, {
-    ok: false, error: upstream.status === 429 ? "gemini_quota_exhausted" : "gemini_request_failed"
-  }, origin);
+  if (!upstream.ok) {
+    const failure = classifyGeminiUpstreamError(upstream.status, result);
+    console.error("[JARVIS scanner] Gemini upstream request failed", {
+      http_status: upstream.status,
+      provider_code: failure.provider_code,
+      provider_status: failure.provider_status || "unspecified"
+    });
+    return reply(upstream.status === 429 ? 429 : 502, failure, origin);
+  }
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
   let parsed;
   try { parsed = JSON.parse(generated); } catch { return reply(502, { ok: false, error: "gemini_unstructured_response" }, origin); }
