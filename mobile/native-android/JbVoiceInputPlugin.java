@@ -41,6 +41,8 @@ public class JbVoiceInputPlugin extends Plugin implements RecognitionListener {
             call.resolve(permissionState());
             return;
         }
+        getContext().getSharedPreferences("jb_voice_input", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("microphone_prompted", true).apply();
         requestPermissionForAlias("microphone", call, "microphonePermissionCallback");
     }
 
@@ -56,9 +58,13 @@ public class JbVoiceInputPlugin extends Plugin implements RecognitionListener {
             rationale = ActivityCompat.shouldShowRequestPermissionRationale(
                 getActivity(), Manifest.permission.RECORD_AUDIO);
         } catch (Exception ignored) {}
+        boolean promptedBefore = getContext()
+            .getSharedPreferences("jb_voice_input", android.content.Context.MODE_PRIVATE)
+            .getBoolean("microphone_prompted", false);
         JSObject result = new JSObject();
         result.put("granted", granted);
         result.put("shouldShowRationale", rationale);
+        result.put("permanentlyDenied", !granted && promptedBefore && !rationale);
         return result;
     }
 
