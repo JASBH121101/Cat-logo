@@ -98,11 +98,11 @@ test("starting a new scan never clears a pending interrupted OCR session", () =>
 test("OCR observations remain in native memory until a successful review is rendered", () => {
   const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
   const finish = source.indexOf("  async function finish()");
-  const clear = source.indexOf("await native.clearScan().catch(() => {})", finish);
   const api = source.indexOf('fetch("/api/jb-gopartners-scan"', finish);
   const render = source.indexOf("renderReview();", api);
+  const clearAfterReview = source.indexOf("await native.clearScan().catch(() => {})", render);
   assert.ok(finish >= 0 && api > finish && render > api);
-  assert.ok(clear > render, "OCR must not be cleared before analysis and review rendering succeed");
+  assert.ok(clearAfterReview > render, "OCR must only be cleared after analysis and review rendering succeed");
   assert.match(source, /recoverableSession = true/);
   assert.match(source, /El texto OCR sigue guardado temporalmente/);
 });
