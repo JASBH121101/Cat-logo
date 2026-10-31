@@ -282,10 +282,12 @@ test("successful save and discard return to the top of the product form", () => 
 });
 
 
-test("native reload warning is shown only while the Add Product panel is visible", () => {
-  assert.match(admin, /const addPanel = document\.querySelector\('\[data-admin-panel="add"\]'\)/);
-  assert.match(admin, /return Boolean\(addPanel && !addPanel\.classList\.contains\("hidden"\)\)/);
-  assert.match(admin, /void saveLocalRecoveryDraft\(\);[\s\S]*?const addPanel/);
+test("native reload warning is restricted to the active visible Add Product panel", () => {
+  assert.match(admin, /document\.body\.dataset\.adminActiveSection = section/);
+  assert.match(admin, /document\.body\.dataset\.adminActiveSection === "add"/);
+  assert.match(admin, /addPanel\.getClientRects\(\)\.length/);
+  assert.match(admin, /if \(!isProductEditorActive\) \{[\s\S]*?return false/);
+  assert.match(admin, /if \(!hasUnsavedEditorChanges\(\)\) return false/);
 });
 
 test("switching catalogs does not prompt for a clean form or an unchanged open product", () => {
@@ -313,4 +315,15 @@ test("admin typography adapts by desktop, tablet and mobile breakpoints", () => 
   assert.match(accessibilityCss, /max-width:\s*760px/);
   assert.match(accessibilityCss, /font-size:\s*16px !important/);
   assert.match(accessibilityCss, /font-size:\s*12\.5px !important/);
+});
+
+
+test("manual tags are grouped in aligned responsive grids on all device widths", () => {
+  assert.match(html, /Distintivos generales/);
+  assert.match(html, /Etiquetas de tecnología/);
+  assert.match(accessibilityCss, /product-collection-tag-options\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(accessibilityCss, /product-tag-options\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(accessibilityCss, /max-width:\s*760px/);
+  assert.match(accessibilityCss, /max-width:\s*380px/);
+  assert.match(accessibilityCss, /product-tag-option\s*\{[\s\S]*?width:\s*100% !important/);
 });
