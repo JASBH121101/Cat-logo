@@ -18,6 +18,8 @@ public final class GoPartnersScanSession {
     private static boolean truncated = false;
     private static boolean interrupted = false;
     private static boolean finishRequested = false;
+    private static boolean overlayVisible = false;
+    private static String overlayError = "";
     private static String interruptionReason = "";
 
     private GoPartnersScanSession() {}
@@ -30,6 +32,8 @@ public final class GoPartnersScanSession {
             truncated = false;
             interrupted = false;
             finishRequested = false;
+            overlayVisible = false;
+            overlayError = "";
             interruptionReason = "";
         }
     }
@@ -40,6 +44,17 @@ public final class GoPartnersScanSession {
 
     public static void clearFinishRequest() {
         synchronized (LOCK) { finishRequested = false; }
+    }
+
+    public static void setOverlayVisible(boolean visible) {
+        synchronized (LOCK) { overlayVisible = visible; }
+    }
+
+    public static void setOverlayError(String error) {
+        synchronized (LOCK) {
+            overlayVisible = false;
+            overlayError = error == null ? "" : error.trim();
+        }
     }
 
     public static void markInterrupted(String reason) {
@@ -92,6 +107,8 @@ public final class GoPartnersScanSession {
                 result.put("truncated", truncated);
                 result.put("interrupted", interrupted);
                 result.put("finishRequested", finishRequested);
+                result.put("overlayVisible", overlayVisible);
+                result.put("overlayError", overlayError);
                 result.put("interruptionReason", interruptionReason);
                 result.put("observationsCount", observations.length());
                 result.put("observations", new JSONArray(observations.toString()));
