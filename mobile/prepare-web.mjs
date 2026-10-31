@@ -937,13 +937,29 @@ for (const [label, source, fragments] of [
 
 
 if (!builtAdminHtml.includes('id="jb-gp-scanner"')
-  || !builtAdminHtml.includes('admin-gopartners-scanner.css?v=20261030-gp-scanner2')) {
-  throw new Error("JARVIS scanner regression: APK admin panel is missing the Go Partners scanner interface.");
+  || !/admin-gopartners-scanner\.css\?v=[^"]+/.test(builtAdminHtml)) {
+  throw new Error("JARVIS scanner regression: APK admin panel is missing the current Go Partners scanner interface or stylesheet.");
 }
 if (!builtAdminScript.includes("initGoPartnersScanner")
+  || !builtAdminScript.includes("initJbManagerAI")
   || !builtScannerScript.includes("/api/jb-gopartners-scan")
-  || !builtProviderScript.includes("openReviewFromScan")) {
-  throw new Error("JARVIS scanner regression: APK web bundle is missing the OCR review integration.");
+  || !builtScannerScript.includes("scannerSessionReviewable")
+  || !builtScannerScript.includes("recoverableSession = true")
+  || !builtProviderScript.includes("openReviewFromScan")
+  || !builtProviderScript.includes("normalizeConfig(row.dataset.colorName) === colorKey")
+  || !builtAdminScript.includes("JbVoiceInput")) {
+  throw new Error("JARVIS scanner regression: APK web bundle is missing current OCR recovery, variant review, or Copilot voice integration.");
+}
+const builtScannerCss = await readFile(join(webDir, "admin-gopartners-scanner.css"), "utf8");
+if (!builtScannerCss.includes('html[data-theme="dark"] body.admin-body .jb-gp-scanner')
+  || !builtScannerCss.includes('html[data-theme="light"] body.admin-body .jb-gp-scanner')) {
+  throw new Error("JARVIS scanner regression: APK scanner stylesheet is missing explicit light and dark theme support.");
+}
+const builtVoiceScript = await readFile(join(webDir, "admin-ai.js"), "utf8");
+if (!builtVoiceScript.includes("native.requestPermission()")
+  || !builtVoiceScript.includes("native.startListening({ language: \"es-NI\" })")
+  || !builtVoiceScript.includes("permission?.permanentlyDenied")) {
+  throw new Error("JARVIS voice regression: APK Copilot is missing the Android microphone permission flow.");
 }
 
 // Prevent future Android packaging from silently dropping login/session controls
