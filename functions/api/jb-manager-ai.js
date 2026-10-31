@@ -257,8 +257,12 @@ export async function onRequestPost({ request, env }) {
           }]
         }],
         generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema,
+          responseFormat: {
+            text: {
+              mimeType: "application/json",
+              schema: responseSchema
+            }
+          },
           maxOutputTokens: 1800
         }
       })
