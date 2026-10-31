@@ -189,10 +189,12 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         candidate.price_nio != null ? "C$ " + Number(candidate.price_nio).toFixed(2) : ""].filter(Boolean);
       price.textContent = "Precio detectado: " + (amounts.join(" · ") || "No identificado");
       const confidence = document.createElement("small");
+      confidence.className = "jb-gp-candidate-meta jb-gp-candidate-confidence";
       const attemptedCount = Array.isArray(candidate.attempted_fields) ? candidate.attempted_fields.length : 8;
       const groundedCount = Array.isArray(candidate.grounded_fields) ? candidate.grounded_fields.length : 0;
       confidence.textContent = "Respaldo OCR comprobado: " + groundedCount + "/" + attemptedCount + " dato(s) · Captura " + (candidate.source_observation || "—");
       const evidence = document.createElement("small");
+      evidence.className = "jb-gp-candidate-meta jb-gp-candidate-evidence";
       evidence.textContent = candidate.evidence ? "Fragmento OCR verificado: " + candidate.evidence : "Sin fragmento OCR verificable.";
       const warning = document.createElement("small");
       warning.className = "jb-gp-candidate-warning";
