@@ -282,11 +282,24 @@ export async function onRequestPost({ request, env }) {
     attempts += 1;
     const url = "https://generativelanguage.googleapis.com/v1beta/models/" +
       candidate.name + ":generateContent";
-    let candidateResponse = await fetch(url, {
-      method: "POST",
-      headers: geminiHeaders,
-      body: JSON.stringify(geminiRequestBody(candidate.useSchema))
-    });
+    let candidateResponse;
+    try {
+      candidateResponse = await fetch(url, {
+        method: "POST",
+        headers: geminiHeaders,
+        body: JSON.stringify(geminiRequestBody(candidate.useSchema))
+      });
+    } catch (error) {
+      lastGeminiError = {
+        httpStatus: 0,
+        apiStatus: "NETWORK_ERROR",
+        message: cleanText(error?.message || "Network request failed", 320),
+        model: candidate.name
+      };
+      console.warn("[JB Copilot] Gemini network error; switching to fallback",
+        JSON.stringify({ model: candidate.name, message: lastGeminiError.message }));
+      continue;
+    }
 
     // The full catalogue schema is optional. If it is rejected, retry this
     // model once in plain JSON mode before switching models.
@@ -296,16 +309,31 @@ export async function onRequestPost({ request, env }) {
       console.warn("[JB Copilot] Structured response schema rejected; retrying JSON mode",
         cleanText(schemaError?.error?.message, 240));
       attempts += 1;
-      candidateResponse = await fetch(url, {
-        method: "POST",
-        headers: geminiHeaders,
-        body: JSON.stringify(geminiRequestBody(false))
-      });
+      try {
+        candidateResponse = await fetch(url, {
+          method: "POST",
+          headers: geminiHeaders,
+          body: JSON.stringify(geminiRequestBody(false))
+        });
+      } catch (error) {
+        lastGeminiError = {
+          httpStatus: 0,
+          apiStatus: "NETWORK_ERROR",
+          message: cleanText(error?.message || "Network request failed", 320),
+          model: candidate.name
+        };
+        console.warn("[JB Copilot] Gemini JSON-mode network error; switching to fallback",
+          JSON.stringify({ model: candidate.name, message: lastGeminiError.message }));
+        continue;
+      }
     }
 
     if (candidateResponse.ok) {
       geminiResponse = candidateResponse;
       selectedModel = candidate.name;
+      if (selectedModel !== modelPlan[0].name) {
+        console.warn("[JB Copilot] Fallback model handled the request", selectedModel);
+      }
       break;
     }
 
@@ -382,7 +410,12 @@ export async function onRequestPost({ request, env }) {
     return response(status, {
       ok: false,
       error,
-      detail: [apiStatus, apiMessage].filter(Boolean).join(": ").slice(0, 320)
+      detail: [
+        lastGeminiError?.model || selectedModel,
+        apiStatus,
+        apiMessage,
+        "Modelos intentados: " + modelPlan.slice(0, Math.min(modelPlan.length, attempts)).map(item => item.name).join(", ")
+      ].filter(Boolean).join(": ").slice(0, 480)
     }, origin);
   }
 
