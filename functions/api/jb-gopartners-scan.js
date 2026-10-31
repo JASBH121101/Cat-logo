@@ -1,6 +1,6 @@
 const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
-const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
+const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://localhost", "http://localhost:8788", "http://127.0.0.1:8788"]);
 const buckets = new Map();
 
 function reply(status, payload, origin) {
