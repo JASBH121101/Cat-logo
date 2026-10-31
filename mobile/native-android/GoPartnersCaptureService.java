@@ -233,8 +233,13 @@ public class GoPartnersCaptureService extends Service {
         Bitmap padded = Bitmap.createBitmap(paddedWidth, height, Bitmap.Config.ARGB_8888);
         buffer.rewind();
         padded.copyPixelsFromBuffer(buffer);
-        Bitmap cropped = Bitmap.createBitmap(padded, 0, 0, width, height);
-        padded.recycle();
+        Bitmap cropped;
+        if (paddedWidth == width) {
+            cropped = padded;
+        } else {
+            cropped = Bitmap.createBitmap(padded, 0, 0, width, height);
+            padded.recycle();
+        }
 
         int maxWidth = 1280;
         if (cropped.getWidth() > maxWidth) {
