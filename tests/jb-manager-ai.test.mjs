@@ -134,3 +134,42 @@ test("JB Copilot allows the Capacitor Android origin and handles blocked microph
   assert.match(assistant, /Abrir permisos del micrófono/);
   assert.match(css, /\.jb-ai-permission-settings/);
 });
+
+
+const jbAiEndpoint = await import(
+  "data:text/javascript;base64," + Buffer.from(endpoint, "utf8").toString("base64")
+);
+
+test("JB Copilot CORS preflight accepts GitHub Pages and the Android Capacitor origin", async () => {
+  for (const origin of ["https://jasbh121101.github.io", "https://localhost"]) {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "OPTIONS",
+      headers: {
+        Origin: origin,
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "authorization,content-type"
+      }
+    });
+    const response = await jbAiEndpoint.onRequestOptions({ request });
+    assert.equal(response.status, 204, origin);
+    assert.equal(response.headers.get("Access-Control-Allow-Origin"), origin);
+    assert.match(response.headers.get("Access-Control-Allow-Methods") || "", /POST/);
+    assert.match(response.headers.get("Access-Control-Allow-Headers") || "", /Authorization/i);
+  }
+});
+
+test("JB Copilot POST handler is reached and returns authentication_required, not 405", async () => {
+  const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+    method: "POST",
+    headers: {
+      Origin: "https://localhost",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ message: "diagnostic" })
+  });
+  const response = await jbAiEndpoint.onRequestPost({ request, env: {} });
+  const payload = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(payload.error, "authentication_required");
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://localhost");
+});
