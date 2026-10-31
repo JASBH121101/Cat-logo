@@ -281,9 +281,11 @@ a { color: inherit; }
   justify-content: center;
   gap: 15px;
   width: min(100%, 330px);
+  height: 55px;
   min-height: 55px;
+  flex: 0 0 55px;
   margin-top: 22px;
-  padding: 13px 23px;
+  padding: 0 23px;
   border: 1px solid rgba(255,255,255,.6);
   border-radius: 999px;
   color: #fff8e9;
@@ -371,7 +373,7 @@ a { color: inherit; }
   .world-emblem { width: 68px; }
   .world-title { font-size: clamp(27px, 3vw, 39px); }
   .world-copy { margin-top: 10px; line-height: 1.55; }
-  .world-cta { margin-top: 14px; min-height: 48px; }
+  .world-cta { margin-top: 14px; }
   .collections-footer { bottom: 8px; }
 }
 @media (max-width: 760px) {
@@ -414,7 +416,7 @@ a { color: inherit; }
   .world-title { font-size: clamp(31px, 8vw, 42px); }
   .world-eyebrow { margin-top: 9px; font-size: 9px; letter-spacing: .19em; }
   .world-copy { margin-top: 11px; font-size: 13px; line-height: 1.65; }
-  .world-cta { width: min(100%, 360px); min-height: 52px; margin-top: 18px; font-size: 10px; }
+  .world-cta { width: min(100%, 360px); height: 52px; min-height: 52px; flex-basis: 52px; margin-top: 18px; font-size: 10px; }
   .collections-footer { position: relative; right: auto; bottom: auto; left: auto; min-height: 42px; padding: 11px 14px; background: #070d19; }
 }
 @media (max-width: 390px) {
@@ -578,7 +580,9 @@ a { color: inherit; }
   }
   .world-cta {
     width: min(100%, 340px);
+    height: 43px;
     min-height: 43px;
+    flex-basis: 43px;
     margin-top: 11px;
     padding: 10px 14px;
     font-size: 9px;
