@@ -16,6 +16,15 @@ function reply(status, payload, origin) {
 function clean(value, max = 2400) {
   return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
+function cleanOcrText(value, max = 2200) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ")
+    .split(/\r?\n/)
+    .map(line => line.replace(/[ \t]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, max);
+}
 function limited(request) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown", now = Date.now();
   const bucket = buckets.get(ip);
@@ -41,7 +50,7 @@ async function authorizeAdmin(token) {
 const SCANNER_FIELD_LABELS = {
   product_name: "nombre", brand: "marca", model: "modelo", category: "categoría",
   ram: "RAM", storage: "almacenamiento", color: "color",
-  price_usd: "precio USD", price_nio: "precio NIO"
+  price_usd: "precio USD", price_nio: "precio NIO", availability: "disponibilidad"
 };
 
 function normalizeOcrMatch(value) {
@@ -138,22 +147,22 @@ function findScannerEvidence(source, item) {
     .sort((a, b) => normalizeOcrMatch(b).length - normalizeOcrMatch(a).length);
   if (!identities.length) return "";
 
-  const suppliedQuote = clean(item?.evidence, 240);
+  const suppliedQuote = clean(item?.evidence, 1200);
   const suppliedSpan = findOcrSpan(source, suppliedQuote);
   if (suppliedSpan) {
     const quote = String(source).slice(suppliedSpan.start, suppliedSpan.end);
     if (identities.some(identity => ocrContains(quote, identity))) {
-      const start = Math.max(0, suppliedSpan.start - 55);
-      const end = Math.min(String(source).length, Math.max(suppliedSpan.end + 180, start + 240));
-      return clean(String(source).slice(start, end), 240);
+      const start = Math.max(0, suppliedSpan.start - 80);
+      const end = Math.min(String(source).length, Math.max(suppliedSpan.end + 1000, start + 1080));
+      return cleanOcrText(String(source).slice(start, end), 1200);
     }
   }
 
   const anchor = identities.map(identity => findOcrMatch(source, identity)).find(Boolean);
   if (!anchor) return "";
-  const start = Math.max(0, anchor.start - 55);
-  const end = Math.min(String(source).length, Math.max(anchor.end + 180, start + 240));
-  return clean(String(source).slice(start, end), 240);
+  const start = Math.max(0, anchor.start - 80);
+  const end = Math.min(String(source).length, Math.max(anchor.end + 1000, start + 1080));
+  return cleanOcrText(String(source).slice(start, end), 1200);
 }
 
 function parseOcrAmount(raw) {
@@ -181,7 +190,7 @@ function hasOcrPriceEvidence(source, amount, currency) {
   const text = String(source ?? "");
   const amountPattern = /\d{1,3}(?:[,. ]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?/g;
   const currencyPattern = currency === "USD"
-    ? /US\s*\$|\bUSD\b|d[oó]lares?/ig
+    ? /US\s*\$|\bUSD\b|d[oó]lares?|(?<!C)\$/ig
     : /C\s*\$|\bNIO\b|c[oó]rdobas?/ig;
   const currencies = [...text.matchAll(currencyPattern)];
   const amounts = [...text.matchAll(amountPattern)];
@@ -283,6 +292,16 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
       color: verifiedText("color", 50),
       price_usd: verifiedPrice("price_usd", "USD"),
       price_nio: verifiedPrice("price_nio", "NIO"),
+      availability: (() => {
+        const raw = String(item.availability || "").trim().toLowerCase();
+        if (raw === "unknown") return raw;
+        const markers = {
+          available: /\bdisponible\b/i,
+          on_request: /\bbajo\s+pedido\b/i,
+          unavailable: /\bno\s+disponible\b/i
+        };
+        return markers[raw]?.test(evidence) ? raw : "unknown";
+      })(),
       confidence: attemptedFields.length ? groundedFields.length / attemptedFields.length : 0,
       grounded_fields: groundedFields,
       attempted_fields: attemptedFields,
@@ -328,12 +347,13 @@ const responseSchema = {
           color: { type: "string" },
           price_usd: { type: ["number", "null"] },
           price_nio: { type: ["number", "null"] },
+          availability: { type: "string", enum: ["available", "on_request", "unavailable", "unknown"] },
           confidence: { type: "number" },
           evidence: { type: "string" },
           notes: { type: "array", items: { type: "string" } }
         },
         required: ["source_observation", "product_name", "brand", "model", "category", "catalog_type",
-          "ram", "storage", "color", "price_usd", "price_nio", "confidence", "evidence", "notes"]
+          "ram", "storage", "color", "price_usd", "price_nio", "availability", "confidence", "evidence", "notes"]
       }
     },
     session_notes: { type: "array", items: { type: "string" } }
@@ -370,7 +390,7 @@ export async function onRequestPost({ request, env }) {
   }
   const observations = body.observations.map((item, index) => ({
     index: Number.isInteger(item?.index) ? item.index : index + 1,
-    captured_at: clean(item?.capturedAt, 40), text: clean(item?.text, 1200)
+    captured_at: clean(item?.capturedAt, 40), text: cleanOcrText(item?.text, 2200)
   })).filter(item => item.text.length >= 8);
   const total = observations.reduce((sum, item) => sum + item.text.length, 0);
   if (!observations.length || total > 100000) return reply(400, { ok: false, error: "insufficient_or_excessive_ocr_text" }, origin);
@@ -388,6 +408,7 @@ export async function onRequestPost({ request, env }) {
     "Cada texto OBSERVACIÓN lleva un índice entero de 1 a N. source_observation debe copiar exactamente ese índice; nunca uses cero ni inventes un índice.",
     "Transcribí product_name, brand, model y las variantes tal como aparecen. No normalices ni corrijas silenciosamente la ortografía del OCR.",
     "Incluí una fila si la identidad del producto es legible aunque falten precio, RAM, almacenamiento o color. No descartes un producto solo por carecer de precio.",
+    "Detectá disponibilidad: si aparece DISPONIBLE usa available; si aparece BAJO PEDIDO usa on_request; si aparece explícitamente NO DISPONIBLE usa unavailable; si no hay etiqueta clara usa unknown. No confundas disponibilidad general de la ficha con una variante distinta si la pantalla la identifica por separado.",
     "Leé líneas consecutivas como parte de la misma ficha cuando la pantalla muestre un título, modelo, configuración y precio distribuidos verticalmente.",
     "evidence debe ser una cita literal y breve de la observación correspondiente, idealmente incluyendo el nombre/modelo y la línea de configuración si aparecen.",
     "confidence debe estar entre 0 y 1. No infieras una marca o modelo a partir de una categoría genérica."
