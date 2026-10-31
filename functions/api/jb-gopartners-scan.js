@@ -203,17 +203,33 @@ export function groundScannerProducts(rawProducts, observations) {
 }
 
 const responseSchema = {
-  type: "OBJECT",
+  type: "object",
   properties: {
-    products: { type: "ARRAY", items: { type: "OBJECT", properties: {
-      source_observation: { type: "INTEGER" }, product_name: { type: "STRING" }, brand: { type: "STRING" },
-      model: { type: "STRING" }, category: { type: "STRING" },
-      catalog_type: { type: "STRING", enum: ["technology", "perfumery", "unknown"] },
-      ram: { type: "STRING" }, storage: { type: "STRING" }, color: { type: "STRING" },
-      price_usd: { type: "NUMBER", nullable: true }, price_nio: { type: "NUMBER", nullable: true },
-      confidence: { type: "NUMBER" }, evidence: { type: "STRING" }, notes: { type: "ARRAY", items: { type: "STRING" } }
-    }, required: ["source_observation", "product_name", "brand", "model", "category", "catalog_type", "ram", "storage", "color", "price_usd", "price_nio", "confidence", "evidence", "notes"] } },
-    session_notes: { type: "ARRAY", items: { type: "STRING" } }
+    products: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          source_observation: { type: "integer" },
+          product_name: { type: "string" },
+          brand: { type: "string" },
+          model: { type: "string" },
+          category: { type: "string" },
+          catalog_type: { type: "string", enum: ["technology", "perfumery", "unknown"] },
+          ram: { type: "string" },
+          storage: { type: "string" },
+          color: { type: "string" },
+          price_usd: { type: ["number", "null"] },
+          price_nio: { type: ["number", "null"] },
+          confidence: { type: "number" },
+          evidence: { type: "string" },
+          notes: { type: "array", items: { type: "string" } }
+        },
+        required: ["source_observation", "product_name", "brand", "model", "category", "catalog_type",
+          "ram", "storage", "color", "price_usd", "price_nio", "confidence", "evidence", "notes"]
+      }
+    },
+    session_notes: { type: "array", items: { type: "string" } }
   },
   required: ["products", "session_notes"]
 };
@@ -265,23 +281,170 @@ export async function onRequestPost({ request, env }) {
     "confidence debe estar entre 0 y 1. evidence debe ser una cita breve del OCR que respalde el producto o precio."
   ].join(" ");
   const content = observations.map(item => "OBSERVACIÓN " + item.index + " (" + item.captured_at + "):\n" + item.text).join("\n\n---\n\n");
-  let upstream;
-  try {
-    upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
-      encodeURIComponent(env.GEMINI_API_KEY), {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: instruction }] },
-        contents: [{ role: "user", parts: [{ text: "Extraé los productos de estas observaciones OCR:\n\n" + content }] }],
-        generationConfig: { temperature: 0.1, responseMimeType: "application/json", responseSchema, maxOutputTokens: 6500 }
-      })
-    });
-  } catch { return reply(502, { ok: false, error: "gemini_unreachable" }, origin); }
+  const geminiHeaders = {
+    "Content-Type": "application/json",
+    "x-goog-api-key": env.GEMINI_API_KEY
+  };
+  const geminiContents = {
+    systemInstruction: { parts: [{ text: instruction }] },
+    contents: [{ role: "user", parts: [{ text: "Extraé los productos de estas observaciones OCR:\n\n" + content }] }]
+  };
+  function geminiRequestBody(useSchema) {
+    const generationConfig = useSchema
+      ? {
+          responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: responseSchema } },
+          maxOutputTokens: 6500
+        }
+      : { responseMimeType: "application/json", maxOutputTokens: 6500 };
+    return { ...geminiContents, generationConfig };
+  }
+
+  const modelPlan = [
+    { name: "gemini-3.8-flash", useSchema: true },
+    { name: "gemini-3.6-flash", useSchema: false },
+    { name: "gemini-3.5-flash-lite", useSchema: false }
+  ];
+  let upstream = null;
+  let selectedModel = "";
+  let lastGeminiError = null;
+  let attempts = 0;
+  const attemptedModels = [];
+
+  for (const candidate of modelPlan) {
+    attemptedModels.push(candidate.name);
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" +
+      candidate.name + ":generateContent";
+    let candidateResponse;
+    attempts += 1;
+    try {
+      candidateResponse = await fetch(url, {
+        method: "POST",
+        headers: geminiHeaders,
+        body: JSON.stringify(geminiRequestBody(candidate.useSchema))
+      });
+    } catch (error) {
+      lastGeminiError = {
+        httpStatus: 0,
+        apiStatus: "NETWORK_ERROR",
+        message: clean(error?.message || "Network request failed", 320),
+        model: candidate.name
+      };
+      console.warn("[JB Scanner] Gemini network error; trying fallback", JSON.stringify(lastGeminiError));
+      continue;
+    }
+
+    if (!candidateResponse.ok && candidateResponse.status === 400 && candidate.useSchema) {
+      let schemaError = {};
+      try { schemaError = await candidateResponse.clone().json(); } catch {}
+      console.warn("[JB Scanner] Structured schema rejected; retrying JSON mode",
+        clean(schemaError?.error?.message, 240));
+      attempts += 1;
+      try {
+        candidateResponse = await fetch(url, {
+          method: "POST",
+          headers: geminiHeaders,
+          body: JSON.stringify(geminiRequestBody(false))
+        });
+      } catch (error) {
+        lastGeminiError = {
+          httpStatus: 0,
+          apiStatus: "NETWORK_ERROR",
+          message: clean(error?.message || "Network request failed", 320),
+          model: candidate.name
+        };
+        console.warn("[JB Scanner] Gemini JSON-mode network error; trying fallback",
+          JSON.stringify(lastGeminiError));
+        continue;
+      }
+    }
+
+    if (candidateResponse.ok) {
+      upstream = candidateResponse;
+      selectedModel = candidate.name;
+      if (selectedModel !== modelPlan[0].name) {
+        console.warn("[JB Scanner] Fallback model handled OCR extraction", selectedModel);
+      }
+      break;
+    }
+
+    let candidateError = {};
+    try { candidateError = await candidateResponse.clone().json(); } catch {}
+    const apiError = candidateError?.error && typeof candidateError.error === "object"
+      ? candidateError.error : {};
+    lastGeminiError = {
+      httpStatus: candidateResponse.status,
+      apiStatus: clean(apiError.status, 80),
+      message: clean(apiError.message, 420),
+      model: candidate.name
+    };
+    const transient = [500, 502, 503, 504].includes(candidateResponse.status) ||
+      (candidateResponse.status === 404 && /model|not found/i.test(lastGeminiError.message));
+    if (transient && modelPlan.indexOf(candidate) < modelPlan.length - 1) {
+      console.warn("[JB Scanner] Gemini model unavailable; switching to fallback",
+        JSON.stringify({ model: candidate.name, httpStatus: candidateResponse.status, apiStatus: lastGeminiError.apiStatus }));
+      continue;
+    }
+    upstream = candidateResponse;
+    break;
+  }
+
+  if (!upstream) {
+    const detail = [
+      lastGeminiError?.model,
+      lastGeminiError?.apiStatus,
+      lastGeminiError?.message,
+      "Modelos intentados: " + attemptedModels.join(", ")
+    ].filter(Boolean).join(" · ").slice(0, 520);
+    console.error("[JB Scanner] No Gemini model completed the OCR request", detail);
+    return reply(503, { ok: false, error: "gemini_temporarily_unavailable", detail }, origin);
+  }
+
   let result;
-  try { result = await upstream.json(); } catch { return reply(502, { ok: false, error: "gemini_invalid_response" }, origin); }
-  if (!upstream.ok) return reply(upstream.status === 429 ? 429 : 502, {
-    ok: false, error: upstream.status === 429 ? "gemini_quota_exhausted" : "gemini_request_failed"
-  }, origin);
+  try { result = await upstream.json(); }
+  catch {
+    console.error("[JB Scanner] Gemini returned a non-JSON response", upstream.status, selectedModel);
+    return reply(502, { ok: false, error: "gemini_invalid_response", detail: "Modelo " + selectedModel }, origin);
+  }
+  if (!upstream.ok) {
+    const apiError = result?.error && typeof result.error === "object" ? result.error : {};
+    const apiStatus = clean(apiError.status, 80) || lastGeminiError?.apiStatus || "";
+    const apiMessage = clean(apiError.message, 420) || lastGeminiError?.message || "";
+    const normalizedMessage = apiMessage.toLowerCase();
+    let error = "gemini_request_failed";
+    let status = 502;
+    if (upstream.status === 429) {
+      error = "gemini_quota_exhausted";
+      status = 429;
+    } else if (upstream.status === 402 ||
+      (apiStatus === "FAILED_PRECONDITION" && /billing|payment|prepay|free tier/.test(normalizedMessage))) {
+      error = "gemini_billing_required";
+      status = 503;
+    } else if (upstream.status === 401 || upstream.status === 403) {
+      error = "gemini_api_access_denied";
+      status = 503;
+    } else if (upstream.status === 404) {
+      error = "gemini_model_unavailable";
+      status = 503;
+    } else if (upstream.status === 400) {
+      error = "gemini_invalid_request";
+      status = 502;
+    } else if ([408, 500, 502, 503, 504].includes(upstream.status)) {
+      error = "gemini_temporarily_unavailable";
+      status = 503;
+    }
+    const detail = [
+      selectedModel || lastGeminiError?.model,
+      "HTTP " + upstream.status,
+      apiStatus,
+      apiMessage
+    ].filter(Boolean).join(" · ").slice(0, 520);
+    console.error("[JB Scanner] Gemini OCR request failed", JSON.stringify({
+      model: selectedModel || lastGeminiError?.model || "unknown",
+      attempts, httpStatus: upstream.status, apiStatus, message: apiMessage.slice(0, 240)
+    }));
+    return reply(status, { ok: false, error, detail }, origin);
+  }
+
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
   let parsed;
   try { parsed = JSON.parse(generated); } catch { return reply(502, { ok: false, error: "gemini_unstructured_response" }, origin); }
