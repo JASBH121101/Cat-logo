@@ -586,9 +586,13 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       renderReview();
       const timings = payload.timings_ms && typeof payload.timings_ms === "object" ? payload.timings_ms : {};
       const totalSeconds = Number(timings.total) / 1000;
-      const timingNote = Number.isFinite(totalSeconds) && totalSeconds > 0
-        ? " · Análisis del servidor: " + totalSeconds.toFixed(1) + " s"
-        : "";
+      const geminiSeconds = Number(timings.gemini) / 1000;
+      const groundingMs = Number(timings.grounding);
+      const timingParts = [];
+      if (Number.isFinite(totalSeconds) && totalSeconds > 0) timingParts.push("servidor " + totalSeconds.toFixed(1) + " s");
+      if (Number.isFinite(geminiSeconds) && geminiSeconds >= 0) timingParts.push("Gemini " + geminiSeconds.toFixed(1) + " s");
+      if (Number.isFinite(groundingMs) && groundingMs >= 0) timingParts.push("validación OCR " + Math.round(groundingMs) + " ms");
+      const timingNote = timingParts.length ? " · " + timingParts.join(" · ") : "";
       const cleared = await native.clearScan();
       if (cleared?.cleared !== true) {
         throw new Error("Los productos quedaron listos para revisión, pero Android no confirmó la eliminación del OCR temporal.");
