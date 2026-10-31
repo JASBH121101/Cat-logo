@@ -4,18 +4,22 @@ The scanner is a native Capacitor plugin used by the JB Manager Android APK.
 
 ## Runtime flow
 
-1. The administrator starts a scan from the authenticated JB Manager panel.
-2. `GoPartnersScannerPlugin` requests Android's system MediaProjection consent.
-3. `GoPartnersCaptureService` runs as a foreground media-projection service and publishes a persistent notification with a stop action.
-4. Frames are held only in RAM, sampled approximately every 1.9 seconds, downscaled for OCR, and processed locally with bundled ML Kit Latin text recognition.
-5. Temporary OCR observations are held in the static `GoPartnersScanSession` buffer (maximum 80 observations). No bitmap, screenshot, video, or OCR text is written to files or SharedPreferences.
-6. The administrator stops the scan and chooses Finalizar y revisar. Only the bounded OCR text is then sent to the authenticated Cloudflare Function; images are never uploaded.
-7. The browser-side scanner proposes matches and asks for duplicate confirmation. Provider prices are staged in the existing private provider-review dialog. The dialog is opened first so its selected product configuration rows exist before exact RAM/storage matching. No catalog write or public-price change occurs from the scanner itself.
+1. The administrator starts a scan from the authenticated JB Copilot conversation.
+2. If needed, `GoPartnersScannerPlugin` asks Android once for the special "Display over other apps" permission. The app then requests Android's system MediaProjection consent for each scan session.
+3. `GoPartnersCaptureService` runs as a foreground media-projection service and publishes a persistent notification. `GoPartnersOverlayService` shows a small draggable JARVIS control above Go Partners.
+4. Tapping the floating control opens an Android confirmation. Choosing "Finalizar y revisar" marks the handoff, returns the existing JB Manager task to the foreground, and lets the WebView stop capture and run the same review flow automatically.
+5. Frames are held only in RAM, sampled approximately every 1.9 seconds, downscaled for OCR, and processed locally with bundled ML Kit Latin text recognition.
+6. Temporary OCR observations are held in the static `GoPartnersScanSession` buffer (maximum 80 observations). No bitmap, screenshot, video, or OCR text is written to files or SharedPreferences.
+7. Only the bounded OCR text is sent to the authenticated Cloudflare Function; images are never uploaded. The results and duplicate confirmation appear inside the Copilot conversation.
+8. The browser-side scanner proposes matches and stages supplier prices in the existing private provider-review dialog. No catalog write or public-price change occurs from the scanner itself.
 
 ## Privacy and platform constraints
 
 - Android displays the system screen-capture permission for each new session.
 - The foreground notification remains visible while capture is active and offers a stop action.
+- The floating control requires Android's `SYSTEM_ALERT_WINDOW` special permission. It is shown only during an active scan, can be dragged out of the way, and contains only a JARVIS finish action; it does not read or alter provider app content.
+- The finish action requires explicit confirmation. On confirmation it sets an in-memory handoff flag and returns the existing JB Manager task to the foreground. The browser-side scanner then calls the same authenticated OCR review endpoint used by the in-app fallback.
+- If overlay permission is denied or the overlay service cannot start, the capture is stopped safely rather than leaving an unattended session.
 - An unexpected MediaProjection stop or service destruction marks the session as interrupted and preserves OCR observations already collected. An intentional stop initiated from the scanner does not mark the session as interrupted.
 - If capture is interrupted, the UI warns that results may be incomplete and allows the user to review the partial OCR or discard it.
 - The scanner must not attempt to bypass Android capture restrictions. If the provider app marks its window secure, Android may return a blank or blocked frame; stop and use the manual photo workflow instead.
