@@ -75,10 +75,10 @@ function normalizedOcrSource(source) {
   return { normalized, starts, ends };
 }
 
-function findOcrSpan(source, value) {
+function findOcrSpan(source, value, mappedSource = null) {
   const needle = normalizeOcrMatch(value);
   if (needle.length < 3) return null;
-  const mapped = normalizedOcrSource(source);
+  const mapped = mappedSource || normalizedOcrSource(source);
   const offset = mapped.normalized.indexOf(needle);
   if (offset < 0) return null;
   return { start: mapped.starts[offset], end: mapped.ends[offset + needle.length - 1], exact: true };
@@ -105,10 +105,10 @@ function boundedEditDistance(left, right, maximum) {
   return previous[right.length];
 }
 
-function findFuzzyOcrSpan(source, value) {
+function findFuzzyOcrSpan(source, value, mappedSource = null) {
   const needle = normalizeOcrMatch(value);
   if (needle.length < 10) return null;
-  const mapped = normalizedOcrSource(source);
+  const mapped = mappedSource || normalizedOcrSource(source);
   if (!mapped.normalized) return null;
   const maximum = needle.length >= 24 ? 2 : 1;
   let best = null;
@@ -133,22 +133,22 @@ function findFuzzyOcrSpan(source, value) {
   return best;
 }
 
-function findOcrMatch(source, value) {
-  return findOcrSpan(source, value) || findFuzzyOcrSpan(source, value);
+function findOcrMatch(source, value, mappedSource = null) {
+  return findOcrSpan(source, value, mappedSource) || findFuzzyOcrSpan(source, value, mappedSource);
 }
 
-function ocrContains(source, value) {
-  return Boolean(findOcrMatch(source, value));
+function ocrContains(source, value, mappedSource = null) {
+  return Boolean(findOcrMatch(source, value, mappedSource));
 }
 
-function findScannerEvidence(source, item) {
+function findScannerEvidence(source, item, mappedSource = null) {
   const identities = [item?.model, item?.product_name]
     .map(value => clean(value, 160)).filter(Boolean)
     .sort((a, b) => normalizeOcrMatch(b).length - normalizeOcrMatch(a).length);
   if (!identities.length) return "";
 
   const suppliedQuote = clean(item?.evidence, 1200);
-  const suppliedSpan = findOcrSpan(source, suppliedQuote);
+  const suppliedSpan = findOcrSpan(source, suppliedQuote, mappedSource);
   if (suppliedSpan) {
     const quote = String(source).slice(suppliedSpan.start, suppliedSpan.end);
     if (identities.some(identity => ocrContains(quote, identity))) {
@@ -158,7 +158,7 @@ function findScannerEvidence(source, item) {
     }
   }
 
-  const anchor = identities.map(identity => findOcrMatch(source, identity)).find(Boolean);
+  const anchor = identities.map(identity => findOcrMatch(source, identity, mappedSource)).find(Boolean);
   if (!anchor) return "";
   const start = Math.max(0, anchor.start - 80);
   const end = Math.min(String(source).length, Math.max(anchor.end + 1000, start + 1080));
@@ -210,6 +210,10 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
   const sources = (Array.isArray(observations) ? observations : [])
     .filter(item => Number.isInteger(item?.index) && typeof item?.text === "string" && item.text.trim().length >= 8);
   const observationByIndex = new Map(sources.map(item => [item.index, item]));
+  // Normalize each unique source once; candidate matching reuses these character maps.
+  const sourceMatchers = new Map(
+    [...observationByIndex.entries()].map(([index, item]) => [index, normalizedOcrSource(item.text)])
+  );
   const counters = {
     candidates_received: Array.isArray(rawProducts) ? rawProducts.length : 0,
     products_grounded: 0,
@@ -233,7 +237,7 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
     let matchedSource = null;
     let evidence = "";
     for (const source of orderedSources) {
-      const candidateEvidence = findScannerEvidence(source.text, item);
+      const candidateEvidence = findScannerEvidence(source.text, item, sourceMatchers.get(source.index));
       if (candidateEvidence) {
         matchedSource = source;
         evidence = candidateEvidence;
@@ -246,13 +250,14 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
     }
     if (requestedIndex !== matchedSource.index) counters.source_index_recovered += 1;
 
+    const evidenceMatcher = normalizedOcrSource(evidence);
     const groundedFields = [], attemptedFields = [], unverifiedFields = [], approximateFields = [];
     const verifiedText = (field, maxLength) => {
       const value = clean(item[field], maxLength);
       if (!value) return "";
       attemptedFields.push(field);
-      const exact = findOcrSpan(evidence, value);
-      const approximate = exact ? null : findFuzzyOcrSpan(evidence, value);
+      const exact = findOcrSpan(evidence, value, evidenceMatcher);
+      const approximate = exact ? null : findFuzzyOcrSpan(evidence, value, evidenceMatcher);
       if (exact || approximate) {
         groundedFields.push(field);
         if (approximate) {
@@ -281,7 +286,7 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
 
     const identity = [item?.model, item?.product_name].map(value => clean(value, 160))
       .filter(Boolean).sort((a, b) => normalizeOcrMatch(b).length - normalizeOcrMatch(a).length)[0] || "";
-    const identitySpan = findOcrMatch(evidence, identity);
+    const identitySpan = findOcrMatch(evidence, identity, evidenceMatcher);
     const availabilityMarkers = [...evidence.matchAll(/no\s+disponible|bajo\s+pedido|disponible/ig)];
     const nearestAvailability = availabilityMarkers.sort((a, b) =>
       Math.abs(a.index - (identitySpan?.start ?? 0)) - Math.abs(b.index - (identitySpan?.start ?? 0))
@@ -374,6 +379,7 @@ export async function onRequestOptions({ request }) {
   }});
 }
 export async function onRequestPost({ request, env }) {
+  const requestStartedAt = Date.now();
   const origin = request.headers.get("Origin") || "";
   if (!ALLOWED_ORIGINS.has(origin)) return reply(403, { ok: false, error: "origin_not_allowed" }, origin);
   if (limited(request)) return reply(429, { ok: false, error: "rate_limit_exceeded" }, origin);
@@ -381,7 +387,9 @@ export async function onRequestPost({ request, env }) {
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!token || token.length > 8192) return reply(401, { ok: false, error: "authentication_required" }, origin);
   let user;
+  const authorizationStartedAt = Date.now();
   try { user = await authorizeAdmin(token); } catch { return reply(503, { ok: false, error: "admin_verification_unavailable" }, origin); }
+  const authorizationMs = Date.now() - authorizationStartedAt;
   if (!user) return reply(403, { ok: false, error: "admin_only" }, origin);
   let body;
   try {
@@ -439,6 +447,7 @@ export async function onRequestPost({ request, env }) {
     return { ...geminiContents, generationConfig };
   }
 
+  const geminiStartedAt = Date.now();
   const modelPlan = [
     { name: "gemini-3.8-flash", useSchema: true },
     { name: "gemini-3.6-flash", useSchema: false },
@@ -528,6 +537,7 @@ export async function onRequestPost({ request, env }) {
     break;
   }
 
+  const geminiMs = Date.now() - geminiStartedAt;
   if (!upstream) {
     const detail = [
       lastGeminiError?.model,
@@ -588,10 +598,27 @@ export async function onRequestPost({ request, env }) {
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
   let parsed;
   try { parsed = JSON.parse(generated); } catch { return reply(502, { ok: false, error: "gemini_unstructured_response" }, origin); }
+  const groundingStartedAt = Date.now();
   const diagnostics = {};
   const products = groundScannerProducts(parsed.products, observations, diagnostics);
+  const groundingMs = Date.now() - groundingStartedAt;
+  const timingsMs = {
+    authorization: authorizationMs,
+    gemini: geminiMs,
+    grounding: groundingMs,
+    total: Date.now() - requestStartedAt
+  };
+  console.info("[JB Scanner] OCR analysis timings", JSON.stringify({
+    ...timingsMs,
+    model: selectedModel || "unknown",
+    attempts,
+    observations: observations.length,
+    characters: total,
+    candidatesReceived: diagnostics.candidates_received || 0,
+    productsGrounded: diagnostics.products_grounded || 0
+  }));
   return reply(200, {
-    ok: true, products, diagnostics,
+    ok: true, products, diagnostics, timings_ms: timingsMs,
     session_notes: Array.isArray(parsed.session_notes) ? parsed.session_notes.slice(0, 12).map(value => clean(value, 180)).filter(Boolean) : [],
     observations_processed: observations.length, screenshots_uploaded: false
   }, origin);
