@@ -962,3 +962,110 @@ body.admin-body #product-catalog-type {
 body.admin-body #form-title {
   scroll-margin-top: calc(var(--admin-header-height, 76px) + 18px);
 }
+
+
+/* JB MANAGER · persistent step navigation and readable named form actions. */
+html body.admin-body #product-form .product-form-section-nav {
+  position: sticky !important;
+  top: 8px !important;
+  z-index: 80 !important;
+  isolation: isolate;
+  padding: 8px !important;
+  margin: 0 0 17px !important;
+  border: 1px solid rgba(111, 133, 194, .34) !important;
+  border-radius: 15px !important;
+  background: rgba(248, 250, 255, .94) !important;
+  box-shadow: 0 8px 22px rgba(31, 50, 103, .12), 0 2px 5px rgba(31, 50, 103, .06) !important;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  scroll-margin-top: 10px;
+}
+html[data-theme="dark"] body.admin-body #product-form .product-form-section-nav {
+  border-color: rgba(91, 125, 196, .48) !important;
+  background: rgba(12, 23, 44, .94) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  margin-top: 24px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(111, 133, 194, .26) !important;
+  border-radius: 15px !important;
+  background: var(--surface, #f7f9ff) !important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action {
+  display: inline-flex !important;
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 48px !important;
+  max-height: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 9px 10px !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+  text-indent: 0 !important;
+}
+html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action svg {
+  flex: 0 0 19px !important;
+  width: 19px !important;
+  min-width: 19px !important;
+  height: 19px !important;
+  min-height: 19px !important;
+}
+html body.admin-body form#product-form .workflow-action-label {
+  display: inline;
+  min-width: 0;
+  font: inherit !important;
+  font-weight: 750 !important;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+}
+html[data-theme="dark"] body.admin-body form#product-form .form-actions.workflow-form-actions {
+  border-color: #334867 !important;
+  background: #101b30 !important;
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  html body.admin-body form#product-form .form-actions.workflow-form-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 760px) {
+  html body.admin-body #product-form .product-form-section-nav {
+    top: 6px !important;
+    gap: 6px !important;
+    margin-bottom: 13px !important;
+    padding: 6px !important;
+  }
+  html body.admin-body form#product-form .form-actions.workflow-form-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+  html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action {
+    min-height: 48px !important;
+    padding: 8px 9px !important;
+    font-size: 13px !important;
+  }
+  html body.admin-body form#product-form .form-actions.workflow-form-actions > button.workflow-action:last-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, 240px) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body.admin-body #product-form .product-form-section-nav {
+    scroll-behavior: auto;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
