@@ -1559,7 +1559,7 @@ async function handleBiometricSettingsToggle() {
         throw new Error("No se pudo recordar la sesión en este dispositivo. No se activó la huella.");
       }
     }
-    setStatus("Huella activada. Se solicitará al volver a abrir JB Manager.");
+    setStatus("Huella activada y sesión recordada en este dispositivo. Android pedirá la biometría al volver a abrir la APK.");
   } catch (error) {
     const messageText = error?.message || "No se pudo actualizar el desbloqueo biométrico.";
     if (error?.code === "BIOMETRIC_PASSWORD_FALLBACK" || error?.code === "BIOMETRIC_CANCELED") {
@@ -3025,14 +3025,24 @@ $("#login-remember-user")?.addEventListener("change", event => {
   );
 });
 
-$("#remember-user-toggle")?.addEventListener("click", () => {
+$("#remember-user-toggle")?.addEventListener("click", async () => {
   const nextEnabled = !isRememberedSessionEnabled();
+  const biometric = nativeBiometricApi();
+  if (!nextEnabled && biometric) {
+    try {
+      const status = await biometric.getStatus();
+      if (status?.enabled) await biometric.disable();
+    } catch (error) {
+      console.warn("No se pudo desactivar el desbloqueo biométrico al dejar de recordar la sesión.", error);
+    }
+  }
   setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminEmail());
   setStatus(
     nextEnabled
       ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
-      : "Dejaste de recordar este usuario. La sesión actual seguirá activa hasta que la cierres."
+      : "Dejaste de recordar este usuario. El desbloqueo con huella también quedó desactivado; la sesión actual seguirá activa hasta que la cierres."
   );
+  await syncBiometricControls();
 });
 
 $("#biometric-auth-toggle")?.addEventListener("click", () => {
