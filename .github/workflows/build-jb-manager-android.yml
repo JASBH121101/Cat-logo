@@ -1,0 +1,1135 @@
+name: Build JB Manager Collections APK
+# Build and sign the Android APK using the latest merged production source from main.
+# Rebuild after the mobile chat theme and sticky-header scroll fixes were merged.
+# Trigger update-compatible rebuild after the mobile variant theme fix was merged.
+# Trigger update-compatible rebuild with native microphone permission recovery and Copilot CORS fixes.
+# Include live handler-level Copilot preflight and POST regression checks from main.
+# Rebuild packaged Copilot client and native voice permissions for Gemini 3.8 migration.
+# Re-run after synchronizing the Copilot regression assertions with the current prompt.
+# Trigger update-compatible rebuild with trust-card alignment, chat data policy, and admin theme fixes.
+# Rebuild after confirming the background DownloadManager UX and recovery flow.
+# Rebuild APK with Gemini APPLICATION_JSON enum fix and visible Google diagnostics.
+# Rebuild APK with Copilot send timeout and disabled-button recovery.
+
+concurrency:
+  group: jb-manager-android-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+      - feature/jb-manager-android-apk
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Assemble latest main source with the Android build system
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPPORT_DIR="$RUNNER_TEMP/jb-manager-build-support"
+          mkdir -p "$SUPPORT_DIR"
+          cp -a mobile "$SUPPORT_DIR/mobile"
+          cp .github/workflows/build-jb-manager-android.yml "$SUPPORT_DIR/build-jb-manager-android.yml"
+          cp .github/android-signing-key-persisted "$SUPPORT_DIR/android-signing-key-persisted"
+          cp responsive-layout.css "$SUPPORT_DIR/responsive-layout.css"
+
+          git fetch origin main
+          git checkout -B android-source origin/main
+
+          cp -a "$SUPPORT_DIR/mobile" ./mobile
+          mkdir -p .github/workflows
+          cp "$SUPPORT_DIR/build-jb-manager-android.yml" .github/workflows/build-jb-manager-android.yml
+          cp "$SUPPORT_DIR/android-signing-key-persisted" .github/android-signing-key-persisted
+          cp "$SUPPORT_DIR/responsive-layout.css" responsive-layout.css
+
+          grep -Fq 'publicCatalogUrl: "https://jb-collections.pages.dev"' config.js
+          grep -Fq 'href="https://jb-collections.pages.dev/"' index.html
+          grep -Fq 'href="https://jb-collections.pages.dev/tecnologia/"' tecnologia/index.html
+          grep -Fq 'href="https://jb-collections.pages.dev/perfumeria/"' perfumeria/index.html
+          grep -Fq 'bottom: calc(23px + 48px + 14px)' ai-assistant.css
+          grep -Fq 'bottom: calc(max(23px, env(safe-area-inset-bottom, 0px)) + 48px + 14px)' ai-assistant.css
+          ! grep -Fq 'IS_READ_ONLY_VERCEL_PREVIEW' admin.js
+          grep -Fq 'const IS_READ_ONLY_PREVIEW' admin.js
+          grep -Fq '.back-to-top' theme-ui.css
+          grep -Fq 'data-ai-color-open' admin.js
+          grep -Fq '/api/color-assistant' admin.js
+          grep -Fq '.jb-color-ai-overlay' theme-ui.css
+          grep -Fq 'jb-manager-mobile-sidebar-stability' theme-ui.css
+          grep -Fq 'theme-ui.css?v=20261028-limited-edition-icons1' admin.html
+          grep -Fq 'admin-sidebar-scroll-locked' admin.js
+          grep -Fq 'html.admin-sidebar-scroll-locked' theme-ui.css
+          grep -Fq 'create table if not exists public.color_library' supabase/migrations/20261027015711_shared_color_library.sql
+          test -s functions/api/color-assistant.js
+          grep -Eq 'src="admin\.js\?v=[^"]+"' admin.html
+          grep -Eq 'href="admin-provider\.css\?v=[^"]+"' admin.html
+          grep -Fq 'data-color-ai-library-alias' admin.js
+          grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
+          grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
+          grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
+          grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
+          grep -Fq 'shared_library_match' functions/api/color-assistant.js
+          grep -Fq 'inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace' functions/api/color-assistant.js
+          echo "Latest main source includes persistent AI color knowledge, exact alias lookup, photo AI, shared library, and back-to-top controls."
+          test -s admin-gopartners-scanner.js
+          test -s admin-gopartners-scanner.css
+          test -s functions/api/jb-gopartners-scan.js
+          grep -Fq 'id="jb-gp-scanner"' admin.html
+          grep -Fq 'initGoPartnersScanner' admin.js
+          grep -Fq '/api/jb-gopartners-scan' admin-gopartners-scanner.js
+          grep -Fq 'openReviewFromScan' admin-provider.js
+          echo "Latest main source includes the JARVIS Go Partners scanner and private provider review bridge."
+
+      - name: Diagnose direct and Cloudflare APK download completeness
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.0.85"
+          direct_url="https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v${version}/JB-Manager-Collections.apk"
+          proxy_url="https://jb-collections.pages.dev/api/download/apk?version=${version}"
+          for source in direct proxy; do
+            if [ "$source" = "direct" ]; then url="$direct_url"; else url="$proxy_url"; fi
+            headers="$RUNNER_TEMP/jb-apk-${source}.headers"
+            body="$RUNNER_TEMP/jb-apk-${source}.apk"
+            status="$(curl --silent --show-error --location --max-time 120 --retry 4 --retry-all-errors --retry-delay 5 --retry-max-time 75 \
+              --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
+            size="$(wc -c < "$body" | tr -d ' ')"
+            echo "$source download: HTTP $status, $size bytes"
+            if [ "$status" != "200" ]; then
+              echo "$source response body:" >&2
+              head -c 1200 "$body" >&2 || true
+              echo >&2
+              exit 1
+            fi
+            python3 - "$body" "$source" <<'PY'
+          import sys
+          from pathlib import Path
+          path, source = sys.argv[1], sys.argv[2]
+          data = Path(path).read_bytes()
+          tail_start = max(0, len(data) - 65557)
+          eocd = data.rfind(bytes.fromhex("504b0506"), tail_start)
+          print(f"{source} ZIP diagnostics: bytes={len(data)}, head={data[:8].hex()}, eocd_index={eocd}, tail={data[-32:].hex()}")
+          if len(data) < 1_000_000 or len(data) > 52_428_800:
+              raise SystemExit(f"{source} response size outside APK limits")
+          if not data.startswith(b"PK"):
+              raise SystemExit(f"{source} response is not a ZIP/APK")
+          if eocd < 0:
+              raise SystemExit(f"{source} APK lacks ZIP end-of-central-directory")
+          PY
+            if [ "$source" = "proxy" ]; then
+              grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
+                echo "Cloudflare proxy did not return the Android package MIME type." >&2
+                exit 1
+              }
+            fi
+          done
+          echo "Both direct and Cloudflare APK download paths returned complete ZIP/APK bodies."
+
+      - name: Smoke-test live AI sales advisor
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/jb-ai-smoke.json"
+          status="$(curl --silent --show-error --location --max-time 90 \
+            --output "$body" --write-out "%{http_code}" \
+            -H "Origin: https://jb-collections.pages.dev" \
+            -H "Content-Type: application/json" \
+            --data '{"catalogType":"technology","message":"Busco un celular para juegos con presupuesto de US$250.","history":[]}' \
+            "https://jb-collections.pages.dev/api/assistant")"
+          if [ "$status" != "200" ]; then
+            echo "Live AI assistant returned HTTP $status:" >&2
+            head -c 1200 "$body" >&2 || true
+            echo >&2
+            exit 1
+          fi
+          python3 - "$body" <<'PY'
+          import json, sys
+          from pathlib import Path
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if not isinstance(data.get("reply"), str) or not data["reply"].strip():
+              raise SystemExit("AI assistant response is missing a human-readable reply.")
+          if not isinstance(data.get("recommendations"), list):
+              raise SystemExit("AI assistant response is missing the recommendations array.")
+          for item in data["recommendations"]:
+              if not isinstance(item, dict) or not item.get("id") or not item.get("name"):
+                  raise SystemExit("AI assistant returned an invalid recommendation.")
+          print(f"Live AI assistant responded successfully; validated {len(data['recommendations'])} catalogue recommendations.")
+          PY
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run scanner and product-form regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/jb-gopartners-scanner.test.mjs \
+            tests/admin-product-form-workflow.test.mjs \
+            tests/jb-manager-ai.test.mjs
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "ANDROID_HOME/ANDROID_SDK_ROOT is not configured on this runner." >&2
+            exit 1
+          fi
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Android sdkmanager was not found." >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Restore persistent Android debug signing key
+        uses: actions/cache@v4
+        id: android-signing-key
+        with:
+          path: ~/.android/debug.keystore
+          key: jb-manager-collections-debug-signing-v1-${{ runner.os }}
+
+      - name: Ensure stable Android signing key
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ -f "$HOME/.android/debug.keystore" ]; then
+            echo "Restored the existing signing key for update-compatible builds."
+          elif [ -f .github/android-signing-key-persisted ]; then
+            echo "ERROR: The saved signing key cache is missing. Refusing to generate a different key because it would block app updates." >&2
+            exit 1
+          else
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            echo "Created the initial persistent signing key; it will be cached after a successful build."
+          fi
+
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare a self-contained admin web bundle
+        env:
+          JB_MANAGER_VERSION: 1.0.${{ github.run_number }}
+        run: node mobile/prepare-web.mjs
+
+      - name: Verify Android system bars and header safe area
+        shell: bash
+        run: |
+          set -euo pipefail
+          require_text() {
+            local needle="$1"
+            local file="$2"
+            if ! grep -Fq -- "$needle" "$file"; then
+              echo "Missing expected text in $file: $needle" >&2
+              exit 1
+            fi
+          }
+          if grep -Fq 'padding-top: max(24px' mobile/www/admin.html; then
+            echo "Obsolete hard-coded Android safe-area padding is still present." >&2
+            exit 1
+          fi
+          require_text 'viewport-fit=cover' mobile/www/admin.html
+          require_text 'id="jb-manager-android-safe-area"' mobile/www/admin.html
+          require_text '--jb-manager-safe-top: var(--safe-area-inset-top' mobile/www/admin.html
+          require_text 'src="./jb-manager-system-bars.js"' mobile/www/admin.html
+          require_text '"insetsHandling": "css"' mobile/capacitor.config.json
+          require_text '"initialViewportFitValueHint": "cover"' mobile/capacitor.config.json
+          test -s mobile/www/jb-manager-system-bars.js || { echo "Missing bundled system bars bridge." >&2; exit 1; }
+          require_text '"@capacitor/local-notifications": "8.3.1"' mobile/package.json
+          require_text 'JBManagerNativeNotifications' mobile/native-notifications.js
+          require_text 'src="./jb-manager-native-notifications.js"' mobile/www/admin.html
+          test -s mobile/www/jb-manager-native-notifications.js || { echo "Missing bundled native notifications bridge." >&2; exit 1; }
+          require_text 'jb-manager-private-chat' mobile/www/admin-notifications.mjs
+          require_text 'admin-notifications.mjs?v=20261029-native-local-notifications1' mobile/www/admin.js
+          require_text 'Para recibir avisos con la app en segundo plano o cerrada hace falta configurar push nativo' mobile/www/admin.js
+          require_text 'compareVersions(latest.version, currentVersion) > 0' mobile/prepare-web.mjs
+          require_text 'state.installPrompted' mobile/prepare-web.mjs
+          require_text 'Android installer is the confirmation UI' mobile/prepare-web.mjs
+          echo "Android safe area, native notification bridge, shared logic, and updater recovery checks passed."
+
+      - name: Verify shared web assets match the browser source
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The APK must package the same business logic, Supabase config, and styles
+          # as the browser panel. Only the HTML shell/native bridges are platform-specific.
+          for file in admin.js admin-ai.js admin-notifications.mjs admin-provider.js admin-gopartners-scanner.js admin-gopartners-scanner.css app.js config.js perfumeria.js ui.js styles.css theme-ui.css brand-refresh.css dark-theme-redesign.css catalog-performance.css perfumeria.css technology-visual-refresh.css admin-workflow.css admin-bulk-import.css admin-provider.css admin-commission.css admin-desktop-typography.css admin-duplicate-detector.css responsive-layout.css; do
+            if ! cmp -s "$file" "mobile/www/$file"; then
+              echo "Shared source and APK bundle differ: $file" >&2
+              diff -u "$file" "mobile/www/$file" || true
+              exit 1
+            fi
+          done
+
+          for page in admin.html tecnologia/index.html perfumeria/index.html; do
+            test -s "mobile/www/$page" || {
+              echo "Missing shared page in APK bundle: $page" >&2
+              exit 1
+            }
+          done
+
+          for page in admin.html mobile/www/admin.html; do
+            grep -Fq 'id="dashboard-activity-list"' "$page" || {
+              echo "Recent activity widget is missing from $page." >&2
+              exit 1
+            }
+            grep -Fq 'id="dashboard-activity-refresh"' "$page" || {
+              echo "Recent activity refresh control is missing from $page." >&2
+              exit 1
+            }
+          done
+
+          grep -Fq 'updated_at || a.created_at' admin.js
+          grep -Fq 'catalog_events' app.js
+
+          # New shared AI color tools must be present in the web source copied into the APK.
+          grep -Fq 'data-ai-color-open' admin.js
+          grep -Fq '/api/color-assistant' admin.js
+          grep -Fq 'from("color_library")' admin.js
+          grep -Fq 'data-color-ai-library-alias' admin.js
+          grep -Fq 'saveColorToLibrary(colorToSave)' admin.js
+          grep -Eq 'src="admin\.js\?v=[^"]+"' admin.html
+          grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' admin.html
+          grep -Fq 'id="product-tag-limited-edition"' admin.html
+          grep -Fq 'product-tag-option-icon--tech' admin.html
+          grep -Fq 'product-tag-option-icon--perfume' admin.html
+          grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' theme-ui.css
+          grep -Fq 'function normalizedPerfumeProductTags(product)' perfumeria.js
+          grep -Fq 'AUTONOMÍA ACOTADA' functions/api/assistant.js
+          grep -Fq 'personal_data_not_needed' functions/api/assistant.js
+          grep -Fq 'containsPersonalInformation' ai-assistant.js
+          grep -Fq 'id="limited-edition-section"' tecnologia/index.html
+          grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' tecnologia/index.html
+          grep -Fq 'id="perfume-limited-edition-section"' perfumeria/index.html
+          grep -Fq 'function renderProductDuplicateSuggestions()' admin.js
+          grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' admin.js
+          grep -Fq '20261027-audit-cascade1' admin.html
+          grep -Fq 'loadSharedColorLibrary' functions/api/color-assistant.js
+          grep -Fq 'findSharedColorMatch' functions/api/color-assistant.js
+          grep -Fq 'selectRelevantLibraryEntries' functions/api/color-assistant.js
+          grep -Fq 'shared_library_match' functions/api/color-assistant.js
+          grep -Fq 'inline_data: { mime_type: match[1].toLowerCase(), data: match[2].replace' functions/api/color-assistant.js
+          grep -Fq '.jb-color-ai-overlay' theme-ui.css
+          test -s functions/api/color-assistant.js
+          echo "Shared AI color knowledge, manufacturer aliases, exact lookups, and photo endpoint are present."
+
+          # The product detail must package the same final gallery fix as the public source.
+          grep -Eq 'technology-visual-refresh\.css\?v=[^"]+' mobile/www/tecnologia/index.html
+          grep -Eq 'app\.js\?v=[^"]+' mobile/www/tecnologia/index.html
+          grep -Eq 'perfumeria\.css\?v=[^"]+' mobile/www/perfumeria/index.html
+          grep -Eq 'perfumeria\.js\?v=[^"]+' mobile/www/perfumeria/index.html
+          ! grep -Fq 'Explorar equipos' mobile/www/tecnologia/index.html
+          ! grep -Fq 'Explorar perfumería' mobile/www/perfumeria/index.html
+          grep -Fq 'Hero cleanup: remove the redundant scroll CTA' mobile/www/technology-visual-refresh.css
+          grep -Fq 'Editorial hero cleanup: the collection is already discoverable below' mobile/www/perfumeria.css
+          grep -Fq 'Softer editorial caption gradient' mobile/www/perfumeria.css
+          grep -Fq 'dialog-image-load-error' mobile/www/technology-visual-refresh.css
+          grep -Fq 'Gallery resilience: broken full-size images' mobile/www/app.js
+          grep -Fq 'mainImage.alt = photoLabel' mobile/www/app.js
+          grep -Fq 'function renderProductGallery(product, images, caption = "")' mobile/www/app.js
+          grep -Fq 'renderProductGallery(product, initialImages)' mobile/www/app.js
+          grep -Fq 'renderProductGallery(product, chosenImages, configuration)' mobile/www/app.js
+
+          for file in technology-visual-refresh.css app.js; do
+            if ! cmp -s "$file" "mobile/www/$file"; then
+              echo "Gallery fix in APK bundle differs from browser source: $file" >&2
+              diff -u "$file" "mobile/www/$file" || true
+              exit 1
+            fi
+          done
+
+          grep -Fq 'jb-manager-mobile-sidebar-stability' mobile/www/theme-ui.css
+          grep -Fq 'theme-ui.css?v=20261028-limited-edition-icons1' mobile/www/admin.html
+          grep -Eq 'href="admin-provider\.css\?v=[^"]+"' mobile/www/admin.html
+          grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' mobile/www/admin.html
+          grep -Fq 'id="product-tag-limited-edition"' mobile/www/admin.html
+          grep -Fq 'product-tag-option-icon--tech' mobile/www/admin.html
+          grep -Fq 'product-tag-option-icon--perfume' mobile/www/admin.html
+          grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' mobile/www/theme-ui.css
+          grep -Fq 'id="limited-edition-section"' mobile/www/tecnologia/index.html
+          grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' mobile/www/tecnologia/index.html
+          grep -Fq 'id="perfume-limited-edition-section"' mobile/www/perfumeria/index.html
+          grep -Fq 'function normalizedPerfumeProductTags(product)' mobile/www/perfumeria.js
+          grep -Fq 'function renderProductDuplicateSuggestions()' mobile/www/admin.js
+          grep -Fq 'document.body.classList.contains("admin-sidebar-open")' mobile/www/admin.html
+          grep -Fq 'sidebarClassObserver.observe(document.body' mobile/www/admin.html
+          grep -Fq 'updateButton.style.display = shouldHide ? "none" : "grid"' mobile/www/admin.html
+          grep -Fq 'admin-sidebar-scroll-locked' mobile/www/admin.js
+          grep -Fq 'html.admin-sidebar-scroll-locked' mobile/www/theme-ui.css
+          ! grep -Fq 'willChange: "transform"' mobile/www/admin.html
+          ! grep -Fq 'transform: "translateZ(0)"' mobile/www/admin.html
+          ! grep -Fq 'window.dispatchEvent(new Event("resize"))' mobile/www/admin.html
+          ! grep -Fq 'document.body.style.webkitTransform' mobile/www/admin.html
+          ! grep -Fq 'html.jb-manager-keyboard-open *' mobile/www/admin.html
+          grep -Fq 'function scheduleSync()' mobile/www/admin.html
+          echo "Browser source and APK bundle match, including gallery repair, admin features, catalogs, and mobile drawer stability."
+
+      - name: Create Android project
+        working-directory: mobile
+        run: npx cap add android
+
+      - name: Install native APK downloader
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          native_source = Path("mobile/native-android/ApkUpdaterPlugin.java")
+          if not native_source.exists():
+              raise SystemExit("Native APK updater source is missing.")
+          candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
+          if len(candidates) != 1:
+              raise SystemExit("Expected one MainActivity.java, found " + str(len(candidates)))
+          main_path = candidates[0]
+          source = main_path.read_text()
+          package_match = re.search(r"^package\s+([A-Za-z0-9_.]+);", source, re.M)
+          if not package_match:
+              raise SystemExit("Could not determine generated Android package.")
+          package_name = package_match.group(1)
+          plugin_text = re.sub(r"^package\s+[^;]+;", "package " + package_name + ";", native_source.read_text(), count=1, flags=re.M)
+          (main_path.parent / "ApkUpdaterPlugin.java").write_text(plugin_text)
+          if "registerPlugin(ApkUpdaterPlugin.class)" not in source:
+              needle = "super.onCreate(savedInstanceState);"
+              if needle in source:
+                  source = source.replace(needle, "registerPlugin(ApkUpdaterPlugin.class);\n        " + needle, 1)
+              else:
+                  class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
+                  if not class_open:
+                      raise SystemExit("Could not locate generated MainActivity class declaration.")
+                  source = source.replace("package " + package_name + ";", "package " + package_name + ";\n\nimport android.os.Bundle;", 1)
+                  class_open = re.search(r"public\s+class\s+MainActivity\s+extends\s+BridgeActivity\s*\{", source)
+                  method = (
+                      "\n    @Override\n"
+                      "    public void onCreate(Bundle savedInstanceState) {\n"
+                      "        registerPlugin(ApkUpdaterPlugin.class);\n"
+                      "        super.onCreate(savedInstanceState);\n"
+                      "    }\n"
+                  )
+                  source = source[:class_open.end()] + method + source[class_open.end():]
+              main_path.write_text(source)
+          manifest = Path("mobile/android/app/src/main/AndroidManifest.xml")
+          manifest_text = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
+          if permission not in manifest_text:
+              manifest_text = manifest_text.replace("<application", permission + "\n    <application", 1)
+          manifest.write_text(manifest_text)
+          print("Installed native DownloadManager bridge and APK-install permission.")
+          PY
+
+      - name: Install JARVIS Go Partners screen scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          native_dir = Path("mobile/native-android")
+          plugin_source = native_dir / "GoPartnersScannerPlugin.java"
+          service_source = native_dir / "GoPartnersCaptureService.java"
+          session_source = native_dir / "GoPartnersScanSession.java"
+          voice_source = native_dir / "JbVoiceInputPlugin.java"
+          if not plugin_source.is_file() or not service_source.is_file() or not session_source.is_file():
+              raise SystemExit("JARVIS screen scanner native sources are missing.")
+          if not voice_source.is_file():
+              raise SystemExit("JARVIS native voice input source is missing.")
+          voice_text = voice_source.read_text(encoding="utf-8")
+          for required in (
+              "requestPermissionForAlias",
+              "microphonePermissionCallback",
+              "openAppSettings",
+              "Settings.ACTION_APPLICATION_DETAILS_SETTINGS",
+          ):
+              if required not in voice_text:
+                  raise SystemExit("Native microphone plugin is missing required permission recovery: " + required)
+
+          candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
+          if len(candidates) != 1:
+              raise SystemExit("Expected one MainActivity.java for JARVIS registration.")
+          main_path = candidates[0]
+          source = main_path.read_text(encoding="utf-8")
+          package_match = re.search(r"^package\s+([A-Za-z0-9_.]+);", source, re.M)
+          if not package_match:
+              raise SystemExit("Could not determine Android package for JARVIS scanner.")
+          package_name = package_match.group(1)
+          package_dir = main_path.parent
+
+          for filename, native_file in (
+              ("GoPartnersScannerPlugin.java", plugin_source),
+              ("GoPartnersCaptureService.java", service_source),
+              ("GoPartnersScanSession.java", session_source),
+              ("JbVoiceInputPlugin.java", voice_source),
+          ):
+              content = re.sub(
+                  r"^package\s+[^;]+;",
+                  "package " + package_name + ";",
+                  native_file.read_text(encoding="utf-8"),
+                  count=1,
+                  flags=re.M,
+              )
+              (package_dir / filename).write_text(content, encoding="utf-8")
+
+          registrations = [
+              "registerPlugin(GoPartnersScannerPlugin.class)",
+              "registerPlugin(JbVoiceInputPlugin.class)",
+          ]
+          if any(registration not in source for registration in registrations):
+              if "super.onCreate(savedInstanceState);" not in source:
+                  raise SystemExit("Android MainActivity has no onCreate hook for native plugin registration.")
+              for registration in registrations:
+                  if registration not in source:
+                      source = source.replace(
+                          "super.onCreate(savedInstanceState);",
+                          registration + ";" + chr(10) + "        super.onCreate(savedInstanceState);",
+                          1
+                      )
+              main_path.write_text(source, encoding="utf-8")
+
+          manifest_path = Path("mobile/android/app/src/main/AndroidManifest.xml")
+          manifest = manifest_path.read_text(encoding="utf-8")
+          permissions = [
+              '<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
+              '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />',
+              '<uses-permission android:name="android.permission.RECORD_AUDIO" />',
+          ]
+          for permission in permissions:
+              if permission not in manifest:
+                  manifest = manifest.replace("<application", permission + chr(10) + "    <application", 1)
+          speech_query = (
+              '<queries><intent><action android:name="android.speech.RecognitionService" />'
+              '</intent></queries>'
+          )
+          if "android.speech.RecognitionService" not in manifest:
+              manifest = manifest.replace("<application", speech_query + chr(10) + "    <application", 1)
+          service = (
+              '<service android:name=".' + "GoPartnersCaptureService" + '" '
+              'android:exported="false" android:stopWithTask="false" '
+              'android:foregroundServiceType="mediaProjection" />'
+          )
+          if "GoPartnersCaptureService" not in manifest:
+              manifest = manifest.replace("</application>", "        " + service + "\n    </application>", 1)
+          manifest_path.write_text(manifest, encoding="utf-8")
+
+          gradle_path = Path("mobile/android/app/build.gradle")
+          gradle = gradle_path.read_text(encoding="utf-8")
+          dependency = "implementation 'com.google.mlkit:text-recognition:16.0.1'"
+          if dependency not in gradle:
+              match = re.search(r"dependencies\s*\{", gradle)
+              if not match:
+                  raise SystemExit("Could not find app-level Gradle dependencies block for ML Kit.")
+              gradle = gradle[:match.end()] + "\n    " + dependency + gradle[match.end():]
+              gradle_path.write_text(gradle, encoding="utf-8")
+
+          print("Installed JARVIS MediaProjection/OCR scanner and native Android microphone/voice recognition plugin.")
+          PY
+
+      - name: Set Android app version
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("mobile/android/app/build.gradle")
+          source = path.read_text()
+          old_code = "versionCode 1"
+          old_name = 'versionName "1.0"'
+          if old_code not in source or old_name not in source:
+              raise SystemExit("Could not locate Android default version fields.")
+          source = source.replace(old_code, "versionCode " + os.environ["VERSION_CODE"], 1)
+          source = source.replace(old_name, 'versionName "' + os.environ["VERSION_NAME"] + '"', 1)
+
+          # Keep the persistent certificate for both build types so Android accepts updates.
+          # The optimized release variant enables R8 and resource shrinking.
+          android_open = "android {"
+          signing_block = """android {
+              signingConfigs {
+                  debug {
+                      storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                  }
+              }
+          """
+          if android_open not in source:
+              raise SystemExit("Could not locate the Android Gradle configuration.")
+          source = source.replace(android_open, signing_block, 1)
+
+          build_types = "    buildTypes {"
+          debug_signing = '        debug {\n            signingConfig signingConfigs.debug\n        }\n'
+          if build_types not in source:
+              raise SystemExit("Could not locate Android buildTypes.")
+          source = source.replace(build_types, build_types + "\n" + debug_signing, 1)
+
+          release_start = source.find("        release {", source.find(build_types))
+          if release_start < 0:
+              raise SystemExit("Could not locate the generated Android release build type.")
+          release_end = source.find("\n        }", release_start)
+          if release_end < 0:
+              raise SystemExit("Could not locate the end of the release build type.")
+          release_block = source[release_start:release_end]
+          if "minifyEnabled" not in release_block:
+              raise SystemExit("Generated release build type has no minifyEnabled setting.")
+          release_block = re.sub(r"minifyEnabled\s+(?:true|false)", "minifyEnabled true", release_block, count=1)
+          if "shrinkResources" in release_block:
+              release_block = re.sub(r"shrinkResources\s+(?:true|false)", "shrinkResources true", release_block, count=1)
+          else:
+              release_block += "\n            shrinkResources true"
+          if "signingConfig" in release_block:
+              release_block = re.sub(r"signingConfig\s+signingConfigs\.\w+", "signingConfig signingConfigs.debug", release_block, count=1)
+          else:
+              release_block += "\n            signingConfig signingConfigs.debug"
+          if "proguardFiles" in release_block:
+              release_block = re.sub(r"proguardFiles\s+.*", "proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'", release_block, count=1)
+          else:
+              release_block += "\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'"
+          source = source[:release_start] + release_block + source[release_end:]
+
+          rules = Path("mobile/android/app/proguard-rules.pro")
+          rules.write_text("""-keepattributes *Annotation*
+          -keep class * extends com.getcapacitor.Plugin { *; }
+          -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+          -keep class com.jbcollections.manager.v2.GoPartnersCaptureService { *; }
+          -keep class com.jbcollections.manager.v2.GoPartnersScanSession { *; }
+          """, encoding="utf-8")
+
+          path.write_text(source)
+          print("Configured Android version", os.environ["VERSION_NAME"])
+          print("Both debug and optimized release variants use the persistent update signing key.")
+          PY
+
+      - name: Generate the JB Manager app icon and splash resources
+        working-directory: mobile
+        run: >
+          npx @capacitor/assets generate --android --assetPath assets
+          --iconBackgroundColor '#11172a'
+          --iconBackgroundColorDark '#11172a'
+          --splashBackgroundColor '#11172a'
+          --splashBackgroundColorDark '#11172a'
+
+      - name: Sync web assets into Android
+        working-directory: mobile
+        run: npx cap sync android
+
+      - name: Build optimized release APK
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Verify APK uses persistent update-compatible signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="$HOME/.android/debug.keystore"
+          APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions "$APK" | grep -q 'android.permission.RECORD_AUDIO' || {
+            echo "APK is missing Android's runtime microphone permission."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-ai.js | grep -Fq 'nativeVoicePlugin()' || {
+            echo "APK is missing the native JB Manager voice-input client."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Eq 'admin-ai\.js\?v=[^"]+' || {
+            echo "APK admin.js does not load the updated native voice-input module."
+            exit 1
+          }
+          EXPECTED="$(keytool -list -v -keystore "$KEYSTORE" -storepass android -alias androiddebugkey 2>/dev/null | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          ACTUAL="$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | awk -F': ' '/certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [ -z "$EXPECTED" ] || [ -z "$ACTUAL" ]; then
+            echo "Could not determine the APK signing certificate fingerprint." >&2
+            exit 1
+          fi
+          echo "Persistent keystore SHA-256: $EXPECTED"
+          echo "APK signer SHA-256:          $ACTUAL"
+          test "$EXPECTED" = "$ACTUAL" || {
+            echo "APK was not signed with the persistent update key." >&2
+            exit 1
+          }
+
+      - name: Verify packaged panel, styles, scripts, and both catalogs
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
+          for asset in \
+            assets/public/index.html \
+            assets/public/admin.html \
+            assets/public/styles.css \
+            assets/public/theme-ui.css \
+            assets/public/brand-refresh.css \
+            assets/public/dark-theme-redesign.css \
+            assets/public/catalog-performance.css \
+            assets/public/technology-visual-refresh.css \
+            assets/public/perfumeria.css \
+            assets/public/admin-workflow.css \
+            assets/public/admin-bulk-import.css \
+            assets/public/admin-provider.css \
+            assets/public/admin-gopartners-scanner.js \
+            assets/public/admin-gopartners-scanner.css \
+            assets/public/admin-commission.css \
+            assets/public/admin-desktop-typography.css \
+            assets/public/admin-duplicate-detector.css \
+            assets/public/responsive-layout.css \
+            assets/public/admin.js \
+            assets/public/admin-ai.js \
+            assets/public/admin-notifications.mjs \
+            assets/public/admin-provider.js \
+            assets/public/app.js \
+            assets/public/perfumeria.js \
+            assets/public/ui.js \
+            assets/public/config.js \
+            assets/public/jb-manager-back-navigation.js \
+            assets/public/jb-manager-apk-updater.js \
+            assets/public/jb-manager-system-bars.js \
+            assets/public/jb-manager-native-notifications.js \
+            assets/public/img/hero-catalogo.png \
+            assets/public/tecnologia/index.html \
+            assets/public/perfumeria/index.html \
+            assets/public/favicon-collections.svg
+          do
+            unzip -l "$APK" "$asset" | grep -q "$asset" || {
+              echo "Missing APK asset: $asset" >&2
+              exit 1
+            }
+          done
+          unzip -p "$APK" assets/public/index.html | grep -q '<base href="https://localhost/">' || {
+            echo "Admin start page is missing its local asset base." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'jb-manager-check-updates' || {
+            echo "APK is missing the persistent update button." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'JB Manager está actualizado' || {
+            echo "APK is missing update-status feedback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'src="./jb-manager-native-notifications.js"' || {
+            echo "APK admin shell is missing the Capacitor native notification bridge." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-notifications.mjs | grep -q 'native-local' || {
+            echo "APK admin module is missing the native local-notification path." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'id="login-remember-user"' || {
+            echo "APK is missing the login remember-session checkbox." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'id="remember-user-toggle"' || {
+            echo "APK is missing the sidebar session-preference toggle." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'cat-logo-remember-admin-session-v1' || {
+            echo "APK is missing remembered-session storage logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'setRememberedSession' || {
+            echo "APK is missing the session-preference handler." >&2
+            exit 1
+          }
+          for catalog in tecnologia perfumeria; do
+            unzip -p "$APK" "assets/public/$catalog/index.html" | grep -q 'ai-assistant.js' || {
+              echo "APK $catalog catalog is missing the AI assistant script." >&2
+              exit 1
+            }
+            unzip -p "$APK" "assets/public/$catalog/index.html" | grep -q 'ai-assistant.css' || {
+              echo "APK $catalog catalog is missing the AI assistant stylesheet." >&2
+              exit 1
+            }
+          done
+          unzip -p "$APK" assets/public/ai-assistant.js | grep -q '/api/assistant' || {
+            echo "APK is missing the AI assistant endpoint client." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/ai-assistant.js | grep -q 'containsPersonalInformation' || {
+            echo "APK is missing the local personal-data guard." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/ai-assistant.js | grep -q 'No enviaré este mensaje' || {
+            echo "APK is missing the privacy warning before sending user messages." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -q 'admin-sidebar-remember' || {
+            echo "APK is missing the session-preference styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq 'jb-manager-mobile-sidebar-stability' || {
+            echo "APK is missing the mobile sidebar stability patch."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -Fq 'document.body.classList.contains("admin-sidebar-open")' || {
+            echo "APK updater does not hide its floating button while the sidebar is open."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -Fq 'sidebarClassObserver.observe(document.body' || {
+            echo "APK updater does not observe sidebar open/close state."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -Fq 'updateButton.style.display = shouldHide ? "none" : "grid"' || {
+            echo "APK updater still cannot hide its inline display-grid button."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'admin-sidebar-scroll-locked' || {
+            echo "APK admin script is missing the document scroll lock."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq 'html.admin-sidebar-scroll-locked' || {
+            echo "APK stylesheet is missing the document scroll lock rules."
+            exit 1
+          }
+          ! unzip -p "$APK" assets/public/index.html | grep -Fq 'willChange: "transform"' || {
+            echo "APK updater still forces the compositor layer that can flicker on touch screens."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'data-ai-color-open' || {
+            echo "APK is missing the AI color/photo assistant in the admin variant editor." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q '/api/color-assistant' || {
+            echo "APK is missing the AI color assistant API client." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -q 'from("color_library")' || {
+            echo "APK is missing shared color library synchronization." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -q '.jb-color-ai-overlay' || {
+            echo "APK is missing the light/dark AI color dialog styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Eq 'href="admin-provider\.css\?v=[^"]+"' || {
+            echo "::error::APK does not include the provider dialog contrast fix."
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Eq 'src="admin\.js\?v=[^"]+"' || {
+            echo "APK does not load the updated AI color-knowledge script." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1' || {
+            echo "APK does not load the smart duplicate detector styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'function renderProductDuplicateSuggestions()' || {
+            echo "APK does not include smart duplicate detection logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'normalizeDuplicateText(product.brand) !== brandKey' || {
+            echo "APK duplicate detector does not restrict matches to the same brand." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'id="product-tag-limited-edition"' || {
+            echo "APK admin form is missing the limited-edition checkbox." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'product-tag-option-icon--tech' || {
+            echo "APK admin form is missing the JB TECH microchip icon." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq 'product-tag-option-icon--perfume' || {
+            echo "APK admin form is missing the JB Parfums crown icon." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/tecnologia/index.html | grep -Fq '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>' || {
+            echo "APK technology limited-edition section is missing its microchip icon." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq 'admin-catalog-perfumery .product-tag-option-icon--perfume' || {
+            echo "APK is missing perfume-specific crown styling." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'tags: selectedProductTags()' || {
+            echo "APK does not persist collection labels for both catalogs." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/app.js | grep -Fq 'limitedEditionSection.classList.toggle' || {
+            echo "APK technology catalog is missing limited-edition section logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/perfumeria.js | grep -Fq 'perfumeLimitedEditionSection.classList.toggle' || {
+            echo "APK perfume catalog is missing limited-edition section logic." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/technology-visual-refresh.css | grep -Fq 'limited-edition-section' || {
+            echo "APK is missing JB TECH limited-edition visuals." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/perfumeria.css | grep -Fq 'perfume-featured-section--limited-edition' || {
+            echo "APK is missing luxury limited-edition visuals." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -Fq '20261027-audit-cascade1' || {
+            echo "APK does not reference the latest admin color-assistant styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'data-color-ai-library-alias' || {
+            echo "APK is missing manufacturer-code/alias memory in the AI color dialog." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'saveColorToLibrary(colorToSave)' || {
+            echo "APK is missing persisted AI color aliases." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'persistColorLibraryEntry(colorToSave)' || {
+            echo "APK is missing shared AI color-alias synchronization." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q '__jbManagerAllowCatalogNavigation' || {
+            echo "APK is missing the Android catalog-navigation fallback." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/index.html | grep -q 'jb-manager-back-navigation.js' || {
+            echo "APK admin page is missing the native back-button handler reference." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'backButton' || {
+            echo "APK is missing the native Capacitor back-button handler." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-back-navigation.js | grep -q 'jb-manager-return=dashboard' || {
+            echo "APK native back-button handler does not route to the admin dashboard." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-apk-updater.js | grep -q 'downloadAndInstall' || {
+            echo "APK native APK downloader bridge is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/jb-manager-system-bars.js | grep -q 'SystemBars' || {
+            echo "APK Android system-bars bridge is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'onPrepareNewProduct: prepareProductDraft' || {
+            echo "APK admin.js is missing scanner-to-product-form preparation." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'onPrepareProductDraft: prepareProductDraft' || {
+            echo "APK admin.js is missing Copilot product-form preparation." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'usd.length && !usdHasMissing ? usd[0] : null' || {
+            echo "APK scanner could copy a partial supplier price across color rows." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'configuration_availability: "unknown"' || {
+            echo "APK scanner is missing explicit pending-availability protection." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'data-ai-color-open' || {
+            echo "APK admin.js is missing the AI color assistant control." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq '/api/color-assistant' || {
+            echo "APK admin.js is missing the AI color API client." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.js | grep -Fq 'from("color_library")' || {
+            echo "APK admin.js is missing shared color-library synchronization." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/theme-ui.css | grep -Fq '.jb-color-ai-overlay' || {
+            echo "APK theme CSS is missing the AI color dialog styles." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q 'id="jb-manager-android-safe-area"' || {
+            echo "APK admin header safe-area style is missing." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin.html | grep -q -- '--jb-manager-safe-top' || {
+            echo "APK admin header does not consume the safe-area inset." >&2
+            exit 1
+          }
+          ! unzip -p "$APK" assets/public/admin.html | grep -q 'padding-top: max(24px' || {
+            echo "APK admin page still includes a blank body top spacer." >&2
+            exit 1
+          }
+          grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
+            echo "Native APK updater plugin is not registered in MainActivity." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appName": "JB Manager Collections V2"' || {
+            echo "Unexpected application name." >&2
+            exit 1
+          }
+          echo "APK bundle checks passed."
+
+      - name: Verify native updater source, manifest and package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/ApkUpdaterPlugin.java"
+          MANIFEST="mobile/android/app/src/main/AndroidManifest.xml"
+          python3 -c 'import xml.etree.ElementTree as ET; ET.parse("mobile/android/app/src/main/AndroidManifest.xml")'
+          test -f "$PLUGIN"
+          grep -q 'EXPECTED_PACKAGE = "com.jbcollections.manager.v2"' "$PLUGIN"
+          grep -q 'validateDownloadedApk' "$PLUGIN"
+          grep -q 'sameHashSet' "$PLUGIN"
+          grep -q 'clearObsoleteDownloadIfInstalledVersionIsNewer' "$PLUGIN"
+          grep -q 'DownloadManager.Request' "$PLUGIN"
+          grep -q 'dm.enqueue(request)' "$PLUGIN"
+          grep -q 'VISIBILITY_VISIBLE_NOTIFY_COMPLETED' "$PLUGIN"
+          grep -q 'setAllowedOverMetered(true)' "$PLUGIN"
+          grep -q 'putLong(ID, id)' "$PLUGIN"
+          grep -q 'getDownloadStatus' "$PLUGIN"
+          grep -q 'Podés salir de JB Manager' "$PLUGIN"
+          grep -q 'resumeNativeDownloadIfNeeded' mobile/prepare-web.mjs
+          grep -q 'visibilitychange' mobile/prepare-web.mjs
+          grep -q 'Podés salir de JB Manager' mobile/prepare-web.mjs
+          grep -q 'api/download/apk?version=' mobile/prepare-web.mjs
+          grep -q 'REQUEST_INSTALL_PACKAGES' "$MANIFEST"
+          grep -q 'applicationId "com.jbcollections.manager.v2"' mobile/android/app/build.gradle || {
+            echo "Unexpected Android applicationId." >&2
+            exit 1
+          }
+          grep -q 'registerPlugin(ApkUpdaterPlugin.class)' mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java || {
+            echo "Native APK updater plugin is not registered in MainActivity." >&2
+            exit 1
+          }
+          echo "Native updater source and package identity checks passed."
+
+      - name: Verify JARVIS Go Partners screen scanner wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="mobile/android/app/src/main/AndroidManifest.xml"
+          MAIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/MainActivity.java"
+          GRADLE="mobile/android/app/build.gradle"
+          PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersScannerPlugin.java"
+          SERVICE="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersCaptureService.java"
+          SESSION="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersScanSession.java"
+          test -s "$PLUGIN"
+          test -s "$SERVICE"
+          test -s "$SESSION"
+          grep -q "GoPartnersScanSession.appendObservation" "$SERVICE"
+          grep -q "GoPartnersScanSession.markInterrupted" "$SERVICE"
+          grep -q 'state.put("interrupted"' "$PLUGIN"
+          grep -q 'state.put("interruptionReason"' "$PLUGIN"
+          grep -q 'result.put("interrupted"' "$SESSION"
+          ! grep -q "SharedPreferences" "$SERVICE"
+          grep -q 'registerPlugin(GoPartnersScannerPlugin.class)' "$MAIN"
+          grep -q 'FOREGROUND_SERVICE_MEDIA_PROJECTION' "$MANIFEST"
+          grep -q 'foregroundServiceType="mediaProjection"' "$MANIFEST"
+          grep -q 'android:exported="false"' "$MANIFEST"
+          grep -q 'GoPartnersCaptureService' "$MANIFEST"
+          grep -q 'com.google.mlkit:text-recognition:16.0.1' "$GRADLE"
+          grep -q 'TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)' "$SERVICE"
+          grep -q 'MAX_OBSERVATIONS = 80' "$SESSION"
+          VOICE="mobile/android/app/src/main/java/com/jbcollections/manager/v2/JbVoiceInputPlugin.java"
+          test -s "$VOICE"
+          grep -q 'registerPlugin(JbVoiceInputPlugin.class)' "$MAIN"
+          grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"
+          grep -q 'android.speech.RecognitionService' "$MANIFEST"
+          grep -q 'requestPermissionForAlias("microphone"' "$VOICE"
+          grep -q 'permanentlyDenied' "$VOICE"
+          grep -q 'SpeechRecognizer.createSpeechRecognizer' "$VOICE"
+          grep -q 'notifyListeners("result"' "$VOICE"
+          grep -q 'emitTranscript("partialResult"' "$VOICE"
+          echo "JARVIS scanner, local OCR, native microphone permission, and Android speech recognition are wired into the APK."
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JB-Manager-Collections-APK
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish APK update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk JB-Manager-Collections.apk
+          TAG="jb-manager-v1.0.$GITHUB_RUN_NUMBER"
+          gh release create "$TAG" JB-Manager-Collections.apk \
+            --title "JB Manager Collections v1.0.$GITHUB_RUN_NUMBER" \
+            --notes "Update for JB Manager Collections. Download and install the APK on Android; the system will ask you to confirm installation." \
+            --prerelease
+
+      - name: Verify freshly published APK over GitHub and Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.0.${GITHUB_RUN_NUMBER}"
+          direct_url="https://github.com/JASBH121101/Cat-logo/releases/download/jb-manager-v${version}/JB-Manager-Collections.apk"
+          proxy_url="https://jb-collections.pages.dev/api/download/apk?version=${version}"
+          for source in direct proxy; do
+            if [ "$source" = "direct" ]; then url="$direct_url"; else url="$proxy_url"; fi
+            headers="$RUNNER_TEMP/jb-apk-latest-${source}.headers"
+            body="$RUNNER_TEMP/jb-apk-latest-${source}.apk"
+            status="$(curl --silent --show-error --location --max-time 120 \
+              --dump-header "$headers" --output "$body" --write-out "%{http_code}" "$url")"
+            size="$(wc -c < "$body" | tr -d ' ')"
+            echo "$source latest APK: HTTP $status, $size bytes, version $version"
+            if [ "$status" != "200" ]; then
+              echo "$source latest download did not return HTTP 200." >&2
+              head -c 1200 "$body" >&2 || true
+              exit 1
+            fi
+            if [ "$source" = "proxy" ]; then
+              grep -Eiq '^content-type: application/vnd[.]android[.]package-archive' "$headers" || {
+                echo "Cloudflare did not return the expected APK MIME type." >&2
+                exit 1
+              }
+            fi
+            python3 - "$body" "$source" <<'PY'
+          import sys, zipfile
+          from pathlib import Path
+          path, source = sys.argv[1], sys.argv[2]
+          data = Path(path).read_bytes()
+          print(f"{source} latest APK diagnostics: bytes={len(data)}, ZIP magic={data[:4].hex()}")
+          if len(data) < 1_000_000 or len(data) > 52_428_800:
+              raise SystemExit(f"{source} latest APK size is outside the expected limits")
+          if not data.startswith(b"PK") or not zipfile.is_zipfile(path):
+              raise SystemExit(f"{source} latest download is not a valid APK/ZIP")
+          with zipfile.ZipFile(path) as archive:
+              broken = archive.testzip()
+              if broken:
+                  raise SystemExit(f"{source} latest APK has a corrupt entry: {broken}")
+          PY
+          done
+          echo "Freshly published APK passed direct and Cloudflare download integrity checks."
+
+      - name: Build summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "## JB Manager Collections"
+            echo ""
+            echo "The optimized Android release APK was built successfully with the persistent update-compatible signing key."
+            echo ""
+            echo "Download the **JB-Manager-Collections-APK** artifact from this workflow run."
+            echo "This signed personal-use APK is not a Play Store production signing release."
+          } >> "$GITHUB_STEP_SUMMARY"
