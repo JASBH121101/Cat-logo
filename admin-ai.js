@@ -146,7 +146,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error || !data?.session?.access_token) throw new Error("Tu sesión expiró. Iniciá sesión nuevamente.");
-      const response = await fetch("/api/jb-manager-ai", {
+      const response = await fetch("https://jb-collections.pages.dev/api/jb-manager-ai", {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + data.session.access_token,
