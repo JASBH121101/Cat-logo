@@ -37,12 +37,12 @@ function cleanText(value, maxLength = 3000) {
 function isSimpleGreeting(value) {
   const normalized = String(value ?? "")
     .normalize("NFD")
-    .replace(/\\p{Diacritic}/gu, "")
+    .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
     .replace(/[¿?¡!.,;:]/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
-  return /^(hola(?:\\s+(?:bro|banda|amigo|amiga))?(?:\\s+como estas)?|buenas(?:\\s+(?:tardes|noches))?|buenos dias|que onda(?:\\s+(?:bro|banda))?|hey|hello|hi)$/.test(normalized);
+  return /^(hola(?:\s+(?:bro|banda|amigo|amiga))?(?:\s+como estas)?|buenas(?:\s+(?:tardes|noches))?|buenos dias|que onda(?:\s+(?:bro|banda))?|hey|hello|hi)$/.test(normalized);
 }
 
 function emptyAssistantResult(message, model = "local") {
