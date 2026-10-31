@@ -964,6 +964,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     // Open it before querying those rows; otherwise a previous/empty dialog
     // could cause a false "variant not found" result.
     openReview(productId);
+    const failReview = message => {
+      say(reviewMessage, message, "error");
+      return { ok: false, message };
+    };
 
     const hasVariants = productHasProviderVariants(product);
     const normalizeConfig = value => normalizedText(value).replace(/\s+/g, "");
@@ -978,9 +982,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
           (!storage || normalizeConfig(row.dataset.storage) === storage)
         );
         if (matches.length !== 1) {
-          return { ok: false, message: matches.length
+          return failReview(matches.length
             ? "La configuración coincide con más de una variante. Revisala manualmente."
-            : "No se encontró la configuración " + [scanned.ram, scanned.storage].filter(Boolean).join(" / ") + " en este producto." };
+            : "No se encontró la configuración " + [scanned.ram, scanned.storage].filter(Boolean).join(" / ") + " en este producto.");
         }
         const configRow = matches[0];
         let colorRow = null;
@@ -989,9 +993,9 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
           const colorMatches = Array.from(configRow.querySelectorAll("[data-provider-color-row]"))
             .filter(row => normalizeConfig(row.dataset.colorName) === colorKey);
           if (colorMatches.length !== 1) {
-            return { ok: false, message: colorMatches.length
+            return failReview(colorMatches.length
               ? "El color " + scanned.color + " coincide con más de una opción. Seleccionalo manualmente en la revisión."
-              : "La configuración coincide, pero el color " + scanned.color + " no existe exactamente en JB Collections. Verificalo manualmente; no se asociaron los datos automáticamente." };
+              : "La configuración coincide, pero el color " + scanned.color + " no existe exactamente en JB Collections. Verificalo manualmente; no se asociaron los datos automáticamente.");
           }
           colorRow = colorMatches[0];
         }
