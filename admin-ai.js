@@ -48,6 +48,16 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     status.classList.toggle("is-error", error);
   }
 
+  function resizeInput() {
+    if (!input) return;
+    input.style.height = "auto";
+    const viewportHeight = window.visualViewport?.height || window.innerHeight || 700;
+    const maxHeight = Math.min(176, Math.max(112, Math.round(viewportHeight * 0.24)));
+    const nextHeight = Math.min(input.scrollHeight, maxHeight);
+    input.style.height = nextHeight + "px";
+    input.style.overflowY = input.scrollHeight > maxHeight ? "auto" : "hidden";
+  }
+
   function appendMessage(role, text, meta = null) {
     const article = document.createElement("article");
     article.className = "jb-manager-ai-message " + (role === "user" ? "is-user" : "is-assistant");
@@ -64,11 +74,25 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       };
       tag.textContent = labels[meta.intent] || "PROPUESTA";
       article.append(tag);
-      if (meta.missing_fields?.length) {
-        const missing = document.createElement("small");
-        missing.className = "jb-manager-ai-missing";
-        missing.textContent = "Datos pendientes: " + meta.missing_fields.join(", ");
-        article.append(missing);
+      if (Array.isArray(meta.missing_fields) && meta.missing_fields.length) {
+        const labels = {"product_query":"Producto o modelo","product":"Producto","model":"Modelo","model_name":"Modelo","brand":"Marca","catalog_type":"Catálogo (tecnología o perfumería)","category":"Categoría","variant":"Configuración o variante","configuration":"Configuración (RAM y almacenamiento)","ram":"Memoria RAM","storage":"Almacenamiento","color":"Color","currency":"Moneda","price":"Precio del proveedor","provider_price":"Precio del proveedor","provider_price_usd":"Precio del proveedor (USD)","provider_price_nio":"Precio del proveedor (C$)","price_usd":"Precio del proveedor (USD)","price_nio":"Precio del proveedor (C$)","audience":"Público (masculino, femenino o unisex)","volume":"Volumen (ml)","volume_ml":"Volumen (ml)","concentration":"Concentración (EDP, EDT, Parfum)","sku":"Código o referencia","availability":"Disponibilidad"};
+        const displayFields = [...new Set(meta.missing_fields
+          .map(value => String(value ?? "").trim())
+          .filter(Boolean)
+          .map(value => {
+            const key = value.toLowerCase().replace(/[\\s-]+/g, "_");
+            return labels[key] || value.replace(/[_-]+/g, " ").replace(/\\b\\w/g, letter => letter.toUpperCase());
+          }))];
+        if (displayFields.length) {
+          const missing = document.createElement("div");
+          missing.className = "jb-manager-ai-missing";
+          const title = document.createElement("strong");
+          title.textContent = "Para continuar necesito:";
+          const list = document.createElement("span");
+          list.textContent = displayFields.join(" · ");
+          missing.append(title, list);
+          article.append(missing);
+        }
       }
       if (meta.intent === "provider_price_update") {
         const prices = [];
@@ -116,6 +140,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     }
     appendMessage("user", message);
     input.value = "";
+    resizeInput();
     setBusy(true);
     setStatus("JB Copilot está procesando tu solicitud…");
     try {
@@ -150,10 +175,11 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       speak(assistant.message || "");
     } catch (error) {
       appendMessage("assistant", error?.message || "Ocurrió un error al procesar la solicitud.");
-      setStatus("No se pudo completar la consulta.", true);
+      setStatus(error?.message || "No se pudo completar la consulta. Revisá la conexión e intentá nuevamente.", true);
     } finally {
       setBusy(false);
       input.focus();
+      resizeInput();
     }
   }
 
@@ -186,6 +212,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     const final = await native.addListener("result", event => {
       const transcript = safeText(event?.transcript, 3000);
       if (transcript) input.value = transcript;
+      resizeInput();
       finishVoiceUI(input.value.trim()
         ? "Dictado listo. Revisá el texto y presioná enviar."
         : "No se reconocieron palabras. Podés volver a intentarlo.");
@@ -296,6 +323,9 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     startBrowserVoice();
   }
 
+  input.addEventListener("input", resizeInput);
+  resizeInput();
+
   form.addEventListener("submit", event => {
     event.preventDefault();
     void sendMessage(input.value);
@@ -315,6 +345,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
   document.querySelectorAll("[data-jb-ai-prompt]").forEach(button => {
     button.addEventListener("click", () => {
       input.value = button.dataset.jbAiPrompt || "";
+      resizeInput();
       input.focus();
     });
   });
