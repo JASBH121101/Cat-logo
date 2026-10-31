@@ -67,3 +67,22 @@ test("assistant sends only bounded catalog context and renders model text safely
   assert.match(endpoint, /slice\(0, 80\)/);
   assert.match(endpoint, /cleanText\(parsed\.message, 1800\)/);
 });
+
+
+test("JB Copilot textarea auto-expands for typing, prompts, and speech transcripts", () => {
+  assert.match(assistant, /function resizeInput\(\)/);
+  assert.match(assistant, /input\.addEventListener\("input", resizeInput\)/);
+  assert.match(assistant, /resizeInput\(\);/);
+  assert.match(assistant, /input\.scrollHeight/);
+  assert.match(assistant, /input\.style\.overflowY/);
+  assert.match(assistant, /resize: none/);
+  assert.match(css, /max-height:176px/);
+  assert.match(css, /overflow-y:hidden/);
+});
+
+test("JB Copilot renders missing fields as human-readable labels, not raw model keys", () => {
+  assert.match(assistant, /Para continuar necesito:/);
+  assert.match(assistant, /Precio del proveedor \(USD\)/);
+  assert.match(assistant, /Configuración \(RAM y almacenamiento\)/);
+  assert.match(assistant, /labels\[key\]/);
+});
