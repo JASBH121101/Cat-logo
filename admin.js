@@ -186,7 +186,8 @@ const dashboardScopeSelector = $("#dashboard-scope-selector");
 const jbManagerAI = initJbManagerAI({
   getSupabase: () => supabase,
   getCurrentUser: () => currentUser,
-  getProducts: () => products
+  getProducts: () => products,
+  onPrepareProductDraft: prepareProductDraft
 });
 const providerTools = initProviderTools({
   getSupabase: () => supabase,
@@ -4725,6 +4726,124 @@ function clearEditor() {
   setProductFormStep(1, { scroll: false });
   markEditorClean();
   scheduleProductDuplicateCheck({ immediate: true });
+}
+
+async function prepareProductDraft(draft) {
+  if (!draft || typeof draft !== "object" || !String(draft.name || "").trim()) {
+    message("#product-form-status", "Copilot no recibió un nombre de producto válido. No se abrió el formulario.", "error");
+    return false;
+  }
+
+  const targetCatalog = draft.catalog_type === "perfumery"
+    ? "perfumery"
+    : draft.catalog_type === "technology"
+      ? "technology"
+      : activeCatalogType;
+  const hasProductOpen = Boolean($("#product-id")?.value);
+  const hasUnsavedChanges = Boolean(editorIsDirty);
+  if ((hasProductOpen || hasUnsavedChanges) &&
+      !window.confirm("Copilot va a preparar un producto nuevo. Se descartará el contenido actual del editor, pero no se guardará ningún cambio. ¿Continuar?")) {
+    return false;
+  }
+
+  clearTimeout(recoveryTimer);
+  await recoveryAction("readwrite", store => store.delete(RECOVERY_KEY))
+    .catch(error => console.warn("No se pudo limpiar el respaldo anterior antes de preparar el producto.", error));
+
+  if (targetCatalog !== activeCatalogType) setActiveCatalogType(targetCatalog);
+  clearEditor();
+
+  const setValue = (selector, value) => {
+    const field = $(selector);
+    if (!field || value === undefined || value === null) return;
+    field.value = String(value);
+  };
+  const allowedCategories = new Set([
+    "Celulares", "Laptops", "Tablets", "Gaming", "Consolas",
+    "Televisores", "Audio", "Accesorios", "Otros"
+  ]);
+
+  setValue("#product-name", draft.name);
+  setValue("#product-brand", draft.brand);
+  setValue("#product-model", draft.model);
+  setValue("#product-description", draft.description);
+  setValue("#product-specs", draft.specs);
+  if (Number.isFinite(Number(draft.warranty_months)) && draft.warranty_months !== null) {
+    setValue("#product-warranty", draft.warranty_months);
+  }
+
+  if (targetCatalog === "perfumery") {
+    const perfume = draft.perfume && typeof draft.perfume === "object" ? draft.perfume : {};
+    setValue("#product-category", "Perfumería");
+    setValue("#product-type", perfume.type === "set" ? "set" : "perfume");
+    setValue("#product-perfume-family", ["arabes", "nicho", "disenador"].includes(perfume.family) ? perfume.family : "");
+    setValue("#product-perfume-concentration", perfume.concentration);
+    setValue("#product-perfume-volume", perfume.volume_ml);
+    setValue("#product-perfume-audience", ["Masculino", "Femenino", "Unisex"].includes(perfume.audience) ? perfume.audience : "");
+    setValue("#product-perfume-scent-family", perfume.scent_family);
+    setValue("#product-perfume-top-notes", Array.isArray(perfume.top_notes) ? perfume.top_notes.join(", ") : "");
+    setValue("#product-perfume-heart-notes", Array.isArray(perfume.heart_notes) ? perfume.heart_notes.join(", ") : "");
+    setValue("#product-perfume-base-notes", Array.isArray(perfume.base_notes) ? perfume.base_notes.join(", ") : "");
+    setValue("#product-price-usd", draft.price_usd);
+    setValue("#product-price-nio", draft.price_nio);
+    updateProductFormMode();
+    $("#product-type")?.dispatchEvent(new Event("change", { bubbles: true }));
+  } else {
+    const category = String(draft.category || "").trim();
+    if (allowedCategories.has(category)) setValue("#product-category", category);
+    updateProductSubcategorySuggestions(String(draft.subcategory || ""));
+    const groups = Array.isArray(draft.variants) ? draft.variants.slice(0, 20) : [];
+    const variantRows = [];
+    groups.forEach(group => {
+      if (!group || typeof group !== "object") return;
+      const base = {
+        ram: String(group.ram || ""),
+        storage: String(group.storage || ""),
+        price_usd: group.price_usd,
+        price_nio: group.price_nio,
+        configuration_availability: ["available", "on_order", "out_of_stock"].includes(group.configuration_availability)
+          ? group.configuration_availability
+          : "available"
+      };
+      const colors = Array.isArray(group.colors) ? group.colors.slice(0, 16) : [];
+      if (colors.length) {
+        colors.forEach(color => {
+          if (!color || typeof color !== "object" || !String(color.color || "").trim()) return;
+          variantRows.push({
+            ...base,
+            color: String(color.color),
+            color_hex: /^#[0-9a-fA-F]{6}$/.test(String(color.color_hex || "")) ? color.color_hex : "#242424",
+            availability: ["available", "on_order", "out_of_stock"].includes(color.availability)
+              ? color.availability
+              : "available"
+          });
+        });
+      } else if (base.ram || base.storage) {
+        variantRows.push(base);
+      }
+    });
+    renderVariantRows(variantRows);
+    updateCategoryVariantVisibility();
+    updateVariantRowHeadings();
+  }
+
+  const availability = ["available", "on_order", "out_of_stock"].includes(draft.availability)
+    ? draft.availability
+    : "";
+  setValue("#product-availability", availability);
+
+  showAdminSection("add");
+  setProductFormStep(1, { scroll: false });
+  updateEditorDirtyState();
+  scheduleLocalRecoverySave(0);
+  scheduleProductDuplicateCheck({ immediate: true });
+  resizeSpecsTextarea();
+  message("#product-form-status",
+    "Borrador preparado por JB Copilot. Revisá nombre, categoría, especificaciones, precios y variantes. No se guardó, publicó ni asignó fotografías.",
+    "success"
+  );
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  return true;
 }
 
 const PRODUCT_SUBCATEGORY_SUGGESTIONS = {
