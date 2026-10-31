@@ -206,6 +206,7 @@ export async function onRequestOptions({ request }) {
 }
 
 export async function onRequestPost({ request, env }) {
+  const requestStartedAt = Date.now();
   const origin = request.headers.get("Origin") || "";
   if (!ALLOWED_ORIGINS.has(origin)) return response(403, { ok: false, error: "origin_not_allowed" }, origin);
   if (rateLimited(request)) return response(429, { ok: false, error: "rate_limit_exceeded" }, origin);
@@ -214,6 +215,7 @@ export async function onRequestPost({ request, env }) {
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!token || token.length > 8192) return response(401, { ok: false, error: "authentication_required" }, origin);
 
+  const authStartedAt = Date.now();
   let user;
   try {
     user = await authorizeAdmin(token);
@@ -221,6 +223,8 @@ export async function onRequestPost({ request, env }) {
     return response(503, { ok: false, error: "admin_verification_unavailable" }, origin);
   }
   if (!user) return response(403, { ok: false, error: "admin_only" }, origin);
+  const authDurationMs = Date.now() - authStartedAt;
+  const geminiStartedAt = Date.now();
 
   let body;
   try {
@@ -628,7 +632,7 @@ export async function onRequestPost({ request, env }) {
   if (productDraft && !productDraft.name) {
     productDraft.name = "";
   }
-  return response(200, {
+  const successResponse = response(200, {
     ok: true,
     assistant: {
       message: assistantMessage,
@@ -642,4 +646,8 @@ export async function onRequestPost({ request, env }) {
       model_used: selectedModel
     }
   }, origin);
+  successResponse.headers.set("Server-Timing",
+    "auth;dur=" + authDurationMs + ", gemini;dur=" + (Date.now() - geminiStartedAt) +
+    ", total;dur=" + (Date.now() - requestStartedAt));
+  return successResponse;
 }
