@@ -248,7 +248,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
           .map(value => String(value ?? "").trim())
           .filter(Boolean)
           .map(value => {
-            const key = value.toLowerCase().trim().replace(/[\\s-]+/g, "_").replace(/[^a-z0-9_]/g, "");
+            const key = value.toLowerCase().trim().replace(/[\s-]+/g, "_").replace(/[^a-z0-9_]/g, "");
             return labels[key] || value.replace(/[_-]+/g, " ").replace(/\\b\\w/g, letter => letter.toUpperCase());
           }))];
         if (displayFields.length) {
