@@ -172,7 +172,8 @@ jobs:
           set -euo pipefail
           node --test \
             tests/jb-gopartners-scanner.test.mjs \
-            tests/admin-product-form-workflow.test.mjs
+            tests/admin-product-form-workflow.test.mjs \
+            tests/jb-manager-ai.test.mjs
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -453,6 +454,15 @@ jobs:
               raise SystemExit("JARVIS screen scanner native sources are missing.")
           if not voice_source.is_file():
               raise SystemExit("JARVIS native voice input source is missing.")
+          voice_text = voice_source.read_text(encoding="utf-8")
+          for required in (
+              "requestPermissionForAlias",
+              "microphonePermissionCallback",
+              "openAppSettings",
+              "Settings.ACTION_APPLICATION_DETAILS_SETTINGS",
+          ):
+              if required not in voice_text:
+                  raise SystemExit("Native microphone plugin is missing required permission recovery: " + required)
 
           candidates = list(Path("mobile/android/app/src/main/java").rglob("MainActivity.java"))
           if len(candidates) != 1:
