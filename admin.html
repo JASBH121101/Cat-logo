@@ -861,11 +861,24 @@
             <div id="jb-ai-messages" class="jb-manager-ai-messages" aria-live="polite">
               <article class="jb-manager-ai-message is-assistant"><strong>Hola, estoy listo.</strong><p>Podés decirme, por ejemplo: “Quiero revisar el precio del POCO X8 Pro Max; el proveedor ahora lo ofrece a 245 dólares”.</p></article>
             </div>
-            <div class="jb-manager-ai-prompts">
-              <button type="button" data-jb-ai-prompt="Quiero revisar un precio de proveedor.">Revisar un precio</button>
-              <button type="button" data-jb-ai-prompt="Ayudame a preparar un producto nuevo para JB TECH.">Añadir producto</button>
-              <button type="button" data-jb-ai-prompt="Buscá un producto en mis catálogos.">Buscar producto</button>
+            <section class="jb-gp-scanner jb-gp-scanner-inline" id="jb-gp-scanner" aria-label="Herramientas de escaneo de proveedor">
+            <p id="jb-gp-scan-status" class="jb-gp-scan-status" role="status" aria-live="polite">El escaneo de Go Partners está disponible en la APK Android.</p>
+            <div class="jb-gp-scanner-inline-actions">
+              <button type="button" class="button button-outline" id="jb-gp-scan-finish" disabled>Finalizar aquí</button>
+              <button type="button" class="button button-ghost" id="jb-gp-scan-clear" disabled>Descartar</button>
             </div>
+            <div id="jb-gp-scan-results" class="jb-gp-scan-results" hidden>
+              <div id="jb-gp-scan-summary" class="jb-gp-scan-summary"></div>
+              <div id="jb-gp-scan-duplicates" class="jb-gp-scan-duplicates"></div>
+              <div id="jb-gp-scan-products" class="jb-gp-scan-products"></div>
+            </div>
+          </section>
+          <div class="jb-manager-ai-prompts">
+            <button type="button" id="jb-gp-scan-start">Escanear proveedor</button>
+            <button type="button" data-jb-ai-prompt="Quiero revisar un precio de proveedor.">Revisar un precio</button>
+            <button type="button" data-jb-ai-prompt="Ayudame a preparar un producto nuevo para JB TECH.">Añadir producto</button>
+            <button type="button" data-jb-ai-prompt="Buscá un producto en mis catálogos.">Buscar producto</button>
+          </div>
             <form id="jb-ai-form" class="jb-manager-ai-form">
               <button type="button" id="jb-ai-voice" class="jb-ai-voice" aria-label="Dictar mensaje" title="Dictar mensaje">🎙</button>
               <button type="button" id="jb-ai-speech-toggle" class="jb-ai-speech-toggle" aria-label="Activar respuestas por voz" aria-pressed="false" title="Activar respuestas por voz">🔇</button>
@@ -876,28 +889,7 @@
           </section>
         </div>
 
-        <section class="jb-gp-scanner" id="jb-gp-scanner" aria-labelledby="jb-gp-scanner-title">
-          <div class="jb-gp-scanner-heading">
-            <div>
-              <p class="jb-gp-scanner-kicker">JARVIS · PROVEEDOR</p>
-              <h3 id="jb-gp-scanner-title">Scanner de Go Partners</h3>
-              <p class="jb-gp-scanner-description">Navegá manualmente por Go Partners mientras JARVIS lee el texto de cada pantalla. Al finalizar, identificará productos, variantes, precios y posibles repeticiones.</p>
-            </div>
-            <span class="jb-manager-ai-status"><i></i><span>Revisión antes de guardar</span></span>
-          </div>
-          <div class="jb-gp-scanner-actions">
-            <button type="button" class="button button-primary" id="jb-gp-scan-start">Iniciar escaneo</button>
-            <button type="button" class="button button-outline" id="jb-gp-scan-finish" disabled>Finalizar y revisar</button>
-            <button type="button" class="button button-ghost" id="jb-gp-scan-clear" disabled>Descartar sesión</button>
-          </div>
-          <p id="jb-gp-scan-status" class="jb-gp-scan-status" role="status" aria-live="polite">Disponible en la APK Android. El navegador no puede capturar otras aplicaciones.</p>
-          <p class="jb-gp-scanner-privacy">Privacidad: Android pedirá permiso de captura en cada sesión. Las imágenes se procesan localmente para OCR y se descartan; no se guarda vídeo ni capturas. Al finalizar, JARVIS envía únicamente el texto reconocido a la IA para estructurarlo. Mientras escaneás, evitá mostrar chats, pedidos privados o información personal.</p>
-          <div id="jb-gp-scan-results" class="jb-gp-scan-results" hidden>
-            <div id="jb-gp-scan-summary" class="jb-gp-scan-summary"></div>
-            <div id="jb-gp-scan-duplicates" class="jb-gp-scan-duplicates"></div>
-            <div id="jb-gp-scan-products" class="jb-gp-scan-products"></div>
-          </div>
-        </section>
+
       </section>
       <button type="button" id="jb-ai-floating-launcher" class="jb-ai-floating-launcher" aria-label="Abrir JB Manager AI" title="Abrir JB Manager AI"><span aria-hidden="true">✦</span></button>
       <section id="admin-section-messages" class="admin-nav-panel hidden private-chat-admin-panel" data-admin-panel="messages">
