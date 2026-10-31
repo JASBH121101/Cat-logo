@@ -10,7 +10,7 @@ The scanner is a native Capacitor plugin used by the JB Manager Android APK.
 4. Frames are held only in RAM, sampled approximately every 1.9 seconds, downscaled for OCR, and processed locally with bundled ML Kit Latin text recognition.
 5. Temporary OCR observations are held in the static `GoPartnersScanSession` buffer (maximum 80 observations). No bitmap, screenshot, video, or OCR text is written to files or SharedPreferences.
 6. The administrator stops the scan and chooses Finalizar y revisar. Only the bounded OCR text is then sent to the authenticated Cloudflare Function; images are never uploaded.
-7. The browser-side scanner proposes matches and asks for duplicate confirmation. Provider prices are staged in the existing private provider-review dialog. No catalog write or public-price change occurs from the scanner itself.
+7. The browser-side scanner proposes matches and asks for duplicate confirmation. Provider prices are staged in the existing private provider-review dialog. The dialog is opened first so its selected product configuration rows exist before exact RAM/storage matching. No catalog write or public-price change occurs from the scanner itself.
 
 ## Privacy and platform constraints
 
