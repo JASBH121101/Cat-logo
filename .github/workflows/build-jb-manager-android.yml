@@ -458,10 +458,22 @@ jobs:
           session_source = native_dir / "GoPartnersScanSession.java"
           overlay_source = native_dir / "GoPartnersOverlayService.java"
           voice_source = native_dir / "JbVoiceInputPlugin.java"
+          biometric_source = native_dir / "JbBiometricAuthPlugin.java"
           if not plugin_source.is_file() or not service_source.is_file() or not session_source.is_file() or not overlay_source.is_file():
               raise SystemExit("JARVIS screen scanner native sources are missing.")
           if not voice_source.is_file():
               raise SystemExit("JARVIS native voice input source is missing.")
+          if not biometric_source.is_file():
+              raise SystemExit("JB Manager native biometric plugin source is missing.")
+          biometric_text = biometric_source.read_text(encoding="utf-8")
+          for required in (
+              "BiometricManager.Authenticators.BIOMETRIC_STRONG",
+              "BiometricPrompt",
+              "putBoolean(KEY_ENABLED, true)",
+              "Settings.ACTION_BIOMETRIC_ENROLL",
+          ):
+              if required not in biometric_text:
+                  raise SystemExit("Native biometric plugin is missing required secure prompt behavior: " + required)
           voice_text = voice_source.read_text(encoding="utf-8")
           for required in (
               "requestPermissionForAlias",
@@ -489,6 +501,7 @@ jobs:
               ("GoPartnersScanSession.java", session_source),
               ("GoPartnersOverlayService.java", overlay_source),
               ("JbVoiceInputPlugin.java", voice_source),
+              ("JbBiometricAuthPlugin.java", biometric_source),
           ):
               content = re.sub(
                   r"^package\s+[^;]+;",
@@ -502,6 +515,7 @@ jobs:
           registrations = [
               "registerPlugin(GoPartnersScannerPlugin.class)",
               "registerPlugin(JbVoiceInputPlugin.class)",
+              "registerPlugin(JbBiometricAuthPlugin.class)",
           ]
           if any(registration not in source for registration in registrations):
               if "super.onCreate(savedInstanceState);" not in source:
@@ -549,15 +563,19 @@ jobs:
 
           gradle_path = Path("mobile/android/app/build.gradle")
           gradle = gradle_path.read_text(encoding="utf-8")
-          dependency = "implementation 'com.google.mlkit:text-recognition:16.0.1'"
-          if dependency not in gradle:
+          dependencies = [
+              "implementation 'com.google.mlkit:text-recognition:16.0.1'",
+              "implementation 'androidx.biometric:biometric:1.1.0'",
+          ]
+          missing = [dependency for dependency in dependencies if dependency not in gradle]
+          if missing:
               match = re.search(r"dependencies\s*\{", gradle)
               if not match:
-                  raise SystemExit("Could not find app-level Gradle dependencies block for ML Kit.")
-              gradle = gradle[:match.end()] + "\n    " + dependency + gradle[match.end():]
+                  raise SystemExit("Could not find app-level Gradle dependencies block.")
+              gradle = gradle[:match.end()] + "\n    " + "\n    ".join(missing) + gradle[match.end():]
               gradle_path.write_text(gradle, encoding="utf-8")
 
-          print("Installed JARVIS MediaProjection/OCR scanner and native Android microphone/voice recognition plugin.")
+          print("Installed JARVIS MediaProjection/OCR scanner, native voice input, and AndroidX biometric unlock plugin.")
           PY
 
       - name: Set Android app version
@@ -1080,6 +1098,15 @@ jobs:
           grep -q 'notifyListeners("result"' "$VOICE"
           grep -q 'emitTranscript("partialResult"' "$VOICE"
           echo "JARVIS scanner, local OCR, native microphone permission, and Android speech recognition are wired into the APK."
+          BIOMETRIC="mobile/android/app/src/main/java/com/jbcollections/manager/v2/JbBiometricAuthPlugin.java"
+          test -s "$BIOMETRIC"
+          grep -q 'registerPlugin(JbBiometricAuthPlugin.class)' "$MAIN"
+          grep -q 'implementation .androidx.biometric:biometric:1.1.0.' "$GRADLE"
+          grep -q 'BiometricManager.Authenticators.BIOMETRIC_STRONG' "$BIOMETRIC"
+          grep -q 'Settings.ACTION_BIOMETRIC_ENROLL' "$BIOMETRIC"
+          grep -q 'openEnrollmentSettings' "$BIOMETRIC"
+          grep -q 'putBoolean(KEY_ENABLED, true)' "$BIOMETRIC"
+          echo "JB Manager biometric unlock plugin and stable AndroidX dependency are wired into the APK."
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
