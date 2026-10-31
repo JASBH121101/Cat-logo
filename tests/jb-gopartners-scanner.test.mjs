@@ -106,3 +106,16 @@ test("OCR observations remain in native memory until a successful review is rend
   assert.match(source, /recoverableSession = true/);
   assert.match(source, /El texto OCR sigue guardado temporalmente/);
 });
+
+
+test("discard confirms native deletion before clearing review state or reporting success", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const start = source.indexOf("  async function clearSession()");
+  const end = source.indexOf("  startButton.addEventListener", start);
+  const block = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(block, /state\?\.running === true \|\| state\?\.processing === true/);
+  assert.match(block, /cleared\?\.cleared !== true/);
+  assert.ok(block.indexOf("cleared?.cleared !== true") < block.indexOf("scanCandidates = []"));
+  assert.match(block, /Los resultados no se consideran eliminados/);
+});
