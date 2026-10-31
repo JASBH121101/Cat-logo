@@ -82,3 +82,27 @@ test("scanner surfaces explicit light and dark theme tokens", () => {
   assert.match(css, /html\[data-theme="dark"\] body\.admin-body \.jb-gp-scanner/);
   assert.match(css, /\.jb-gp-scanner select/);
 });
+
+
+test("starting a new scan never clears a pending interrupted OCR session", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const start = source.indexOf("  async function start()");
+  const finish = source.indexOf("  async function finish()", start);
+  const startBlock = source.slice(start, finish);
+  assert.ok(start >= 0 && finish > start);
+  assert.ok(startBlock.indexOf("const pendingSession = await native.getScanState()") >= 0);
+  assert.ok(startBlock.indexOf("scannerSessionReviewable(pendingSession)") <
+    startBlock.indexOf("await native.clearScan()"));
+});
+
+test("OCR observations remain in native memory until a successful review is rendered", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const finish = source.indexOf("  async function finish()");
+  const clear = source.indexOf("await native.clearScan().catch(() => {})", finish);
+  const api = source.indexOf('fetch("/api/jb-gopartners-scan"', finish);
+  const render = source.indexOf("renderReview();", api);
+  assert.ok(finish >= 0 && api > finish && render > api);
+  assert.ok(clear > render, "OCR must not be cleared before analysis and review rendering succeed");
+  assert.match(source, /recoverableSession = true/);
+  assert.match(source, /El texto OCR sigue guardado temporalmente/);
+});
