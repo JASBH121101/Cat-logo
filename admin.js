@@ -698,32 +698,82 @@ function categoryUsesRamStorage(category = $("#product-category")?.value || "") 
   return ["Celulares", "Tablets", "Laptops"].includes(normalizeTechnologyCategory(category));
 }
 
+function categoryUsesColorOnlyVariants(category = $("#product-category")?.value || "") {
+  return ["Televisores", "Audio"].includes(normalizeTechnologyCategory(category));
+}
+
 function updateCategoryVariantVisibility() {
   const category = normalizeTechnologyCategory($("#product-category")?.value || "");
   const usesRamStorage = categoryUsesRamStorage(category);
-  baseColorManager?.classList.toggle("is-ram-storage", usesRamStorage);
+  const colorOnly = categoryUsesColorOnlyVariants(category);
+  const groups = Array.from(form?.querySelectorAll("[data-variant-group]") || []);
   const addVariantButton = $("#add-variant-button");
 
-  // Todas las categorías tecnológicas pueden tener variantes de capacidad,
-  // RAM, precio y color. Estos campos son opcionales; la categoría solo define
-  // qué datos son obligatorios al publicar ciertos productos.
-  addVariantButton?.classList.remove("hidden");
+  baseColorManager?.classList.toggle("is-ram-storage", usesRamStorage);
+  baseColorManager?.classList.toggle("is-color-only", colorOnly);
+  $("#technology-variants-section")?.classList.toggle("is-color-only", colorOnly);
+
   if (addVariantButton) {
-    addVariantButton.textContent = "+ Agregar variante";
-    addVariantButton.title = "Agregar otra variante de capacidad, RAM, precio y color";
-    addVariantButton.setAttribute("aria-label", "Agregar variante de capacidad, RAM, precio y color");
+    addVariantButton.classList.toggle("hidden", colorOnly);
+    addVariantButton.textContent = colorOnly ? "+ Agregar variante" : "+ Agregar variante";
+    addVariantButton.title = colorOnly
+      ? "Televisores y audio usan una configuración principal con precio y colores."
+      : "Agregar otra variante de capacidad, RAM, precio y color";
+    addVariantButton.setAttribute("aria-label", colorOnly
+      ? "Agregar variante de capacidad cuando la categoría lo permita"
+      : "Agregar variante de capacidad, RAM, almacenamiento, precio y color");
   }
 
-  form?.querySelectorAll("[data-variant-group]").forEach(group => {
-    group.querySelectorAll(".variant-storage-label, [data-group-ram]").forEach(field => {
-      const wrapper = field.matches("label") ? field : field.closest("label");
-      wrapper?.classList.remove("hidden");
+  groups.forEach((group, index) => {
+    const storageLabel = group.querySelector(".variant-storage-label");
+    const ramInput = group.querySelector("[data-group-ram]");
+    const ramLabel = ramInput?.closest("label");
+    [storageLabel, ramLabel].filter(Boolean).forEach(label => {
+      label.classList.toggle("hidden", colorOnly);
     });
+    group.classList.toggle("variant-color-only", colorOnly);
+
+    const titleNode = group.querySelector("[data-variant-group-title]");
+    if (colorOnly && titleNode) {
+      titleNode.textContent = group.dataset.baseGroup === "true"
+        ? "Configuración principal"
+        : "Configuración adicional " + (index + 1);
+    } else if (!colorOnly && titleNode && group.dataset.baseGroup !== "true") {
+      const storage = group.querySelector("[data-group-storage]")?.value || "";
+      const unit = group.querySelector("[data-group-storage-unit]")?.value || "GB";
+      const ram = group.querySelector("[data-group-ram]")?.value || "";
+      const parts = [];
+      if (storage) parts.push(formatStorageLabel(storage, unit));
+      if (ram) parts.push(ram + " GB RAM");
+      titleNode.textContent = parts.join(" · ") || "Nueva configuración";
+    }
+
+    const summary = group.querySelector("[data-variant-group-summary]");
+    if (summary) {
+      if (colorOnly) {
+        summary.textContent = group.dataset.baseGroup === "true"
+          ? "Configuración principal · precio, disponibilidad y colores"
+          : "Configuración guardada · precio, disponibilidad y colores";
+      } else {
+        summary.textContent = group.dataset.baseGroup === "true"
+          ? "Configuración principal · expandí para editar precio, disponibilidad y colores"
+          : "Configuración plegada · expandí para editar precio, disponibilidad y colores";
+      }
+    }
   });
+
+  const variantsTitle = colorOnly ? "Precios y colores" : "Variantes, capacidades y precios";
   const title = $("#variants-editor-title");
-  if (title) title.textContent = "Variantes, capacidades y precios";
+  if (title) title.textContent = variantsTitle;
   const sectionTitle = $("#product-form-section-title-2");
-  if (sectionTitle) sectionTitle.textContent = "Variantes, capacidades y precios";
+  if (sectionTitle) sectionTitle.textContent = variantsTitle;
+
+  const sectionDescription = $("#variants-editor-description");
+  if (sectionDescription) {
+    sectionDescription.textContent = colorOnly
+      ? "Configurá el precio y la disponibilidad del producto; añadí únicamente los colores que realmente ofrece."
+      : "Administrá capacidades, memoria, precios y colores de cada configuración.";
+  }
 }
 
 function setActiveCatalogType(value) {
