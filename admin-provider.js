@@ -982,7 +982,20 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
             ? "La configuración coincide con más de una variante. Revisala manualmente."
             : "No se encontró la configuración " + [scanned.ram, scanned.storage].filter(Boolean).join(" / ") + " en este producto." };
         }
-        matchedRows.push({ row: matches[0], scanned });
+        const configRow = matches[0];
+        let colorRow = null;
+        if (String(scanned.color || "").trim()) {
+          const colorKey = normalizeConfig(scanned.color);
+          const colorMatches = Array.from(configRow.querySelectorAll("[data-provider-color-row]"))
+            .filter(row => normalizeConfig(row.dataset.colorName) === colorKey);
+          if (colorMatches.length !== 1) {
+            return { ok: false, message: colorMatches.length
+              ? "El color " + scanned.color + " coincide con más de una opción. Seleccionalo manualmente en la revisión."
+              : "La configuración coincide, pero el color " + scanned.color + " no existe exactamente en JB Collections. Verificalo manualmente; no se asociaron los datos automáticamente." };
+          }
+          colorRow = colorMatches[0];
+        }
+        matchedRows.push({ row: configRow, colorRow, scanned });
       }
     }
     if (hasVariants) {
@@ -1004,8 +1017,12 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     const syncCheckbox = $("#provider-review-sync-catalog-availability");
     if (syncCheckbox) syncCheckbox.checked = false;
     const source = rows.map(row => "captura " + (row.source_observation || "sin índice")).join(", ");
+    const colorEvidence = matchedRows.filter(item => item.colorRow).map(item =>
+      [item.scanned.ram, item.scanned.storage, item.scanned.color].filter(Boolean).join(" · ")
+    );
     const notes = $("#provider-review-notes");
-    const scannerNote = "JARVIS Scanner Go Partners · " + new Date().toLocaleString("es-NI") + " · " + source;
+    const scannerNote = "JARVIS Scanner Go Partners · " + new Date().toLocaleString("es-NI") + " · " + source +
+      (colorEvidence.length ? " · Colores coincidentes: " + colorEvidence.join("; ") : " · Color sin asociación automática");
     notes.value = [notes.value.trim(), scannerNote].filter(Boolean).join("\\n").slice(0, 2000);
     updateReviewComparison();
     return { ok: true, appliedConfigurations: matchedRows.length || 1 };
