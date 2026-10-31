@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261031-limited-edition-champagne2/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261031-limited-edition-vertical-card1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261030-gallery-ambient2/);
   assert.match(html, /id="quality-price-section"/);
@@ -56,13 +56,12 @@ test("limited edition showcase uses champagne gold in light mode and keeps its l
   assert.ok(css.includes("white-space:nowrap !important"));
 });
 
-test("all technology showcases share the Exclusivos horizontal card layout on desktop", () => {
+test("main technology showcases share the horizontal desktop layout, while limited editions stay vertical", () => {
   const start = css.indexOf("JB TECH · distribución uniforme de todas las vitrinas");
   assert.ok(start >= 0, "shared showcase layout block should exist");
   const sharedLayout = css.slice(start);
   for (const id of [
     "featured-grid",
-    "limited-edition-grid",
     "high-performance-grid",
     "quality-price-grid",
     "top-gaming-grid",
@@ -73,15 +72,20 @@ test("all technology showcases share the Exclusivos horizontal card layout on de
   assert.ok(sharedLayout.includes("height:300px !important"));
   assert.ok(sharedLayout.includes("object-fit:contain !important"));
   assert.ok(sharedLayout.includes("object-position:center !important"));
-  assert.ok(sharedLayout.includes("grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) !important"));
-  assert.ok(sharedLayout.includes("grid-column:1 !important"));
-  assert.ok(sharedLayout.includes("grid-column:2 !important"));
+
+  assert.ok(css.includes("Limited editions use the standard vertical catalog card"));
+  assert.ok(css.includes("#limited-edition-grid.featured-grid {"));
+  assert.ok(css.includes("grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),300px)) !important"));
+  assert.ok(css.includes("max-width:300px !important"));
+  assert.ok(css.includes("aspect-ratio:1 / 1 !important"));
+  assert.ok(css.includes("flex-direction:column !important"));
 });
 
 test("curated showcase typography is easier to read without changing responsive auto-fit", () => {
   assert.match(css, /JB TECH · subir la legibilidad de las vitrinas/);
   assert.match(css, /\.section-subtitle\s*\{\s*font-size:clamp\(14px,1vw,16px\) !important;/);
-  assert.match(css, /#limited-edition-grid\.featured-grid[\s\S]*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,600px\),1fr\)\) !important/);
+  assert.match(css, /Limited editions use the standard vertical catalog card/);
+  assert.match(css, /#limited-edition-grid\.featured-grid\s*\{[\s\S]*?grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,260px\),300px\)\) !important/);
   assert.match(css, /#limited-edition-grid\.featured-grid \.product-badge[\s\S]*?font-size:10px !important/);
   assert.match(css, /#limited-edition-grid\.featured-grid \.product-view-button[\s\S]*?font-size:13\.5px !important/);
 });
