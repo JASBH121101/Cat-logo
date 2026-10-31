@@ -256,6 +256,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
           for (const group of variantMap.values()) {
             const uniquePrices = field => [...new Set(group.rows.map(row => row[field]).filter(value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value))).map(Number))];
             const usd = uniquePrices("price_usd"), nio = uniquePrices("price_nio");
+            const usdHasMissing = group.rows.some(row => row.price_usd === null || row.price_usd === undefined || row.price_usd === "");
+            const nioHasMissing = group.rows.some(row => row.price_nio === null || row.price_nio === undefined || row.price_nio === "");
             if (usd.length > 1 || nio.length > 1) {
               setStatus("El mismo modelo y configuración tiene precios distintos entre colores/capturas. Corregí los datos antes de preparar el producto.", true);
               return;
@@ -263,8 +265,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
             variants.push({
               ram: group.ram,
               storage: group.storage,
-              price_usd: usd.length ? usd[0] : null,
-              price_nio: nio.length ? nio[0] : null,
+              price_usd: usd.length && !usdHasMissing ? usd[0] : null,
+              price_nio: nio.length && !nioHasMissing ? nio[0] : null,
               configuration_availability: "unknown",
               colors: group.rows.filter(row => String(row.color || "").trim()).map(row => ({
                 color: String(row.color).trim(),
