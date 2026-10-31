@@ -333,7 +333,10 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         return;
       }
       renderReview();
-      await native.clearScan().catch(() => {});
+      const cleared = await native.clearScan();
+      if (cleared?.cleared !== true) {
+        throw new Error("Los productos quedaron listos para revisión, pero Android no confirmó la eliminación del OCR temporal.");
+      }
       recoverableSession = false;
       setStatus(wasInterrupted
         ? "Revisión parcial lista. Android interrumpió la captura, pero se recuperaron " + observations.length + " pantalla(s). " + interruptionReason + " Revisá cuidadosamente los resultados."
