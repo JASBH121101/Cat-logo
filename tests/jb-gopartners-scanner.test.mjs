@@ -255,14 +255,14 @@ test("OCR preview exposes the exact locally recognized screen text without HTML 
   const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
   assert.match(html, /id="jb-gp-scan-ocr-preview"/);
   assert.match(html, /id="jb-gp-scan-ocr-content"/);
-  assert.match(source, /function renderOcrPreview\\(observations\\)/);
+  assert.match(source, /function renderOcrPreview\(observations\)/);
   assert.match(source, /text\\.textContent = item\\.text/);
   assert.match(source, /Ver texto reconocido/);
 });
 
 test("scanner reports whether Gemini found no candidates or grounding rejected its candidates", () => {
   const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
-  assert.match(source, /payload\\.diagnostics/);
+  assert.match(source, /payload\.diagnostics/);
   assert.match(source, /candidates_received/);
   assert.match(source, /Gemini propuso/);
   assert.match(source, /Gemini no encontró una identidad de producto clara/);
