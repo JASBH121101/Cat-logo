@@ -1,0 +1,21 @@
+{
+  "name": "jb-manager-collections-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper for the private JB Manager Collections catalog admin",
+  "scripts": {
+    "prepare:web": "node prepare-web.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/local-notifications": "8.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.28.2",
+    "sharp": "0.34.1"
+  }
+}
