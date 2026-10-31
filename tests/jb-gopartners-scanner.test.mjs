@@ -105,6 +105,8 @@ test("OCR observations remain in native memory until a successful review is rend
   assert.ok(clearAfterReview > render, "OCR must only be cleared after analysis and review rendering succeed");
   assert.match(source, /recoverableSession = true/);
   assert.match(source, /El texto OCR sigue guardado temporalmente/);
+  assert.match(source, /const cleared = await native\.clearScan\(\)/);
+  assert.match(source, /cleared\?\.cleared !== true/);
 });
 
 
