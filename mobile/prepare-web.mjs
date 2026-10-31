@@ -665,7 +665,7 @@ if (!adminHtml.includes('src="./jb-manager-biometric-auth.js"')) {
   const adminModule = adminHtml.indexOf('<script type="module" src="admin.js');
   if (adminModule < 0) throw new Error("Could not locate the admin module to install the native biometric bridge.");
   adminHtml = adminHtml.slice(0, adminModule)
-    + '<script src="./jb-manager-biometric-auth.js"></script>\\n'
+    + '<script src="./jb-manager-biometric-auth.js"></script>\n'
     + adminHtml.slice(adminModule);
 }
 
