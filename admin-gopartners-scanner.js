@@ -377,6 +377,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
       setStatus("Sesión descartada. Android confirmó que se eliminó el texto OCR temporal.");
     } catch (error) {
+      scanning = false;
       try { restoreSessionState(await native.getScanState()); } catch {}
       setStatus((error?.message || "No se pudo descartar la sesión.") + " Los resultados no se consideran eliminados.", true);
     }
