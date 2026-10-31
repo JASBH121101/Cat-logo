@@ -26,18 +26,19 @@ test("product draft and unpublished saves require a name but defer publish-only 
   assert.match(admin, /category: isPerfume \? "Perfumería" : \(\$\("#product-category"\)\.value\.trim\(\) \|\| null\)/);
 });
 
-test("RAM and storage fields stay available but are optional when a product does not use them", () => {
-  assert.match(admin, /function categoryUsesRamStorage[\s\S]*?\["Celulares", "Tablets", "Laptops"\]/);
-  assert.match(admin, /group\.querySelectorAll\("\.variant-storage-label, \[data-group-ram\]"\)[\s\S]*?wrapper\?\.classList\.remove\("hidden"\)/);
-  assert.match(admin, /const ramRaw = read\("\[data-group-ram\]"\);[\s\S]*?const ram = ramRaw \?/);
-  assert.doesNotMatch(admin, /requiresConfiguration && !options\.allowIncomplete && !ramRaw/);
+test("RAM and storage fields are reserved for categories that use those specifications", () => {
+  assert.match(admin, /function categoryUsesRamStorage[\\s\\S]*?\\["Celulares", "Tablets", "Laptops"\\]/);
+  assert.match(admin, /function categoryUsesColorOnlyVariants[\\s\\S]*?\\["Televisores", "Audio"\\]/);
+  assert.match(admin, /label\\.classList\\.toggle\\("hidden", colorOnly\\)/);
+  assert.match(admin, /const ramRaw = read\\("\\[data-group-ram\\]"\\);[\\s\\S]*?const ram = ramRaw \\?/);
+  assert.doesNotMatch(admin, /requiresConfiguration && !options\\.allowIncomplete && !ramRaw/);
 });
 
-test("variant add control is available for every technology category and fields adapt immediately", () => {
-  assert.match(admin, /addVariantButton\?\.classList\.remove\("hidden"\)/);
-  assert.match(admin, /addVariantButton\.title = "Agregar otra variante de capacidad, RAM, precio y color"/);
-  assert.match(admin, /wrapper\?\.classList\.remove\("hidden"\)/);
-  assert.match(admin, /updateCategoryVariantVisibility\(\);[\s\S]*?const focusSelector = categoryUsesRamStorage\(\) \?[\s\S]*?data-group-price-usd/);
+test("variant controls and specifications adapt immediately to the selected technology category", () => {
+  assert.match(admin, /addVariantButton\\.classList\\.toggle\\("hidden", colorOnly\\)/);
+  assert.match(admin, /addVariantButton\\.title = colorOnly[\\s\\S]*?Agregar otra variante de capacidad, RAM, precio y color/);
+  assert.match(admin, /label\\.classList\\.toggle\\("hidden", colorOnly\\)/);
+  assert.match(admin, /updateCategoryVariantVisibility\\(\\);[\\s\\S]*?const focusSelector = categoryUsesRamStorage\\(\\) \\?[\\s\\S]*?data-group-price-usd/);
   assert.match(html, /id="base-color-manager" class="base-color-manager primary-config-slot"/);
 });
 
@@ -268,7 +269,8 @@ test("dashboard pending-publication count and shortcut include both unpublished 
 test("changing only the product catalog selector does not mark the editor dirty", () => {
   assert.match(admin, /f\.id\s*===\s*"product-catalog-type"/);
   assert.match(admin, /function updateEditorDirtyState\(\)/);
-  assert.match(admin, /if \(hasOpenProduct \|\| editorIsDirty\)/);
+  assert.match(admin, /if \\(requested === activeCatalogType\\) return/);
+  assert.match(admin, /updateEditorDirtyState\\(\\);[\\s\\S]*?if \\(editorIsDirty\\)/);
 });
 
 test("desktop sidebar has an accessible collapse control and compact layout", () => {
