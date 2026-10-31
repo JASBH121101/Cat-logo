@@ -12,6 +12,7 @@ const provider = readFileSync(new URL("../admin-provider.js", import.meta.url), 
 const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.url), "utf8");
 const publicApp = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const advisorCss = readFileSync(new URL("../ai-assistant.css", import.meta.url), "utf8");
+const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
   assert.match(admin, /if \(!name\) throw new Error\("Escribí el nombre del producto\."\);/);
