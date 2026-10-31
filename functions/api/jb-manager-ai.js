@@ -184,7 +184,7 @@ export async function onRequestPost({ request, env }) {
   let body;
   try {
     const raw = await request.text();
-    if (raw.length > 18_000) return response(413, { ok: false, error: "request_too_large" }, origin);
+    if (raw.length > 64_000) return response(413, { ok: false, error: "request_too_large" }, origin);
     body = JSON.parse(raw);
   } catch {
     return response(400, { ok: false, error: "invalid_json" }, origin);
