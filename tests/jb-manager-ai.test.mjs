@@ -51,8 +51,8 @@ test("Gemini endpoint verifies Supabase identity and admin membership before cal
 });
 
 test("Gemini cannot write to the catalog and all changes remain proposals", () => {
-  assert.match(endpoint, /No afirmés que guardaste, cambiaste o publicaste datos/);
-  assert.match(endpoint, /Toda modificación debe presentarse como propuesta/);
+  assert.match(endpoint, /No afirmés que guardaste, cambiaste, publicaste, enviaste o ejecutaste acciones/);
+  assert.match(endpoint, /Toda modificación de catálogo es solo una propuesta/);
   assert.doesNotMatch(endpoint, /\/rest\/v1\/products/);
   assert.doesNotMatch(endpoint, /service_role/i);
   assert.doesNotMatch(assistant, /supabase\.from\(["']products["']\)\.(insert|update|upsert|delete)/);
@@ -102,7 +102,7 @@ test("JB Copilot supports natural conversation and prepares a structured product
   assert.match(endpoint, /productDraftSchema/);
   assert.match(endpoint, /product_draft: productDraft && productDraft\.name \? productDraft : null/);
   assert.match(endpoint, /No inventés modelo, especificaciones, RAM, almacenamiento, colores/);
-  assert.match(endpoint, /No calculés una moneda a partir de la otra/);
+  assert.match(endpoint, /Nunca calculés una moneda a partir de la otra/);
   assert.match(assistant, /onPrepareProductDraft/);
   assert.match(assistant, /Rellenar formulario/);
   assert.match(assistant, /no guarda, publica ni añade fotografías/);
