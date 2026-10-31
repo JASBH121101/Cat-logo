@@ -1000,6 +1000,10 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
     }
     if (hasVariants) {
       for (const item of matchedRows) {
+        if (item.colorRow) {
+          item.colorRow.classList.add("is-jb-scanner-match");
+          item.colorRow.title = "JARVIS reconoció este color. Confirmá manualmente su disponibilidad.";
+        }
         if (item.scanned.price_usd != null) {
           const field = item.row.querySelector("[data-provider-config-price-usd]");
           if (field) field.value = String(item.scanned.price_usd);
