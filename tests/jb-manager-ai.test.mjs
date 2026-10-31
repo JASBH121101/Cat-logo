@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { normalizeCopilotMissingFieldKey } from "../admin-ai.js";
 
 const root = new URL("../", import.meta.url);
 const html = await readFile(new URL("admin.html", root), "utf8");
@@ -645,4 +646,16 @@ test("the scanner status and review cards stay inside the conversation card", ()
   assert.ok(scannerStart < promptsStart);
   assert.match(html, /id="jb-gp-scan-start">Escanear proveedor/);
   assert.match(html, /id="jb-gp-scan-results"/);
+});
+
+
+test("Copilot missing product fields normalize spaces and hyphens into known Spanish labels", () => {
+  assert.equal(normalizeCopilotMissingFieldKey("price usd"), "price_usd");
+  assert.equal(normalizeCopilotMissingFieldKey("sub-category"), "sub_category");
+  assert.equal(normalizeCopilotMissingFieldKey("description"), "description");
+  assert.equal(normalizeCopilotMissingFieldKey("variants"), "variants");
+  assert.match(assistant, /"price_usd":"Precio de venta \(USD\)"/);
+  assert.match(assistant, /"subcategory":"Subcategoría"/);
+  assert.match(assistant, /"description":"Descripción comercial"/);
+  assert.match(assistant, /"variants":"Configuraciones y variantes"/);
 });
