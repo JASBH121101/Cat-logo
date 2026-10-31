@@ -2,6 +2,7 @@ name: Build JB Manager Collections APK
 # Build and sign the Android APK using the latest merged production source from main.
 # Rebuild after the mobile chat theme and sticky-header scroll fixes were merged.
 # Trigger update-compatible rebuild after the mobile variant theme fix was merged.
+# Trigger update-compatible rebuild with native microphone permission recovery and Copilot CORS fixes.
 # Trigger update-compatible rebuild with trust-card alignment, chat data policy, and admin theme fixes.
 
 concurrency:
