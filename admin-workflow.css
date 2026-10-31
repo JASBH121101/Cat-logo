@@ -730,3 +730,156 @@ html[data-theme="light"] body.admin-body form#product-form details.variant-confi
   border-color: #9aafd6 !important;
   box-shadow: 0 0 0 1px rgba(91, 119, 170, .10) !important;
 }
+
+
+/* JB MANAGER · one mixed inventory with shared catalog and taxonomy filters. */
+.product-form-catalog-switcher {
+  margin: 0 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #dce5f3);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(80, 111, 215, .08), rgba(37, 151, 168, .06));
+}
+.product-form-catalog-switcher > label {
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  color: var(--ink, #23324c);
+  font-weight: 800;
+}
+.product-form-catalog-switcher select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #cbd7e8);
+  border-radius: 10px;
+  color: var(--ink, #23324c);
+  background: var(--surface, #fff);
+  font: inherit;
+}
+.product-form-catalog-switcher small {
+  color: var(--muted, #65748f);
+  font-size: .8rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.product-form-catalog-switcher select:disabled {
+  cursor: not-allowed;
+  opacity: .78;
+}
+.admin-list-filter-row {
+  display: grid;
+  grid-template-columns: minmax(180px, .8fr) minmax(220px, 1.2fr);
+  gap: 12px;
+  margin: 0 0 13px;
+  padding: 12px;
+  border: 1px solid var(--line, #e0e7f2);
+  border-radius: 13px;
+  background: var(--surface-soft, #f6f8fc);
+}
+.admin-list-filter-row label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: var(--muted, #64748b);
+  font-size: .78rem;
+  font-weight: 800;
+}
+.admin-list-filter-row select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line, #d7e0ee);
+  border-radius: 9px;
+  color: var(--ink, #23324c);
+  background: var(--surface, #fff);
+  font: inherit;
+  font-size: .88rem;
+}
+.admin-product-taxonomy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 7px;
+}
+.admin-product-catalog-pill,
+.admin-product-category-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  width: fit-content;
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.admin-product-catalog-pill.is-technology {
+  color: #2854a0;
+  border-color: #c8d8f8;
+  background: #edf3ff;
+}
+.admin-product-catalog-pill.is-perfumery {
+  color: #89652d;
+  border-color: #ead8b6;
+  background: #fbf5e9;
+}
+.admin-product-category-pill {
+  color: #475a77;
+  border-color: #dce4ef;
+  background: #f4f7fb;
+}
+html[data-theme="dark"] body.admin-body .product-form-catalog-switcher {
+  border-color: #3a4e70;
+  background: linear-gradient(135deg, rgba(74, 103, 192, .18), rgba(34, 132, 151, .12));
+}
+html[data-theme="dark"] body.admin-body .product-form-catalog-switcher > label,
+html[data-theme="dark"] body.admin-body .admin-list-filter-row label {
+  color: #dbe7ff;
+}
+html[data-theme="dark"] body.admin-body .product-form-catalog-switcher select,
+html[data-theme="dark"] body.admin-body .admin-list-filter-row select {
+  color: #f3f6ff;
+  border-color: #53688e;
+  background: #0d172b;
+  color-scheme: dark;
+}
+html[data-theme="dark"] body.admin-body .product-form-catalog-switcher small {
+  color: #b5c6e5;
+}
+html[data-theme="dark"] body.admin-body .admin-list-filter-row {
+  border-color: #344968;
+  background: #111d33;
+}
+html[data-theme="dark"] body.admin-body .admin-product-catalog-pill.is-technology {
+  color: #c5d8ff;
+  border-color: #3b568a;
+  background: #1b3157;
+}
+html[data-theme="dark"] body.admin-body .admin-product-catalog-pill.is-perfumery {
+  color: #f3dfb8;
+  border-color: #79623c;
+  background: #3a3022;
+}
+html[data-theme="dark"] body.admin-body .admin-product-category-pill {
+  color: #d0dcef;
+  border-color: #405473;
+  background: #1b2a43;
+}
+@media (max-width: 620px) {
+  .admin-list-filter-row {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .product-form-catalog-switcher {
+    padding: 12px;
+  }
+  .admin-product-taxonomy {
+    gap: 5px;
+  }
+}
