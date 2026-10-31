@@ -25,6 +25,7 @@ test("JB Manager AI requests the native Android microphone permission and keeps 
   assert.match(assistant, /nativeVoicePlugin\(\)/);
   assert.match(assistant, /native\.checkPermission\(\)/);
   assert.match(assistant, /native\.requestPermission\(\)/);
+  assert.match(assistant, /permission\?\.permanentlyDenied/);
   assert.match(assistant, /native\.startListening\(\{ language: "es-NI" \}\)/);
   assert.match(assistant, /native\.addListener\("partialResult"/);
   assert.match(assistant, /native\.addListener\("result"/);
