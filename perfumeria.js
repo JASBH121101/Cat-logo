@@ -9,7 +9,7 @@ const categoryDefinitions = [
   { key: "disenador", section: $("#category-disenador"), grid: $("#product-grid-disenador"), count: $("#category-disenador-count"), empty: $("#empty-category-disenador") },
   { key: "otras", section: $("#category-otras"), grid: $("#product-grid-otras"), count: $("#category-otras-count"), empty: null, optional: true }
 ];
-const productGrids = categoryDefinitions.map(category => category.grid).filter(Boolean);
+const productGrids = [...categoryDefinitions.map(category => category.grid), $("#perfume-exclusive-grid"), $("#perfume-limited-edition-grid")].filter(Boolean);
 const statusNode = $("#catalog-status");
 const emptyNode = $("#empty-results");
 const searchInput = $("#perfume-search-input");
@@ -25,6 +25,12 @@ const productTypeFilters = $("#product-type-filters");
 const clearAllFiltersButton = $("#clear-all-filters");
 const filterSummary = $("#perfume-filter-summary");
 const resultsHeading = $("#catalog-results-heading");
+const perfumeExclusiveSection = $("#perfume-exclusive-section");
+const perfumeExclusiveGrid = $("#perfume-exclusive-grid");
+const perfumeExclusiveCount = $("#perfume-exclusive-count");
+const perfumeLimitedEditionSection = $("#perfume-limited-edition-section");
+const perfumeLimitedEditionGrid = $("#perfume-limited-edition-grid");
+const perfumeLimitedEditionCount = $("#perfume-limited-edition-count");
 const resultsEyebrow = $("#catalog-results-eyebrow");
 const resultsTitle = $("#catalog-results-title");
 const minPriceInput = $("#price-min-input");
@@ -122,6 +128,10 @@ function canonicalAudience(value) {
   if (["hombre","masculino","male","man"].includes(audience)) return "hombre";
   if (["mujer","femenino","female","woman"].includes(audience)) return "mujer";
   return audience === "unisex" ? "unisex" : "";
+}
+
+function audienceDisplay(value) {
+  return ({ hombre: "Varón", mujer: "Mujer", unisex: "Unisex" })[canonicalAudience(value)] || "";
 }
 function audienceMatches(product) {
   return !selectedAudiences.size || selectedAudiences.has(canonicalAudience(product.perfume_details?.audience));
@@ -245,18 +255,93 @@ function productLink(product) {
 }
 
 function productShareLink(product) {
-  const currentHost = window.location.hostname.toLocaleLowerCase();
-  const shareOrigin = currentHost.endsWith(".github.io")
-    ? "https://cat-logo-preview.vercel.app"
-    : window.location.origin;
+  const configuredPublicUrl = String(window.CATALOG_CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").trim();
+  let shareOrigin = "https://jb-collections.pages.dev";
+  try {
+    shareOrigin = new URL(configuredPublicUrl).origin;
+  } catch {
+    shareOrigin = "https://jb-collections.pages.dev";
+  }
   const share = new URL("/api/share", shareOrigin);
   share.searchParams.set("catalog", "perfumery");
   share.searchParams.set("id", String(product.id));
   return share.href;
 }
 
+const whatsappIconMarkup = `<svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg>`;
+const chatIconMarkup = `<svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 function whatsappLink(message) {
   return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
+}
+
+async function startPerfumePrivateChat(product, paymentType = "product", button = null) {
+  if (!product) {
+    window.alert("No pudimos identificar esta fragancia. Cerrá la ficha y volvé a abrirla.");
+    return;
+  }
+  const detail = product.perfume_details || {};
+  const concentration = String(detail.concentration || "").trim();
+  const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
+  const price = formatUSD(product.price_usd);
+  const contextName = [product.name || "Fragancia", concentration, volume, price].filter(Boolean).join(" · ").slice(0, 160);
+  const baseUrl = String(window.CATALOG_CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
+  if (button) {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+  }
+  try {
+    const response = await fetch(baseUrl + "/api/private-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      credentials: "omit",
+      body: JSON.stringify({
+        action: "start",
+        catalogType: "perfumery",
+        productId: product.id,
+        productName: contextName,
+        productUrl: productLink(product),
+        paymentTopic: ["financing", "credit_card", "other", "product"].includes(paymentType) ? paymentType : "product"
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok || !data.inviteUrl) {
+      throw new Error(data.message || "No se pudo abrir la mensajería privada. Intentá de nuevo o elegí WhatsApp.");
+    }
+    window.location.assign(data.inviteUrl);
+  } catch (error) {
+    window.alert(error.message || "No se pudo abrir la mensajería privada. Intentá de nuevo o elegí WhatsApp.");
+    if (button) {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
+  }
+}
+
+
+function refreshPerfumePaymentChoices() {
+  const product = perfumes.find(item => String(item.id) === String(dialogContent.dataset.productId));
+  const typeSelect = dialogContent.querySelector("#perfume-payment-type");
+  const channelPanel = dialogContent.querySelector("#perfume-payment-channel-panel");
+  const whatsappChoice = dialogContent.querySelector("#perfume-payment-whatsapp");
+  const privateChoice = dialogContent.querySelector("#perfume-payment-jb");
+  const paymentType = typeSelect?.value || "";
+  if (channelPanel) channelPanel.hidden = !paymentType;
+  if (!product || !paymentType) return;
+
+  if (whatsappChoice) {
+    const intent = paymentType === "credit_card"
+      ? "quisiera información sobre pagar con tarjeta de crédito para esta fragancia."
+      : "quisiera información sobre las opciones de financiamiento para esta fragancia.";
+    whatsappChoice.href = whatsappLink(buildWhatsAppMessage(product, intent));
+  }
+  if (privateChoice) {
+    privateChoice.dataset.paymentType = paymentType;
+    privateChoice.setAttribute("aria-label", paymentType === "credit_card"
+      ? "Abrir mensajería privada de JB Collections para consultar tarjeta de crédito"
+      : "Abrir mensajería privada de JB Collections para consultar financiamiento");
+  }
 }
 
 function buildWhatsAppMessage(product, intent) {
@@ -290,16 +375,53 @@ function isCatalogAdminActivityActive() {
   }
 }
 
+let perfumeVisitorLocationPromise = null;
+async function getPerfumeVisitorLocation() {
+  if (!perfumeVisitorLocationPromise) {
+    perfumeVisitorLocationPromise = fetch("../api/catalog-location", {
+      method: "GET", credentials: "same-origin", cache: "no-store"
+    }).then(response => response.ok ? response.json() : null)
+      .then(value => ({
+        country: typeof value?.country === "string" ? value.country.slice(0, 2).toUpperCase() : null,
+        department: typeof value?.department === "string" ? value.department.slice(0, 80) : null
+      }))
+      .catch(() => ({ country: null, department: null }));
+  }
+  return perfumeVisitorLocationPromise;
+}
+
+async function recordPerfumeCatalogPageVisit() {
+  if (!supabase || isCatalogAdminActivityActive()) return;
+  const visitor = await getPerfumeVisitorLocation();
+  const { error } = await supabase.from("catalog_events").insert({
+    product_id: null,
+    event_type: "catalog_view",
+    catalog_type: "perfumery",
+    visitor_country: visitor.country,
+    visitor_department: visitor.department
+  });
+  if (error) console.info("No se pudo registrar la visita de catálogo.", error.message);
+}
+
 async function recordEvent(productId, eventType) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view","whatsapp_click"].includes(eventType)) return;
   try {
-    const { error } = await supabase.from("catalog_events").insert({
+    const eventBase = {
       product_id: productId,
       event_type: eventType,
       variant_color: null,
       variant_ram: null,
       variant_storage: null
+    };
+    const visitor = await getPerfumeVisitorLocation();
+    let { error } = await supabase.from("catalog_events").insert({
+      ...eventBase,
+      visitor_country: visitor.country,
+      visitor_department: visitor.department
     });
+    if (error && /visitor_(country|department)|schema cache|column .*does not exist/i.test(error.message || "")) {
+      ({ error } = await supabase.from("catalog_events").insert(eventBase));
+    }
     if (error) console.info("La analítica no está disponible:", error.message);
   } catch (error) {
     console.info("La analítica no está disponible.", error);
@@ -389,40 +511,87 @@ document.addEventListener("load", event => {
 function imageMarkup(product) {
   const url = getImages(product)[0] || "";
   return url
-    ? '<img data-perfume-image src="' + escapeHtml(url) + '" alt="' + escapeHtml(product.name || "Fragancia") + '" loading="lazy" decoding="async">'
+    ? '<img data-perfume-image src="' + escapeHtml(url) + '" alt="' + escapeHtml(product.name || "Fragancia") + '" loading="lazy">'
     : '<div class="perfume-photo-placeholder"><span aria-hidden="true">✦</span><small>Foto por agregar</small></div>';
+}
+
+function normalizedPerfumeProductTags(product) {
+  return [...new Set((Array.isArray(product?.tags) ? product.tags : [])
+    .map(tag => String(tag || "").trim().toLocaleLowerCase("es"))
+    .filter(tag => Boolean(tag) && tag !== "recommended"))];
+}
+
+
+function renderCommercialDescription(value, fallbackText) {
+  const source = String(value || "").replace(/\r\n?/g, "\n").trim();
+  if (!source) return '<p class="commercial-copy-empty">' + escapeHtml(fallbackText || "Consultá más información en la tienda.") + '</p>';
+
+  const lines = source.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const blocks = [];
+  let bullets = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    blocks.push('<ul class="commercial-copy-list">' + bullets.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>');
+    bullets = [];
+  };
+
+  for (const rawLine of lines) {
+    const parts = rawLine.split(/\s+[•●▪]\s+/).map(part => part.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      flushBullets();
+      if (!/^(?:[-*•●▪]|\d+[.)])\s+/.test(parts[0])) blocks.push('<p>' + escapeHtml(parts.shift()) + '</p>');
+      for (const part of parts) bullets.push(part.replace(/^(?:[-*•●▪]|\d+[.)])\s+/, ""));
+      continue;
+    }
+    const bulletMatch = rawLine.match(/^(?:[-*•●▪]|\d+[.)])\s+(.+)$/);
+    if (bulletMatch) {
+      bullets.push(bulletMatch[1]);
+      continue;
+    }
+    flushBullets();
+    const sentences = rawLine.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡0-9])/u).filter(Boolean);
+    if (sentences.length > 1 && rawLine.length > 150) {
+      sentences.forEach(sentence => blocks.push('<p>' + escapeHtml(sentence.trim()) + '</p>'));
+    } else {
+      blocks.push('<p>' + escapeHtml(rawLine) + '</p>');
+    }
+  }
+  flushBullets();
+  if (blocks.length && blocks[0].startsWith("<p>")) blocks[0] = blocks[0].replace("<p>", '<p class="commercial-copy-lead">');
+  return '<div class="commercial-copy-blocks">' + blocks.join("") + '</div>';
 }
 
 function renderCard(product) {
   const detail = product.perfume_details || {};
-  const family = familyLabel(detail.family);
   const concentration = String(detail.concentration || "").trim();
   const volume = detail.volume_ml ? Number(detail.volume_ml).toLocaleString("es-NI") + " ml" : "";
-  const productTypeLabel = product.product_type === "set" ? "Set de perfumes" : "Perfume / fragancia";
   const image = imageMarkup(product);
   const tightPhotoFrame = /9\s*pm\s*elixir|sauvage\s+elixir/i.test(String(product.name || ""));
-  const badge = product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "";
+  const tags = normalizedPerfumeProductTags(product);
+  const exclusive = tags.includes("exclusive");
+  const limitedEdition = tags.includes("limited_edition");
+  const badge = exclusive
+    ? '<span class="perfume-featured-badge">♛ EXCLUSIVO</span>'
+    : (product.featured ? '<span class="perfume-featured-badge">✦ DESTACADO</span>' : "");
+  const limitedBadge = limitedEdition ? '<span class="perfume-limited-edition-badge">♛ EDICIÓN LIMITADA</span>' : "";
   const state = statusLabel(product.availability);
   const stateBadge = state === "Disponible" ? "" : '<span class="perfume-state-badge">' + escapeHtml(state) + '</span>';
   const nio = formatNIO(product.price_nio);
+  const productMeta = [concentration, volume].filter(Boolean).map(escapeHtml).join('<span aria-hidden="true">·</span>');
 
-  const badges = badge || stateBadge
-    ? '<div class="perfume-product-badges">' + badge + stateBadge + '</div>'
+  const badges = badge || limitedBadge || stateBadge
+    ? '<div class="perfume-product-badges">' + badge + limitedBadge + stateBadge + '</div>'
     : "";
 
   return '<article class="product-card perfume-product-card' + (product.featured ? ' featured-product-card' : '') + '">' +
     badges +
     '<div class="product-image perfume-product-image' + (tightPhotoFrame ? ' is-tight-photo-frame' : '') + '">' + image + '</div>' +
     '<div class="product-card-content perfume-product-card-content">' +
-      '<p class="perfume-card-family">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
       '<h3>' + escapeHtml(product.name || "Fragancia sin nombre") + '</h3>' +
-      (product.brand ? '<p class="perfume-card-brand">' + escapeHtml(product.brand) + '</p>' : '') +
-      '<div class="perfume-product-meta">' + [concentration, volume, detail.audience].filter(Boolean).map(escapeHtml).join('<span aria-hidden="true">·</span>') + '</div>' +
-      (detail.scent_family ? '<p class="perfume-card-scent">' + escapeHtml(detail.scent_family) + '</p>' : '') +
-      '<div class="perfume-price-label">' + 'Precio' + '</div>' +
+      (productMeta ? '<div class="perfume-product-meta">' + productMeta + '</div>' : '') +
       '<div class="perfume-product-price">' + escapeHtml(formatUSD(product.price_usd)) + '</div>' +
       (nio ? '<p class="perfume-product-price-secondary">' + escapeHtml(nio) + '</p>' : '') +
-      '<div class="product-actions"><a class="button perfume-view-button" href="' + escapeHtml(productLink(product)) + '" data-details="' + escapeHtml(product.id) + '">' + (product.product_type === "set" ? "Ver set" : "Ver fragancia") + ' <span aria-hidden="true">↗</span></a></div>' +
+      '<div class="product-actions"><a class="button perfume-view-button" href="' + escapeHtml(productLink(product)) + '" data-details="' + escapeHtml(product.id) + '">Ver producto <span aria-hidden="true">↗</span></a></div>' +
     '</div>' +
   '</article>';
 }
@@ -486,20 +655,44 @@ function renderProducts() {
   const filtering = hasContentFilters();
   const catalogEmpty = perfumes.length === 0;
   const hasMatchedProducts = matched.length > 0;
+  const exclusiveProducts = filtering ? [] : matched.filter(product => normalizedPerfumeProductTags(product).includes("exclusive"));
+  const limitedEditionProducts = filtering ? [] : matched.filter(product => normalizedPerfumeProductTags(product).includes("limited_edition"));
+  const highlightedIds = new Set([...exclusiveProducts, ...limitedEditionProducts].map(product => String(product.id)));
+  const categorizedProducts = filtering
+    ? matched
+    : matched.filter(product => !highlightedIds.has(String(product.id)));
 
   resultsHeading.classList.toggle("hidden", catalogEmpty);
   resultsEyebrow.textContent = filtering ? "RESULTADOS" : "DESCUBRÍ";
   resultsTitle.textContent = filtering ? "Resultados de tu búsqueda" : "Toda la colección";
 
+  if (perfumeExclusiveSection && perfumeExclusiveGrid) {
+    perfumeExclusiveSection.classList.toggle("hidden", exclusiveProducts.length === 0);
+    perfumeExclusiveGrid.innerHTML = exclusiveProducts.map(renderCard).join("");
+  }
+  if (perfumeExclusiveCount) perfumeExclusiveCount.textContent = exclusiveProducts.length
+    ? exclusiveProducts.length + (exclusiveProducts.length === 1 ? " fragancia exclusiva" : " fragancias exclusivas")
+    : "";
+  if (perfumeLimitedEditionSection && perfumeLimitedEditionGrid) {
+    perfumeLimitedEditionSection.classList.toggle("hidden", limitedEditionProducts.length === 0);
+    perfumeLimitedEditionGrid.innerHTML = limitedEditionProducts.map(renderCard).join("");
+  }
+  if (perfumeLimitedEditionCount) perfumeLimitedEditionCount.textContent = limitedEditionProducts.length
+    ? limitedEditionProducts.length + (limitedEditionProducts.length === 1 ? " edición" : " ediciones")
+    : "";
+
   categoryDefinitions.forEach(category => {
-    const categoryProducts = matched.filter(product => canonicalFamily(product.perfume_details?.family) === category.key);
+    const categoryProducts = categorizedProducts.filter(product => canonicalFamily(product.perfume_details?.family) === category.key);
     const hasCategoryProducts = categoryProducts.length > 0;
 
     if (category.optional) {
       category.section.classList.toggle("hidden", !hasCategoryProducts);
+    } else if (!filtering) {
+      category.section.classList.toggle("hidden", !hasCategoryProducts);
+      category.empty?.classList.add("hidden");
     } else {
-      category.section.classList.toggle("hidden", filtering && !hasCategoryProducts);
-      category.empty.classList.toggle("hidden", hasCategoryProducts || filtering);
+      category.section.classList.toggle("hidden", !hasCategoryProducts);
+      category.empty?.classList.add("hidden");
     }
 
     category.grid.innerHTML = categoryProducts.map(renderCard).join("");
@@ -541,7 +734,7 @@ function renderProducts() {
 function notesSection(title, values) {
   const items = Array.isArray(values) ? values.filter(Boolean) : [];
   if (!items.length) return "";
-  return '<section class="perfume-note-group"><h3>' + title + '</h3>' +
+  return '<section class="perfume-note-group"><h2 class="perfume-note-heading">' + title + '</h2>' +
     '<ul>' + items.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>' +
     '</section>';
 }
@@ -568,7 +761,7 @@ function openPerfume(product) {
       '</div>' +
       (images.length > 1
         ? '<div class="perfume-dialog-thumbnails">' + images.map((url,index) =>
-            '<button type="button" class="perfume-dialog-thumb ' + (index===0 ? "active" : "") + '" data-gallery-image="' + escapeHtml(url) + '" aria-label="Ver fotografía ' + (index+1) + '"><img src="' + escapeHtml(url) + '" alt="" loading="lazy" decoding="async"></button>'
+            '<button type="button" class="perfume-dialog-thumb ' + (index===0 ? "active" : "") + '" data-gallery-image="' + escapeHtml(url) + '" aria-label="Ver fotografía ' + (index+1) + '"><img src="' + escapeHtml(url) + '" alt="" loading="lazy"></button>'
           ).join("") + '</div>'
         : "")
     : '<div class="perfume-photo-placeholder perfume-dialog-photo-placeholder"><span aria-hidden="true">✦</span><small>Fotografía no disponible</small></div>';
@@ -578,22 +771,33 @@ function openPerfume(product) {
       '<section class="perfume-dialog-gallery">' + gallery + '</section>' +
       '<section class="perfume-dialog-detail">' +
         '<p class="perfume-kicker">' + escapeHtml(productTypeLabel + " · " + family) + '</p>' +
-        '<h2>' + escapeHtml(product.name || "Fragancia") + '</h2>' +
+        '<h1 class="perfume-dialog-title">' + escapeHtml(product.name || "Fragancia") + '</h1>' +
         (product.brand ? '<p class="perfume-dialog-brand">' + escapeHtml(product.brand) + '</p>' : '') +
-        '<p class="perfume-dialog-description">' + escapeHtml(product.description || "Consultá por las notas y características de esta fragancia.") + '</p>' +
+        '<div class="perfume-dialog-description">' + renderCommercialDescription(product.description, "Consultá por las notas y características de esta fragancia.") + '</div>' +
         '<dl class="perfume-dialog-facts">' +
           (concentration ? '<div><dt>Concentración</dt><dd>' + escapeHtml(concentration) + '</dd></div>' : '') +
           (detail.volume_ml ? '<div><dt>Contenido</dt><dd>' + escapeHtml(volume) + '</dd></div>' : '') +
           '<div><dt>Tipo de producto</dt><dd>' + escapeHtml(productTypeLabel) + '</dd></div>' +
-          (detail.audience ? '<div><dt>Género</dt><dd>' + escapeHtml(detail.audience) + '</dd></div>' : '') +
+          (canonicalAudience(detail.audience) ? '<div><dt>Público</dt><dd>' + escapeHtml(audienceDisplay(detail.audience)) + '</dd></div>' : '') +
           '<div><dt>Disponibilidad</dt><dd>' + escapeHtml(statusLabel(product.availability)) + '</dd></div>' +
           (detail.scent_family ? '<div><dt>Familia olfativa</dt><dd>' + escapeHtml(detail.scent_family) + '</dd></div>' : '') +
         '</dl>' +
         '<div class="perfume-dialog-price"><span>Precio</span><strong>' + escapeHtml(formatUSD(product.price_usd)) + '</strong>' + (nio ? '<small>' + escapeHtml(nio) + '</small>' : '') + '</div>' +
-        '<div class="perfume-dialog-actions">' +
-          '<a id="perfume-buy-link" class="perfume-primary-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quiero comprar este set de perfumes." : "quiero comprar esta fragancia."))) + '" target="_blank" rel="noopener">' + (product.product_type === "set" ? "Quiero comprar este set" : "Quiero comprarla") + ' <span aria-hidden="true">↗</span></a>' +
-          '<a id="perfume-question-link" class="perfume-outline-link" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar opciones de pago para este set de perfumes." : "quisiera consultar las opciones de financiamiento o pago con tarjeta de crédito para esta fragancia."))) + '" target="_blank" rel="noopener">Consultar pago o financiamiento</a>' +
+        '<div class="perfume-dialog-actions perfume-dialog-actions--channels">' +
+          '<a id="perfume-buy-link" class="perfume-primary-link contact-channel-button contact-channel-button--whatsapp" href="' + escapeHtml(whatsappLink(buildWhatsAppMessage(product, product.product_type === "set" ? "quisiera consultar por este set de perfumes." : "quisiera consultar por esta fragancia."))) + '" target="_blank" rel="noopener"><span class="contact-channel-icon" aria-hidden="true">' + whatsappIconMarkup + '</span><span>WhatsApp</span></a>' +
+          '<button type="button" id="perfume-jb-contact" class="perfume-outline-link contact-channel-button contact-channel-button--jb"><span class="contact-channel-icon" aria-hidden="true">' + chatIconMarkup + '</span><span>Contactar JB Collections</span></button>' +
         '</div>' +
+        '<section class="payment-choice-panel perfume-payment-choice-panel" aria-label="Opciones de pago">' +
+          '<div class="payment-choice-heading"><label for="perfume-payment-type">¿Qué querés consultar?</label><p>Elegí el tema y después el canal por el que preferís continuar.</p></div>' +
+          '<select id="perfume-payment-type" class="payment-choice-select"><option value="">Seleccioná una opción</option><option value="financing">Financiamiento</option><option value="credit_card">Compra con tarjeta de crédito</option></select>' +
+          '<div id="perfume-payment-channel-panel" class="payment-channel-panel" hidden>' +
+            '<p>¿Por cuál canal querés continuar?</p>' +
+            '<div class="payment-channel-actions">' +
+              '<a id="perfume-payment-whatsapp" class="payment-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener">' + whatsappIconMarkup + '<span>WhatsApp</span></a>' +
+              '<button type="button" id="perfume-payment-jb" class="payment-channel-button contact-channel-button--jb">' + chatIconMarkup + '<span>JB Collections</span></button>' +
+            '</div>' +
+          '</div>' +
+        '</section>' +
       '</section>' +
     '</div>' +
     (hasOlfactoryNotes
@@ -603,14 +807,17 @@ function openPerfume(product) {
         notesSection("Notas de fondo", detail.base_notes) +
         '</div>'
       : '');
+  const perfumeContact = dialogContent.querySelector("#perfume-jb-contact");
+  if (perfumeContact) perfumeContact.dataset.paymentType = "product";
+  refreshPerfumePaymentChoices();
   perfumeDetailPage?.classList.remove("hidden");
   if (perfumeHeaderBack) perfumeHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-perfume-detail-view");
   document.body.classList.add("perfume-detail-active");
+  window.scrollTo({ top: 0, behavior: "instant" });
   document.title = `${product.name || "Fragancia"} | JB Parfums`;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) canonical.href = productLink(product);
-  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function readPerfumeRoute() {
@@ -641,7 +848,9 @@ function loadDeepLink() {
     const wasDetail = document.body.classList.contains("perfume-detail-active");
     const scrollY = Number(window.history.state?.catalogScrollY) || 0;
     showPerfumeCatalog();
-    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    if (wasDetail && Math.abs(window.scrollY - scrollY) > 2) {
+      window.scrollTo({ top: scrollY, behavior: "instant" });
+    }
     return;
   }
 
@@ -761,7 +970,7 @@ clearAllFiltersButton?.addEventListener("click", () => {
   renderProducts();
 });
 
-document.querySelectorAll(".perfume-category-grid").forEach(productGrid => {
+document.querySelectorAll(".perfume-category-grid, .perfume-highlight-grid").forEach(productGrid => {
   productGrid.addEventListener("click", event => {
     const target = event.target instanceof Element ? event.target : null;
     const link = target?.closest("a[data-details]");
@@ -811,8 +1020,23 @@ dialogContent.addEventListener("touchend", event => {
   movePerfumeGallery(deltaX < 0 ? 1 : -1);
 }, { passive: true });
 
+dialogContent.addEventListener("change", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.matches("#perfume-payment-type")) refreshPerfumePaymentChoices();
+});
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const aiContactButton = target?.closest("#perfume-jb-contact, #perfume-payment-jb");
+  if (aiContactButton) {
+    event.preventDefault();
+    const product = perfumes.find(item => String(item.id) === String(dialogContent.dataset.productId));
+    const paymentType = aiContactButton.id === "perfume-payment-jb"
+      ? (dialogContent.querySelector("#perfume-payment-type")?.value || "product")
+      : "product";
+    if (product) void startPerfumePrivateChat(product, paymentType, aiContactButton);
+    return;
+  }
   const galleryStep = target?.closest("[data-gallery-step]");
   if (galleryStep) {
     event.preventDefault();
@@ -830,17 +1054,46 @@ dialogContent.addEventListener("click", event => {
   dialogContent.querySelectorAll("[data-gallery-image]").forEach(item => item.classList.toggle("active", item === thumb));
 });
 
+
+/* Escape behaves like the page Back action, preserving the catalog scroll state. */
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || event.defaultPrevented) return;
+  if (!document.body.classList.contains("perfume-detail-active")) return;
+  if (document.querySelector("dialog[open]")) return;
+
+  event.preventDefault();
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+
+  const nextState = { ...(window.history.state || {}) };
+  delete nextState.productDetailRoute;
+  delete nextState.productId;
+  const catalogScrollY = Number(nextState.catalogScrollY) || 0;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("fragancia");
+  url.hash = "";
+  window.history.replaceState(nextState, document.title, url.href);
+  showPerfumeCatalog();
+  window.scrollTo({ top: catalogScrollY, behavior: "instant" });
+});
+
 perfumeHeaderBack?.addEventListener("click", () => {
   if (window.history.state?.productDetailRoute) {
     window.history.back();
     return;
   }
+  const nextState = { ...(window.history.state || {}) };
+  delete nextState.productDetailRoute;
+  delete nextState.productId;
+  const catalogScrollY = Number(nextState.catalogScrollY) || 0;
   const url = new URL(window.location.href);
   url.searchParams.delete("fragancia");
   url.hash = "";
-  window.history.replaceState(window.history.state, document.title, url.href);
+  window.history.replaceState(nextState, document.title, url.href);
   showPerfumeCatalog();
-  window.scrollTo({ top: 0, behavior: "auto" });
+  window.scrollTo({ top: catalogScrollY, behavior: "instant" });
 });
 window.addEventListener("popstate", loadDeepLink);
 window.addEventListener("hashchange", loadDeepLink);
@@ -929,6 +1182,7 @@ async function initializePerfumes() {
     updateBrandFilterLabel();
     renderProducts();
     loadDeepLink();
+    restoreConciergeSelection();
   } catch (error) {
     statusNode.textContent = "No pudimos cargar las fragancias. Revisá las políticas de lectura y la tabla de detalles de Supabase.";
     productGrids.forEach(container => { if (container) container.innerHTML = ""; });
@@ -940,6 +1194,47 @@ async function initializePerfumes() {
 
 const conciergeForm = $("#perfume-concierge-form");
 const conciergeResults = $("#perfume-concierge-results");
+const conciergeClearButton = $("#perfume-concierge-clear");
+const CONCIERGE_SESSION_KEY = "jbparfums-concierge-selection-v1";
+
+function persistConciergeSelection(submitted = !conciergeResults?.hidden) {
+  if (!conciergeForm) return;
+  const state = {
+    family: $("#concierge-family")?.value || "all",
+    scent: $("#concierge-scent")?.value || "all",
+    audience: $("#concierge-audience")?.value || "all",
+    budget: $("#concierge-budget")?.value || "",
+    submitted: Boolean(submitted)
+  };
+  try { sessionStorage.setItem(CONCIERGE_SESSION_KEY, JSON.stringify(state)); } catch { /* La página sigue funcionando sin almacenamiento. */ }
+}
+function restoreConciergeSelection() {
+  if (!conciergeForm) return;
+  let state;
+  try { state = JSON.parse(sessionStorage.getItem(CONCIERGE_SESSION_KEY) || "null"); } catch { state = null; }
+  if (!state || typeof state !== "object") return;
+  const allowed = {
+    family: ["all", "nicho", "arabes", "disenador"],
+    scent: ["all", "dulce", "fresco", "amaderado", "intenso", "floral"],
+    audience: ["all", "hombre", "mujer", "unisex"]
+  };
+  if (allowed.family.includes(state.family)) $("#concierge-family").value = state.family;
+  if (allowed.scent.includes(state.scent)) $("#concierge-scent").value = state.scent;
+  if (allowed.audience.includes(state.audience)) $("#concierge-audience").value = state.audience;
+  $("#concierge-budget").value = typeof state.budget === "string" && /^[0-9]*(?:\\.[0-9]*)?$/.test(state.budget) ? state.budget : "";
+  if (state.submitted) conciergeForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+}
+conciergeForm?.addEventListener("input", () => persistConciergeSelection());
+conciergeForm?.addEventListener("change", () => persistConciergeSelection());
+conciergeClearButton?.addEventListener("click", () => {
+  conciergeForm.reset();
+  $("#concierge-family").value = "all";
+  $("#concierge-scent").value = "all";
+  $("#concierge-audience").value = "all";
+  $("#concierge-budget").value = "";
+  if (conciergeResults) { conciergeResults.hidden = true; conciergeResults.replaceChildren(); }
+  try { sessionStorage.removeItem(CONCIERGE_SESSION_KEY); } catch { /* Almacenamiento opcional. */ }
+});
 
 function recommendPerfumes(preferences) {
   const scentTerms = {
@@ -995,6 +1290,7 @@ if (conciergeForm && conciergeResults) {
       audience: $("#concierge-audience")?.value || "all",
       budget: budgetValue !== null && Number.isFinite(budgetValue) && budgetValue >= 0 ? budgetValue : null
     };
+    persistConciergeSelection(true);
     const recommendations = recommendPerfumes(preferences);
     conciergeResults.hidden = false;
     if (!recommendations.length) {
@@ -1003,6 +1299,19 @@ if (conciergeForm && conciergeResults) {
     }
     conciergeResults.innerHTML = '<div class="perfume-concierge-results-heading"><p class="perfume-kicker">SELECCIÓN PERSONALIZADA</p><h3>Opciones para vos</h3><p>Una selección orientativa basada en los datos disponibles de cada fragancia.</p></div><div class="product-grid perfume-product-grid perfume-concierge-grid">' + recommendations.map(renderCard).join("") + '</div>';
     const grid = conciergeResults.querySelector(".perfume-concierge-grid");
+    grid?.addEventListener("click", event => {
+      const target = event.target instanceof Element ? event.target : null;
+      const link = target?.closest("a[data-details]");
+      if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const product = recommendations.find(item => String(item.id) === String(link.dataset.details));
+      if (!product) return;
+      event.preventDefault();
+      persistConciergeSelection(true);
+      const scrollY = window.scrollY;
+      window.history.replaceState({ ...(window.history.state || {}), catalogScrollY: scrollY }, document.title, window.location.href);
+      window.history.pushState({ productDetailRoute: true, catalogScrollY: scrollY, productId: String(product.id) }, document.title, productLink(product));
+      openPerfume(product);
+    });
     grid?.querySelectorAll("a[data-details]").forEach(viewLink => {
       const product = recommendations.find(item => String(item.id) === String(viewLink.dataset.details));
       if (!product) return;
@@ -1020,6 +1329,7 @@ if (conciergeForm && conciergeResults) {
   });
 }
 
+void recordPerfumeCatalogPageVisit();
 initializePerfumes();
 
 /* JB PARFUMS · carrusel ligero: una imagen inicial y precarga de una sola foto. */
