@@ -13,6 +13,7 @@ const providerCss = readFileSync(new URL("../admin-provider.css", import.meta.ur
 const publicApp = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const advisorCss = readFileSync(new URL("../ai-assistant.css", import.meta.url), "utf8");
 const workflowCss = readFileSync(new URL("../admin-workflow.css", import.meta.url), "utf8");
+const accessibilityCss = readFileSync(new URL("../admin-accessibility.css", import.meta.url), "utf8");
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
   assert.match(admin, /if \(!name\) throw new Error\("Escribí el nombre del producto\."\);/);
@@ -290,4 +291,26 @@ test("native reload warning is shown only while the Add Product panel is visible
 test("switching catalogs does not prompt for a clean form or an unchanged open product", () => {
   assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change", \(\) => \{\s*const requested = normalizeCatalogType\(activeCatalogSelector\.value\);\s*if \(requested === activeCatalogType\) return;\s*updateEditorDirtyState\(\);\s*if \(editorIsDirty\)/);
   assert.doesNotMatch(admin, /const hasOpenProduct = Boolean\(\$\("#product-id"\)\?\.value\);\s*if \(hasOpenProduct \|\| editorIsDirty\)/);
+});
+
+
+test("product form step navigation stays visible while scrolling", () => {
+  assert.match(workflowCss, /#product-form \.product-form-section-nav\s*\{[\s\S]*?position:\s*sticky/);
+  assert.match(workflowCss, /product-form-section-nav\s*\{[\s\S]*?top:\s*6px/);
+});
+
+test("form actions show clear labels alongside icons on desktop and mobile", () => {
+  for (const label of ["Guardar", "Publicar", "Borrador", "Destacar", "Cancelar"]) {
+    assert.match(html, new RegExp('workflow-action-label">' + label + '<'));
+  }
+  assert.match(workflowCss, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(workflowCss, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+});
+
+test("admin typography adapts by desktop, tablet and mobile breakpoints", () => {
+  assert.match(accessibilityCss, /min-width:\s*1200px/);
+  assert.match(accessibilityCss, /min-width:\s*761px\) and \(max-width:\s*1199px/);
+  assert.match(accessibilityCss, /max-width:\s*760px/);
+  assert.match(accessibilityCss, /font-size:\s*16px !important/);
+  assert.match(accessibilityCss, /font-size:\s*12\.5px !important/);
 });
