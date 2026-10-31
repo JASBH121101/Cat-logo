@@ -129,16 +129,16 @@ test("unmatched Go Partners candidates can prepare a grouped new-product draft o
   assert.match(source, /newProductGroups/);
   assert.match(source, /hasExistingMatch/);
   assert.match(source, /Preparar producto nuevo/);
-  assert.match(source, /duplicate\\.decision !== "same"/);
-  assert.match(source, /price_usd: usd\\.length \\? usd\\[0\\] : null/);
+  assert.match(source, /duplicate\.decision !== "same"/);
+  assert.match(source, /price_usd: usd\.length \? usd\[0\] : null/);
   assert.match(source, /color_hex: ""/);
   assert.match(source, /availability: "unknown"/);
-  assert.match(source, /onPrepareNewProduct\\(draft\\)/);
+  assert.match(source, /onPrepareNewProduct\(draft\)/);
 });
 
 test("Go Partners new-product preparation blocks conflicting prices within one configuration", () => {
   const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
-  assert.match(source, /usd\\.length > 1 \\|\\| nio\\.length > 1/);
-  assert.match(source, /tiene precios distintos entre colores\\/capturas/);
+  assert.match(source, /usd\.length > 1 \|\| nio\.length > 1/);
+  assert.match(source, /tiene precios distintos entre colores\/capturas/);
   assert.match(source, /No se guardó nada/);
 });
