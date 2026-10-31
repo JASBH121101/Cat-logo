@@ -236,16 +236,15 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
     assert.doesNotMatch(geminiRequest.url, /[?&]key=/);
     assert.equal(geminiRequest.headers["x-goog-api-key"], "test-only-key");
     assert.equal(geminiRequest.body.generationConfig.temperature, undefined);
-    assert.equal(geminiRequest.body.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
-    const schema = geminiRequest.body.generationConfig.responseFormat.text.schema;
+    assert.equal(geminiRequest.body.generationConfig.responseMimeType, "application/json");
+    const schema = geminiRequest.body.generationConfig.responseSchema;
     assert.equal(schema.type, "object");
     assert.deepEqual(schema.properties.provider_price_usd.type, ["number", "null"]);
     assert.deepEqual(schema.properties.product_draft.type, ["object", "null"]);
     assert.equal(schema.properties.product_draft.properties.variants.type, "array");
     assert.doesNotMatch(endpoint, /nullable\s*:/);
     assert.doesNotMatch(endpoint, /type:\s*"[A-Z]+"/);
-    assert.equal(geminiRequest.body.generationConfig.responseSchema, undefined);
-    assert.equal(geminiRequest.body.generationConfig.responseMimeType, undefined);
+    assert.equal(geminiRequest.body.generationConfig.responseFormat, undefined);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -386,11 +385,140 @@ test("JB Copilot retries simple JSON mode when Gemini rejects the full product s
     assert.equal(response.status, 200);
     assert.equal(payload.assistant.message, assistantResult.message);
     assert.equal(geminiBodies.length, 2);
-    assert.equal(geminiBodies[0].generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
-    assert.ok(geminiBodies[0].generationConfig.responseFormat.text.schema);
+    assert.equal(geminiBodies[0].generationConfig.responseMimeType, "application/json");
+    assert.ok(geminiBodies[0].generationConfig.responseSchema);
     assert.equal(geminiBodies[1].generationConfig.responseMimeType, "application/json");
-    assert.equal(geminiBodies[1].generationConfig.responseFormat, undefined);
     assert.equal(geminiBodies[1].generationConfig.responseSchema, undefined);
+    assert.equal(geminiBodies[1].generationConfig.responseFormat, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test("JB Copilot fails over from an overloaded Gemini 3.8 model to stable Flash", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  const assistantResult = {
+    message: "¡Hola! Ya estoy disponible.",
+    intent: "question",
+    product_query: "",
+    provider_price_usd: null,
+    provider_price_nio: null,
+    catalog_type: "technology",
+    missing_fields: [],
+    product_draft: null
+  };
+
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    }
+    if (url.includes("/rest/v1/admin_users")) {
+      return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    }
+    if (url.includes("generativelanguage.googleapis.com")) {
+      const body = JSON.parse(init.body);
+      calls.push({ url, body });
+      if (calls.length === 1) {
+        return new Response(JSON.stringify({
+          error: {
+            code: 503,
+            status: "UNAVAILABLE",
+            message: "This model is currently experiencing high demand."
+          }
+        }), { status: 503 });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{
+          content: { parts: [{ text: JSON.stringify(assistantResult) }] }
+        }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected test request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola" })
+    });
+    const result = await jbAiEndpoint.onRequestPost({
+      request,
+      env: { GEMINI_API_KEY: "test-only-key" }
+    });
+    const payload = await result.json();
+
+    assert.equal(result.status, 200);
+    assert.equal(payload.assistant.message, assistantResult.message);
+    assert.equal(calls.length, 2);
+    assert.match(calls[0].url, /models\/gemini-3\.8-flash:generateContent$/);
+    assert.match(calls[1].url, /models\/gemini-3\.6-flash:generateContent$/);
+    assert.equal(calls[0].body.generationConfig.responseSchema.type, "object");
+    assert.equal(calls[1].body.generationConfig.responseMimeType, "application/json");
+    assert.equal(calls[1].body.generationConfig.responseSchema, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("JB Copilot falls back to Flash-Lite when both primary Flash models are unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  const modelCalls = [];
+  const assistantResult = {
+    message: "¡Hola! Estoy listo.",
+    intent: "question",
+    product_query: "",
+    provider_price_usd: null,
+    provider_price_nio: null,
+    catalog_type: "technology",
+    missing_fields: [],
+    product_draft: null
+  };
+
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    if (url.includes("/rest/v1/admin_users")) return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    if (url.includes("generativelanguage.googleapis.com")) {
+      modelCalls.push(url);
+      if (modelCalls.length < 3) {
+        return new Response(JSON.stringify({
+          error: { code: 503, status: "UNAVAILABLE", message: "High demand" }
+        }), { status: 503 });
+      }
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(assistantResult) }] } }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected test request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola" })
+    });
+    const result = await jbAiEndpoint.onRequestPost({
+      request,
+      env: { GEMINI_API_KEY: "test-only-key" }
+    });
+    const payload = await result.json();
+    assert.equal(result.status, 200);
+    assert.equal(payload.assistant.message, assistantResult.message);
+    assert.equal(modelCalls.length, 3);
+    assert.match(modelCalls[2], /models\/gemini-3\.5-flash-lite:generateContent$/);
   } finally {
     globalThis.fetch = originalFetch;
   }
