@@ -937,7 +937,7 @@ for (const [label, source, fragments] of [
 
 
 if (!builtAdminHtml.includes('id="jb-gp-scanner"')
-  || !builtAdminHtml.includes('admin-gopartners-scanner.css?v=20261030-gp-scanner1')) {
+  || !builtAdminHtml.includes('admin-gopartners-scanner.css?v=20261030-gp-scanner2')) {
   throw new Error("JARVIS scanner regression: APK admin panel is missing the Go Partners scanner interface.");
 }
 if (!builtAdminScript.includes("initGoPartnersScanner")
