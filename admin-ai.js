@@ -103,9 +103,21 @@ export function extractFastCatalogQuery(message) {
   return match[1].replace(/[?!.]+$/g, "").trim();
 }
 
+function normalizeCopilotSearchToken(token) {
+  const value = String(token || "");
+  if (value.length > 5 && value.endsWith("es")) return value.slice(0, -2);
+  if (value.length > 4 && value.endsWith("s")) return value.slice(0, -1);
+  return value;
+}
+
 function copilotSearchTokens(value) {
   return [...new Set(normalizeCopilotSearchText(value).split(" ")
+    .map(normalizeCopilotSearchToken)
     .filter(token => token.length >= 2 && !COPILOT_SEARCH_STOPWORDS.has(token)))];
+}
+
+function hasSearchToken(haystack, token) {
+  return String(haystack || "").split(" ").some(value => normalizeCopilotSearchToken(value) === token);
 }
 
 function productSearchHaystacks(product) {
@@ -141,13 +153,13 @@ export function rankCatalogProducts(products, query, limit = 24) {
       let matched = 0;
       let score = 0;
       for (const token of tokens) {
-        if (haystacks.identity.split(" ").includes(token)) {
+        if (hasSearchToken(haystacks.identity, token)) {
           matched += 1;
           score += 10;
-        } else if (haystacks.category.split(" ").includes(token)) {
+        } else if (hasSearchToken(haystacks.category, token)) {
           matched += 1;
           score += 6;
-        } else if (haystacks.details.split(" ").includes(token)) {
+        } else if (hasSearchToken(haystacks.details, token)) {
           matched += 1;
           score += 2;
         } else if (haystacks.all.includes(token)) {
