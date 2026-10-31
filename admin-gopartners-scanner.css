@@ -178,3 +178,46 @@ html[data-theme="dark"] body.admin-body .jb-gp-product-card small.jb-gp-candidat
   background: rgba(105,128,164,.13);
   overflow-wrap: anywhere;
 }
+
+/* Local-only OCR inspection for debugging supplier capture. */
+.jb-gp-scanner-inline .jb-gp-scan-ocr-preview {
+  margin-top: 9px;
+  border: 1px solid var(--border-color, rgba(140,160,195,.22));
+  border-radius: 11px;
+  background: var(--surface-muted, rgba(105,128,164,.07));
+  overflow: hidden;
+}
+.jb-gp-scanner-inline .jb-gp-scan-ocr-preview > summary {
+  cursor: pointer;
+  padding: 9px 11px;
+  color: var(--text-secondary, #9eabc1);
+  font-size: .78rem;
+  font-weight: 650;
+}
+.jb-gp-scanner-inline .jb-gp-scan-ocr-content {
+  display: grid;
+  gap: 8px;
+  padding: 0 9px 9px;
+}
+.jb-gp-scanner-inline .jb-gp-ocr-observation {
+  min-width: 0;
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--surface-card, rgba(30,43,64,.55));
+}
+.jb-gp-scanner-inline .jb-gp-ocr-observation strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .72rem;
+  color: var(--text-secondary, #9eabc1);
+}
+.jb-gp-scanner-inline .jb-gp-ocr-observation pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  font-family: inherit;\n  font-size: .78rem;\n  font-weight: 500;\n  line-height: 1.5;
+  color: var(--text-primary, #e5ebf5);
+}

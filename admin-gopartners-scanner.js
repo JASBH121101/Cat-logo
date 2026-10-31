@@ -58,6 +58,9 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   const startButton = $("#jb-gp-scan-start"), finishButton = $("#jb-gp-scan-finish"), clearButton = $("#jb-gp-scan-clear");
   const status = $("#jb-gp-scan-status"), results = $("#jb-gp-scan-results"), summary = $("#jb-gp-scan-summary");
   const duplicateReview = $("#jb-gp-scan-duplicates"), productList = $("#jb-gp-scan-products");
+  const ocrPreview = $("#jb-gp-scan-ocr-preview");
+  const ocrPreviewSummary = $("#jb-gp-scan-ocr-summary");
+  const ocrPreviewContent = $("#jb-gp-scan-ocr-content");
   if (!startButton || !finishButton || !status || !results || !summary || !duplicateReview || !productList) return null;
   let scanning = false, startInProgress = false, finishing = false, pendingOverlayPermission = false, recoverableSession = false;
   let scanCandidates = [], duplicateGroups = [];
@@ -71,6 +74,30 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     status.classList.toggle("is-error", error);
     status.classList.toggle("is-success", !error);
   };
+  function renderOcrPreview(observations) {
+    if (!ocrPreview || !ocrPreviewSummary || !ocrPreviewContent) return;
+    const rows = (Array.isArray(observations) ? observations : [])
+      .filter(item => typeof item?.text === "string" && item.text.trim().length >= 8)
+      .slice(0, 80);
+    ocrPreviewContent.replaceChildren();
+    if (!rows.length) {
+      ocrPreview.hidden = true;
+      return;
+    }
+    ocrPreview.hidden = false;
+    ocrPreviewSummary.textContent = "Ver texto reconocido (" + rows.length + " pantalla(s))";
+    rows.forEach((item, index) => {
+      const card = document.createElement("section");
+      card.className = "jb-gp-ocr-observation";
+      const heading = document.createElement("strong");
+      heading.textContent = "Pantalla " + (Number.isInteger(item.index) ? item.index : index + 1) +
+        (item.capturedAt ? " · " + String(item.capturedAt).slice(11, 19) : "");
+      const text = document.createElement("pre");
+      text.textContent = item.text;
+      card.append(heading, text);
+      ocrPreviewContent.append(card);
+    });
+  }
   function updateControls() {
     startButton.disabled = scanning || startInProgress;
     finishButton.disabled = !scanning || finishing;
@@ -169,9 +196,19 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       warning.className = "jb-gp-candidate-warning";
       const fieldLabels = { product_name: "nombre", brand: "marca", model: "modelo", category: "categoría", ram: "RAM", storage: "almacenamiento", color: "color", price_usd: "precio USD", price_nio: "precio NIO" };
       const unverifiedFields = Array.isArray(candidate.unverified_fields) ? candidate.unverified_fields : [];
-      warning.textContent = unverifiedFields.length
-        ? "Se dejaron en blanco por falta de respaldo OCR: " + unverifiedFields.map(field => fieldLabels[field] || field).join(", ") + "."
-        : "Los datos detectados tienen respaldo en el fragmento OCR mostrado.";
+      const approximateFields = Array.isArray(candidate.approximate_fields) ? candidate.approximate_fields : [];
+      const warningParts = [];
+      if (unverifiedFields.length) {
+        warningParts.push("Se dejaron en blanco por falta de respaldo OCR: " +
+          unverifiedFields.map(field => fieldLabels[field] || field).join(", ") + ".");
+      }
+      if (approximateFields.length) {
+        warningParts.push("Coincidencia aproximada por un posible error de lectura en: " +
+          approximateFields.map(field => fieldLabels[field] || field).join(", ") +
+          ". Confirmá estos valores visualmente.");
+      }
+      warning.textContent = warningParts.join(" ") ||
+        "Los datos detectados tienen respaldo en el fragmento OCR mostrado.";
 
       const corrections = document.createElement("details");
       corrections.className = "jb-gp-corrections";
@@ -423,6 +460,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       await native.clearScan();
       recoverableSession = false;
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
+      renderOcrPreview([]);
       const result = await native.startScan();
       if (!result?.started) {
         if (result?.overlayPermissionRequired) {
@@ -478,6 +516,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       }
       scanning = false; updateControls();
       const observations = Array.isArray(session?.observations) ? session.observations : [];
+      renderOcrPreview(observations);
       const wasTruncated = session?.truncated === true;
       const wasInterrupted = session?.interrupted === true;
       const interruptionReason = String(session?.interruptionReason || "").trim();
@@ -528,7 +567,12 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       })) : [];
       if (!scanCandidates.length) {
         scanning = true;
-        setStatus("No se identificaron productos con nombre o modelo legible. El texto OCR permanece en memoria; podés volver a finalizar para reintentar o descartar la sesión.", true);
+        const diagnostics = payload.diagnostics && typeof payload.diagnostics === "object" ? payload.diagnostics : {};
+        const received = Number(diagnostics.candidates_received) || 0;
+        const detail = received > 0
+          ? "Gemini propuso " + received + " posible(s) producto(s), pero no se pudieron confirmar contra el texto de la pantalla."
+          : "Gemini no encontró una identidad de producto clara en el texto recibido.";
+        setStatus(detail + " Revisá «Ver texto reconocido» para comprobar si Android leyó bien la ficha. El OCR sigue en memoria; podés reintentar o descartar.", true);
         return;
       }
       renderReview();
@@ -575,6 +619,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       scanning = false;
       recoverableSession = false;
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
+      renderOcrPreview([]);
       setStatus("Sesión descartada. Android confirmó que se eliminó el texto OCR temporal.");
     } catch (error) {
       scanning = false;
@@ -588,6 +633,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   clearButton.addEventListener("click", () => { void clearSession(); });
   function restoreSessionState(state) {
     if (!scannerSessionReviewable(state)) return;
+    renderOcrPreview(state?.observations);
     scanning = true;
     setStatus(scannerSessionStatus(state), state?.interrupted === true);
     updateControls();
