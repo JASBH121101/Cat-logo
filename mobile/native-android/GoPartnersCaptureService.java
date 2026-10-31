@@ -113,7 +113,6 @@ public class GoPartnersCaptureService extends Service {
             CHANNEL_ID, "Escaneo de Go Partners", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("Indica cuándo JARVIS está leyendo texto de la pantalla.");
         channel.setShowBadge(false);
-        try { stopService(new Intent(this, GoPartnersOverlayService.class)); } catch (Exception ignored) {}
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) manager.createNotificationChannel(channel);
     }
@@ -313,6 +312,7 @@ public class GoPartnersCaptureService extends Service {
         }
         captureHandler = null;
         GoPartnersScanSession.setFlags(false, false);
+        try { stopService(new Intent(this, GoPartnersOverlayService.class)); } catch (Exception ignored) {}
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) manager.cancel(NOTIFICATION_ID);
         try { stopForeground(true); } catch (Exception ignored) {}
