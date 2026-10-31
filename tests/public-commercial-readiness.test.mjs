@@ -55,7 +55,7 @@ test("configuration availability affects public variant choices, status, and Wha
   assert.match(app, /const selectedAvailability = effectiveVariantAvailability\(selected\);[\s\S]*?colorStatusLabel\(selectedAvailability\)/);
   assert.match(app, /Disponibilidad de esta variante:.*effectiveVariantAvailability\(variant\)/);
   assert.match(app, /variant-choice-status status-/);
-  assert.match(techHtml, /app\.js\?v=20261030-gallery-ambient1/);
+  assert.match(techHtml, /app\.js\?v=20261030-gallery-ambient2/);
 });
 
 const sitemapXml = readFileSync(new URL("../sitemap.xml", import.meta.url), "utf8");
