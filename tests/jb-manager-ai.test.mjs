@@ -95,3 +95,31 @@ test("JB Copilot explains provider, session and service errors without a generic
   assert.match(assistant, /No se hizo ningún cambio/);
   assert.match(assistant, /setStatus\(error\?\.message/);
 });
+
+
+test("JB Copilot supports natural conversation and prepares a structured product draft", () => {
+  assert.match(endpoint, /asistente conversacional y operativo/);
+  assert.match(endpoint, /productDraftSchema/);
+  assert.match(endpoint, /product_draft: productDraft && productDraft\.name \? productDraft : null/);
+  assert.match(endpoint, /No inventés modelo, especificaciones, RAM, almacenamiento, colores/);
+  assert.match(endpoint, /No calculés una moneda a partir de la otra/);
+  assert.match(assistant, /onPrepareProductDraft/);
+  assert.match(assistant, /Rellenar formulario/);
+  assert.match(assistant, /no guarda, publica ni añade fotografías/);
+  assert.match(admin, /onPrepareProductDraft: prepareProductDraft/);
+  assert.match(admin, /async function prepareProductDraft/);
+  assert.match(admin, /renderVariantRows\(variantRows\)/);
+  assert.match(admin, /No se guardó, publicó ni asignó fotografías/);
+  assert.match(admin, /showAdminSection\("add"\)/);
+});
+
+test("Product preparation uses the existing editor and never submits or writes directly", () => {
+  const start = admin.indexOf("async function prepareProductDraft");
+  const end = admin.indexOf("const PRODUCT_SUBCATEGORY_SUGGESTIONS", start);
+  const preparation = admin.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(preparation, /clearEditor\(\)/);
+  assert.match(preparation, /renderVariantRows\(variantRows\)/);
+  assert.match(preparation, /scheduleProductDuplicateCheck\(\{ immediate: true \}\)/);
+  assert.doesNotMatch(preparation, /\.submit\(|supabase\.from\(["']products["']\)/);
+});
