@@ -600,3 +600,15 @@ test("OCR grounding prioritizes No disponible over the substring Disponible", ()
   assert.ok(product);
   assert.equal(product.availability, "unavailable");
 });
+
+
+test("JARVIS review evidence labels stay compact and scanner controls use equal columns", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../admin-gopartners-scanner.css", import.meta.url), "utf8");
+  assert.match(source, /confidence\.className = "jb-gp-candidate-meta jb-gp-candidate-confidence"/);
+  assert.match(source, /evidence\.className = "jb-gp-candidate-meta jb-gp-candidate-evidence"/);
+  assert.match(css, /\.jb-gp-scanner-inline-actions\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(css, /\.jb-gp-candidate-meta\s*\{[^}]*width:\s*fit-content;[^}]*max-width:\s*100%/s);
+  assert.match(css, /\.jb-gp-prepare-new-product,[\s\S]*?\.jb-gp-prepare-review/);
+  assert.doesNotMatch(css, /font-family:\s*inherit;\\n\s*font-size/);
+});
