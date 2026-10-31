@@ -609,9 +609,9 @@ jobs:
           -keep class com.jbcollections.manager.v2.GoPartnersScanSession { *; }
           """, encoding="utf-8")
 
-                    path.write_text(source)
+          path.write_text(source)
           print("Configured Android version", os.environ["VERSION_NAME"])
-          print("Pinned the debug APK signing config to ~/.android/debug.keystore.")
+          print("Both debug and optimized release variants use the persistent update signing key.")
           PY
 
       - name: Generate the JB Manager app icon and splash resources
