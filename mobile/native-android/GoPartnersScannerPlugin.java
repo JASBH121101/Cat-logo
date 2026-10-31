@@ -116,6 +116,14 @@ public class GoPartnersScannerPlugin extends Plugin {
             started.put("message", "Permiso concedido. La captura local y el control flotante están iniciándose.");
             call.resolve(started);
         } catch (Exception error) {
+            try {
+                Intent stop = new Intent(getContext(), GoPartnersCaptureService.class);
+                stop.setAction(ACTION_STOP);
+                getContext().startService(stop);
+            } catch (Exception ignored) {
+                getContext().stopService(new Intent(getContext(), GoPartnersCaptureService.class));
+            }
+            hideOverlayControls();
             GoPartnersScanSession.setFlags(false, false);
             JSObject failed = new JSObject();
             failed.put("started", false);
