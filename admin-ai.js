@@ -235,7 +235,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   }
 
   function speak(text) {
-    if (!speechEnabled || !("speechSynthesis" in window) || !text) return;
+    if (!speechEnabled || document.hidden || !("speechSynthesis" in window) || !text) return;
     try {
       window.speechSynthesis.cancel();
       const utterance = new window.SpeechSynthesisUtterance(text.slice(0, 700));
@@ -530,7 +530,14 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     updateSpeechToggle();
   }
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) window.speechSynthesis?.cancel?.();
+    if (document.hidden) {
+      window.speechSynthesis?.cancel?.();
+      setSpeechEnabled(false);
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    window.speechSynthesis?.cancel?.();
+    setSpeechEnabled(false);
   });
   clear.addEventListener("click", () => {
     messages.replaceChildren();
