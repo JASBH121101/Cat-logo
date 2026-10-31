@@ -244,3 +244,46 @@ test("voice replies remain opt-in and automatically switch off when the app is b
   assert.match(source, /if \(document\.hidden\) \{[\s\S]*setSpeechEnabled\(false\)/);
   assert.match(source, /window\.addEventListener\("pagehide",[\s\S]*setSpeechEnabled\(false\)/);
 });
+
+
+test("JARVIS scanner requests overlay access once and resumes the scan after permission is granted", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(source, /native\.hasOverlayPermission\(\)/);
+  assert.match(source, /native\.requestOverlayPermission\(\)/);
+  assert.match(source, /pendingOverlayPermission = true/);
+  assert.match(source, /Al regresar, JARVIS iniciará el escaneo automáticamente/);
+  assert.match(source, /document\.addEventListener\("visibilitychange"/);
+});
+
+test("floating confirmation automatically returns to JB Manager and starts review", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const nativeOverlay = readFileSync(new URL("../mobile/native-android/GoPartnersOverlayService.java", import.meta.url), "utf8");
+  const nativePlugin = readFileSync(new URL("../mobile/native-android/GoPartnersScannerPlugin.java", import.meta.url), "utf8");
+  assert.match(nativeOverlay, /GoPartnersScanSession\.requestFinishFromOverlay\(\)/);
+  assert.match(nativeOverlay, /Finalizar y revisar/);
+  assert.match(nativeOverlay, /PendingIntent\.getActivity/);
+  assert.match(nativePlugin, /finishRequested/);
+  assert.match(source, /state\?\.finishRequested === true/);
+  assert.match(source, /void finish\(\)/);
+  assert.match(source, /await native\.stopScan\(\)/);
+});
+
+test("scanner overlay is installed with the Android special permission and service declaration", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/build-jb-manager-android.yml", import.meta.url), "utf8");
+  const overlay = readFileSync(new URL("../mobile/native-android/GoPartnersOverlayService.java", import.meta.url), "utf8");
+  assert.match(workflow, /GoPartnersOverlayService\.java/);
+  assert.match(workflow, /android\.permission\.SYSTEM_ALERT_WINDOW/);
+  assert.match(workflow, /GoPartnersOverlayService/);
+  assert.match(overlay, /Settings\.canDrawOverlays/);
+  assert.match(overlay, /TYPE_APPLICATION_OVERLAY/);
+});
+
+test("Go Partners scanner controls are embedded in the Copilot conversation", () => {
+  const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const chatStart = html.indexOf('<section class="jb-manager-ai-chat"');
+  const scannerStart = html.indexOf('id="jb-gp-scanner"');
+  const promptsStart = html.indexOf('class="jb-manager-ai-prompts"');
+  assert.ok(chatStart >= 0 && scannerStart > chatStart && promptsStart > scannerStart);
+  assert.equal((html.match(/id="jb-gp-scanner"/g) || []).length, 1);
+  assert.equal((html.match(/id="jb-gp-scan-start"/g) || []).length, 1);
+});
