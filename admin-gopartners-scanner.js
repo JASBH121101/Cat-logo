@@ -59,7 +59,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   const status = $("#jb-gp-scan-status"), results = $("#jb-gp-scan-results"), summary = $("#jb-gp-scan-summary");
   const duplicateReview = $("#jb-gp-scan-duplicates"), productList = $("#jb-gp-scan-products");
   if (!startButton || !finishButton || !status || !results || !summary || !duplicateReview || !productList) return null;
-  let scanning = false, startInProgress = false, finishing = false, pendingOverlayPermission = false;
+  let scanning = false, startInProgress = false, finishing = false, pendingOverlayPermission = false, recoverableSession = false;
   let scanCandidates = [], duplicateGroups = [];
   const duplicateState = new Map();
   const plugin = () => {
@@ -421,6 +421,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         return;
       }
       await native.clearScan();
+      recoverableSession = false;
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
       const result = await native.startScan();
       if (!result?.started) {
@@ -482,6 +483,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const interruptionReason = String(session?.interruptionReason || "").trim();
       if (!observations.length) {
         await native.clearScan().catch(() => {});
+        recoverableSession = false;
         setStatus(wasInterrupted
           ? "Android interrumpió la captura y no quedaron pantallas OCR para revisar. " + interruptionReason
           : "No se reconoció texto. Comprobá que Go Partners permita capturas y repetí la sesión.", true);
@@ -571,6 +573,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const cleared = await native.clearScan();
       if (cleared?.cleared !== true) throw new Error("Android no confirmó la eliminación de la sesión.");
       scanning = false;
+      recoverableSession = false;
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
       setStatus("Sesión descartada. Android confirmó que se eliminó el texto OCR temporal.");
     } catch (error) {
