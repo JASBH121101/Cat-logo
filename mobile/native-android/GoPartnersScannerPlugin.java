@@ -200,6 +200,8 @@ public class GoPartnersScannerPlugin extends Plugin {
         state.put("truncated", snapshot.optBoolean("truncated", false));
         state.put("interrupted", snapshot.optBoolean("interrupted", false));
         state.put("finishRequested", snapshot.optBoolean("finishRequested", false));
+        state.put("overlayVisible", snapshot.optBoolean("overlayVisible", false));
+        state.put("overlayError", snapshot.optString("overlayError", ""));
         state.put("interruptionReason", snapshot.optString("interruptionReason", ""));
         state.put("observationsCount", snapshot.optInt("observationsCount", 0));
         JSONArray observations = snapshot.optJSONArray("observations");
