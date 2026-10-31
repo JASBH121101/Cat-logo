@@ -218,6 +218,145 @@ html[data-theme="dark"] body.admin-body .jb-gp-product-card small.jb-gp-candidat
   word-break: break-word;
   max-height: 260px;
   overflow: auto;
-  font-family: inherit;\n  font-size: .78rem;\n  font-weight: 500;\n  line-height: 1.5;
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 500;
+  line-height: 1.5;
   color: var(--text-primary, #e5ebf5);
+}
+
+
+/* JARVIS · compact review surface, proportional evidence labels and consistent controls. */
+.jb-gp-scanner-inline .jb-gp-scanner-inline-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+}
+.jb-gp-scanner-inline .jb-gp-scanner-inline-actions > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  height: auto;
+  padding: 8px 10px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+.jb-gp-scanner-inline .jb-gp-product-card {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 14px;
+  border-color: #c8dce9;
+  border-left: 4px solid #278da5;
+  background: linear-gradient(145deg, #f8fbff 0%, #edf5fb 100%);
+  box-shadow: 0 5px 16px rgba(34, 91, 124, .07);
+}
+.jb-gp-scanner-inline .jb-gp-product-card h4 {
+  margin: 0;
+  line-height: 1.3;
+}
+.jb-gp-scanner-inline .jb-gp-product-card p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.jb-gp-scanner-inline .jb-gp-product-card select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.jb-gp-scanner-inline .jb-gp-product-card .jb-gp-candidate-meta {
+  display: inline-flex;
+  justify-self: start;
+  align-items: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid #c9dce9;
+  border-radius: 9px;
+  color: #36556e;
+  background: #e8f2f8;
+  font-size: .74rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.jb-gp-scanner-inline .jb-gp-product-card .jb-gp-candidate-warning {
+  display: block;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #e8cb8d;
+  border-radius: 9px;
+  color: #805b18 !important;
+  background: #fff7e7;
+  font-size: .76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.jb-gp-scanner-inline .jb-gp-product-card .jb-gp-candidate-status {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  color: #586d80;
+  font-size: .78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.jb-gp-scanner-inline .jb-gp-product-card .jb-gp-prepare-new-product,
+.jb-gp-scanner-inline .jb-gp-product-card .jb-gp-prepare-review {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  height: auto;
+  padding: 10px 12px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner-inline .jb-gp-product-card {
+  border-color: #28546b;
+  border-left-color: #4cc7d7;
+  color: #e8f5ff;
+  background: linear-gradient(145deg, #102c3c 0%, #17364a 58%, #182b43 100%);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(145, 222, 237, .06);
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner-inline .jb-gp-product-card .jb-gp-candidate-meta {
+  border-color: #315c73;
+  color: #c5e0ed;
+  background: #1c4055;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner-inline .jb-gp-product-card .jb-gp-candidate-warning {
+  border-color: #8e713c;
+  color: #ffe0a0 !important;
+  background: #49391f;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-scanner-inline .jb-gp-product-card .jb-gp-candidate-status {
+  color: #b7ccdb;
+}
+html[data-theme="light"] body.admin-body .jb-gp-scanner-inline .jb-gp-product-card {
+  color: #19344b;
+}
+@media (max-width: 360px) {
+  .jb-gp-scanner-inline .jb-gp-scanner-inline-actions {
+    gap: 6px;
+  }
+  .jb-gp-scanner-inline .jb-gp-scanner-inline-actions > button {
+    padding-inline: 7px;
+    font-size: .72rem;
+  }
 }
