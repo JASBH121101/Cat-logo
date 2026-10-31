@@ -4,6 +4,72 @@ function safeText(value, max = 180) {
   return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+function formatCopilotText(value) {
+  return String(value ?? "")
+    .replace(/\bproduct_draft\b/gi, "borrador de producto")
+    .replace(/\bmissing_fields\b/gi, "datos pendientes")
+    .replace(/\bintent\b/gi, "tipo de solicitud");
+}
+
+function appendInlineFormatting(target, text) {
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\x60[^\x60]+\x60)/g;
+  let cursor = 0;
+  for (const match of String(text).matchAll(pattern)) {
+    const token = match[0];
+    const index = match.index ?? 0;
+    if (index > cursor) target.append(document.createTextNode(text.slice(cursor, index)));
+    let node;
+    if (token.startsWith("**")) {
+      node = document.createElement("strong");
+      node.textContent = token.slice(2, -2);
+    } else if (token.startsWith("*")) {
+      node = document.createElement("em");
+      node.textContent = token.slice(1, -1);
+    } else {
+      node = document.createElement("code");
+      node.textContent = token.slice(1, -1);
+    }
+    target.append(node);
+    cursor = index + token.length;
+  }
+  if (cursor < text.length) target.append(document.createTextNode(text.slice(cursor)));
+}
+
+function appendFormattedAssistantText(container, value) {
+  const lines = String(value ?? "").replace(/\r/g, "").split("\n");
+  let list = null;
+  let inserted = false;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      list = null;
+      continue;
+    }
+    const bullet = line.match(/^[-•]\s+(.+)$/);
+    if (bullet) {
+      if (!list) {
+        list = document.createElement("ul");
+        container.append(list);
+      }
+      const item = document.createElement("li");
+      appendInlineFormatting(item, bullet[1]);
+      list.append(item);
+      inserted = true;
+      continue;
+    }
+    list = null;
+    const paragraph = document.createElement("p");
+    appendInlineFormatting(paragraph, line);
+    container.append(paragraph);
+    inserted = true;
+  }
+  if (!inserted) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = String(value ?? "");
+    container.append(paragraph);
+  }
+}
+
 function catalogContext(products) {
   const rows = Array.isArray(products) ? products : [];
   return rows.filter(item => item && !["trash", "deleting"].includes(item.workflow_status)).slice(0, 80).map(item => ({
@@ -125,9 +191,13 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   function appendMessage(role, text, meta = null) {
     const article = document.createElement("article");
     article.className = "jb-manager-ai-message " + (role === "user" ? "is-user" : "is-assistant");
-    const paragraph = document.createElement("p");
-    paragraph.textContent = text;
-    article.append(paragraph);
+    if (role === "assistant") {
+      appendFormattedAssistantText(article, formatCopilotText(text));
+    } else {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = text;
+      article.append(paragraph);
+    }
     if (meta && meta.intent === "add_product" && meta.product_draft &&
         typeof meta.product_draft === "object" && String(meta.product_draft.name || "").trim()) {
       const action = document.createElement("button");
@@ -235,7 +305,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   }
 
   function speak(text) {
-    if (!speechEnabled || !("speechSynthesis" in window) || !text) return;
+    if (!speechEnabled || document.hidden || !("speechSynthesis" in window) || !text) return;
     try {
       window.speechSynthesis.cancel();
       const utterance = new window.SpeechSynthesisUtterance(text.slice(0, 700));
@@ -530,7 +600,14 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     updateSpeechToggle();
   }
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) window.speechSynthesis?.cancel?.();
+    if (document.hidden) {
+      window.speechSynthesis?.cancel?.();
+      setSpeechEnabled(false);
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    window.speechSynthesis?.cancel?.();
+    setSpeechEnabled(false);
   });
   clear.addEventListener("click", () => {
     messages.replaceChildren();

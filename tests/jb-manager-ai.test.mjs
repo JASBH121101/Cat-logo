@@ -626,3 +626,23 @@ test("JB Copilot never returns a successful generic answer for malformed model J
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("JB Copilot formats bold text and lists without exposing internal field names", () => {
+  assert.match(assistant, /appendFormattedAssistantText/);
+  assert.match(assistant, /appendInlineFormatting/);
+  assert.match(assistant, /document\.createElement\("strong"\)/);
+  assert.match(assistant, /document\.createElement\("ul"\)/);
+  assert.match(assistant, /borrador de producto/);
+  assert.match(endpoint, /Nunca muestres nombres internos de campos/);
+  assert.match(endpoint, /product_draft/);
+});
+
+test("the scanner status and review cards stay inside the conversation card", () => {
+  const scannerStart = html.indexOf('id="jb-gp-scanner"');
+  const promptsStart = html.indexOf('class="jb-manager-ai-prompts"');
+  assert.ok(scannerStart > html.indexOf('class="jb-manager-ai-chat"'));
+  assert.ok(scannerStart < promptsStart);
+  assert.match(html, /id="jb-gp-scan-start">Escanear proveedor/);
+  assert.match(html, /id="jb-gp-scan-results"/);
+});

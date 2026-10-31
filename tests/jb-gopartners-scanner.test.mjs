@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups, scannerSessionReviewable, scannerSessionStatus } from "../admin-gopartners-scanner.js";
+import { groundScannerProducts } from "../functions/api/jb-gopartners-scan.js";
 
 test("normaliza modelos, RAM y almacenamiento", () => {
   assert.equal(normalizeScannerKey("12 GB"), "12gb");
@@ -98,7 +99,7 @@ test("starting a new scan never clears a pending interrupted OCR session", () =>
 test("OCR observations remain in native memory until a successful review is rendered", () => {
   const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
   const finish = source.indexOf("  async function finish()");
-  const api = source.indexOf('fetch("/api/jb-gopartners-scan"', finish);
+  const api = source.indexOf('fetch("https://jb-collections.pages.dev/api/jb-gopartners-scan"', finish);
   const render = source.indexOf("renderReview();", api);
   const clearAfterReview = source.indexOf("const cleared = await native.clearScan()", render);
   assert.ok(finish >= 0 && api > finish && render > api);
@@ -150,4 +151,148 @@ test("scanner never carries a supplier price across color rows when OCR missed a
   assert.match(source, /nioHasMissing/);
   assert.match(source, /usd\.length && !usdHasMissing \? usd\[0\] : null/);
   assert.match(source, /nio\.length && !nioHasMissing \? nio\[0\] : null/);
+});
+
+
+test("OCR grounding keeps only fields visible in the matching supplier observation", () => {
+  const evidence = "POCO X8 Pro Max | 12 GB RAM | 256 GB | Negro | US$ 245.00";
+  const observations = [{ index: 1, text: "Catálogo del proveedor\n" + evidence }];
+  const [product] = groundScannerProducts([{
+    source_observation: 1,
+    product_name: "POCO X8 Pro Max",
+    brand: "POCO",
+    model: "X8 Pro Max",
+    category: "Celulares",
+    catalog_type: "technology",
+    ram: "12 GB",
+    storage: "256 GB",
+    color: "Negro",
+    price_usd: 245,
+    price_nio: 245,
+    confidence: 1,
+    evidence
+  }], observations);
+
+  assert.ok(product);
+  assert.equal(product.product_name, "POCO X8 Pro Max");
+  assert.equal(product.brand, "POCO");
+  assert.equal(product.model, "X8 Pro Max");
+  assert.equal(product.ram, "12 GB");
+  assert.equal(product.storage, "256 GB");
+  assert.equal(product.color, "Negro");
+  assert.equal(product.category, "");
+  assert.equal(product.price_usd, 245);
+  assert.equal(product.price_nio, null);
+  assert.ok(product.unverified_fields.includes("category"));
+  assert.ok(product.unverified_fields.includes("price_nio"));
+  assert.ok(product.grounded_fields.includes("price_usd"));
+  assert.equal(product.confidence, product.grounded_fields.length / product.attempted_fields.length);
+});
+
+test("OCR grounding removes invented RAM, color and prices instead of trusting model confidence", () => {
+  const evidence = "POCO X8 Pro Max | 12 GB RAM | 256 GB | Negro | US$ 245.00";
+  const [product] = groundScannerProducts([{
+    source_observation: 1,
+    product_name: "POCO X8 Pro Max",
+    brand: "POCO",
+    model: "X8 Pro Max",
+    ram: "16 GB",
+    storage: "256 GB",
+    color: "Azul",
+    price_usd: 299,
+    confidence: 1,
+    evidence
+  }], [{ index: 1, text: evidence }]);
+
+  assert.ok(product);
+  assert.equal(product.ram, "");
+  assert.equal(product.storage, "256 GB");
+  assert.equal(product.color, "");
+  assert.equal(product.price_usd, null);
+  assert.ok(product.unverified_fields.includes("ram"));
+  assert.ok(product.unverified_fields.includes("color"));
+  assert.ok(product.unverified_fields.includes("price_usd"));
+  assert.ok(product.notes.some(note => /precio USD/.test(note)));
+});
+
+test("OCR grounding rejects candidates whose source observation does not exist", () => {
+  const result = groundScannerProducts([{
+    source_observation: 7, product_name: "POCO X8 Pro Max", model: "X8 Pro Max",
+    evidence: "POCO X8 Pro Max", price_usd: 245
+  }], [{ index: 1, text: "POCO X8 Pro Max US$ 245" }]);
+  assert.deepEqual(result, []);
+});
+
+test("OCR grounding replaces a fabricated citation with a source excerpt around the model", () => {
+  const source = "Producto destacado: POCO X8 Pro Max · 12 GB RAM · 256 GB · US$ 245.00";
+  const [product] = groundScannerProducts([{
+    source_observation: 1, product_name: "POCO X8 Pro Max", brand: "POCO",
+    model: "X8 Pro Max", ram: "12 GB", storage: "256 GB", price_usd: 245,
+    evidence: "POCO X8 Pro Max · US$ 999.99"
+  }], [{ index: 1, text: source }]);
+
+  assert.ok(product);
+  assert.notEqual(product.evidence, "POCO X8 Pro Max · US$ 999.99");
+  assert.match(product.evidence, /POCO X8 Pro Max/);
+  assert.equal(product.price_usd, 245);
+});
+
+test("voice replies remain opt-in and automatically switch off when the app is backgrounded", () => {
+  const source = readFileSync(new URL("../admin-ai.js", import.meta.url), "utf8");
+  assert.match(source, /let speechEnabled = false/);
+  assert.match(source, /!speechEnabled \|\| document\.hidden/);
+  assert.match(source, /if \(document\.hidden\) \{[\s\S]*setSpeechEnabled\(false\)/);
+  assert.match(source, /window\.addEventListener\("pagehide",[\s\S]*setSpeechEnabled\(false\)/);
+});
+
+
+test("JARVIS scanner requests overlay access once and resumes the scan after permission is granted", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(source, /native\.hasOverlayPermission\(\)/);
+  assert.match(source, /native\.requestOverlayPermission\(\)/);
+  assert.match(source, /pendingOverlayPermission = true/);
+  assert.match(source, /Al regresar, JARVIS iniciará el escaneo automáticamente/);
+  assert.match(source, /document\.addEventListener\("visibilitychange"/);
+});
+
+test("floating confirmation automatically returns to JB Manager and starts review", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const nativeOverlay = readFileSync(new URL("../mobile/native-android/GoPartnersOverlayService.java", import.meta.url), "utf8");
+  const nativePlugin = readFileSync(new URL("../mobile/native-android/GoPartnersScannerPlugin.java", import.meta.url), "utf8");
+  assert.match(nativeOverlay, /GoPartnersScanSession\.requestFinishFromOverlay\(\)/);
+  assert.match(nativeOverlay, /Finalizar y revisar/);
+  assert.match(nativeOverlay, /PendingIntent\.getActivity/);
+  assert.match(nativePlugin, /finishRequested/);
+  assert.match(source, /state\?\.finishRequested === true/);
+  assert.match(source, /void finish\(\)/);
+  assert.match(source, /await native\.stopScan\(\)/);
+});
+
+test("scanner overlay is installed with the Android special permission and service declaration", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/build-jb-manager-android.yml", import.meta.url), "utf8");
+  const overlay = readFileSync(new URL("../mobile/native-android/GoPartnersOverlayService.java", import.meta.url), "utf8");
+  assert.match(workflow, /GoPartnersOverlayService\.java/);
+  assert.match(workflow, /android\.permission\.SYSTEM_ALERT_WINDOW/);
+  assert.match(workflow, /GoPartnersOverlayService/);
+  assert.match(overlay, /Settings\.canDrawOverlays/);
+  assert.match(overlay, /TYPE_APPLICATION_OVERLAY/);
+});
+
+test("Go Partners scanner controls are embedded in the Copilot conversation", () => {
+  const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const chatStart = html.indexOf('<section class="jb-manager-ai-chat"');
+  const scannerStart = html.indexOf('id="jb-gp-scanner"');
+  const promptsStart = html.indexOf('class="jb-manager-ai-prompts"');
+  assert.ok(chatStart >= 0 && scannerStart > chatStart && promptsStart > scannerStart);
+  assert.equal((html.match(/id="jb-gp-scanner"/g) || []).length, 1);
+  assert.equal((html.match(/id="jb-gp-scan-start"/g) || []).length, 1);
+});
+
+
+test("APK scanner sends OCR text to the authenticated Cloudflare endpoint, not local WebView routes", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  const endpoint = readFileSync(new URL("../functions/api/jb-gopartners-scan.js", import.meta.url), "utf8");
+  assert.match(source, /fetch\("https:\/\/jb-collections\.pages\.dev\/api\/jb-gopartners-scan"/);
+  assert.match(endpoint, /https:\/\/localhost/);
+  assert.match(endpoint, /Authorization: "Bearer " \+ token/);
 });

@@ -1,6 +1,6 @@
 const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
-const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
+const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://localhost", "http://localhost:8788", "http://127.0.0.1:8788"]);
 const buckets = new Map();
 
 function reply(status, payload, origin) {
@@ -37,6 +37,171 @@ async function authorizeAdmin(token) {
   const admins = await adminResponse.json();
   return Array.isArray(admins) && admins.some(row => row.user_id === user.id) ? user : null;
 }
+
+const SCANNER_FIELD_LABELS = {
+  product_name: "nombre", brand: "marca", model: "modelo", category: "categoría",
+  ram: "RAM", storage: "almacenamiento", color: "color",
+  price_usd: "precio USD", price_nio: "precio NIO"
+};
+
+function normalizeOcrMatch(value) {
+  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function findOcrSpan(source, value) {
+  const needle = normalizeOcrMatch(value);
+  if (needle.length < 3) return null;
+  let normalized = "";
+  const starts = [], ends = [];
+  let rawIndex = 0;
+  for (const character of String(source ?? "")) {
+    const part = character.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (const digitOrLetter of part) {
+      normalized += digitOrLetter;
+      starts.push(rawIndex);
+      ends.push(rawIndex + character.length);
+    }
+    rawIndex += character.length;
+  }
+  const offset = normalized.indexOf(needle);
+  if (offset < 0) return null;
+  return { start: starts[offset], end: ends[offset + needle.length - 1] };
+}
+
+function ocrContains(source, value) {
+  return Boolean(findOcrSpan(source, value));
+}
+
+function findScannerEvidence(source, item) {
+  const identities = [item?.model, item?.product_name]
+    .map(value => clean(value, 160)).filter(Boolean)
+    .sort((a, b) => normalizeOcrMatch(b).length - normalizeOcrMatch(a).length);
+  if (!identities.length) return "";
+
+  const suppliedQuote = clean(item?.evidence, 240);
+  const suppliedSpan = findOcrSpan(source, suppliedQuote);
+  if (suppliedSpan && identities.some(identity => ocrContains(suppliedQuote, identity))) {
+    return clean(String(source).slice(suppliedSpan.start, suppliedSpan.end), 240);
+  }
+
+  const anchor = identities.map(identity => findOcrSpan(source, identity)).find(Boolean);
+  if (!anchor) return "";
+  const start = Math.max(0, anchor.start - 55);
+  const end = Math.min(String(source).length, Math.max(anchor.end + 180, start + 240));
+  return clean(String(source).slice(start, end), 240);
+}
+
+function parseOcrAmount(raw) {
+  let value = String(raw ?? "").replace(/\s/g, "");
+  if (!/^\d[\d.,]*$/.test(value)) return NaN;
+  const comma = value.lastIndexOf(",");
+  const dot = value.lastIndexOf(".");
+  if (comma >= 0 && dot >= 0) {
+    const decimal = comma > dot ? "," : ".";
+    const grouping = decimal === "," ? "." : ",";
+    value = value.split(grouping).join("").replace(decimal, ".");
+  } else if (comma >= 0 || dot >= 0) {
+    const separator = comma >= 0 ? "," : ".";
+    const parts = value.split(separator);
+    const last = parts[parts.length - 1];
+    if (parts.length > 2 || last.length === 3) value = parts.join("");
+    else value = parts.slice(0, -1).join("") + "." + last;
+  }
+  return Number(value);
+}
+
+function hasOcrPriceEvidence(source, amount, currency) {
+  const expected = Number(amount);
+  if (!Number.isFinite(expected) || expected < 0) return false;
+  const text = String(source ?? "");
+  const amountPattern = /\d{1,3}(?:[,. ]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?/g;
+  const currencyPattern = currency === "USD"
+    ? /US\s*\$|\bUSD\b|d[oó]lares?/ig
+    : /C\s*\$|\bNIO\b|c[oó]rdobas?/ig;
+  const currencies = [...text.matchAll(currencyPattern)];
+  const amounts = [...text.matchAll(amountPattern)];
+  return amounts.some(match => {
+    const parsed = parseOcrAmount(match[0]);
+    if (!Number.isFinite(parsed) || Math.abs(parsed - expected) > 0.005) return false;
+    return currencies.some(marker => {
+      const distance = marker.index < match.index
+        ? match.index - (marker.index + marker[0].length)
+        : marker.index - (match.index + match[0].length);
+      return Math.abs(distance) <= 36;
+    });
+  });
+}
+
+export function groundScannerProducts(rawProducts, observations) {
+  const observationByIndex = new Map(
+    (Array.isArray(observations) ? observations : [])
+      .filter(item => Number.isInteger(item?.index) && typeof item?.text === "string")
+      .map(item => [item.index, item.text])
+  );
+  return (Array.isArray(rawProducts) ? rawProducts : []).slice(0, 120).map((item, index) => {
+    if (!item || typeof item !== "object") return null;
+    const sourceObservation = Number.isInteger(item.source_observation) ? item.source_observation : null;
+    const sourceText = sourceObservation === null ? "" : observationByIndex.get(sourceObservation);
+    if (!sourceText) return null;
+
+    const evidence = findScannerEvidence(sourceText, item);
+    if (!evidence) return null;
+
+    const groundedFields = [], attemptedFields = [], unverifiedFields = [];
+    const verifiedText = (field, maxLength) => {
+      const value = clean(item[field], maxLength);
+      if (!value) return "";
+      attemptedFields.push(field);
+      if (ocrContains(evidence, value)) {
+        groundedFields.push(field);
+        return value;
+      }
+      unverifiedFields.push(field);
+      return "";
+    };
+    const verifiedPrice = (field, currency) => {
+      const raw = item[field];
+      if (raw === null || raw === undefined || raw === "") return null;
+      attemptedFields.push(field);
+      const amount = Number(raw);
+      const maximum = currency === "USD" ? 1000000 : 100000000;
+      if (Number.isFinite(amount) && amount >= 0 && amount <= maximum && hasOcrPriceEvidence(evidence, amount, currency)) {
+        groundedFields.push(field);
+        return amount;
+      }
+      unverifiedFields.push(field);
+      return null;
+    };
+
+    const product = {
+      id: "scan-" + (index + 1),
+      source_observation: sourceObservation,
+      product_name: verifiedText("product_name", 160),
+      brand: verifiedText("brand", 80),
+      model: verifiedText("model", 100),
+      category: verifiedText("category", 80),
+      catalog_type: ["technology", "perfumery"].includes(item.catalog_type) ? item.catalog_type : "unknown",
+      ram: verifiedText("ram", 30),
+      storage: verifiedText("storage", 40),
+      color: verifiedText("color", 50),
+      price_usd: verifiedPrice("price_usd", "USD"),
+      price_nio: verifiedPrice("price_nio", "NIO"),
+      confidence: attemptedFields.length ? groundedFields.length / attemptedFields.length : 0,
+      grounded_fields: groundedFields,
+      attempted_fields: attemptedFields,
+      unverified_fields: unverifiedFields,
+      evidence,
+      notes: unverifiedFields.map(field =>
+        "Se descartó " + (SCANNER_FIELD_LABELS[field] || field) + " porque no aparece respaldado en el texto OCR."
+      )
+    };
+    if (!product.product_name && !product.model) return null;
+    return product;
+  }).filter(Boolean);
+}
+
 const responseSchema = {
   type: "OBJECT",
   properties: {
@@ -120,24 +285,7 @@ export async function onRequestPost({ request, env }) {
   const generated = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
   let parsed;
   try { parsed = JSON.parse(generated); } catch { return reply(502, { ok: false, error: "gemini_unstructured_response" }, origin); }
-  const products = Array.isArray(parsed.products) ? parsed.products.slice(0, 120).map((item, index) => {
-    const usd = item.price_usd == null || item.price_usd === "" ? null : Number(item.price_usd);
-    const nio = item.price_nio == null || item.price_nio === "" ? null : Number(item.price_nio);
-    const confidence = Number(item.confidence);
-    return {
-      id: "scan-" + (index + 1),
-      source_observation: Number.isInteger(item.source_observation) ? item.source_observation : null,
-      product_name: clean(item.product_name, 160), brand: clean(item.brand, 80), model: clean(item.model, 100),
-      category: clean(item.category, 80),
-      catalog_type: ["technology", "perfumery"].includes(item.catalog_type) ? item.catalog_type : "unknown",
-      ram: clean(item.ram, 30), storage: clean(item.storage, 40), color: clean(item.color, 50),
-      price_usd: usd !== null && Number.isFinite(usd) && usd >= 0 && usd <= 1000000 ? usd : null,
-      price_nio: nio !== null && Number.isFinite(nio) && nio >= 0 && nio <= 100000000 ? nio : null,
-      confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0,
-      evidence: clean(item.evidence, 240),
-      notes: Array.isArray(item.notes) ? item.notes.slice(0, 6).map(value => clean(value, 120)).filter(Boolean) : []
-    };
-  }).filter(item => item.product_name || item.model) : [];
+  const products = groundScannerProducts(parsed.products, observations);
   return reply(200, {
     ok: true, products,
     session_notes: Array.isArray(parsed.session_notes) ? parsed.session_notes.slice(0, 12).map(value => clean(value, 180)).filter(Boolean) : [],
