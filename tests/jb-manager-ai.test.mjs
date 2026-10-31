@@ -242,8 +242,8 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
     assert.deepEqual(schema.properties.provider_price_usd.type, ["number", "null"]);
     assert.deepEqual(schema.properties.product_draft.type, ["object", "null"]);
     assert.equal(schema.properties.product_draft.properties.variants.type, "array");
-    assert.doesNotMatch(endpoint, /nullable\\s*:/);
-    assert.doesNotMatch(endpoint, /type:\\s*"[A-Z]+"/);
+    assert.doesNotMatch(endpoint, /nullable\s*:/);
+    assert.doesNotMatch(endpoint, /type:\s*"[A-Z]+"/);
     assert.equal(geminiRequest.body.generationConfig.responseSchema, undefined);
     assert.equal(geminiRequest.body.generationConfig.responseMimeType, undefined);
   } finally {
