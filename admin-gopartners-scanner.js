@@ -352,10 +352,32 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   }
   async function clearSession() {
     const native = plugin();
-    if (scanning) { scanning = false; try { await native?.stopScan?.(); } catch {} }
-    try { await native?.clearScan?.(); } catch {}
-    scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
-    setStatus("Sesión descartada. El texto temporal fue eliminado del dispositivo."); updateControls();
+    if (!native) {
+      setStatus("La sesión OCR solo puede descartarse desde la APK Android.", true);
+      return;
+    }
+    try {
+      let state = await native.getScanState();
+      if (state?.running === true || state?.processing === true) {
+        setStatus("Deteniendo la captura antes de descartar los resultados…");
+        state = await native.stopScan();
+      }
+      if (state?.running === true || state?.processing === true) {
+        scanning = true;
+        setStatus("Android todavía está procesando la última pantalla. No se eliminó ningún resultado; esperá unos segundos y volvé a descartar.", true);
+        updateControls();
+        return;
+      }
+      const cleared = await native.clearScan();
+      if (cleared?.cleared !== true) throw new Error("Android no confirmó la eliminación de la sesión.");
+      scanning = false;
+      scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
+      setStatus("Sesión descartada. Android confirmó que se eliminó el texto OCR temporal.");
+    } catch (error) {
+      try { restoreSessionState(await native.getScanState()); } catch {}
+      setStatus((error?.message || "No se pudo descartar la sesión.") + " Los resultados no se consideran eliminados.", true);
+    }
+    updateControls();
   }
   startButton.addEventListener("click", () => { void start(); });
   finishButton.addEventListener("click", () => { void finish(); });
