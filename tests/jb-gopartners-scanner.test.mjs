@@ -215,12 +215,57 @@ test("OCR grounding removes invented RAM, color and prices instead of trusting m
   assert.ok(product.notes.some(note => /precio USD/.test(note)));
 });
 
-test("OCR grounding rejects candidates whose source observation does not exist", () => {
+test("OCR grounding recovers a product when Gemini returns the wrong observation index", () => {
+  const diagnostics = {};
   const result = groundScannerProducts([{
     source_observation: 7, product_name: "POCO X8 Pro Max", model: "X8 Pro Max",
     evidence: "POCO X8 Pro Max", price_usd: 245
-  }], [{ index: 1, text: "POCO X8 Pro Max US$ 245" }]);
-  assert.deepEqual(result, []);
+  }], [{ index: 1, text: "POCO X8 Pro Max US$ 245" }], diagnostics);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].source_observation, 1);
+  assert.equal(result[0].price_usd, 245);
+  assert.equal(diagnostics.source_index_recovered, 1);
+});
+
+test("OCR grounding tolerates one character misread in a long product identity but still validates prices exactly", () => {
+  const source = "POCO X8 Pro M4x | 12 GB RAM | 256 GB | Negro | US$ 245.00";
+  const [product] = groundScannerProducts([{
+    source_observation: 1,
+    product_name: "POCO X8 Pro Max",
+    brand: "POCO",
+    model: "X8 Pro Max",
+    ram: "12 GB",
+    storage: "256 GB",
+    color: "Negro",
+    price_usd: 245,
+    price_nio: 245,
+    evidence: source
+  }], [{ index: 1, text: source }]);
+  assert.ok(product);
+  assert.equal(product.product_name, "POCO X8 Pro Max");
+  assert.ok(product.approximate_fields.includes("product_name"));
+  assert.equal(product.ram, "12 GB");
+  assert.equal(product.price_usd, 245);
+  assert.equal(product.price_nio, null);
+  assert.ok(product.notes.some(note => /pequeña diferencia OCR/.test(note)));
+});
+
+test("OCR preview exposes the exact locally recognized screen text without HTML injection", () => {
+  const html = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(html, /id="jb-gp-scan-ocr-preview"/);
+  assert.match(html, /id="jb-gp-scan-ocr-content"/);
+  assert.match(source, /function renderOcrPreview\\(observations\\)/);
+  assert.match(source, /text\\.textContent = item\\.text/);
+  assert.match(source, /Ver texto reconocido/);
+});
+
+test("scanner reports whether Gemini found no candidates or grounding rejected its candidates", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(source, /payload\\.diagnostics/);
+  assert.match(source, /candidates_received/);
+  assert.match(source, /Gemini propuso/);
+  assert.match(source, /Gemini no encontró una identidad de producto clara/);
 });
 
 test("OCR grounding replaces a fabricated citation with a source excerpt around the model", () => {
