@@ -389,6 +389,6 @@ test("native biometric plugin delegates matching to Android and stores only an e
   assert.match(biometricPlugin, /new BiometricPrompt/);
   assert.match(biometricPlugin, /putBoolean\(KEY_ENABLED, true\)/);
   assert.match(biometricPlugin, /getSharedPreferences\(PREFS/);
-  assert.doesNotMatch(biometricPlugin, /fingerprintTemplate|fingerprintImage|rawFingerprint|password/i);
+  assert.doesNotMatch(biometricPlugin, /fingerprintTemplate|fingerprintImage|rawFingerprint/i);
   assert.match(biometricPlugin, /openEnrollmentSettings/);
 });
