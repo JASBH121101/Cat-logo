@@ -1704,7 +1704,7 @@ function variantRowMarkup(variant = {}) {
     color_hex: validHex(variant.color_hex || variant.hex),
     images,
     image_url: images[0] || String(variant.image_url || variant.imageUrl || "").trim(),
-    availability: normalizeVariantAvailability(variant.availability)
+    availability: variant.availability === "pending" ? "" : normalizeVariantAvailability(variant.availability)
   };
   const librarySaved = isColorSaved({ name: v.color, hex: v.color_hex });
   const libraryFavorite = isColorFavorite({ name: v.color, hex: v.color_hex });
@@ -1715,7 +1715,7 @@ function variantRowMarkup(variant = {}) {
         <span class="inline-color-dot" data-variant-color-dot style="--inline-color:${v.color_hex}" aria-hidden="true"></span>
         <span class="inline-color-card-summary-copy">
           <strong data-variant-color-summary>${escapeHtml(v.color || "Color sin nombre")}</strong>
-          <small data-variant-summary-availability>Estado: ${v.availability === "available" ? "Disponible" : v.availability === "order" ? "Por pedido" : "Agotado"}</small>
+          <small data-variant-summary-availability>Estado: ${v.availability === "available" ? "Disponible" : v.availability === "order" ? "Por pedido" : v.availability === "out_of_stock" ? "Agotado" : "Pendiente de confirmar"}</small>
         </span>
         <button class="admin-mini-button danger inline-color-remove" type="button" data-remove-variant aria-label="Quitar color" title="Quitar color">×</button>
         <span class="inline-color-card-chevron" aria-hidden="true">⌄</span>
@@ -1750,6 +1750,7 @@ function variantRowMarkup(variant = {}) {
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
           <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${visibleColorSwatches(v.color_hex).map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
           <label>Disponibilidad de este color<select data-variant-availability>
+            <option value="" ${!v.availability ? "selected" : ""}>Pendiente de confirmar</option>
             <option value="available" ${v.availability === "available" ? "selected" : ""}>Disponible</option>
             <option value="order" ${v.availability === "order" ? "selected" : ""}>Por pedido</option>
             <option value="out_of_stock" ${v.availability === "out_of_stock" ? "selected" : ""}>No disponible</option>
@@ -1827,7 +1828,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
   const storage = parsedStorage.amount;
   const storageUnit = parsedStorage.unit;
   const ram = String(v.ram || "").trim().replace(/\s*GB\s*/i, "");
-  const configurationAvailability = normalizeVariantAvailability(v.configuration_availability);
+  const configurationAvailability = v.configuration_availability === "pending" ? "" : normalizeVariantAvailability(v.configuration_availability);
   const title = isBase
     ? "Configuración principal"
     : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || "Nueva configuración";
@@ -1843,6 +1844,7 @@ function variantGroupMarkup(v = {}, isBase = false) {
       <label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_nio ?? "")}"></span></label>
       <label class="variant-configuration-availability-field">Disponibilidad de la variante
         <select data-group-availability aria-label="Disponibilidad de esta configuración">
+          <option value="" ${!configurationAvailability ? "selected" : ""}>Pendiente de confirmar</option>
           <option value="available" ${configurationAvailability === "available" ? "selected" : ""}>Disponible</option>
           <option value="order" ${configurationAvailability === "order" ? "selected" : ""}>Bajo pedido</option>
           <option value="out_of_stock" ${configurationAvailability === "out_of_stock" ? "selected" : ""}>Agotado</option>
@@ -4676,6 +4678,7 @@ function clearEditor() {
   if (!form) return;
   cancelQueuedPhotoUploadsForEditor();
   editorRecordExists=false;
+  form.dataset.aiDraftRequiresAvailability = "";
   form.reset();
   $("#product-subcategory").value = "";
   $("#product-subcategory-custom").value = "";
@@ -4832,6 +4835,11 @@ async function prepareProductDraft(draft) {
     ? draft.availability
     : "";
   setValue("#product-availability", availability);
+  const needsVariantAvailabilityReview = Array.from(form.querySelectorAll("[data-variant-group]")).some(group =>
+    group.querySelector("[data-group-availability]")?.value === "" ||
+    Array.from(group.querySelectorAll("[data-variant-availability]")).some(select => select.value === "")
+  );
+  form.dataset.aiDraftRequiresAvailability = needsVariantAvailabilityReview ? "true" : "";
 
   showAdminSection("add");
   setProductFormStep(1, { scroll: false });
@@ -6194,6 +6202,18 @@ form?.addEventListener("submit", async event => {
   const saveAction=event.submitter?.dataset?.saveAction||form.dataset.lastSaveAction||"unpublished";
   form.dataset.lastSaveAction = "";
   let targetStatus=saveAction==="draft"?"draft":saveAction==="published"?"published":"unpublished";
+  if (form.dataset.aiDraftRequiresAvailability === "true") {
+    const pending = Array.from(form.querySelectorAll("[data-variant-group]")).some(group =>
+      group.querySelector("[data-group-availability]")?.value === "" ||
+      Array.from(group.querySelectorAll("[data-variant-availability]")).some(select => select.value === "")
+    );
+    if (pending) {
+      message("#product-form-status", "Confirmá la disponibilidad de cada configuración y de cada color antes de guardar este producto preparado por IA.", "error");
+      setProductFormStep(2);
+      return;
+    }
+    form.dataset.aiDraftRequiresAvailability = "";
+  }
   const forceDraftFromPhotoIssue = form.dataset.forceDraftOnPhotoIssue === "true";
   form.dataset.forceDraftOnPhotoIssue = "";
   const preflightPhotoIssues = forceDraftFromPhotoIssue ? (currentPublishReview?.blockingIssues || []) : [];
