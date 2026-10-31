@@ -4077,7 +4077,10 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
           : targetStatus === "draft" ? "drafts"
           : targetStatus === "unpublished" ? "unpublished" : "trash";
         showAdminSection(targetSection);
-        const search = document.getElementById(targetSection === "published" ? "published-search" : "draft-search");
+        const searchId = targetSection === "published" ? "published-search"
+          : targetSection === "unpublished" ? "unpublished-search"
+          : targetSection === "drafts" ? "draft-search" : "trash-search";
+        const search = document.getElementById(searchId);
         if (search) {
           search.value = String(target.name || "");
           search.dispatchEvent(new Event("input"));
