@@ -136,13 +136,14 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     productList.replaceChildren();
     const newProductGroups = new Map();
     scanCandidates.forEach((candidate, index) => {
-      if (candidate.matches?.length) return;
       const brandKey = normalizeScannerKey(candidate.brand);
       const productKey = normalizeScannerKey(candidate.model || candidate.product_name);
       if (!brandKey || !productKey) return;
       const key = brandKey + "|" + productKey;
-      if (!newProductGroups.has(key)) newProductGroups.set(key, { key, indexes: [], first: candidate });
-      newProductGroups.get(key).indexes.push(index);
+      if (!newProductGroups.has(key)) newProductGroups.set(key, { key, indexes: [], first: candidate, hasExistingMatch: false });
+      const group = newProductGroups.get(key);
+      group.indexes.push(index);
+      if (candidate.matches?.length) group.hasExistingMatch = true;
     });
     const preparedNewProductKeys = new Set();
     scanCandidates.forEach((candidate, index) => {
@@ -214,7 +215,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       matchSelect.addEventListener("change", () => { candidate.matchId = matchSelect.value; });
       const newProductKey = normalizeScannerKey(candidate.brand) + "|" + normalizeScannerKey(candidate.model || candidate.product_name);
       const newProductGroup = newProductGroups.get(newProductKey);
-      if (!candidate.matches.length && newProductGroup && !preparedNewProductKeys.has(newProductKey)) {
+      if (newProductGroup && !newProductGroup.hasExistingMatch && !preparedNewProductKeys.has(newProductKey)) {
         preparedNewProductKeys.add(newProductKey);
         const createNew = document.createElement("button");
         createNew.type = "button";
@@ -228,8 +229,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
             setStatus("La preparación de productos nuevos no está disponible en esta versión.", true);
             return;
           }
-          const rows = newProductGroup.indexes.map(rowIndex => scanCandidates[rowIndex]);
-          const accepted = new Set();
+          const includedIndexes = new Set(newProductGroup.indexes);
           for (const duplicate of duplicateGroups.filter(group => group.indexes.some(rowIndex => newProductGroup.indexes.includes(rowIndex)))) {
             if (duplicate.decision !== "same") {
               setStatus(duplicate.decision === "separate"
@@ -241,13 +241,11 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
               setStatus("Elegí la captura cuyo precio sea correcto antes de preparar el producto.", true);
               return;
             }
-            accepted.add(duplicate.selectedIndex === null ? duplicate.indexes[0] : duplicate.selectedIndex);
+            const chosenIndex = duplicate.selectedIndex === null ? duplicate.indexes[duplicate.indexes.length - 1] : duplicate.selectedIndex;
+            duplicate.indexes.forEach(rowIndex => includedIndexes.delete(rowIndex));
+            includedIndexes.add(chosenIndex);
           }
-          const includedRows = rows.filter(row => {
-            const rowIndex = scanCandidates.indexOf(row);
-            const duplicate = duplicateGroups.find(group => group.indexes.includes(rowIndex));
-            return !duplicate || !accepted.has(rowIndex) || duplicate.selectedIndex === null || duplicate.selectedIndex === rowIndex;
-          });
+          const includedRows = [...includedIndexes].sort((a, b) => a - b).map(rowIndex => scanCandidates[rowIndex]);
           const variantMap = new Map();
           for (const row of includedRows) {
             const configurationKey = normalizeScannerKey(row.ram) + "|" + normalizeScannerKey(row.storage);
