@@ -21,10 +21,10 @@ test("each product tag creates an independent highlight without excluding other 
   const render = app.slice(renderStart, renderEnd);
 
   assert.ok(render.includes("const featured = hasFilters ? [] : list.filter(isExclusiveProduct);"));
-  assert.ok(render.includes('tags.includes("limited_edition")'));
+  assert.ok(render.includes('normalizedProductTags(product).includes("limited_edition")'));
   assert.ok(render.includes('tags.includes("high_performance")'));
-  assert.ok(render.includes('tags.includes("quality_price")'));
-  assert.ok(render.includes('tags.includes("top_gaming")'));
+  assert.ok(render.includes('normalizedProductTags(product).includes("quality_price")'));
+  assert.ok(render.includes('normalizedProductTags(product).includes("top_gaming")'));
   assert.ok(!render.includes('tags.includes("high_performance") && !isExclusiveProduct(product)'));
 });
 
