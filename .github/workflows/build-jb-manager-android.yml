@@ -456,8 +456,9 @@ jobs:
           plugin_source = native_dir / "GoPartnersScannerPlugin.java"
           service_source = native_dir / "GoPartnersCaptureService.java"
           session_source = native_dir / "GoPartnersScanSession.java"
+          overlay_source = native_dir / "GoPartnersOverlayService.java"
           voice_source = native_dir / "JbVoiceInputPlugin.java"
-          if not plugin_source.is_file() or not service_source.is_file() or not session_source.is_file():
+          if not plugin_source.is_file() or not service_source.is_file() or not session_source.is_file() or not overlay_source.is_file():
               raise SystemExit("JARVIS screen scanner native sources are missing.")
           if not voice_source.is_file():
               raise SystemExit("JARVIS native voice input source is missing.")
@@ -486,6 +487,7 @@ jobs:
               ("GoPartnersScannerPlugin.java", plugin_source),
               ("GoPartnersCaptureService.java", service_source),
               ("GoPartnersScanSession.java", session_source),
+              ("GoPartnersOverlayService.java", overlay_source),
               ("JbVoiceInputPlugin.java", voice_source),
           ):
               content = re.sub(
@@ -519,6 +521,7 @@ jobs:
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />',
               '<uses-permission android:name="android.permission.RECORD_AUDIO" />',
+              '<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />',
           ]
           for permission in permissions:
               if permission not in manifest:
@@ -536,6 +539,12 @@ jobs:
           )
           if "GoPartnersCaptureService" not in manifest:
               manifest = manifest.replace("</application>", "        " + service + "\n    </application>", 1)
+          overlay_service = (
+              '<service android:name=".' + "GoPartnersOverlayService" + '" '
+              'android:exported="false" android:stopWithTask="false" />'
+          )
+          if "GoPartnersOverlayService" not in manifest:
+              manifest = manifest.replace("</application>", "        " + overlay_service + "\n    </application>", 1)
           manifest_path.write_text(manifest, encoding="utf-8")
 
           gradle_path = Path("mobile/android/app/build.gradle")
@@ -624,6 +633,7 @@ jobs:
           -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
           -keep class com.jbcollections.manager.v2.GoPartnersCaptureService { *; }
           -keep class com.jbcollections.manager.v2.GoPartnersScanSession { *; }
+          -keep class com.jbcollections.manager.v2.GoPartnersOverlayService { *; }
           """, encoding="utf-8")
 
           path.write_text(source)
@@ -1034,6 +1044,15 @@ jobs:
           test -s "$SESSION"
           grep -q "GoPartnersScanSession.appendObservation" "$SERVICE"
           grep -q "GoPartnersScanSession.markInterrupted" "$SERVICE"
+          OVERLAY="mobile/android/app/src/main/java/com/jbcollections/manager/v2/GoPartnersOverlayService.java"
+          test -s "$OVERLAY"
+          grep -q "requestFinishFromOverlay" "$OVERLAY"
+          grep -q "Finalizar y revisar" "$OVERLAY"
+          grep -q "Settings.canDrawOverlays" "$OVERLAY"
+          grep -q "SYSTEM_ALERT_WINDOW" "$MANIFEST"
+          grep -q "GoPartnersOverlayService" "$MANIFEST"
+          grep -q "requestOverlayPermission" "$PLUGIN"
+          grep -q "finishRequested" "$PLUGIN"
           grep -q 'state.put("interrupted"' "$PLUGIN"
           grep -q 'state.put("interruptionReason"' "$PLUGIN"
           grep -q 'result.put("interrupted"' "$SESSION"
