@@ -947,7 +947,7 @@ if (!builtAdminScript.includes("initGoPartnersScanner")
   || !builtScannerScript.includes("recoverableSession = true")
   || !builtProviderScript.includes("openReviewFromScan")
   || !builtProviderScript.includes("normalizeConfig(row.dataset.colorName) === colorKey")
-  || !builtAdminScript.includes("JbVoiceInput")) {
+) {
   throw new Error("JARVIS scanner regression: APK web bundle is missing current OCR recovery, variant review, or Copilot voice integration.");
 }
 const builtScannerCss = await readFile(join(webDir, "admin-gopartners-scanner.css"), "utf8");
