@@ -282,12 +282,12 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
     const identity = [item?.model, item?.product_name].map(value => clean(value, 160))
       .filter(Boolean).sort((a, b) => normalizeOcrMatch(b).length - normalizeOcrMatch(a).length)[0] || "";
     const identitySpan = findOcrMatch(evidence, identity);
-    const availabilityMarkers = [...evidence.matchAll(/no\\s+disponible|bajo\\s+pedido|disponible/ig)];
+    const availabilityMarkers = [...evidence.matchAll(/no\s+disponible|bajo\s+pedido|disponible/ig)];
     const nearestAvailability = availabilityMarkers.sort((a, b) =>
       Math.abs(a.index - (identitySpan?.start ?? 0)) - Math.abs(b.index - (identitySpan?.start ?? 0))
     )[0]?.[0]?.toLowerCase() || "";
-    const availability = /no\\s+disponible/.test(nearestAvailability) ? "unavailable"
-      : /bajo\\s+pedido/.test(nearestAvailability) ? "on_request"
+    const availability = /no\s+disponible/.test(nearestAvailability) ? "unavailable"
+      : /bajo\s+pedido/.test(nearestAvailability) ? "on_request"
       : /disponible/.test(nearestAvailability) ? "available" : "unknown";
     if (availability !== "unknown") {
       attemptedFields.push("availability");
