@@ -490,12 +490,6 @@ jobs:
 
           manifest_path = Path("mobile/android/app/src/main/AndroidManifest.xml")
           manifest = manifest_path.read_text(encoding="utf-8")
-          speech_query = (
-              '<queries><intent><action android:name="android.speech.RecognitionService" />'
-              '</intent></queries>'
-          )
-          if "android.speech.RecognitionService" not in manifest:
-              manifest = manifest.replace("<application", speech_query + "\\n    <application", 1)
           permissions = [
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
               '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />',
@@ -503,7 +497,13 @@ jobs:
           ]
           for permission in permissions:
               if permission not in manifest:
-                  manifest = manifest.replace("<application", permission + "\n    <application", 1)
+                  manifest = manifest.replace("<application", permission + "\\n    <application", 1)
+          speech_query = (
+              '<queries><intent><action android:name="android.speech.RecognitionService" />'
+              '</intent></queries>'
+          )
+          if "android.speech.RecognitionService" not in manifest:
+              manifest = manifest.replace("<application", speech_query + "\\n    <application", 1)
           service = (
               '<service android:name=".' + "GoPartnersCaptureService" + '" '
               'android:exported="false" android:stopWithTask="false" '
