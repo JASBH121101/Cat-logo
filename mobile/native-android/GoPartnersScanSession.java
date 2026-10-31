@@ -17,6 +17,7 @@ public final class GoPartnersScanSession {
     private static boolean processing = false;
     private static boolean truncated = false;
     private static boolean interrupted = false;
+    private static boolean finishRequested = false;
     private static String interruptionReason = "";
 
     private GoPartnersScanSession() {}
@@ -28,8 +29,17 @@ public final class GoPartnersScanSession {
             processing = false;
             truncated = false;
             interrupted = false;
+            finishRequested = false;
             interruptionReason = "";
         }
+    }
+
+    public static void requestFinishFromOverlay() {
+        synchronized (LOCK) { finishRequested = true; }
+    }
+
+    public static void clearFinishRequest() {
+        synchronized (LOCK) { finishRequested = false; }
     }
 
     public static void markInterrupted(String reason) {
@@ -81,6 +91,7 @@ public final class GoPartnersScanSession {
                 result.put("processing", processing);
                 result.put("truncated", truncated);
                 result.put("interrupted", interrupted);
+                result.put("finishRequested", finishRequested);
                 result.put("interruptionReason", interruptionReason);
                 result.put("observationsCount", observations.length());
                 result.put("observations", new JSONArray(observations.toString()));
