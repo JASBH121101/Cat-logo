@@ -375,7 +375,7 @@ const updateChecker = `
           } else if (result && result.installerLaunched) {
             document.getElementById("jb-manager-update-notice")?.remove();
           } else {
-            showMessage("Descarga iniciada", "Android gestiona la descarga con DownloadManager. El progreso, pausas y errores se consultan al sistema.");
+            showMessage("Descarga en segundo plano · v" + activeDownloadVersion, "Android ya gestiona la transferencia. Podés salir de JB Manager o usar otras apps: la descarga seguirá en segundo plano y verás su notificación. Al regresar, se recuperará el progreso.");
             startNativeDownloadMonitor();
           }
         } catch (error) {
@@ -457,7 +457,7 @@ const updateChecker = `
       if (["pending", "running", "paused"].includes(state.status)) {
         const amount = total > 0 ? " · " + formatBytes(downloaded) + " / " + formatBytes(total) : "";
         const percent = total > 0 ? Math.min(100, Math.floor(downloaded * 100 / total)) + "%" : "calculando";
-        updateDownloadNotice("Descargando actualización · v" + (state.version || activeDownloadVersion), "DownloadManager: " + percent + amount + (state.status === "paused" ? ". Android pausó la descarga temporalmente." : "."), activeDownloadUrl, activeDownloadVersion);
+        updateDownloadNotice("Descargando actualización · v" + (state.version || activeDownloadVersion), "Android descarga en segundo plano: " + percent + amount + (state.status === "paused" ? ". Android pausó temporalmente la transferencia; se reanudará cuando la conexión lo permita." : ". Podés salir de JB Manager sin detenerla."), activeDownloadUrl, activeDownloadVersion);
         return;
       }
       if (state.status === "successful") {
@@ -521,7 +521,7 @@ const updateChecker = `
       activeDownloadVersion = state.version || "";
       activeDownloadUrl = activeDownloadVersion ? downloadUrlFor(activeDownloadVersion) : "";
       if (["pending", "running", "paused"].includes(state.status)) {
-        showMessage("Descarga de actualización en curso", "Se recuperó el estado persistente de Android. Podés consultar el progreso.", activeDownloadUrl, activeDownloadVersion);
+        showMessage("Descarga en segundo plano · v" + activeDownloadVersion, "Se recuperó el estado persistente de Android. Podés salir de JB Manager y seguir usando el teléfono; Android mantendrá la descarga y su notificación.", activeDownloadUrl, activeDownloadVersion);
         startNativeDownloadMonitor();
       } else if (state.status === "successful") {
         if (state.installPrompted) {
@@ -556,7 +556,7 @@ const updateChecker = `
         return;
       }
       if (compareVersions(latest.version, currentVersion) > 0) {
-        showMessage("Actualización disponible · v" + latest.version, "El APK se descargará con el administrador nativo. Al finalizar, Android validará el archivo y abrirá el instalador.", latest.downloadUrl, latest.version);
+        showMessage("Actualización disponible · v" + latest.version, "Android descargará el APK en segundo plano y mostrará una notificación. Podés salir de JB Manager o usar otras apps; al regresar se recuperará el progreso. Al terminar, Android validará el archivo y abrirá el instalador.", latest.downloadUrl, latest.version);
       } else if (interactive) {
         showMessage("JB Manager está actualizado", "Versión de esta compilación: v" + currentVersion + ". Última versión publicada: v" + latest.version + ".");
       }
