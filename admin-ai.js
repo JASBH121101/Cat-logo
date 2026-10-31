@@ -161,13 +161,20 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       try { payload = await response.json(); } catch { payload = {}; }
       if (!response.ok) {
         const errors = {
-          gemini_not_configured: "Falta configurar GEMINI_API_KEY en Cloudflare Pages.",
-          gemini_quota_exhausted: "Gemini alcanzó su cuota disponible. Podés intentarlo más tarde.",
+          gemini_not_configured: "El servicio de Gemini todavía no está configurado en Cloudflare. La consulta no se procesó.",
+          gemini_quota_exhausted: "Gemini alcanzó su cuota disponible. Esperá un momento y volvé a intentarlo.",
+          gemini_request_failed: "Gemini no pudo completar la consulta. Revisá la conexión o intentá nuevamente en unos minutos.",
+          gemini_invalid_response: "Gemini respondió con un formato que JB Copilot no pudo leer. Probá reformulando la instrucción.",
+          gemini_unstructured_response: "La respuesta de Gemini no llegó en el formato esperado. No se hizo ningún cambio; podés repetir la consulta.",
+          admin_verification_unavailable: "No se pudo verificar tu cuenta administradora con Supabase. Revisá tu conexión e intentá otra vez.",
           admin_only: "Tu usuario no tiene permisos de administrador.",
-          authentication_required: "La sesión no es válida. Iniciá sesión nuevamente.",
-          rate_limit_exceeded: "Se alcanzó el límite temporal de consultas. Esperá un minuto."
+          authentication_required: "La sesión no es válida o expiró. Iniciá sesión nuevamente.",
+          rate_limit_exceeded: "Se alcanzó el límite temporal de consultas. Esperá un minuto.",
+          request_too_large: "La solicitud es demasiado extensa. Resumí la instrucción y volvé a enviarla.",
+          origin_not_allowed: "La solicitud llegó desde un origen no autorizado. Abrí JB Manager desde su dirección oficial.",
+          message_required: "Escribí una instrucción antes de enviarla."
         };
-        throw new Error(errors[payload.error] || "No se pudo consultar Gemini (" + response.status + ").");
+        throw new Error(errors[payload.error] || "No se pudo completar la consulta (" + response.status + "). No se modificó el catálogo.");
       }
       const assistant = payload.assistant || {};
       appendMessage("assistant", assistant.message || "No pude interpretar la solicitud.", assistant);
