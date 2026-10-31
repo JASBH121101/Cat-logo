@@ -584,16 +584,21 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         return;
       }
       renderReview();
+      const timings = payload.timings_ms && typeof payload.timings_ms === "object" ? payload.timings_ms : {};
+      const totalSeconds = Number(timings.total) / 1000;
+      const timingNote = Number.isFinite(totalSeconds) && totalSeconds > 0
+        ? " · Análisis del servidor: " + totalSeconds.toFixed(1) + " s"
+        : "";
       const cleared = await native.clearScan();
       if (cleared?.cleared !== true) {
         throw new Error("Los productos quedaron listos para revisión, pero Android no confirmó la eliminación del OCR temporal.");
       }
       recoverableSession = false;
-      setStatus(wasInterrupted
+      setStatus((wasInterrupted
         ? "Revisión parcial lista. Android interrumpió la captura, pero se recuperaron " + observations.length + " pantalla(s). " + interruptionReason + " Revisá cuidadosamente los resultados."
         : wasTruncated
           ? "Análisis listo. Se alcanzó el límite de 80 pantallas; revisá estos resultados y, si faltan productos, iniciá otra sesión."
-          : "Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.");
+          : "Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.") + timingNote);
     } catch (error) {
       if (recoverableSession) {
         scanning = true;
