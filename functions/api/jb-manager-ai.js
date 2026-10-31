@@ -482,7 +482,7 @@ export async function onRequestPost({ request, env }) {
 
   if (generated) {
     const candidates = [generated];
-    const fenced = generated.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/i);
+    const fenced = generated.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (fenced?.[1]) candidates.push(fenced[1].trim());
     const firstBrace = generated.indexOf("{");
     const lastBrace = generated.lastIndexOf("}");
@@ -500,7 +500,7 @@ export async function onRequestPost({ request, env }) {
     }
   }
 
-  const productActionRequested = /(?:\\b(?:agreg|añad|anad|registr|crea|prepara|alta|incorpora)\\w*\\b.{0,50}\\bproducto\\b|\\bproducto\\b.{0,50}\\b(?:nuevo|alta|registr|prepar|crea)\\b|\\b(?:revis|actualiz)\\w*\\s+(?:el\\s+)?precio\\b|\\bprecio\\s+de\\s+proveedor\\b|\\b(?:busca|buscá|buscar)\\s+(?:un\\s+)?producto\\b)/i.test(prompt);
+  const productActionRequested = /(?:\b(?:agreg|añad|anad|registr|crea|prepara|alta|incorpora)\w*\b.{0,50}\bproducto\b|\bproducto\b.{0,50}\b(?:nuevo|alta|registr|prepar|crea)\b|\b(?:revis|actualiz)\w*\s+(?:el\s+)?precio\b|\bprecio\s+de\s+proveedor\b|\b(?:busca|buscá|buscar)\s+(?:un\s+)?producto\b)/i.test(prompt);
 
   if (typeof parsed === "string" && parsed.trim()) {
     parsed = { message: parsed.trim(), intent: "question" };
