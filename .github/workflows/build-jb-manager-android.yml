@@ -4,6 +4,7 @@ name: Build JB Manager Collections APK
 # Trigger update-compatible rebuild after the mobile variant theme fix was merged.
 # Trigger update-compatible rebuild with native microphone permission recovery and Copilot CORS fixes.
 # Include live handler-level Copilot preflight and POST regression checks from main.
+# Re-run after synchronizing the Copilot regression assertions with the current prompt.
 # Trigger update-compatible rebuild with trust-card alignment, chat data policy, and admin theme fixes.
 
 concurrency:
