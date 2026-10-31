@@ -16,6 +16,8 @@ public final class GoPartnersScanSession {
     private static boolean running = false;
     private static boolean processing = false;
     private static boolean truncated = false;
+    private static boolean interrupted = false;
+    private static String interruptionReason = "";
 
     private GoPartnersScanSession() {}
 
@@ -25,6 +27,15 @@ public final class GoPartnersScanSession {
             running = false;
             processing = false;
             truncated = false;
+            interrupted = false;
+            interruptionReason = "";
+        }
+    }
+
+    public static void markInterrupted(String reason) {
+        synchronized (LOCK) {
+            interrupted = true;
+            interruptionReason = reason == null ? "" : reason.trim();
         }
     }
 
@@ -69,6 +80,8 @@ public final class GoPartnersScanSession {
                 result.put("running", running);
                 result.put("processing", processing);
                 result.put("truncated", truncated);
+                result.put("interrupted", interrupted);
+                result.put("interruptionReason", interruptionReason);
                 result.put("observationsCount", observations.length());
                 result.put("observations", new JSONArray(observations.toString()));
             } catch (JSONException ignored) {

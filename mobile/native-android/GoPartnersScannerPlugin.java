@@ -127,6 +127,8 @@ public class GoPartnersScannerPlugin extends Plugin {
         state.put("running", snapshot.optBoolean("running", false));
         state.put("processing", snapshot.optBoolean("processing", false));
         state.put("truncated", snapshot.optBoolean("truncated", false));
+        state.put("interrupted", snapshot.optBoolean("interrupted", false));
+        state.put("interruptionReason", snapshot.optString("interruptionReason", ""));
         state.put("observationsCount", snapshot.optInt("observationsCount", 0));
         JSONArray observations = snapshot.optJSONArray("observations");
         state.put("observations", observations == null ? new JSONArray() : observations);

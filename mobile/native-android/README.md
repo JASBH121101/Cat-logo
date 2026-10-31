@@ -16,6 +16,8 @@ The scanner is a native Capacitor plugin used by the JB Manager Android APK.
 
 - Android displays the system screen-capture permission for each new session.
 - The foreground notification remains visible while capture is active and offers a stop action.
+- An unexpected MediaProjection stop or service destruction marks the session as interrupted and preserves OCR observations already collected. An intentional stop initiated from the scanner does not mark the session as interrupted.
+- If capture is interrupted, the UI warns that results may be incomplete and allows the user to review the partial OCR or discard it.
 - The scanner must not attempt to bypass Android capture restrictions. If the provider app marks its window secure, Android may return a blank or blocked frame; stop and use the manual photo workflow instead.
 - When Android offers app-only sharing, choose Go Partners to avoid exposing other apps. If only full-screen capture is offered, keep personal chats, customer details, payment screens, and other sensitive content off-screen during the scan.
 - OCR observations exist only in process memory. Clearing the session or terminating the app process discards them.

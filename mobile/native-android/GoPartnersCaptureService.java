@@ -159,7 +159,13 @@ public class GoPartnersCaptureService extends Service {
         imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
         imageReader.setOnImageAvailableListener(this::processLatestFrame, captureHandler);
         projection.registerCallback(new MediaProjection.Callback() {
-            @Override public void onStop() { requestStop(); }
+            @Override public void onStop() {
+                if (!stopping) {
+                    GoPartnersScanSession.markInterrupted(
+                        "Android detuvo o revocó el permiso de captura.");
+                }
+                requestStop();
+            }
         }, captureHandler);
 
         virtualDisplay = projection.createVirtualDisplay(
@@ -314,7 +320,11 @@ public class GoPartnersCaptureService extends Service {
 
     @Override
     public void onDestroy() {
-        if (!stopping) requestStop();
+        if (!stopping) {
+            GoPartnersScanSession.markInterrupted(
+                "Android cerró el servicio de captura inesperadamente.");
+            requestStop();
+        }
         super.onDestroy();
     }
 
