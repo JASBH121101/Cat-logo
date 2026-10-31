@@ -259,6 +259,13 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const supabase = getSupabase();
       if (!getCurrentUser() || !supabase) throw new Error("Iniciá sesión como administrador.");
       await getAccessToken();
+      const pendingSession = await native.getScanState();
+      if (scannerSessionReviewable(pendingSession)) {
+        scanning = true;
+        setStatus(scannerSessionStatus(pendingSession), pendingSession?.interrupted === true);
+        updateControls();
+        return;
+      }
       await native.clearScan();
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
       const result = await native.startScan();
@@ -287,6 +294,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     const native = plugin();
     if (!native) { setStatus("No se encontró el servicio nativo de captura.", true); return; }
     finishButton.disabled = true; setStatus("Finalizando captura y recuperando texto OCR…");
+    let recoverableSession = false;
     try {
       const session = await native.stopScan();
       if (session?.running === true || session?.processing === true) {
@@ -300,13 +308,14 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const wasTruncated = session?.truncated === true;
       const wasInterrupted = session?.interrupted === true;
       const interruptionReason = String(session?.interruptionReason || "").trim();
-      await native.clearScan().catch(() => {});
       if (!observations.length) {
+        await native.clearScan().catch(() => {});
         setStatus(wasInterrupted
           ? "Android interrumpió la captura y no quedaron pantallas OCR para revisar. " + interruptionReason
           : "No se reconoció texto. Comprobá que Go Partners permita capturas y repetí la sesión.", true);
         return;
       }
+      recoverableSession = true;
       setStatus("Se leyeron " + observations.length + " pantallas. JARVIS está identificando productos y variantes…");
       const response = await fetch("/api/jb-gopartners-scan", {
         method: "POST", headers: { Authorization: "Bearer " + await getAccessToken(), "Content-Type": "application/json" },
@@ -318,15 +327,28 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         ...item, price_usd: item.price_usd == null ? null : Number(item.price_usd),
         price_nio: item.price_nio == null ? null : Number(item.price_nio)
       })) : [];
-      if (!scanCandidates.length) { setStatus("No se encontraron productos con nombre o modelo legible. Mantené cada ficha visible unos segundos.", true); return; }
+      if (!scanCandidates.length) {
+        scanning = true;
+        setStatus("No se identificaron productos con nombre o modelo legible. El texto OCR permanece en memoria; podés volver a finalizar para reintentar o descartar la sesión.", true);
+        return;
+      }
       renderReview();
+      await native.clearScan().catch(() => {});
+      recoverableSession = false;
       setStatus(wasInterrupted
         ? "Revisión parcial lista. Android interrumpió la captura, pero se recuperaron " + observations.length + " pantalla(s). " + interruptionReason + " Revisá cuidadosamente los resultados."
         : wasTruncated
           ? "Análisis listo. Se alcanzó el límite de 80 pantallas; revisá estos resultados y, si faltan productos, iniciá otra sesión."
           : "Análisis listo. Revisá las coincidencias y reconfirmá los duplicados antes de preparar actualizaciones.");
-    } catch (error) { setStatus(error?.message || "Falló el análisis de la sesión.", true); }
-    finally { updateControls(); }
+    } catch (error) {
+      if (recoverableSession) {
+        scanning = true;
+        setStatus((error?.message || "Falló el análisis de la sesión.") +
+          " El texto OCR sigue guardado temporalmente en este dispositivo; pulsá Finalizar y revisar para reintentar o Descartar sesión para eliminarlo.", true);
+      } else {
+        setStatus(error?.message || "Falló el análisis de la sesión.", true);
+      }
+    } finally { updateControls(); }
   }
   async function clearSession() {
     const native = plugin();
