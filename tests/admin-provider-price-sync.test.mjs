@@ -21,7 +21,7 @@ test("provider review displays live price differences and availability validatio
   assert.match(html, /id="provider-review-validation-summary"[^>]*aria-live="polite"/);
   assert.match(css, /provider-price-difference.is-different/);
   assert.match(css, /provider-validation-line.is-match/);
-  assert.match(admin, /admin-provider\.js\?v=20261031-scanner-bridge1/);
+  assert.match(admin, /admin-provider\.js\?v=20261031-provider-review4/);
 });
 
 test("variant product comparison uses the lowest RAM/storage configuration instead of duplicate general fields", () => {
