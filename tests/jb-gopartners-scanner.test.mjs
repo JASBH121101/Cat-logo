@@ -39,3 +39,10 @@ test("scanner review exposes editable OCR fields before preparing the provider r
   }
   assert.ok(source.includes("Corregir lectura antes de revisar"));
 });
+
+test("a stopped in-memory capture session can still be resumed for review", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.ok(source.includes("function restoreSessionState(state)"));
+  assert.ok(source.includes("state?.running || count > 0"));
+  assert.ok(source.includes("La captura ya se detuvo"));
+});
