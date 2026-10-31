@@ -131,6 +131,7 @@ public class GoPartnersScannerPlugin extends Plugin {
 
     @PluginMethod
     public void stopScan(PluginCall call) {
+        GoPartnersScanSession.clearFinishRequest();
         requestStop();
         hideOverlayControls();
         resolveWhenStopped(call, 0);
