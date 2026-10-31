@@ -296,9 +296,13 @@
     // Sincroniza icono y texto del control.
     applyTheme(initialTheme);
 
-    // Crea el botón flotante para regresar al inicio.
-    if (!document.querySelector("[data-back-to-top]")) {
+    // El panel de administración no necesita el botón flotante "Volver arriba".
+    // Se conserva en los catálogos públicos y demás páginas del sitio.
+    if (!document.body.classList.contains("admin-body") &&
+        !document.querySelector("[data-back-to-top]")) {
       createBackToTopButton();
+    } else if (document.body.classList.contains("admin-body")) {
+      document.querySelectorAll("[data-back-to-top]").forEach(button => button.remove());
     }
 
     // Prepara los filtros adaptables.
