@@ -4339,3 +4339,82 @@ html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid .pro
 html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid .product-tag-badge.tag-limited_edition {
   justify-self:start !important;
 }
+
+
+/* JB TECH · Limited editions use the standard vertical catalog card, not the wide showcase split. */
+@media (min-width: 761px) and (hover: hover) and (pointer: fine) {
+  body.technology-catalog #limited-edition-grid.featured-grid {
+    display:grid !important;
+    grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),300px)) !important;
+    justify-content:start !important;
+    align-items:stretch !important;
+    gap:18px !important;
+    width:100% !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card {
+    display:flex !important;
+    flex-direction:column !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    width:100% !important;
+    max-width:300px !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    height:100% !important;
+    align-items:stretch !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image {
+    display:grid !important;
+    place-items:center !important;
+    grid-column:auto !important;
+    flex:0 0 auto !important;
+    width:100% !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    aspect-ratio:1 / 1 !important;
+    overflow:hidden !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image img {
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    max-height:none !important;
+    padding:10px !important;
+    box-sizing:border-box !important;
+    object-fit:contain !important;
+    object-position:center !important;
+    transform:none !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-card-content {
+    display:flex !important;
+    flex:1 1 auto !important;
+    flex-direction:column !important;
+    grid-column:auto !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    align-items:stretch !important;
+    justify-content:flex-start !important;
+    padding:14px !important;
+    gap:8px !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid .product-card h3 {
+    font-size:16px !important;
+    line-height:1.35 !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid .product-price {
+    font-size:22px !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid .product-actions {
+    display:flex !important;
+    width:100% !important;
+    margin-top:auto !important;
+    padding-top:10px !important;
+  }
+  body.technology-catalog #limited-edition-grid.featured-grid .product-view-button {
+    width:100% !important;
+    min-height:42px !important;
+  }
+}
