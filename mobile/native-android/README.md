@@ -50,3 +50,6 @@ The APK workflow copies these Java sources into the generated Capacitor Android 
 - This guarantee applies to leaving/minimizing the app or removing its task from Recents. Android system restrictions, loss of network, insufficient storage or explicitly force-stopping/disabling system download components can still interrupt a transfer.
 
 - The floating JARVIS control is started with the MediaProjection session and must remain visible while Go Partners is being captured. Creating the foreground notification channel must not stop the overlay; the capture service removes the overlay only during its shutdown path.
+
+
+- The current JB Copilot build exposes a local OCR transcript for every captured observation, recovers a candidate against its verified source observation when the model returns an incorrect observation index, and allows only bounded product-identity OCR corrections. Supplier prices still require exact numeric and currency evidence in the same OCR context. The web/API assets are assembled from the latest `main` during the APK workflow.
