@@ -461,7 +461,7 @@ test("JB Copilot fails over from an overloaded Gemini 3.8 model to stable Flash"
     assert.equal(calls.length, 2);
     assert.match(calls[0].url, /models\/gemini-3\.8-flash:generateContent$/);
     assert.match(calls[1].url, /models\/gemini-3\.6-flash:generateContent$/);
-    assert.equal(calls[0].body.generationConfig.responseSchema.type, "object");
+    assert.equal(calls[0].body.generationConfig.responseFormat.text.schema.type, "object");
     assert.equal(calls[1].body.generationConfig.responseMimeType, "application/json");
     assert.equal(calls[1].body.generationConfig.responseSchema, undefined);
   } finally {
