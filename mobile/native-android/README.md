@@ -25,8 +25,8 @@ The scanner is a native Capacitor plugin used by the JB Manager Android APK.
 
 ## JB Copilot voice input
 
-- The `JbVoiceInput` Capacitor plugin checks `RECORD_AUDIO` and requests the Android runtime permission only when the administrator taps the microphone.
-- A denied first request can be retried from the microphone button. The interface points to Android app settings only after the permission is permanently blocked.
+- The `JbVoiceInput` Capacitor plugin checks `RECORD_AUDIO` and requests the Android runtime permission only when the administrator taps the microphone. The permission request is dispatched on Android's UI thread through Capacitor's registered permission callback.
+- A denied request can be retried from the microphone button. Repeated denial is tracked only after Android returns the permission result; when the permission is permanently blocked, or the native permission request does not return, JB Manager exposes an `Abrir permisos del micrófono` action that opens the app's Android settings page.
 - Speech recognition uses Android's configured `SpeechRecognizer` service with partial and final transcript callbacks. It is push-to-talk; the app does not run continuous background listening.
 - Android's default speech-recognition implementation may process audio remotely. JB Manager does not persist or upload raw microphone audio itself; it receives the recognized text locally in the WebView, and the text is sent to JB Copilot only after the administrator presses Enviar.
 - If the system speech service is unavailable, denied, offline, or does not support the requested Spanish locale, the interface reports the specific failure and retains the text-entry fallback.
