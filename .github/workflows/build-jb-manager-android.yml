@@ -953,8 +953,12 @@ jobs:
             echo "APK scanner could copy a partial supplier price across color rows." >&2
             exit 1
           }
-          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'configuration_availability: "unknown"' || {
-            echo "APK scanner is missing explicit pending-availability protection." >&2
+          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'const states = [...new Set(group.rows.map(row => row.availability || "unknown"))]' || {
+            echo "APK scanner is missing variant-level availability aggregation." >&2
+            exit 1
+          }
+          unzip -p "$APK" assets/public/admin-gopartners-scanner.js | grep -Fq 'availability: row.availability || "unknown"' || {
+            echo "APK scanner is missing per-color availability protection." >&2
             exit 1
           }
           unzip -p "$APK" assets/public/admin.js | grep -Fq 'data-ai-color-open' || {
