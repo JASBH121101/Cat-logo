@@ -184,7 +184,7 @@ export async function onRequestPost({ request, env }) {
   let body;
   try {
     const raw = await request.text();
-    if (raw.length > 64_000) return response(413, { ok: false, error: "request_too_large" }, origin);
+    if (raw.length > 180_000) return response(413, { ok: false, error: "request_too_large" }, origin);
     body = JSON.parse(raw);
   } catch {
     return response(400, { ok: false, error: "invalid_json" }, origin);
@@ -204,20 +204,20 @@ export async function onRequestPost({ request, env }) {
     description: cleanText(item?.description, 180),
     specifications: cleanText(typeof item?.specifications === "string" ? item.specifications : JSON.stringify(item?.specifications || {}), 420),
     catalog_type: item?.catalog_type === "perfumery" ? "perfumery" : "technology",
-    price_usd: Number.isFinite(Number(item?.price_usd)) ? Number(item.price_usd) : null,
-    price_nio: Number.isFinite(Number(item?.price_nio)) ? Number(item.price_nio) : null,
+    price_usd: item?.price_usd == null || item.price_usd === "" ? null : Number.isFinite(Number(item.price_usd)) ? Number(item.price_usd) : null,
+    price_nio: item?.price_nio == null || item.price_nio === "" ? null : Number.isFinite(Number(item.price_nio)) ? Number(item.price_nio) : null,
     perfume_details: item?.perfume_details ? {
       family: cleanText(item.perfume_details.family, 40),
       concentration: cleanText(item.perfume_details.concentration, 50),
-      volume_ml: Number.isFinite(Number(item.perfume_details.volume_ml)) ? Number(item.perfume_details.volume_ml) : null,
+      volume_ml: item.perfume_details.volume_ml == null || item.perfume_details.volume_ml === "" ? null : Number.isFinite(Number(item.perfume_details.volume_ml)) ? Number(item.perfume_details.volume_ml) : null,
       audience: cleanText(item.perfume_details.audience, 30)
     } : null,
     variants: Array.isArray(item?.variants) ? item.variants.slice(0, 12).map(variant => ({
       ram: cleanText(variant?.ram, 30),
       storage: cleanText(variant?.storage || variant?.capacity, 30),
       color: cleanText(variant?.color, 40),
-      price_usd: Number.isFinite(Number(variant?.price_usd)) ? Number(variant.price_usd) : null,
-      price_nio: Number.isFinite(Number(variant?.price_nio)) ? Number(variant.price_nio) : null
+      price_usd: variant?.price_usd == null || variant.price_usd === "" ? null : Number.isFinite(Number(variant.price_usd)) ? Number(variant.price_usd) : null,
+      price_nio: variant?.price_nio == null || variant.price_nio === "" ? null : Number.isFinite(Number(variant.price_nio)) ? Number(variant.price_nio) : null
     })) : []
   })) : [];
 
