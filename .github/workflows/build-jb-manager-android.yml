@@ -994,6 +994,16 @@ jobs:
           grep -q 'validateDownloadedApk' "$PLUGIN"
           grep -q 'sameHashSet' "$PLUGIN"
           grep -q 'clearObsoleteDownloadIfInstalledVersionIsNewer' "$PLUGIN"
+          grep -q 'DownloadManager.Request' "$PLUGIN"
+          grep -q 'dm.enqueue(request)' "$PLUGIN"
+          grep -q 'VISIBILITY_VISIBLE_NOTIFY_COMPLETED' "$PLUGIN"
+          grep -q 'setAllowedOverMetered(true)' "$PLUGIN"
+          grep -q 'putLong(ID, id)' "$PLUGIN"
+          grep -q 'getDownloadStatus' "$PLUGIN"
+          grep -q 'Podés salir de JB Manager' "$PLUGIN"
+          grep -q 'resumeNativeDownloadIfNeeded' mobile/prepare-web.mjs
+          grep -q 'visibilitychange' mobile/prepare-web.mjs
+          grep -q 'Podés salir de JB Manager' mobile/prepare-web.mjs
           grep -q 'api/download/apk?version=' mobile/prepare-web.mjs
           grep -q 'REQUEST_INSTALL_PACKAGES' "$MANIFEST"
           grep -q 'applicationId "com.jbcollections.manager.v2"' mobile/android/app/build.gradle || {
