@@ -268,7 +268,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
         };
         const baseMessage = errors[payload.error] || "No se pudo completar la consulta (" + response.status + "). No se modificó el catálogo.";
         const diagnostic = typeof payload.detail === "string"
-          ? payload.detail.replace(/[\\u0000-\\u001f\\u007f]/g, " ").slice(0, 320)
+          ? payload.detail.replace(/[\x00-\x1F\x7F]/g, " ").slice(0, 320)
           : "";
         throw new Error(baseMessage + (diagnostic ? " Detalle de Google: " + diagnostic : ""));
       }
