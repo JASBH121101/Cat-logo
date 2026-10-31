@@ -265,6 +265,10 @@ jobs:
           test -s mobile/www/jb-manager-system-bars.js || { echo "Missing bundled system bars bridge." >&2; exit 1; }
           require_text '"@capacitor/local-notifications": "8.3.1"' mobile/package.json
           require_text 'JBManagerNativeNotifications' mobile/native-notifications.js
+          test -s mobile/www/jb-manager-biometric-auth.js
+          require_text 'src="./jb-manager-biometric-auth.js"' mobile/www/admin.html
+          grep -Fq 'Activar huella' mobile/www/admin.html
+          echo "Android biometric bridge was bundled into the APK admin page."
           require_text 'src="./jb-manager-native-notifications.js"' mobile/www/admin.html
           test -s mobile/www/jb-manager-native-notifications.js || { echo "Missing bundled native notifications bridge." >&2; exit 1; }
           require_text 'jb-manager-private-chat' mobile/www/admin-notifications.mjs
