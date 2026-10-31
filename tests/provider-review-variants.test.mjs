@@ -131,4 +131,7 @@ test("scanner opens the selected product review before matching rendered configu
   assert.ok(bridge.indexOf("openReview(productId)") >= 0);
   assert.ok(bridge.indexOf("openReview(productId)") < bridge.indexOf('document.querySelectorAll("#provider-review-variants'));
   assert.match(bridge, /matches\.length !== 1/);
+  assert.match(bridge, /normalizeConfig\(row\.dataset\.colorName\) === colorKey/);
+  assert.match(bridge, /is-jb-scanner-match/);
+  assert.match(bridge, /El color .*no existe exactamente en JB Collections/);
 });
