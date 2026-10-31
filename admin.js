@@ -4055,11 +4055,13 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
     const action = button.dataset.dashboardAction;
 
     if (action === "drafts") {
-      const scopedDrafts = getDashboardProducts().filter(product => ["draft", "unpublished"].includes(getWorkflowStatus(product)));
-      const target = scopedDrafts.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
-        || scopedDrafts[0];
-      if (target) setAdminListFilters({ catalog: normalizeCatalogType(target.catalog_type), taxonomy: "all" });
-      showAdminSection("drafts");
+      const scopedPending = getDashboardProducts().filter(product => ["draft", "unpublished"].includes(getWorkflowStatus(product)));
+      const target = scopedPending.find(product => normalizeCatalogType(product.catalog_type) === activeCatalogType)
+        || scopedPending[0];
+      const listCatalog = dashboardCatalogScope === "all" ? "all" : dashboardCatalogScope;
+      setAdminListFilters({ catalog: listCatalog, taxonomy: "all" });
+      const targetSection = target && getWorkflowStatus(target) === "draft" ? "drafts" : "unpublished";
+      showAdminSection(targetSection);
       return;
     }
 
@@ -4070,7 +4072,10 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
 
       if (target) {
         const targetCatalog = normalizeCatalogType(target.catalog_type);
-        setAdminListFilters({ catalog: targetCatalog, taxonomy: "all" });
+        setAdminListFilters({
+          catalog: dashboardCatalogScope === "all" ? "all" : dashboardCatalogScope,
+          taxonomy: "all"
+        });
 
         const targetStatus = getWorkflowStatus(target);
         const targetSection = targetStatus === "published" ? "published"
@@ -4515,7 +4520,7 @@ function summarizeAdminList(rows, visibleRows, pluralLabel, singularLabel, searc
   const technology = rows.filter(product => normalizeCatalogType(product.catalog_type) === "technology").length;
   const perfumery = rows.length - technology;
   const totalLabel = rows.length + " " + (rows.length === 1 ? singularLabel : pluralLabel);
-  const breakdown = technology + " tecnología · " + perfumery + " perfumería";
+  const breakdown = technology + " JB TECH · " + perfumery + " JB Parfums";
   const filtered = visibleRows.length !== rows.length || adminListFilterState.catalog !== "all" ||
     adminListFilterState.taxonomy !== "all" || Boolean(String(searchValue || "").trim());
   return (filtered ? "Mostrando " + visibleRows.length + " de " + totalLabel : totalLabel) +
