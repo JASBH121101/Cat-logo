@@ -219,3 +219,33 @@ test("JB TECH mobile advisor launcher is compact and its label does not cover sp
   assert.match(advisorCss, /width: 48px;[\s\S]*?height: 48px;[\s\S]*?border-radius: 50%/);
   assert.match(advisorCss, /clip: rect\(0, 0, 0, 0\)/);
 });
+
+
+test("product lists merge both catalogs and use the same catalog and category/family filters", () => {
+  assert.doesNotMatch(html, /id="active-catalog-selector"/);
+  assert.match(html, /id="product-catalog-type"/);
+  assert.equal((html.match(/data-admin-list-filters/g) || []).length, 4);
+  assert.match(html, /data-admin-catalog-filter/);
+  assert.match(html, /data-admin-taxonomy-filter/);
+  assert.match(admin, /const items = products;/);
+  assert.match(admin, /function matchesAdminListFilters\(product\)/);
+  assert.match(admin, /product\.perfume_details\?\.family/);
+  assert.match(admin, /TECHNOLOGY_LIST_CATEGORIES/);
+  assert.match(admin, /PERFUMERY_LIST_FAMILIES/);
+  assert.match(admin, /Navigation counters always show the complete inventory across both catalogs/);
+});
+
+test("the Add Product form owns catalog selection and locks the catalog while editing", () => {
+  assert.match(html, /<select id="product-catalog-type"/);
+  assert.match(admin, /const activeCatalogSelector = \$\("#product-catalog-type"\)/);
+  assert.match(admin, /activeCatalogSelector\.disabled = Boolean\(\$\("#product-id"\)\?\.value\)/);
+  assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change"/);
+});
+
+test("mixed inventory cards identify whether each item belongs to JB TECH or JB Parfums", () => {
+  assert.match(admin, /const catalogLabel = perfume \? "JB PARFUMS" : "JB TECH"/);
+  assert.match(admin, /getAdminProductTaxonomy\(product\)/);
+  assert.match(admin, /admin-product-catalog-pill/);
+  assert.match(admin, /admin-product-category-pill/);
+  assert.match(html, /id="draft-section-title">Borradores/);
+});
