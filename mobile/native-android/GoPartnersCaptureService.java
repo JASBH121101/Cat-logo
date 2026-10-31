@@ -113,6 +113,7 @@ public class GoPartnersCaptureService extends Service {
             CHANNEL_ID, "Escaneo de Go Partners", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("Indica cuándo JARVIS está leyendo texto de la pantalla.");
         channel.setShowBadge(false);
+        try { stopService(new Intent(this, GoPartnersOverlayService.class)); } catch (Exception ignored) {}
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) manager.createNotificationChannel(channel);
     }
@@ -129,7 +130,7 @@ public class GoPartnersCaptureService extends Service {
             ? new Notification.Builder(this, CHANNEL_ID) : new Notification.Builder(this);
         builder.setSmallIcon(android.R.drawable.ic_menu_search)
             .setContentTitle("JARVIS está escaneando")
-            .setContentText("Navegá por Go Partners y volvé a JB Manager para finalizar.")
+            .setContentText("Navegá por Go Partners. Usá el control flotante de JARVIS para revisar.")
             .setOngoing(true)
             .setOnlyAlertOnce(true);
         if (openApp != null) builder.setContentIntent(openApp);
