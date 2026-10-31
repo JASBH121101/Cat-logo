@@ -298,20 +298,24 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   startButton.addEventListener("click", () => { void start(); });
   finishButton.addEventListener("click", () => { void finish(); });
   clearButton.addEventListener("click", () => { void clearSession(); });
+  function restoreSessionState(state) {
+    const count = Number(state?.observationsCount || 0);
+    if (state?.running || count > 0) {
+      scanning = true;
+      setStatus(state.running
+        ? "La captura sigue activa. Se han leído " + count + " pantallas. Podés continuar o finalizar."
+        : "La captura ya se detuvo. Hay " + count + " pantallas en memoria listas para revisar.");
+      updateControls();
+    }
+  }
   window.addEventListener("focus", async () => {
     const native = plugin();
     if (!native || scanning) return;
-    try { const state = await native.getScanState(); if (state?.running) {
-      scanning = true;
-      setStatus("La captura sigue activa. Se han leído " + Number(state.observationsCount || 0) + " pantallas. Podés continuar o finalizar aquí.");
-      updateControls();
-    }} catch {}
+    try { restoreSessionState(await native.getScanState()); } catch {}
   });
   const native = plugin();
   if (!native) setStatus("Disponible en la APK Android. El navegador no puede capturar otras aplicaciones.");
-  else void native.getScanState?.().then(state => {
-    if (state?.running) { scanning = true; setStatus("Se recuperó una sesión activa. Pantallas reconocidas: " + Number(state.observationsCount || 0) + "."); updateControls(); }
-  }).catch(() => {});
+  else void native.getScanState?.().then(restoreSessionState).catch(() => {});
   updateControls();
   return { clearSession, isScanning: () => scanning };
 }
