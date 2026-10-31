@@ -122,3 +122,11 @@ html[data-theme="dark"] body.admin-body #provider-review-variants .provider-vari
   background:#25365b;
   box-shadow:0 0 0 2px rgba(138,162,255,.18);
 }
+
+.jb-gp-candidate-warning {
+  color: #93600f !important;
+  font-weight: 700;
+}
+html[data-theme="dark"] body.admin-body .jb-gp-product-card small.jb-gp-candidate-warning {
+  color: #f2c979 !important;
+}
