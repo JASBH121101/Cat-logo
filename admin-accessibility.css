@@ -748,3 +748,115 @@ html[data-theme="dark"] body.admin-body .admin-refresh-status {
   }
 }
 
+
+
+/* JB MANAGER · responsive typography tuned per device width.
+   Keep form controls comfortable to read; reduce secondary copy before inputs. */
+@media (min-width: 1200px) {
+  html[data-theme] body.admin-body #product-form .product-form-section-heading h3 {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+  }
+  html[data-theme] body.admin-body #product-form .product-form-section-tab {
+    font-size: 15px !important;
+  }
+  html[data-theme] body.admin-body .admin-form label {
+    font-size: 15.5px !important;
+    line-height: 1.45 !important;
+  }
+  html[data-theme] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-form select,
+  html[data-theme] body.admin-body .admin-form textarea {
+    font-size: 16.5px !important;
+    line-height: 1.45 !important;
+  }
+  html[data-theme] body.admin-body .admin-form label > small,
+  html[data-theme] body.admin-body .admin-form .field-help,
+  html[data-theme] body.admin-body .admin-form .form-hint {
+    font-size: 13.5px !important;
+    line-height: 1.55 !important;
+  }
+}
+@media (min-width: 761px) and (max-width: 1199px) {
+  html[data-theme] body.admin-body #product-form .product-form-section-heading h3 {
+    font-size: 18px !important;
+  }
+  html[data-theme] body.admin-body #product-form .product-form-section-tab {
+    font-size: 14px !important;
+  }
+  html[data-theme] body.admin-body .admin-form label {
+    font-size: 14.5px !important;
+    line-height: 1.45 !important;
+  }
+  html[data-theme] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-form select,
+  html[data-theme] body.admin-body .admin-form textarea {
+    font-size: 15.5px !important;
+    line-height: 1.45 !important;
+  }
+  html[data-theme] body.admin-body .admin-form label > small,
+  html[data-theme] body.admin-body .admin-form .field-help,
+  html[data-theme] body.admin-body .admin-form .form-hint {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+  html[data-theme] body.admin-body .admin-nav-button {
+    font-size: 13px !important;
+  }
+}
+@media (max-width: 760px) {
+  html[data-theme] body.admin-body .admin-form label {
+    font-size: 14.5px !important;
+    line-height: 1.45 !important;
+  }
+  html[data-theme] body.admin-body #product-form .product-form-section .form-grid input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  html[data-theme] body.admin-body #product-form .product-form-section .form-grid select,
+  html[data-theme] body.admin-body #product-form .product-form-section .form-grid textarea,
+  html[data-theme] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+  html[data-theme] body.admin-body .admin-form select,
+  html[data-theme] body.admin-body .admin-form textarea {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+  html[data-theme] body.admin-body .admin-form label > small,
+  html[data-theme] body.admin-body .admin-form .field-help,
+  html[data-theme] body.admin-body .admin-form .form-hint {
+    font-size: 12.8px !important;
+    line-height: 1.5 !important;
+  }
+  html[data-theme] body.admin-body #product-form .product-form-section-heading h3 {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+  }
+  html[data-theme] body.admin-body #product-form .product-form-section-tab {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+  html[data-theme] body.admin-body .admin-nav-button {
+    font-size: 13px !important;
+  }
+  html[data-theme] body.admin-body .admin-product-name {
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+  }
+  html[data-theme] body.admin-body .admin-product-meta {
+    font-size: 12.8px !important;
+    line-height: 1.45 !important;
+  }
+}
+@media (max-width: 380px) {
+  html[data-theme] body.admin-body .admin-form label {
+    font-size: 14px !important;
+  }
+  html[data-theme] body.admin-body .admin-form label > small,
+  html[data-theme] body.admin-body .admin-form .field-help,
+  html[data-theme] body.admin-body .admin-form .form-hint {
+    font-size: 12.5px !important;
+  }
+  html[data-theme] body.admin-body #product-form .product-form-section-tab {
+    font-size: 13px !important;
+  }
+  html[data-theme] body.admin-body .admin-nav-button {
+    font-size: 12.5px !important;
+  }
+}
