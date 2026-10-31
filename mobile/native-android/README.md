@@ -51,3 +51,12 @@ The APK workflow copies these Java sources into the generated Capacitor Android 
 
 
 - Screen-change detection is based on the recognized OCR text rather than a sparse 18×18 pixel hash. The capture service still samples at a bounded interval, and exact duplicate OCR text is filtered after ML Kit. This avoids skipping a new product name, variant or price that changes in a small region outside the former pixel sample grid.
+
+
+## Optional biometric unlock
+
+- On Android, an administrator signs in normally first, then enables **Ajustes → Activar huella**.
+- Enabling biometric unlock also enables the existing **Recordar sesión en este dispositivo** preference, so a previously authenticated Supabase session can be restored after the APK is closed.
+- On the next cold launch with a remembered session, Android's system biometric prompt must succeed before the admin dashboard is shown. If biometric authentication is unavailable or cancelled, the dashboard remains closed and the existing email/password login remains available.
+- The integration uses AndroidX BiometricPrompt with strong biometrics. The Android operating system performs matching; the app stores only an enabled/disabled preference and never stores fingerprint templates or biometric images.
+- Biometric unlock is an on-device app-access gate, not a replacement for Supabase authentication or an additional server-side MFA factor. The administrator still must have a valid Supabase session and be present in `admin_users`.
