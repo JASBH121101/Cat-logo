@@ -266,7 +266,11 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
           origin_not_allowed: "La solicitud llegó desde un origen no autorizado. Abrí JB Manager desde su dirección oficial.",
           message_required: "Escribí una instrucción antes de enviarla."
         };
-        throw new Error(errors[payload.error] || "No se pudo completar la consulta (" + response.status + "). No se modificó el catálogo.");
+        const baseMessage = errors[payload.error] || "No se pudo completar la consulta (" + response.status + "). No se modificó el catálogo.";
+        const diagnostic = typeof payload.detail === "string"
+          ? payload.detail.replace(/[\\u0000-\\u001f\\u007f]/g, " ").slice(0, 320)
+          : "";
+        throw new Error(baseMessage + (diagnostic ? " Detalle de Google: " + diagnostic : ""));
       }
       const assistant = payload.assistant || {};
       appendMessage("assistant", assistant.message || "No pude interpretar la solicitud.", assistant);
