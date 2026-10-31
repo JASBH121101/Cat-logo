@@ -20,12 +20,12 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
   <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
-  <link rel="stylesheet" href="admin-accessibility.css?v=20261031-device-typography1">
+  <link rel="stylesheet" href="admin-accessibility.css?v=20261031-tag-grid-device-guard2">
   <link rel="stylesheet" href="admin-ai.css?v=20261031-chat-ui1">
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
 
   <script src="config.js?v=20261029-admin-webpush3"></script>
-  <script type="module" src="admin.js?v=20261031-no-false-reload-prompts1"></script>
+  <script type="module" src="admin.js?v=20261031-active-editor-guard2"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -554,7 +554,11 @@
                   <h3 id="product-tags-title">Etiquetas manuales</h3>
                   <p id="product-tags-description">Elegí solo las que correspondan; no se asignan automáticamente por marca.</p>
                 </div>
-                <div class="product-collection-tag-options" aria-label="Etiquetas de colección">
+                <div class="product-tag-group-heading">
+                  <h4>Distintivos generales</h4>
+                  <small>Disponibles para ambos catálogos.</small>
+                </div>
+                <div class="product-collection-tag-options" aria-label="Etiquetas generales">
                   <label class="product-tag-option product-tag-option--exclusive">
                     <input type="checkbox" data-product-tag value="exclusive" id="product-tag-exclusive">
                     <span>✦ Exclusivo</span>
@@ -569,7 +573,11 @@
                   </label>
                 </div>
                 <div class="product-tech-tag-options" id="product-tech-tag-options">
-                  <div class="product-tag-options">
+                  <div class="product-tag-group-heading product-tag-group-heading--tech">
+                    <h4>Etiquetas de tecnología</h4>
+                    <small>Se muestran únicamente al registrar productos JB TECH.</small>
+                  </div>
+                  <div class="product-tag-options" aria-label="Etiquetas de tecnología">
                     <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-high-performance" value="high_performance"><span>⚡ Alto rendimiento</span></label>
                     <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-quality-price" value="quality_price"><span>💎 Calidad-precio</span></label>
                     <label class="product-tag-option"><input type="checkbox" data-product-tag id="product-tag-top-gaming" value="top_gaming"><span>🎮 Top Gaming</span></label>
