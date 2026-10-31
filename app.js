@@ -22,9 +22,22 @@ const dialogContent = document.querySelector("#dialog-content");
 const catalogDocumentTitle = document.title;
 const catalogCanonical = document.querySelector('link[rel="canonical"]')?.href || "";
 const categoryFilters = document.querySelector("#category-filters");
+const subcategoryFilter = document.querySelector("#subcategory-filter");
 const featuredSection = document.querySelector("#featured-section");
 const featuredGrid = document.querySelector("#featured-grid");
 const featuredCount = document.querySelector("#featured-count");
+const limitedEditionSection = document.querySelector("#limited-edition-section");
+const limitedEditionGrid = document.querySelector("#limited-edition-grid");
+const limitedEditionCount = document.querySelector("#limited-edition-count");
+const highPerformanceSection = document.querySelector("#high-performance-section");
+const highPerformanceGrid = document.querySelector("#high-performance-grid");
+const highPerformanceCount = document.querySelector("#high-performance-count");
+const qualityPriceSection = document.querySelector("#quality-price-section");
+const qualityPriceGrid = document.querySelector("#quality-price-grid");
+const qualityPriceCount = document.querySelector("#quality-price-count");
+const topGamingSection = document.querySelector("#top-gaming-section");
+const topGamingGrid = document.querySelector("#top-gaming-grid");
+const topGamingCount = document.querySelector("#top-gaming-count");
 const resultsHeading = document.querySelector("#catalog-results-heading");
 const resultsEyebrow = document.querySelector("#catalog-results-eyebrow");
 const resultsTitle = document.querySelector("#catalog-results-title");
@@ -36,6 +49,7 @@ const priceFilterFeedback = document.querySelector("#budget-filter-feedback");
 let supabase = null;
 let products = [];
 let selectedCategory = "all";
+let selectedSubcategory = "";
 let selectedBrand = "";
 
 
@@ -48,7 +62,22 @@ function isCatalogAdminActivityActive() {
   }
 }
 
-// Analytics: record product views and WhatsApp intent, including the selected variant.
+// Analytics: record product views, WhatsApp intent and aggregate region metrics; never persist raw IP addresses.
+let catalogVisitorLocationPromise = null;
+async function getCatalogVisitorLocation() {
+  if (!catalogVisitorLocationPromise) {
+    catalogVisitorLocationPromise = fetch("/api/catalog-location", {
+      method: "GET", credentials: "same-origin", cache: "no-store"
+    }).then(response => response.ok ? response.json() : null)
+      .then(value => ({
+        country: typeof value?.country === "string" ? value.country.slice(0, 2).toUpperCase() : null,
+        department: typeof value?.department === "string" ? value.department.slice(0, 80) : null
+      }))
+      .catch(() => ({ country: null, department: null }));
+  }
+  return catalogVisitorLocationPromise;
+}
+
 async function recordCatalogEvent(productId, eventType, variant = {}) {
   if (isCatalogAdminActivityActive() || !supabase || !productId || !["view", "whatsapp_click"].includes(eventType)) return;
 
@@ -58,16 +87,46 @@ async function recordCatalogEvent(productId, eventType, variant = {}) {
   };
 
   try {
-    const { error } = await supabase.from("catalog_events").insert({
+    const visitor = await getCatalogVisitorLocation();
+    const eventBase = {
       product_id: productId,
       event_type: eventType,
       variant_color: cleanValue(variant.color),
       variant_ram: cleanValue(variant.ram),
       variant_storage: cleanValue(variant.storage)
+    };
+    let { error } = await supabase.from("catalog_events").insert({
+      ...eventBase,
+      visitor_country: visitor.country,
+      visitor_department: visitor.department
     });
+    if (error && /visitor_(country|department)|schema cache|column .*does not exist/i.test(error.message || "")) {
+      ({ error } = await supabase.from("catalog_events").insert(eventBase));
+    }
     if (error) console.warn("No se pudo registrar el evento de analítica:", error.message);
   } catch (error) {
     console.warn("No se pudo registrar el evento de analítica.", error);
+  }
+}
+
+async function recordCatalogPageVisit(catalogType) {
+  if (!supabase || isCatalogAdminActivityActive()) return;
+  try {
+    const visitor = await getCatalogVisitorLocation();
+    const { error } = await supabase.from("catalog_events").insert({
+      product_id: null,
+      event_type: "catalog_view",
+      catalog_type,
+      visitor_country: visitor.country,
+      visitor_department: visitor.department
+    });
+    if (error && /catalog_view|catalog_type|visitor_(country|department)|schema cache|column .*does not exist/i.test(error.message || "")) {
+      console.info("Las visitas generales empezarán a registrarse al aplicar la migración de analítica geográfica.");
+      return;
+    }
+    if (error) console.info("No se pudo registrar la visita al catálogo:", error.message);
+  } catch (error) {
+    console.info("No se pudo registrar la visita al catálogo.", error);
   }
 }
 
@@ -126,6 +185,46 @@ function escapeHtml(value = "") {
     '"': "&quot;",
     "'": "&#39;"
   })[character]);
+}
+
+
+function renderCommercialDescription(value, fallbackText) {
+  const source = String(value || "").replace(/\r\n?/g, "\n").trim();
+  if (!source) return '<p class="commercial-copy-empty">' + escapeHtml(fallbackText || "Consultá más información en la tienda.") + '</p>';
+
+  const lines = source.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const blocks = [];
+  let bullets = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    blocks.push('<ul class="commercial-copy-list">' + bullets.map(item => '<li>' + escapeHtml(item) + '</li>').join("") + '</ul>');
+    bullets = [];
+  };
+
+  for (const rawLine of lines) {
+    const parts = rawLine.split(/\s+[•●▪]\s+/).map(part => part.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      flushBullets();
+      if (!/^(?:[-*•●▪]|\d+[.)])\s+/.test(parts[0])) blocks.push('<p>' + escapeHtml(parts.shift()) + '</p>');
+      for (const part of parts) bullets.push(part.replace(/^(?:[-*•●▪]|\d+[.)])\s+/, ""));
+      continue;
+    }
+    const bulletMatch = rawLine.match(/^(?:[-*•●▪]|\d+[.)])\s+(.+)$/);
+    if (bulletMatch) {
+      bullets.push(bulletMatch[1]);
+      continue;
+    }
+    flushBullets();
+    const sentences = rawLine.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡0-9])/u).filter(Boolean);
+    if (sentences.length > 1 && rawLine.length > 150) {
+      sentences.forEach(sentence => blocks.push('<p>' + escapeHtml(sentence.trim()) + '</p>'));
+    } else {
+      blocks.push('<p>' + escapeHtml(rawLine) + '</p>');
+    }
+  }
+  flushBullets();
+  if (blocks.length && blocks[0].startsWith("<p>")) blocks[0] = blocks[0].replace("<p>", '<p class="commercial-copy-lead">');
+  return '<div class="commercial-copy-blocks">' + blocks.join("") + '</div>';
 }
 
 function parseJSON(value, fallback) {
@@ -190,24 +289,54 @@ function formatNIO(value) {
   }).format(number);
 }
 
+function isGeneratedSpecificationLabel(label) {
+  return /^dato(?:\s+\d+)?$/i.test(String(label || "").trim());
+}
+
+function cleanSpecificationLine(value) {
+  let line = String(value ?? "").trim();
+  line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
+  line = line.replace(/^Dato\s*\d+\s*:\s*/i, "");
+  line = line.replace(/^\s*\d+\s*[.):\-]\s*/, "");
+  line = line.replace(/^(?:(?:[•●▪◦]|\*|-\s)\s*)+/g, "");
+  return line.trim();
+}
+
 function specsArray(specs) {
   specs = parseJSON(specs, {});
   if (!specs) return [];
 
+  let lines = [];
   if (Array.isArray(specs)) {
-    return specs.map(item => typeof item === "string"
-      ? item
-      : `${item.label || item.name || "Dato"}: ${item.value || ""}`)
+    lines = specs.map(item => {
+      if (typeof item === "string") return String(item ?? "").trim();
+      if (item && typeof item === "object") {
+        const label = String(item.label || item.name || "").trim();
+        const value = String(item.value || "").trim();
+        return !label || isGeneratedSpecificationLabel(label) ? value : `${label}: ${value}`;
+      }
+      return String(item ?? "").trim();
+    }).filter(Boolean);
+  } else if (typeof specs === "object") {
+    lines = Object.entries(specs)
+      .map(([key, value]) => isGeneratedSpecificationLabel(key)
+        ? String(value ?? "").trim()
+        : `${key}: ${String(value ?? "").trim()}`)
       .filter(Boolean);
+  } else {
+    return [];
   }
 
-  if (typeof specs === "object") {
-    return Object.entries(specs)
-      .map(([key, value]) => `${key}: ${value}`)
-      .filter(Boolean);
+  // Older JB TECH entries were saved with explicit sequence numbers. Sort by that
+  // original sequence, then hide the implementation numbers in the customer UI.
+  const numbered = lines.filter(line => /^\s*\d+\s*[.):\-]\s*/.test(line));
+  if (numbered.length === lines.length && lines.length > 1) {
+    lines = lines
+      .map((line, index) => ({ line, index, order: Number(line.match(/^\s*(\d+)\s*[.):\-]\s*/)?.[1]) }))
+      .sort((left, right) => left.order - right.order || left.index - right.index)
+      .map(item => item.line);
   }
-
-  return [];
+  return lines.map(cleanSpecificationLine).filter(Boolean);
 }
 
 function getProductImages(product) {
@@ -226,6 +355,14 @@ function normalizeVariantAvailability(value) {
   if (["out_of_stock", "unavailable", "no disponible", "agotado", "agotado temporalmente"].includes(normalized)) {
     return "out_of_stock";
   }
+  return "available";
+}
+
+function effectiveVariantAvailability(variant) {
+  const colorStatus = normalizeVariantAvailability(variant?.availability);
+  const configurationStatus = normalizeVariantAvailability(variant?.configuration_availability);
+  if (colorStatus === "out_of_stock" || configurationStatus === "out_of_stock") return "out_of_stock";
+  if (colorStatus === "order" || configurationStatus === "order") return "order";
   return "available";
 }
 
@@ -252,6 +389,7 @@ function getProductVariants(product) {
       price_usd: Number.isFinite(usd) ? usd : null,
       price_nio: Number.isFinite(nio) ? nio : null,
       availability: normalizeVariantAvailability(item.availability),
+      configuration_availability: normalizeVariantAvailability(item.configuration_availability),
       images: (() => {
         const legacyImage = String(item.image_url || item.imageUrl || "").trim();
         const storedImages = Array.isArray(item.images)
@@ -288,7 +426,7 @@ function getProductVariants(product) {
 }
 
 function colorStatusLabel(value) {
-  return value === "order" || value === "on_order" ? "Por pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
+  return value === "order" || value === "on_order" ? "Bajo pedido" : value === "out_of_stock" ? "No disponible" : "Disponible";
 }
 
 function getProductColors(product, configuration = null) {
@@ -312,14 +450,15 @@ function getProductColors(product, configuration = null) {
       if (!previous) {
         map.set(key, {
           name: variant.color,
-          type: variant.availability,
+          type: effectiveVariantAvailability(variant),
           image_url: variant.image_url,
           color_hex: variant.color_hex
         });
       } else {
-        if (variant.availability === "available") {
+        const currentStatus = effectiveVariantAvailability(variant);
+        if (currentStatus === "available") {
           previous.type = "available";
-        } else if (variant.availability === "order" && previous.type !== "available") {
+        } else if (currentStatus === "order" && previous.type !== "available") {
           previous.type = "order";
         }
         if (!previous.image_url && variant.image_url) {
@@ -417,7 +556,7 @@ function renderColorSummary(product) {
     <span class="product-color-chip">
       ${
         color.image_url
-          ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
+          ? `<img src="${escapeHtml(color.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
           : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
       }
       ${escapeHtml(color.name)}
@@ -444,7 +583,7 @@ function imageMarkup(product) {
     return `
       <img src="${escapeHtml(url)}"
            alt="${escapeHtml(product.name)}"
-           loading="lazy" decoding="async"
+           loading="lazy"
            data-product-image>
     `;
   }
@@ -458,7 +597,7 @@ function imageMarkup(product) {
 }
 
 // Sustituir imágenes de catálogo rotas por un estado visible, no por un hueco vacío.
-document.querySelectorAll("#product-grid, #featured-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
   const container = img.closest(".product-image");
@@ -475,10 +614,13 @@ function productLink(product) {
 }
 
 function productShareLink(product, variant = null, fallbackColor = null) {
-  const currentHost = window.location.hostname.toLocaleLowerCase();
-  const shareOrigin = currentHost.endsWith(".github.io")
-    ? "https://cat-logo-preview.vercel.app"
-    : window.location.origin;
+  const configuredPublicUrl = String(window.CATALOG_CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").trim();
+  let shareOrigin = "https://jb-collections.pages.dev";
+  try {
+    shareOrigin = new URL(configuredPublicUrl).origin;
+  } catch {
+    shareOrigin = "https://jb-collections.pages.dev";
+  }
   const share = new URL("/api/share", shareOrigin);
   share.searchParams.set("catalog", "technology");
   share.searchParams.set("id", String(product.id));
@@ -492,38 +634,33 @@ function productShareLink(product, variant = null, fallbackColor = null) {
 }
 
 function buildProductWhatsAppMessage(product, variant = null, fallbackColor = null) {
-  const parts = [`Hola, estoy seguro de mi elección y quiero comprar este producto: ${product.name}.`];
+  const rawAvailability = variant ? effectiveVariantAvailability(variant) : (fallbackColor?.type ?? product.availability);
+  const availability = normalizeVariantAvailability(rawAvailability);
+  const opening = availability === "order"
+    ? "Hola, quisiera consultar cómo pedir este producto"
+    : availability === "out_of_stock"
+      ? "Hola, quisiera consultar si habrá reposición de este producto"
+      : "Hola, quiero consultar para comprar este producto";
+  const parts = [`${opening}: ${product.name}.`];
 
   if (variant) {
-    const configuration = [
-      variant.storage,
-      variant.ram,
-      variant.color
-    ].filter(Boolean).join(" · ");
-
-    if (configuration) {
-      parts.push(`Configuración seleccionada: ${configuration}.`);
-    }
-
+    const configuration = [variant.storage, variant.ram, variant.color].filter(Boolean).join(" · ");
+    if (configuration) parts.push(`Configuración seleccionada: ${configuration}.`);
     parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
-
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
-
-    parts.push(`Estado de la variante: ${colorStatusLabel(variant.availability)}.`);
+    parts.push(`Estado de la variante: ${colorStatusLabel(effectiveVariantAvailability(variant))}.`);
   } else {
     parts.push(`Precio de referencia: ${formatUSD(product.price_usd)}.`);
-
     if (fallbackColor) {
-      parts.push(
-        `Color de interés: ${fallbackColor.name} (${colorStatusLabel(fallbackColor.type)}).`
-      );
+      parts.push(`Color de interés: ${fallbackColor.name} (${colorStatusLabel(fallbackColor.type)}).`);
+    } else {
+      parts.push(`Disponibilidad: ${colorStatusLabel(product.availability)}.`);
     }
   }
 
   parts.push(`Enlace del artículo: ${productShareLink(product, variant, fallbackColor)}.`);
-  parts.push("Quisiera confirmar la disponibilidad final, la forma de pago y el costo de entrega para realizar la compra.");
-
+  parts.push("Quisiera confirmar disponibilidad final, forma de pago y costo de entrega antes de decidir.");
   return parts.join(" ");
 }
 
@@ -540,7 +677,7 @@ function buildPaymentWhatsAppMessage(product, variant = null, paymentType = "fin
     if (variant.price_usd !== null && variant.price_usd !== undefined) parts.push(`Precio en dólares: ${formatUSD(variant.price_usd)}.`);
     const nio = formatNIO(variant.price_nio);
     if (nio) parts.push(`Precio en córdobas: ${nio}.`);
-    parts.push(`Disponibilidad de esta variante: ${colorStatusLabel(variant.availability)}.`);
+    parts.push(`Disponibilidad de esta variante: ${colorStatusLabel(effectiveVariantAvailability(variant))}.`);
   } else {
     const usdPrice = startingPrice(product, "price_usd");
     if (usdPrice !== null && usdPrice !== undefined) parts.push(`Precio de referencia: ${formatUSD(usdPrice)}.`);
@@ -558,13 +695,137 @@ function buildFinancingWhatsAppMessage(product, variant = null) {
   return buildPaymentWhatsAppMessage(product, variant, "financing");
 }
 
+function buildAIProductPrompt(product, variant = null, fallbackColor = null, paymentType = "") {
+  const normalizedType = paymentType === "credit_card" || paymentType === "financing" ? paymentType : "";
+  const displayName = [product.brand, product.model].filter(Boolean).join(" ").trim() || String(product.name || "este producto");
+  const intent = normalizedType === "credit_card"
+    ? "Quiero consultar el pago con tarjeta de crédito."
+    : normalizedType === "financing"
+      ? "Quiero consultar las opciones de financiamiento."
+      : "Quiero consultar este producto.";
+  const parts = [intent, "Producto: " + displayName + "."];
+  if (variant) {
+    const configuration = [variant.storage, variant.ram].filter(Boolean).join(" / ");
+    if (configuration) parts.push("Configuración: " + configuration + ".");
+    const colorName = String(variant.color || fallbackColor?.name || "").trim();
+    if (colorName) parts.push("Color: " + colorName + ".");
+    if (variant.price_usd !== null && variant.price_usd !== undefined) parts.push("Precio publicado: " + formatUSD(variant.price_usd) + ".");
+    const nio = formatNIO(variant.price_nio);
+    if (nio) parts.push("Precio en córdobas: " + nio + ".");
+  } else {
+    if (fallbackColor?.name) parts.push("Color: " + fallbackColor.name + ".");
+    const usd = startingPrice(product, "price_usd");
+    const nio = formatNIO(startingPrice(product, "price_nio"));
+    if (usd !== null && usd !== undefined) parts.push("Precio publicado: " + formatUSD(usd) + ".");
+    if (nio) parts.push("Precio en córdobas: " + nio + ".");
+  }
+  return parts.join(" ").slice(0, 360);
+}
+
+async function startPrivateChatFromTechnology(paymentTopic = "product", sourceButton = null) {
+  const context = activeContactContext;
+  if (!context?.product) {
+    window.alert("No pudimos identificar el producto. Cerrá esta ventana y volvé a abrir la ficha.");
+    return;
+  }
+  const { product, variant, fallbackColor } = context;
+  const baseUrl = String(window.CATALOG_CONFIG?.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
+  const configuration = variant
+    ? [variant.storage, variant.ram].filter(Boolean).join(" / ")
+    : "";
+  const colorName = String(variant?.color || fallbackColor?.name || "").trim();
+  const priceUsd = variant?.price_usd !== null && variant?.price_usd !== undefined
+    ? variant.price_usd
+    : startingPrice(product, "price_usd");
+  const contextName = [
+    String(product.name || [product.brand, product.model].filter(Boolean).join(" ") || "Producto"),
+    configuration,
+    colorName,
+    priceUsd !== null && priceUsd !== undefined ? formatUSD(priceUsd) : ""
+  ].filter(Boolean).join(" · ").slice(0, 160);
+  const selectedVariant = variant || null;
+  const productUrl = productShareLink(product, selectedVariant, fallbackColor);
+  const contactButton = sourceButton || document.querySelector("#dialog-jb-contact, #dialog-payment-jb");
+  if (contactButton) {
+    contactButton.disabled = true;
+    contactButton.setAttribute("aria-busy", "true");
+  }
+  try {
+    const response = await fetch(baseUrl + "/api/private-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      credentials: "omit",
+      body: JSON.stringify({
+        action: "start",
+        catalogType: "technology",
+        productId: product.id,
+        productName: contextName,
+        productUrl,
+        paymentTopic: ["financing", "credit_card", "other", "product"].includes(paymentTopic) ? paymentTopic : "product"
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok || !data.inviteUrl) {
+      throw new Error(data.message || "No se pudo abrir la mensajería privada. Intentá de nuevo o elegí WhatsApp.");
+    }
+    window.location.assign(data.inviteUrl);
+  } catch (error) {
+    window.alert(error.message || "No se pudo abrir la mensajería privada. Intentá de nuevo o elegí WhatsApp.");
+    if (contactButton) {
+      contactButton.disabled = false;
+      contactButton.removeAttribute("aria-busy");
+    }
+  }
+}
+
+let activeContactContext = null;
+
+function refreshPaymentChannelChoices() {
+  const paymentType = $("#dialog-payment-type")?.value || "";
+  const channelPanel = $("#dialog-payment-channel-panel");
+  const whatsappChoice = $("#dialog-payment-whatsapp");
+  const aiChoice = $("#dialog-payment-jb");
+  if (channelPanel) channelPanel.hidden = !paymentType;
+  if (!activeContactContext || !paymentType) return;
+
+  const { product, variant, fallbackColor } = activeContactContext;
+  if (whatsappChoice) {
+    whatsappChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, paymentType));
+    whatsappChoice.setAttribute("aria-label", paymentType === "credit_card"
+      ? "Consultar tarjeta de crédito por WhatsApp"
+      : "Consultar financiamiento por WhatsApp");
+  }
+  if (aiChoice) {
+    aiChoice.dataset.paymentType = paymentType;
+    aiChoice.setAttribute("aria-label", paymentType === "credit_card"
+      ? "Abrir mensajería privada de JB Collections para consultar tarjeta de crédito"
+      : "Abrir mensajería privada de JB Collections para consultar financiamiento");
+  }
+}
+
 function updateProductContactLinks(product, variant = null, fallbackColor = null) {
+  activeContactContext = { product, variant, fallbackColor };
   const buyLink = $("#dialog-buy-link");
-  const financingChoice = $("#dialog-financing-choice");
-  const creditCardChoice = $("#dialog-credit-card-choice");
-  if (buyLink) buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
-  if (financingChoice) financingChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "financing"));
-  if (creditCardChoice) creditCardChoice.href = buildWhatsAppLink(buildPaymentWhatsAppMessage(product, variant, "credit_card"));
+  const buyLabel = $("#dialog-buy-label");
+  const jbContact = $("#dialog-jb-contact");
+  const rawAvailability = variant ? effectiveVariantAvailability(variant) : (fallbackColor?.type ?? product.availability);
+  const availability = normalizeVariantAvailability(rawAvailability);
+
+  if (buyLink) {
+    buyLink.href = buildWhatsAppLink(buildProductWhatsAppMessage(product, variant, fallbackColor));
+    buyLink.setAttribute("aria-label", availability === "order"
+      ? "Consultar pedido de este producto por WhatsApp"
+      : availability === "out_of_stock"
+        ? "Consultar disponibilidad de este producto por WhatsApp"
+        : "Consultar compra de este producto por WhatsApp");
+  }
+  if (buyLabel) buyLabel.textContent = "WhatsApp";
+  if (jbContact) {
+    jbContact.dataset.aiPrompt = buildAIProductPrompt(product, variant, fallbackColor);
+    jbContact.setAttribute("aria-label", "Consultar este producto con el asesor IA de JB Collections");
+  }
+  refreshPaymentChannelChoices();
 }
 function startingPrice(product, field = "price_usd") {
   const variants = getProductVariants(product);
@@ -578,7 +839,7 @@ function startingPrice(product, field = "price_usd") {
 
   /* Priorizar precios de variantes disponibles. */
   const availableVariants = pricedVariants.filter(
-    variant => variant.availability === "available"
+    variant => effectiveVariantAvailability(variant) === "available"
   );
   if (availableVariants.length) {
     return Math.min(...availableVariants.map(variant => Number(variant[field])));
@@ -587,7 +848,7 @@ function startingPrice(product, field = "price_usd") {
   /* Si hay variantes disponibles pero no tienen precio, no anunciar el precio
      de una variante agotada o solo por pedido como si fuera la opción disponible. */
   const hasAvailableUnpricedVariant = variants.some(
-    variant => variant.availability === "available"
+    variant => effectiveVariantAvailability(variant) === "available"
   );
   if (hasAvailableUnpricedVariant) return product[field];
 
@@ -597,12 +858,64 @@ function startingPrice(product, field = "price_usd") {
   return values.length ? Math.min(...values) : product[field];
 }
 
+function normalizedProductTags(product) {
+  return [...new Set((Array.isArray(product?.tags) ? product.tags : []).map(tag => String(tag || "").trim().toLowerCase()).filter(tag => Boolean(tag) && tag !== "recommended"))];
+}
+
+function formatCustomProductTag(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("es")
+    .replace(/(^|[\s/])([a-záéíóúñ])/g, (_, separator, letter) =>
+      separator + letter.toLocaleUpperCase("es")
+    )
+    .replace(/\b(3d|2d)\b/gi, match => match.toUpperCase())
+    .replace(/\b(4k|8k)\b/gi, match => match.toUpperCase())
+    .replace(/\bwi\s*fi\b/gi, "Wi-Fi")
+    .replace(/\busb\s*c\b/gi, "USB-C")
+    .replace(/\besim\b/gi, "eSIM")
+    .replace(/\b(ram|rom|ssd|oled|amoled|nfc|hdr|vr|ar|cpu|gpu)\b/gi, match => match.toUpperCase())
+    .replace(/\b([45])g\b/gi, "$1G");
+}
+
+const PRODUCT_TAG_LABELS = {
+  limited_edition: "▦ EDICIÓN LIMITADA",
+  high_performance: "⚡ ALTO RENDIMIENTO",
+  quality_price: "💎 CALIDAD-PRECIO",
+  top_gaming: "🎮 TOP GAMING",
+  best_seller: "MÁS VENDIDO",
+  new_arrival: "NUEVO INGRESO",
+  offer: "OFERTA"
+};
+
+
+
 function renderCard(product) {
   const image = imageMarkup(product);
   const variants = getProductVariants(product);
-  const badge = product.featured
-    ? '<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'
-    : "";
+  const tags = normalizedProductTags(product);
+  const rawTagLabels = new Map(
+    (Array.isArray(product?.tags) ? product.tags : []).map(rawTag => {
+      const raw = String(rawTag || "").trim();
+      return [raw.toLocaleLowerCase("es"), raw];
+    })
+  );
+  const isExclusive = Boolean(product.featured || product.is_exclusive || tags.includes("exclusive"));
+  const cardThemeClasses = [
+    ...(isExclusive ? ["product-card-tag-exclusive"] : []),
+    ...tags.filter(tag => ["high_performance", "top_gaming", "quality_price"].includes(tag)).map(tag => "product-card-tag-" + tag)
+  ].join(" ");
+  const badge = [
+    ...(isExclusive ? ['<span class="product-badge featured-badge">✦ EXCLUSIVO</span>'] : []),
+    ...tags.filter(tag => tag !== "exclusive").map(tag => {
+      const label = PRODUCT_TAG_LABELS[tag] || formatCustomProductTag(rawTagLabels.get(tag) || tag);
+      const badgeClass = PRODUCT_TAG_LABELS[tag] ? tag.replace(/[^a-z0-9_-]/g, "") : "custom";
+      return '<span class="product-badge product-tag-badge tag-' + badgeClass + '">' + escapeHtml(label) + '</span>';
+    })
+  ].join("");
+  
   const productStatus = normalizeProductAvailability(product.availability);
   const availabilityBadge =
     productStatus === "out_of_stock"
@@ -618,12 +931,12 @@ function renderCard(product) {
   const cardConfiguration =
     variants
       .filter(variant =>
-        variant.availability === "available" &&
+        effectiveVariantAvailability(variant) === "available" &&
         variant.price_usd !== null &&
         Number.isFinite(variant.price_usd)
       )
       .sort((left, right) => left.price_usd - right.price_usd)[0] ||
-    variants.find(variant => variant.availability === "available") ||
+    variants.find(variant => effectiveVariantAvailability(variant) === "available") ||
     variants[0] ||
     null;
   const cardRam = String(cardConfiguration?.ram || "").trim();
@@ -633,20 +946,16 @@ function renderCard(product) {
     : cardRam || cardStorage;
   const nioPrice = cardConfiguration ? cardConfiguration.price_nio : startingPrice(product, "price_nio");
   const nio = formatNIO(nioPrice);
-  const colorSwatches = renderProductColorSwatches(product, cardConfiguration);
 
   return `
-    <article class="product-card${product.featured ? " featured-product-card" : ""}">
+    <article class="product-card${product.featured ? " featured-product-card" : ""}${cardThemeClasses ? " " + cardThemeClasses : ""}">
       <div class="product-image">
-        ${badge}
-        ${availabilityBadge}
         ${image}
       </div>
       <div class="product-card-content">
-        <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
+        <div class="product-card-badges">${badge}${availabilityBadge}</div>
         <h3>${escapeHtml(title)}</h3>
         ${capacity ? `<p class="product-card-capacity">${escapeHtml(capacity)}</p>` : ""}
-        <div class="product-card-color-slot${colorSwatches ? "" : " is-empty"}">${colorSwatches}</div>
         <div class="product-price-label">${variants.length ? "Precio desde" : "Precio"}</div>
         <div class="product-price">${escapeHtml(formatUSD(price))}</div>
         ${nio ? `<div class="product-price-secondary">${escapeHtml(nio)}</div>` : ""}
@@ -731,15 +1040,44 @@ function searchTokensMatch(haystack, query) {
 }
 
 function productIdentityText(product) {
-  return normalizeCatalogSearch([product.name, product.brand, product.model].filter(Boolean).join(" "));
+  return normalizeCatalogSearch([product.name, product.brand, product.model, product.category, product.subcategory, ...normalizedProductTags(product)].filter(Boolean).join(" "));
 }
 
 function hasActiveCatalogFilters() {
+  // Sorting changes order, not the result set. Keep category sections and the
+  // featured-products area visible when the customer only changes sort order.
   return Boolean((searchInput?.value || "").trim() || selectedBrand ||
-    selectedCategory !== "all" || readPriceBound(minPriceInput) !== null ||
-    readPriceBound(maxPriceInput) !== null || (catalogSortSelect?.value || "recent") !== "recent");
+    selectedCategory !== "all" || selectedSubcategory || readPriceBound(minPriceInput) !== null ||
+    readPriceBound(maxPriceInput) !== null);
 }
 
+
+function updateSubcategoryFilter() {
+  if (!subcategoryFilter) return;
+  const availableProducts = products.filter(product => matchesSelectedCatalogCategory(product));
+  const seen = new Map();
+  availableProducts.forEach(product => {
+    const value = String(product?.subcategory || "").trim();
+    const key = value.toLocaleLowerCase("es");
+    if (value && !seen.has(key)) seen.set(key, value);
+  });
+  const options = [...seen.values()].sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }));
+  if (selectedSubcategory && !options.some(value => value.toLocaleLowerCase("es") === selectedSubcategory.toLocaleLowerCase("es"))) selectedSubcategory = "";
+  subcategoryFilter.replaceChildren();
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "Todas las subcategorías";
+  subcategoryFilter.append(allOption);
+  options.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    subcategoryFilter.append(option);
+  });
+  subcategoryFilter.value = selectedSubcategory;
+  subcategoryFilter.disabled = options.length === 0;
+  subcategoryFilter.setAttribute("aria-label", options.length ? "Filtrar por subcategoría" : "No hay subcategorías disponibles para esta categoría");
+}
 
 function visibleProducts() {
   const rawQuery = (searchInput?.value || "").trim();
@@ -762,9 +1100,9 @@ function visibleProducts() {
 
   return products.filter(product => {
     if (!validRange) return false;
-    const productCategory = String(product.category || "");
-    const categoryMatches = selectedCategory === "all" ||
-      productCategory.toLocaleLowerCase("es") === selectedCategory.toLocaleLowerCase("es");
+    const categoryMatches = matchesSelectedCatalogCategory(product);
+    const rawSubcategory = String(product?.subcategory || "").trim();
+    const subcategoryMatches = !selectedSubcategory || rawSubcategory.toLocaleLowerCase("es") === selectedSubcategory.toLocaleLowerCase("es");
     const variants = getProductVariants(product);
     const searchableFields = [
       product.name, product.brand, product.model, product.category, product.description,
@@ -783,12 +1121,14 @@ function visibleProducts() {
       const price = rawPrice === null || rawPrice === undefined || rawPrice === "" ? NaN : Number(rawPrice);
       priceMatches = Number.isFinite(price) && (minPrice === null || price >= minPrice) && (maxPrice === null || price <= maxPrice);
     }
-    return categoryMatches && queryMatches && brandMatches && priceMatches;
+    return categoryMatches && subcategoryMatches && queryMatches && brandMatches && priceMatches;
   }).sort((a, b) => {
     const sort = catalogSortSelect?.value || "recent";
     if (sort === "price-asc" || sort === "price-desc") {
-      const rawA = a.price_usd;
-      const rawB = b.price_usd;
+      // Compare the actual starting price, including variant prices, instead
+      // of relying only on the product-level reference price.
+      const rawA = startingPrice(a, "price_usd");
+      const rawB = startingPrice(b, "price_usd");
       const priceA = rawA === null || rawA === undefined || rawA === "" ? NaN : Number(rawA);
       const priceB = rawB === null || rawB === undefined || rawB === "" ? NaN : Number(rawB);
       const validA = Number.isFinite(priceA) ? priceA : (sort === "price-asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
@@ -800,20 +1140,141 @@ function visibleProducts() {
   });
 }
 
+const CATALOG_CATEGORY_ORDER = [
+  "Celulares",
+  "Laptops",
+  "Tablets",
+  "Gaming",
+  "Consolas",
+  "Televisores",
+  "Audio",
+  "Accesorios",
+  "Otros"
+];
+
+function canonicalCatalogCategory(product) {
+  const raw = String(product?.category || "").trim();
+  const normalized = normalizeCatalogSearch(raw);
+  const aliases = [
+    ["Celulares", ["celular", "celulares", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles"]],
+    ["Laptops", ["laptop", "laptops", "portatil", "portatiles", "notebook", "notebooks"]],
+    ["Tablets", ["tablet", "tablets"]],
+    ["Gaming", ["gaming", "gaming gear", "gaming equipment"]],
+    ["Consolas", ["consola", "consolas", "console", "consoles", "videojuego", "videojuegos", "gaming console", "gaming consoles"]],
+    ["Televisores", ["televisor", "televisores", "television", "televisiones", "tv"]],
+    ["Audio", ["audio", "auriculares", "parlantes", "bocinas", "altavoces", "headphones", "earbuds"]],
+    ["Accesorios", ["accesorio", "accesorios", "accessory", "accessories"]],
+    ["Otros", ["otro", "otros"]]
+  ];
+  for (const [label, values] of aliases) {
+    if (values.includes(normalized)) return label;
+  }
+  return raw ? "Otros" : "Otros";
+}
+
+// Consolas is a public navigation option for console products whose stored primary
+// category stays "Gaming" and whose subcategory stays "Consolas" (for example, PS5).
+function matchesSelectedCatalogCategory(product, category = selectedCategory) {
+  const selected = normalizeCatalogSearch(category);
+  if (!selected || selected === "all") return true;
+  if (normalizeCatalogSearch(canonicalCatalogCategory(product)) === selected) return true;
+  return selected === "consolas" && normalizeCatalogSearch(product?.subcategory) === selected;
+}
+
+function renderCategorizedProducts(productList) {
+  const grouped = new Map(CATALOG_CATEGORY_ORDER.map(category => [category, []]));
+  for (const product of productList) {
+    const category = canonicalCatalogCategory(product);
+    if (!grouped.has(category)) grouped.set(category, []);
+    grouped.get(category).push(product);
+  }
+
+  return [...grouped.entries()]
+    .filter(([, items]) => items.length > 0)
+    .map(([category, items]) => {
+      const slug = normalizeCatalogSearch(category).replace(/\s+/g, "-");
+      const titleId = "catalog-category-" + slug;
+      const countLabel = items.length + " producto" + (items.length === 1 ? "" : "s");
+      return `
+        <section class="catalog-category-section" aria-labelledby="${titleId}">
+          <header class="catalog-category-heading">
+            <span class="catalog-category-heading-mark" aria-hidden="true"></span>
+            <div class="catalog-category-heading-copy">
+              <p class="catalog-category-eyebrow">EXPLORÁ POR CATEGORÍA</p>
+              <h3 id="${titleId}">${escapeHtml(category)}</h3>
+            </div>
+            <span class="catalog-category-count">${countLabel}</span>
+          </header>
+          <div class="catalog-category-grid">${items.map(renderCard).join("")}</div>
+        </section>
+      `;
+    }).join("");
+}
+
 function renderProducts() {
+  updateSubcategoryFilter();
   const list = visibleProducts();
   const hasFilters = hasActiveCatalogFilters();
-  const featured = hasFilters ? [] : list.filter(product => Boolean(product.featured));
-  const regularProducts = hasFilters ? list : list.filter(product => !product.featured);
+  const isExclusiveProduct = product => Boolean(
+    product.featured || product.is_exclusive || normalizedProductTags(product).includes("exclusive")
+  );
+  const featured = hasFilters ? [] : list.filter(isExclusiveProduct);
+  const limitedEdition = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("limited_edition"));
+  const highPerformance = hasFilters ? [] : list.filter(product => {
+    const tags = normalizedProductTags(product);
+    return tags.includes("high_performance") && !isExclusiveProduct(product);
+  });
+  const qualityPrice = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("quality_price"));
+  const topGaming = hasFilters ? [] : list.filter(product => normalizedProductTags(product).includes("top_gaming"));
+  const regularProducts = hasFilters ? list : list.filter(product => {
+    const tags = normalizedProductTags(product);
+    return !isExclusiveProduct(product) &&
+      !tags.includes("limited_edition") &&
+      !tags.includes("high_performance") &&
+      !tags.includes("quality_price") &&
+      !tags.includes("top_gaming");
+  });
+  if (highPerformanceSection && highPerformanceGrid) {
+    highPerformanceSection.classList.toggle("hidden", highPerformance.length === 0);
+    highPerformanceGrid.innerHTML = highPerformance.map(renderCard).join("");
+  }
+  if (highPerformanceCount) {
+    highPerformanceCount.textContent = highPerformance.length
+      ? highPerformance.length + " equipo" + (highPerformance.length === 1 ? "" : "s")
+      : "";
+  }
+  if (qualityPriceSection && qualityPriceGrid) {
+    qualityPriceSection.classList.toggle("hidden", qualityPrice.length === 0);
+    qualityPriceGrid.innerHTML = qualityPrice.map(renderCard).join("");
+  }
+  if (qualityPriceCount) qualityPriceCount.textContent = qualityPrice.length
+    ? qualityPrice.length + " producto" + (qualityPrice.length === 1 ? "" : "s")
+    : "";
+  if (topGamingSection && topGamingGrid) {
+    topGamingSection.classList.toggle("hidden", topGaming.length === 0);
+    topGamingGrid.innerHTML = topGaming.map(renderCard).join("");
+  }
+  if (topGamingCount) topGamingCount.textContent = topGaming.length ? (topGaming.length + " equipo" + (topGaming.length === 1 ? "" : "s")) : "";
   if (featuredSection && featuredGrid) {
     featuredSection.classList.toggle("hidden", featured.length === 0);
     featuredGrid.innerHTML = featured.map(renderCard).join("");
   }
   if (featuredCount) featuredCount.textContent = featured.length ? `${featured.length} exclusivo${featured.length === 1 ? "" : "s"}` : "";
+  if (limitedEditionSection && limitedEditionGrid) {
+    limitedEditionSection.classList.toggle("hidden", limitedEdition.length === 0);
+    limitedEditionGrid.innerHTML = limitedEdition.map(renderCard).join("");
+  }
+  if (limitedEditionCount) limitedEditionCount.textContent = limitedEdition.length
+    ? limitedEdition.length + " edición" + (limitedEdition.length === 1 ? "" : "es")
+    : "";
   if (resultsEyebrow) resultsEyebrow.textContent = hasFilters ? "TU BÚSQUEDA" : "CATÁLOGO COMPLETO";
   if (resultsTitle) resultsTitle.textContent = hasFilters ? "Resultados" : "Explorá todo el catálogo";
   if (resultsHeading) resultsHeading.classList.toggle("hidden", !hasFilters && regularProducts.length === 0);
-  grid.innerHTML = regularProducts.map(renderCard).join("");
+  const groupByCategory = !hasFilters && regularProducts.length > 0;
+  grid.classList.toggle("is-categorized", groupByCategory);
+  grid.innerHTML = groupByCategory
+    ? renderCategorizedProducts(regularProducts)
+    : regularProducts.map(renderCard).join("");
   emptyNode.classList.toggle("hidden", list.length > 0);
   if (clearPriceFilterButton) clearPriceFilterButton.disabled = !hasActiveCatalogFilters();
   statusNode.textContent = products.length
@@ -822,7 +1283,9 @@ function renderProducts() {
       : `${products.length} producto${products.length === 1 ? "" : "s"} publicado${products.length === 1 ? "" : "s"}${featured.length ? ` · ${featured.length} destacado${featured.length === 1 ? "" : "s"} en su sección` : ""}`
     : "Todavía no hay productos publicados.";
   categoryFilters.querySelectorAll("[data-category]").forEach(button => {
-    button.classList.toggle("active", button.dataset.category === selectedCategory);
+    const isSelected = button.dataset.category === selectedCategory;
+    button.classList.toggle("active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
   });
 }
 function uniqueValues(variants, field) {
@@ -908,13 +1371,21 @@ function renderVariantButtonGroup(variants, selected, field, title) {
       const ram = String(variant.ram || "").trim();
       const label = storage && ram ? `${storage} / ${ram}` : storage || ram || "Estándar";
       const key = `${storage.toLocaleLowerCase("es")}| ${ram.toLocaleLowerCase("es")}`;
-      if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram}); }
+      const matching = variants.filter(candidate =>
+        String(candidate.storage || "").trim() === storage &&
+        String(candidate.ram || "").trim() === ram
+      );
+      const status = matching.some(candidate => effectiveVariantAvailability(candidate) === "available")
+        ? "available"
+        : matching.some(candidate => effectiveVariantAvailability(candidate) === "order") ? "order" : "out_of_stock";
+      if (label && !seen.has(key)) { seen.add(key); values.push({label, storage, ram, status}); }
     });
     const buttons = values.map(item => {
       const isSelected = selected.storage === item.storage && selected.ram === item.ram;
-      return `<button type="button" class="variant-choice ${isSelected ? "selected" : ""}" data-variant-dimension="configuration" data-variant-storage="${escapeHtml(item.storage)}" data-variant-ram="${escapeHtml(item.ram)}" aria-pressed="${isSelected ? "true" : "false"}">${escapeHtml(item.label)}</button>`;
+      const statusLabel = colorStatusLabel(item.status);
+      return `<button type="button" class="variant-choice ${isSelected ? "selected" : ""}" data-variant-dimension="configuration" data-variant-storage="${escapeHtml(item.storage)}" data-variant-ram="${escapeHtml(item.ram)}" aria-pressed="${isSelected ? "true" : "false"}" aria-label="${escapeHtml(item.label + ": " + statusLabel)}" title="${escapeHtml(item.label + " · " + statusLabel)}"><span>${escapeHtml(item.label)}</span><small class="variant-choice-status status-${item.status}">${escapeHtml(statusLabel)}</small></button>`;
     }).join("");
-    return `<section class="variant-option-group"><h3>${title}</h3><div class="variant-choice-list">${buttons}</div></section>`;
+    return `<section class="variant-option-group"><h2 class="variant-section-title">${title}</h2><div class="variant-choice-list">${buttons}</div></section>`;
   }
 
   const values = uniqueValues(variants, field);
@@ -925,7 +1396,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
       const candidate = chooseVariant(variants, selected, field, value);
       const isSelected = selected.color === value;
       const swatch = validHex(candidate?.color_hex);
-      const status = colorStatusLabel(candidate?.availability);
+      const status = colorStatusLabel(effectiveVariantAvailability(candidate));
 
       return `
         <button type="button"
@@ -943,7 +1414,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
 
     return `
       <section class="variant-option-group variant-option-color-group">
-        <h3>${title}</h3>
+        <h2 class="variant-section-title">${title}</h2>
         <div class="variant-choice-list color-choice-list">${buttons}</div>
       </section>
     `;
@@ -963,9 +1434,51 @@ function renderVariantButtonGroup(variants, selected, field, title) {
 
   return `
     <section class="variant-option-group">
-      <h3>${title}</h3>
+      <h2 class="variant-section-title">${title}</h2>
       <div class="variant-choice-list">${buttons}</div>
     </section>
+  `;
+}
+
+function renderProductGallery(product, images, caption = "") {
+  const photoUrls = [...new Set((Array.isArray(images) ? images : [])
+    .filter(url => typeof url === "string")
+    .map(url => url.trim())
+    .filter(Boolean))];
+  if (!photoUrls.length) {
+    return '<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>';
+  }
+
+  const productName = String(product?.name || "Producto").trim();
+  const imageAlt = [productName, caption].filter(Boolean).join(" · ");
+  const multiple = photoUrls.length > 1;
+
+  return `
+    <div class="dialog-gallery-main" data-inline-gallery>
+      <div class="dialog-gallery-backdrop" aria-hidden="true">
+        <img data-gallery-backdrop src="${escapeHtml(photoUrls[0])}" alt="" loading="eager" decoding="async">
+      </div>
+      ${multiple ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
+      <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
+        <img id="dialog-main-image" class="dialog-main-image"
+             src="${escapeHtml(photoUrls[0])}"
+             alt="${escapeHtml(imageAlt)}"
+             loading="eager" decoding="async">
+      </button>
+      ${multiple ? '<button type="button" class="dialog-gallery-nav dialog-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>' : ""}
+    </div>
+    ${multiple
+      ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
+          ${photoUrls.map((url, index) => `
+            <button type="button"
+                    class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
+                    data-gallery-image="${escapeHtml(url)}"
+                    aria-label="Ver fotografía ${index + 1}">
+              <img src="${escapeHtml(url)}" alt="" loading="lazy">
+            </button>
+          `).join("")}
+        </div>`
+      : ""}
   `;
 }
 
@@ -985,9 +1498,10 @@ function renderVariantControls(product, variants, selected) {
 
   const usd = formatUSD(selected.price_usd);
   const nio = formatNIO(selected.price_nio);
-  const status = colorStatusLabel(selected.availability);
-  const isOrder = selected.availability === "order";
-  const isUnavailable = selected.availability === "out_of_stock";
+  const selectedAvailability = effectiveVariantAvailability(selected);
+  const status = colorStatusLabel(selectedAvailability);
+  const isOrder = selectedAvailability === "order";
+  const isUnavailable = selectedAvailability === "out_of_stock";
 
   area.innerHTML = `
     <div class="variant-selector">
@@ -1026,32 +1540,7 @@ function renderVariantControls(product, variants, selected) {
       : selected.image_url
         ? [selected.image_url]
         : [];
-    dialogImage.innerHTML = chosenImages.length
-      ? `
-        <div class="dialog-gallery-main" data-inline-gallery>
-          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-prev" data-gallery-step="-1" aria-label="Ver fotografía anterior">‹</button>' : ""}
-          <button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto">
-            <img id="dialog-main-image" class="dialog-main-image"
-               src="${escapeHtml(chosenImages[0])}"
-               alt="${escapeHtml(`${product.name} ${configuration}`)}"
-               loading="eager" decoding="async">
-          </button>
-          ${chosenImages.length > 1 ? '<button type="button" class="dialog-gallery-nav dialog-gallery-next" data-gallery-step="1" aria-label="Ver fotografía siguiente">›</button>' : ""}
-        </div>
-        ${chosenImages.length > 1
-          ? `<div class="dialog-gallery-thumbs" aria-label="Fotografías del producto">
-              ${chosenImages.map((url, index) => `
-                <button type="button"
-                        class="dialog-gallery-thumb ${index === 0 ? "active" : ""}"
-                        data-gallery-image="${escapeHtml(url)}"
-                        aria-label="Ver fotografía ${index + 1}">
-                  <img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async">
-                </button>
-              `).join("")}
-            </div>`
-          : ""}
-      `
-      : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`;
+    dialogImage.innerHTML = renderProductGallery(product, chosenImages, configuration);
   }
 }
 
@@ -1069,7 +1558,7 @@ function renderLegacyColorOptions(product, selectedColorName = "") {
             <div class="dialog-color-image">
               ${
                 color.image_url
-                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy" decoding="async">`
+                  ? `<img src="${escapeHtml(color.image_url)}" alt="${escapeHtml(`${product.name} color ${color.name}`)}" loading="lazy">`
                   : `<span class="product-color-dot" style="background:${validHex(color.color_hex)}" aria-hidden="true"></span>`
               }
             </div>
@@ -1214,6 +1703,32 @@ function moveTechnologyGallery(step) {
   thumbnails[(currentIndex + step + thumbnails.length) % thumbnails.length].click();
 }
 
+
+/* Gallery resilience: broken full-size images are shown as a useful fallback,
+   and broken thumbnails are hidden instead of displaying a broken-image icon. */
+dialogContent.addEventListener("error", event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+
+  if (image.matches("#dialog-image .dialog-main-image")) {
+    image.style.visibility = "hidden";
+    const gallery = image.closest(".dialog-gallery-main");
+    if (gallery && !gallery.querySelector(".dialog-image-load-error")) {
+      const fallback = document.createElement("div");
+      fallback.className = "dialog-image-load-error";
+      fallback.setAttribute("role", "status");
+      fallback.textContent = "No se pudo cargar esta fotografía. Probá otra imagen de la galería.";
+      gallery.appendChild(fallback);
+    }
+    return;
+  }
+
+  if (image.matches("#dialog-image .dialog-gallery-thumb img")) {
+    const thumbnail = image.closest(".dialog-gallery-thumb");
+    if (thumbnail) thumbnail.hidden = true;
+  }
+}, true);
+
 let technologyGalleryTouchStart = null;
 dialogContent.addEventListener("touchstart", event => {
   const target = event.target instanceof Element ? event.target : null;
@@ -1239,8 +1754,22 @@ dialogContent.addEventListener("touchend", event => {
   moveTechnologyGallery(deltaX < 0 ? 1 : -1);
 }, { passive: true });
 
+dialogContent.addEventListener("change", event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.matches("#dialog-payment-type")) refreshPaymentChannelChoices();
+});
+
 dialogContent.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const aiContactButton = target?.closest("#dialog-jb-contact, #dialog-payment-jb");
+  if (aiContactButton) {
+    event.preventDefault();
+    const paymentTopic = aiContactButton.id === "dialog-payment-jb"
+      ? ($("#dialog-payment-type")?.value || "product")
+      : "product";
+    void startPrivateChatFromTechnology(paymentTopic, aiContactButton);
+    return;
+  }
   const galleryStep = target?.closest("[data-gallery-step]");
   if (galleryStep) {
     event.preventDefault();
@@ -1288,7 +1817,13 @@ dialogContent.addEventListener("click", event => {
   const mainImage = dialogContent.querySelector("#dialog-main-image");
   if (mainImage) {
     mainImage.src = thumbnail.dataset.galleryImage;
+    const backdropImage = mainImage.closest(".dialog-gallery-main")?.querySelector("[data-gallery-backdrop]");
+    if (backdropImage) backdropImage.src = thumbnail.dataset.galleryImage;
+    const productName = dialogContent.querySelector(".dialog-detail .dialog-product-title, .dialog-detail h2")?.textContent?.trim() || "Producto";
+    const photoLabel = thumbnail.getAttribute("aria-label") || "";
+    mainImage.alt = photoLabel ? `${productName} — ${photoLabel.toLocaleLowerCase("es")}` : productName;
     mainImage.style.visibility = "visible";
+    mainImage.closest(".dialog-gallery-main")?.querySelector(".dialog-image-load-error")?.remove();
   }
   dialogContent.querySelectorAll("[data-gallery-image]").forEach(button => {
     button.classList.toggle("active", button === thumbnail);
@@ -1307,7 +1842,18 @@ function openProduct(product, requestedVariant = null) {
   const requestedColor = !variants.length && requestedColorName
     ? getProductColors(product).find(color => String(color.name || "").trim().toLocaleLowerCase("es") === requestedColorName.toLocaleLowerCase("es"))
     : null;
-  const initialImage = requestedColor?.image_url || getProductImages(product)[0] || "";
+  const productImages = getProductImages(product);
+  const fallbackColorImages = !variants.length
+    ? getProductColors(product).map(color => color.image_url).filter(Boolean)
+    : [];
+  // Legacy products also get the full image gallery. If a URL explicitly opens a color,
+  // prioritize that color-specific photo rather than a generic image of another finish.
+  const initialImages = requestedColor?.image_url
+    ? [requestedColor.image_url]
+    : productImages.length
+      ? productImages
+      : fallbackColorImages;
+  const initialImage = initialImages[0] || "";
 
   const warranty =
     product.warranty_months !== null &&
@@ -1323,14 +1869,14 @@ function openProduct(product, requestedVariant = null) {
       <div class="dialog-image" id="dialog-image">
         ${
           initialImage
-            ? `<div class="dialog-gallery-main"><button type="button" class="dialog-image-zoom" aria-label="Ampliar fotografía del producto"><img id="dialog-main-image" class="dialog-main-image" src="${escapeHtml(initialImage)}" alt="${escapeHtml(product.name)}" loading="eager" decoding="async" onerror="this.style.visibility='hidden'"></button></div>`
+            ? renderProductGallery(product, initialImages)
             : `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>`
         }
       </div>
 
       <div class="dialog-detail">
         <div class="product-category">${escapeHtml(product.category || "Tecnología")}</div>
-        <h2>${escapeHtml(product.name)}</h2>
+        <h1 class="dialog-product-title">${escapeHtml(product.name)}</h1>
 
         ${
           variants.length
@@ -1341,23 +1887,36 @@ function openProduct(product, requestedVariant = null) {
                ${renderLegacyColorOptions(product, requestedColorName)}`
         }
 
-        <p class="dialog-product-description">${escapeHtml(product.description || "Consultá disponibilidad y características.")}</p>
+        <div class="dialog-product-description">${renderCommercialDescription(product.description, "Consultá disponibilidad y características.")}</div>
 
         <div class="product-contact-actions">
-          <a id="dialog-buy-link" class="button button-primary dialog-buy-button" href="#" target="_blank" rel="noopener"><span aria-hidden="true">✓</span> Quiero comprar este producto</a>
-          <button id="dialog-payment-options-toggle" class="button button-secondary dialog-payment-toggle" type="button" aria-expanded="false" aria-controls="dialog-payment-choice-panel">Consultar opciones de pago <span aria-hidden="true">⌄</span></button>
-        </div>
-        <div id="dialog-payment-choice-panel" class="payment-choice-panel" hidden>
-          <div><strong>¿Qué querés consultar?</strong><p>Elegí el tema y WhatsApp abrirá el mensaje con los datos de este producto.</p></div>
-          <div class="payment-choice-actions">
-            <a id="dialog-financing-choice" class="button button-secondary payment-choice-button" href="#" target="_blank" rel="noopener">Financiamiento</a>
-            <a id="dialog-credit-card-choice" class="button button-secondary payment-choice-button" href="#" target="_blank" rel="noopener">Compra con tarjeta de crédito</a>
+          <div class="product-contact-channel-actions">
+            <a id="dialog-buy-link" class="button button-primary contact-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener"><span class="contact-channel-icon" aria-hidden="true"><svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg></span><span id="dialog-buy-label">WhatsApp</span></a>
+            <button id="dialog-jb-contact" class="button button-secondary contact-channel-button contact-channel-button--jb" type="button"><span class="contact-channel-icon" aria-hidden="true"><svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Contactar JB Collections</span></button>
           </div>
         </div>
+        <section id="dialog-payment-choice-panel" class="payment-choice-panel" aria-label="Opciones de pago">
+          <div class="payment-choice-heading">
+            <label for="dialog-payment-type">¿Qué querés consultar?</label>
+            <p>Elegí el tema y después el canal por el que preferís continuar.</p>
+          </div>
+          <select id="dialog-payment-type" class="payment-choice-select">
+            <option value="">Seleccioná una opción</option>
+            <option value="financing">Financiamiento</option>
+            <option value="credit_card">Compra con tarjeta de crédito</option>
+          </select>
+          <div id="dialog-payment-channel-panel" class="payment-channel-panel" hidden>
+            <p>¿Por cuál canal querés continuar?</p>
+            <div class="payment-channel-actions">
+              <a id="dialog-payment-whatsapp" class="payment-channel-button contact-channel-button--whatsapp" href="#" target="_blank" rel="noopener"><svg class="contact-channel-svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.02 3.1A12.83 12.83 0 0 0 5.05 22.57L3.3 28.8l6.4-1.68A12.86 12.86 0 1 0 16.02 3.1Zm0 23.38h-.01a10.5 10.5 0 0 1-5.35-1.47l-.38-.22-3.8 1 1.01-3.7-.25-.4A10.47 10.47 0 1 1 16.02 26.48Zm5.75-7.85c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.51-.16-.72.16-.22.32-.83 1.05-1.02 1.26-.19.22-.38.24-.7.08-.33-.16-1.38-.51-2.62-1.62-.97-.86-1.63-1.93-1.82-2.25-.19-.32-.02-.49.14-.65.14-.14.32-.38.48-.57.16-.19.22-.32.32-.54.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.63-.53-.54-.72-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.68s1.16 3.1 1.32 3.31c.16.22 2.27 3.47 5.5 4.86.77.33 1.37.53 1.84.68.77.25 1.47.21 2.02.13.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.14-.29-.22-.62-.38Z"/></svg><span>WhatsApp</span></a>
+              <button id="dialog-payment-jb" class="payment-channel-button contact-channel-button--jb" type="button"><svg class="contact-channel-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>JB Collections</span></button>
+            </div>
+          </div>
+        </section>
 
         ${warranty}
 
-        <h3>Especificaciones</h3>
+        <h2 class="dialog-section-title">Especificaciones</h2>
         ${
           specs.length
             ? `<ul class="dialog-specs">${specs.map(spec => `<li>${escapeHtml(spec)}</li>`).join("")}</ul>`
@@ -1376,7 +1935,7 @@ function openProduct(product, requestedVariant = null) {
     </div>
   `;
 
-  updateProductContactLinks(product);
+  updateProductContactLinks(product, null, requestedColor);
 
   if (variants.length) {
     const requestedVariantPresent = Boolean(
@@ -1393,7 +1952,7 @@ function openProduct(product, requestedVariant = null) {
       : null;
     let selectedVariant =
       routeVariant ||
-      variants.find(variant => variant.availability === "available") ||
+      variants.find(variant => effectiveVariantAvailability(variant) === "available") ||
       variants[0];
 
     const variantArea = $("#variant-options-area");
@@ -1409,8 +1968,8 @@ function openProduct(product, requestedVariant = null) {
           variant.storage === (button.dataset.variantStorage || "") &&
           variant.ram === (button.dataset.variantRam || "")
         );
-        selectedVariant = matching.find(variant => variant.color === selectedVariant.color && variant.availability === "available")
-          || matching.find(variant => variant.availability === "available")
+        selectedVariant = matching.find(variant => variant.color === selectedVariant.color && effectiveVariantAvailability(variant) === "available")
+          || matching.find(variant => effectiveVariantAvailability(variant) === "available")
           || matching.find(variant => variant.color === selectedVariant.color)
           || matching[0]
           || selectedVariant;
@@ -1431,13 +1990,13 @@ function openProduct(product, requestedVariant = null) {
   if (productHeaderBack) productHeaderBack.hidden = false;
   document.querySelector("main")?.classList.add("is-product-detail-view");
   document.body.classList.add("product-detail-active");
+  window.scrollTo({ top: 0, behavior: "instant" });
   document.title = `${product.name || "Producto"} | JB TECH`;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) canonical.href = productLink(product);
-  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
-document.querySelectorAll("#product-grid, #featured-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   const link = target?.closest("a[data-details]");
   if (!link) return;
@@ -1459,6 +2018,7 @@ categoryFilters.addEventListener("click", event => {
   if (!button) return;
 
   selectedCategory = button.dataset.category;
+  updateSubcategoryFilter();
   renderProducts();
 });
 
@@ -1518,12 +2078,18 @@ brandFilterOptions?.addEventListener("click", event => {
 document.addEventListener("click", event => {
   if (!event.target.closest(".brand-filter-wrap")) closeBrandFilterMenu();
 });
+subcategoryFilter?.addEventListener("change", () => {
+  selectedSubcategory = subcategoryFilter.value || "";
+  renderProducts();
+});
 catalogSortSelect?.addEventListener("change", renderProducts);
 minPriceInput?.addEventListener("input", renderProducts);
 maxPriceInput?.addEventListener("input", renderProducts);
 clearPriceFilterButton?.addEventListener("click", () => {
   if (searchInput) searchInput.value = "";
   selectedBrand = "";
+  selectedSubcategory = "";
+  if (subcategoryFilter) subcategoryFilter.value = "";
   if (brandFilterSearch) brandFilterSearch.value = "";
   updateBrandFilterLabel();
   closeBrandFilterMenu();
@@ -1571,7 +2137,9 @@ function handleProductRoute() {
     const wasDetail = document.body.classList.contains("product-detail-active");
     const scrollY = Number(window.history.state?.catalogScrollY) || 0;
     showCatalogView();
-    if (wasDetail) window.scrollTo({ top: scrollY, behavior: "auto" });
+    if (wasDetail && Math.abs(window.scrollY - scrollY) > 2) {
+      window.scrollTo({ top: scrollY, behavior: "instant" });
+    }
     return;
   }
   const product = products.find(item => String(item.id) === route.id);
@@ -1586,17 +2154,46 @@ function handleProductRoute() {
   openProduct(product, route);
 }
 
+
+/* Escape behaves like the page Back action, preserving the catalog scroll state. */
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || event.defaultPrevented) return;
+  if (!document.body.classList.contains("product-detail-active")) return;
+  if (document.querySelector("dialog[open]")) return;
+
+  event.preventDefault();
+  if (window.history.state?.productDetailRoute) {
+    window.history.back();
+    return;
+  }
+
+  const nextState = { ...(window.history.state || {}) };
+  delete nextState.productDetailRoute;
+  delete nextState.productId;
+  const catalogScrollY = Number(nextState.catalogScrollY) || 0;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("producto");
+  url.hash = "";
+  window.history.replaceState(nextState, document.title, url.href);
+  showCatalogView();
+  window.scrollTo({ top: catalogScrollY, behavior: "instant" });
+});
+
 productHeaderBack?.addEventListener("click", () => {
   if (window.history.state?.productDetailRoute) {
     window.history.back();
     return;
   }
+  const nextState = { ...(window.history.state || {}) };
+  delete nextState.productDetailRoute;
+  delete nextState.productId;
+  const catalogScrollY = Number(nextState.catalogScrollY) || 0;
   const url = new URL(window.location.href);
   url.searchParams.delete("producto");
   url.hash = "";
-  window.history.replaceState(window.history.state, document.title, url.href);
+  window.history.replaceState(nextState, document.title, url.href);
   showCatalogView();
-  window.scrollTo({ top: 0, behavior: "auto" });
+  window.scrollTo({ top: catalogScrollY, behavior: "instant" });
 });
 
 async function initializeCatalog() {
@@ -1653,4 +2250,5 @@ async function initializeCatalog() {
   window.addEventListener("hashchange", handleProductRoute);
 }
 
+void recordCatalogPageVisit("technology");
 initializeCatalog();
