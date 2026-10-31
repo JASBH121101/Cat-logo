@@ -279,6 +279,13 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
       return null;
     };
 
+    const availability = /\bno\s+disponible\b/i.test(evidence) ? "unavailable"
+      : /\bbajo\s+pedido\b/i.test(evidence) ? "on_request"
+      : /\bdisponible\b/i.test(evidence) ? "available" : "unknown";
+    if (availability !== "unknown") {
+      attemptedFields.push("availability");
+      groundedFields.push("availability");
+    }
     const product = {
       id: "scan-" + (index + 1),
       source_observation: matchedSource.index,
@@ -292,12 +299,7 @@ export function groundScannerProducts(rawProducts, observations, diagnostics = n
       color: verifiedText("color", 50),
       price_usd: verifiedPrice("price_usd", "USD"),
       price_nio: verifiedPrice("price_nio", "NIO"),
-      availability: (() => {
-        if (/\bno\s+disponible\b/i.test(evidence)) return "unavailable";
-        if (/\bbajo\s+pedido\b/i.test(evidence)) return "on_request";
-        if (/\bdisponible\b/i.test(evidence)) return "available";
-        return "unknown";
-      })(),
+      availability,
       confidence: attemptedFields.length ? groundedFields.length / attemptedFields.length : 0,
       grounded_fields: groundedFields,
       attempted_fields: attemptedFields,
