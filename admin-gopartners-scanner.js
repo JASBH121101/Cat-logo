@@ -59,7 +59,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
   const status = $("#jb-gp-scan-status"), results = $("#jb-gp-scan-results"), summary = $("#jb-gp-scan-summary");
   const duplicateReview = $("#jb-gp-scan-duplicates"), productList = $("#jb-gp-scan-products");
   if (!startButton || !finishButton || !status || !results || !summary || !duplicateReview || !productList) return null;
-  let scanning = false, scanCandidates = [], duplicateGroups = [];
+  let scanning = false, startInProgress = false, finishing = false, pendingOverlayPermission = false;
+  let scanCandidates = [], duplicateGroups = [];
   const duplicateState = new Map();
   const plugin = () => {
     const cap = window.Capacitor;
@@ -378,13 +379,37 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     results.hidden = false;
   }
   async function start() {
-    if (scanning) return;
+    if (scanning || startInProgress) return;
     const native = plugin();
-    if (!native) { setStatus("Disponible solo en la APK Android actualizada. La web no puede capturar otras aplicaciones.", true); return; }
+    if (!native) {
+      setStatus("El escáner está disponible en la APK Android. El navegador no puede capturar otras aplicaciones.", true);
+      return;
+    }
+    startInProgress = true;
     try {
       const supabase = getSupabase();
       if (!getCurrentUser() || !supabase) throw new Error("Iniciá sesión como administrador.");
       await getAccessToken();
+
+      if (typeof native.hasOverlayPermission !== "function" || typeof native.requestOverlayPermission !== "function") {
+        throw new Error("Actualizá JB Manager para habilitar el control flotante de JARVIS.");
+      }
+      const overlayPermission = await native.hasOverlayPermission();
+      if (!overlayPermission?.granted) {
+        if (!window.confirm("Para controlar el escaneo sin salir de Go Partners, JB Manager necesita permiso para mostrar un pequeño control flotante sobre otras aplicaciones. ¿Abrimos los ajustes de Android?")) {
+          setStatus("El escaneo no se inició. Podés habilitar el control flotante cuando estés listo.");
+          return;
+        }
+        pendingOverlayPermission = true;
+        const permissionRequest = await native.requestOverlayPermission();
+        if (permissionRequest?.opened !== true && permissionRequest?.granted !== true) {
+          pendingOverlayPermission = false;
+          throw new Error("Android no pudo abrir el permiso para mostrar el control flotante.");
+        }
+        setStatus("Habilitá «Mostrar sobre otras aplicaciones» para JB Manager. Al regresar, JARVIS iniciará el escaneo automáticamente.");
+        return;
+      }
+
       const pendingSession = await native.getScanState();
       if (scannerSessionReviewable(pendingSession)) {
         scanning = true;
@@ -395,7 +420,18 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       await native.clearScan();
       scanCandidates = []; duplicateGroups = []; duplicateState.clear(); results.hidden = true;
       const result = await native.startScan();
-      if (!result?.started) throw new Error(result?.message || "No se concedió el permiso de captura.");
+      if (!result?.started) {
+        if (result?.overlayPermissionRequired) {
+          pendingOverlayPermission = true;
+          const accepted = window.confirm("Necesitamos permiso para mostrar el control flotante de JARVIS. ¿Abrimos los ajustes de Android?");
+          if (accepted) await native.requestOverlayPermission();
+          else pendingOverlayPermission = false;
+          setStatus("Habilitá el permiso y regresá a JB Manager para continuar.", !accepted);
+          return;
+        }
+        throw new Error(result?.message || "No se concedió el permiso de captura.");
+      }
+      pendingOverlayPermission = false;
       let nativeState = await native.getScanState();
       for (let attempt = 0; attempt < 5 && !nativeState?.running && !scannerSessionReviewable(nativeState); attempt += 1) {
         await new Promise(resolve => setTimeout(resolve, 400));
@@ -411,12 +447,19 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         throw new Error("Android no pudo iniciar la captura. Volvé a intentarlo y aceptá el permiso de compartir pantalla.");
       }
       scanning = true;
-      setStatus("Escaneo activo. Abrí Go Partners y recorré los productos manualmente. Mantené cada ficha visible un par de segundos. Las imágenes no se guardan: solo texto OCR temporal.");
-    } catch (error) { setStatus(error?.message || "No se pudo iniciar el escaneo.", true); }
-    updateControls();
+      root.hidden = false;
+      setStatus("Escaneo activo. Navegá por Go Partners; el control flotante de JARVIS te permitirá finalizar y volver automáticamente para revisar los resultados.");
+    } catch (error) {
+      pendingOverlayPermission = false;
+      setStatus(error?.message || "No se pudo iniciar el escaneo.", true);
+    } finally {
+      startInProgress = false;
+      updateControls();
+    }
   }
   async function finish() {
-    if (!scanning) return;
+    if (!scanning || finishing) return;
+    finishing = true;
     const native = plugin();
     if (!native) { setStatus("No se encontró el servicio nativo de captura.", true); return; }
     finishButton.disabled = true; setStatus("Finalizando captura y recuperando texto OCR…");
@@ -477,7 +520,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       } else {
         setStatus(error?.message || "Falló el análisis de la sesión.", true);
       }
-    } finally { updateControls(); }
+    } finally { finishing = false; updateControls(); }
   }
   async function clearSession() {
     const native = plugin();
@@ -518,10 +561,36 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     setStatus(scannerSessionStatus(state), state?.interrupted === true);
     updateControls();
   }
-  window.addEventListener("focus", async () => {
+  async function handleNativeResume() {
     const native = plugin();
     if (!native) return;
-    try { restoreSessionState(await native.getScanState()); } catch {}
+    try {
+      if (pendingOverlayPermission) {
+        const permission = await native.hasOverlayPermission();
+        if (permission?.granted) {
+          pendingOverlayPermission = false;
+          setStatus("Permiso concedido. JARVIS está iniciando el escaneo…");
+          void start();
+        } else {
+          setStatus("El control flotante aún no tiene permiso. Activá «Mostrar sobre otras aplicaciones» en Android.", true);
+        }
+        return;
+      }
+      const state = await native.getScanState();
+      if (state?.finishRequested === true) {
+        scanning = true;
+        updateControls();
+        void finish();
+        return;
+      }
+      restoreSessionState(state);
+    } catch (error) {
+      console.warn("No se pudo recuperar el estado del escáner JARVIS:", error);
+    }
+  }
+  window.addEventListener("focus", () => { void handleNativeResume(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void handleNativeResume();
   });
   const native = plugin();
   if (!native) setStatus("Disponible en la APK Android. El navegador no puede capturar otras aplicaciones.");
