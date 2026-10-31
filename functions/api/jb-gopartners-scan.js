@@ -142,7 +142,11 @@ function findScannerEvidence(source, item) {
   const suppliedSpan = findOcrSpan(source, suppliedQuote);
   if (suppliedSpan) {
     const quote = String(source).slice(suppliedSpan.start, suppliedSpan.end);
-    if (identities.some(identity => ocrContains(quote, identity))) return clean(quote, 240);
+    if (identities.some(identity => ocrContains(quote, identity))) {
+      const start = Math.max(0, suppliedSpan.start - 55);
+      const end = Math.min(String(source).length, Math.max(suppliedSpan.end + 180, start + 240));
+      return clean(String(source).slice(start, end), 240);
+    }
   }
 
   const anchor = identities.map(identity => findOcrMatch(source, identity)).find(Boolean);
