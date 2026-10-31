@@ -122,3 +122,13 @@ test("provider price sync applies confirmed prices per configuration and recalcu
   assert.match(priceSyncMigration, /SECURITY INVOKER/);
   assert.doesNotMatch(priceSyncMigration, /price_usd = v_provider_price_usd/i);
 });
+
+test("scanner opens the selected product review before matching rendered configuration rows", () => {
+  const start = provider.indexOf("function openReviewFromScan(");
+  const end = provider.indexOf("\n  let savingReview", start);
+  assert.ok(start >= 0 && end > start, "scanner provider bridge must exist");
+  const bridge = provider.slice(start, end);
+  assert.ok(bridge.indexOf("openReview(productId)") >= 0);
+  assert.ok(bridge.indexOf("openReview(productId)") < bridge.indexOf('document.querySelectorAll("#provider-review-variants'));
+  assert.match(bridge, /matches\.length !== 1/);
+});
