@@ -497,13 +497,13 @@ jobs:
           ]
           for permission in permissions:
               if permission not in manifest:
-                  manifest = manifest.replace("<application", permission + "\\n    <application", 1)
+                  manifest = manifest.replace("<application", permission + chr(10) + "    <application", 1)
           speech_query = (
               '<queries><intent><action android:name="android.speech.RecognitionService" />'
               '</intent></queries>'
           )
           if "android.speech.RecognitionService" not in manifest:
-              manifest = manifest.replace("<application", speech_query + "\\n    <application", 1)
+              manifest = manifest.replace("<application", speech_query + chr(10) + "    <application", 1)
           service = (
               '<service android:name=".' + "GoPartnersCaptureService" + '" '
               'android:exported="false" android:stopWithTask="false" '
@@ -915,6 +915,7 @@ jobs:
           set -euo pipefail
           PLUGIN="mobile/android/app/src/main/java/com/jbcollections/manager/v2/ApkUpdaterPlugin.java"
           MANIFEST="mobile/android/app/src/main/AndroidManifest.xml"
+          python3 -c 'import xml.etree.ElementTree as ET; ET.parse("mobile/android/app/src/main/AndroidManifest.xml")'
           test -f "$PLUGIN"
           grep -q 'EXPECTED_PACKAGE = "com.jbcollections.manager.v2"' "$PLUGIN"
           grep -q 'validateDownloadedApk' "$PLUGIN"
