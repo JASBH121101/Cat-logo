@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { matchScannerCandidate, normalizeScannerKey, scannerDuplicateGroups } from "../admin-gopartners-scanner.js";
 
 test("normaliza modelos, RAM y almacenamiento", () => {
@@ -29,4 +30,12 @@ test("prioriza coincidencia de marca, modelo y configuración", () => {
   }, [product]);
   assert.equal(matches[0].product.id, "p1");
   assert.ok(matches[0].score >= 0.9);
+});
+
+test("scanner review exposes editable OCR fields before preparing the provider review", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  for (const field of ["product_name", "brand", "model", "ram", "storage", "color", "price_usd", "price_nio"]) {
+    assert.ok(source.includes('["' + field + '"'), "missing editable field: " + field);
+  }
+  assert.ok(source.includes("Corregir lectura antes de revisar"));
 });
