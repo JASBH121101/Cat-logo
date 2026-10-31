@@ -269,8 +269,8 @@ test("dashboard pending-publication count and shortcut include both unpublished 
 test("changing only the product catalog selector does not mark the editor dirty", () => {
   assert.match(admin, /f\.id\s*===\s*"product-catalog-type"/);
   assert.match(admin, /function updateEditorDirtyState\(\)/);
-  assert.match(admin, /if \\(requested === activeCatalogType\\) return/);
-  assert.match(admin, /updateEditorDirtyState\\(\\);[\\s\\S]*?if \\(editorIsDirty\\)/);
+  assert.match(admin, /if \(requested === activeCatalogType\) return/);
+  assert.match(admin, /updateEditorDirtyState\(\);[\s\S]*?if \(editorIsDirty\)/);
 });
 
 test("desktop sidebar has an accessible collapse control and compact layout", () => {
