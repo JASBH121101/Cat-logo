@@ -7,6 +7,7 @@ const technologyHtml = readFileSync(new URL("../tecnologia/index.html", import.m
 const technologyCss = readFileSync(new URL("../technology-visual-refresh.css", import.meta.url), "utf8");
 const appJs = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const homeHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const collectionsCss = readFileSync(new URL("../collections.css", import.meta.url), "utf8");
 const perfumeHtml = readFileSync(new URL("../perfumeria/index.html", import.meta.url), "utf8");
 const perfumeJs = readFileSync(new URL("../perfumeria.js", import.meta.url), "utf8");
 
@@ -38,7 +39,12 @@ test("homepage catalog CTAs remain distinct and warranty copy belongs only to th
   assert.doesNotMatch(perfumePanel, /garantía/i);
   assert.match(technologyPanel, /world-trust-note--tech/);
   assert.match(technologyPanel, /Garantía de fábrica según producto/);
-  assert.match(homeHtml, /collections\.css\?v=20261029-trust-microcopy1/);
+  assert.ok(
+    technologyPanel.indexOf("world-trust-note--tech") < technologyPanel.indexOf("world-cta world-cta--tech"),
+    "the technology trust note must sit above its CTA so both CTAs share the same baseline"
+  );
+  assert.match(collectionsCss, /\.world-cta\s*\{[^}]*height: 55px;[^}]*flex: 0 0 55px;/);
+  assert.match(homeHtml, /collections\.css\?v=20261031-cta-alignment1/);
 });
 
 test("trust cards use responsive styling and retain accessible visible text", () => {
