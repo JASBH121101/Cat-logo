@@ -52,7 +52,7 @@ export function matchScannerCandidate(candidate, products) {
     }).filter(item => item.score >= 0.32)
     .sort((a, b) => b.score - a.score || String(a.product.name).localeCompare(String(b.product.name), "es")).slice(0, 8);
 }
-export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts, providerTools }) {
+export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts, providerTools, onPrepareNewProduct }) {
   const root = $("#jb-gp-scanner");
   if (!root) return null;
   const startButton = $("#jb-gp-scan-start"), finishButton = $("#jb-gp-scan-finish"), clearButton = $("#jb-gp-scan-clear");
@@ -134,6 +134,17 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       });
     }
     productList.replaceChildren();
+    const newProductGroups = new Map();
+    scanCandidates.forEach((candidate, index) => {
+      if (candidate.matches?.length) return;
+      const brandKey = normalizeScannerKey(candidate.brand);
+      const productKey = normalizeScannerKey(candidate.model || candidate.product_name);
+      if (!brandKey || !productKey) return;
+      const key = brandKey + "|" + productKey;
+      if (!newProductGroups.has(key)) newProductGroups.set(key, { key, indexes: [], first: candidate });
+      newProductGroups.get(key).indexes.push(index);
+    });
+    const preparedNewProductKeys = new Set();
     scanCandidates.forEach((candidate, index) => {
       const card = document.createElement("article"); card.className = "jb-gp-product-card";
       const heading = document.createElement("h4"); heading.textContent = candidate.product_name || candidate.model || "Producto sin nombre";
@@ -201,6 +212,111 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       });
       matchSelect.value = candidate.matchId || "";
       matchSelect.addEventListener("change", () => { candidate.matchId = matchSelect.value; });
+      const newProductKey = normalizeScannerKey(candidate.brand) + "|" + normalizeScannerKey(candidate.model || candidate.product_name);
+      const newProductGroup = newProductGroups.get(newProductKey);
+      if (!candidate.matches.length && newProductGroup && !preparedNewProductKeys.has(newProductKey)) {
+        preparedNewProductKeys.add(newProductKey);
+        const createNew = document.createElement("button");
+        createNew.type = "button";
+        createNew.className = "button button-primary jb-gp-prepare-new-product";
+        createNew.textContent = "Preparar producto nuevo (" + newProductGroup.indexes.length + " captura(s))";
+        const newProductStatus = document.createElement("small");
+        newProductStatus.className = "jb-gp-candidate-status";
+        newProductStatus.textContent = "Agrupa únicamente las configuraciones del mismo modelo. Revisá cada precio y color antes de guardar.";
+        createNew.addEventListener("click", async () => {
+          if (typeof onPrepareNewProduct !== "function") {
+            setStatus("La preparación de productos nuevos no está disponible en esta versión.", true);
+            return;
+          }
+          const rows = newProductGroup.indexes.map(rowIndex => scanCandidates[rowIndex]);
+          const accepted = new Set();
+          for (const duplicate of duplicateGroups.filter(group => group.indexes.some(rowIndex => newProductGroup.indexes.includes(rowIndex)))) {
+            if (duplicate.decision !== "same") {
+              setStatus(duplicate.decision === "separate"
+                ? "Hay capturas idénticas marcadas como registros separados. Revisá esa decisión antes de crear un solo producto."
+                : "Confirmá los posibles duplicados de esta configuración antes de preparar el producto.", true);
+              return;
+            }
+            if (duplicate.hasPriceConflict && duplicate.selectedIndex === null) {
+              setStatus("Elegí la captura cuyo precio sea correcto antes de preparar el producto.", true);
+              return;
+            }
+            accepted.add(duplicate.selectedIndex === null ? duplicate.indexes[0] : duplicate.selectedIndex);
+          }
+          const includedRows = rows.filter(row => {
+            const rowIndex = scanCandidates.indexOf(row);
+            const duplicate = duplicateGroups.find(group => group.indexes.includes(rowIndex));
+            return !duplicate || !accepted.has(rowIndex) || duplicate.selectedIndex === null || duplicate.selectedIndex === rowIndex;
+          });
+          const variantMap = new Map();
+          for (const row of includedRows) {
+            const configurationKey = normalizeScannerKey(row.ram) + "|" + normalizeScannerKey(row.storage);
+            if (!variantMap.has(configurationKey)) variantMap.set(configurationKey, { ram: String(row.ram || ""), storage: String(row.storage || ""), rows: [] });
+            variantMap.get(configurationKey).rows.push(row);
+          }
+          const variants = [];
+          for (const group of variantMap.values()) {
+            const uniquePrices = field => [...new Set(group.rows.map(row => row[field]).filter(value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value))).map(Number))];
+            const usd = uniquePrices("price_usd"), nio = uniquePrices("price_nio");
+            if (usd.length > 1 || nio.length > 1) {
+              setStatus("El mismo modelo y configuración tiene precios distintos entre colores/capturas. Corregí los datos antes de preparar el producto.", true);
+              return;
+            }
+            variants.push({
+              ram: group.ram,
+              storage: group.storage,
+              price_usd: usd.length ? usd[0] : null,
+              price_nio: nio.length ? nio[0] : null,
+              configuration_availability: "unknown",
+              colors: group.rows.filter(row => String(row.color || "").trim()).map(row => ({
+                color: String(row.color).trim(),
+                color_hex: "",
+                availability: "unknown"
+              }))
+            });
+          }
+          const first = newProductGroup.first;
+          const categories = new Set(["Celulares", "Laptops", "Tablets", "Gaming", "Consolas", "Televisores", "Audio", "Accesorios", "Otros"]);
+          const draft = {
+            name: String(first.product_name || first.model || "").trim(),
+            brand: String(first.brand || "").trim(),
+            model: String(first.model || "").trim(),
+            catalog_type: "technology",
+            category: categories.has(String(first.category || "").trim()) ? String(first.category).trim() : "",
+            subcategory: "",
+            description: "",
+            specs: "",
+            availability: "unknown",
+            warranty_months: null,
+            price_usd: null,
+            price_nio: null,
+            variants,
+            perfume: null
+          };
+          if (!draft.name) {
+            setStatus("La lectura OCR no contiene un nombre de producto fiable. Corregí el nombre antes de preparar el formulario.", true);
+            return;
+          }
+          createNew.disabled = true;
+          createNew.textContent = "Preparando…";
+          try {
+            const prepared = await onPrepareNewProduct(draft);
+            if (prepared) {
+              createNew.textContent = "✓ Formulario preparado";
+              newProductStatus.textContent = "Formulario abierto. Revisá el nombre, categoría, variantes y precios. No se guardó nada.";
+            } else {
+              createNew.disabled = false;
+              createNew.textContent = "Preparar producto nuevo (" + newProductGroup.indexes.length + " captura(s))";
+            }
+          } catch (error) {
+            createNew.disabled = false;
+            createNew.textContent = "Preparar producto nuevo (" + newProductGroup.indexes.length + " captura(s))";
+            setStatus(error?.message || "No se pudo preparar el producto nuevo.", true);
+          }
+        });
+        card.append(createNew, newProductStatus);
+      }
+
       const prepare = document.createElement("button"); prepare.type = "button"; prepare.className = "button button-outline jb-gp-prepare-review";
       prepare.textContent = "Preparar revisión de proveedor";
       const line = document.createElement("small"); line.className = "jb-gp-candidate-status";
