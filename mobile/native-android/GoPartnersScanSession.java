@@ -38,6 +38,10 @@ public final class GoPartnersScanSession {
         synchronized (LOCK) { finishRequested = true; }
     }
 
+    public static void clearFinishRequest() {
+        synchronized (LOCK) { finishRequested = false; }
+    }
+
     public static void markInterrupted(String reason) {
         synchronized (LOCK) {
             interrupted = true;
