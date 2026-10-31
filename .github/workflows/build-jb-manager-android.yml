@@ -7,6 +7,7 @@ name: Build JB Manager Collections APK
 # Rebuild packaged Copilot client and native voice permissions for Gemini 3.8 migration.
 # Re-run after synchronizing the Copilot regression assertions with the current prompt.
 # Trigger update-compatible rebuild with trust-card alignment, chat data policy, and admin theme fixes.
+# Rebuild after confirming the background DownloadManager UX and recovery flow.
 
 concurrency:
   group: jb-manager-android-${{ github.ref }}
