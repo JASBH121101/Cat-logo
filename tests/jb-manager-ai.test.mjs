@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { normalizeCopilotMissingFieldKey } from "../admin-ai.js";
+import {
+  normalizeCopilotMissingFieldKey,
+  normalizeCopilotSearchText,
+  extractFastCatalogQuery,
+  rankCatalogProducts,
+  buildFastCatalogAnswer
+} from "../admin-ai.js";
 
 const root = new URL("../", import.meta.url);
 const html = await readFile(new URL("admin.html", root), "utf8");
@@ -243,7 +249,8 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
     assert.equal(schema.type, "object");
     assert.deepEqual(schema.properties.provider_price_usd.type, ["number", "null"]);
     assert.deepEqual(schema.properties.product_draft.type, ["object", "null"]);
-    assert.equal(schema.properties.product_draft.properties.variants.type, "array");
+    assert.equal(schema.properties.product_draft.properties, undefined);
+    assert.equal(geminiRequest.body.generationConfig.maxOutputTokens, 800);
     assert.doesNotMatch(endpoint, /nullable\s*:/);
     assert.doesNotMatch(endpoint, /type:\s*"[A-Z]+"/);
     assert.equal(geminiRequest.body.generationConfig.responseMimeType, undefined);
@@ -658,4 +665,56 @@ test("Copilot missing product fields normalize spaces and hyphens into known Spa
   assert.match(assistant, /"subcategory":"Subcategoría"/);
   assert.match(assistant, /"description":"Descripción comercial"/);
   assert.match(assistant, /"variants":"Configuraciones y variantes"/);
+});
+
+
+test("JB Copilot extracts common explicit product-search commands without guessing unclear requests", () => {
+  assert.equal(extractFastCatalogQuery("Buscá Apple iPhone 18 Pro Max"), "Apple iPhone 18 Pro Max");
+  assert.equal(extractFastCatalogQuery("¿Tenés el POCO X8 Pro Max?"), "POCO X8 Pro Max");
+  assert.equal(extractFastCatalogQuery("Mostrame la Samsung Galaxy Tab A11"), "Samsung Galaxy Tab A11");
+  assert.equal(extractFastCatalogQuery("Quiero mejorar el catálogo"), "");
+  assert.equal(normalizeCopilotSearchText("Xiaomi Redmi Note 15 Pro"), "xiaomi redmi note 15 pro");
+});
+
+test("local catalog retrieval ranks exact product identity and excludes deleted products", () => {
+  const products = [
+    { id: "iphone", name: "Apple iPhone 18 Pro Max Esim", brand: "Apple", model: "iPhone 18 Pro Max Esim", category: "Celulares", price_usd: 1649, price_nio: 61013,
+      variants: [{ storage: "256 GB", color: "Glacier", price_usd: 1649, price_nio: 61013 }] },
+    { id: "iphone16", name: "Apple iPhone 16", brand: "Apple", model: "iPhone 16", category: "Celulares", price_usd: 825 },
+    { id: "deleted", name: "Apple iPhone 18 Pro Max", brand: "Apple", model: "iPhone 18 Pro Max", workflow_status: "trash" }
+  ];
+  const ranked = rankCatalogProducts(products, "Apple iPhone 18 Pro Max", 8);
+  assert.equal(ranked[0].product.id, "iphone");
+  assert.equal(ranked.some(item => item.product.id === "deleted"), false);
+  assert.ok(ranked[0].coverage >= 0.85);
+});
+
+test("high-confidence local product search returns grounded price and variant information immediately", () => {
+  const products = [{
+    id: "iphone",
+    name: "Apple iPhone 18 Pro Max Esim",
+    brand: "Apple",
+    model: "iPhone 18 Pro Max Esim",
+    category: "Celulares",
+    price_usd: 1649,
+    price_nio: 61013,
+    variants: [{ ram: "", storage: "256 GB", color: "Glacier", price_usd: 1649, price_nio: 61013 }]
+  }];
+  const result = buildFastCatalogAnswer(products, "Apple iPhone 18 Pro Max Esim");
+  assert.ok(result);
+  assert.match(result.message, /Apple iPhone 18 Pro Max Esim/);
+  assert.match(result.message, /US\\$ 1,649/);
+  assert.match(result.message, /C\\$ 61,013/);
+  assert.match(result.message, /256 GB \\/ Glacier/);
+  assert.equal(buildFastCatalogAnswer(products, "producto inexistente"), null);
+});
+
+test("Copilot uses a smaller JSON schema and output budget for normal questions but retains full draft capacity", () => {
+  assert.match(endpoint, /responseSchemaForRequest\\(prepareProductRequested\\)/);
+  assert.match(endpoint, /product_draft: \\{ type: \\["object", "null"\\] \\}/);
+  assert.match(endpoint, /responseTokenBudget = prepareProductRequested \\? 1800 : providerPriceRequested \\? 1100 : productSearchRequested \\? 850 : 800/);
+  assert.match(endpoint, /if \\(prepareProductRequested\\) systemInstruction\\.push/);
+  assert.match(endpoint, /const systemInstructionText = systemInstruction\\.join\\(" "\\)/);
+  assert.match(endpoint, /text: systemInstructionText/);
+  assert.match(endpoint, /gemini;dur=/);
 });
