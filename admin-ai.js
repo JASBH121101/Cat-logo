@@ -76,9 +76,153 @@ function appendFormattedAssistantText(container, value) {
   }
 }
 
-function catalogContext(products) {
-  const rows = Array.isArray(products) ? products : [];
-  return rows.filter(item => item && !["trash", "deleting"].includes(item.workflow_status)).slice(0, 80).map(item => ({
+const COPILOT_SEARCH_STOPWORDS = new Set([
+  "quiero", "necesito", "busca", "buscame", "buscar", "buscá", "encontra", "encontrá",
+  "mostrame", "mostra", "mostrá", "muestra", "mostrar", "listar", "lista", "listame",
+  "tenes", "tenés", "tenemos", "hay", "dame", "favor", "porfa", "por", "favor",
+  "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "al", "en",
+  "para", "con", "que", "cual", "cuál", "cuales", "cuáles", "mi", "mis", "me",
+  "producto", "productos", "catalogo", "catálogo", "catalog", "precio", "precios",
+  "modelo", "marca", "disponible", "disponibles", "hay", "tienen", "tiene"
+]);
+
+export function normalizeCopilotSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function extractFastCatalogQuery(message) {
+  const value = String(message ?? "").trim();
+  const match = value.match(/(?:^|\b)(?:busca(?:r)?|busc[aá]|encontra(?:r)?|encontr[aá]|mostrame|mostra(?:r)?|mostr[aá]|muestr(?:a|ame)|lista(?:r)?|listame|tenemos|ten[eé]s|hay)\s+(?:(?:en|del|de)\s+(?:el\s+)?cat[aá]logo\s+)?(?:(?:el|la|los|las|un|una|unos|unas)\s+)?(.+?)[?!.]*$/i);
+  if (!match?.[1]) return "";
+  return match[1].replace(/[?!.]+$/g, "").trim();
+}
+
+function copilotSearchTokens(value) {
+  return [...new Set(normalizeCopilotSearchText(value).split(" ")
+    .filter(token => token.length >= 2 && !COPILOT_SEARCH_STOPWORDS.has(token)))];
+}
+
+function productSearchHaystacks(product) {
+  const identity = [
+    product?.name, product?.brand, product?.model, product?.sku,
+    product?.slug
+  ].map(normalizeCopilotSearchText).filter(Boolean).join(" ");
+  const category = [
+    product?.category, product?.subcategory, product?.catalog_type
+  ].map(normalizeCopilotSearchText).filter(Boolean).join(" ");
+  const details = [
+    product?.description,
+    typeof product?.specifications === "string" ? product.specifications : JSON.stringify(product?.specifications || {}),
+    product?.perfume_details?.family,
+    product?.perfume_details?.concentration,
+    product?.perfume_details?.volume_ml,
+    product?.perfume_details?.audience,
+    ...(Array.isArray(product?.variants) ? product.variants.flatMap(variant => [
+      variant?.ram, variant?.storage, variant?.capacity, variant?.color
+    ]) : [])
+  ].map(normalizeCopilotSearchText).filter(Boolean).join(" ");
+  return { identity, category, details, all: [identity, category, details].filter(Boolean).join(" ") };
+}
+
+export function rankCatalogProducts(products, query, limit = 24) {
+  const normalizedQuery = normalizeCopilotSearchText(query);
+  const tokens = copilotSearchTokens(query);
+  if (!normalizedQuery || !tokens.length) return [];
+  const ranked = (Array.isArray(products) ? products : [])
+    .filter(product => product && !["trash", "deleting"].includes(product.workflow_status))
+    .map(product => {
+      const haystacks = productSearchHaystacks(product);
+      let matched = 0;
+      let score = 0;
+      for (const token of tokens) {
+        if (haystacks.identity.split(" ").includes(token)) {
+          matched += 1;
+          score += 10;
+        } else if (haystacks.category.split(" ").includes(token)) {
+          matched += 1;
+          score += 6;
+        } else if (haystacks.details.split(" ").includes(token)) {
+          matched += 1;
+          score += 2;
+        } else if (haystacks.all.includes(token)) {
+          matched += 0.5;
+          score += 1;
+        }
+      }
+      const phrase = normalizedQuery.length >= 4 &&
+        (haystacks.identity.includes(normalizedQuery) || haystacks.all.includes(normalizedQuery));
+      if (phrase) score += 40;
+      const coverage = matched / tokens.length;
+      return { product, score, coverage, phrase };
+    })
+    .filter(item => item.score > 0 && item.coverage >= 0.5)
+    .sort((a, b) => b.score - a.score || b.coverage - a.coverage)
+    .slice(0, Math.max(1, Math.min(80, Number(limit) || 24)));
+  return ranked;
+}
+
+function isBroadCatalogRequest(message) {
+  return /\b(?:todos los productos|todo el catalogo|catalogo completo|inventario completo|lista completa)\b/i
+    .test(normalizeCopilotSearchText(message));
+}
+
+function needsCatalogContext(message) {
+  return /\b(?:catalogo|producto|celular|telefono|smartphone|iphone|samsung|xiaomi|poco|redmi|laptop|tablet|computadora|televisor|tv|consola|gaming|perfume|fragancia|precio|proveedor|variante|ram|almacenamiento|stock|disponibilidad|registrar|agregar|anadir|crear|nuevo)\b/i
+    .test(normalizeCopilotSearchText(message));
+}
+
+function formatLocalCatalogPrice(value, currency) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return "";
+  return currency + " " + amount.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+export function buildFastCatalogAnswer(products, query) {
+  const ranked = rankCatalogProducts(products, query, 8);
+  if (!ranked.length) return null;
+  const first = ranked[0];
+  const singleToken = copilotSearchTokens(query).length === 1;
+  const confident = first.phrase || first.coverage >= 0.85 && first.score >= (singleToken ? 6 : 12);
+  if (!confident) return null;
+  const ceiling = first.phrase ? first.score - 8 : first.score * 0.58;
+  const matches = ranked.filter(item => item.score >= ceiling).slice(0, 6);
+  if (!matches.length) return null;
+  const lines = matches.map(({ product }) => {
+    const name = safeText(product.name || [product.brand, product.model].filter(Boolean).join(" "), 140) || "Producto sin nombre";
+    const category = safeText(product.category, 60);
+    const usd = formatLocalCatalogPrice(product.price_usd, "US$");
+    const nio = formatLocalCatalogPrice(product.price_nio, "C$");
+    const variants = Array.isArray(product.variants) ? product.variants.slice(0, 4).map(variant => {
+      const config = [variant.ram, variant.storage || variant.capacity, variant.color].map(value => safeText(value, 35)).filter(Boolean).join(" / ");
+      const price = formatLocalCatalogPrice(variant.price_usd, "US$") ||
+        formatLocalCatalogPrice(variant.price_nio, "C$");
+      return config ? "    · " + config + (price ? " — " + price : "") : "";
+    }).filter(Boolean) : [];
+    return "- **" + name + "**" + (category ? " · " + category : "") +
+      (usd || nio ? "\\n  Precio: " + [usd, nio].filter(Boolean).join(" · ") : "") +
+      (variants.length ? "\\n  Configuraciones:\\n" + variants.join("\\n") : "");
+  });
+  return {
+    message: matches.length === 1
+      ? "Encontré este producto en el catálogo:\\n\\n" + lines[0]
+      : "Encontré " + matches.length + " coincidencias relevantes en el catálogo:\\n\\n" + lines.join("\\n\\n"),
+    results: matches.map(item => item.product)
+  };
+}
+
+function catalogContext(products, message) {
+  const rows = Array.isArray(products) ? products.filter(item => item && !["trash", "deleting"].includes(item.workflow_status)) : [];
+  const broad = isBroadCatalogRequest(message);
+  const ranked = rankCatalogProducts(rows, message, broad ? 80 : 24);
+  const selected = broad ? ranked.map(item => item.product) : ranked.map(item => item.product).slice(0, 24);
+  const contextRows = selected.length ? selected : (needsCatalogContext(message) ? rows.slice(0, 12) : []);
+  return contextRows.slice(0, 80).map(item => ({
     id: safeText(item.id, 80),
     name: safeText(item.name, 140),
     brand: safeText(item.brand, 80),
@@ -332,6 +476,16 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     }
     appendMessage("user", message);
     input.value = "";
+    const fastQuery = extractFastCatalogQuery(message);
+    if (fastQuery) {
+      const fastResult = buildFastCatalogAnswer(getProducts(), fastQuery);
+      if (fastResult) {
+        appendMessage("assistant", fastResult.message, { intent: "search_product", local_search: true });
+        setStatus("Búsqueda local lista. No se modificó el catálogo.");
+        speak(fastResult.message);
+        return;
+      }
+    }
     resizeInput();
     setBusy(true);
     setStatus("JB Copilot está procesando tu solicitud…");
@@ -359,7 +513,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
         signal: requestController.signal,
         body: JSON.stringify({
           message,
-          products: catalogContext(getProducts())
+          products: catalogContext(getProducts(), message)
         })
       });
       let payload;
