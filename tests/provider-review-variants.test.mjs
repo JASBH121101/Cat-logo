@@ -133,7 +133,7 @@ test("scanner opens the selected product review before matching rendered configu
   assert.match(bridge, /matches\.length !== 1/);
   assert.match(bridge, /normalizeConfig\(row\.dataset\.colorName\) === colorKey/);
   assert.match(bridge, /is-jb-scanner-match/);
-  assert.match(bridge, /El color[\\s\\S]*?no existe exactamente en JB Collections/);
+  assert.match(bridge, /El color[\s\S]*?no existe exactamente en JB Collections/);
   assert.match(bridge, /return failReview\(/);
   assert.match(bridge, /say\(reviewMessage, message, "error"\)/);
 });
