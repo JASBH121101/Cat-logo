@@ -75,7 +75,7 @@ test("JB Copilot textarea auto-expands for typing, prompts, and speech transcrip
   assert.match(assistant, /resizeInput\(\);/);
   assert.match(assistant, /input\.scrollHeight/);
   assert.match(assistant, /input\.style\.overflowY/);
-  assert.match(assistant, /resize: none/);
+  assert.match(css, /resize:none/);
   assert.match(css, /max-height:176px/);
   assert.match(css, /overflow-y:hidden/);
 });
