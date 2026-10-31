@@ -208,6 +208,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     const partial = await native.addListener("partialResult", event => {
       const transcript = safeText(event?.transcript, 3000);
       if (transcript) input.value = transcript;
+      resizeInput();
     });
     const final = await native.addListener("result", event => {
       const transcript = safeText(event?.transcript, 3000);
@@ -280,6 +281,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
         transcript += event.results[index][0]?.transcript || "";
       }
       if (transcript) input.value = transcript.trim();
+      resizeInput();
     };
     recognition.onerror = event => {
       const reason = event.error === "not-allowed"
