@@ -42,6 +42,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   const messages = $("#jb-ai-messages");
   const send = $("#jb-ai-send");
   const voice = $("#jb-ai-voice");
+  const speechToggle = $("#jb-ai-speech-toggle");
   const status = $("#jb-ai-status");
   const clear = $("#jb-ai-clear");
   if (!page || !launcher || !form || !input || !messages) return null;
@@ -50,6 +51,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   let busy = false;
   let recognition = null;
   let listening = false;
+  let speechEnabled = false;
   let nativeVoiceActive = false;
   let nativeVoiceListenersReady = false;
   let nativeVoiceListeners = [];
@@ -214,11 +216,29 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     form.classList.toggle("is-busy", value);
   }
 
+  function updateSpeechToggle() {
+    if (!speechToggle) return;
+    speechToggle.classList.toggle("is-enabled", speechEnabled);
+    speechToggle.setAttribute("aria-pressed", speechEnabled ? "true" : "false");
+    speechToggle.setAttribute("aria-label", speechEnabled ? "Desactivar respuestas por voz" : "Activar respuestas por voz");
+    speechToggle.title = speechEnabled ? "Desactivar respuestas por voz" : "Activar respuestas por voz";
+    speechToggle.textContent = speechEnabled ? "🔊" : "🔇";
+  }
+
+  function setSpeechEnabled(enabled) {
+    speechEnabled = Boolean(enabled) && ("speechSynthesis" in window) &&
+      typeof window.SpeechSynthesisUtterance === "function";
+    if (!speechEnabled) window.speechSynthesis?.cancel?.();
+    updateSpeechToggle();
+    if (speechEnabled) setStatus("Modo de voz activado. Las próximas respuestas se leerán en voz alta; podés apagarlo cuando quieras.");
+    else setStatus("Modo de voz apagado. JB Copilot responderá solo por texto.");
+  }
+
   function speak(text) {
-    if (!("speechSynthesis" in window) || !text) return;
+    if (!speechEnabled || !("speechSynthesis" in window) || !text) return;
     try {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text.slice(0, 500));
+      const utterance = new window.SpeechSynthesisUtterance(text.slice(0, 700));
       utterance.lang = "es-NI";
       utterance.rate = 1.02;
       utterance.pitch = 1;
@@ -501,6 +521,17 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     void sendMessage(input.value);
   });
   voice.addEventListener("click", startVoice);
+  if (speechToggle) {
+    speechToggle.addEventListener("click", () => setSpeechEnabled(!speechEnabled));
+    if (!("speechSynthesis" in window) || typeof window.SpeechSynthesisUtterance !== "function") {
+      speechToggle.disabled = true;
+      speechToggle.title = "La lectura por voz no está disponible en este navegador.";
+    }
+    updateSpeechToggle();
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) window.speechSynthesis?.cancel?.();
+  });
   clear.addEventListener("click", () => {
     messages.replaceChildren();
     const welcome = document.createElement("article");
@@ -544,6 +575,8 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       nativeVoiceActive = false;
       setVoiceListening(false);
       window.speechSynthesis?.cancel?.();
+      speechEnabled = false;
+      updateSpeechToggle();
     }
   };
 }
