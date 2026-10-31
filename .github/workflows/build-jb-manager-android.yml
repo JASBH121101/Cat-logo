@@ -572,33 +572,33 @@ jobs:
           source = source.replace(android_open, signing_block, 1)
 
           build_types = "    buildTypes {"
-          debug_signing = '        debug {\\n            signingConfig signingConfigs.debug\\n        }\\n'
+          debug_signing = '        debug {\n            signingConfig signingConfigs.debug\n        }\n'
           if build_types not in source:
               raise SystemExit("Could not locate Android buildTypes.")
-          source = source.replace(build_types, build_types + "\\n" + debug_signing, 1)
+          source = source.replace(build_types, build_types + "\n" + debug_signing, 1)
 
           release_start = source.find("        release {", source.find(build_types))
           if release_start < 0:
               raise SystemExit("Could not locate the generated Android release build type.")
-          release_end = source.find("\\n        }", release_start)
+          release_end = source.find("\n        }", release_start)
           if release_end < 0:
               raise SystemExit("Could not locate the end of the release build type.")
           release_block = source[release_start:release_end]
           if "minifyEnabled" not in release_block:
               raise SystemExit("Generated release build type has no minifyEnabled setting.")
-          release_block = re.sub(r"minifyEnabled\\s+(?:true|false)", "minifyEnabled true", release_block, count=1)
+          release_block = re.sub(r"minifyEnabled\s+(?:true|false)", "minifyEnabled true", release_block, count=1)
           if "shrinkResources" in release_block:
-              release_block = re.sub(r"shrinkResources\\s+(?:true|false)", "shrinkResources true", release_block, count=1)
+              release_block = re.sub(r"shrinkResources\s+(?:true|false)", "shrinkResources true", release_block, count=1)
           else:
-              release_block += "\\n            shrinkResources true"
+              release_block += "\n            shrinkResources true"
           if "signingConfig" in release_block:
-              release_block = re.sub(r"signingConfig\\s+signingConfigs\\.\\w+", "signingConfig signingConfigs.debug", release_block, count=1)
+              release_block = re.sub(r"signingConfig\s+signingConfigs\.\w+", "signingConfig signingConfigs.debug", release_block, count=1)
           else:
-              release_block += "\\n            signingConfig signingConfigs.debug"
+              release_block += "\n            signingConfig signingConfigs.debug"
           if "proguardFiles" in release_block:
-              release_block = re.sub(r"proguardFiles\\s+.*", "proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'", release_block, count=1)
+              release_block = re.sub(r"proguardFiles\s+.*", "proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'", release_block, count=1)
           else:
-              release_block += "\\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'"
+              release_block += "\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'"
           source = source[:release_start] + release_block + source[release_end:]
 
           rules = Path("mobile/android/app/proguard-rules.pro")
