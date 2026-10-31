@@ -524,5 +524,5 @@ test("Android OCR does not discard changed screens using a sparse pixel hash", (
   assert.match(source, /MIN_FRAME_INTERVAL_MS/);
   assert.match(source, /recognizer\.process\(InputImage\.fromBitmap\(frame, 0\)\)/);
   assert.match(source, /normalized\.equals\(lastRecognizedText\)/);
-  assert.match(source, /Duplicate recognized text is filtered after ML Kit/);
+  assert.match(source, /duplicate recognized text is filtered after ML Kit/i);
 });
