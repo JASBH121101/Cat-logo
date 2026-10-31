@@ -303,6 +303,8 @@ test("JB Copilot classifies Gemini upstream access, billing and quota failures",
       });
       const payload = await response.json();
       assert.equal(payload.error, item.expected, "HTTP " + item.status);
+      assert.equal(typeof payload.detail, "string", "Gemini error diagnostic for HTTP " + item.status);
+      assert.match(payload.detail, new RegExp(item.body.error.status));
     }
   } finally {
     globalThis.fetch = originalFetch;
