@@ -101,6 +101,15 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       .finally(() => window.clearTimeout(timer));
   }
 
+  function withRequestDeadline(promise, timeoutMs, message) {
+    let timer = null;
+    const timeout = new Promise((resolve, reject) => {
+      timer = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    });
+    return Promise.race([Promise.resolve(promise), timeout])
+      .finally(() => window.clearTimeout(timer));
+  }
+
   function resizeInput() {
     if (!input) return;
     input.style.height = "auto";
@@ -230,15 +239,28 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     resizeInput();
     setBusy(true);
     setStatus("JB Copilot está procesando tu solicitud…");
+    let requestController = null;
+    let requestTimer = null;
+    let requestTimedOut = false;
     try {
-      const { data, error } = await supabase.auth.getSession();
+      const { data, error } = await withRequestDeadline(
+        supabase.auth.getSession(),
+        12000,
+        "No se pudo recuperar la sesión a tiempo. Revisá tu conexión e intentá nuevamente."
+      );
       if (error || !data?.session?.access_token) throw new Error("Tu sesión expiró. Iniciá sesión nuevamente.");
+      requestController = new AbortController();
+      requestTimer = window.setTimeout(() => {
+        requestTimedOut = true;
+        requestController?.abort();
+      }, 45000);
       const response = await fetch("https://jb-collections.pages.dev/api/jb-manager-ai", {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + data.session.access_token,
           "Content-Type": "application/json"
         },
+        signal: requestController.signal,
         body: JSON.stringify({
           message,
           products: catalogContext(getProducts())
@@ -277,9 +299,16 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       setStatus("Respuesta lista. No se realizó ningún cambio en el catálogo.");
       speak(assistant.message || "");
     } catch (error) {
-      appendMessage("assistant", error?.message || "Ocurrió un error al procesar la solicitud.");
-      setStatus(error?.message || "No se pudo completar la consulta. Revisá la conexión e intentá nuevamente.", true);
+      const messageError = requestTimedOut
+        ? "La consulta tardó más de 45 segundos y se canceló para desbloquear JB Copilot. Podés volver a intentarlo."
+        : error?.name === "AbortError"
+          ? "La consulta se interrumpió antes de recibir respuesta. Podés volver a intentarlo."
+          : error?.message || "Ocurrió un error al procesar la solicitud.";
+      appendMessage("assistant", messageError);
+      setStatus(messageError, true);
+      if (!input.value.trim()) input.value = message;
     } finally {
+      if (requestTimer) window.clearTimeout(requestTimer);
       setBusy(false);
       input.focus();
       resizeInput();
@@ -462,6 +491,9 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
   }
 
   input.addEventListener("input", resizeInput);
+  // WebViews can restore a form while retaining a stale disabled DOM state.
+  // Always recover the send controls when the Copilot module initializes.
+  setBusy(false);
   resizeInput();
 
   form.addEventListener("submit", event => {
@@ -499,6 +531,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     },
     clearSession() {
       authenticatedUser = null;
+      setBusy(false);
       launcher.hidden = true;
       recognition?.abort?.();
       const nativeVoice = nativeVoicePlugin();
