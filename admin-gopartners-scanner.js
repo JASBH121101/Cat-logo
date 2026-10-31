@@ -72,8 +72,11 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
     status.classList.toggle("is-success", !error);
   };
   function updateControls() {
-    startButton.disabled = scanning; finishButton.disabled = !scanning;
-    clearButton.disabled = !scanning && scanCandidates.length === 0;
+    startButton.disabled = scanning || startInProgress;
+    finishButton.disabled = !scanning || finishing;
+    finishButton.textContent = recoverableSession ? "Reintentar análisis" : "Finalizar y revisar";
+    clearButton.disabled = !scanning && !recoverableSession && scanCandidates.length === 0;
+    clearButton.textContent = recoverableSession ? "Descartar sesión" : "Descartar";
     root.classList.toggle("is-scanning", scanning);
   }
   async function getAccessToken() {
@@ -491,7 +494,32 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         cache: "no-store", body: JSON.stringify({ observations: observations.slice(0, 80) })
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.ok) throw new Error(payload.error || "No se pudo analizar el catálogo.");
+      if (!response.ok || !payload.ok) {
+        const messages = {
+          gemini_not_configured: "El servicio de análisis todavía no está configurado en Cloudflare.",
+          gemini_api_access_denied: "Google rechazó el acceso a Gemini. Hay que revisar la clave y los permisos del proyecto.",
+          gemini_billing_required: "El proyecto de Gemini necesita una cuenta de facturación activa.",
+          gemini_model_unavailable: "Los modelos de Gemini configurados no están disponibles para este proyecto.",
+          gemini_invalid_request: "Google rechazó el formato de la solicitud de análisis. El escáner ya tiene un formato compatible alternativo.",
+          gemini_quota_exhausted: "Gemini alcanzó su cuota disponible. Esperá un momento y reintentá.",
+          gemini_temporarily_unavailable: "Gemini no está respondiendo ahora. El texto OCR se conservó para reintentar.",
+          gemini_request_failed: "Gemini no pudo completar el análisis del proveedor.",
+          gemini_invalid_response: "Gemini devolvió una respuesta que JB Manager no pudo interpretar.",
+          gemini_unstructured_response: "Gemini no devolvió los productos en un formato válido.",
+          admin_verification_unavailable: "No se pudo verificar la cuenta administradora con Supabase.",
+          authentication_required: "La sesión administrativa expiró. Iniciá sesión nuevamente.",
+          admin_only: "La cuenta activa no tiene permisos de administrador.",
+          rate_limit_exceeded: "Se alcanzó el límite temporal de análisis. Esperá un minuto y reintentá.",
+          origin_not_allowed: "La solicitud llegó desde un origen no autorizado.",
+          observations_required: "No hay texto OCR suficiente para analizar.",
+          insufficient_or_excessive_ocr_text: "El texto OCR está vacío o supera el límite permitido."
+        };
+        const message = messages[payload.error] || "No se pudo analizar el catálogo (HTTP " + response.status + ").";
+        const detail = typeof payload.detail === "string"
+          ? payload.detail.replace(/[\x00-\x1F\x7F]/g, " ").slice(0, 360)
+          : "";
+        throw new Error(message + (detail ? " Diagnóstico: " + detail : ""));
+      }
       scanCandidates = Array.isArray(payload.products) ? payload.products.map(item => ({
         ...item, price_usd: item.price_usd == null ? null : Number(item.price_usd),
         price_nio: item.price_nio == null ? null : Number(item.price_nio)
