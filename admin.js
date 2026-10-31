@@ -2,7 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { initProviderTools } from "./admin-provider.js?v=20261029-variant-availability-validation1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261030-jb-manager-ai1";
-import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261030-gp-scanner2";
+import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261030-gp-scanner3";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
