@@ -965,6 +965,7 @@ jobs:
           grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"
           grep -q 'android.speech.RecognitionService' "$MANIFEST"
           grep -q 'requestPermissionForAlias("microphone"' "$VOICE"
+          grep -q 'permanentlyDenied' "$VOICE"
           grep -q 'SpeechRecognizer.createSpeechRecognizer' "$VOICE"
           grep -q 'notifyListeners("result"' "$VOICE"
           grep -q 'notifyListeners("partialResult"' "$VOICE"
