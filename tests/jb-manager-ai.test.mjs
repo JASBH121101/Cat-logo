@@ -223,7 +223,7 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
         Authorization: "Bearer test-admin-token",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: "Hola bro" })
+      body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
     const response = await jbAiEndpoint.onRequestPost({
       request,
@@ -236,15 +236,16 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
     assert.doesNotMatch(geminiRequest.url, /[?&]key=/);
     assert.equal(geminiRequest.headers["x-goog-api-key"], "test-only-key");
     assert.equal(geminiRequest.body.generationConfig.temperature, undefined);
-    assert.equal(geminiRequest.body.generationConfig.responseMimeType, "application/json");
-    const schema = geminiRequest.body.generationConfig.responseSchema;
+    assert.equal(geminiRequest.body.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
+    const schema = geminiRequest.body.generationConfig.responseFormat.text.schema;
     assert.equal(schema.type, "object");
     assert.deepEqual(schema.properties.provider_price_usd.type, ["number", "null"]);
     assert.deepEqual(schema.properties.product_draft.type, ["object", "null"]);
     assert.equal(schema.properties.product_draft.properties.variants.type, "array");
     assert.doesNotMatch(endpoint, /nullable\s*:/);
     assert.doesNotMatch(endpoint, /type:\s*"[A-Z]+"/);
-    assert.equal(geminiRequest.body.generationConfig.responseFormat, undefined);
+    assert.equal(geminiRequest.body.generationConfig.responseMimeType, undefined);
+    assert.equal(geminiRequest.body.generationConfig.responseSchema, undefined);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -294,7 +295,7 @@ test("JB Copilot classifies Gemini upstream access, billing and quota failures",
           "Content-Type": "application/json",
           "CF-Connecting-IP": "192.0.2.99"
         },
-        body: JSON.stringify({ message: "Hola bro" })
+        body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
       });
       const response = await jbAiEndpoint.onRequestPost({
         request,
@@ -374,7 +375,7 @@ test("JB Copilot retries simple JSON mode when Gemini rejects the full product s
         Authorization: "Bearer test-admin-token",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: "Hola" })
+      body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
     const response = await jbAiEndpoint.onRequestPost({
       request,
@@ -385,8 +386,8 @@ test("JB Copilot retries simple JSON mode when Gemini rejects the full product s
     assert.equal(response.status, 200);
     assert.equal(payload.assistant.message, assistantResult.message);
     assert.equal(geminiBodies.length, 2);
-    assert.equal(geminiBodies[0].generationConfig.responseMimeType, "application/json");
-    assert.ok(geminiBodies[0].generationConfig.responseSchema);
+    assert.equal(geminiBodies[0].generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
+    assert.ok(geminiBodies[0].generationConfig.responseFormat.text.schema);
     assert.equal(geminiBodies[1].generationConfig.responseMimeType, "application/json");
     assert.equal(geminiBodies[1].generationConfig.responseSchema, undefined);
     assert.equal(geminiBodies[1].generationConfig.responseFormat, undefined);
@@ -447,7 +448,7 @@ test("JB Copilot fails over from an overloaded Gemini 3.8 model to stable Flash"
         Authorization: "Bearer test-admin-token",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: "Hola" })
+      body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
     const result = await jbAiEndpoint.onRequestPost({
       request,
@@ -508,7 +509,7 @@ test("JB Copilot falls back to Flash-Lite when both primary Flash models are una
         Authorization: "Bearer test-admin-token",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: "Hola" })
+      body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
     const result = await jbAiEndpoint.onRequestPost({
       request,
@@ -519,6 +520,107 @@ test("JB Copilot falls back to Flash-Lite when both primary Flash models are una
     assert.equal(payload.assistant.message, assistantResult.message);
     assert.equal(modelCalls.length, 3);
     assert.match(modelCalls[2], /models\/gemini-3\.5-flash-lite:generateContent$/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test("JB Copilot answers a simple greeting without depending on Gemini availability", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async input => {
+    const url = String(input);
+    calls.push(url);
+    if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    if (url.includes("/rest/v1/admin_users")) return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    throw new Error("A simple greeting must not call Gemini: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "¡Hola bro!" })
+    });
+    const result = await jbAiEndpoint.onRequestPost({ request, env: {} });
+    const payload = await result.json();
+    assert.equal(result.status, 200);
+    assert.match(payload.assistant.message, /¡Hola!/);
+    assert.match(payload.assistant.message, /¿Qué necesitás gestionar hoy/);
+    assert.equal(payload.assistant.intent, "question");
+    assert.ok(!calls.some(url => url.includes("generativelanguage.googleapis.com")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("JB Copilot accepts natural-language text or common reply aliases from Gemini", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async input => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    if (url.includes("/rest/v1/admin_users")) return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    if (url.includes("generativelanguage.googleapis.com")) {
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: JSON.stringify({ reply: "Puedo ayudarte con consultas y productos." }) }] } }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected test request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
+    });
+    const result = await jbAiEndpoint.onRequestPost({ request, env: { GEMINI_API_KEY: "test-only-key" } });
+    const payload = await result.json();
+    assert.equal(result.status, 200);
+    assert.equal(payload.assistant.message, "Puedo ayudarte con consultas y productos.");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("JB Copilot never returns a successful generic answer for malformed model JSON", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async input => {
+    const url = String(input);
+    if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "test-admin" }), { status: 200 });
+    if (url.includes("/rest/v1/admin_users")) return new Response(JSON.stringify([{ user_id: "test-admin" }]), { status: 200 });
+    if (url.includes("generativelanguage.googleapis.com")) {
+      return new Response(JSON.stringify({
+        candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify({ intent: "question", product_query: "" }) }] } }]
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected test request: " + url);
+  };
+
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://localhost",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Explicame cómo funciona el catálogo." })
+    });
+    const result = await jbAiEndpoint.onRequestPost({ request, env: { GEMINI_API_KEY: "test-only-key" } });
+    const payload = await result.json();
+    assert.equal(result.status, 502);
+    assert.equal(payload.error, "gemini_unstructured_response");
+    assert.match(payload.detail, /Campos recibidos/);
   } finally {
     globalThis.fetch = originalFetch;
   }
