@@ -454,7 +454,8 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       }
       pendingOverlayPermission = false;
       let nativeState = await native.getScanState();
-      for (let attempt = 0; attempt < 5 && !nativeState?.running && !scannerSessionReviewable(nativeState); attempt += 1) {
+      for (let attempt = 0; attempt < 8 && (!nativeState?.running && !scannerSessionReviewable(nativeState) ||
+        nativeState?.running && !nativeState?.overlayVisible && !nativeState?.overlayError); attempt += 1) {
         await new Promise(resolve => setTimeout(resolve, 400));
         nativeState = await native.getScanState();
       }
@@ -469,7 +470,14 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       }
       scanning = true;
       root.hidden = false;
-      setStatus("Escaneo activo. Navegá por Go Partners; el control flotante de JARVIS te permitirá finalizar y volver automáticamente para revisar los resultados.");
+      if (nativeState?.overlayVisible !== true) {
+        const overlayDetail = String(nativeState?.overlayError || "").trim();
+        setStatus("La captura está activa, pero Android no confirmó el control flotante de JARVIS. " +
+          (overlayDetail ? "Detalle: " + overlayDetail + " " : "") +
+          "Podés usar «Finalizar aquí» en JB Copilot o detener desde la notificación de Android.", true);
+      } else {
+        setStatus("Escaneo activo. Navegá por Go Partners; el control flotante de JARVIS te permitirá finalizar y volver automáticamente para revisar los resultados.");
+      }
     } catch (error) {
       pendingOverlayPermission = false;
       setStatus(error?.message || "No se pudo iniciar el escaneo.", true);
