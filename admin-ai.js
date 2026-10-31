@@ -181,12 +181,7 @@ export function rankCatalogProducts(products, query, limit = 24) {
 }
 
 function isBroadCatalogRequest(message) {
-  return /\b(?:todos los productos|todo el catalogo|catalogo completo|inventario completo|lista completa)\b/i
-    .test(normalizeCopilotSearchText(message));
-}
-
-function needsCatalogContext(message) {
-  return /\b(?:catalogo|producto|productos?|celular|telefono|smartphone|iphone|samsung|xiaomi|poco|redmi|laptop|tablet|computadora|televisor|tv|consola|gaming|perfume|fragancia|precio|proveedor|variante|ram|almacenamiento|stock|disponibilidad|registrar|agregar|anadir|crear|nuevo)\b/i
+  return /\b(?:todos los productos|todo el catalogo|catalogo completo|inventario completo|lista completa|que productos (?:hay|tenemos|tienen)|cuales productos|productos disponibles)\b/i
     .test(normalizeCopilotSearchText(message));
 }
 
