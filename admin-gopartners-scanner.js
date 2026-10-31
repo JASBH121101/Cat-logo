@@ -131,6 +131,51 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
       const confidence = document.createElement("small");
       confidence.textContent = "Confianza de lectura: " + Math.round((candidate.confidence || 0) * 100) + "% · Captura " + (candidate.source_observation || "—");
       const evidence = document.createElement("small"); evidence.textContent = candidate.evidence ? "Evidencia: " + candidate.evidence : "Sin evidencia OCR.";
+
+      const corrections = document.createElement("details");
+      corrections.className = "jb-gp-corrections";
+      const correctionsSummary = document.createElement("summary");
+      correctionsSummary.textContent = "Corregir lectura antes de revisar";
+      const correctionGrid = document.createElement("div");
+      correctionGrid.className = "jb-gp-correction-grid";
+      const editableFields = [
+        ["product_name", "Nombre del producto", "text"],
+        ["brand", "Marca", "text"],
+        ["model", "Modelo", "text"],
+        ["ram", "RAM", "text"],
+        ["storage", "Almacenamiento", "text"],
+        ["color", "Color", "text"],
+        ["price_usd", "Precio proveedor · USD", "number"],
+        ["price_nio", "Precio proveedor · NIO", "number"]
+      ];
+      editableFields.forEach(([field, labelText, type]) => {
+        const label = document.createElement("label");
+        label.className = "jb-gp-correction-field";
+        const caption = document.createElement("span");
+        caption.textContent = labelText;
+        const input = document.createElement("input");
+        input.type = type;
+        input.value = candidate[field] == null ? "" : String(candidate[field]);
+        input.dataset.scannerField = field;
+        input.setAttribute("aria-label", labelText);
+        if (type === "number") {
+          input.min = "0";
+          input.step = "0.01";
+          input.inputMode = "decimal";
+        }
+        input.addEventListener("change", () => {
+          const raw = input.value.trim();
+          candidate[field] = type === "number" ? (raw === "" ? null : Number(raw)) : raw;
+          if (["product_name", "brand", "model", "ram", "storage"].includes(field)) {
+            candidate.matchId = "";
+          }
+          renderReview();
+        });
+        label.append(caption, input);
+        correctionGrid.append(label);
+      });
+      corrections.append(correctionsSummary, correctionGrid);
+
       const matchSelect = document.createElement("select"); matchSelect.className = "jb-gp-match-select";
       matchSelect.setAttribute("aria-label", "Producto de JB Collections al que corresponde");
       const placeholder = document.createElement("option"); placeholder.value = ""; placeholder.textContent = "Seleccionar producto de JB Collections"; matchSelect.append(placeholder);
@@ -165,7 +210,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
         line.textContent = "Datos preparados. Confirmá los campos y guardá desde la revisión del proveedor.";
         setStatus("Revisión preparada para " + (chosen.name || "el producto") + ". No se guardó ningún cambio todavía.");
       });
-      card.append(heading, specs, price, confidence, evidence, matchSelect, prepare, line);
+      card.append(heading, specs, price, confidence, evidence, corrections, matchSelect, prepare, line);
       productList.append(card);
     });
     duplicateReview.querySelectorAll(".jb-gp-duplicate-decision").forEach(select => {
