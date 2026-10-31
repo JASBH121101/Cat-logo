@@ -1003,6 +1003,28 @@ export function initProviderTools({ getSupabase, getCurrentUser, getProducts, on
       }
     }
     if (hasVariants) {
+      const pricesByConfiguration = new Map();
+      for (const item of matchedRows) {
+        const priceSet = pricesByConfiguration.get(item.row) || { usd: new Set(), nio: new Set() };
+        if (item.scanned.price_usd != null && Number.isFinite(Number(item.scanned.price_usd))) {
+          priceSet.usd.add(Number(item.scanned.price_usd).toFixed(2));
+        }
+        if (item.scanned.price_nio != null && Number.isFinite(Number(item.scanned.price_nio))) {
+          priceSet.nio.add(Number(item.scanned.price_nio).toFixed(2));
+        }
+        pricesByConfiguration.set(item.row, priceSet);
+      }
+      for (const [configRow, priceSet] of pricesByConfiguration) {
+        if (priceSet.usd.size > 1 || priceSet.nio.size > 1) {
+          const configLabel = configRow.dataset.configLabel || "esta configuración";
+          const currencies = [
+            priceSet.usd.size > 1 ? "USD" : "",
+            priceSet.nio.size > 1 ? "NIO" : ""
+          ].filter(Boolean).join(" y ");
+          return failReview("JARVIS detectó precios distintos por color dentro de " + configLabel +
+            " (" + currencies + "). JB Collections guarda el precio por configuración RAM/almacenamiento, no por color. No se aplicó ningún precio automáticamente; verificá el precio correcto manualmente.");
+        }
+      }
       for (const item of matchedRows) {
         if (item.colorRow) {
           item.colorRow.classList.add("is-jb-scanner-match");
