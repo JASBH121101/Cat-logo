@@ -81,7 +81,7 @@ test("all technology showcases share the Exclusivos horizontal card layout on de
 test("curated showcase typography is easier to read without changing responsive auto-fit", () => {
   assert.match(css, /JB TECH · subir la legibilidad de las vitrinas/);
   assert.match(css, /\.section-subtitle\s*\{\s*font-size:clamp\(14px,1vw,16px\) !important;/);
-  assert.match(css, /#limited-edition-grid\.featured-grid[\s\S]*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,430px\),1fr\)\) !important/);
+  assert.match(css, /#limited-edition-grid\.featured-grid[\s\S]*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,600px\),1fr\)\) !important/);
   assert.match(css, /#limited-edition-grid\.featured-grid \.product-badge[\s\S]*?font-size:10px !important/);
   assert.match(css, /#limited-edition-grid\.featured-grid \.product-view-button[\s\S]*?font-size:13\.5px !important/);
 });
