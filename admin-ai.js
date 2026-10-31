@@ -24,7 +24,7 @@ function catalogContext(products) {
     catalog_type: item.catalog_type === "perfumery" ? "perfumery" : "technology",
     price_usd: item.price_usd == null ? null : Number(item.price_usd),
     price_nio: item.price_nio == null ? null : Number(item.price_nio),
-    variants: Array.isArray(item.variants) ? item.variants.slice(0, 12).map(variant => ({
+    variants: Array.isArray(item.variants) ? item.variants.slice(0, 8).map(variant => ({
       ram: safeText(variant.ram, 30),
       storage: safeText(variant.storage || variant.capacity, 30),
       color: safeText(variant.color, 40),
@@ -120,7 +120,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       tag.textContent = labels[meta.intent] || "PROPUESTA";
       article.append(tag);
       if (Array.isArray(meta.missing_fields) && meta.missing_fields.length) {
-        const labels = {"product_query":"Producto o modelo","product":"Producto","model":"Modelo","model_name":"Modelo","brand":"Marca","catalog_type":"Catálogo (tecnología o perfumería)","category":"Categoría","variant":"Configuración o variante","configuration":"Configuración (RAM y almacenamiento)","ram":"Memoria RAM","storage":"Almacenamiento","color":"Color","currency":"Moneda","price":"Precio del proveedor","provider_price":"Precio del proveedor","provider_price_usd":"Precio del proveedor (USD)","provider_price_nio":"Precio del proveedor (C$)","price_usd":"Precio del proveedor (USD)","price_nio":"Precio del proveedor (C$)","audience":"Público (masculino, femenino o unisex)","volume":"Volumen (ml)","volume_ml":"Volumen (ml)","concentration":"Concentración (EDP, EDT, Parfum)","sku":"Código o referencia","availability":"Disponibilidad"};
+        const labels = {"product_query":"Producto o modelo","product":"Producto","model":"Modelo","model_name":"Modelo","brand":"Marca","catalog_type":"Catálogo (tecnología o perfumería)","category":"Categoría","variant":"Configuración o variante","configuration":"Configuración (RAM y almacenamiento)","ram":"Memoria RAM","storage":"Almacenamiento","color":"Color","currency":"Moneda","price":"Precio del proveedor","provider_price":"Precio del proveedor","provider_price_usd":"Precio del proveedor (USD)","provider_price_nio":"Precio del proveedor (C$)","price_usd":"Precio del proveedor (USD)","price_nio":"Precio del proveedor (C$)","audience":"Público (masculino, femenino o unisex)","volume":"Volumen (ml)","volume_ml":"Volumen (ml)","concentration":"Concentración (EDP, EDT, Parfum)","sku":"Código o referencia","availability":"Disponibilidad","name":"Nombre del producto","description":"Descripción comercial","specs":"Especificaciones","specifications":"Especificaciones","subcategory":"Subcategoría","warranty_months":"Garantía (meses)","variants":"Variantes y configuraciones","family":"Familia de perfume","scent_family":"Familia olfativa","top_notes":"Notas de salida","heart_notes":"Notas de corazón","base_notes":"Notas de fondo"};
         const displayFields = [...new Set(meta.missing_fields
           .map(value => String(value ?? "").trim())
           .filter(Boolean)
