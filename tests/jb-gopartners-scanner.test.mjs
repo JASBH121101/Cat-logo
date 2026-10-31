@@ -142,3 +142,12 @@ test("Go Partners new-product preparation blocks conflicting prices within one c
   assert.match(source, /tiene precios distintos entre colores\/capturas/);
   assert.match(source, /No se guardó nada/);
 });
+
+
+test("scanner never carries a supplier price across color rows when OCR missed another price", () => {
+  const source = readFileSync(new URL("../admin-gopartners-scanner.js", import.meta.url), "utf8");
+  assert.match(source, /usdHasMissing/);
+  assert.match(source, /nioHasMissing/);
+  assert.match(source, /usd\.length && !usdHasMissing \? usd\[0\] : null/);
+  assert.match(source, /nio\.length && !nioHasMissing \? nio\[0\] : null/);
+});
