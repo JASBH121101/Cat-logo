@@ -41,7 +41,7 @@ test("technology limited editions have a dedicated section immediately after Exc
   assert.match(technologyHtml, /<rect x="6\.5" y="6\.5" width="11" height="11" rx="2"\/>/);
   assert.match(technologyJs, /normalizedProductTags\(product\)\.includes\("limited_edition"\)/);
   assert.match(technologyJs, /limitedEditionSection\.classList\.toggle\("hidden", limitedEdition\.length === 0\)/);
-  assert.match(technologyJs, /!tags\.includes\("limited_edition"\)/);
+  assert.match(technologyJs, /const regularProducts = list;/);
   assert.match(technologyCss, /limited-edition-section/);
   assert.match(technologyCss, /product-tag-badge\.tag-limited_edition/);
 });
