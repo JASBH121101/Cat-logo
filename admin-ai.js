@@ -39,6 +39,9 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
   let busy = false;
   let recognition = null;
   let listening = false;
+  let nativeVoiceActive = false;
+  let nativeVoiceListenersReady = false;
+  let nativeVoiceListeners = [];
 
   function setStatus(text, error = false) {
     status.textContent = text;
@@ -154,14 +157,86 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     }
   }
 
-  function startVoice() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setStatus("Este navegador no ofrece dictado por voz. Podés escribir el mensaje.", true);
+  function setVoiceListening(active) {
+    listening = active;
+    voice.classList.toggle("is-listening", active);
+    voice.setAttribute("aria-label", active ? "Detener dictado" : "Dictar mensaje");
+    voice.title = active ? "Detener dictado" : "Dictar mensaje";
+  }
+
+  function finishVoiceUI(message = "") {
+    setVoiceListening(false);
+    nativeVoiceActive = false;
+    if (message) setStatus(message);
+  }
+
+  function nativeVoicePlugin() {
+    const cap = window.Capacitor;
+    return cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform()
+      ? cap.Plugins?.JbVoiceInput || null
+      : null;
+  }
+
+  async function attachNativeVoiceListeners(native) {
+    if (nativeVoiceListenersReady) return;
+    const partial = await native.addListener("partialResult", event => {
+      const transcript = safeText(event?.transcript, 3000);
+      if (transcript) input.value = transcript;
+    });
+    const final = await native.addListener("result", event => {
+      const transcript = safeText(event?.transcript, 3000);
+      if (transcript) input.value = transcript;
+      finishVoiceUI(input.value.trim()
+        ? "Dictado listo. Revisá el texto y presioná enviar."
+        : "No se reconocieron palabras. Podés volver a intentarlo.");
+    });
+    const failure = await native.addListener("recognitionError", event => {
+      const messages = {
+        audio: "No se pudo acceder al micrófono. Revisá los permisos de JB Manager.",
+        network: "El servicio de reconocimiento de voz no pudo conectarse.",
+        no_match: "No se reconocieron palabras. Acercate al micrófono y probá de nuevo.",
+        busy: "El servicio de voz está ocupado. Intentá nuevamente.",
+        unavailable: "No hay un servicio de reconocimiento de voz disponible en Android.",
+        permission: "Android no concedió el acceso al micrófono."
+      };
+      finishVoiceUI(messages[event?.code] || "No se pudo reconocer la voz. Podés escribir el mensaje.");
+      setStatus(messages[event?.code] || "No se pudo reconocer la voz. Podés escribir el mensaje.", true);
+    });
+    nativeVoiceListeners = [partial, final, failure].filter(Boolean);
+    nativeVoiceListenersReady = true;
+  }
+
+  async function startNativeVoice(native) {
+    const current = await native.checkPermission();
+    let permission = current;
+    if (!current?.granted) {
+      setStatus("Android solicitará permiso para usar el micrófono…");
+      permission = await native.requestPermission();
+    }
+    if (!permission?.granted) {
+      setStatus(permission?.shouldShowRationale
+        ? "No se concedió el permiso del micrófono. Podés volver a tocar el botón para intentarlo."
+        : "El permiso del micrófono está bloqueado. Abrí Información de la aplicación → Permisos → Micrófono y habilitalo.", true);
       return;
     }
-    if (listening && recognition) {
-      recognition.stop();
+    await attachNativeVoiceListeners(native);
+    setVoiceListening(true);
+    setStatus("Activando el reconocimiento de voz de Android…");
+    try {
+      const started = await native.startListening({ language: "es-NI" });
+      if (started?.started === false) throw new Error(started.message || "Android no pudo iniciar el reconocimiento.");
+      nativeVoiceActive = true;
+      setStatus("Escuchando… Hablá ahora. El dictado no se enviará hasta que presionés Enviar.");
+    } catch (error) {
+      finishVoiceUI();
+      throw error;
+    }
+  }
+
+  function startBrowserVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatus("Este navegador no ofrece dictado por voz. En la APK se requiere el puente nativo actualizado; podés escribir el mensaje.", true);
       return;
     }
     recognition = new SpeechRecognition();
@@ -169,10 +244,8 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
     recognition.interimResults = true;
     recognition.continuous = false;
     recognition.onstart = () => {
-      listening = true;
-      voice.classList.add("is-listening");
-      voice.setAttribute("aria-label", "Detener dictado");
-      setStatus("Escuchando…");
+      setVoiceListening(true);
+      setStatus("Escuchando… El dictado no se enviará hasta que presionés Enviar.");
     };
     recognition.onresult = event => {
       let transcript = "";
@@ -182,16 +255,45 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       if (transcript) input.value = transcript.trim();
     };
     recognition.onerror = event => {
-      const reason = event.error === "not-allowed" ? "Permití el acceso al micrófono para dictar." : "No se pudo reconocer la voz. Podés escribir el mensaje.";
+      const reason = event.error === "not-allowed"
+        ? "El navegador bloqueó el micrófono. Revisá los permisos de JB Manager en Android."
+        : "No se pudo reconocer la voz. Podés escribir el mensaje.";
       setStatus(reason, true);
     };
     recognition.onend = () => {
-      listening = false;
-      voice.classList.remove("is-listening");
-      voice.setAttribute("aria-label", "Dictar mensaje");
-      if (input.value.trim()) setStatus("Dictado listo. Revisá el texto y presioná enviar.");
+      finishVoiceUI(input.value.trim()
+        ? "Dictado listo. Revisá el texto y presioná enviar."
+        : "");
     };
-    try { recognition.start(); } catch { setStatus("No se pudo iniciar el micrófono.", true); }
+    try { recognition.start(); }
+    catch (error) {
+      finishVoiceUI();
+      setStatus(error?.message || "No se pudo iniciar el micrófono.", true);
+    }
+  }
+
+  async function startVoice() {
+    if (listening) {
+      if (nativeVoiceActive) {
+        try { await nativeVoicePlugin()?.stopListening?.(); }
+        catch { setStatus("No se pudo detener el dictado de voz.", true); }
+      } else {
+        try { recognition?.stop?.(); } catch {}
+      }
+      return;
+    }
+    const native = nativeVoicePlugin();
+    if (native) {
+      try {
+        await startNativeVoice(native);
+      } catch (error) {
+        finishVoiceUI();
+        const message = error?.message || "No se pudo iniciar el reconocimiento de voz de Android.";
+        setStatus(message + " Podés escribir el mensaje.", true);
+      }
+      return;
+    }
+    startBrowserVoice();
   }
 
   form.addEventListener("submit", event => {
@@ -230,6 +332,12 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts }) {
       authenticatedUser = null;
       launcher.hidden = true;
       recognition?.abort?.();
+      if (nativeVoiceActive) void nativeVoicePlugin()?.stopListening?.().catch?.(() => {});
+      nativeVoiceListeners.forEach(handle => handle?.remove?.());
+      nativeVoiceListeners = [];
+      nativeVoiceListenersReady = false;
+      nativeVoiceActive = false;
+      setVoiceListening(false);
       window.speechSynthesis?.cancel?.();
     }
   };
