@@ -58,8 +58,11 @@ test("all technology showcases share the Exclusivos horizontal card layout on de
   ]) {
     assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the common showcase grid");
   }
-  assert.ok(sharedLayout.includes("grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)) !important"));
-  assert.ok(sharedLayout.includes("grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr) !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr)) !important"));
+  assert.ok(sharedLayout.includes("height:300px !important"));
+  assert.ok(sharedLayout.includes("object-fit:contain !important"));
+  assert.ok(sharedLayout.includes("object-position:center !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) !important"));
   assert.ok(sharedLayout.includes("grid-column:1 !important"));
   assert.ok(sharedLayout.includes("grid-column:2 !important"));
 });
@@ -77,7 +80,7 @@ test("desktop JB TECH showcases use the available width and readable compact lab
   assert.match(css, /width:min\(1580px,calc\(100% - 40px\)\) !important/);
   assert.match(css, /max-width:1580px !important/);
   assert.match(css, /font-size:11\.5px !important/);
-  assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,430px\),1fr\)\) !important/);
+  assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,600px\),1fr\)\) !important/);
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
