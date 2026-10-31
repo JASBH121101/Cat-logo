@@ -73,38 +73,38 @@ async function authorizeAdmin(token) {
 }
 
 const productDraftSchema = {
-  type: "OBJECT",
+  type: "object",
   properties: {
-    name: { type: "STRING" },
-    brand: { type: "STRING" },
-    model: { type: "STRING" },
-    catalog_type: { type: "STRING", enum: ["technology", "perfumery", "unknown"] },
-    category: { type: "STRING" },
-    subcategory: { type: "STRING" },
-    description: { type: "STRING" },
-    specs: { type: "STRING" },
-    availability: { type: "STRING", enum: ["available", "on_order", "out_of_stock", "unknown"] },
-    warranty_months: { type: "NUMBER", nullable: true },
-    price_usd: { type: "NUMBER", nullable: true },
-    price_nio: { type: "NUMBER", nullable: true },
+    name: { type: "string" },
+    brand: { type: "string" },
+    model: { type: "string" },
+    catalog_type: { type: "string", enum: ["technology", "perfumery", "unknown"] },
+    category: { type: "string" },
+    subcategory: { type: "string" },
+    description: { type: "string" },
+    specs: { type: "string" },
+    availability: { type: "string", enum: ["available", "on_order", "out_of_stock", "unknown"] },
+    warranty_months: { type: ["number", "null"] },
+    price_usd: { type: ["number", "null"] },
+    price_nio: { type: ["number", "null"] },
     variants: {
-      type: "ARRAY",
+      type: "array",
       items: {
-        type: "OBJECT",
+        type: "object",
         properties: {
-          ram: { type: "STRING" },
-          storage: { type: "STRING" },
-          price_usd: { type: "NUMBER", nullable: true },
-          price_nio: { type: "NUMBER", nullable: true },
-          configuration_availability: { type: "STRING", enum: ["available", "on_order", "out_of_stock", "unknown"] },
+          ram: { type: "string" },
+          storage: { type: "string" },
+          price_usd: { type: ["number", "null"] },
+          price_nio: { type: ["number", "null"] },
+          configuration_availability: { type: "string", enum: ["available", "on_order", "out_of_stock", "unknown"] },
           colors: {
-            type: "ARRAY",
+            type: "array",
             items: {
-              type: "OBJECT",
+              type: "object",
               properties: {
-                color: { type: "STRING" },
-                color_hex: { type: "STRING" },
-                availability: { type: "STRING", enum: ["available", "on_order", "out_of_stock", "unknown"] }
+                color: { type: "string" },
+                color_hex: { type: "string" },
+                availability: { type: "string", enum: ["available", "on_order", "out_of_stock", "unknown"] }
               },
               required: ["color", "color_hex", "availability"]
             }
@@ -114,17 +114,17 @@ const productDraftSchema = {
       }
     },
     perfume: {
-      type: "OBJECT",
+      type: "object",
       properties: {
-        type: { type: "STRING", enum: ["perfume", "set", "unknown"] },
-        family: { type: "STRING", enum: ["arabes", "nicho", "disenador", "unknown"] },
-        concentration: { type: "STRING" },
-        volume_ml: { type: "NUMBER", nullable: true },
-        audience: { type: "STRING", enum: ["Masculino", "Femenino", "Unisex", "unknown"] },
-        scent_family: { type: "STRING" },
-        top_notes: { type: "ARRAY", items: { type: "STRING" } },
-        heart_notes: { type: "ARRAY", items: { type: "STRING" } },
-        base_notes: { type: "ARRAY", items: { type: "STRING" } }
+        type: { type: "string", enum: ["perfume", "set", "unknown"] },
+        family: { type: "string", enum: ["arabes", "nicho", "disenador", "unknown"] },
+        concentration: { type: "string" },
+        volume_ml: { type: ["number", "null"] },
+        audience: { type: "string", enum: ["Masculino", "Femenino", "Unisex", "unknown"] },
+        scent_family: { type: "string" },
+        top_notes: { type: "array", items: { type: "string" } },
+        heart_notes: { type: "array", items: { type: "string" } },
+        base_notes: { type: "array", items: { type: "string" } }
       },
       required: ["type", "family", "concentration", "volume_ml", "audience", "scent_family", "top_notes", "heart_notes", "base_notes"]
     }
@@ -133,19 +133,19 @@ const productDraftSchema = {
 };
 
 const responseSchema = {
-  type: "OBJECT",
+  type: "object",
   properties: {
-    message: { type: "STRING" },
+    message: { type: "string" },
     intent: {
-      type: "STRING",
+      type: "string",
       enum: ["question", "search_product", "provider_price_update", "add_product", "unknown"]
     },
-    product_query: { type: "STRING" },
-    provider_price_usd: { type: "NUMBER", nullable: true },
-    provider_price_nio: { type: "NUMBER", nullable: true },
-    catalog_type: { type: "STRING", enum: ["technology", "perfumery", "unknown"] },
-    missing_fields: { type: "ARRAY", items: { type: "STRING" } },
-    product_draft: { ...productDraftSchema, nullable: true }
+    product_query: { type: "string" },
+    provider_price_usd: { type: ["number", "null"] },
+    provider_price_nio: { type: ["number", "null"] },
+    catalog_type: { type: "string", enum: ["technology", "perfumery", "unknown"] },
+    missing_fields: { type: "array", items: { type: "string" } },
+    product_draft: { ...productDraftSchema, type: ["object", "null"] }
   },
   required: ["message", "intent", "product_query", "provider_price_usd", "provider_price_nio", "catalog_type", "missing_fields", "product_draft"]
 };
