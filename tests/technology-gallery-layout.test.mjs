@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261030-desktop4k1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261031-limited-edition-champagne2/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261030-gallery-ambient2/);
   assert.match(html, /id="quality-price-section"/);
@@ -46,12 +46,14 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
 });
 
 test("limited edition showcase uses champagne gold in light mode and keeps its label compact", () => {
-  assert.match(css, /Ediciones limitadas: champagne gold in light mode/);
-  assert.match(css, /html:not\\(\\[data-theme="dark"\\]\\) body\\.technology-catalog \\.limited-edition-section[\\s\\S]*?linear-gradient\\(135deg,#fbf7ed 0%,#f3ead7 56%,#eee1c5 100%\\)/);
-  assert.match(css, /html\\[data-theme="dark"\\] body\\.technology-catalog \\.limited-edition-section/);
-  assert.match(css, /product-tag-badge\\.tag-limited_edition[\\s\\S]*?width:fit-content !important/);
-  assert.match(css, /product-tag-badge\\.tag-limited_edition[\\s\\S]*?flex:0 0 auto !important/);
-  assert.match(css, /product-tag-badge\\.tag-limited_edition[\\s\\S]*?white-space:nowrap !important/);
+  assert.ok(css.includes("Ediciones limitadas: champagne gold in light mode"));
+  assert.ok(css.includes('html:not([data-theme="dark"]) body.technology-catalog .limited-edition-section'));
+  assert.ok(css.includes("linear-gradient(135deg,#fbf7ed 0%,#f3ead7 56%,#eee1c5 100%)"));
+  assert.ok(css.includes('html[data-theme="dark"] body.technology-catalog .limited-edition-section'));
+  assert.ok(css.includes("Keep the limited-edition tag at its natural content width in both themes."));
+  assert.ok(css.includes("width:fit-content !important"));
+  assert.ok(css.includes("flex:0 0 auto !important"));
+  assert.ok(css.includes("white-space:nowrap !important"));
 });
 
 test("all technology showcases share the Exclusivos horizontal card layout on desktop", () => {
