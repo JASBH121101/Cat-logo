@@ -74,7 +74,7 @@ test("database constraint allows incomplete draft and unpublished records but va
 test("admin hides the floating back-to-top control and forces fresh script URLs", () => {
   assert.match(ui, /!document\.body\.classList\.contains\("admin-body"\)/);
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
-  assert.match(html, /admin\.js\?v=20261031-[^"]+/);
+  assert.match(html, /src="admin\.js\?v=\d{8}-[^"]+"/);
   assert.match(html, /admin-private-chat\.css\?v=20261029-chat-reply-theme3/);
   assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
 });
@@ -408,15 +408,15 @@ test("disabling remembered sessions also disables the optional biometric app loc
 });
 
 
-test("television and audio variants hide RAM/storage in the DOM, styling and saved payload", () => {
+test("television and audio variants generate hidden RAM/storage labels and exclude them from saved payload", () => {
   assert.match(admin, /function categoryUsesColorOnlyVariants\(category[\s\S]*?\["Televisores", "Audio"\]/);
   assert.match(admin, /const storageRaw = colorOnly \? "" : read\("\[data-group-storage\]"\)/);
   assert.match(admin, /const ramRaw = colorOnly \? "" : read\("\[data-group-ram\]"\)/);
   assert.match(admin, /group\.querySelector\("\.variant-ram-label"\)/);
   assert.match(admin, /group\.querySelector\("\.variant-storage-label"\)/);
-  assert.match(html, /class="variant-ram-label"/);
-  assert.match(html, /class="variant-price-usd-label"/);
-  assert.match(html, /class="variant-price-nio-label"/);
+  assert.match(admin, /<label class="variant-ram-label">/);
+  assert.match(admin, /<label class="variant-price-usd-label">/);
+  assert.match(admin, /<label class="variant-price-nio-label">/);
   assert.match(accessibilityCss, /technology-variants-section\.is-color-only \.variant-storage-label[\s\S]*?display: none !important/);
   assert.match(accessibilityCss, /technology-variants-section\.is-color-only \.variant-ram-label/);
 });

@@ -86,7 +86,7 @@ after(async () => {
   await new Promise(resolveClose => server.close(resolveClose));
 });
 
-test("mobile admin inbox hides the empty thread and keeps long history internally scrollable in both themes", async () => {
+test("mobile admin inbox stays compact without the retired global catalog selector and keeps long history internally scrollable in both themes", async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({
@@ -147,8 +147,8 @@ test("mobile admin inbox hides the empty thread and keeps long history internall
     });
     assert.equal(compactHeader.greetingDisplay, "none",
       "non-dashboard admin sections should not keep the large welcome block");
-    assert.ok(compactHeader.contextHeight > 0 && compactHeader.contextHeight < 90,
-      "catalog selector should collapse to a compact context bar: " + JSON.stringify(compactHeader));
+    assert.equal(compactHeader.contextHeight, -1,
+      "the retired global catalog selector should remain absent after scope selection moved into the product form: " + JSON.stringify(compactHeader));
     assert.ok(compactHeader.dashboardTopHeight < 100,
       "compact context row should not reserve the old dashboard header height");
     assert.equal(compactHeader.descriptionDisplay, "none",
