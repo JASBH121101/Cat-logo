@@ -330,7 +330,7 @@ jobs:
   production-visual-audit:
     name: Read-only production visual audit
     # Runs independently so commerce-test failures do not suppress visual evidence.
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.audit_production) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.audit_production }}
     runs-on: ubuntu-latest
     env:
       AI_REVIEW_ENABLED: ${{ vars.ENABLE_AI_VISUAL_REVIEW == 'true' && secrets.GEMINI_API_KEY != '' }}
