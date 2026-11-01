@@ -690,6 +690,8 @@ function normalizeTechnologyCategory(value = "") {
   if (["celular", "celulares", "smartphone", "smartphones", "telefono", "telefonos", "movil", "moviles", "mobile", "mobiles"].includes(normalized)) return "Celulares";
   if (["laptop", "laptops", "portatil", "portatiles", "notebook", "notebooks"].includes(normalized)) return "Laptops";
   if (["tablet", "tablets", "tableta", "tabletas"].includes(normalized)) return "Tablets";
+  if (["televisor", "televisores", "tv", "television", "televisions"].includes(normalized)) return "Televisores";
+  if (["audio", "sonido", "sonidos", "audio equipment", "sound system", "sound systems"].includes(normalized)) return "Audio";
   if (["consola", "consolas", "console", "consoles", "videojuego", "videojuegos", "gaming console", "gaming consoles"].includes(normalized)) return "Consolas";
   return original;
 }
@@ -714,8 +716,9 @@ function updateCategoryVariantVisibility() {
   $("#technology-variants-section")?.classList.toggle("is-color-only", colorOnly);
 
   if (addVariantButton) {
+    addVariantButton.hidden = colorOnly;
     addVariantButton.classList.toggle("hidden", colorOnly);
-    addVariantButton.textContent = colorOnly ? "+ Agregar variante" : "+ Agregar variante";
+    addVariantButton.textContent = "+ Agregar variante";
     addVariantButton.title = colorOnly
       ? "Televisores y audio usan una configuración principal con precio y colores."
       : "Agregar otra variante de capacidad, RAM, precio y color";
@@ -726,10 +729,12 @@ function updateCategoryVariantVisibility() {
 
   groups.forEach((group, index) => {
     const storageLabel = group.querySelector(".variant-storage-label");
-    const ramInput = group.querySelector("[data-group-ram]");
-    const ramLabel = ramInput?.closest("label");
+    const ramLabel = group.querySelector(".variant-ram-label") ||
+      group.querySelector("[data-group-ram]")?.closest("label");
     [storageLabel, ramLabel].filter(Boolean).forEach(label => {
+      label.hidden = colorOnly;
       label.classList.toggle("hidden", colorOnly);
+      label.setAttribute("aria-hidden", String(colorOnly));
     });
     group.classList.toggle("variant-color-only", colorOnly);
 
@@ -753,7 +758,7 @@ function updateCategoryVariantVisibility() {
       if (colorOnly) {
         summary.textContent = group.dataset.baseGroup === "true"
           ? "Configuración principal · precio, disponibilidad y colores"
-          : "Configuración guardada · precio, disponibilidad y colores";
+          : "Configuración adicional · precio, disponibilidad y colores";
       } else {
         summary.textContent = group.dataset.baseGroup === "true"
           ? "Configuración principal · expandí para editar precio, disponibilidad y colores"
@@ -1992,9 +1997,9 @@ function variantGroupMarkup(v = {}, isBase = false) {
   </div>`;
   const fields = `<div class="variant-config-fields">
       <label class="variant-storage-label"><span class="variant-storage-label-row"><select class="variant-storage-unit" data-group-storage-unit aria-label="Unidad de almacenamiento"><option value="GB" ${storageUnit === "GB" ? "selected" : ""}>GB</option><option value="TB" ${storageUnit === "TB" ? "selected" : ""}>TB</option></select><span class="variant-storage-name">Almacenamiento</span></span><input data-group-storage type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(storage)}"></label>
-      <label>GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
-      <label>Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_usd ?? "")}"></span></label>
-      <label>Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_nio ?? "")}"></span></label>
+      <label class="variant-ram-label">GB de memoria RAM<input data-group-ram type="number" min="1" step="1" inputmode="numeric" value="${escapeHtml(ram)}"></label>
+      <label class="variant-price-usd-label">Precio en dólares<span class="admin-input-unit"><span>$</span><input data-group-price-usd type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_usd ?? "")}"></span></label>
+      <label class="variant-price-nio-label">Precio en córdobas<span class="admin-input-unit"><span>C$</span><input data-group-price-nio type="number" min="0" step="0.01" inputmode="decimal" value="${escapeHtml(v.price_nio ?? "")}"></span></label>
       <label class="variant-configuration-availability-field">Disponibilidad de la variante
         <select data-group-availability aria-label="Disponibilidad de esta configuración">
           <option value="" ${!configurationAvailability ? "selected" : ""}>Pendiente de confirmar</option>
@@ -2136,7 +2141,10 @@ function updateVariantRowHeadings() {
     const storage = group.querySelector("[data-group-storage]")?.value.trim();
     const ram = group.querySelector("[data-group-ram]")?.value.trim();
     const storageUnit = group.querySelector("[data-group-storage-unit]")?.value || "GB";
-    const title = [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || (group.dataset.baseGroup === "true" ? "Configuración principal" : "Nueva configuración");
+    const colorOnly = categoryUsesColorOnlyVariants($("#product-category")?.value || "");
+    const title = colorOnly
+      ? (group.dataset.baseGroup === "true" ? "Configuración principal" : "Configuración adicional")
+      : [formatStorageLabel(storage, storageUnit), ram ? ram + " GB RAM" : ""].filter(Boolean).join(" · ") || (group.dataset.baseGroup === "true" ? "Configuración principal" : "Nueva configuración");
     const heading = group.querySelector("[data-variant-group-title]");
     if (heading) heading.textContent = title;
     const summary = group.querySelector("[data-variant-group-summary]");
@@ -2147,7 +2155,9 @@ function updateVariantRowHeadings() {
       const availabilityLabel = availability === "available" ? "Disponible"
         : availability === "order" || availability === "on_order" ? "Por pedido"
         : availability === "out_of_stock" ? "Agotado" : "Disponibilidad pendiente";
-      summary.textContent = colors + " color(es) · " + availabilityLabel + " · tocá para desplegar";
+      summary.textContent = colorOnly
+        ? colors + " color(es) · " + availabilityLabel
+        : colors + " color(es) · " + availabilityLabel + " · tocá para desplegar";
     }
     group.querySelectorAll("[data-variant-row]").forEach((row, index) => {
       const colorName = row.querySelector("[data-variant-color]")?.value.trim();
@@ -2649,6 +2659,7 @@ quickColorPalette?.addEventListener("click", event => {
 
 $("#add-variant-button")?.addEventListener("click", event => {
   event.preventDefault();
+  if (categoryUsesColorOnlyVariants($("#product-category")?.value || "")) return;
   const container = $("#product-variants-list");
   if (!container) return;
   const groupHtml = variantGroupMarkup({ storage: "", ram: "", price_usd: "", price_nio: "" }, false);
@@ -5957,8 +5968,11 @@ async function collectVariants(productId, existingVariants = [], uploadIssues = 
     const group = allGroups[groupIndex];
     const isBase = group.dataset.baseGroup === "true";
     const read = selector => group.querySelector(selector)?.value.trim() || "";
-    const storageRaw = read("[data-group-storage]");
-    const ramRaw = read("[data-group-ram]");
+    const colorOnly = categoryUsesColorOnlyVariants($("#product-category")?.value || "");
+    // Hidden legacy values remain in the editor for reversible category changes,
+    // but they are not serialized for TV/audio products.
+    const storageRaw = colorOnly ? "" : read("[data-group-storage]");
+    const ramRaw = colorOnly ? "" : read("[data-group-ram]");
     const storageUnit = read("[data-group-storage-unit]") || "GB";
     const storage = storageRaw ? formatStorageLabel(storageRaw, storageUnit) : "";
     const ram = ramRaw ? `${ramRaw} GB` : "";
