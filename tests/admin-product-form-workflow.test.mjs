@@ -17,6 +17,7 @@ const accessibilityCss = readFileSync(new URL("../admin-accessibility.css", impo
 const biometricPlugin = readFileSync(new URL("../mobile/native-android/JbBiometricAuthPlugin.java", import.meta.url), "utf8");
 const biometricBridge = readFileSync(new URL("../mobile/biometric-auth.js", import.meta.url), "utf8");
 const prepareWeb = readFileSync(new URL("../mobile/prepare-web.mjs", import.meta.url), "utf8");
+const androidWorkflow = readFileSync(new URL("../.github/workflows/build-jb-manager-android.yml", import.meta.url), "utf8");
 
 
 test("product draft and unpublished saves require a name but defer publish-only fields", () => {
@@ -29,15 +30,20 @@ test("product draft and unpublished saves require a name but defer publish-only 
 test("RAM and storage fields are reserved for categories that use those specifications", () => {
   assert.match(admin, /function categoryUsesRamStorage[\s\S]*?\["Celulares", "Tablets", "Laptops"\]/);
   assert.match(admin, /function categoryUsesColorOnlyVariants[\s\S]*?\["Televisores", "Audio"\]/);
+  assert.match(admin, /label\.hidden = colorOnly/);
   assert.match(admin, /label\.classList\.toggle\("hidden", colorOnly\)/);
-  assert.match(admin, /const ramRaw = read\("\[data-group-ram\]"\);[\s\S]*?const ram = ramRaw \?/);
+  assert.match(admin, /const storageRaw = colorOnly \? "" : read\("\[data-group-storage\]"\)/);
+  assert.match(admin, /const ramRaw = colorOnly \? "" : read\("\[data-group-ram\]"\);[\s\S]*?const ram = ramRaw \?/);
   assert.doesNotMatch(admin, /requiresConfiguration && !options\.allowIncomplete && !ramRaw/);
 });
 
 test("variant controls and specifications adapt immediately to the selected technology category", () => {
+  assert.match(admin, /addVariantButton\.hidden = colorOnly/);
   assert.match(admin, /addVariantButton\.classList\.toggle\("hidden", colorOnly\)/);
   assert.match(admin, /addVariantButton\.title = colorOnly[\s\S]*?Agregar otra variante de capacidad, RAM, precio y color/);
   assert.match(admin, /label\.classList\.toggle\("hidden", colorOnly\)/);
+  assert.match(admin, /function updateVariantRowHeadings\(\)[\s\S]*?const colorOnly = categoryUsesColorOnlyVariants/);
+  assert.match(admin, /if \(categoryUsesColorOnlyVariants\(\$\("#product-category"\)\?\.value \|\| ""\)\) return/);
   assert.match(admin, /updateCategoryVariantVisibility\(\);[\s\S]*?const focusSelector = categoryUsesRamStorage\(\) \?[\s\S]*?data-group-price-usd/);
   assert.match(html, /id="base-color-manager" class="base-color-manager primary-config-slot"/);
 });
@@ -399,4 +405,35 @@ test("native biometric plugin delegates matching to Android and stores only an e
 test("disabling remembered sessions also disables the optional biometric app lock", () => {
   assert.match(admin, /if \(!nextEnabled && biometric\) \{[\s\S]*?if \(status\?\.enabled\) await biometric\.disable\(\)/);
   assert.match(admin, /El desbloqueo con huella también quedó desactivado/);
+});
+
+
+test("television and audio variants hide RAM/storage in the DOM, styling and saved payload", () => {
+  assert.match(admin, /function categoryUsesColorOnlyVariants\(category[\s\S]*?\["Televisores", "Audio"\]/);
+  assert.match(admin, /const storageRaw = colorOnly \? "" : read\("\[data-group-storage\]"\)/);
+  assert.match(admin, /const ramRaw = colorOnly \? "" : read\("\[data-group-ram\]"\)/);
+  assert.match(admin, /group\.querySelector\("\.variant-ram-label"\)/);
+  assert.match(admin, /group\.querySelector\("\.variant-storage-label"\)/);
+  assert.match(html, /class="variant-ram-label"/);
+  assert.match(html, /class="variant-price-usd-label"/);
+  assert.match(html, /class="variant-price-nio-label"/);
+  assert.match(accessibilityCss, /technology-variants-section\.is-color-only \.variant-storage-label[\s\S]*?display: none !important/);
+  assert.match(accessibilityCss, /technology-variants-section\.is-color-only \.variant-ram-label/);
+});
+
+test("tag groups stay responsive and retain their catalog-specific visibility", () => {
+  assert.match(html, /product-tag-group-heading/);
+  assert.match(html, /product-tech-tag-options/);
+  assert.match(html, /product-custom-tags-field/);
+  assert.match(admin, /product-tech-tag-options[\s\S]*?classList\.toggle\("hidden", isPerfume\)/);
+  assert.match(accessibilityCss, /product-tag-options\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(accessibilityCss, /max-width:\s*760px/);
+  assert.match(accessibilityCss, /max-width:\s*380px/);
+});
+
+test("APK build refreshes and verifies the shared admin accessibility stylesheet", () => {
+  assert.match(html, /admin-accessibility\.css\?v=20261101-tags-and-variants2/);
+  assert.match(html, /admin-workflow\.css\?v=20261101-category-aware-form1/);
+  assert.match(androidWorkflow, /admin-accessibility\.css/);
+  assert.match(androidWorkflow, /node --test[\s\S]*tests\/admin-product-form-workflow\.test\.mjs/);
 });
