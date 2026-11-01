@@ -122,5 +122,5 @@ test("mobile drawer covers the full viewport instead of leaving the dashboard to
 test("switching admin sections resets scroll so the sticky header cannot cover the panel heading", () => {
   assert.ok(adminJs.includes('window.scrollTo({ top: 0, left: 0, behavior: "auto" })'));
   assert.ok(adminJs.indexOf('setMobileSidebarOpen(false);', adminJs.indexOf('function showAdminSection(section)')) < adminJs.indexOf('window.scrollTo({ top: 0, left: 0, behavior: "auto" })', adminJs.indexOf('function showAdminSection(section)')));
-  assert.ok(/admin\.js\?v=20261031-[^"]+/.test(html));
+  assert.ok(/src="admin\.js\?v=\d{8}-[^"]+"/.test(html));
 });
