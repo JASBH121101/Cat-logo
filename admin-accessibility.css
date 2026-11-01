@@ -1042,3 +1042,38 @@ html[data-theme="dark"] body.admin-body #technology-variants-section.is-color-on
     grid-column: 1;
   }
 }
+
+
+/* JB MANAGER · hard-hide capacity fields on televisions/audio. */
+html body.admin-body #technology-variants-section.is-color-only .variant-storage-label,
+html body.admin-body #technology-variants-section.is-color-only .variant-ram-label {
+  display: none !important;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-config-fields {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start !important;
+  gap: 12px !important;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-price-usd-label {
+  grid-column: 1 !important;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-price-nio-label {
+  grid-column: 2 !important;
+}
+html body.admin-body #technology-variants-section.is-color-only .variant-configuration-availability-field {
+  grid-column: 1 / -1 !important;
+}
+html body.admin-body #technology-variants-section.is-color-only #add-variant-button {
+  display: none !important;
+}
+@media (max-width: 760px) {
+  html body.admin-body #technology-variants-section.is-color-only .variant-config-fields {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  html body.admin-body #technology-variants-section.is-color-only .variant-price-usd-label,
+  html body.admin-body #technology-variants-section.is-color-only .variant-price-nio-label,
+  html body.admin-body #technology-variants-section.is-color-only .variant-configuration-availability-field {
+    grid-column: 1 !important;
+  }
+}
