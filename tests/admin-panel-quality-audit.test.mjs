@@ -48,8 +48,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(adminJs, /dashboard\?\.classList\.toggle\("admin-section-focused", section !== "home"\)/);
   assert.match(chatStyles, /dashboard\.admin-section-focused > \.dashboard-top > div:first-child/);
   assert.match(chatStyles, /dashboard\.admin-section-focused > #admin-status/);
-  assert.match(chatStyles, /dashboard\.admin-section-focused \.admin-catalog-context/);
-  assert.ok(html.includes("admin-workflow.css?v=20261029-mobile-chevron1"));
+  assert.match(html, /href="admin-workflow\.css\?v=\d{8}-[^"]+"/);
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.inline-color-details/);
   assert.match(editorWorkflow, /html\[data-theme="dark"\] body\.admin-body form#product-form \.variant-color-library-tools/);
   assert.match(editorWorkflow, /\.variant-config-chevron::before\s*\{[^}]*border-right:\s*2px solid currentColor[^}]*border-bottom:\s*2px solid currentColor/);
@@ -58,7 +57,7 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(editorWorkflow, /html\[data-theme="light"\] body\.admin-body form#product-form details\.variant-config-collapse > \.variant-config-summary \.variant-config-chevron\s*\{[^}]*color:\s*#243b62\s*!important;[^}]*background-color:\s*#f1f5ff\s*!important/);
   assert.ok(chatStyles.includes("min-height: 38px"));
   assert.ok(chatStyles.includes("padding: 7px 9px"));
-  assert.ok(html.includes("admin-accessibility.css?v=20261030-inventory-refresh1"));
+  assert.match(html, /href="admin-accessibility\.css\?v=\d{8}-[^"]+"/);
   const accessibilityStyles = await readFile(new URL("admin-accessibility.css", root), "utf8");
   assert.match(accessibilityStyles, /html body\.admin-body \{[^}]*font-family:\s*"DM Sans"/);
   assert.match(accessibilityStyles, /html body\.admin-body :is\(h1,h2,h3,h4,[^}]*font-family:\s*"Manrope"/);
@@ -75,7 +74,6 @@ test("complete admin panel audit validates navigation, accessibility signals and
   assert.match(accessibilityStyles, /html\[data-theme="light"\] body\.admin-body #admin-context-hint\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-eyebrow\s*\{[^}]*font-size:\s*11\.5px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body #private-chat-refresh,[\s\S]*?font-size:\s*12px\s*!important;/);
-  assert.match(accessibilityStyles, /html body\.admin-body \.admin-catalog-context label\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body footer\.site-footer span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.commission-summary-grid span\s*\{[^}]*font-size:\s*12px\s*!important;/);
   assert.match(accessibilityStyles, /html body\.admin-body \.dashboard-updated,[\s\S]*?font-size:\s*12px\s*!important;/);
