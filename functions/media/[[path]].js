@@ -1,6 +1,6 @@
 const SUPABASE_STORAGE_ORIGIN = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const STORAGE_BUCKET = "product-images";
-const IMAGE_EXTENSIONS = /\.(?:avif|gif|jpe?g|png|webp)$/i;
+const IMAGE_EXTENSIONS = /\.(?:avif|gif|jpe?g|jfif|png|webp)$/i;
 
 function errorResponse(status, message) {
   return new Response(message, {
