@@ -2,8 +2,13 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
-const CATALOG_MEDIA_SUPABASE_ORIGIN = String(CONFIG.supabaseUrl || "").replace(/\\/+$/, "");
+const CATALOG_MEDIA_SUPABASE_ORIGIN = stripCatalogTrailingSlashes(CONFIG.supabaseUrl || "");
 const CATALOG_MEDIA_BUCKET = String(CONFIG.storageBucket || "product-images");
+function stripCatalogTrailingSlashes(value) {
+  let text = String(value || "");
+  while (text.endsWith("/")) text = text.slice(0, -1);
+  return text;
+}
 
 function catalogMediaUrl(value) {
   const original = String(value || "").trim();
@@ -17,7 +22,7 @@ function catalogMediaUrl(value) {
     if (segments.length < 2 || segments.some(segment =>
       !segment || segment === "." || segment === ".." || !/^[a-z0-9._-]+$/i.test(segment)
     )) return original;
-    const base = String(CONFIG.publicCatalogUrl || window.location.origin).replace(/\\/+$/, "");
+    const base = stripCatalogTrailingSlashes(CONFIG.publicCatalogUrl || window.location.origin);
     return base + "/media/" + segments.map(encodeURIComponent).join("/");
   } catch {
     return original;
@@ -420,7 +425,7 @@ function getProductVariants(product) {
               .map(url => catalogMediaUrl(url.trim()))
               .filter(Boolean))]
           : [];
-        return storedImages.length ? storedImages : (legacyImage ? [legacyImage] : []);
+        return storedImages.length ? storedImages : (legacyImage ? [catalogMediaUrl(legacyImage)] : []);
       })(),
       image_url: (() => {
         const legacyImage = String(item.image_url || item.imageUrl || "").trim();
