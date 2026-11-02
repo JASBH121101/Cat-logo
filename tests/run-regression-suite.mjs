@@ -15,7 +15,7 @@ export const regressionGroups = [
     test("tests/conversion-trust.test.mjs"), test("tests/design-authenticity-audit.test.mjs"),
     test("tests/design-quality-audit.test.mjs"), test("tests/ai-reviewer-reliability.test.mjs"), test("tests/perfume-page-utilization.test.mjs"), test("tests/personal-experience-qa-profile.test.mjs"), test("tests/limited-edition-sections.test.mjs"),
     test("tests/product-tag-formatting.test.mjs"), test("tests/catalog-tag-category-overlap.test.mjs"),
-    test("tests/asset-cache-contract.test.mjs"),
+    test("tests/asset-cache-contract.test.mjs"), test("tests/egress-optimization.test.mjs"),
   ]},
   { name: "admin-and-catalog", tests: [
     test("tests/admin-notifications.test.mjs"), test("tests/admin-panel-quality-audit.test.mjs"), test("tests/jb-manager-ai.test.mjs"),

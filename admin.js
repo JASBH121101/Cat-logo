@@ -3798,9 +3798,16 @@ document.getElementById("private-chat-admin-close")?.addEventListener("click", (
   }
 });
 privateChatReplyForm?.addEventListener("submit", event => void privateChatSendAdminReply(event));
-window.setInterval(() => {
-  if (currentUser && dashboard && !dashboard.classList.contains("hidden")) void loadPrivateChatInbox({ silent: true });
-}, 15000);
+const PRIVATE_CHAT_ADMIN_REFRESH_INTERVAL_MS = 45_000;
+function refreshPrivateChatAdminInboxWhenVisible() {
+  if (currentUser && dashboard && !dashboard.classList.contains("hidden") &&
+      document.visibilityState === "visible") {
+    void loadPrivateChatInbox({ silent: true });
+  }
+}
+window.setInterval(refreshPrivateChatAdminInboxWhenVisible, PRIVATE_CHAT_ADMIN_REFRESH_INTERVAL_MS);
+document.addEventListener("visibilitychange", refreshPrivateChatAdminInboxWhenVisible);
+window.addEventListener("focus", refreshPrivateChatAdminInboxWhenVisible);
 
 async function loadProducts() {
   if (!supabase || !currentUser) return false;
@@ -5845,7 +5852,7 @@ async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onPr
     xhr.setRequestHeader("Authorization","Bearer "+accessToken);
     xhr.setRequestHeader("Content-Type",contentType);
     xhr.setRequestHeader("x-upsert","false");
-    xhr.setRequestHeader("cache-control","max-age=3600");
+    xhr.setRequestHeader("cache-control","max-age=31536000, immutable");
     xhr.upload.addEventListener("progress",event=>{
       if(!event.lengthComputable||typeof onProgress!=="function")return;
       const percent=Math.max(0,Math.min(100,Math.round(event.loaded/event.total*100)));

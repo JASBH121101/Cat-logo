@@ -1,6 +1,40 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const CONFIG = window.CATALOG_CONFIG || {};
+
+const CATALOG_MEDIA_SUPABASE_ORIGIN = stripCatalogTrailingSlashes(CONFIG.supabaseUrl || "");
+const CATALOG_MEDIA_BUCKET = String(CONFIG.storageBucket || "product-images");
+function stripCatalogTrailingSlashes(value) {
+  let text = String(value || "");
+  while (text.endsWith("/")) text = text.slice(0, -1);
+  return text;
+}
+function catalogMediaBaseUrl() {
+  const host = String(window.location.hostname || "").toLowerCase();
+  if (host === "jb-collections.pages.dev" || host.endsWith(".jb-collections.pages.dev")) {
+    return window.location.origin;
+  }
+  return stripCatalogTrailingSlashes(CONFIG.publicCatalogUrl || window.location.origin);
+}
+
+function catalogMediaUrl(value) {
+  const original = String(value || "").trim();
+  if (!original || !CATALOG_MEDIA_SUPABASE_ORIGIN) return original;
+  try {
+    const parsed = new URL(original, window.location.href);
+    if (parsed.origin !== CATALOG_MEDIA_SUPABASE_ORIGIN || parsed.search || parsed.hash) return original;
+    const prefix = "/storage/v1/object/public/" + CATALOG_MEDIA_BUCKET + "/";
+    if (!parsed.pathname.startsWith(prefix)) return original;
+    const segments = parsed.pathname.slice(prefix.length).split("/").map(segment => decodeURIComponent(segment));
+    if (segments.length < 2 || segments.some(segment =>
+      !segment || segment === "." || segment === ".." || !/^[a-z0-9._-]+$/i.test(segment)
+    )) return original;
+    const base = catalogMediaBaseUrl();
+    return base + "/media/" + segments.map(encodeURIComponent).join("/");
+  } catch {
+    return original;
+  }
+}
 const $ = selector => document.querySelector(selector);
 const whatsappNumber = String(CONFIG.whatsappNumber || "").replace(/\D/g, "");
 const categoryDefinitions = [
@@ -90,7 +124,7 @@ function getImages(product) {
   const images = Array.isArray(raw) ? raw : [];
   return [...new Set([...images, product?.image_url]
     .filter(item => typeof item === "string")
-    .map(item => item.trim())
+    .map(item => catalogMediaUrl(item.trim()))
     .filter(Boolean))];
 }
 
