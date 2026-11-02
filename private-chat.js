@@ -329,4 +329,13 @@ input.addEventListener("input", () => {
 });
 initializePrivateChatTheme();
 void initialize();
-setInterval(() => { if (sessionToken && !expired) void refreshConversation(); }, 6500);
+
+const PRIVATE_CHAT_REFRESH_INTERVAL_MS = 30_000;
+function refreshPrivateChatWhenVisible() {
+  if (sessionToken && !expired && document.visibilityState === "visible") {
+    void refreshConversation();
+  }
+}
+window.setInterval(refreshPrivateChatWhenVisible, PRIVATE_CHAT_REFRESH_INTERVAL_MS);
+document.addEventListener("visibilitychange", refreshPrivateChatWhenVisible);
+window.addEventListener("focus", refreshPrivateChatWhenVisible);
