@@ -9,6 +9,13 @@ function stripCatalogTrailingSlashes(value) {
   while (text.endsWith("/")) text = text.slice(0, -1);
   return text;
 }
+function catalogMediaBaseUrl() {
+  const host = String(window.location.hostname || "").toLowerCase();
+  if (host === "jb-collections.pages.dev" || host.endsWith(".jb-collections.pages.dev")) {
+    return window.location.origin;
+  }
+  return stripCatalogTrailingSlashes(CONFIG.publicCatalogUrl || window.location.origin);
+}
 
 function catalogMediaUrl(value) {
   const original = String(value || "").trim();
@@ -22,7 +29,7 @@ function catalogMediaUrl(value) {
     if (segments.length < 2 || segments.some(segment =>
       !segment || segment === "." || segment === ".." || !/^[a-z0-9._-]+$/i.test(segment)
     )) return original;
-    const base = stripCatalogTrailingSlashes(CONFIG.publicCatalogUrl || window.location.origin);
+    const base = catalogMediaBaseUrl();
     return base + "/media/" + segments.map(encodeURIComponent).join("/");
   } catch {
     return original;
