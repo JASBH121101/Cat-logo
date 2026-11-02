@@ -29,6 +29,8 @@ test("technology and perfume catalogs route existing Supabase product images thr
   for (const source of [technology, perfumery]) {
     assert.match(source, /function catalogMediaUrl\(value\)/);
     assert.match(source, /\/media\//);
+    assert.match(source, /catalogMediaBaseUrl\(\)/);
+    assert.match(source, /host\.endsWith\("\.jb-collections\.pages\.dev"\)/);
     assert.match(source, /storage\/v1\/object\/public/);
   }
   assert.match(technology, /catalogMediaUrl\(value\.trim\(\)\)/);
