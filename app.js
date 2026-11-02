@@ -2,6 +2,28 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
+const CATALOG_MEDIA_SUPABASE_ORIGIN = String(CONFIG.supabaseUrl || "").replace(/\\/+$/, "");
+const CATALOG_MEDIA_BUCKET = String(CONFIG.storageBucket || "product-images");
+
+function catalogMediaUrl(value) {
+  const original = String(value || "").trim();
+  if (!original || !CATALOG_MEDIA_SUPABASE_ORIGIN) return original;
+  try {
+    const parsed = new URL(original, window.location.href);
+    if (parsed.origin !== CATALOG_MEDIA_SUPABASE_ORIGIN || parsed.search || parsed.hash) return original;
+    const prefix = "/storage/v1/object/public/" + CATALOG_MEDIA_BUCKET + "/";
+    if (!parsed.pathname.startsWith(prefix)) return original;
+    const segments = parsed.pathname.slice(prefix.length).split("/").map(segment => decodeURIComponent(segment));
+    if (segments.length < 2 || segments.some(segment =>
+      !segment || segment === "." || segment === ".." || !/^[a-z0-9._-]+$/i.test(segment)
+    )) return original;
+    const base = String(CONFIG.publicCatalogUrl || window.location.origin).replace(/\\/+$/, "");
+    return base + "/media/" + segments.map(encodeURIComponent).join("/");
+  } catch {
+    return original;
+  }
+}
+
 // Selector breve usado por los controles de la ficha de producto.
 const $ = selector => document.querySelector(selector);
 const whatsappNumber = String(CONFIG.whatsappNumber || "").replace(/\D/g, "");
@@ -345,7 +367,7 @@ function getProductImages(product) {
 
   return [...new Set([...list, product?.image_url]
     .filter(value => typeof value === "string")
-    .map(value => value.trim())
+    .map(value => catalogMediaUrl(value.trim()))
     .filter(Boolean))];
 }
 
@@ -395,7 +417,7 @@ function getProductVariants(product) {
         const storedImages = Array.isArray(item.images)
           ? [...new Set(item.images
               .filter(url => typeof url === "string")
-              .map(url => url.trim())
+              .map(url => catalogMediaUrl(url.trim()))
               .filter(Boolean))]
           : [];
         return storedImages.length ? storedImages : (legacyImage ? [legacyImage] : []);
@@ -405,7 +427,7 @@ function getProductVariants(product) {
         const firstStoredImage = Array.isArray(item.images)
           ? item.images.find(url => typeof url === "string" && url.trim())
           : "";
-        return String(firstStoredImage || legacyImage).trim();
+        return catalogMediaUrl(String(firstStoredImage || legacyImage).trim());
       })()
     };
   }).filter(item => item && (item.storage || item.ram || item.color))
@@ -488,7 +510,7 @@ function getProductColors(product, configuration = null) {
     return {
       name: String(color.name || color.color || "").trim(),
       type: normalizeVariantAvailability(color.type),
-      image_url: String(color.image_url || color.imageUrl || "").trim(),
+      image_url: catalogMediaUrl(String(color.image_url || color.imageUrl || "").trim()),
       color_hex: validHex(color.color_hex || color.hex)
     };
   }).filter(color => color && color.name);
@@ -1438,7 +1460,7 @@ function renderVariantButtonGroup(variants, selected, field, title) {
 function renderProductGallery(product, images, caption = "") {
   const photoUrls = [...new Set((Array.isArray(images) ? images : [])
     .filter(url => typeof url === "string")
-    .map(url => url.trim())
+    .map(url => catalogMediaUrl(url.trim()))
     .filter(Boolean))];
   if (!photoUrls.length) {
     return '<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Foto por agregar</span></div>';
