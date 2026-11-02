@@ -60,7 +60,7 @@ jobs:
           while IFS= read -r -d '' file; do
             echo "Checking $file"
             case "$file" in
-              functions/api/*|functions/_shared/*|api/share.js)
+              functions/api/*|functions/_shared/*|functions/media/*|api/share.js)
                 node --input-type=module --check < "$file"
                 ;;
               *)
