@@ -8,6 +8,7 @@ const technology = read("app.js");
 const perfumery = read("perfumeria.js");
 const customerChat = read("private-chat.js");
 const admin = read("admin.js");
+const workflow = read(".github/workflows/catalog-static-checks.yml");
 
 test("public product media is proxied through Cloudflare cache without exposing arbitrary origins", () => {
   assert.match(mediaRoute, /SUPABASE_STORAGE_ORIGIN = "https:\/\/uwqnoadelnnplcvqqlyz\.supabase\.co"/);
@@ -21,6 +22,7 @@ test("public product media is proxied through Cloudflare cache without exposing 
   assert.match(mediaRoute, /context\.params\?\.path/);
   assert.match(mediaRoute, /request\.method !== "GET" && request\.method !== "HEAD"/);
   assert.doesNotMatch(mediaRoute, /Authorization/);
+  assert.match(workflow, /functions\/media\/\*/);
 });
 
 test("technology and perfume catalogs route existing Supabase product images through Cloudflare", () => {
