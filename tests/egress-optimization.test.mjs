@@ -17,6 +17,7 @@ test("public product media is proxied through Cloudflare cache without exposing 
   assert.match(mediaRoute, /cache\.put\(cacheKey, response\.clone\(\)\)/);
   assert.match(mediaRoute, /max-age=31536000, immutable/);
   assert.match(mediaRoute, /IMAGE_EXTENSIONS/);
+  assert.match(mediaRoute, /jfif/);
   assert.match(mediaRoute, /context\.params\?\.path/);
   assert.match(mediaRoute, /request\.method !== "GET" && request\.method !== "HEAD"/);
   assert.doesNotMatch(mediaRoute, /Authorization/);
