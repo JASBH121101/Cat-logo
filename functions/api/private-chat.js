@@ -69,7 +69,7 @@ function rateLimit(request, action) {
   return current.count > limit;
 }
 async function rpc(name, params, env, accessToken) {
-  const endpoint = String(env?.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  const endpoint = String(env?.NEON_DATA_API_URL || "").replace(/\/+$/, "");
   if (!endpoint) {
     const error = new Error("Neon Data API no está configurada.");
     error.status = 503;
@@ -228,7 +228,7 @@ export async function onRequest(context) {
   if (request.method !== "POST") return json(405, { ok: false, error: "method_not_allowed" }, origin);
   if (!allowedOrigin(origin)) return json(403, { ok: false, error: "origin_not_allowed" }, "");
   const authorization = request.headers.get("Authorization") || "";
-  const tokenMatch = authorization.match(/^Bearer\\s+([A-Za-z0-9._~-]+)$/i);
+  const tokenMatch = authorization.match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
   if (!tokenMatch) return json(401, { ok: false, error: "neon_token_required" }, origin);
   const neonAccessToken = tokenMatch[1];
   const declaredLength = Number(request.headers.get("Content-Length") || 0);
