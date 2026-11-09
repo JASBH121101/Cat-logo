@@ -171,14 +171,14 @@ async function dispatchAdminPush(sessionHash, env = {}, clientIp = "", accessTok
       dispatch_secret: dispatchSecret,
       conversation_id: claim.conversation_id,
       delivered
-    }, clientIp);
+    }, env, accessToken, clientIp);
   } catch (error) {
     console.warn("JB admin push completion failed:", clean(error?.message || "unknown error", 120));
   }
 }
 
-function scheduleAdminPush(context, sessionHash, clientIp = "") {
-  const operation = dispatchAdminPush(sessionHash, context?.env || {}, clientIp);
+function scheduleAdminPush(context, sessionHash, clientIp = "", accessToken = "") {
+  const operation = dispatchAdminPush(sessionHash, context?.env || {}, clientIp, accessToken);
   if (typeof context?.waitUntil === "function") {
     context.waitUntil(operation);
     return Promise.resolve();
