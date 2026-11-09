@@ -4591,18 +4591,24 @@ productPreviewDialog?.addEventListener("click", event => {
 });
 
 function collectProductStoragePaths(product) {
-  const bucket = String(CONFIG.storageBucket || "product-images").trim();
-  let storageOrigin = "";
-  try { storageOrigin = new URL(CONFIG.supabaseUrl).origin; } catch { return []; }
-  const publicPrefix = "/storage/v1/object/public/" + bucket + "/";
+  const publicPrefix = "/storage/v1/object/public/" + String(CONFIG.storageBucket || "product-images").trim() + "/";
+  let supabaseOrigin = "https://uwqnoadelnnplcvqqlyz.supabase.co";
+  let catalogOrigin = "";
+  try { catalogOrigin = new URL(CONFIG.publicCatalogUrl || window.location.origin).origin; } catch { /* usar solo URLs Supabase conocidas */ }
   const paths = new Set();
   const visit = value => {
     if (typeof value === "string") {
       if (!value.startsWith("https://") && !value.startsWith("http://")) return;
       try {
         const imageUrl = new URL(value);
-        if (imageUrl.origin !== storageOrigin || !imageUrl.pathname.startsWith(publicPrefix)) return;
-        const encodedPath = imageUrl.pathname.slice(publicPrefix.length);
+        let encodedPath = "";
+        if (imageUrl.origin === supabaseOrigin && imageUrl.pathname.startsWith(publicPrefix)) {
+          encodedPath = imageUrl.pathname.slice(publicPrefix.length);
+        } else if (catalogOrigin && imageUrl.origin === catalogOrigin && imageUrl.pathname.startsWith("/media/")) {
+          encodedPath = imageUrl.pathname.slice("/media/".length);
+        } else {
+          return;
+        }
         const path = encodedPath.split("/").map(part => {
           try { return decodeURIComponent(part); } catch { return part; }
         }).join("/");
@@ -5829,15 +5835,10 @@ async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onPr
   if(sessionError)throw sessionError;
   const accessToken=data?.session?.access_token;
   if(!accessToken)throw new Error("La sesión administrativa expiró. Volvé a iniciar sesión antes de subir fotografías.");
-  const baseUrl=String(CONFIG.supabaseUrl||"").replace(/\/+$/,"");
-  if(!baseUrl||!CONFIG.supabaseAnonKey)throw new Error("Falta la configuración pública de Supabase para subir fotografías.");
-  const encodedBucket=encodeURIComponent(bucket);
-  const encodedPath=String(path).split("/").map(part=>encodeURIComponent(part)).join("/");
-  const endpoint=baseUrl+"/storage/v1/object/"+encodedBucket+"/"+encodedPath;
+  const endpoint="/api/storage/upload?bucket="+encodeURIComponent(bucket)+"&path="+encodeURIComponent(String(path));
   return new Promise((resolve,reject)=>{
     const xhr=new XMLHttpRequest();
     xhr.open("POST",endpoint,true);
-    xhr.setRequestHeader("apikey",CONFIG.supabaseAnonKey);
     xhr.setRequestHeader("Authorization","Bearer "+accessToken);
     xhr.setRequestHeader("Content-Type",contentType);
     xhr.setRequestHeader("x-upsert","false");
@@ -5854,7 +5855,7 @@ async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onPr
         const body=JSON.parse(xhr.responseText||"{}");
         detail=String(body.message||body.error||body.error_description||"");
       }catch{}
-      const message=detail||("Supabase Storage respondió HTTP "+xhr.status+".");
+      const message=detail||("Cloudflare R2 respondió HTTP "+xhr.status+".");
       const uploadError=new Error(message);
       uploadError.status=xhr.status;
       uploadError.responseText=xhr.responseText||"";
