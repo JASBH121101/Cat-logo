@@ -5,8 +5,8 @@ window.CATALOG_CONFIG = {
   storeName: "JB TECH",
   publicCatalogUrl: "https://jb-collections.pages.dev",
   whatsappNumber: "50557683840",
-  supabaseUrl: "https://uwqnoadelnnplcvqqlyz.supabase.co",
-  supabaseAnonKey: "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p",
+  neonAuthUrl: "https://ep-wandering-scene-beu9tqyd.neonauth.c-9.us-east-2.aws.neon.tech/neondb/auth",
+  neonDataApiUrl: "https://ep-wandering-scene-beu9tqyd.apirest.c-9.us-east-2.aws.neon.tech/neondb/rest/v1",
   storageBucket: "product-images",
   adminPushPublicKey: "BKrSHccTAKWOuZyPCwzNDFAKXS-csTv5sZ7ByFqKRcD8QkUOrXlfRk7jEAxkeLQEaTGdUJmlsT4duB3IX45H5No"
 };
