@@ -124,6 +124,34 @@ CREATE POLICY admin_push_subscriptions_admin_manage ON public.admin_push_subscri
     )
   );
 
+
+-- Server-side allowlisted admin context for the isolated migration endpoints.
+CREATE OR REPLACE FUNCTION public.catalog_admin_context()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $function$
+  SELECT jsonb_build_object(
+    'is_admin', EXISTS (
+      SELECT 1
+      FROM public.admin_users AS au
+      WHERE au.neon_auth_user_id = public.current_neon_auth_user_id()
+    ),
+    'admin_id', (
+      SELECT au.user_id
+      FROM public.admin_users AS au
+      WHERE au.neon_auth_user_id = public.current_neon_auth_user_id()
+      LIMIT 1
+    )
+  )
+$function$;
+
+REVOKE ALL ON FUNCTION public.catalog_admin_context() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.catalog_admin_context() FROM anonymous;
+GRANT EXECUTE ON FUNCTION public.catalog_admin_context() TO authenticated;
+
 INSERT INTO public.schema_migrations(version, name)
 VALUES ('0008', 'secure_neon_auth_schema_access')
 ON CONFLICT (version) DO NOTHING;
