@@ -211,6 +211,9 @@
           <button type="button" class="admin-nav-button" data-admin-section="messages" aria-label="Abrir mensajería privada">
             <span class="admin-nav-icon" aria-hidden="true">✉</span><span class="admin-nav-label">Mensajería</span><span class="admin-nav-count" id="private-chat-nav-count">0</span>
           </button>
+          <button type="button" class="admin-nav-button" data-admin-section="storage-migration">
+            <span class="admin-nav-icon" aria-hidden="true">⇧</span><span class="admin-nav-label">Migración de imágenes</span>
+          </button>
         </nav>
 
         <div class="admin-settings-wrap admin-sidebar-settings">
@@ -253,6 +256,28 @@
           <span><strong>JB Manager</strong><small>Dos catálogos · Un panel</small></span>
         </div>
       </aside>
+
+      <div id="admin-section-storage-migration" class="admin-nav-panel hidden" data-admin-panel="storage-migration">
+        <section class="dashboard-section-card" aria-labelledby="storage-migration-title">
+          <p class="eyebrow">INFRAESTRUCTURA · ALMACENAMIENTO</p>
+          <h2 id="storage-migration-title">Migración de imágenes a Cloudflare R2</h2>
+          <p class="section-subtitle">Copia las imágenes de Supabase Storage al bucket privado de R2 por lotes pequeños y verifica cada archivo guardado.</p>
+
+          <div class="admin-alert" role="note">
+            <strong>Protección de datos:</strong> esta herramienta solo lee Supabase y escribe en R2. No elimina ni modifica archivos del bucket original.
+          </div>
+
+          <div class="form-actions">
+            <button id="storage-migration-check" class="button button-secondary" type="button">Verificar conexión e inventario</button>
+            <button id="storage-migration-start" class="button button-primary" type="button" disabled>Iniciar migración</button>
+          </div>
+
+          <p id="storage-migration-status" class="form-status" role="status" aria-live="polite">Primero verificá la conexión S3 y el inventario. La copia solo estará disponible cuando este entorno tenga sus secretos y el binding R2.</p>
+          <progress id="storage-migration-progress" max="1" value="0" aria-label="Progreso de migración"></progress>
+          <p id="storage-migration-summary" class="section-subtitle">Primero verificá la conexión y el inventario de origen.</p>
+          <div id="storage-migration-log" class="admin-alert" aria-live="polite" aria-label="Registro de migración"></div>
+        </section>
+      </div>
 
       <div id="admin-section-home" class="admin-nav-panel" data-admin-panel="home">
       <section class="admin-welcome" aria-label="Resumen del panel">
