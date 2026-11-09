@@ -37,6 +37,26 @@ REVOKE ALL ON FUNCTION public.is_catalog_admin_user() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.is_catalog_admin_user() FROM anonymous;
 GRANT EXECUTE ON FUNCTION public.is_catalog_admin_user() TO authenticated;
 
+
+-- Keep the legacy-UUID resolver invoker-scoped, but route identity lookup
+-- through the controlled SECURITY DEFINER helper above.
+CREATE OR REPLACE FUNCTION public.current_catalog_admin_legacy_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+  SELECT au.user_id
+  FROM public.admin_users AS au
+  WHERE au.neon_auth_user_id = public.current_neon_auth_user_id()
+  LIMIT 1
+$function$;
+
+REVOKE ALL ON FUNCTION public.current_catalog_admin_legacy_id() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.current_catalog_admin_legacy_id() FROM anonymous;
+GRANT EXECUTE ON FUNCTION public.current_catalog_admin_legacy_id() TO authenticated;
+
 DROP POLICY IF EXISTS admin_users_select_self ON public.admin_users;
 CREATE POLICY admin_users_select_self ON public.admin_users
   FOR SELECT TO authenticated
