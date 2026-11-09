@@ -1,5 +1,3 @@
-const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://jasbh121101.github.io", "https://localhost", "http://localhost"]);
 const MAX_MESSAGE = 600;
@@ -255,13 +253,29 @@ function rateLimited(ip) {
   current.count++;
   return false;
 }
-const headersSupabase = () => ({
-  apikey: SUPABASE_PUBLISHABLE_KEY,
-  Authorization: "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-  Accept: "application/json"
-});
-async function publishedProducts(catalogType) {
-  const url = new URL(SUPABASE_URL + "/rest/v1/products");
+async function getAnonymousAccessToken(env) {
+  const authBase = String(env.NEON_AUTH_BASE_URL || "").replace(/\\/+$/, "");
+  if (!authBase) throw new Error("NEON_AUTH_BASE_URL is not configured.");
+  const response = await fetch(authBase + "/token/anonymous", {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error("NEON_ANONYMOUS_TOKEN_FAILED");
+  const payload = await response.json().catch(() => null);
+  const token = String(payload?.token || "");
+  if (!token) throw new Error("NEON_ANONYMOUS_TOKEN_INVALID");
+  return token;
+}
+async function publishedProducts(catalogType, env, accessToken) {
+  const dataApi = String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  if (!dataApi) throw new Error("NEON_DATA_API_URL is not configured.");
+  const headers = {
+    Authorization: "Bearer " + accessToken,
+    Accept: "application/json",
+    "Cache-Control": "no-store"
+  };
+  const url = new URL(dataApi + "/products");
   url.searchParams.set("select","id,catalog_type,name,brand,category,description,product_type,price_usd,price_nio,availability,warranty_months,specifications,variants,colors,image_url,featured,sort_order,published_at");
   url.searchParams.set("catalog_type","eq." + catalogType);
   url.searchParams.set("is_published","eq.true");
@@ -269,7 +283,7 @@ async function publishedProducts(catalogType) {
   url.searchParams.set("deleted_at","is.null");
   url.searchParams.set("order","featured.desc,published_at.desc");
   url.searchParams.set("limit",String(MAX_PRODUCTS));
-  const response = await fetch(url,{headers:headersSupabase(),cache:"no-store"});
+  const response = await fetch(url,{headers,cache:"no-store"});
   if (!response.ok) throw new Error("CATALOG_QUERY_FAILED");
   const rows = await response.json();
   if (!Array.isArray(rows)) throw new Error("CATALOG_QUERY_FAILED");
@@ -277,10 +291,10 @@ async function publishedProducts(catalogType) {
   if (catalogType === "perfumery" && rows.length) {
     const ids = rows.map(row => safeId(row.id)).filter(Boolean);
     if (ids.length) {
-      const detailsUrl = new URL(SUPABASE_URL + "/rest/v1/perfume_details");
+      const detailsUrl = new URL(dataApi + "/perfume_details");
       detailsUrl.searchParams.set("select","product_id,family,concentration,volume_ml,audience,scent_family,top_notes,heart_notes,base_notes,is_original");
       detailsUrl.searchParams.set("product_id","in.(" + ids.join(",") + ")");
-      const detailResponse = await fetch(detailsUrl,{headers:headersSupabase(),cache:"no-store"});
+      const detailResponse = await fetch(detailsUrl,{headers,cache:"no-store"});
       if (detailResponse.ok) {
         const details = await detailResponse.json();
         if (Array.isArray(details)) detailsById = new Map(details.map(d => [String(d.product_id),d]));
@@ -404,9 +418,13 @@ export async function onRequest(context) {
   try {
     const previousHistory = historyMessages(body && body.history);
     const preferenceContext = previousHistory.map(item => item.content).concat(message).join(" ");
+    const accessToken = await getAnonymousAccessToken(env);
     const products = catalogType === "collections"
-      ? (await Promise.all([publishedProducts("technology"), publishedProducts("perfumery")])).flat()
-      : await publishedProducts(catalogType);
+      ? (await Promise.all([
+          publishedProducts("technology", env, accessToken),
+          publishedProducts("perfumery", env, accessToken)
+        ])).flat()
+      : await publishedProducts(catalogType, env, accessToken);
     if (!products.length) return json(200,{reply:"Por el momento no encuentro productos publicados en este catálogo. Escribinos por WhatsApp y te ayudamos a revisar opciones.",recommendations:[],catalogType},origin);
 
     let contextProducts;
