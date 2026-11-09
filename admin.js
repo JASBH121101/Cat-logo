@@ -4723,14 +4723,26 @@ async function deleteProductFromDatabase(product) {
 
   const imagePaths = collectProductStoragePaths(product);
   const storageErrors = [];
-  const bucket = String(CONFIG.storageBucket || "product-images");
-  for (let offset = 0; offset < imagePaths.length; offset += 100) {
-    try {
-      const { error: storageError } = await supabase.storage.from(bucket).remove(imagePaths.slice(offset, offset + 100));
-      if (storageError) storageErrors.push(storageError.message || "Error de Storage sin detalle.");
-    } catch (storageError) {
-      storageErrors.push(storageError && storageError.message ? storageError.message : "Error de Storage sin detalle.");
+  try {
+    const token = await getCatalogAccessToken();
+    for (let offset = 0; offset < imagePaths.length; offset += 100) {
+      const response = await fetch("/api/storage/remove", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({ paths: imagePaths.slice(offset, offset + 100) })
+      });
+      if (!response.ok) {
+        let detail = "";
+        try { detail = String((await response.json())?.error || ""); } catch {}
+        storageErrors.push(detail || "Cloudflare R2 respondió HTTP " + response.status + ".");
+      }
     }
+  } catch (storageError) {
+    storageErrors.push(storageError?.message || "No se pudo contactar Cloudflare R2.");
   }
   if (storageErrors.length) {
     throw new Error("El producto permanece protegido en la papelera; la limpieza de Storage falló y puede reintentarse: " + storageErrors.slice(0, 2).join(" · "));
@@ -5891,11 +5903,29 @@ function waitBeforeRetry(milliseconds) {
   return new Promise(resolve => window.setTimeout(resolve, milliseconds));
 }
 
+function getR2MediaUrl(path) {
+  return "/media/" + String(path || "").split("/").map(encodeURIComponent).join("/");
+}
+
+async function getCatalogAccessToken() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const token = data?.session?.access_token;
+  if (!token) throw new Error("La sesión administrativa expiró. Volvé a iniciar sesión.");
+  return token;
+}
+
 async function recoverUploadedImageUrl(bucket, path) {
   try {
-    const { data, error } = await supabase.storage.from(bucket).info(path);
-    if (error || !data) return "";
-    return supabase.storage.from(bucket).getPublicUrl(path)?.data?.publicUrl || "";
+    const token = await getCatalogAccessToken();
+    const response = await fetch("/api/storage/info?path=" + encodeURIComponent(String(path)), {
+      method: "GET",
+      headers: { Authorization: "Bearer " + token, Accept: "application/json" },
+      cache: "no-store"
+    });
+    if (!response.ok) return "";
+    const body = await response.json();
+    return body?.data?.path ? getR2MediaUrl(body.data.path) : "";
   } catch {
     return "";
   }
@@ -5978,8 +6008,7 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
     try {
       await uploadStorageObjectWithProgress(bucket, path, uploadFile, uploadMime, onProgress);
       if (typeof onProgress === "function") onProgress(100);
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-      return data.publicUrl;
+      return getR2MediaUrl(path);
     } catch (error) {
       lastError = error;
       if (isTransientImageUploadError(error)) {
@@ -5987,8 +6016,9 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
         if (recoveredUrl) return recoveredUrl;
       }
       if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(error?.message || ""))) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return data.publicUrl;
+        const recoveredUrl = await recoverUploadedImageUrl(bucket, path);
+        if (recoveredUrl) return recoveredUrl;
+        throw error;
       }
       if (!isTransientImageUploadError(error) || attempt === maxAttempts - 1) break;
     }
