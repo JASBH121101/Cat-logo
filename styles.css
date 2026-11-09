@@ -1550,6 +1550,59 @@ button:disabled {
   margin-top: 25px;
 }
 
+.admin-password-reset-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-top: 12px;
+  padding: 8px 4px;
+  border: 0;
+  color: #425d9a;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.admin-password-reset-toggle:hover { color: #243f83; }
+.admin-password-reset-form {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #dbe3f2;
+  border-radius: 13px;
+  background: #f8faff;
+}
+.admin-password-reset-form h2 {
+  margin: 0 0 6px;
+  color: #24324d;
+  font-size: 17px;
+}
+.admin-password-reset-form p {
+  margin: 0;
+  color: #697793;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.admin-password-reset-code-stage {
+  display: grid;
+  gap: 14px;
+}
+.admin-password-reset-code-stage[hidden] { display: none !important; }
+.admin-password-reset-form .button { width: 100%; min-height: 44px; }
+.admin-password-reset-cancel {
+  justify-self: center;
+  border: 0;
+  color: #697793;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.admin-password-reset-form .form-status { overflow-wrap: anywhere; }
+
 .admin-help {
   margin-top: 22px;
   color: #697793;
