@@ -85,7 +85,7 @@ function cleanLibraryEntry(value) {
 }
 
 async function loadSharedColorLibrary(authorization, env) {
-  const url = new URL(String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "") + "/color_library");
+  const url = new URL(String(env.NEON_DATA_API_URL || "").replace(/\/+$/, "") + "/color_library");
   url.searchParams.set("select", "name,name_key,hex,aliases,is_favorite,updated_at");
   url.searchParams.set("order", "updated_at.desc");
   url.searchParams.set("limit", "500");
