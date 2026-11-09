@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
+import { requireCatalogAdmin } from "../_shared/neon-admin.js";
+
 const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://localhost", "http://localhost:8788", "http://127.0.0.1:8788"]);
 const buckets = new Map();
 
@@ -31,20 +31,13 @@ function limited(request) {
   if (!bucket || bucket.resetAt <= now) { buckets.set(ip, { count: 1, resetAt: now + 60_000 }); return false; }
   return ++bucket.count > 8;
 }
-async function authorizeAdmin(token) {
-  const userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", {
-    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token, "Cache-Control": "no-store" }
+async function authorizeAdmin(token, env) {
+  const request = new Request("https://jb-collections.pages.dev/api/jb-gopartners-scan", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token }
   });
-  if (!userResponse.ok) return null;
-  const user = await userResponse.json();
-  if (!user?.id) return null;
-  const adminResponse = await fetch(SUPABASE_URL + "/rest/v1/admin_users?user_id=eq." +
-    encodeURIComponent(user.id) + "&select=user_id&limit=1", {
-    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token, "Cache-Control": "no-store" }
-  });
-  if (!adminResponse.ok) return null;
-  const admins = await adminResponse.json();
-  return Array.isArray(admins) && admins.some(row => row.user_id === user.id) ? user : null;
+  const result = await requireCatalogAdmin(request, env);
+  return result.ok ? { id: result.adminId } : null;
 }
 
 const SCANNER_FIELD_LABELS = {
@@ -386,7 +379,7 @@ export async function onRequestPost({ request, env }) {
   if (!token || token.length > 8192) return reply(401, { ok: false, error: "authentication_required" }, origin);
   let user;
   const authorizationStartedAt = Date.now();
-  try { user = await authorizeAdmin(token); } catch { return reply(503, { ok: false, error: "admin_verification_unavailable" }, origin); }
+  try { user = await authorizeAdmin(token, env); } catch { return reply(503, { ok: false, error: "admin_verification_unavailable" }, origin); }
   const authorizationMs = Date.now() - authorizationStartedAt;
   if (!user) return reply(403, { ok: false, error: "admin_only" }, origin);
   let body;
