@@ -1,7 +1,5 @@
 import { sendWebPush } from "../_shared/web-push.js";
 
-const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
 const PUBLIC_CHAT_URL = "https://jb-collections.pages.dev";
 const ALLOWED_ORIGINS = new Set([
   "https://jb-collections.pages.dev",
@@ -70,12 +68,22 @@ function rateLimit(request, action) {
   current.count += 1;
   return current.count > limit;
 }
-async function rpc(name, params) {
-  const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + name, {
+async function rpc(name, params, env, accessToken) {
+  const endpoint = String(env?.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  if (!endpoint) {
+    const error = new Error("Neon Data API no está configurada.");
+    error.status = 503;
+    throw error;
+  }
+  if (!accessToken) {
+    const error = new Error("Falta el token público de Neon.");
+    error.status = 401;
+    throw error;
+  }
+  const response = await fetch(endpoint + "/rpc/" + encodeURIComponent(name), {
     method: "POST",
     headers: {
-      "apikey": SUPABASE_PUBLISHABLE_KEY,
-      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      "Authorization": "Bearer " + accessToken,
       "Content-Type": "application/json",
       "Cache-Control": "no-store"
     },
@@ -84,37 +92,33 @@ async function rpc(name, params) {
   let data = null;
   try { data = await response.json(); } catch {}
   if (!response.ok) {
-    const message = clean(data?.message || data?.hint || data?.error || "", 180);
+    const message = clean(data?.message || data?.hint || data?.details || data?.error || "", 180);
     const error = new Error(message || "chat_service_error");
     error.status = response.status;
     throw error;
   }
   return data;
 }
-async function edgePushRpc(action, params, clientIp = "") {
-  const response = await fetch(SUPABASE_URL + "/functions/v1/private-chat", {
-    method: "POST",
-    headers: {
-      "apikey": SUPABASE_PUBLISHABLE_KEY,
-      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-      "Origin": PUBLIC_CHAT_URL,
-      "X-JB-Client-IP": clean(clientIp || "server-push", 80),
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    },
-    body: JSON.stringify({ action, ...params })
-  });
-  let data = null;
-  try { data = await response.json(); } catch {}
-  if (!response.ok) {
-    const message = clean(data?.message || data?.error || "push_service_error", 180);
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
+
+async function edgePushRpc(action, params, env, accessToken, clientIp = "") {
+  if (action === "push_claim") {
+    return rpc("private_chat_claim_push_delivery", {
+      p_dispatch_secret: params.dispatch_secret,
+      p_session_token_hash: params.session_token_hash
+    }, env, accessToken);
   }
-  return data;
+  if (action === "push_finish") {
+    return rpc("private_chat_finish_push_delivery", {
+      p_dispatch_secret: params.dispatch_secret,
+      p_conversation_id: params.conversation_id,
+      p_delivered: params.delivered
+    }, env, accessToken);
+  }
+  const error = new Error("push_action_not_supported");
+  error.status = 400;
+  throw error;
 }
-async function dispatchAdminPush(sessionHash, env = {}, clientIp = "") {
+async function dispatchAdminPush(sessionHash, env = {}, clientIp = "", accessToken = "") {
   const dispatchSecret = String(env.PUSH_DISPATCH_SECRET || "");
   const vapidPrivateJwk = env.VAPID_PRIVATE_JWK;
   const vapidPublicKey = String(env.VAPID_PUBLIC_KEY || "");
@@ -125,7 +129,7 @@ async function dispatchAdminPush(sessionHash, env = {}, clientIp = "") {
     claim = await edgePushRpc("push_claim", {
       dispatch_secret: dispatchSecret,
       session_token_hash: sessionHash
-    }, clientIp);
+    }, env, accessToken, clientIp);
   } catch (error) {
     console.warn("JB admin push claim failed:", clean(error?.message || "unknown error", 120));
     return;
@@ -223,6 +227,10 @@ export async function onRequest(context) {
   }
   if (request.method !== "POST") return json(405, { ok: false, error: "method_not_allowed" }, origin);
   if (!allowedOrigin(origin)) return json(403, { ok: false, error: "origin_not_allowed" }, "");
+  const authorization = request.headers.get("Authorization") || "";
+  const tokenMatch = authorization.match(/^Bearer\\s+([A-Za-z0-9._~-]+)$/i);
+  if (!tokenMatch) return json(401, { ok: false, error: "neon_token_required" }, origin);
+  const neonAccessToken = tokenMatch[1];
   const declaredLength = Number(request.headers.get("Content-Length") || 0);
   if (declaredLength > 8000) return json(413, { ok: false, error: "request_too_large" }, origin);
 
@@ -261,7 +269,7 @@ export async function onRequest(context) {
         p_product_url: productUrl,
         p_payment_topic: paymentTopic,
         p_invite_token_hash: inviteHash
-      });
+      }, context.env, neonAccessToken);
       const conversationId = result?.conversation_id || result?.id;
       if (!conversationId) throw new Error("chat_service_invalid_create_response");
       return json(200, {
@@ -281,7 +289,7 @@ export async function onRequest(context) {
       const result = await rpc("private_chat_redeem", {
         p_invite_token_hash: await sha256Hex(inviteToken),
         p_session_token_hash: await sha256Hex(sessionToken)
-      });
+      }, context.env, neonAccessToken);
       return json(200, { ok: true, sessionToken, conversation: result }, origin);
     }
 
@@ -300,8 +308,8 @@ export async function onRequest(context) {
     if (action === "route") {
       const route = clean(body.route, 12).toLowerCase();
       if (!["support", "buy"].includes(route)) return json(400, { ok: false, error: "invalid_route" }, origin);
-      const result = await rpc("private_chat_choose_route", { p_session_token_hash: sessionHash, p_route: route });
-      if (route === "support") await scheduleAdminPush(context, sessionHash, request.headers.get("CF-Connecting-IP") || "");
+      const result = await rpc("private_chat_choose_route", { p_session_token_hash: sessionHash, p_route: route }, context.env, neonAccessToken);
+      if (route === "support") await scheduleAdminPush(context, sessionHash, request.headers.get("CF-Connecting-IP") || "", neonAccessToken);
       return json(200, { ok: true, result }, origin);
     }
     if (action === "consent") {
@@ -311,8 +319,8 @@ export async function onRequest(context) {
         p_session_token_hash: sessionHash,
         p_choice: choice,
         p_notice_version: "2026-10-29-v3"
-      });
-      if (choice === "yes") await scheduleAdminPush(context, sessionHash, request.headers.get("CF-Connecting-IP") || "");
+      }, context.env, neonAccessToken);
+      if (choice === "yes") await scheduleAdminPush(context, sessionHash, request.headers.get("CF-Connecting-IP") || "", neonAccessToken);
       return json(200, { ok: true, result }, origin);
     }
     if (action === "send") {
