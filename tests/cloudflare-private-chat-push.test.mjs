@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { onRequest } from "../functions/api/private-chat.js";
 import { readFileSync } from "node:fs";
 
-const privateChatEdge = readFileSync(new URL("../supabase/functions/private-chat/index.ts", import.meta.url), "utf8");
-const pushSecurityMigration = readFileSync(new URL("../supabase/migrations/20261029124043_catalog_security_performance_hardening.sql", import.meta.url), "utf8");
+const privateChatBackend = readFileSync(new URL("../functions/api/private-chat.js", import.meta.url), "utf8");
+const pushSecurityMigration = readFileSync(new URL("../db/migrations/0005_private_chat_push_dispatch.sql", import.meta.url), "utf8");
+const PUBLIC_ACCESS_TOKEN = "test-neon-anonymous-token";
+const NEON_ENDPOINT = "https://neon.example.test/neondb/rest/v1";
 
 
 function base64url(bytes) {
@@ -38,6 +40,7 @@ function request(body) {
     headers: {
       Origin: "https://jb-collections.pages.dev",
       "Content-Type": "application/json",
+      Authorization: "Bearer " + PUBLIC_ACCESS_TOKEN
     },
     body: JSON.stringify(body),
   });
@@ -50,13 +53,14 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
   let finishDelivered;
   globalThis.fetch = async (url, options = {}) => {
     const target = String(url);
-    if (target.includes("/rest/v1/rpc/private_chat_record_consent")) {
+    if (target.includes("/rpc/private_chat_record_consent")) {
       calls.push({ kind: "consent", params: JSON.parse(options.body) });
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
     }
-    if (target.includes("/functions/v1/private-chat")) {
+    if (target.includes("/rpc/private_chat_claim_push_delivery") || target.includes("/rpc/private_chat_finish_push_delivery")) {
+      assert.equal(options.headers.Authorization, "Bearer " + PUBLIC_ACCESS_TOKEN);
       const params = JSON.parse(options.body);
-      if (params.action === "push_claim") {
+      if (target.includes("/rpc/private_chat_claim_push_delivery")) {
         calls.push({ kind: "claim", params });
         return new Response(JSON.stringify({
           ok: true,
@@ -67,8 +71,8 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
           subscriptions: [subscription],
         }), { status: 200 });
       }
-      if (params.action === "push_finish") {
-        finishDelivered = params.delivered;
+      if (target.includes("/rpc/private_chat_finish_push_delivery")) {
+        finishDelivered = params.p_delivered;
         calls.push({ kind: "finish", params });
         return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
       }
@@ -83,20 +87,20 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
   try {
     const response = await onRequest({
       request: request({ action: "consent", sessionToken: "b".repeat(64), choice: "yes" }),
-      env,
+      env: { ...env, NEON_DATA_API_URL: NEON_ENDPOINT },
     });
     const result = await response.json();
     assert.equal(response.status, 200);
     assert.equal(result.ok, true);
     assert.deepEqual(calls.map(call => call.kind), ["consent", "claim", "push", "finish"]);
-    assert.equal(calls[1].params.dispatch_secret, env.PUSH_DISPATCH_SECRET);
-    assert.equal(calls[1].params.action, "push_claim");
-    assert.equal(calls[1].params.session_token_hash.length, 64);
+    assert.equal(calls[1].params.p_dispatch_secret, env.PUSH_DISPATCH_SECRET);
+    assert.equal(calls[1].params.p_session_token_hash.length, 64);
+    assert.equal(calls[1].params.p_session_token_hash.length, 64);
     assert.equal(calls[2].options.headers["Content-Encoding"], "aes128gcm");
     assert.match(calls[2].options.headers.Authorization, /^vapid t=/);
     assert.equal(finishDelivered, true);
-    assert.equal(calls[3].params.conversation_id, "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a");
-    assert.equal(calls[3].params.action, "push_finish");
+    assert.equal(calls[3].params.p_conversation_id, "2b81e51b-4d0a-4a02-a49d-6411d4e8c12a");
+    assert.equal(calls[3].params.p_delivered, true);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -108,10 +112,10 @@ test("push server failure does not block a customer's successful consent respons
   let finishDelivered = true;
   globalThis.fetch = async (url, options = {}) => {
     const target = String(url);
-    if (target.includes("/rest/v1/rpc/private_chat_record_consent")) {
+    if (target.includes("/rpc/private_chat_record_consent")) {
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
     }
-    if (target.includes("/functions/v1/private-chat")) {
+    if (target.includes("/rpc/private_chat_claim_push_delivery") || target.includes("/rpc/private_chat_finish_push_delivery")) {
       const params = JSON.parse(options.body);
       if (params.action === "push_claim") {
         return new Response(JSON.stringify({
@@ -120,8 +124,8 @@ test("push server failure does not block a customer's successful consent respons
           product_name: "Phone X", contact_route: "buy", subscriptions: [subscription],
         }), { status: 200 });
       }
-      if (params.action === "push_finish") {
-        finishDelivered = params.delivered;
+      if (target.includes("/rpc/private_chat_finish_push_delivery")) {
+        finishDelivered = params.p_delivered;
         return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
       }
     }
@@ -148,7 +152,7 @@ test("push dispatch is skipped safely when production secrets are not configured
   globalThis.fetch = async (url, options = {}) => {
     const target = String(url);
     calls.push(target);
-    if (target.includes("/rest/v1/rpc/private_chat_record_consent")) {
+    if (target.includes("/rpc/private_chat_record_consent")) {
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
     }
     throw new Error("Push should not be dispatched without server secrets.");
@@ -167,19 +171,16 @@ test("push dispatch is skipped safely when production secrets are not configured
 
 
 test("the public Edge Function is restricted to secret-protected internal push operations", () => {
-  assert.match(privateChatEdge, /const SERVICE_KEY = getKey\("SUPABASE_SECRET_KEYS", "SUPABASE_SERVICE_ROLE_KEY"\)/);
-  assert.match(privateChatEdge, /const ALLOWED_ACTIONS = new Set\(\["push_claim", "push_finish"\]\)/);
-  assert.match(privateChatEdge, /if \(!ALLOWED_ACTIONS\.has\(action\)\)/);
-  assert.match(privateChatEdge, /serviceRpc\("private_chat_claim_push_delivery"/);
-  assert.match(privateChatEdge, /serviceRpc\("private_chat_finish_push_delivery"/);
-  assert.match(privateChatEdge, /p_dispatch_secret: dispatchSecret/);
-  assert.doesNotMatch(privateChatEdge, /if \(action === "start"\)/);
-  assert.doesNotMatch(privateChatEdge, /consent_choice:\s*"yes"/);
-  assert.doesNotMatch(privateChatEdge, /async function createConversation/);
-  assert.match(pushSecurityMigration, /REVOKE EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text, text\) FROM PUBLIC, anon, authenticated/i);
-  assert.match(pushSecurityMigration, /REVOKE EXECUTE ON FUNCTION public\.private_chat_finish_push_delivery\(text, uuid, boolean\) FROM PUBLIC, anon, authenticated/i);
-  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text, text\) TO service_role/i);
-  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_finish_push_delivery\(text, uuid, boolean\) TO service_role/i);
+  assert.doesNotMatch(privateChatBackend, /supabase\.co|SUPABASE_PUBLISHABLE_KEY|functions\/v1\/private-chat/i);
+  assert.match(privateChatBackend, /NEON_DATA_API_URL/);
+  assert.match(privateChatBackend, /Authorization: "Bearer " \+ accessToken/);
+  assert.match(privateChatBackend, /private_chat_claim_push_delivery/);
+  assert.match(privateChatBackend, /private_chat_finish_push_delivery/);
+  assert.match(pushSecurityMigration, /REVOKE ALL ON FUNCTION public\.private_chat_claim_push_delivery\(text,text\) FROM PUBLIC, authenticated/i);
+  assert.match(pushSecurityMigration, /REVOKE ALL ON FUNCTION public\.private_chat_finish_push_delivery\(text,uuid,boolean\) FROM PUBLIC, authenticated/i);
+  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_claim_push_delivery\(text,text\) TO anonymous/i);
+  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\.private_chat_finish_push_delivery\(text,uuid,boolean\) TO anonymous/i);
+  assert.match(pushSecurityMigration, /secret_hash.*sha256|secret_hash text/i);
   for (const index of [
     "admin_push_subscriptions_user_id_idx",
     "color_library_updated_by_idx",
