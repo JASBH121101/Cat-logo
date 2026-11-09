@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createCatalogClient } from "./db-client.js";
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
@@ -164,10 +164,10 @@ async function recordCatalogPageVisit(catalogType) {
   }
 }
 
-const hasSupabaseConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+const hasNeonConfig = Boolean(CONFIG.neonAuthUrl && CONFIG.neonDataApiUrl);
 
-if (hasSupabaseConfig) {
-  supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+if (hasNeonConfig) {
+  supabase = createCatalogClient({ admin: false });
 }
 
 document.querySelector("#brand-name").textContent =
