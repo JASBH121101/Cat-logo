@@ -6005,8 +6005,8 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
   const connectionAdvice = navigator.onLine === false
     ? "El teléfono aparece sin conexión."
     : isTransientImageUploadError(lastError)
-      ? "El navegador no recibió una respuesta de Supabase Storage. Puede ser una interrupción de red o un bloqueo de la solicitud; probá de nuevo cuando la conexión esté estable."
-      : "Supabase Storage respondió con un error. Revisá el detalle técnico que aparece al final.";
+      ? "El navegador no recibió una respuesta de Cloudflare R2. Puede ser una interrupción de red o un bloqueo de la solicitud; probá de nuevo cuando la conexión esté estable."
+      : "Cloudflare R2 respondió con un error. Revisá el detalle técnico que aparece al final.";
   throw new Error(
     `No se pudo subir ${file.name} después de ${maxAttempts} intentos. ${connectionAdvice} El archivo se conserva en el formulario para reintentar. Detalle técnico: ${detail}`
   );
