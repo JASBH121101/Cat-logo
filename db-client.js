@@ -122,7 +122,7 @@ export async function completeCatalogPasswordReset(email, otp, password) {
   const address = String(email || "").trim().toLowerCase();
   const code = String(otp || "").trim();
   const newPassword = String(password || "");
-  if (!address || !/^\\d{6}$/.test(code)) throw new Error("El código de correo debe tener seis dígitos.");
+  if (!address || !/^\d{6}$/.test(code)) throw new Error("El código de correo debe tener seis dígitos.");
   if (newPassword.length < 12 || newPassword.length > 128) {
     throw new Error("La contraseña debe tener entre 12 y 128 caracteres.");
   }
