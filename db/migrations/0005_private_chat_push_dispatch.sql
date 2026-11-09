@@ -1,6 +1,8 @@
 -- JB Collections only. Server-to-server push dispatch gate.
 -- Copy of the source SHA-256 digest only; the raw dispatch secret remains in Cloudflare Pages secrets.
 BEGIN;
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 CREATE SCHEMA IF NOT EXISTS private;
 REVOKE ALL ON SCHEMA private FROM PUBLIC, anonymous, authenticated;
 CREATE TABLE IF NOT EXISTS private.admin_push_dispatch_config (
