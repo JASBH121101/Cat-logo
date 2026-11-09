@@ -1,5 +1,3 @@
-const DEFAULT_SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
-const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
 
 function htmlEscape(value) {
   return String(value == null ? "" : value)
@@ -62,17 +60,35 @@ function money(value, currency) {
   const formatted = number.toLocaleString(currency === "USD" ? "en-US" : "es-NI", { maximumFractionDigits: 2 });
   return (currency === "USD" ? "US$" : "NIO ") + formatted;
 }
-async function getRows(supabaseUrl, publishableKey, table, filters) {
-  const url = new URL(supabaseUrl + "/rest/v1/" + table);
+async function getNeonAnonymousAccess(env) {
+  const authBase = String(env.NEON_AUTH_BASE_URL || "").replace(/\/+$/, "");
+  if (!authBase) throw new Error("Neon Auth is not configured.");
+  const response = await fetch(authBase + "/token/anonymous", {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error("Neon anonymous token unavailable.");
+  const payload = await response.json().catch(() => null);
+  const token = String(payload?.token || "");
+  if (!token) throw new Error("Neon anonymous token invalid.");
+  return token;
+}
+async function getRows(dataApi, accessToken, table, filters) {
+  const url = new URL(dataApi + "/" + encodeURIComponent(table));
   url.searchParams.set("select", "*");
   for (const [key, value] of Object.entries(filters)) url.searchParams.set(key, value);
   url.searchParams.set("limit", "1");
   const response = await fetch(url.href, {
     method: "GET",
-    headers: { apikey: publishableKey, Authorization: "Bearer " + publishableKey, Accept: "application/json" }
+    headers: {
+      Authorization: "Bearer " + accessToken,
+      Accept: "application/json",
+      "Cache-Control": "no-store"
+    }
   });
   if (!response.ok) {
-    const error = new Error("Supabase public catalog query failed.");
+    const error = new Error("Neon public catalog query failed.");
     error.status = response.status;
     throw error;
   }
@@ -117,11 +133,12 @@ export async function onRequest({ request, env = {} }) {
     return makeResponse(400, "Missing or invalid product ID", {}, request.method);
   }
 
-  const supabaseUrl = String(env.SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/+$/, "");
-  const publishableKey = String(env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_PUBLISHABLE_KEY);
+  const dataApi = String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  if (!dataApi) return makeResponse(503, "Catalog data service unavailable", {}, request.method);
 
   try {
-    const products = await getRows(supabaseUrl, publishableKey, "products", {
+    const accessToken = await getNeonAnonymousAccess(env);
+    const products = await getRows(dataApi, accessToken, "products", {
       id: "eq." + productId, is_published: "eq.true"
     });
     const product = products[0];
@@ -132,7 +149,7 @@ export async function onRequest({ request, env = {} }) {
     let perfumeDetail = {};
     if (catalog === "perfumery") {
       try {
-        const details = await getRows(supabaseUrl, publishableKey, "perfume_details", { product_id: "eq." + productId });
+        const details = await getRows(dataApi, accessToken, "perfume_details", { product_id: "eq." + productId });
         perfumeDetail = details[0] || {};
       } catch { perfumeDetail = {}; }
     }
