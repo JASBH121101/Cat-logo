@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createCatalogClient } from "./db-client.js";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
@@ -14,10 +14,8 @@ const CONFIG = window.CATALOG_CONFIG || {};
 let customProductTags = [];
 
 const configured = Boolean(
-  CONFIG.supabaseUrl &&
-  CONFIG.supabaseAnonKey &&
-  !String(CONFIG.supabaseUrl).includes("PON_AQUI") &&
-  !String(CONFIG.supabaseAnonKey).includes("PON_AQUI")
+  CONFIG.neonAuthUrl &&
+  CONFIG.neonDataApiUrl
 );
 
 /*
@@ -100,16 +98,7 @@ const supabaseAuthStorage = {
   }
 };
 
-const supabase = configured
-  ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
-      auth: {
-        storage: supabaseAuthStorage,
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
-  : null;
+const supabase = configured ? createCatalogClient({ admin: true }) : null;
 
 /* Preview deployments are read-only: protect production data while testing Vercel/Cloudflare previews. */
 const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
@@ -2925,7 +2914,7 @@ async function confirmAdmin(user) {
   const { data, error } = await supabase
     .from("admin_users")
     .select("user_id")
-    .eq("user_id", user.id)
+    .eq("neon_auth_user_id", user.id)
     .maybeSingle();
 
   if (error) {
@@ -2938,13 +2927,13 @@ async function confirmAdmin(user) {
     );
   }
 
-  return true;
+  return data.user_id;
 }
 
 async function showDashboard(user) {
-  await confirmAdmin(user);
+  const legacyAdminId = await confirmAdmin(user);
 
-  currentUser = user;
+  currentUser = { ...user, id: legacyAdminId, neonAuthUserId: user.id };
   jbManagerAI?.setAuthenticatedUser(user);
   void syncBiometricControls();
   refreshCatalogAdminActivityMarker();
@@ -2982,7 +2971,7 @@ async function handleSession() {
   if (!configured) {
     message(
       "#login-status",
-      "Falta configurar la URL y la clave publicable de Supabase en config.js.",
+      "Falta configurar Neon Auth y Neon Data API en config.js.",
       "error"
     );
 
@@ -3066,7 +3055,7 @@ $("#login-form")?.addEventListener("submit", async event => {
   if (!supabase) {
     message(
       "#login-status",
-      "Configurá primero Supabase en config.js.",
+      "Configurá primero Neon Auth y Neon Data API en config.js.",
       "error"
     );
 
