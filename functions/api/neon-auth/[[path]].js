@@ -13,14 +13,18 @@ function proxyJson(status, payload) {
 }
 
 function rewriteCookie(cookie, upstreamPath) {
-  let value = String(cookie || "");
-  // The browser stores this as a first-party, host-only cookie on Pages.
-  value = value.replace(/;\\s*domain=[^;]+/i, "");
-  // Keep cookies scoped to the proxy route when Better Auth scopes them
-  // to its original /neondb/auth path.
-  const pathPattern = new RegExp(";\\s*path=" + upstreamPath.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + "(?=;|$)", "i");
-  value = value.replace(pathPattern, "; Path=" + AUTH_PROXY_PREFIX);
-  return value;
+  const attributes = String(cookie || "").split(";");
+  const rewritten = [];
+  for (const attribute of attributes) {
+    const trimmed = attribute.trim();
+    if (/^domain=/i.test(trimmed)) continue;
+    if (/^path=/i.test(trimmed) && trimmed.slice(5).trim().replace(/\/+$/, "") === upstreamPath) {
+      rewritten.push(" Path=" + AUTH_PROXY_PREFIX);
+    } else {
+      rewritten.push(attribute);
+    }
+  }
+  return rewritten.join(";");
 }
 
 export async function onRequest({ request, env }) {
@@ -50,14 +54,16 @@ export async function onRequest({ request, env }) {
     return proxyJson(403, { error: "cross_origin_request_blocked" });
   }
 
-  const relativePath = incoming.pathname.slice(AUTH_PROXY_PREFIX.length).replace(/^\\/+/, "");
+  const relativePath = incoming.pathname.slice(AUTH_PROXY_PREFIX.length).replace(/^\/+/, "");
   let decodedPath;
   try {
     decodedPath = decodeURIComponent(relativePath);
   } catch {
     return proxyJson(400, { error: "invalid_auth_path" });
   }
-  if (!decodedPath || decodedPath.includes("\\") || decodedPath.split("/").some(part => !part || part === "." || part === ".." || !/^[a-zA-Z0-9._~-]+$/.test(part))) {
+  if (!decodedPath || decodedPath.includes("\\") || decodedPath.split("/").some(part =>
+    !part || part === "." || part === ".." || !/^[a-zA-Z0-9._~-]+$/.test(part)
+  )) {
     return proxyJson(400, { error: "invalid_auth_path" });
   }
 
@@ -73,7 +79,7 @@ export async function onRequest({ request, env }) {
     }
   }
 
-  const upstreamPath = upstreamBase.pathname.replace(/\\/+$/, "");
+  const upstreamPath = upstreamBase.pathname.replace(/\/+$/, "");
   const target = new URL(upstreamBase.toString());
   target.pathname = upstreamPath + "/" + relativePath;
   target.search = incoming.search;
