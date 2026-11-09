@@ -3045,10 +3045,13 @@ const passwordResetStatus = $("#admin-password-reset-status");
 const passwordResetRequestButton = $("#admin-password-reset-request");
 const passwordResetCompleteButton = $("#admin-password-reset-complete");
 
+$("#admin-password-reset-cancel")?.addEventListener("click", () => passwordResetToggle?.click());
+
 passwordResetToggle?.addEventListener("click", () => {
   if (!passwordResetForm) return;
   const show = passwordResetForm.hidden;
   passwordResetForm.hidden = !show;
+  passwordResetToggle.setAttribute("aria-expanded", String(show));
   if (show) {
     const loginEmail = String($("#login-email")?.value || "").trim();
     const resetEmail = $("#admin-password-reset-email");
