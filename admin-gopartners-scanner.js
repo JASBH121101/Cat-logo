@@ -555,7 +555,7 @@ export function initGoPartnersScanner({ getSupabase, getCurrentUser, getProducts
           gemini_request_failed: "Gemini no pudo completar el análisis del proveedor.",
           gemini_invalid_response: "Gemini devolvió una respuesta que JB Manager no pudo interpretar.",
           gemini_unstructured_response: "Gemini no devolvió los productos en un formato válido.",
-          admin_verification_unavailable: "No se pudo verificar la cuenta administradora con Supabase.",
+          admin_verification_unavailable: "No se pudo verificar la cuenta administradora con Neon.",
           authentication_required: "La sesión administrativa expiró. Iniciá sesión nuevamente.",
           admin_only: "La cuenta activa no tiene permisos de administrador.",
           rate_limit_exceeded: "Se alcanzó el límite temporal de análisis. Esperá un minuto y reintentá.",
