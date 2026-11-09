@@ -254,7 +254,7 @@ function rateLimited(ip) {
   return false;
 }
 async function getAnonymousAccessToken(env) {
-  const authBase = String(env.NEON_AUTH_BASE_URL || "").replace(/\\/+$/, "");
+  const authBase = String(env.NEON_AUTH_BASE_URL || "").replace(/\/+$/, "");
   if (!authBase) throw new Error("NEON_AUTH_BASE_URL is not configured.");
   const response = await fetch(authBase + "/token/anonymous", {
     method: "GET",
