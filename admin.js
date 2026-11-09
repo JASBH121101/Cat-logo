@@ -19,7 +19,7 @@ const configured = Boolean(
 );
 
 /*
-  «Recordar mi sesión» conserva la sesión autenticada de Supabase en este
+  «Recordar mi sesión» conserva la sesión autenticada de Neon en este
   dispositivo, sin guardar la contraseña. Si está desactivado, se usa
   sessionStorage y una recarga vuelve a pedir autenticación.
 */
@@ -53,12 +53,11 @@ const isPageReload = (() => {
 
 if (isPageReload && !isRememberedSessionEnabled()) {
   try {
-    const projectRef = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
-    const key = `sb-${projectRef}-auth-token`;
-    window.sessionStorage.removeItem(key);
-    window.localStorage.removeItem(key);
+    const legacyKey = "sb-uwqnoadelnnplcvqqlyz-auth-token";
+    window.sessionStorage.removeItem(legacyKey);
+    window.localStorage.removeItem(legacyKey);
   } catch (error) {
-    console.warn("No se pudo limpiar la sesión temporal durante la recarga.", error);
+    console.warn("No se pudo limpiar una sesión antigua de Supabase.", error);
   }
 }
 
@@ -1342,23 +1341,12 @@ function normalizeVariantAvailability(value) {
    ========================================================= */
 
 /*
-  Supabase utiliza por defecto una clave parecida a:
-  sb-<project-ref>-auth-token
-
-  Eliminamos una posible sesión antigua almacenada en localStorage
-  por una versión anterior del panel.
+  Elimina únicamente la sesión local antigua de Supabase que pudiera
+  quedar en este navegador después del cambio a Neon Auth.
 */
 
 function authStorageKey() {
-  try {
-    const projectRef = new URL(CONFIG.supabaseUrl)
-      .hostname
-      .split(".")[0];
-
-    return `sb-${projectRef}-auth-token`;
-  } catch {
-    return null;
-  }
+  return "sb-uwqnoadelnnplcvqqlyz-auth-token";
 }
 
 function clearLegacyPersistentAuth() {
@@ -5829,7 +5817,7 @@ async function recoverUploadedImageUrl(bucket, path) {
 
 async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
   if (IS_READ_ONLY_PREVIEW) {
-    throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían a Supabase.");
+    throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían al servidor.");
   }
   const {data,error:sessionError}=await supabase.auth.getSession();
   if(sessionError)throw sessionError;
