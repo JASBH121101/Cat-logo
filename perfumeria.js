@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createCatalogClient } from "../db-client.js";
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
@@ -84,8 +84,8 @@ const selectedAudiences = new Set();
 const selectedProductTypes = new Set();
 let selectedBrand = "";
 
-const hasConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
-if (hasConfig) supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+const hasNeonConfig = Boolean(CONFIG.neonAuthUrl && CONFIG.neonDataApiUrl);
+if (hasNeonConfig) supabase = createCatalogClient({ admin: false });
 
 const yearNode = $("#perfume-year");
 if (yearNode) yearNode.textContent = new Date().getFullYear();
