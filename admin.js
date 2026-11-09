@@ -1,4 +1,4 @@
-import { createCatalogClient } from "./db-client.js";
+import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
@@ -57,7 +57,7 @@ if (isPageReload && !isRememberedSessionEnabled()) {
     window.sessionStorage.removeItem(legacyKey);
     window.localStorage.removeItem(legacyKey);
   } catch (error) {
-    console.warn("No se pudo limpiar una sesión antigua de Supabase.", error);
+    console.warn("No se pudo limpiar una sesión antigua de autenticación.", error);
   }
 }
 
@@ -1400,7 +1400,7 @@ async function signOutLocalSafely() {
     }
   } catch (error) {
     console.warn(
-      "No se pudo completar el cierre de sesión.",
+      "No se pudo completar el cierre de sesión de Neon.",
       error
     );
   } finally {
@@ -3037,6 +3037,89 @@ $("#biometric-auth-toggle")?.addEventListener("click", () => {
   void handleBiometricSettingsToggle();
 });
 
+
+const passwordResetToggle = $("#admin-password-reset-toggle");
+const passwordResetForm = $("#admin-password-reset-form");
+const passwordResetStage = $("#admin-password-reset-code-stage");
+const passwordResetStatus = $("#admin-password-reset-status");
+const passwordResetRequestButton = $("#admin-password-reset-request");
+const passwordResetCompleteButton = $("#admin-password-reset-complete");
+
+passwordResetToggle?.addEventListener("click", () => {
+  if (!passwordResetForm) return;
+  const show = passwordResetForm.hidden;
+  passwordResetForm.hidden = !show;
+  if (show) {
+    const loginEmail = String($("#login-email")?.value || "").trim();
+    const resetEmail = $("#admin-password-reset-email");
+    if (resetEmail && loginEmail && !resetEmail.value) resetEmail.value = loginEmail;
+    resetEmail?.focus();
+  } else {
+    passwordResetForm.reset();
+    if (passwordResetStage) passwordResetStage.hidden = true;
+    if (passwordResetStatus) passwordResetStatus.textContent = "";
+  }
+});
+
+passwordResetRequestButton?.addEventListener("click", async () => {
+  if (!supabase) {
+    if (passwordResetStatus) passwordResetStatus.textContent = "Neon Auth no está configurado.";
+    return;
+  }
+  const email = String($("#admin-password-reset-email")?.value || "").trim().toLowerCase();
+  passwordResetRequestButton.disabled = true;
+  passwordResetRequestButton.textContent = "Solicitando código…";
+  if (passwordResetStatus) passwordResetStatus.textContent = "Solicitando un código de un solo uso…";
+  try {
+    await requestCatalogPasswordReset(email);
+    if (passwordResetStage) passwordResetStage.hidden = false;
+    if (passwordResetStatus) passwordResetStatus.textContent = "Si el correo corresponde a una cuenta registrada, Neon enviará un código. Revisá también Spam.";
+    $("#admin-password-reset-otp")?.focus();
+  } catch (error) {
+    console.warn("No se pudo solicitar el código de recuperación de Neon.", error);
+    if (passwordResetStatus) passwordResetStatus.textContent = error?.message || "No se pudo solicitar el código. Intentá nuevamente.";
+  } finally {
+    passwordResetRequestButton.disabled = false;
+    passwordResetRequestButton.textContent = "Enviar código al correo";
+  }
+});
+
+passwordResetForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!passwordResetStage || passwordResetStage.hidden) return;
+  const email = String($("#admin-password-reset-email")?.value || "").trim().toLowerCase();
+  const otp = String($("#admin-password-reset-otp")?.value || "").trim();
+  const password = String($("#admin-password-reset-password")?.value || "");
+  const confirm = String($("#admin-password-reset-confirm")?.value || "");
+  if (password !== confirm) {
+    if (passwordResetStatus) passwordResetStatus.textContent = "Las contraseñas no coinciden.";
+    $("#admin-password-reset-confirm")?.focus();
+    return;
+  }
+  passwordResetCompleteButton.disabled = true;
+  passwordResetCompleteButton.textContent = "Guardando contraseña…";
+  if (passwordResetStatus) passwordResetStatus.textContent = "Verificando el código con Neon Auth…";
+  try {
+    await completeCatalogPasswordReset(email, otp, password);
+    passwordResetForm.reset();
+    passwordResetForm.hidden = true;
+    passwordResetStage.hidden = true;
+    if (passwordResetStatus) passwordResetStatus.textContent = "";
+    passwordResetToggle?.setAttribute("aria-expanded", "false");
+    message("#login-status", "Contraseña establecida. Ya podés iniciar sesión con Neon.", "success");
+    if ($("#login-email")) $("#login-email").value = email;
+    $("#login-password")?.focus();
+  } catch (error) {
+    console.warn("No se pudo establecer la contraseña de Neon.", error);
+    if (passwordResetStatus) passwordResetStatus.textContent = error?.message || "No se pudo validar el código. Solicitá uno nuevo.";
+  } finally {
+    passwordResetCompleteButton.disabled = false;
+    passwordResetCompleteButton.textContent = "Guardar contraseña";
+    $("#admin-password-reset-password").value = "";
+    $("#admin-password-reset-confirm").value = "";
+  }
+});
+
 $("#login-form")?.addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -3063,7 +3146,7 @@ $("#login-form")?.addEventListener("submit", async event => {
   try {
     const loginEmail = $("#login-email").value.trim();
     const rememberSession = Boolean($("#login-remember-user")?.checked);
-    // Select session storage before Supabase persists the successful login.
+    // Select session storage before Neon Auth persists the successful login.
     setRememberedSession(rememberSession, loginEmail);
 
     const { data, error } = await supabase.auth.signInWithPassword({
