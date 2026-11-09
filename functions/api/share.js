@@ -133,7 +133,7 @@ export async function onRequest({ request, env = {} }) {
     return makeResponse(400, "Missing or invalid product ID", {}, request.method);
   }
 
-  const dataApi = String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  const dataApi = String(env.NEON_DATA_API_URL || "").replace(/\/+$/, "");
   if (!dataApi) return makeResponse(503, "Catalog data service unavailable", {}, request.method);
 
   try {
