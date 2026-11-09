@@ -2,7 +2,7 @@ import { createCatalogClient } from "./db-client.js";
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
-const CATALOG_MEDIA_SUPABASE_ORIGIN = stripCatalogTrailingSlashes(CONFIG.supabaseUrl || "");
+const CATALOG_MEDIA_SUPABASE_ORIGIN = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const CATALOG_MEDIA_BUCKET = String(CONFIG.storageBucket || "product-images");
 function stripCatalogTrailingSlashes(value) {
   let text = String(value || "");
