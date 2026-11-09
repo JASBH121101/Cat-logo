@@ -19,10 +19,10 @@ export function validObjectPath(value) {
 
 export async function requireCatalogAdmin(request, env) {
   const authorization = request.headers.get("Authorization") || "";
-  const match = authorization.match(/^Bearer\\s+([A-Za-z0-9._~-]+)$/i);
+  const match = authorization.match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
   if (!match) return { ok: false, response: jsonResponse(401, { error: "Sesión administrativa requerida." }) };
 
-  const endpoint = String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  const endpoint = String(env.NEON_DATA_API_URL || "").replace(/\/+$/, "");
   if (!endpoint) return { ok: false, response: jsonResponse(503, { error: "Neon Data API no está configurada para este entorno." }) };
 
   try {
