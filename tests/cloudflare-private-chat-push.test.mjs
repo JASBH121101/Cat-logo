@@ -178,15 +178,17 @@ test("customer chat rejects a missing Neon bearer token before database access",
 });
 
 test("private chat dispatch uses Neon and protects server-side push secrets", () => {
-  assert.doesNotMatch(privateChatBackend, /supabase\\.co|SUPABASE_PUBLISHABLE_KEY|functions\\/v1\\/private-chat/i);
-  assert.match(privateChatBackend, /NEON_DATA_API_URL/);
-  assert.match(privateChatBackend, /Authorization: "Bearer " \\+ accessToken/);
-  assert.match(privateChatBackend, /private_chat_claim_push_delivery/);
-  assert.match(privateChatBackend, /private_chat_finish_push_delivery/);
-  assert.match(privateChatBackend, /env\\.PUSH_DISPATCH_SECRET/);
-  assert.match(pushSecurityMigration, /secret_hash text NOT NULL/);
-  assert.match(pushSecurityMigration, /REVOKE ALL ON FUNCTION public\\.private_chat_claim_push_delivery\\(text,text\\) FROM PUBLIC, authenticated/i);
-  assert.match(pushSecurityMigration, /REVOKE ALL ON FUNCTION public\\.private_chat_finish_push_delivery\\(text,uuid,boolean\\) FROM PUBLIC, authenticated/i);
-  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\\.private_chat_claim_push_delivery\\(text,text\\) TO anonymous/i);
-  assert.match(pushSecurityMigration, /GRANT EXECUTE ON FUNCTION public\\.private_chat_finish_push_delivery\\(text,uuid,boolean\\) TO anonymous/i);
+  assert.equal(privateChatBackend.includes("supabase.co"), false);
+  assert.equal(privateChatBackend.includes("SUPABASE_PUBLISHABLE_KEY"), false);
+  assert.equal(privateChatBackend.includes("/functions/v1/private-chat"), false);
+  assert.ok(privateChatBackend.includes("NEON_DATA_API_URL"));
+  assert.ok(privateChatBackend.includes('Authorization: "Bearer " + accessToken'));
+  assert.ok(privateChatBackend.includes("private_chat_claim_push_delivery"));
+  assert.ok(privateChatBackend.includes("private_chat_finish_push_delivery"));
+  assert.ok(privateChatBackend.includes("env.PUSH_DISPATCH_SECRET"));
+  assert.ok(pushSecurityMigration.includes("secret_hash text NOT NULL"));
+  assert.ok(pushSecurityMigration.includes("REVOKE ALL ON FUNCTION public.private_chat_claim_push_delivery(text,text) FROM PUBLIC, authenticated"));
+  assert.ok(pushSecurityMigration.includes("REVOKE ALL ON FUNCTION public.private_chat_finish_push_delivery(text,uuid,boolean) FROM PUBLIC, authenticated"));
+  assert.ok(pushSecurityMigration.includes("GRANT EXECUTE ON FUNCTION public.private_chat_claim_push_delivery(text,text) TO anonymous"));
+  assert.ok(pushSecurityMigration.includes("GRANT EXECUTE ON FUNCTION public.private_chat_finish_push_delivery(text,uuid,boolean) TO anonymous"));
 });
