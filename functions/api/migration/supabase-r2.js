@@ -49,7 +49,7 @@ function xmlValue(source, tag) {
 
 function parseListXml(xml) {
   const objects = [];
-  for (const match of xml.matchAll(/<Contents>([\\s\\S]*?)<\\/Contents>/g)) {
+  for (const match of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
     const key = xmlValue(match[1], "Key");
     const size = Number(xmlValue(match[1], "Size"));
     if (key && Number.isSafeInteger(size) && size >= 0) objects.push({ key, size });
@@ -68,19 +68,19 @@ async function signedSourceRequest({ env, method, key = "", query = {} }) {
 
   const endpoint = new URL(SOURCE_ENDPOINT);
   const encodedKey = key ? "/" + key.split("/").map(rfc3986).join("/") : "";
-  const canonicalUri = endpoint.pathname.replace(/\\/+$/, "") + "/" + rfc3986(SOURCE_BUCKET) + encodedKey;
+  const canonicalUri = endpoint.pathname.replace(/\/+$/, "") + "/" + rfc3986(SOURCE_BUCKET) + encodedKey;
   const queryString = canonicalQuery(query);
   const url = endpoint.origin + canonicalUri + (queryString ? "?" + queryString : "");
 
   const now = new Date();
-  const amzDate = now.toISOString().replace(/[:-]|\\.\\d{3}/g, "");
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
   const payloadHash = hex(await sha256(new ArrayBuffer(0)));
   const host = endpoint.host.toLowerCase();
   const canonicalHeaders =
-    "host:" + host + "\\n" +
-    "x-amz-content-sha256:" + payloadHash + "\\n" +
-    "x-amz-date:" + amzDate + "\\n";
+    "host:" + host + "\n" +
+    "x-amz-content-sha256:" + payloadHash + "\n" +
+    "x-amz-date:" + amzDate + "\n";
   const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
   const canonicalRequest = [
     method,
@@ -89,14 +89,14 @@ async function signedSourceRequest({ env, method, key = "", query = {} }) {
     canonicalHeaders,
     signedHeaders,
     payloadHash
-  ].join("\\n");
+  ].join("\n");
   const scope = dateStamp + "/" + SOURCE_REGION + "/s3/aws4_request";
   const stringToSign = [
     "AWS4-HMAC-SHA256",
     amzDate,
     scope,
     hex(await sha256(encoder.encode(canonicalRequest)))
-  ].join("\\n");
+  ].join("\n");
 
   let signingKey = await hmac(encoder.encode("AWS4" + secretAccessKey), dateStamp);
   signingKey = await hmac(signingKey, SOURCE_REGION);
@@ -139,7 +139,7 @@ async function listSourceObjects(env, continuationToken = "", maxKeys = 1000) {
 
 function imageContentType(value, key) {
   const header = String(value || "").split(";")[0].trim().toLowerCase();
-  if (/^image\\/(?:avif|gif|jpeg|png|webp)$/.test(header)) return header;
+  if (/^image\/(?:avif|gif|jpeg|png|webp)$/.test(header)) return header;
   const extension = key.split(".").pop().toLowerCase();
   return ({
     avif: "image/avif",
