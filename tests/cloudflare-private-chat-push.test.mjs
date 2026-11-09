@@ -52,8 +52,10 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
   let finishDelivered;
   globalThis.fetch = async (url, options = {}) => {
     const target = String(url);
-    assert.equal(options.headers.Authorization, "Bearer " + PUBLIC_ACCESS_TOKEN);
-    const params = JSON.parse(options.body);
+    if (target.startsWith(NEON_ENDPOINT + "/")) {
+      assert.equal(options.headers.Authorization, "Bearer " + PUBLIC_ACCESS_TOKEN);
+    }
+    const params = options.body ? JSON.parse(options.body) : {};
     if (target.endsWith("/rpc/private_chat_record_consent")) {
       calls.push({ kind: "consent", params });
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
