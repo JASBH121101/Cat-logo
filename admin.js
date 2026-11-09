@@ -5904,7 +5904,8 @@ function waitBeforeRetry(milliseconds) {
 }
 
 function getR2MediaUrl(path) {
-  return "/media/" + String(path || "").split("/").map(encodeURIComponent).join("/");
+  const base = String(CONFIG.publicCatalogUrl || window.location.origin).replace(/\/+$/, "");
+  return base + "/media/" + String(path || "").split("/").map(encodeURIComponent).join("/");
 }
 
 async function getCatalogAccessToken() {
