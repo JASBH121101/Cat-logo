@@ -542,7 +542,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
           gemini_request_failed: "Gemini no pudo completar la consulta. Revisá el diagnóstico del servicio e intentá nuevamente.",
           gemini_invalid_response: "Gemini respondió con un formato que JB Copilot no pudo leer. Probá reformulando la instrucción.",
           gemini_unstructured_response: "La respuesta de Gemini no llegó en el formato esperado. No se hizo ningún cambio; podés repetir la consulta.",
-          admin_verification_unavailable: "No se pudo verificar tu cuenta administradora con Supabase. Revisá tu conexión e intentá otra vez.",
+          admin_verification_unavailable: "No se pudo verificar tu cuenta administradora con Neon. Revisá tu conexión e intentá otra vez.",
           admin_only: "Tu usuario no tiene permisos de administrador.",
           authentication_required: "La sesión no es válida o expiró. Iniciá sesión nuevamente.",
           rate_limit_exceeded: "Se alcanzó el límite temporal de consultas. Esperá un minuto.",
