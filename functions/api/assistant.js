@@ -268,7 +268,7 @@ async function getAnonymousAccessToken(env) {
   return token;
 }
 async function publishedProducts(catalogType, env, accessToken) {
-  const dataApi = String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
+  const dataApi = String(env.NEON_DATA_API_URL || "").replace(/\/+$/, "");
   if (!dataApi) throw new Error("NEON_DATA_API_URL is not configured.");
   const headers = {
     Authorization: "Bearer " + accessToken,
