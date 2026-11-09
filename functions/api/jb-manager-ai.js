@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
+import { requireCatalogAdmin } from "../_shared/neon-admin.js";
+
 const ALLOWED_ORIGINS = new Set([
   "https://jb-collections.pages.dev",
   "https://jasbh121101.github.io",
@@ -74,31 +74,13 @@ function rateLimited(request) {
   return current.count > 18;
 }
 
-async function authorizeAdmin(token) {
-  const userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", {
-    headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      Authorization: "Bearer " + token,
-      "Cache-Control": "no-store"
-    }
+async function authorizeAdmin(token, env) {
+  const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token }
   });
-  if (!userResponse.ok) return null;
-  const user = await userResponse.json();
-  if (!user?.id) return null;
-
-  const adminResponse = await fetch(
-    SUPABASE_URL + "/rest/v1/admin_users?user_id=eq." + encodeURIComponent(user.id) + "&select=user_id&limit=1",
-    {
-      headers: {
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        Authorization: "Bearer " + token,
-        "Cache-Control": "no-store"
-      }
-    }
-  );
-  if (!adminResponse.ok) return null;
-  const admins = await adminResponse.json();
-  return Array.isArray(admins) && admins.some(row => row.user_id === user.id) ? user : null;
+  const result = await requireCatalogAdmin(request, env);
+  return result.ok ? { id: result.adminId } : null;
 }
 
 const productDraftSchema = {
@@ -218,7 +200,7 @@ export async function onRequestPost({ request, env }) {
   const authStartedAt = Date.now();
   let user;
   try {
-    user = await authorizeAdmin(token);
+    user = await authorizeAdmin(token, env);
   } catch {
     return response(503, { ok: false, error: "admin_verification_unavailable" }, origin);
   }
