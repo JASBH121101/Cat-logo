@@ -19,30 +19,41 @@ export function validObjectPath(value) {
 
 export async function requireCatalogAdmin(request, env) {
   const authorization = request.headers.get("Authorization") || "";
-  const match = authorization.match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
+  const match = authorization.match(/^Bearer\\s+([A-Za-z0-9._~-]+)$/i);
   if (!match) return { ok: false, response: jsonResponse(401, { error: "Sesión administrativa requerida." }) };
 
-  const endpoint = String(env.NEON_DATA_API_URL || "").replace(/\/+$/, "");
+  const endpoint = String(env.NEON_DATA_API_URL || "").replace(/\\/+$/, "");
   if (!endpoint) return { ok: false, response: jsonResponse(503, { error: "Neon Data API no está configurada para este entorno." }) };
 
   try {
-    // The Data API validates the Neon Auth JWT and applies admin_users RLS.
-    // Non-admin authenticated users receive an empty array rather than the admin row.
-    const response = await fetch(endpoint + "/admin_users?select=user_id&limit=1", {
-      method: "GET",
+    const response = await fetch(endpoint + "/rpc/catalog_admin_context", {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + match[1],
+        "Content-Type": "application/json",
         Accept: "application/json",
+        "Accept-Profile": "public",
+        "Content-Profile": "public",
         "Cache-Control": "no-store"
-      }
+      },
+      body: "{}"
     });
-    if (!response.ok) return { ok: false, response: jsonResponse(401, { error: "La sesión no está autorizada." }) };
-    const rows = await response.json().catch(() => null);
-    if (!Array.isArray(rows) || rows.length !== 1 || !rows[0]?.user_id) {
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error("JB admin authorization RPC failed:", response.status, detail.slice(0, 300));
+      return { ok: false, response: jsonResponse(response.status === 401 ? 401 : 503, { error: "Neon no pudo validar la sesión administrativa (HTTP " + response.status + ")." }) };
+    }
+
+    const context = await response.json().catch(() => null);
+    const value = Array.isArray(context) ? context[0] : context;
+    if (value?.is_admin !== true || typeof value.admin_id !== "string" || !value.admin_id) {
       return { ok: false, response: jsonResponse(403, { error: "Este usuario no tiene permisos administrativos." }) };
     }
-    return { ok: true, token: match[1], adminId: rows[0].user_id };
-  } catch {
+
+    return { ok: true, token: match[1], adminId: value.admin_id };
+  } catch (error) {
+    console.error("JB admin authorization request failed:", error instanceof Error ? error.message : "unknown error");
     return { ok: false, response: jsonResponse(503, { error: "No fue posible verificar el acceso administrativo." }) };
   }
 }
