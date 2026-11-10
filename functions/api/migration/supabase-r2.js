@@ -5,6 +5,7 @@ const SOURCE_REGION = "us-east-2";
 const SOURCE_BUCKET = "product-images";
 const MAX_BATCH_SIZE = 10;
 const MAX_SOURCE_OBJECT_BYTES = 50 * 1024 * 1024;
+const MAX_INVENTORY_PAGES = 100;
 
 const encoder = new TextEncoder();
 
@@ -14,6 +15,10 @@ function hex(bytes) {
 
 async function sha256(value) {
   return await crypto.subtle.digest("SHA-256", value);
+}
+
+export async function sha256Hex(value) {
+  return hex(await sha256(value));
 }
 
 async function hmac(key, value) {
@@ -132,9 +137,47 @@ async function listSourceObjects(env, continuationToken = "", maxKeys = 1000) {
   if (!response.ok) {
     const message = await response.text().catch(() => "");
     console.error("JB S3 list failed:", response.status, message.slice(0, 500));
-    throw new Error("Supabase S3 no pudo listar el bucket (HTTP " + response.status + ").");
+    const explanation = response.status === 402
+      ? "Supabase restringió temporalmente el servicio por cuota (HTTP 402). No se copió ningún archivo."
+      : "Supabase S3 no pudo listar el bucket (HTTP " + response.status + ").";
+    throw new Error(explanation);
   }
   return parseListXml(await response.text());
+}
+
+async function inventorySourceObjects(env) {
+  const inventory = {
+    sourceBucket: SOURCE_BUCKET,
+    region: SOURCE_REGION,
+    objectCount: 0,
+    totalBytes: 0,
+    invalidObjectCount: 0,
+    pageCount: 0,
+    isTruncated: false
+  };
+  let continuationToken = "";
+  const seenTokens = new Set();
+
+  while (inventory.pageCount < MAX_INVENTORY_PAGES) {
+    const page = await listSourceObjects(env, continuationToken, 1000);
+    inventory.pageCount += 1;
+    inventory.objectCount += page.objects.length;
+    inventory.totalBytes += page.objects.reduce((sum, object) => sum + object.size, 0);
+    inventory.invalidObjectCount += page.objects.filter(object => !validObjectPath(object.key)).length;
+
+    if (!page.isTruncated) return inventory;
+    const nextToken = String(page.nextContinuationToken || "");
+    if (!nextToken || seenTokens.has(nextToken)) {
+      throw new Error("El inventario S3 devolvió un cursor de paginación inválido. No se inició la copia.");
+    }
+    seenTokens.add(nextToken);
+    continuationToken = nextToken;
+  }
+
+  inventory.isTruncated = true;
+  inventory.message = "El inventario superó el límite seguro de " + MAX_INVENTORY_PAGES +
+    " páginas. No se inició la copia.";
+  return inventory;
 }
 
 function imageContentType(value, key) {
@@ -154,7 +197,16 @@ function imageContentType(value, key) {
 
 async function copyBatch(context, continuationToken, batchSize) {
   const sourcePage = await listSourceObjects(context.env, continuationToken, batchSize);
-  const result = { copied: 0, alreadyPresent: 0, conflicts: 0, failed: 0, bytesCopied: 0, errors: [] };
+  const bucket = context.env.PRODUCT_IMAGES;
+  const result = {
+    copied: 0,
+    alreadyPresent: 0,
+    conflicts: 0,
+    failed: 0,
+    bytesCopied: 0,
+    sha256Verified: 0,
+    errors: []
+  };
 
   for (const source of sourcePage.objects) {
     const path = validObjectPath(source.key);
@@ -170,20 +222,23 @@ async function copyBatch(context, continuationToken, batchSize) {
     }
 
     try {
-      const existing = await context.env.PRODUCT_IMAGES.head(path);
-      if (existing) {
-        if (existing.size === source.size) result.alreadyPresent += 1;
-        else {
-          result.conflicts += 1;
-          result.errors.push({ key: path, reason: "Ya existe en R2 con un tamaño distinto; no se sobrescribió." });
-        }
+      const existing = await bucket.head(path);
+      if (existing && existing.size !== source.size) {
+        result.conflicts += 1;
+        result.errors.push({
+          key: path,
+          reason: "Ya existe en R2 con un tamaño distinto; no se sobrescribió."
+        });
         continue;
       }
 
       const sourceResponse = await signedSourceRequest({ env: context.env, method: "GET", key: path });
       if (!sourceResponse.ok) {
         await sourceResponse.body?.cancel?.();
-        throw new Error("Supabase S3 respondió HTTP " + sourceResponse.status + " al descargar el objeto.");
+        const explanation = sourceResponse.status === 402
+          ? "Supabase restringió temporalmente la descarga por cuota (HTTP 402). No se sobrescribió ningún archivo."
+          : "Supabase S3 respondió HTTP " + sourceResponse.status + " al descargar el objeto.";
+        throw new Error(explanation);
       }
 
       const contentType = imageContentType(sourceResponse.headers.get("Content-Type"), path);
@@ -192,27 +247,73 @@ async function copyBatch(context, continuationToken, batchSize) {
         throw new Error("El origen no devolvió un tipo de imagen permitido.");
       }
 
-      const bytes = await sourceResponse.arrayBuffer();
+      const bytes = new Uint8Array(await sourceResponse.arrayBuffer());
       if (bytes.byteLength !== source.size) {
         throw new Error("El tamaño descargado no coincide con el inventario S3.");
       }
+      const sourceSha256 = await sha256Hex(bytes);
 
-      await context.env.PRODUCT_IMAGES.put(path, bytes, {
+      if (existing) {
+        const savedHash = String(existing.customMetadata?.sha256 || "").toLowerCase();
+        if (savedHash) {
+          if (savedHash !== sourceSha256) {
+            result.conflicts += 1;
+            result.errors.push({
+              key: path,
+              reason: "Ya existe en R2 con SHA-256 distinto; no se sobrescribió."
+            });
+            continue;
+          }
+        } else {
+          // Legacy objects without our checksum metadata are read back and hashed.
+          // Matching size alone is never considered proof that the object is identical.
+          const existingObject = await bucket.get(path);
+          if (!existingObject) throw new Error("El objeto existente desapareció durante la verificación.");
+          const existingBytes = await existingObject.arrayBuffer();
+          const existingSha256 = await sha256Hex(existingBytes);
+          if (existingBytes.byteLength !== source.size || existingSha256 !== sourceSha256) {
+            result.conflicts += 1;
+            result.errors.push({
+              key: path,
+              reason: "El contenido existente en R2 no coincide por SHA-256; no se sobrescribió."
+            });
+            continue;
+          }
+        }
+        result.alreadyPresent += 1;
+        result.sha256Verified += 1;
+        continue;
+      }
+
+      await bucket.put(path, bytes, {
         httpMetadata: {
           contentType,
           cacheControl: "public, max-age=31536000, immutable"
         },
         customMetadata: {
           source: "supabase-s3-migration",
-          sourceBucket: SOURCE_BUCKET
+          sourceBucket: SOURCE_BUCKET,
+          sha256: sourceSha256
         }
       });
 
-      const saved = await context.env.PRODUCT_IMAGES.head(path);
-      if (!saved || saved.size !== source.size) {
-        throw new Error("La verificación posterior a la copia no coincide.");
+      const saved = await bucket.head(path);
+      if (!saved || saved.size !== source.size ||
+          String(saved.customMetadata?.sha256 || "").toLowerCase() !== sourceSha256) {
+        throw new Error("La verificación de metadatos del objeto guardado no coincide.");
       }
+
+      // Read the written object back from R2. This verifies bytes, not only metadata or size.
+      const readback = await bucket.get(path);
+      if (!readback) throw new Error("R2 no devolvió el objeto después de guardarlo.");
+      const savedBytes = await readback.arrayBuffer();
+      const savedSha256 = await sha256Hex(savedBytes);
+      if (savedBytes.byteLength !== source.size || savedSha256 !== sourceSha256) {
+        throw new Error("La verificación SHA-256 posterior a la copia no coincide.");
+      }
+
       result.copied += 1;
+      result.sha256Verified += 1;
       result.bytesCopied += bytes.byteLength;
     } catch (error) {
       result.failed += 1;
@@ -240,6 +341,10 @@ export async function onRequest(context) {
   if (storageUnavailable(context.env)) {
     return jsonResponse(503, { error: "R2 no está enlazado en este entorno. La migración no se ejecutó." });
   }
+  const bucket = context.env.PRODUCT_IMAGES;
+  if (typeof bucket.head !== "function" || typeof bucket.get !== "function") {
+    return jsonResponse(503, { error: "El binding R2 no ofrece las operaciones necesarias para verificar archivos. La migración no se ejecutó." });
+  }
 
   let payload;
   try { payload = await context.request.json(); }
@@ -251,19 +356,14 @@ export async function onRequest(context) {
 
   try {
     if (action === "inventory") {
-      const page = await listSourceObjects(context.env, "", 1000);
-      const invalid = page.objects.filter(object => !validObjectPath(object.key)).length;
+      const inventory = await inventorySourceObjects(context.env);
       return jsonResponse(200, {
         data: {
-          sourceBucket: SOURCE_BUCKET,
-          region: SOURCE_REGION,
-          objectCount: page.objects.length,
-          totalBytes: page.objects.reduce((sum, object) => sum + object.size, 0),
-          invalidObjectCount: invalid,
-          isTruncated: page.isTruncated,
-          message: page.isTruncated
-            ? "El inventario supera una página; se requiere paginación antes de copiar."
-            : "Inventario de origen completado. No se modificó ningún objeto."
+          ...inventory,
+          message: inventory.isTruncated
+            ? inventory.message
+            : "Inventario completo de " + inventory.objectCount + " objetos en " +
+              inventory.pageCount + " página(s). No se modificó ningún objeto."
         }
       });
     }
@@ -284,9 +384,12 @@ export async function onRequest(context) {
 
     return jsonResponse(400, { error: "Acción no válida. Usá inventory o copy." });
   } catch (error) {
-    console.error("JB Supabase-to-R2 migration failed:", error instanceof Error ? error.message : "unknown error");
-    return jsonResponse(502, {
-      error: error instanceof Error ? error.message : "No se pudo completar la operación S3."
+    const message = error instanceof Error ? error.message : "No se pudo completar la operación S3.";
+    const sourceRestricted = /HTTP 402/.test(message);
+    console.error("JB Supabase-to-R2 migration failed:", message);
+    return jsonResponse(sourceRestricted ? 503 : 502, {
+      code: sourceRestricted ? "SUPABASE_SERVICE_RESTRICTED" : "MIGRATION_FAILED",
+      error: message
     });
   }
 }

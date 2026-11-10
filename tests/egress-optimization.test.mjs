@@ -1,3 +1,4 @@
+import { sha256Hex } from "../functions/api/migration/supabase-r2.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -9,6 +10,7 @@ const perfumery = read("perfumeria.js");
 const customerChat = read("private-chat.js");
 const admin = read("admin.js");
 const workflow = read(".github/workflows/catalog-static-checks.yml");
+const migrationRoute = read("functions/api/migration/supabase-r2.js");
 
 test("public product media is proxied through Cloudflare cache without exposing arbitrary origins", () => {
   assert.match(mediaRoute, /SUPABASE_STORAGE_ORIGIN = "https:\/\/uwqnoadelnnplcvqqlyz\.supabase\.co"/);
@@ -53,4 +55,31 @@ test("admin private inbox polls less frequently and skips background tabs", () =
   assert.match(admin, /document\.visibilityState === "visible"/);
   assert.match(admin, /addEventListener\("visibilitychange", refreshPrivateChatAdminInboxWhenVisible\)/);
   assert.doesNotMatch(admin, /loadPrivateChatInbox\(\{ silent: true \}\);\s*\}, 15000\)/);
+});
+
+test("Supabase-to-R2 migration hashes content and verifies R2 readback", async () => {
+  assert.equal(
+    await sha256Hex(new TextEncoder().encode("abc")),
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+  );
+  assert.match(migrationRoute, /async function inventorySourceObjects\(env\)/);
+  assert.match(migrationRoute, /MAX_INVENTORY_PAGES/);
+  assert.match(migrationRoute, /customMetadata:\s*\{[\s\S]*?sha256:\s*sourceSha256/);
+  assert.match(migrationRoute, /existing\.customMetadata\?\.sha256/);
+  assert.match(migrationRoute, /const existingObject = await bucket\.get\(path\)/);
+  assert.match(migrationRoute, /const readback = await bucket\.get\(path\)/);
+  assert.match(migrationRoute, /savedSha256 !== sourceSha256/);
+  assert.match(migrationRoute, /Supabase restringió temporalmente el servicio por cuota \(HTTP 402\)/);
+  assert.match(migrationRoute, /SUPABASE_SERVICE_RESTRICTED/);
+});
+
+test("admin migration resumes from a persisted cursor and explains service restriction without looping batches", () => {
+  const adminMigration = read("admin-storage-migration.js");
+  assert.match(adminMigration, /STATE_KEY/);
+  assert.match(adminMigration, /function restoreProgress\(\)/);
+  assert.match(adminMigration, /function persistProgress\(\)/);
+  assert.match(adminMigration, /HTTP 402/);
+  assert.match(adminMigration, /La migración quedó detenida/);
+  assert.match(adminMigration, /La paginación S3 no avanzó/);
+  assert.match(adminMigration, /no se sobrescribió conflictos/);
 });
