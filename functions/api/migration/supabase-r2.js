@@ -254,31 +254,20 @@ async function copyBatch(context, continuationToken, batchSize) {
       const sourceSha256 = await sha256Hex(bytes);
 
       if (existing) {
-        const savedHash = String(existing.customMetadata?.sha256 || "").toLowerCase();
-        if (savedHash) {
-          if (savedHash !== sourceSha256) {
-            result.conflicts += 1;
-            result.errors.push({
-              key: path,
-              reason: "Ya existe en R2 con SHA-256 distinto; no se sobrescribió."
-            });
-            continue;
-          }
-        } else {
-          // Legacy objects without our checksum metadata are read back and hashed.
-          // Matching size alone is never considered proof that the object is identical.
-          const existingObject = await bucket.get(path);
-          if (!existingObject) throw new Error("El objeto existente desapareció durante la verificación.");
-          const existingBytes = await existingObject.arrayBuffer();
-          const existingSha256 = await sha256Hex(existingBytes);
-          if (existingBytes.byteLength !== source.size || existingSha256 !== sourceSha256) {
-            result.conflicts += 1;
-            result.errors.push({
-              key: path,
-              reason: "El contenido existente en R2 no coincide por SHA-256; no se sobrescribió."
-            });
-            continue;
-          }
+        // Always compare the actual bytes stored in R2 with the source.
+        // Custom metadata is useful for audit, but is not accepted as proof
+        // that the object content still matches.
+        const existingObject = await bucket.get(path);
+        if (!existingObject) throw new Error("El objeto existente desapareció durante la verificación.");
+        const existingBytes = await existingObject.arrayBuffer();
+        const existingSha256 = await sha256Hex(existingBytes);
+        if (existingBytes.byteLength !== source.size || existingSha256 !== sourceSha256) {
+          result.conflicts += 1;
+          result.errors.push({
+            key: path,
+            reason: "El contenido existente en R2 no coincide por SHA-256; no se sobrescribió."
+          });
+          continue;
         }
         result.alreadyPresent += 1;
         result.sha256Verified += 1;

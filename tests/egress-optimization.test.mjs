@@ -65,8 +65,10 @@ test("Supabase-to-R2 migration hashes content and verifies R2 readback", async (
   assert.match(migrationRoute, /async function inventorySourceObjects\(env\)/);
   assert.match(migrationRoute, /MAX_INVENTORY_PAGES/);
   assert.match(migrationRoute, /customMetadata:\s*\{[\s\S]*?sha256:\s*sourceSha256/);
-  assert.match(migrationRoute, /existing\.customMetadata\?\.sha256/);
   assert.match(migrationRoute, /const existingObject = await bucket\.get\(path\)/);
+  assert.match(migrationRoute, /const existingSha256 = await sha256Hex\(existingBytes\)/);
+  assert.match(migrationRoute, /existingBytes\.byteLength !== source\.size \|\| existingSha256 !== sourceSha256/);
+  assert.doesNotMatch(migrationRoute, /if \(savedHash\)/);
   assert.match(migrationRoute, /const readback = await bucket\.get\(path\)/);
   assert.match(migrationRoute, /savedSha256 !== sourceSha256/);
   assert.match(migrationRoute, /Supabase restringió temporalmente el servicio por cuota \(HTTP 402\)/);
