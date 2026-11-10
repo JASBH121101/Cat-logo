@@ -81,5 +81,8 @@ test("admin migration resumes from a persisted cursor and explains service restr
   assert.match(adminMigration, /HTTP 402/);
   assert.match(adminMigration, /La migración quedó detenida/);
   assert.match(adminMigration, /La paginación S3 no avanzó/);
-  assert.match(adminMigration, /no se sobrescribió conflictos/);
+  assert.match(adminMigration, /no sobrescribió conflictos/);
+  assert.match(adminMigration, /migrationCompleted/);
+  assert.match(adminMigration, /sourceRestricted/);
+  assert.match(adminMigration, /errors\.slice\(0, 10\)/);
 });

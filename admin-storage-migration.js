@@ -28,12 +28,15 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
   let bytesCopied = 0;
   let processed = 0;
   let continuationToken = "";
+  let sourceRestricted = false;
+  let migrationCompleted = false;
 
   function restoreProgress() {
     try {
       continuationToken = sessionStorage.getItem(TOKEN_KEY) || "";
       const saved = JSON.parse(sessionStorage.getItem(STATE_KEY) || "null");
       if (!saved || saved.version !== 1) return;
+      migrationCompleted = saved.completed === true;
       for (const [key, setter] of [
         ["copied", value => { copied = value; }],
         ["alreadyPresent", value => { alreadyPresent = value; }],
@@ -55,7 +58,8 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
       if (continuationToken) sessionStorage.setItem(TOKEN_KEY, continuationToken);
       else sessionStorage.removeItem(TOKEN_KEY);
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
-        version: 1, copied, alreadyPresent, failed, conflicts, bytesCopied, processed
+        version: 1, copied, alreadyPresent, failed, conflicts, bytesCopied, processed,
+        completed: migrationCompleted
       }));
     } catch {}
   }
@@ -129,22 +133,29 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
         " · " + inventory.invalidObjectCount + " rutas fuera del formato esperado.";
       writeLog(message);
       if (inventory.isTruncated) {
-        setStatus("El inventario requiere paginación adicional. No iniciamos la copia.", "warning");
+        setStatus(inventory.message || "El inventario superó el límite seguro de páginas. No iniciamos la copia.", "warning");
       } else if (inventory.invalidObjectCount > 0) {
         setStatus("Hay rutas que requieren revisión. No iniciamos la copia.", "warning");
       } else {
         setStatus("Conexión S3 correcta. Inventario listo; no se modificó ningún archivo.", "success");
-        startButton.disabled = inventory.objectCount === 0;
+        startButton.disabled = sourceRestricted || migrationCompleted || inventory.objectCount === 0;
+        if (migrationCompleted) {
+          setStatus("La migración ya fue completada en esta sesión. No se volverá a copiar automáticamente.", "success");
+        }
       }
     } catch (error) {
-      setStatus(explainError(error), "error");
-      writeLog("Inventario detenido: " + explainError(error));
+      const message = explainError(error);
+      if (/HTTP 402|SUPABASE_SERVICE_RESTRICTED/.test(message)) sourceRestricted = true;
+      setStatus(message, "error");
+      writeLog("Inventario detenido: " + message);
     } finally {
-      inventoryButton.disabled = false;
+      inventoryButton.disabled = sourceRestricted;
+      startButton.disabled = sourceRestricted || migrationCompleted || !inventory || !inventory.objectCount;
     }
   }
 
   async function runMigration() {
+    if (migrationCompleted || sourceRestricted) return;
     if (running) {
       stopRequested = true;
       startButton.textContent = "Deteniendo al terminar este lote…";
@@ -177,9 +188,18 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
           continuationToken = tokenBeforeBatch;
           failed = Number(data.failed || 0);
           conflicts = Number(data.conflicts || 0);
+          const errors = Array.isArray(data.errors) ? data.errors : [];
+          if (errors.some(item => /HTTP 402/.test(String(item?.reason || "")))) {
+            sourceRestricted = true;
+          }
           persistProgress();
           writeLog("Lote con incidencias: " + failed + " errores y " + conflicts + " conflictos. No se avanzó el cursor.");
-          setStatus("La copia se pausó para revisar incidencias. Los originales siguen intactos y R2 no sobrescribió conflictos.", "warning");
+          errors.slice(0, 10).forEach(item => writeLog(String(item.key || "Objeto") + ": " + String(item.reason || "Error sin detalle")));
+          if (sourceRestricted) {
+            setStatus(explainError(new Error("HTTP 402")), "error");
+          } else {
+            setStatus("La copia se pausó para revisar incidencias. Los originales siguen intactos y R2 no sobrescribió conflictos.", "warning");
+          }
           break;
         }
 
@@ -204,7 +224,7 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
 
         if (!data.isTruncated) {
           continuationToken = "";
-          continuationToken = "";
+          migrationCompleted = true;
           persistProgress();
           setStatus("Migración terminada. Los archivos nuevos y los ya existentes fueron verificados por SHA-256. Supabase no se modificó.", "success");
           writeLog("Migración completada; no se borró ningún objeto del bucket de origen.");
@@ -218,13 +238,15 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
         writeLog("Pausa solicitada; el cursor de continuación quedó guardado en esta sesión.");
       }
     } catch (error) {
-      setStatus(explainError(error), "error");
-      writeLog("Migración interrumpida; el origen permanece intacto. " + explainError(error));
+      const message = explainError(error);
+      if (/HTTP 402|SUPABASE_SERVICE_RESTRICTED/.test(message)) sourceRestricted = true;
+      setStatus(message, "error");
+      writeLog("Migración interrumpida; el origen permanece intacto. " + message);
     } finally {
       running = false;
       stopRequested = false;
-      inventoryButton.disabled = false;
-      startButton.disabled = !inventory || !inventory.objectCount;
+      inventoryButton.disabled = sourceRestricted;
+      startButton.disabled = sourceRestricted || migrationCompleted || !inventory || !inventory.objectCount;
       startButton.textContent = "Continuar migración";
       renderSummary();
     }
