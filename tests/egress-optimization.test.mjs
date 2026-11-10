@@ -84,5 +84,6 @@ test("admin migration resumes from a persisted cursor and explains service restr
   assert.match(adminMigration, /no sobrescribió conflictos/);
   assert.match(adminMigration, /migrationCompleted/);
   assert.match(adminMigration, /sourceRestricted/);
+  assert.match(adminMigration, /inventory\.isTruncated/);
   assert.match(adminMigration, /errors\.slice\(0, 10\)/);
 });

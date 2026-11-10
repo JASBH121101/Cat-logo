@@ -138,7 +138,7 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
         setStatus("Hay rutas que requieren revisión. No iniciamos la copia.", "warning");
       } else {
         setStatus("Conexión S3 correcta. Inventario listo; no se modificó ningún archivo.", "success");
-        startButton.disabled = sourceRestricted || migrationCompleted || inventory.objectCount === 0;
+        startButton.disabled = sourceRestricted || migrationCompleted || !inventory || inventory.isTruncated || Number(inventory.invalidObjectCount) > 0 || !inventory.objectCount;
         if (migrationCompleted) {
           setStatus("La migración ya fue completada en esta sesión. No se volverá a copiar automáticamente.", "success");
         }
@@ -150,7 +150,7 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
       writeLog("Inventario detenido: " + message);
     } finally {
       inventoryButton.disabled = sourceRestricted;
-      startButton.disabled = sourceRestricted || migrationCompleted || !inventory || !inventory.objectCount;
+      startButton.disabled = sourceRestricted || migrationCompleted || !inventory || inventory.isTruncated || Number(inventory.invalidObjectCount) > 0 || !inventory.objectCount;
     }
   }
 
@@ -246,7 +246,7 @@ export function initStorageMigration({ getClient, getCurrentUser }) {
       running = false;
       stopRequested = false;
       inventoryButton.disabled = sourceRestricted;
-      startButton.disabled = sourceRestricted || migrationCompleted || !inventory || !inventory.objectCount;
+      startButton.disabled = sourceRestricted || migrationCompleted || !inventory || inventory.isTruncated || Number(inventory.invalidObjectCount) > 0 || !inventory.objectCount;
       startButton.textContent = "Continuar migración";
       renderSummary();
     }
