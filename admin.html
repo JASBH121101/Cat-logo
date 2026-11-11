@@ -60,15 +60,19 @@
       <p class="eyebrow">ÁREA PRIVADA · JB ADMIN</p>
       <h1>Administrá tu catálogo.</h1>
       <p class="section-subtitle">
-        Iniciá sesión con el correo autorizado para agregar y actualizar productos.
+        Iniciá sesión con el usuario y la contraseña que te asignó el propietario.
       </p>
 
       <form id="login-form" class="admin-form login-form">
         <label>
-          Correo electrónico <span class="required-mark" aria-hidden="true">*</span>
+          Usuario <span class="required-mark" aria-hidden="true">*</span>
           <input id="login-email"
-                 type="email"
+                 type="text"
                  autocomplete="username"
+                 autocapitalize="none"
+                 spellcheck="false"
+                 maxlength="254"
+                 placeholder="Ej. invitado01"
                  required>
         </label>
 
@@ -112,7 +116,7 @@
       <form id="admin-password-reset-form" class="admin-form admin-password-reset-form" hidden>
         <div>
           <h2>Configurar contraseña de Neon</h2>
-          <p>Solicitá un código de un solo uso al correo de la cuenta autorizada. No se habilita el registro público.</p>
+          <p>La recuperación por correo aplica solo a cuentas con correo real. Las cuentas de usuario sin correo deberán ser restablecidas por el propietario. No se habilita el registro público.</p>
         </div>
 
         <label>
