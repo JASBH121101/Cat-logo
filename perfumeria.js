@@ -19,9 +19,22 @@ function catalogMediaBaseUrl() {
 
 function catalogMediaUrl(value) {
   const original = String(value || "").trim();
-  if (!original || !CATALOG_MEDIA_SUPABASE_ORIGIN) return original;
+  if (!original) return original;
   try {
     const parsed = new URL(original, window.location.href);
+    const currentHost = String(window.location.hostname || "").toLowerCase();
+    const isPreviewHost = currentHost.endsWith(".jb-collections.pages.dev") &&
+      currentHost !== "jb-collections.pages.dev";
+
+    // Migrated product rows still contain absolute Production media URLs.
+    // Rebase them to this Preview deployment so images resolve only against
+    // the Preview R2 binding (and its explicitly configured source fallback).
+    if (isPreviewHost &&
+        parsed.origin === "https://jb-collections.pages.dev" &&
+        parsed.pathname.startsWith("/media/")) {
+      return window.location.origin + parsed.pathname + parsed.search + parsed.hash;
+    }
+
     if (parsed.origin !== CATALOG_MEDIA_SUPABASE_ORIGIN || parsed.search || parsed.hash) return original;
     const prefix = "/storage/v1/object/public/" + CATALOG_MEDIA_BUCKET + "/";
     if (!parsed.pathname.startsWith(prefix)) return original;
