@@ -3211,6 +3211,141 @@ document.getElementById("team-permissions-refresh")?.addEventListener("click", (
   void loadTeamPermissions();
 });
 
+/* Owner-managed demo accounts. The guest password remains in page memory only
+   and is sent directly to Neon Auth after the owner enters the emailed OTP. */
+let pendingDemoGuestCredential = null;
+const demoGuestCreateForm = document.getElementById("fiverr-demo-create-user-form");
+const demoGuestOtpForm = document.getElementById("fiverr-demo-guest-otp-form");
+const demoGuestCreateStatus = document.getElementById("fiverr-demo-create-user-status");
+const demoGuestCreateButton = document.getElementById("fiverr-demo-create-user-submit");
+const demoGuestOtpButton = document.getElementById("fiverr-demo-guest-otp-submit");
+const demoGuestResendButton = document.getElementById("fiverr-demo-guest-otp-resend");
+
+function setDemoGuestStatus(text, kind = "") {
+  if (!demoGuestCreateStatus) return;
+  demoGuestCreateStatus.textContent = text || "";
+  demoGuestCreateStatus.dataset.state = kind;
+}
+
+demoGuestCreateForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser?.isOwner || !supabase) {
+    setDemoGuestStatus("Solo el propietario puede crear cuentas invitadas.", "error");
+    return;
+  }
+
+  const username = String(document.getElementById("fiverr-demo-guest-username")?.value || "")
+    .trim().normalize("NFKC").toLowerCase();
+  const displayName = String(document.getElementById("fiverr-demo-guest-name")?.value || "").trim();
+  const password = String(document.getElementById("fiverr-demo-guest-password")?.value || "");
+  const confirmation = String(document.getElementById("fiverr-demo-guest-password-confirm")?.value || "");
+
+  if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username) || username === "jaredbh") {
+    setDemoGuestStatus("Usá entre 3 y 30 caracteres válidos. No se puede reutilizar JaredBH.", "error");
+    return;
+  }
+  if (!displayName || displayName.length > 80) {
+    setDemoGuestStatus("Ingresá un nombre visible de hasta 80 caracteres.", "error");
+    return;
+  }
+  if (password.length < 12 || password.length > 128) {
+    setDemoGuestStatus("La contraseña debe tener entre 12 y 128 caracteres.", "error");
+    return;
+  }
+  if (password !== confirmation) {
+    setDemoGuestStatus("Las contraseñas no coinciden.", "error");
+    return;
+  }
+
+  demoGuestCreateButton.disabled = true;
+  demoGuestCreateButton.textContent = "Creando cuenta…";
+  setDemoGuestStatus("Validando propietario y creando la identidad privada…");
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    const token = sessionData?.session?.access_token;
+    if (!token) throw new Error("La sesión expiró. Iniciá sesión nuevamente como propietario.");
+
+    const response = await fetch("/api/admin/guests", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      },
+      body: JSON.stringify({ username, display_name: displayName })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "No se pudo crear la cuenta invitada.");
+
+    pendingDemoGuestCredential = { username, password };
+    demoGuestCreateForm.hidden = true;
+    if (demoGuestOtpForm) demoGuestOtpForm.hidden = false;
+    const otpCopy = document.getElementById("fiverr-demo-guest-otp-copy");
+    if (otpCopy) otpCopy.textContent = "La cuenta " + username + " ya está vinculada. Solicitá el código y confirmá la contraseña que acabás de elegir.";
+    try {
+      await requestCatalogPasswordReset(username);
+      setDemoGuestStatus("Cuenta " + username + " creada. El código de un solo uso fue enviado a tu Gmail.", "success");
+    } catch (emailError) {
+      setDemoGuestStatus("La cuenta " + username + " fue creada, pero no se pudo enviar el código. Usá «Reenviar código» para intentarlo otra vez. " + (emailError?.message || ""), "error");
+    }
+    await loadTeamPermissions();
+  } catch (error) {
+    setDemoGuestStatus(error?.message || "No se pudo crear la cuenta invitada.", "error");
+  } finally {
+    demoGuestCreateButton.disabled = false;
+    demoGuestCreateButton.textContent = "Crear usuario y enviar código";
+  }
+});
+
+demoGuestResendButton?.addEventListener("click", async () => {
+  if (!pendingDemoGuestCredential || !currentUser?.isOwner) return;
+  demoGuestResendButton.disabled = true;
+  try {
+    await requestCatalogPasswordReset(pendingDemoGuestCredential.username);
+    setDemoGuestStatus("Código reenviado a tu Gmail para " + pendingDemoGuestCredential.username + ".", "success");
+  } catch (error) {
+    setDemoGuestStatus(error?.message || "No se pudo reenviar el código.", "error");
+  } finally {
+    demoGuestResendButton.disabled = false;
+  }
+});
+
+demoGuestOtpForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser?.isOwner || !pendingDemoGuestCredential) {
+    setDemoGuestStatus("No hay una cuenta pendiente de activar.", "error");
+    return;
+  }
+  const otp = String(document.getElementById("fiverr-demo-guest-otp")?.value || "").trim();
+  if (!/^\d{6}$/.test(otp)) {
+    setDemoGuestStatus("Ingresá el código de seis dígitos.", "error");
+    return;
+  }
+  demoGuestOtpButton.disabled = true;
+  demoGuestOtpButton.textContent = "Guardando contraseña…";
+  try {
+    await completeCatalogPasswordReset(
+      pendingDemoGuestCredential.username,
+      otp,
+      pendingDemoGuestCredential.password
+    );
+    const completedUsername = pendingDemoGuestCredential.username;
+    pendingDemoGuestCredential = null;
+    demoGuestOtpForm.reset();
+    demoGuestOtpForm.hidden = true;
+    demoGuestCreateForm.reset();
+    demoGuestCreateForm.hidden = false;
+    setDemoGuestStatus("Cuenta " + completedUsername + " creada y contraseña configurada. Ya podés compartir el usuario y la contraseña con el comprador.", "success");
+    await loadTeamPermissions();
+  } catch (error) {
+    setDemoGuestStatus(error?.message || "No se pudo activar la contraseña. Verificá el código e intentá nuevamente.", "error");
+  } finally {
+    demoGuestOtpButton.disabled = false;
+    demoGuestOtpButton.textContent = "Guardar contraseña y finalizar";
+  }
+});
+
 async function handleSession() {
   if (!configured) {
     message(
