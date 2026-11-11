@@ -3071,6 +3071,124 @@ async function showDashboard(user) {
   }
 }
 
+const TEAM_PERMISSION_DEFINITIONS = [
+  { key: "catalog.view_all", label: "Ver inventario completo", description: "Incluye borradores y productos no publicados." },
+  { key: "products.create", label: "Crear productos", description: "Permite registrar nuevos productos y fragancias." },
+  { key: "products.edit", label: "Editar productos", description: "Permite modificar fichas y variantes existentes." },
+  { key: "products.delete", label: "Eliminar productos", description: "Permite mover productos a papelera y eliminarlos definitivamente." },
+  { key: "products.publish", label: "Publicar productos", description: "Permite cambiar el estado de publicación." }
+];
+
+async function loadTeamPermissions() {
+  const card = document.getElementById("team-permissions-card");
+  const list = document.getElementById("team-permissions-list");
+  const status = document.getElementById("team-permissions-status");
+  const refresh = document.getElementById("team-permissions-refresh");
+  if (!card || !list || !status || !currentUser?.isOwner || !supabase) return;
+  card.hidden = false;
+  if (refresh) refresh.disabled = true;
+  status.textContent = "Cargando usuarios y permisos…";
+  list.replaceChildren();
+
+  try {
+    const { data, error } = await supabase.rpc("list_fiverr_demo_team");
+    if (error) throw error;
+    const members = Array.isArray(data) ? data : [];
+    if (!members.length) {
+      status.textContent = "No hay cuentas de equipo registradas todavía. Primero se debe crear la cuenta de demostración.";
+      return;
+    }
+
+    members.forEach(member => {
+      const article = document.createElement("article");
+      article.className = "team-permission-member";
+      const heading = document.createElement("div");
+      heading.className = "team-permission-member-heading";
+      const title = document.createElement("h3");
+      title.textContent = member.is_owner ? "Propietario · " + (member.username || "JaredBH") : (member.username || "Usuario demo");
+      const role = document.createElement("span");
+      role.className = "team-permission-role";
+      role.textContent = member.is_owner ? "CONTROL TOTAL" : "CUENTA DE DEMOSTRACIÓN";
+      heading.append(title, role);
+      article.append(heading);
+
+      if (member.is_owner) {
+        const note = document.createElement("p");
+        note.className = "team-permission-note";
+        note.textContent = "Esta cuenta conserva el control total y no puede ser degradada desde la lista de invitados.";
+        article.append(note);
+        list.append(article);
+        return;
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "team-permission-grid";
+      TEAM_PERMISSION_DEFINITIONS.forEach(definition => {
+        const label = document.createElement("label");
+        label.className = "team-permission-option";
+        const copy = document.createElement("span");
+        copy.className = "team-permission-copy";
+        const strong = document.createElement("strong");
+        strong.textContent = definition.label;
+        const small = document.createElement("small");
+        small.textContent = definition.description;
+        copy.append(strong, small);
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.permission = definition.key;
+        checkbox.checked = member.permissions?.[definition.key] === true;
+        label.append(copy, checkbox);
+        grid.append(label);
+      });
+      article.append(grid);
+
+      const actions = document.createElement("div");
+      actions.className = "team-permission-actions";
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "button button-primary";
+      save.textContent = "Guardar permisos";
+      save.addEventListener("click", async () => {
+        save.disabled = true;
+        const requestedPermissions = Object.fromEntries(
+          Array.from(grid.querySelectorAll("input[data-permission]"))
+            .map(input => [input.dataset.permission, input.checked])
+        );
+        try {
+          const result = await supabase.rpc("set_fiverr_demo_user_permissions", {
+            target_user_id: member.user_id,
+            requested_permissions: requestedPermissions
+          });
+          if (result.error) throw result.error;
+          status.textContent = "Permisos actualizados para " + (member.username || "la cuenta demo") + ".";
+          status.dataset.state = "success";
+        } catch (error) {
+          status.textContent = error?.message || "No se pudieron guardar los permisos.";
+          status.dataset.state = "error";
+        } finally {
+          save.disabled = false;
+        }
+      });
+      actions.append(save);
+      article.append(actions);
+      list.append(article);
+    });
+    if (!status.textContent || status.textContent === "Cargando usuarios y permisos…") {
+      status.textContent = "Los cambios se aplican desde la base de datos y se pueden revocar en cualquier momento.";
+      status.dataset.state = "success";
+    }
+  } catch (error) {
+    status.textContent = error?.message || "No se pudo cargar el equipo.";
+    status.dataset.state = "error";
+  } finally {
+    if (refresh) refresh.disabled = false;
+  }
+}
+
+document.getElementById("team-permissions-refresh")?.addEventListener("click", () => {
+  void loadTeamPermissions();
+});
+
 async function handleSession() {
   if (!configured) {
     message(
