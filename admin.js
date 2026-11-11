@@ -3577,16 +3577,47 @@ window.addEventListener("resize", () => {
   }
 });
 
+const DEMO_VIEWER_MODULE_NOTES = {
+  add: ["Añadir productos", "Módulo disponible para evaluación visual. Los formularios de creación y guardado están deshabilitados."],
+  unpublished: ["Productos no publicados", "Podés revisar la estructura del módulo. Los registros internos y borradores no se comparten con la cuenta invitada."],
+  drafts: ["Borradores", "Vista previa del módulo. Los borradores y sus datos internos permanecen reservados al propietario."],
+  trash: ["Papelera", "La papelera se muestra como módulo, pero la restauración y eliminación están bloqueadas para la cuenta invitada."],
+  provider: ["Productos por revisar", "Vista previa del seguimiento de proveedores. Los precios, notas e historiales internos permanecen privados."],
+  reviewed: ["Productos revisados", "Vista previa del historial de revisión. Los datos del proveedor están reservados al propietario."],
+  ai: ["JB Manager AI", "El módulo se muestra para evaluar su diseño. Las consultas y acciones de IA están deshabilitadas en esta demo."],
+  messages: ["Mensajería de clientes", "El módulo se muestra como referencia. Las conversaciones y los datos de clientes no se exponen a la cuenta invitada."],
+  "storage-migration": ["Migración de imágenes", "Vista previa del módulo de infraestructura. Las verificaciones y migraciones están deshabilitadas."],
+  updates: ["Importar cambios del proveedor", "Vista previa del importador. No se pueden cargar archivos ni aplicar actualizaciones."]
+};
+
+function showDemoViewerModuleNotice(section) {
+  const panel = document.querySelector('[data-admin-panel="' + section + '"]');
+  if (!panel) return;
+  let notice = panel.querySelector(".demo-viewer-module-notice");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.className = "demo-viewer-module-notice";
+    notice.setAttribute("role", "note");
+    panel.prepend(notice);
+  }
+  const copy = DEMO_VIEWER_MODULE_NOTES[section];
+  if (copy) {
+    notice.replaceChildren();
+    const title = document.createElement("strong");
+    title.textContent = copy[0] + " · Solo vista previa";
+    const description = document.createElement("span");
+    description.textContent = copy[1];
+    notice.append(title, description);
+  }
+}
+
 function showAdminSection(section) {
   if (currentUser?.role === "demo_viewer") {
-    const allowed = new Set(["home", "published"]);
-    if (hasCatalogPermission("catalog.view_all")) {
-      ["unpublished", "drafts", "trash"].forEach(item => allowed.add(item));
-    }
-    if (hasCatalogPermission("products.create") || hasCatalogPermission("products.edit")) {
-      allowed.add("add");
-    }
-    if (!allowed.has(section)) section = "home";
+    const visiblePreviewSections = new Set([
+      "home", "add", "published", "unpublished", "drafts", "trash",
+      "provider", "reviewed", "ai", "messages", "storage-migration", "updates"
+    ]);
+    if (!visiblePreviewSections.has(section)) section = "home";
   }
   document.body.dataset.adminActiveSection = section;
   if (!window.matchMedia("(max-width: 760px)").matches) {
@@ -3607,9 +3638,37 @@ function showAdminSection(section) {
   // Navigation can be triggered while the page is scrolled far down. Reset the
   // document scroll so the sticky admin header never covers the selected panel title.
   window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  if (section === "messages") void loadPrivateChatInbox();
+  if (currentUser?.role === "demo_viewer") {
+    showDemoViewerModuleNotice(section);
+    if (section === "messages") {
+      privateChatSetStatus("La mensajería está disponible como vista previa; las conversaciones reales están protegidas.", "info");
+    }
+  } else if (section === "messages") {
+    void loadPrivateChatInbox();
+  }
 }
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
+
+/* Read-only buyer preview: navigation and product preview stay available, all write actions are blocked. */
+document.addEventListener("click", event => {
+  if (currentUser?.role !== "demo_viewer") return;
+  const allowed = event.target.closest(
+    "[data-admin-section], #admin-menu-toggle, #admin-sidebar-backdrop, #logout-button, [data-preview-product], .admin-preview-open-button, summary"
+  );
+  if (allowed) return;
+  const action = event.target.closest("button, [role='button'], input[type='submit']");
+  if (!action) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  setStatus("Modo vista previa: las acciones administrativas están deshabilitadas.");
+}, true);
+
+document.addEventListener("submit", event => {
+  if (currentUser?.role !== "demo_viewer") return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  setStatus("Modo vista previa: no se pueden guardar ni enviar cambios.");
+}, true);
 
 
 /* =========================================================
