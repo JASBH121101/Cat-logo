@@ -10,7 +10,7 @@
   "r2_buckets": [
     {
       "binding": "PRODUCT_IMAGES",
-      "bucket_name": "jb-collections"
+      "bucket_name": "jb-collections-fiverr-demo"
     }
   ],
   "vars": {
