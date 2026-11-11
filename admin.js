@@ -108,6 +108,7 @@ const INTERACTIVE_PREVIEW_HOSTS = new Set([
   "migration-neon-r2.jb-collections.pages.dev"
 ]);
 const IS_READ_ONLY_PREVIEW =
+  IS_FIVERR_DEMO_HOST ||
   /\.vercel\.app$/i.test(adminHostname) ||
   (/\.pages\.dev$/i.test(adminHostname) &&
     adminHostname !== "jb-collections.pages.dev" &&

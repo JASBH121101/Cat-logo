@@ -35,7 +35,7 @@ export async function onRequest({ request, env }) {
 
   const baseValue = String(
     new URL(request.url).hostname === "fiverr-demo.jb-collections.pages.dev"
-      ? env.FIVERR_DEMO_NEON_AUTH_BASE_URL || ""
+      ? "https://ep-steep-rain-bei5dxk1.neonauth.c-9.us-east-2.aws.neon.tech/fiverr_auth/auth"
       : env.NEON_AUTH_BASE_URL || ""
   ).trim();
   let upstreamBase;
