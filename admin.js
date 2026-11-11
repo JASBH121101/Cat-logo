@@ -108,11 +108,12 @@ const INTERACTIVE_PREVIEW_HOSTS = new Set([
   "migration-neon-r2.jb-collections.pages.dev"
 ]);
 const IS_READ_ONLY_PREVIEW =
-  IS_FIVERR_DEMO_HOST ||
-  /\.vercel\.app$/i.test(adminHostname) ||
-  (/\.pages\.dev$/i.test(adminHostname) &&
-    adminHostname !== "jb-collections.pages.dev" &&
-    !INTERACTIVE_PREVIEW_HOSTS.has(adminHostname));
+  !IS_FIVERR_DEMO_HOST && (
+    /\.vercel\.app$/i.test(adminHostname) ||
+    (/\.pages\.dev$/i.test(adminHostname) &&
+      adminHostname !== "jb-collections.pages.dev" &&
+      !INTERACTIVE_PREVIEW_HOSTS.has(adminHostname))
+  );
 if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalFrom = supabase.from.bind(supabase);
   supabase.from = table => {
@@ -206,6 +207,19 @@ loginCredentialForm?.addEventListener("invalid", event => {
 }, true);
 
 let currentUser = null;
+function hasCatalogPermission(permission) {
+  if (currentUser?.role === "admin") return true;
+  return currentUser?.permissions?.[permission] === true;
+}
+function applyDemoPermissionClasses() {
+  const viewer = currentUser?.role === "demo_viewer";
+  document.body.classList.toggle("demo-viewer-can-view-all", viewer && hasCatalogPermission("catalog.view_all"));
+  document.body.classList.toggle("demo-viewer-can-create", viewer && hasCatalogPermission("products.create"));
+  document.body.classList.toggle("demo-viewer-can-edit", viewer && hasCatalogPermission("products.edit"));
+  document.body.classList.toggle("demo-viewer-can-delete", viewer && hasCatalogPermission("products.delete"));
+  document.body.classList.toggle("demo-viewer-can-publish", viewer && hasCatalogPermission("products.publish"));
+  document.body.classList.toggle("demo-viewer-can-write", viewer && (hasCatalogPermission("products.create") || hasCatalogPermission("products.edit")));
+}
 let products = [];
 let inventoryRefreshPromise = null;
 const CATALOG_ADMIN_ACTIVITY_KEY = "cat-logo-admin-activity-v1";
@@ -1622,6 +1636,8 @@ function clearLoginPassword() {
 
 function showLoginScreen(statusText = "", type = "") {
   currentUser = null;
+  applyDemoPermissionClasses();
+  document.body.classList.remove("demo-viewer-mode");
   jbManagerAI?.clearSession();
   products = [];
   clearCatalogAdminActivityMarker();
@@ -2957,38 +2973,61 @@ async function confirmAdmin(user) {
 
   let { data, error } = await supabase
     .from("admin_users")
-    .select("user_id,role")
+    .select("user_id,role,username,is_owner,permissions")
     .eq("neon_auth_user_id", user.id)
     .maybeSingle();
 
   if (error) throw error;
   if (!data && IS_FIVERR_DEMO_HOST) {
-    const { error: registerError } = await supabase.rpc("register_fiverr_demo_viewer");
+    const { error: registerError } = await supabase.rpc("register_fiverr_demo_identity");
     if (registerError) throw new Error(registerError.message || "No se pudo habilitar la cuenta de demostración.");
     const refreshed = await supabase
       .from("admin_users")
-      .select("user_id,role")
+      .select("user_id,role,username,is_owner,permissions")
       .eq("neon_auth_user_id", user.id)
       .maybeSingle();
     if (refreshed.error) throw refreshed.error;
     data = refreshed.data;
   }
-  const role = String(data?.role || "admin");
+  const role = String(data?.role || "");
   if (!data || !["admin", "demo_viewer"].includes(role)) {
     throw new Error("Tu usuario no tiene permisos para acceder a este panel.");
   }
 
-  return { userId: data.user_id, role };
+  return {
+    userId: data.user_id,
+    role,
+    username: data.username || "",
+    isOwner: data.is_owner === true,
+    permissions: data.permissions && typeof data.permissions === "object" ? data.permissions : {}
+  };
 }
 
 async function showDashboard(user) {
   const access = await confirmAdmin(user);
   const isDemoViewer = access.role === "demo_viewer";
 
-  currentUser = { ...user, id: access.userId, neonAuthUserId: user.id, role: access.role };
+  currentUser = {
+    ...user,
+    id: access.userId,
+    neonAuthUserId: user.id,
+    role: access.role,
+    username: access.username,
+    isOwner: access.isOwner,
+    permissions: access.permissions
+  };
   document.body.classList.toggle("demo-viewer-mode", isDemoViewer);
+  applyDemoPermissionClasses();
   const demoBanner = $("#demo-viewer-banner");
-  if (demoBanner) demoBanner.hidden = !isDemoViewer;
+  if (demoBanner) {
+    demoBanner.hidden = !isDemoViewer;
+    const copy = demoBanner.querySelector("span:last-child");
+    if (copy) {
+      copy.textContent = hasCatalogPermission("products.edit") || hasCatalogPermission("products.create")
+        ? "Acceso de demostración · Permisos asignados por el propietario."
+        : "Explorá los catálogos publicados en modo de solo lectura.";
+    }
+  }
 
   if (!isDemoViewer) {
     jbManagerAI?.setAuthenticatedUser(user);
@@ -3013,12 +3052,17 @@ async function showDashboard(user) {
     ? "JB Collections · Demostración"
     : "¡Bienvenido de nuevo, Steven! 👋";
 
-  setStatus(isDemoViewer ? "Modo demostración · Solo lectura" : "Sesión iniciada");
+  setStatus(isDemoViewer
+    ? (hasCatalogPermission("products.edit") || hasCatalogPermission("products.create")
+      ? "Modo demostración · Permisos limitados"
+      : "Modo demostración · Solo lectura")
+    : "Sesión iniciada");
   if (!isDemoViewer) {
     window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
     await syncSharedColorLibrary({ migrateLocal: true });
   }
   await loadProducts();
+  if (currentUser?.isOwner) await loadTeamPermissions();
 
   if (!isDemoViewer) {
     // Establish the initial empty editor baseline after catalog/form setup.
@@ -3394,8 +3438,15 @@ window.addEventListener("resize", () => {
 });
 
 function showAdminSection(section) {
-  if (currentUser?.role === "demo_viewer" && !["home", "published"].includes(section)) {
-    section = "home";
+  if (currentUser?.role === "demo_viewer") {
+    const allowed = new Set(["home", "published"]);
+    if (hasCatalogPermission("catalog.view_all")) {
+      ["unpublished", "drafts", "trash"].forEach(item => allowed.add(item));
+    }
+    if (hasCatalogPermission("products.create") || hasCatalogPermission("products.edit")) {
+      allowed.add("add");
+    }
+    if (!allowed.has(section)) section = "home";
   }
   document.body.dataset.adminActiveSection = section;
   if (!window.matchMedia("(max-width: 760px)").matches) {
@@ -6803,7 +6854,7 @@ form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
   if (IS_READ_ONLY_PREVIEW) {
-    message("#product-form-status", "Vista previa segura de Vercel: los cambios no se guardan. Usá esta vista para probar el importador sin modificar producción.", "error");
+    message("#product-form-status", "Esta vista previa es de solo lectura.", "error");
     return;
   }
   if (productSaveInProgress) return;
