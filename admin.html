@@ -902,45 +902,18 @@
       </section>
 
       <div class="admin-nav-panel" data-admin-panel="home">
-      <section class="admin-card team-preview-card"
+      <section id="team-permissions-card" class="admin-card team-preview-card" hidden
                aria-labelledby="team-preview-title">
         <div class="team-preview-heading">
           <div>
-            <p class="eyebrow">CRECER CON TU NEGOCIO</p>
+            <p class="eyebrow">CONTROL DE ACCESO</p>
             <h2 id="team-preview-title">Equipo y permisos</h2>
-            <p>Preparado para cuando quieras sumar empleados a tu operación.</p>
+            <p>Concedé o revocá capacidades de la cuenta demo sin convertirla en administradora.</p>
           </div>
-          <span class="team-preview-status">SIGUIENTE ETAPA</span>
+          <button id="team-permissions-refresh" class="button button-secondary" type="button">Actualizar</button>
         </div>
-
-        <div class="team-role-grid">
-          <article class="team-role-card owner-role">
-            <span class="team-role-icon">♛</span>
-            <h3>Propietario</h3>
-            <p>Control total del catálogo y del equipo.</p>
-          </article>
-          <article class="team-role-card admin-role">
-            <span class="team-role-icon">✦</span>
-            <h3>Administrador</h3>
-            <p>Gestiona productos y publicaciones.</p>
-          </article>
-          <article class="team-role-card editor-role">
-            <span class="team-role-icon">✎</span>
-            <h3>Editor</h3>
-            <p>Prepara y edita fichas de productos.</p>
-          </article>
-          <article class="team-role-card viewer-role">
-            <span class="team-role-icon">◉</span>
-            <h3>Consulta</h3>
-            <p>Revisa el inventario sin modificarlo.</p>
-          </article>
-        </div>
-
-        <p class="team-security-note">
-          <strong>La invitación por correo aún no está activa.</strong>
-          Antes de habilitar empleados configuraremos permisos y autorización
-          en Supabase.
-        </p>
+        <div id="team-permissions-list" class="team-permissions-list"></div>
+        <p id="team-permissions-status" class="team-permissions-status" role="status" aria-live="polite"></p>
       </section>
 
       <section id="technology-import-card" class="admin-card import-card">
