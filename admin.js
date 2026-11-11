@@ -188,6 +188,20 @@ passwordVisibilityButton?.addEventListener("click", () => {
 const loginPanel = $("#login-panel");
 const dashboard = $("#dashboard");
 const form = $("#product-form");
+const loginCredentialForm = $("#login-form");
+
+// A browser validation bubble can stop form submission before the submit
+// handler runs. Clear any previous success message as soon as credentials
+// change, and replace it with a direct hint when a required field is missing.
+loginCredentialForm?.addEventListener("input", () => {
+  const status = $("#login-status");
+  if (status?.textContent) message(status, "");
+});
+loginCredentialForm?.addEventListener("invalid", event => {
+  if (event.target?.matches("#login-email, #login-password")) {
+    message("#login-status", "Completá tu usuario y contraseña para ingresar.", "error");
+  }
+}, true);
 
 let currentUser = null;
 let products = [];
@@ -3093,9 +3107,11 @@ passwordResetToggle?.addEventListener("click", () => {
   passwordResetForm.hidden = !show;
   passwordResetToggle.setAttribute("aria-expanded", String(show));
   if (show) {
+    // Do not leave an old "authorized" notice beside the recovery form.
+    message("#login-status", "");
     const loginEmail = String($("#login-email")?.value || "").trim();
     const resetEmail = $("#admin-password-reset-email");
-    if (resetEmail && loginEmail && !resetEmail.value) resetEmail.value = loginEmail;
+    if (resetEmail && loginEmail.includes("@") && !resetEmail.value) resetEmail.value = loginEmail;
     resetEmail?.focus();
   } else {
     passwordResetForm.reset();
