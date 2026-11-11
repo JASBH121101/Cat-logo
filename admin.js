@@ -2993,8 +2993,6 @@ async function showDashboard(user) {
   if (!isDemoViewer) {
     jbManagerAI?.setAuthenticatedUser(user);
     void syncBiometricControls();
-  } else {
-    jbManagerAI?.clearSession();
   }
   refreshCatalogAdminActivityMarker();
 
