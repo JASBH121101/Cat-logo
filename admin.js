@@ -25,7 +25,7 @@ const configured = Boolean(
   sessionStorage y una recarga vuelve a pedir autenticación.
 */
 const REMEMBER_SESSION_KEY = "cat-logo-remember-admin-session-v1";
-const REMEMBER_EMAIL_KEY = "cat-logo-remember-admin-email-v1";
+const REMEMBER_LOGIN_KEY = "cat-logo-remember-admin-email-v1";
 
 function isRememberedSessionEnabled() {
   try {
@@ -35,10 +35,10 @@ function isRememberedSessionEnabled() {
   }
 }
 
-function getRememberedAdminEmail() {
+function getRememberedAdminLogin() {
   if (!isRememberedSessionEnabled()) return "";
   try {
-    return window.localStorage.getItem(REMEMBER_EMAIL_KEY) || "";
+    return window.localStorage.getItem(REMEMBER_LOGIN_KEY) || "";
   } catch {
     return "";
   }
@@ -100,11 +100,17 @@ const supabaseAuthStorage = {
 
 const supabase = configured ? createCatalogClient({ admin: true }) : null;
 
-/* Preview deployments are read-only: protect production data while testing Vercel/Cloudflare previews. */
+/* Only the dedicated migration Preview has isolated Neon/R2 resources and may write.
+   Other ad-hoc preview deployments remain read-only by default. */
 const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
+const INTERACTIVE_PREVIEW_HOSTS = new Set([
+  "migration-neon-r2.jb-collections.pages.dev"
+]);
 const IS_READ_ONLY_PREVIEW =
   /\.vercel\.app$/i.test(adminHostname) ||
-  (/\.pages\.dev$/i.test(adminHostname) && adminHostname !== "jb-collections.pages.dev");
+  (/\.pages\.dev$/i.test(adminHostname) &&
+    adminHostname !== "jb-collections.pages.dev" &&
+    !INTERACTIVE_PREVIEW_HOSTS.has(adminHostname));
 if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalFrom = supabase.from.bind(supabase);
   supabase.from = table => {
@@ -133,6 +139,35 @@ if (supabase && IS_READ_ONLY_PREVIEW) {
 }
 
 const $ = selector => document.querySelector(selector);
+
+/*
+  Neon Auth administrado autentica por email/contraseña y no permite
+  instalar plugins Better Auth personalizados. Para las cuentas sin correo,
+  asignamos un identificador interno reservado (.invalid). El colaborador
+  solo ve y escribe su nombre de usuario; nunca se envía un correo real.
+  Las cuentas se deben provisionar con esta misma dirección interna.
+*/
+const INTERNAL_LOGIN_DOMAIN = "jb-collections.invalid";
+
+function resolveCatalogLoginEmail(identifier) {
+  const value = String(identifier || "").trim();
+  if (!value) throw new Error("Ingresá tu usuario y contraseña.");
+
+  // Keep owner accounts created with a real email working during transition.
+  if (value.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      throw new Error("Ingresá un usuario válido o un correo electrónico válido.");
+    }
+    return value.toLowerCase();
+  }
+
+  const username = value.normalize("NFKC").toLowerCase();
+  if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
+    throw new Error("El usuario debe tener entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo.");
+  }
+
+  return username + "@" + INTERNAL_LOGIN_DOMAIN;
+}
 
 /* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
 const passwordInput = $("#login-password");
@@ -1427,9 +1462,9 @@ function syncRememberControls() {
   if (label) label.textContent = enabled ? "Desactivar recordar sesión" : "Recordar sesión en este dispositivo";
 }
 
-function setRememberedSession(enabled, email = "") {
+function setRememberedSession(enabled, identifier = "") {
   const key = authStorageKey();
-  const normalizedEmail = String(email || "").trim();
+  const normalizedIdentifier = String(identifier || "").trim();
   try {
     const currentToken = key
       ? (window.sessionStorage.getItem(key) || window.localStorage.getItem(key))
@@ -1437,7 +1472,7 @@ function setRememberedSession(enabled, email = "") {
 
     if (enabled) {
       window.localStorage.setItem(REMEMBER_SESSION_KEY, "true");
-      if (normalizedEmail) window.localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
+      if (normalizedIdentifier) window.localStorage.setItem(REMEMBER_LOGIN_KEY, normalizedIdentifier);
       if (key && currentToken) {
         window.localStorage.setItem(key, currentToken);
         window.sessionStorage.removeItem(key);
@@ -1447,7 +1482,7 @@ function setRememberedSession(enabled, email = "") {
       if (key && currentToken) window.sessionStorage.setItem(key, currentToken);
       if (key) window.localStorage.removeItem(key);
       window.localStorage.removeItem(REMEMBER_SESSION_KEY);
-      window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
     }
   } catch (error) {
     console.warn("No se pudo actualizar la preferencia para recordar la sesión.", error);
@@ -1456,10 +1491,10 @@ function setRememberedSession(enabled, email = "") {
   syncRememberControls();
 }
 
-// Restore the saved email and visible state whenever the admin module loads.
-const rememberedLoginEmail = $("#login-email");
-if (rememberedLoginEmail && isRememberedSessionEnabled()) {
-  rememberedLoginEmail.value = getRememberedAdminEmail();
+// Restore the saved username (or legacy owner email) when the session is remembered.
+const rememberedLoginIdentifier = $("#login-email");
+if (rememberedLoginIdentifier && isRememberedSessionEnabled()) {
+  rememberedLoginIdentifier.value = getRememberedAdminLogin();
 }
 syncRememberControls();
 
@@ -3152,10 +3187,11 @@ $("#login-form")?.addEventListener("submit", async event => {
   message("#login-status", "Comprobando acceso…");
 
   try {
-    const loginEmail = $("#login-email").value.trim();
+    const loginIdentifier = $("#login-email").value.trim();
+    const loginEmail = resolveCatalogLoginEmail(loginIdentifier);
     const rememberSession = Boolean($("#login-remember-user")?.checked);
-    // Select session storage before Neon Auth persists the successful login.
-    setRememberedSession(rememberSession, loginEmail);
+    // Store only the username/email identifier, never the password.
+    setRememberedSession(rememberSession, loginIdentifier);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
