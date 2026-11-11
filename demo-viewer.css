@@ -98,3 +98,45 @@ body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-b
     flex-direction:column;
   }
 }
+
+/* Owner-side guest provisioning form, shown only to the signed-in owner. */
+#fiverr-demo-guest-setup {
+  margin-top:18px;
+  padding:18px;
+  border:1px solid var(--border, rgba(148,163,184,.2));
+  border-radius:14px;
+  background:rgba(15,23,42,.24);
+}
+#fiverr-demo-guest-setup > strong {
+  display:block;
+  margin-bottom:8px;
+  color:var(--text,#eaf3ff);
+  font-size:15px;
+}
+#fiverr-demo-guest-setup > p {
+  margin:8px 0 12px;
+}
+.fiverr-demo-create-user-form {
+  display:grid;
+  gap:12px;
+  margin-top:12px;
+  max-width:560px;
+}
+.fiverr-demo-create-user-form[hidden] { display:none !important; }
+.fiverr-demo-create-user-form label {
+  display:grid;
+  gap:6px;
+}
+.fiverr-demo-create-user-form input {
+  width:100%;
+  min-width:0;
+}
+.fiverr-demo-create-user-form small {
+  color:var(--muted,#9ca3af);
+  font-size:12px;
+}
+#fiverr-demo-create-user-status {
+  min-height:1.4em;
+  margin-top:10px;
+}
+body.demo-viewer-mode #fiverr-demo-guest-setup { display:none !important; }
