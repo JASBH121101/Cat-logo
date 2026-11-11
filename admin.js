@@ -103,6 +103,7 @@ const supabase = configured ? createCatalogClient({ admin: true }) : null;
 /* Only the dedicated migration Preview has isolated Neon/R2 resources and may write.
    Other ad-hoc preview deployments remain read-only by default. */
 const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
+const IS_FIVERR_DEMO_HOST = adminHostname === "fiverr-demo.jb-collections.pages.dev";
 const INTERACTIVE_PREVIEW_HOSTS = new Set([
   "migration-neon-r2.jb-collections.pages.dev"
 ]);
@@ -2955,29 +2956,34 @@ async function confirmAdmin(user) {
 
   const { data, error } = await supabase
     .from("admin_users")
-    .select("user_id")
+    .select("user_id,role")
     .eq("neon_auth_user_id", user.id)
     .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (error) throw error;
+  const role = String(data?.role || "admin");
+  if (!data || !["admin", "demo_viewer"].includes(role)) {
+    throw new Error("Tu usuario no tiene permisos para acceder a este panel.");
   }
 
-  if (!data) {
-    throw new Error(
-      "Tu usuario inició sesión, pero no está autorizado para administrar el catálogo."
-    );
-  }
-
-  return data.user_id;
+  return { userId: data.user_id, role };
 }
 
 async function showDashboard(user) {
-  const legacyAdminId = await confirmAdmin(user);
+  const access = await confirmAdmin(user);
+  const isDemoViewer = access.role === "demo_viewer";
 
-  currentUser = { ...user, id: legacyAdminId, neonAuthUserId: user.id };
-  jbManagerAI?.setAuthenticatedUser(user);
-  void syncBiometricControls();
+  currentUser = { ...user, id: access.userId, neonAuthUserId: user.id, role: access.role };
+  document.body.classList.toggle("demo-viewer-mode", isDemoViewer);
+  const demoBanner = $("#demo-viewer-banner");
+  if (demoBanner) demoBanner.hidden = !isDemoViewer;
+
+  if (!isDemoViewer) {
+    jbManagerAI?.setAuthenticatedUser(user);
+    void syncBiometricControls();
+  } else {
+    jbManagerAI?.clearSession();
+  }
   refreshCatalogAdminActivityMarker();
 
   loginPanel.classList.add("hidden");
@@ -2990,23 +2996,25 @@ async function showDashboard(user) {
     setDesktopSidebarCollapsed(false);
   }
   const requestedSection = new URLSearchParams(window.location.search).get("open");
-  showAdminSection(requestedSection === "messages" ? "messages" : "home");
+  showAdminSection(isDemoViewer ? "home" : (requestedSection === "messages" ? "messages" : "home"));
 
   const greeting = $("#admin-greeting");
-  if (greeting) greeting.textContent = "¡Bienvenido de nuevo, Steven! 👋";
+  if (greeting) greeting.textContent = isDemoViewer
+    ? "JB Collections · Demostración"
+    : "¡Bienvenido de nuevo, Steven! 👋";
 
-  setStatus("Sesión iniciada");
-  window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
-
-  await syncSharedColorLibrary({ migrateLocal: true });
+  setStatus(isDemoViewer ? "Modo demostración · Solo lectura" : "Sesión iniciada");
+  if (!isDemoViewer) {
+    window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
+    await syncSharedColorLibrary({ migrateLocal: true });
+  }
   await loadProducts();
 
-  // Establish the initial empty editor baseline after catalog/form setup.
-  // Without this, editorBaseline stays "" and the first snapshot is always
-  // interpreted as a user change, even when every field is blank.
-  markEditorClean();
-
-  await checkLocalRecoveryDraft();
+  if (!isDemoViewer) {
+    // Establish the initial empty editor baseline after catalog/form setup.
+    markEditorClean();
+    await checkLocalRecoveryDraft();
+  }
 }
 
 async function handleSession() {
@@ -3376,6 +3384,9 @@ window.addEventListener("resize", () => {
 });
 
 function showAdminSection(section) {
+  if (currentUser?.role === "demo_viewer" && !["home", "published"].includes(section)) {
+    section = "home";
+  }
   document.body.dataset.adminActiveSection = section;
   if (!window.matchMedia("(max-width: 760px)").matches) {
     const toggle = document.getElementById("admin-menu-toggle");
@@ -3970,12 +3981,16 @@ async function loadProducts() {
     }
   }
 
-  await providerTools.refresh();
+  if (currentUser?.role !== "demo_viewer") {
+    await providerTools.refresh();
+  }
 
   updateProductFormMode();
   renderAdminList();
   renderDashboardOverview();
-  await loadCatalogAnalytics();
+  if (currentUser?.role !== "demo_viewer") {
+    await loadCatalogAnalytics();
+  }
   return true;
 }
 

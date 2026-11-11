@@ -1,0 +1,55 @@
+/* Fiverr demo viewer: visually expose only the dashboard and published catalog. */
+body.demo-viewer-mode .demo-viewer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border: 1px solid rgba(67, 193, 255, .28);
+  border-radius: 14px;
+  background: rgba(14, 47, 72, .28);
+  color: var(--text, #eaf3ff);
+  font-size: 13px;
+}
+body.demo-viewer-mode .demo-viewer-banner strong { letter-spacing: .08em; }
+body.demo-viewer-mode .admin-nav-button:not([data-admin-section="home"]):not([data-admin-section="published"]) {
+  display: none !important;
+}
+body.demo-viewer-mode .admin-nav-panel[data-admin-panel]:not([data-admin-panel="home"]):not([data-admin-panel="published"]) {
+  display: none !important;
+}
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-button),
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-divider,
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-menu-title {
+  display: none !important;
+}
+body.demo-viewer-mode #admin-section-home [data-dashboard-action],
+body.demo-viewer-mode #admin-section-home .team-preview-card,
+body.demo-viewer-mode #admin-section-published [data-refresh-inventory],
+body.demo-viewer-mode #admin-section-published [data-edit],
+body.demo-viewer-mode #admin-section-published [data-trash-product],
+body.demo-viewer-mode #admin-section-published [data-exclusive-product],
+body.demo-viewer-mode #admin-section-published [data-delete-product],
+body.demo-viewer-mode #admin-section-published [data-restore-product],
+body.demo-viewer-mode #admin-section-published .admin-product-buttons button:not([data-preview-product]) {
+  display: none !important;
+}
+body.demo-viewer-mode #jb-ai-floating-launcher,
+body.demo-viewer-mode .admin-product-editor,
+body.demo-viewer-mode #admin-section-published .admin-list-refresh-control {
+  display: none !important;
+}
+body.demo-viewer-mode #admin-section-published .admin-product-buttons {
+  justify-content: flex-end;
+}
+body.demo-viewer-mode #admin-section-published .admin-preview-open-button {
+  display: inline-flex !important;
+}
+@media (max-width: 760px) {
+  body.demo-viewer-mode .demo-viewer-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

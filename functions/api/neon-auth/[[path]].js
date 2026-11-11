@@ -33,7 +33,11 @@ export async function onRequest({ request, env }) {
     return proxyJson(405, { error: "method_not_allowed" });
   }
 
-  const baseValue = String(env.NEON_AUTH_BASE_URL || "").trim();
+  const baseValue = String(
+    new URL(request.url).hostname === "fiverr-demo.jb-collections.pages.dev"
+      ? env.FIVERR_DEMO_NEON_AUTH_BASE_URL || ""
+      : env.NEON_AUTH_BASE_URL || ""
+  ).trim();
   let upstreamBase;
   try {
     upstreamBase = new URL(baseValue);
