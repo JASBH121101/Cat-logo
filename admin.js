@@ -2955,13 +2955,24 @@ async function confirmAdmin(user) {
     throw new Error("No se pudo verificar la sesión.");
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("admin_users")
     .select("user_id,role")
     .eq("neon_auth_user_id", user.id)
     .maybeSingle();
 
   if (error) throw error;
+  if (!data && IS_FIVERR_DEMO_HOST) {
+    const { error: registerError } = await supabase.rpc("register_fiverr_demo_viewer");
+    if (registerError) throw new Error(registerError.message || "No se pudo habilitar la cuenta de demostración.");
+    const refreshed = await supabase
+      .from("admin_users")
+      .select("user_id,role")
+      .eq("neon_auth_user_id", user.id)
+      .maybeSingle();
+    if (refreshed.error) throw refreshed.error;
+    data = refreshed.data;
+  }
   const role = String(data?.role || "admin");
   if (!data || !["admin", "demo_viewer"].includes(role)) {
     throw new Error("Tu usuario no tiene permisos para acceder a este panel.");
