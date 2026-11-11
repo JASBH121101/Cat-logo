@@ -1,99 +1,100 @@
-/* Fiverr demo viewer: each capability is exposed only when granted by the owner. */
+/* Fiverr demo viewer: complete module showcase with strictly read-only controls. */
 body.demo-viewer-mode .demo-viewer-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin: 0 0 18px;
-  padding: 12px 16px;
-  border: 1px solid rgba(67, 193, 255, .28);
-  border-radius: 14px;
-  background: rgba(14, 47, 72, .28);
-  color: var(--text, #eaf3ff);
-  font-size: 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px 16px;
+  margin:0 0 18px;
+  padding:12px 16px;
+  border:1px solid rgba(67,193,255,.28);
+  border-radius:14px;
+  background:rgba(14,47,72,.28);
+  color:var(--text,#eaf3ff);
+  font-size:13px;
 }
-body.demo-viewer-mode .demo-viewer-banner strong { letter-spacing: .08em; }
+body.demo-viewer-mode .demo-viewer-banner strong { letter-spacing:.08em; }
 
-/* Baseline demo access: dashboard + published catalog only. */
-body.demo-viewer-mode .admin-nav-button:not([data-admin-section="home"]):not([data-admin-section="published"]) {
-  display: none !important;
-}
-body.demo-viewer-mode .admin-nav-panel[data-admin-panel]:not([data-admin-panel="home"]):not([data-admin-panel="published"]) {
-  display: none !important;
-}
+/* All administrator modules remain visible for the buyer's product walkthrough. */
+body.demo-viewer-mode .admin-nav-button { display:flex !important; }
 body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-button),
 body.demo-viewer-mode .admin-sidebar-settings .admin-settings-divider,
-body.demo-viewer-mode .admin-sidebar-settings .admin-settings-menu-title {
-  display: none !important;
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-menu-title,
+body.demo-viewer-mode #team-permissions-card {
+  display:none !important;
 }
-body.demo-viewer-mode #admin-section-home [data-dashboard-action],
+
+/* Keep navigation and product previews; remove all write or destructive controls. */
+body.demo-viewer-mode .admin-product-editor,
+body.demo-viewer-mode #admin-section-add .admin-product-editor,
+body.demo-viewer-mode #technology-import-card,
+body.demo-viewer-mode #perfume-import-card,
+body.demo-viewer-mode #jb-ai-floating-launcher,
+body.demo-viewer-mode [data-edit],
+body.demo-viewer-mode [data-exclusive-product],
+body.demo-viewer-mode [data-restore-product],
+body.demo-viewer-mode [data-trash-product],
+body.demo-viewer-mode [data-delete-product],
+body.demo-viewer-mode [data-publish-product],
+body.demo-viewer-mode [data-unpublish-product],
+body.demo-viewer-mode [data-admin-action],
+body.demo-viewer-mode .admin-product-buttons button:not([data-preview-product]) {
+  display:none !important;
+}
+body.demo-viewer-mode .admin-preview-open-button,
+body.demo-viewer-mode [data-preview-product] {
+  display:inline-flex !important;
+}
 body.demo-viewer-mode #admin-section-published [data-refresh-inventory],
 body.demo-viewer-mode #admin-section-published .admin-list-refresh-control {
-  display: none !important;
-}
-body.demo-viewer-mode #jb-ai-floating-launcher,
-body.demo-viewer-mode .admin-product-editor {
-  display: none !important;
-}
-body.demo-viewer-mode #admin-section-published .admin-product-buttons {
-  justify-content: flex-end;
-}
-body.demo-viewer-mode .admin-product-buttons button:not([data-preview-product]) {
-  display: none !important;
-}
-body.demo-viewer-mode .admin-preview-open-button {
-  display: inline-flex !important;
+  display:none !important;
 }
 
-/* Inventory visibility is a separate permission from editing. */
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-button[data-admin-section="unpublished"],
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-button[data-admin-section="drafts"],
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-panel[data-admin-panel="unpublished"],
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-panel[data-admin-panel="drafts"] {
-  display: flex !important;
+/* A buyer may see the module shell, but private or operational data stays hidden. */
+body.demo-viewer-mode #admin-section-provider .provider-metrics,
+body.demo-viewer-mode #admin-section-provider .provider-list-card,
+body.demo-viewer-mode #admin-section-reviewed .provider-metrics,
+body.demo-viewer-mode #admin-section-reviewed .provider-list-card,
+body.demo-viewer-mode #admin-section-messages .private-chat-admin-layout,
+body.demo-viewer-mode #admin-section-messages .private-chat-admin-header-actions,
+body.demo-viewer-mode #admin-section-storage-migration .form-actions,
+body.demo-viewer-mode #admin-section-storage-migration #storage-migration-log,
+body.demo-viewer-mode #admin-section-updates .provider-import-controls,
+body.demo-viewer-mode #admin-section-updates .provider-import-options {
+  display:none !important;
 }
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-panel[data-admin-panel="unpublished"],
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-panel[data-admin-panel="drafts"] {
-  display: block !important;
+body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat form,
+body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat textarea,
+body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat input,
+body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat button,
+body.demo-viewer-mode #admin-section-ai .jb-gp-scanner {
+  pointer-events:none !important;
+  opacity:.55;
 }
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-button[data-admin-section="trash"],
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-panel[data-admin-panel="trash"],
-body.demo-viewer-mode.demo-viewer-can-delete .admin-nav-button[data-admin-section="trash"],
-body.demo-viewer-mode.demo-viewer-can-delete .admin-nav-panel[data-admin-panel="trash"] {
-  display: flex !important;
+body.demo-viewer-mode .demo-viewer-module-notice {
+  display:block;
+  margin:0 0 18px;
+  padding:13px 16px;
+  border:1px solid rgba(67,193,255,.24);
+  border-radius:12px;
+  background:rgba(14,47,72,.22);
+  color:var(--text,#eaf3ff);
+  font-size:13px;
+  line-height:1.55;
 }
-body.demo-viewer-mode.demo-viewer-can-view-all .admin-nav-panel[data-admin-panel="trash"],
-body.demo-viewer-mode.demo-viewer-can-delete .admin-nav-panel[data-admin-panel="trash"] {
-  display: block !important;
+body.demo-viewer-mode .demo-viewer-module-notice strong {
+  display:block;
+  margin-bottom:3px;
 }
 
-/* Creation/edit controls remain hidden unless the owner grants the capability. */
-body.demo-viewer-mode.demo-viewer-can-write .admin-nav-button[data-admin-section="add"],
-body.demo-viewer-mode.demo-viewer-can-write .admin-product-editor {
-  display: block !important;
+/* Never expose account administration, configuration, or module management. */
+body.demo-viewer-mode .admin-settings-menu,
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-button) {
+  display:none !important;
 }
-body.demo-viewer-mode.demo-viewer-can-edit [data-edit],
-body.demo-viewer-mode.demo-viewer-can-edit [data-exclusive-product],
-body.demo-viewer-mode.demo-viewer-can-edit [data-restore-product] {
-  display: inline-flex !important;
-}
-body.demo-viewer-mode.demo-viewer-can-delete [data-trash-product],
-body.demo-viewer-mode.demo-viewer-can-delete [data-delete-product] {
-  display: inline-flex !important;
-}
-
-/* Explicitly hide actions when their permission has been revoked. */
-body.demo-viewer-mode:not(.demo-viewer-can-edit) [data-edit],
-body.demo-viewer-mode:not(.demo-viewer-can-edit) [data-exclusive-product],
-body.demo-viewer-mode:not(.demo-viewer-can-edit) [data-restore-product],
-body.demo-viewer-mode:not(.demo-viewer-can-delete) [data-trash-product],
-body.demo-viewer-mode:not(.demo-viewer-can-delete) [data-delete-product] {
-  display: none !important;
-}
-@media (max-width: 760px) {
+@media (max-width:760px) {
   body.demo-viewer-mode .demo-viewer-banner {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items:flex-start;
+    flex-direction:column;
   }
 }
