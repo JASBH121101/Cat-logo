@@ -27,6 +27,42 @@ function rewriteCookie(cookie, upstreamPath) {
   return rewritten.join(";");
 }
 
+function resolveDemoAuthEmail(identifier, ownerEmail) {
+  const value = String(identifier || "").trim().normalize("NFKC").toLowerCase();
+  if (!value || value.includes("@")) return value;
+  if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(value)) return null;
+
+  const owner = String(ownerEmail || "").trim().toLowerCase();
+  const separator = owner.lastIndexOf("@");
+  if (separator <= 0 || separator === owner.length - 1) return null;
+
+  if (value === "jaredbh") return owner;
+  return owner.slice(0, separator) + "+" + value + owner.slice(separator);
+}
+
+function rewriteDemoIdentityPayload(path, body, env) {
+  const identityPaths = new Set([
+    "sign-in/email",
+    "email-otp/request-password-reset",
+    "email-otp/reset-password"
+  ]);
+  if (!identityPaths.has(path) || !body || !env.DEMO_OWNER_AUTH_EMAIL) return body;
+
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(body));
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return body;
+    const identifier = String(payload.email || "").trim();
+    if (!identifier || identifier.includes("@")) return body;
+
+    const resolvedEmail = resolveDemoAuthEmail(identifier, env.DEMO_OWNER_AUTH_EMAIL);
+    if (!resolvedEmail) return body;
+    payload.email = resolvedEmail;
+    return new TextEncoder().encode(JSON.stringify(payload));
+  } catch {
+    return body;
+  }
+}
+
 export async function onRequest({ request, env }) {
   const method = request.method.toUpperCase();
   if (!["GET", "POST", "OPTIONS"].includes(method)) {
@@ -82,6 +118,8 @@ export async function onRequest({ request, env }) {
       return proxyJson(413, { error: "auth_request_too_large" });
     }
   }
+
+  body = rewriteDemoIdentityPayload(decodedPath, body, env);
 
   const upstreamPath = upstreamBase.pathname.replace(/\/+$/, "");
   const target = new URL(upstreamBase.toString());
