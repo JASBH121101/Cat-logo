@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
 
   <script src="config.js?v=20261109-neon-auth-proxy4"></script>
-  <script type="module" src="admin.js?v=20261111-login-form-validation-hint1"></script>
+  <script type="module" src="admin.js?v=20261111-fiverr-guest-owner-guard2"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -913,6 +913,12 @@
           <button id="team-permissions-refresh" class="button button-secondary" type="button">Actualizar</button>
         </div>
         <div id="team-permissions-list" class="team-permissions-list"></div>
+        <div class="team-permission-note" id="fiverr-demo-guest-setup">
+          <strong>Acceso del comprador · invitado01</strong>
+          <p>La cuenta ya está creada y empieza en modo de solo lectura. El comprador solo necesita el usuario <code>invitado01</code> y la contraseña que vos establezcás. No se solicita su correo personal.</p>
+          <p>Para establecer o cambiar esa contraseña: cerrá sesión, abrí «Crear o recuperar contraseña por correo» e ingresá el alias <code>jaredblancoh19+invitado01@gmail.com</code>. El código llega a tu bandeja de Gmail; luego podés definir la contraseña para compartirla directamente con el comprador.</p>
+          <p>El alias es técnico, no es el usuario de inicio de sesión. Los códigos de recuperación quedan bajo tu control.</p>
+        </div>
         <p id="team-permissions-status" class="team-permissions-status" role="status" aria-live="polite"></p>
       </section>
 
