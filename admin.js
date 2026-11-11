@@ -144,19 +144,17 @@ if (supabase && IS_READ_ONLY_PREVIEW) {
 const $ = selector => document.querySelector(selector);
 
 /*
-  Neon Auth administrado autentica por email/contraseña y no permite
-  instalar plugins Better Auth personalizados. Para las cuentas sin correo,
-  asignamos un identificador interno reservado (.invalid). El colaborador
-  solo ve y escribe su nombre de usuario; nunca se envía un correo real.
-  Las cuentas se deben provisionar con esta misma dirección interna.
+  Neon Auth administrado utiliza email/contraseña. Para no pedirle al comprador
+  un correo personal, la cuenta invitada usa un alias Gmail del propietario.
+  Gmail entrega esos mensajes en la misma bandeja; el comprador solo utiliza
+  su nombre de usuario. El alias se reserva por invitación y no abre el registro.
 */
-const INTERNAL_LOGIN_DOMAIN = "jb-collections.invalid";
+const DEMO_OWNER_AUTH_EMAIL = "jaredblancoh19@gmail.com";
 
 function resolveCatalogLoginEmail(identifier) {
   const value = String(identifier || "").trim();
   if (!value) throw new Error("Ingresá tu usuario y contraseña.");
 
-  // Keep owner accounts created with a real email working during transition.
   if (value.includes("@")) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       throw new Error("Ingresá un usuario válido o un correo electrónico válido.");
@@ -168,8 +166,10 @@ function resolveCatalogLoginEmail(identifier) {
   if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
     throw new Error("El usuario debe tener entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo.");
   }
+  if (username === "jaredbh") return DEMO_OWNER_AUTH_EMAIL;
 
-  return username + "@" + INTERNAL_LOGIN_DOMAIN;
+  const [localPart, domain] = DEMO_OWNER_AUTH_EMAIL.split("@");
+  return localPart + "+" + username + "@" + domain;
 }
 
 /* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
@@ -3170,6 +3170,29 @@ async function loadTeamPermissions() {
         }
       });
       actions.append(save);
+
+      const revoke = document.createElement("button");
+      revoke.type = "button";
+      revoke.className = "button button-outline";
+      revoke.textContent = "Revocar acceso";
+      revoke.addEventListener("click", async () => {
+        if (!window.confirm("¿Revocar el acceso de " + (member.username || "esta cuenta") + "? La cuenta dejará de entrar al administrador, aunque su identidad de Neon permanecerá registrada.")) return;
+        revoke.disabled = true;
+        try {
+          const result = await supabase.rpc("revoke_fiverr_demo_guest", {
+            target_user_id: member.user_id
+          });
+          if (result.error) throw result.error;
+          status.textContent = "Acceso revocado para " + (member.username || "la cuenta invitada") + ".";
+          status.dataset.state = "success";
+          await loadTeamPermissions();
+        } catch (error) {
+          status.textContent = error?.message || "No se pudo revocar el acceso.";
+          status.dataset.state = "error";
+          revoke.disabled = false;
+        }
+      });
+      actions.append(revoke);
       article.append(actions);
       list.append(article);
     });
