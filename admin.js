@@ -208,8 +208,8 @@ loginCredentialForm?.addEventListener("invalid", event => {
 
 let currentUser = null;
 function hasCatalogPermission(permission) {
-  if (currentUser?.role === "admin") return true;
-  return currentUser?.permissions?.[permission] === true;
+  if (currentUser?.role === "admin" && currentUser?.isOwner === true) return true;
+  return currentUser?.role === "demo_viewer" && currentUser?.permissions?.[permission] === true;
 }
 function applyDemoPermissionClasses() {
   const viewer = currentUser?.role === "demo_viewer";
@@ -2990,7 +2990,10 @@ async function confirmAdmin(user) {
     data = refreshed.data;
   }
   const role = String(data?.role || "");
-  if (!data || !["admin", "demo_viewer"].includes(role)) {
+  const isOwner = data?.is_owner === true;
+  if (!data || !["admin", "demo_viewer"].includes(role) ||
+      (role === "admin" && !isOwner) ||
+      (role === "demo_viewer" && isOwner)) {
     throw new Error("Tu usuario no tiene permisos para acceder a este panel.");
   }
 
