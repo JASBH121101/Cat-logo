@@ -1621,7 +1621,7 @@ function showLoginScreen(statusText = "", type = "") {
 
   clearEditor();
 
-  $("#login-email").value = getRememberedAdminEmail();
+  $("#login-email").value = getRememberedAdminLogin();
   clearLoginPassword();
   syncRememberControls();
 
@@ -3064,7 +3064,7 @@ $("#remember-user-toggle")?.addEventListener("click", async () => {
       console.warn("No se pudo desactivar el desbloqueo biométrico al dejar de recordar la sesión.", error);
     }
   }
-  setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminEmail());
+  setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminLogin());
   setStatus(
     nextEnabled
       ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
