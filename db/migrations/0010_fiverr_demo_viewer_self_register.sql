@@ -39,8 +39,8 @@ BEGIN
     RAISE EXCEPTION 'La cuenta de demostración ya fue asignada. El propietario debe revocar el acceso anterior antes de crear otro.';
   END IF;
 
-  INSERT INTO public.admin_users (neon_auth_user_id, role)
-  VALUES (current_auth_id, 'demo_viewer')
+  INSERT INTO public.admin_users (user_id, neon_auth_user_id, role)
+  VALUES (gen_random_uuid(), current_auth_id, 'demo_viewer')
   RETURNING * INTO existing_user;
 
   RETURN jsonb_build_object('user_id', existing_user.user_id, 'role', existing_user.role);
