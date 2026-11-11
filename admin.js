@@ -1,4 +1,4 @@
-import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js";
+import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261111-preview-media-host1";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
