@@ -12,7 +12,12 @@ function normalizeObjectPath(path) {
 
 function mediaUrl(path) {
   const config = window.CATALOG_CONFIG || {};
-  const base = String(config.publicCatalogUrl || window.location.origin).replace(/\/+$/, "");
+  const host = String(window.location.hostname || "").toLowerCase();
+  const isPreviewHost = host.endsWith(".jb-collections.pages.dev") &&
+    host !== "jb-collections.pages.dev";
+  const base = String(
+    isPreviewHost ? window.location.origin : (config.publicCatalogUrl || window.location.origin)
+  ).replace(/\/+$/, "");
   return base + "/media/" + normalizeObjectPath(path).split("/").map(encodeURIComponent).join("/");
 }
 
