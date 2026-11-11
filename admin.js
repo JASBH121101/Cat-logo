@@ -149,8 +149,6 @@ const $ = selector => document.querySelector(selector);
   Gmail entrega esos mensajes en la misma bandeja; el comprador solo utiliza
   su nombre de usuario. El alias se reserva por invitación y no abre el registro.
 */
-const DEMO_OWNER_AUTH_EMAIL = "jaredblancoh19@gmail.com";
-
 function resolveCatalogLoginEmail(identifier) {
   const value = String(identifier || "").trim();
   if (!value) throw new Error("Ingresá tu usuario y contraseña.");
@@ -166,10 +164,8 @@ function resolveCatalogLoginEmail(identifier) {
   if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
     throw new Error("El usuario debe tener entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo.");
   }
-  if (username === "jaredbh") return DEMO_OWNER_AUTH_EMAIL;
-
-  const [localPart, domain] = DEMO_OWNER_AUTH_EMAIL.split("@");
-  return localPart + "+" + username + "@" + domain;
+  // The auth proxy resolves usernames to private Neon Auth email aliases.
+  return username;
 }
 
 /* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
