@@ -937,7 +937,10 @@
             <label>Código de un solo uso
               <input id="fiverr-demo-guest-otp" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
             </label>
-            <button id="fiverr-demo-guest-otp-submit" class="button button-primary" type="submit">Guardar contraseña y finalizar</button>
+            <div class="team-permission-actions">
+              <button id="fiverr-demo-guest-otp-submit" class="button button-primary" type="submit">Guardar contraseña y finalizar</button>
+              <button id="fiverr-demo-guest-otp-resend" class="button button-secondary" type="button">Reenviar código</button>
+            </div>
           </form>
           <p id="fiverr-demo-create-user-status" class="team-permissions-status" role="status" aria-live="polite"></p>
           <p>La cuenta existente <code>invitado01</code> se mantiene. No se crean usuarios automáticamente; cada nueva cuenta debe ser creada por vos desde este formulario.</p>
