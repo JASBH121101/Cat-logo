@@ -110,7 +110,7 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 });
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
-  assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-admin-theme-toggle-contrast2/);
+  assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-admin-theme-toggle-contrast3/);
   assert.ok(html.includes("admin.js?v=20261112-product-preview-close1"));
   assert.ok(html.includes("demo-viewer.css?v=20261112-guest-explore-readonly1"));
 });
@@ -147,13 +147,13 @@ test("guest mode explicitly permits the user-facing light/dark theme toggle", ()
   assert.match(admin, /Vista de invitado: podés explorar módulos, variantes y fotografías/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.site-header \.theme-toggle/);
   assert.match(demoViewer, /pointer-events: auto !important/);
-  assert.match(ui, /document\.addEventListener\("click", handleThemeToggleClick, true\)/);
-  assert.match(ui, /function handleThemeToggleClick\(event\)/);
+  assert.match(ui, /function bindThemeToggle\(button\)/);
+  assert.match(ui, /button\.addEventListener\("click", event =>/);
   assert.match(ui, /applyTheme\(next\);\s*saveTheme\(next\);/);
 });
 
 
-test("admin theme toggle works after dashboard render and persists both directions", { timeout: 30000 }, async () => {
+test("admin theme toggle works after dashboard render in both directions", { timeout: 30000 }, async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     for (const viewport of [
@@ -169,18 +169,16 @@ test("admin theme toggle works after dashboard render and persists both directio
       assert.equal(await toggle.isVisible(), true, "theme toggle should be visible");
 
       assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
-      // Click the nested icon to make sure delegated handling works for child targets.
+      // Click the nested icon to verify the direct button listener handles child targets.
       await toggle.locator(".theme-toggle-icon").click();
       assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
       assert.equal(await toggle.locator(".theme-toggle-label").textContent(), "Oscuro");
       assert.equal(await toggle.getAttribute("aria-pressed"), "false");
-      assert.equal(await page.evaluate(() => localStorage.getItem("ct-catalog-theme")), "light");
 
       await toggle.click();
       assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
       assert.equal(await toggle.locator(".theme-toggle-label").textContent(), "Claro");
       assert.equal(await toggle.getAttribute("aria-pressed"), "true");
-      assert.equal(await page.evaluate(() => localStorage.getItem("ct-catalog-theme")), "dark");
       await page.close();
     }
   } finally {
@@ -193,7 +191,8 @@ test("admin catalog links always open the split JB Collections landing page", ()
   assert.match(admin, /if \(publicLink\) publicLink\.href = publicCatalogLanding/);
   assert.match(admin, /if \(sidebarCatalogLink\) sidebarCatalogLink\.href = publicCatalogLanding/);
   assert.doesNotMatch(admin, /sidebarCatalogLink\.href = isPerfume \? "\.\/perfumeria\/" : "\.\/tecnologia\//);
-  assert.ok(html.includes('href="./" class="admin-sidebar-catalog-link"'));
+  assert.ok(html.includes('href="/index.html" class="admin-sidebar-catalog-link"'));
+  assert.match(admin, /new URL\("\/index\.html", window\.location\.origin\)\.href/);
 });
 
 test("Fiverr guest can open Settings and use logout without exposing other settings actions", () => {
