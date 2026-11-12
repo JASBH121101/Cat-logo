@@ -43,8 +43,8 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
   assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-demo-dual-theme1/);
-  assert.ok(html.includes("admin.js?v=20261112-guest-settings-logout1"));
-  assert.ok(html.includes("demo-viewer.css?v=20261112-guest-settings-logout1"));
+  assert.ok(html.includes("admin.js?v=20261112-guest-explore-readonly1"));
+  assert.ok(html.includes("demo-viewer.css?v=20261112-guest-explore-readonly1"));
 });
 
 
@@ -102,4 +102,41 @@ test("guest logout closes the Settings menu and mobile sidebar before returning 
   assert.match(logoutHandler, /admin-settings-toggle.*aria-expanded.*false/);
   assert.match(logoutHandler, /setMobileSidebarOpen\(false\)/);
   assert.match(logoutHandler, /await signOutLocalSafely\(\)/);
+});
+
+
+test("Fiverr guest may freely navigate product form tabs, variant accordions and photo galleries", () => {
+  assert.match(admin, /\[data-product-form-step\]/);
+  assert.match(admin, /\[data-product-form-next\]/);
+  assert.match(admin, /\[data-product-form-prev\]/);
+  assert.match(admin, /const blockedAction = event\.target\.closest\(DEMO_BLOCKED_MUTATION_SELECTOR\)/);
+  assert.doesNotMatch(admin, /const allowed = event\.target\.closest\([\s\S]{0,400}if \(allowed\) return/);
+  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-product-editor/);
+  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
+  assert.doesNotMatch(demoViewer, /\.admin-product-buttons button:not\(\[data-preview-product\]\)/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \.variant-image-preview/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \[data-preview-product\]/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
+});
+
+test("Fiverr demo blocks persisted writes and uploads while keeping database and photo reads available", () => {
+  assert.match(admin, /const IS_READ_ONLY_APP = IS_FIVERR_DEMO_HOST \|\| IS_READ_ONLY_PREVIEW/);
+  assert.match(admin, /if \(supabase && IS_READ_ONLY_APP\)/);
+  assert.match(admin, /\["insert", "update", "upsert", "delete"\]/);
+  assert.match(admin, /\["upload", "update", "move", "copy", "remove", "createSignedUploadUrl"\]/);
+  assert.doesNotMatch(admin, /createSignedUrls"\]/);
+  assert.match(admin, /#save-product-button/);
+  assert.match(admin, /\[data-trash-product\]/);
+  assert.match(admin, /\[data-delete-product\]/);
+  assert.match(admin, /\[data-save-color-library\]/);
+  assert.match(admin, /input\[type='file'\]/);
+});
+
+test("read-only product editor retains view/preview actions and hides only save, delete and file upload", () => {
+  for (const selector of ["#save-product-button", "#publish-product-button", "#save-draft-button",
+    "[data-trash-product]", "[data-delete-product]", "#product-images", ".variant-image-label input[type=\"file\"]"]) {
+    assert.ok(demoViewer.includes("body.demo-viewer-mode " + selector), selector + " must be blocked");
+  }
+  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-product-editor/);
+  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
 });
