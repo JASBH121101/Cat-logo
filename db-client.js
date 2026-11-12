@@ -128,8 +128,8 @@ export async function completeCatalogPasswordReset(email, otp, password) {
   const code = String(otp || "").trim();
   const newPassword = String(password || "");
   if (!address || !/^\d{6}$/.test(code)) throw new Error("El código de correo debe tener seis dígitos.");
-  if (newPassword.length < 12 || newPassword.length > 128) {
-    throw new Error("La contraseña debe tener entre 12 y 128 caracteres.");
+  if (newPassword.length < 8 || newPassword.length > 128) {
+    throw new Error("La contraseña debe tener entre 8 y 128 caracteres.");
   }
   const client = createCatalogClient({ admin: true });
   const auth = client?.auth?.getBetterAuthInstance?.();
