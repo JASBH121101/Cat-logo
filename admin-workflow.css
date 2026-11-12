@@ -1122,3 +1122,23 @@ html body.admin-body form#product-form .admin-photo-progress-label {
   overflow-wrap: anywhere;
   text-align: left;
 }
+
+
+/* Perfume forms have two steps (data + photos), not three. Remove the
+   vacant middle grid track and keep the desktop tabs compact instead of
+   stretching them across the full editor width. */
+@media (min-width: 761px) {
+  html body.admin-body #product-form .product-form-section-nav.is-two-step {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: min(100%, 560px);
+    max-width: 100%;
+    justify-content: start;
+  }
+}
+@media (max-width: 760px) {
+  html body.admin-body #product-form .product-form-section-nav.is-two-step {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100%;
+    max-width: 100%;
+  }
+}
