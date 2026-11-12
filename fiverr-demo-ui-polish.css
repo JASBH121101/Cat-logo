@@ -403,3 +403,22 @@ body.admin-body .admin-header > [data-theme-toggle] .theme-toggle-icon,
 body.admin-body .admin-header > [data-theme-toggle] .theme-toggle-label {
   pointer-events:none !important;
 }
+
+
+/* Keep the admin theme control visible and reachable on desktop and mobile. */
+body.admin-body .admin-header > .admin-theme-toggle {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  min-height: 42px;
+}
+@media (max-width: 560px) {
+  body.admin-body .admin-header > .admin-theme-toggle {
+    min-height: 36px;
+    padding: 7px 9px;
+    gap: 5px;
+    font-size: 11px;
+  }
+  body.admin-body .admin-header > .admin-theme-toggle .theme-toggle-icon {
+    font-size: 15px;
+  }
+}
