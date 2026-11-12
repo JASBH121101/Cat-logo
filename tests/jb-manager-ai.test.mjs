@@ -45,16 +45,15 @@ test("JB Manager AI requests the native Android microphone permission and keeps 
   assert.doesNotMatch(assistant, /native\.addListener\(["']result["'][\s\S]{0,400}sendMessage\(/);
 });
 
-test("Gemini endpoint verifies the Neon admin context before calling the model", () => {
-  const authCheck = endpoint.indexOf("async function authorizeAdmin");
-  const modelCall = endpoint.indexOf("generativelanguage.googleapis.com");
+test("AI endpoint authorizes the owner and the explicitly granted read-only demo viewer through Neon context", () => {
+  const authCheck = endpoint.indexOf("async function authorizeJbAiUser");
+  const modelCall = endpoint.indexOf("https://api.openai.com/v1/responses");
   assert.ok(authCheck >= 0 && modelCall > authCheck);
-  assert.match(endpoint, /requireCatalogAdmin/);
-  assert.match(endpoint, /await requireCatalogAdmin\(request, env\)/);
-  assert.doesNotMatch(endpoint, /\/auth\/v1\/user|\/rest\/v1\/admin_users/);
-  assert.match(endpoint, /if \(!user\) return response\(403/);
-  assert.match(endpoint, /env\.GEMINI_API_KEY/);
-  assert.match(endpoint, /rateLimited\(request\)/);
+  assert.match(endpoint, /rpc\\/catalog_admin_context/);
+  assert.match(endpoint, /is_demo_viewer === true/);
+  assert.match(endpoint, /catalog.view_all/);
+  assert.match(endpoint, /env\\.OPENAI_API_KEY/);
+  assert.match(endpoint, /rateLimited\\(request\\)/);
   assert.match(endpoint, /request_too_large/);
 });
 
@@ -150,19 +149,28 @@ const jbAiEndpoint = await import(new URL("../functions/api/jb-manager-ai.js", i
 
 async function callJbAi(context) {
   const previousFetch = globalThis.fetch;
+  const neonContext = context.mockNeonContext || {
+    is_admin: true,
+    admin_id: "test-admin",
+    role: "admin",
+    is_owner: true,
+    is_demo_viewer: false,
+    permissions: {}
+  };
+  const { mockNeonContext, ...requestContext } = context;
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
     if (url.pathname.endsWith("/rpc/catalog_admin_context")) {
-      return Response.json([{ is_admin: true, admin_id: "test-admin" }]);
+      return Response.json([neonContext]);
     }
     return previousFetch(input, init);
   };
   try {
     return await jbAiEndpoint.onRequestPost({
-      ...context,
+      ...requestContext,
       env: {
         NEON_DATA_API_URL: "https://neon.example.test/rest/v1",
-        ...(context.env || {})
+        ...(requestContext.env || {})
       }
     });
   } finally {
@@ -171,7 +179,7 @@ async function callJbAi(context) {
 }
 
 test("JB Copilot CORS preflight accepts GitHub Pages and the Android Capacitor origin", async () => {
-  for (const origin of ["https://jasbh121101.github.io", "https://localhost"]) {
+  for (const origin of ["https://jasbh121101.github.io", "https://localhost", "https://fiverr-demo.jb-collections.pages.dev"]) {
     const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
       method: "OPTIONS",
       headers: {
@@ -741,4 +749,158 @@ test("Copilot uses a smaller JSON schema and output budget for normal questions 
   assert.ok(endpoint.includes('const systemInstructionText = systemInstruction.join(" ")'));
   assert.ok(endpoint.includes("text: systemInstructionText"));
   assert.ok(endpoint.includes("model;dur="));
+});
+
+
+test("ChatGPT uses the OpenAI Responses API, a bounded context and structured JSON output", async () => {
+  const originalFetch = globalThis.fetch;
+  let openAiRequest = null;
+  const assistantResult = {
+    message: "Puedo ayudarte con el catálogo publicado.",
+    intent: "question",
+    product_query: "",
+    provider_price_usd: null,
+    provider_price_nio: null,
+    catalog_type: "unknown",
+    missing_fields: [],
+    product_draft: null
+  };
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("api.openai.com/v1/responses")) {
+      openAiRequest = { url, headers: init.headers, body: JSON.parse(init.body) };
+      return Response.json({
+        status: "completed",
+        output: [{
+          type: "message",
+          content: [{ type: "output_text", text: JSON.stringify(assistantResult) }]
+        }]
+      });
+    }
+    throw new Error("Unexpected model request: " + url);
+  };
+
+  try {
+    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://fiverr-demo.jb-collections.pages.dev",
+        Authorization: "Bearer test-admin-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: "Mostrame los productos publicados",
+        products: [
+          { id: "public-1", name: "Producto visible", is_published: true, workflow_status: "published" },
+          { id: "private-1", name: "Secreto interno", is_published: false, workflow_status: "unpublished" }
+        ]
+      })
+    });
+    const response = await callJbAi({
+      request,
+      env: { OPENAI_API_KEY: "test-only-key", OPENAI_MODEL: "gpt-6-luna" },
+      mockNeonContext: {
+        is_admin: false,
+        admin_id: null,
+        role: "demo_viewer",
+        is_owner: false,
+        is_demo_viewer: true,
+        username: "stevenb",
+        permissions: { "catalog.view_all": true }
+      }
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.assistant.model_used, "gpt-6-luna");
+    assert.equal(payload.assistant.message, assistantResult.message);
+    assert.equal(openAiRequest.url, "https://api.openai.com/v1/responses");
+    assert.equal(openAiRequest.headers.Authorization, "Bearer test-only-key");
+    assert.equal(openAiRequest.body.model, "gpt-6-luna");
+    assert.equal(openAiRequest.body.reasoning.effort, "low");
+    assert.equal(openAiRequest.body.text.format.type, "json_schema");
+    assert.match(openAiRequest.body.input, /Producto visible/);
+    assert.doesNotMatch(openAiRequest.body.input, /Secreto interno/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("read-only demo viewers cannot ask the AI to create products or change provider prices", async () => {
+  const originalFetch = globalThis.fetch;
+  let modelCalled = false;
+  globalThis.fetch = async url => {
+    if (String(url).includes("api.openai.com/v1/responses")) {
+      modelCalled = true;
+      return Response.json({ output: [] });
+    }
+    throw new Error("Unexpected model request: " + String(url));
+  };
+
+  try {
+    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://fiverr-demo.jb-collections.pages.dev",
+        Authorization: "Bearer test-demo-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Prepará un producto nuevo, una laptop" })
+    });
+    const response = await callJbAi({
+      request,
+      env: { OPENAI_API_KEY: "test-only-key" },
+      mockNeonContext: {
+        is_admin: false,
+        admin_id: null,
+        role: "demo_viewer",
+        is_owner: false,
+        is_demo_viewer: true,
+        username: "stevenb",
+        permissions: { "catalog.view_all": true }
+      }
+    });
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error, "demo_readonly_ai");
+    assert.equal(modelCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("the read-only demo AI fails closed until the OpenAI API secret is configured", async () => {
+  const originalFetch = globalThis.fetch;
+  let modelCalled = false;
+  globalThis.fetch = async url => {
+    if (String(url).includes("api.openai.com")) modelCalled = true;
+    throw new Error("No model API should be called without OPENAI_API_KEY");
+  };
+  try {
+    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://fiverr-demo.jb-collections.pages.dev",
+        Authorization: "Bearer test-demo-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Explicame cómo comprar un producto publicado" })
+    });
+    const response = await callJbAi({
+      request,
+      env: {},
+      mockNeonContext: {
+        is_admin: false,
+        admin_id: null,
+        role: "demo_viewer",
+        is_owner: false,
+        is_demo_viewer: true,
+        username: "stevenb",
+        permissions: { "catalog.view_all": true }
+      }
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, "openai_not_configured");
+    assert.equal(modelCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
