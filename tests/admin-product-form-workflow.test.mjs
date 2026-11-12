@@ -433,7 +433,7 @@ test("tag groups stay responsive and retain their catalog-specific visibility", 
 
 test("APK build refreshes and verifies the shared admin accessibility stylesheet", () => {
   assert.match(html, /admin-accessibility\.css\?v=20261101-tags-and-variants2/);
-  assert.match(html, /admin-workflow\.css\?v=20261112-photo-progress-contained1/);
+  assert.match(html, /admin-workflow\.css\?v=20261112-photo-layout-desktop-nav2/);
   assert.match(androidWorkflow, /admin-accessibility\.css/);
   assert.match(androidWorkflow, /node --test[\s\S]*tests\/admin-product-form-workflow\.test\.mjs/);
 });
@@ -445,4 +445,12 @@ test("variant photo galleries shrink to their cards and upload progress stays in
   assert.match(workflowCss, /html body\.admin-body form#product-form \.admin-photo-upload-progress\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);[^}]*min-width:\s*0;[^}]*max-width:\s*100%;/);
   assert.match(workflowCss, /html body\.admin-body form#product-form \.admin-photo-progress-track\s*\{[^}]*width:\s*100%;[^}]*min-width:\s*0;[^}]*max-width:\s*100%;/);
   assert.match(workflowCss, /html body\.admin-body form#product-form \.admin-photo-progress-label\s*\{[^}]*min-width:\s*0;[^}]*white-space:\s*normal;/);
+});
+
+
+test("perfumery two-step navigation uses two compact columns on desktop and mobile", () => {
+  assert.match(admin, /const sectionNav = form\?\.querySelector\("\.product-form-section-nav"\);[\s\S]*?sectionNav\?\.classList\.toggle\("is-two-step", isPerfume\)/);
+  assert.match(workflowCss, /@media \(min-width: 761px\)[\s\S]*?#product-form \.product-form-section-nav\.is-two-step\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;[^}]*width:\s*min\(100%, 560px\);/);
+  assert.match(workflowCss, /@media \(max-width: 760px\)[\s\S]*?#product-form \.product-form-section-nav\.is-two-step\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;[^}]*width:\s*100%;/);
+  assert.match(html, /admin-workflow\.css\?v=20261112-photo-layout-desktop-nav2/);
 });
