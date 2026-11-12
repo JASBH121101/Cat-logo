@@ -167,6 +167,35 @@ test("JB Copilot CORS preflight accepts GitHub Pages and the Android Capacitor o
   }
 });
 
+test("JB Copilot preflight accepts only the exact Fiverr demo origin in addition to its existing origins", async () => {
+  const demoOrigin = "https://fiverr-demo.jb-collections.pages.dev";
+  const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+    method: "OPTIONS",
+    headers: {
+      Origin: demoOrigin,
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "authorization,content-type"
+    }
+  });
+  const response = await jbAiEndpoint.onRequestOptions({ request });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), demoOrigin);
+});
+
+test("JB Copilot still requires admin authentication from the Fiverr demo origin", async () => {
+  const demoOrigin = "https://fiverr-demo.jb-collections.pages.dev";
+  const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+    method: "POST",
+    headers: { Origin: demoOrigin, "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "diagnostic" })
+  });
+  const response = await jbAiEndpoint.onRequestPost({ request, env: {} });
+  const payload = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(payload.error, "authentication_required");
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), demoOrigin);
+});
+
 test("JB Copilot POST handler is reached and returns authentication_required, not 405", async () => {
   const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
     method: "POST",
