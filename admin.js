@@ -165,7 +165,8 @@ const IS_READ_ONLY_PREVIEW =
       adminHostname !== "jb-collections.pages.dev" &&
       !INTERACTIVE_PREVIEW_HOSTS.has(adminHostname))
   );
-if (supabase && IS_READ_ONLY_PREVIEW) {
+const IS_READ_ONLY_APP = IS_FIVERR_DEMO_HOST || IS_READ_ONLY_PREVIEW;
+if (supabase && IS_READ_ONLY_APP) {
   const originalFrom = supabase.from.bind(supabase);
   supabase.from = table => {
     const query = originalFrom(table);
@@ -181,7 +182,7 @@ if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalStorageFrom = supabase.storage.from.bind(supabase.storage);
   supabase.storage.from = bucket => {
     const storageApi = originalStorageFrom(bucket);
-    for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl", "createSignedUrls"]) {
+    for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl"]) {
       if (typeof storageApi[method] === "function") {
         storageApi[method] = async () => {
           throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde un despliegue de prueba.");
@@ -2442,7 +2443,7 @@ function photoEntryIsCurrent(entry,token){
 function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   const item=entry?.item;
   if(!item||item.kind!=="new"||!item.file)return Promise.resolve({ok:item?.kind==="existing"});
-  if (IS_READ_ONLY_PREVIEW) {
+  if (IS_READ_ONLY_APP) {
     item.uploadState = "";
     item.uploadStage = "preview-only";
     item.uploadProgress = 0;
@@ -2556,7 +2557,7 @@ mainImagesInput?.addEventListener("change",()=>{
   added.forEach(item=>void queueBackgroundPhotoUpload({source:"main",item}));
 });
 retryMainImagesButton?.addEventListener("click",async()=>{
-  if (IS_READ_ONLY_PREVIEW) {
+  if (IS_READ_ONLY_APP) {
     message("#product-form-status", "Vista previa segura: la subida a Storage está deshabilitada en Vercel.", "error");
     return;
   }
@@ -3859,25 +3860,60 @@ function showAdminSection(section) {
 }
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
 
-/* Read-only buyer preview: navigation and product preview stay available, all write actions are blocked. */
+/* Fiverr guest mode: allow browsing, tabs, accordions, previews and local-only navigation.
+   Stop only controls that would persist, upload, publish, or delete data. */
+const DEMO_BLOCKED_MUTATION_SELECTOR = [
+  "#save-product-button",
+  "#publish-product-button",
+  "#save-draft-button",
+  "button[data-save-action]",
+  "#toggle-product-exclusive",
+  "[data-exclusive-product]",
+  "[data-trash-product]",
+  "[data-restore-product]",
+  "[data-delete-product]",
+  "#commission-save-button",
+  "[data-commission-delete]",
+  "#provider-import-apply",
+  "#provider-review-save",
+  "#provider-review-sync-catalog-availability",
+  "#publish-review-confirm",
+  "#add-variant-button",
+  "[data-add-group-color]",
+  "[data-remove-group]",
+  "[data-remove-variant]",
+  "[data-main-image-remove]",
+  "[data-variant-image-remove]",
+  "[data-save-color-library]",
+  "[data-toggle-color-favorite]",
+  "[data-ai-color-open]",
+  "[data-color-ai-analyze]",
+  "[data-color-ai-save]",
+  "#retry-main-image-uploads",
+  "input[type='file']",
+  "label.file-button",
+  "label.variant-image-label"
+].join(", ");
+
 document.addEventListener("click", event => {
   if (currentUser?.role !== "demo_viewer") return;
-  const allowed = event.target.closest(
-    "[data-admin-section], [data-theme-toggle], #admin-settings-toggle, #admin-menu-toggle, #admin-sidebar-backdrop, #logout-button, [data-preview-product], .admin-preview-open-button, summary"
-  );
-  if (allowed) return;
-  const action = event.target.closest("button, [role='button'], input[type='submit']");
-  if (!action) return;
+  const blockedAction = event.target.closest(DEMO_BLOCKED_MUTATION_SELECTOR);
+  if (!blockedAction) return;
+
   event.preventDefault();
   event.stopImmediatePropagation();
-  setStatus("Vista de invitado: podés navegar y cambiar el tema. Las modificaciones del catálogo están deshabilitadas.");
+  setStatus("Vista de invitado: podés explorar módulos, variantes y fotografías. Guardar, subir o eliminar datos está deshabilitado.");
 }, true);
 
 document.addEventListener("submit", event => {
   if (currentUser?.role !== "demo_viewer") return;
+  const mutationForm = event.target.closest(
+    "#product-form, #commission-form, #provider-review-form, #fiverr-demo-create-user-form, #fiverr-demo-guest-otp-form, #private-chat-admin-reply-form"
+  );
+  if (!mutationForm) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  setStatus("Modo vista previa: no se pueden guardar ni enviar cambios.");
+  setStatus("Vista de invitado: el formulario se puede explorar, pero no se pueden guardar cambios.");
 }, true);
 
 
@@ -6531,7 +6567,7 @@ async function recoverUploadedImageUrl(bucket, path) {
 }
 
 async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
-  if (IS_READ_ONLY_PREVIEW) {
+  if (IS_READ_ONLY_APP) {
     throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían al servidor.");
   }
   const {data,error:sessionError}=await supabase.auth.getSession();
@@ -7318,7 +7354,7 @@ form?.addEventListener("click", event => {
 form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
-  if (IS_READ_ONLY_PREVIEW) {
+  if (IS_READ_ONLY_APP) {
     message("#product-form-status", "Esta vista previa es de solo lectura.", "error");
     return;
   }
