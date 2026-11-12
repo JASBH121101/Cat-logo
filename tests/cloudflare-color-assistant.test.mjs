@@ -1,10 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { onRequest } from "../functions/api/color-assistant.js";
+import { onRequest as handleColorAssistantRequest } from "../functions/api/color-assistant.js";
 
 const ORIGIN = "https://jb-collections.pages.dev";
 const ADMIN_ID = "e72a1601-1122-4321-9abc-123456789abc";
 const TOKEN = "Bearer test-admin-access-token";
+
+async function onRequest(context) {
+  return handleColorAssistantRequest({
+    ...context,
+    env: {
+      NEON_DATA_API_URL: "https://neon.example/rest/v1",
+      ...(context.env || {})
+    }
+  });
+}
 let sequence = 1;
 
 function makeRequest(body = {}, options = {}) {
@@ -25,8 +35,11 @@ async function withAdminFetch(callback, colorRows = [], geminiHandler = null) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
-    if (url.endsWith("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
-    if (url.includes("/rest/v1/admin_users")) return Response.json([{ user_id: ADMIN_ID }]);
+    if (url.endsWith("/rpc/catalog_admin_context")) {
+      assert.equal(init.method, "POST");
+      assert.equal(init.headers.Authorization, TOKEN);
+      return Response.json([{ is_admin: true, admin_id: ADMIN_ID }]);
+    }
     if (url.includes("/rest/v1/color_library")) return Response.json(colorRows);
     if (url.includes("generativelanguage.googleapis.com")) {
       if (typeof geminiHandler === "function") return geminiHandler(input, init);
