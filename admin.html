@@ -270,10 +270,10 @@
         <section class="dashboard-section-card" aria-labelledby="storage-migration-title">
           <p class="eyebrow">INFRAESTRUCTURA · ALMACENAMIENTO</p>
           <h2 id="storage-migration-title">Migración directa desde Supabase (deshabilitada en Fiverr demo)</h2>
-          <p class="section-subtitle">Copia las imágenes de Supabase Storage al bucket privado de R2 por lotes pequeños y verifica cada archivo guardado.</p>
+          <p class="section-subtitle">La migración directa desde Supabase Storage está apagada en Fiverr demo. Para esta demo se usa exclusivamente el rescate desde caché de Cloudflare.</p>
 
           <div class="admin-alert" role="note">
-            <strong>Protección de datos:</strong> esta herramienta solo lee Supabase y escribe en R2. No elimina ni modifica archivos del bucket original.
+            <strong>Protección de datos:</strong> la migración directa no se ejecuta en Fiverr demo. No se consultan secretos S3 ni se solicitan imágenes a Supabase desde este panel.
           </div>
 
           <div class="form-actions">
@@ -281,7 +281,7 @@
             <button id="storage-migration-start" class="button button-primary" type="button" disabled>Iniciar migración</button>
           </div>
 
-          <p id="storage-migration-status" class="form-status" role="status" aria-live="polite">Primero verificá la conexión S3 y el inventario. La copia solo estará disponible cuando este entorno tenga sus secretos y el binding R2.</p>
+          <p id="storage-migration-status" class="form-status" role="status" aria-live="polite">Migración directa deshabilitada en Fiverr demo. Utilizá el mecanismo de rescate desde caché de Cloudflare.</p>
           <progress id="storage-migration-progress" max="1" value="0" aria-label="Progreso de migración"></progress>
           <p id="storage-migration-summary" class="section-subtitle">Primero verificá la conexión y el inventario de origen.</p>
           <div id="storage-migration-log" class="admin-alert" aria-live="polite" aria-label="Registro de migración"></div>

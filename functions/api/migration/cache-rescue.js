@@ -147,7 +147,9 @@ async function processPath(bucket, path, action) {
 
   // Deliberately no source fetch or Supabase fallback exists in this route.
   // It copies only a response already present in the local Cloudflare Cache API.
-  await bucket.put(path, bytes, {
+  const created = await bucket.put(path, bytes, {
+    // Atomic create-only semantics: a concurrent rescue cannot overwrite an existing object.
+    onlyIf: { etagDoesNotMatch: "*" },
     httpMetadata: {
       contentType: cached.contentType,
       cacheControl: "public, max-age=31536000, immutable"
@@ -159,6 +161,25 @@ async function processPath(bucket, path, action) {
       recoveredAt: new Date().toISOString()
     }
   });
+
+  if (!created) {
+    const raced = await readExistingR2(bucket, path);
+    if (raced && !raced.error && raced.size === bytes.byteLength && raced.sha256 === sourceSha256) {
+      return {
+        path,
+        status: "already",
+        size: raced.size,
+        contentType: raced.contentType,
+        sha256: raced.sha256,
+        message: "Otro intento guardó la misma imagen; se verificó sin sobrescribirla."
+      };
+    }
+    return {
+      path,
+      status: "error",
+      reason: raced?.error || "R2 protegió un objeto que apareció durante la copia; no se sobrescribió."
+    };
+  }
 
   const saved = await bucket.get(path);
   if (!saved) {
