@@ -1,8 +1,7 @@
 const AUTH_PROXY_PREFIX = "/api/neon-auth";
 const MAX_AUTH_BODY_BYTES = 1024 * 1024;
 const ALLOWED_AUTH_HOSTS = new Set([
-  "fiverr-demo.jb-collections.pages.dev",
-  "migration-neon-r2.jb-collections.pages.dev"
+  "fiverr-demo.jb-collections.pages.dev"
 ]);
 
 function proxyJson(status, payload) {
@@ -91,11 +90,7 @@ export async function onRequest({ request, env }) {
     return proxyJson(405, { error: "method_not_allowed" });
   }
 
-  const baseValue = String(
-    incoming.hostname === "fiverr-demo.jb-collections.pages.dev"
-      ? "https://ep-steep-rain-bei5dxk1.neonauth.c-9.us-east-2.aws.neon.tech/fiverr_auth/auth"
-      : env.NEON_AUTH_BASE_URL || ""
-  ).trim();
+  const baseValue = "https://ep-steep-rain-bei5dxk1.neonauth.c-9.us-east-2.aws.neon.tech/fiverr_auth/auth";
   let upstreamBase;
   try {
     upstreamBase = new URL(baseValue);
