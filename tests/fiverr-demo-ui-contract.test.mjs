@@ -43,7 +43,7 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
   assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-demo-dual-theme1/);
-  assert.ok(html.includes("admin.js?v=20261112-meaningful-dirty-state2"));
+  assert.ok(html.includes("admin.js?v=20261112-guest-settings-logout1"));
   assert.ok(html.includes("demo-viewer.css?v=20261112-demo-theme-ai-off1"));
 });
 
@@ -81,4 +81,25 @@ test("guest mode explicitly permits the user-facing light/dark theme toggle", ()
   assert.match(demoViewer, /pointer-events: auto !important/);
   assert.match(ui, /button\.addEventListener\("click", \(\) => \{/);
   assert.match(ui, /applyTheme\(next\);\s*saveTheme\(next\);/);
+});
+
+
+test("Fiverr guest can open Settings and use logout without exposing other settings actions", () => {
+  assert.ok(admin.includes("#admin-settings-toggle"));
+  assert.ok(admin.includes("#logout-button"));
+  assert.match(admin, /\[data-admin-section\], \[data-theme-toggle\], #admin-settings-toggle,/);
+  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-settings-menu,\s*body\.demo-viewer-mode/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \.admin-sidebar-settings \.admin-settings-item:not\(#logout-button\)/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \.admin-sidebar-settings #logout-button/);
+});
+
+test("guest logout closes the Settings menu and mobile sidebar before returning to login", () => {
+  const logoutStart = admin.indexOf('$("#logout-button")?.addEventListener("click"');
+  const logoutEnd = admin.indexOf("/* =========================================================", logoutStart);
+  const logoutHandler = admin.slice(logoutStart, logoutEnd);
+  assert.ok(logoutStart >= 0 && logoutEnd > logoutStart);
+  assert.match(logoutHandler, /settingsMenu\.hidden = true/);
+  assert.match(logoutHandler, /admin-settings-toggle.*aria-expanded.*false/);
+  assert.match(logoutHandler, /setMobileSidebarOpen\(false\)/);
+  assert.match(logoutHandler, /await signOutLocalSafely\(\)/);
 });
