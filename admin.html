@@ -24,9 +24,10 @@
   <link rel="stylesheet" href="demo-viewer.css?v=20261111-full-readonly-module-preview4">
   <link rel="stylesheet" href="admin-ai.css?v=20261031-chat-ui1">
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
+  <link rel="stylesheet" href="fiverr-demo-ui-polish.css?v=20261112-demo-dual-theme1">
 
   <script src="config.js?v=20261112-fiverr-data-api-cache1"></script>
-  <script type="module" src="admin.js?v=20261112-fiverr-cache-rescue1"></script>
+  <script type="module" src="admin.js?v=20261112-fiverr-demo-ui-polish1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -73,7 +74,7 @@
                  autocapitalize="none"
                  spellcheck="false"
                  maxlength="254"
-                 placeholder="Ej. invitado01"
+                
                  required>
         </label>
 
@@ -122,7 +123,7 @@
 
         <label>
           Correo autorizado o usuario invitado
-          <input id="admin-password-reset-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" placeholder="Correo o usuario invitado" required>
+          <input id="admin-password-reset-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required>
         </label>
 
         <button id="admin-password-reset-request" class="button button-outline" type="button">
@@ -541,12 +542,12 @@
                   <option value="" selected>Seleccionar subcategoría…</option>
                   <option value="__custom__">Otra (escribir…)</option>
                 </select>
-                <input id="product-subcategory-custom" type="text" maxlength="80" placeholder="Escribí la subcategoría" aria-label="Subcategoría personalizada" hidden>
+                <input id="product-subcategory-custom" type="text" maxlength="80" aria-label="Subcategoría personalizada" hidden>
               </label>
 
               <label class="span-2">
                 Descripción comercial
-                <textarea id="product-description" rows="3" maxlength="1800" placeholder="Describí brevemente el producto y sus puntos principales."></textarea>
+                <textarea id="product-description" rows="3" maxlength="1800"></textarea>
               </label>
 
               <section id="product-perfume-fields" class="span-2 admin-perfume-fields hidden" aria-labelledby="perfume-fields-title">
@@ -699,7 +700,7 @@
                     Etiquetas personalizadas
                     <div class="product-custom-tags-entry">
                       <div id="product-custom-tags-chips" class="product-custom-tags-chips" aria-live="polite" hidden></div>
-                      <input id="product-custom-tags" type="text" maxlength="300" autocomplete="off" enterkeyhint="done" placeholder="Escribí una etiqueta y presioná Enter" aria-describedby="product-custom-tags-help">
+                      <input id="product-custom-tags" type="text" maxlength="300" autocomplete="off" enterkeyhint="done" aria-describedby="product-custom-tags-help">
                     </div>
                     <small id="product-custom-tags-help">Presioná Enter para guardar cada etiqueta por separado. También podés pegar varias separadas por comas o punto y coma.</small>
                   </label>
@@ -822,7 +823,7 @@
               </select>
             </label>
           </div>
-          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados" placeholder="Buscar producto publicado"></label>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="published-search" type="search" aria-label="Buscar productos publicados"></label>
           <div id="published-product-list" class="admin-product-list"></div>
         </section>
       </section>
@@ -851,7 +852,7 @@
               </select>
             </label>
           </div>
-          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="unpublished-search" type="search" aria-label="Buscar productos no publicados" placeholder="Buscar producto no publicado"></label>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="unpublished-search" type="search" aria-label="Buscar productos no publicados"></label>
           <div id="unpublished-product-list" class="admin-product-list"></div>
         </section>
       </section>
@@ -880,7 +881,7 @@
               </select>
             </label>
           </div>
-          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar borradores" placeholder="Buscar borrador"></label>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="draft-search" type="search" aria-label="Buscar borradores"></label>
           <div id="draft-product-list" class="admin-product-list"></div>
         </section>
         <section class="admin-card local-recovery-card" aria-labelledby="local-recovery-title">
@@ -918,7 +919,7 @@
               </select>
             </label>
           </div>
-          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="trash-search" type="search" aria-label="Buscar productos en la papelera" placeholder="Buscar en papelera"></label>
+          <label class="search-box admin-search"><span aria-hidden="true">⌕</span><input id="trash-search" type="search" aria-label="Buscar productos en la papelera"></label>
           <div id="trash-product-list" class="admin-product-list"></div>
         </section>
       </section>
@@ -940,10 +941,10 @@
           <p>Vos elegís el nombre de usuario y la contraseña. No se solicita correo personal al comprador. El código de activación se envía a tu Gmail y la contraseña se configura directamente desde este panel.</p>
           <form id="fiverr-demo-create-user-form" class="admin-form fiverr-demo-create-user-form">
             <label>Nombre visible
-              <input id="fiverr-demo-guest-name" type="text" maxlength="80" placeholder="Ej. Comprador Fiverr" required>
+              <input id="fiverr-demo-guest-name" type="text" maxlength="80" required>
             </label>
             <label>Nombre de usuario
-              <input id="fiverr-demo-guest-username" type="text" maxlength="30" minlength="3" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,29}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ej. comprador01" required>
+              <input id="fiverr-demo-guest-username" type="text" maxlength="30" minlength="3" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,29}" autocomplete="off" autocapitalize="none" spellcheck="false" required>
             </label>
             <label>Contraseña inicial
               <input id="fiverr-demo-guest-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
@@ -1003,7 +1004,7 @@
         <section class="admin-card provider-list-card">
           <div class="provider-toolbar provider-toolbar-pending">
             <label class="provider-field"><span>Catálogo</span><select id="provider-catalog-filter"><option value="all">Ambos catálogos</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
-            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-search" type="search" placeholder="Nombre, marca o modelo…" autocomplete="off"></label>
+            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-search" type="search" autocomplete="off"></label>
           </div>
           <div id="provider-product-list" class="provider-product-list" aria-live="polite"><p class="provider-empty-state">Cargando productos pendientes…</p></div>
         </section>
@@ -1025,7 +1026,7 @@
           <div class="provider-toolbar">
             <label class="provider-field"><span>Catálogo</span><select id="provider-reviewed-catalog-filter"><option value="all">Ambos catálogos</option><option value="technology">JB TECH</option><option value="perfumery">JB Parfums</option></select></label>
             <label class="provider-field"><span>Estado</span><select id="provider-reviewed-filter"><option value="all">Todos los revisados</option><option value="overdue">Necesitan revisión</option><option value="current">Al día</option></select></label>
-            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-reviewed-search" type="search" placeholder="Nombre, marca o modelo…" autocomplete="off"></label>
+            <label class="provider-field provider-search-field"><span>Buscar producto</span><input id="provider-reviewed-search" type="search" autocomplete="off"></label>
           </div>
           <div id="provider-reviewed-list" class="provider-product-list" aria-live="polite"><p class="provider-empty-state">Cargando productos revisados…</p></div>
         </section>
@@ -1082,7 +1083,7 @@
             <form id="jb-ai-form" class="jb-manager-ai-form">
               <button type="button" id="jb-ai-voice" class="jb-ai-voice" aria-label="Dictar mensaje" title="Dictar mensaje">🎙</button>
               <button type="button" id="jb-ai-speech-toggle" class="jb-ai-speech-toggle" aria-label="Activar respuestas por voz" aria-pressed="false" title="Activar respuestas por voz">🔇</button>
-              <textarea id="jb-ai-input" rows="1" maxlength="3000" placeholder="Escribí o dictá una instrucción…" aria-label="Mensaje para JB Manager AI"></textarea>
+              <textarea id="jb-ai-input" rows="1" maxlength="3000" aria-label="Mensaje para JB Manager AI"></textarea>
               <button type="submit" id="jb-ai-send" class="jb-ai-send" aria-label="Enviar mensaje">➤</button>
             </form>
             <p id="jb-ai-status" class="jb-manager-ai-statusline" role="status">El dictado solicita permiso al sistema. Android puede procesar el audio con el servicio de voz configurado; JARVIS recibe el texto solo cuando presionás Enviar.</p>
@@ -1139,7 +1140,7 @@
               <div id="private-chat-admin-messages" class="private-chat-admin-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
               <form id="private-chat-admin-reply-form" class="private-chat-admin-reply-form" hidden>
                 <label class="visually-hidden" for="private-chat-admin-reply">Tu respuesta</label>
-                <textarea id="private-chat-admin-reply" rows="2" maxlength="1200" placeholder="Escribí tu respuesta…" autocomplete="off"></textarea>
+                <textarea id="private-chat-admin-reply" rows="2" maxlength="1200" autocomplete="off"></textarea>
                 <button id="private-chat-admin-send" class="button button-primary" type="submit">Enviar respuesta</button>
               </form>
               <p class="private-chat-admin-security-note">Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular. No solicités contraseñas, PIN, códigos de seguridad ni números completos de tarjetas o cuentas bancarias. El historial se conserva hasta 7 días.</p>
@@ -1218,7 +1219,7 @@
         <label id="provider-review-price-nio-field"><span>Precio indicado por proveedor (C$)</span><input id="provider-review-price-nio" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label id="provider-review-availability-field" class="provider-dialog-wide"><span>Disponibilidad general confirmada en el proveedor</span><select id="provider-review-availability"><option value="unknown">Sin confirmar</option><option value="available">Disponible</option><option value="on_order">Por pedido</option><option value="out_of_stock">Agotado / no disponible</option></select></label>
         <p id="provider-review-variant-overview-note" class="provider-review-variant-overview-note provider-dialog-wide" hidden>En este producto, el precio general se toma de la configuración con menor RAM y almacenamiento (la referencia más económica). La disponibilidad general se calcula a partir de las configuraciones y colores confirmados.</p>
-        <label class="provider-dialog-wide"><span>Notas de la revisión</span><textarea id="provider-review-notes" rows="3" maxlength="2000" placeholder="Cambios detectados, condiciones, fecha estimada…"></textarea></label>
+        <label class="provider-dialog-wide"><span>Notas de la revisión</span><textarea id="provider-review-notes" rows="3" maxlength="2000"></textarea></label>
       </div>
       <p id="provider-review-message" class="form-status provider-feedback" role="status" aria-live="polite"></p>
       <p class="provider-private-note"><span aria-hidden="true">🔒</span> Estos datos se guardan en tablas privadas de administración. No se publican en las fichas del catálogo ni calculan automáticamente tu comisión.</p>

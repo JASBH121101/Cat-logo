@@ -1,4 +1,4 @@
-import { jsonResponse, requireCatalogAdmin, validObjectPath, storageUnavailable } from "../../_shared/neon-admin.js";
+import { jsonResponse, requireCatalogAdmin, validObjectPath, storageUnavailable, isFiverrDemoRequest } from "../../_shared/neon-admin.js";
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]);
@@ -13,6 +13,7 @@ function validImageBytes(bytes, type) {
 }
 
 export async function onRequest(context) {
+  if (!isFiverrDemoRequest(context.request)) return jsonResponse(404, { error: "not_found" });
   if (context.request.method !== "POST") return jsonResponse(405, { error: "Método no permitido." });
   if (storageUnavailable(context.env)) return jsonResponse(503, { error: "El almacenamiento R2 no está enlazado." });
 
@@ -38,6 +39,7 @@ export async function onRequest(context) {
     if (existing) return jsonResponse(409, { error: "Ya existe una imagen con esa ruta." });
 
     const object = await context.env.PRODUCT_IMAGES.put(path, bytes, {
+      onlyIf: { etagDoesNotMatch: "*" },
       httpMetadata: {
         contentType: type,
         cacheControl: "public, max-age=31536000, immutable"
@@ -47,6 +49,7 @@ export async function onRequest(context) {
         source: "jb-manager"
       }
     });
+    if (!object) return jsonResponse(409, { error: "Ya existe una imagen con esa ruta." });
     return jsonResponse(201, { data: { path, etag: object.etag, size: bytes.byteLength } });
   } catch (error) {
     console.error("JB R2 upload failed:", error instanceof Error ? error.message : "unknown error");

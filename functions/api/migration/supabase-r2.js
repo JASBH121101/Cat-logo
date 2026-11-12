@@ -322,6 +322,9 @@ async function copyBatch(context, continuationToken, batchSize) {
 }
 
 export async function onRequest(context) {
+  if (new URL(context.request.url).hostname !== "migration-neon-r2.jb-collections.pages.dev") {
+    return jsonResponse(404, { error: "not_found" });
+  }
   if (context.request.method !== "POST") return jsonResponse(405, { error: "Método no permitido." });
 
   const auth = await requireCatalogAdmin(context.request, context.env);

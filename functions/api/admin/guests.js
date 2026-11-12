@@ -1,8 +1,6 @@
 const OWNER_EMAIL_DOMAIN = "gmail.com";
 const NEON_PROJECT_ID = "wispy-forest-84396726";
 const NEON_BRANCH_ID = "br-little-sun-be3xph9h";
-const DATA_API_FALLBACK = "https://ep-wandering-scene-beu9tqyd.apirest.c-9.us-east-2.aws.neon.tech/neondb/rest/v1";
-const AUTH_HOST = "https://ep-steep-rain-bei5dxk1.neonauth.c-9.us-east-2.aws.neon.tech/fiverr_auth/auth";
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -38,17 +36,28 @@ async function getOwnerContext(token, dataApiUrl) {
 }
 
 export async function onRequest({ request, env }) {
-  if (new URL(request.url).hostname !== "fiverr-demo.jb-collections.pages.dev") {
+  const requestUrl = new URL(request.url);
+  if (requestUrl.protocol !== "https:" || requestUrl.hostname !== "fiverr-demo.jb-collections.pages.dev") {
     return json(404, { error: "not_found" });
   }
+  const origin = request.headers.get("Origin");
+  if (origin && origin !== requestUrl.origin) return json(403, { error: "cross_origin_request_blocked" });
   if (request.method !== "POST") {
     return json(405, { error: "method_not_allowed" });
   }
   const token = bearerToken(request);
   if (!token) return json(401, { error: "Iniciá sesión como propietario." });
 
-  const dataApiUrl = String(env.NEON_DATA_API_URL || DATA_API_FALLBACK).trim();
-  const owner = await getOwnerContext(token, dataApiUrl).catch(() => null);
+  const dataApiUrl = String(env.NEON_DATA_API_URL || "").trim();
+  if (!dataApiUrl) return json(503, { error: "NEON_DATA_API_URL no está configurada en Preview." });
+  let parsedDataApiUrl;
+  try {
+    parsedDataApiUrl = new URL(dataApiUrl);
+    if (parsedDataApiUrl.protocol !== "https:" || !parsedDataApiUrl.hostname.endsWith(".neon.tech")) throw new Error("invalid_data_api_url");
+  } catch {
+    return json(503, { error: "La URL de Neon Data API no es válida." });
+  }
+  const owner = await getOwnerContext(token, parsedDataApiUrl.toString().replace(/\\/$/, "")).catch(() => null);
   if (owner?.is_owner !== true || owner?.role !== "admin") {
     return json(403, { error: "Solo el propietario puede crear usuarios invitados." });
   }

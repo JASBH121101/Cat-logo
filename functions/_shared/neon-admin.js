@@ -61,3 +61,14 @@ export async function requireCatalogAdmin(request, env) {
 export function storageUnavailable(env) {
   return !env?.PRODUCT_IMAGES || typeof env.PRODUCT_IMAGES.put !== "function";
 }
+
+
+// These mutation/metadata APIs belong only to the isolated Fiverr demo Preview.
+export function isFiverrDemoRequest(request) {
+  try {
+    const url = new URL(request.url);
+    return url.protocol === "https:" && url.hostname === "fiverr-demo.jb-collections.pages.dev";
+  } catch {
+    return false;
+  }
+}

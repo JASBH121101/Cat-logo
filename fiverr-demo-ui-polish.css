@@ -1,0 +1,371 @@
+/* Fiverr demo admin polish: loaded only by the isolated Preview admin page. */
+body.admin-body .field-label-copy {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+}
+body.admin-body .required-mark {
+  display: inline;
+  margin-inline-start: 2px;
+  color: #dc2626 !important;
+  font-size: .95em;
+  font-weight: 900;
+  line-height: 1;
+}
+html[data-theme="dark"] body.admin-body .required-mark {
+  color: #ff8293 !important;
+}
+
+/* Team permissions: clear cards, separated labels and a responsive grid. */
+body.admin-body .team-preview-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+body.admin-body .team-preview-heading > div {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+body.admin-body .team-permissions-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+  margin: 16px 0;
+}
+body.admin-body .team-permission-member {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid;
+  border-radius: 14px;
+}
+body.admin-body .team-permission-member-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  min-width: 0;
+}
+body.admin-body .team-permission-member-heading h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+body.admin-body .team-permission-role {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .055em;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+}
+body.admin-body .team-permission-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+body.admin-body .team-permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+body.admin-body .team-permission-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid;
+  border-radius: 11px;
+  cursor: pointer;
+}
+body.admin-body .team-permission-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+body.admin-body .team-permission-copy strong {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+body.admin-body .team-permission-copy small {
+  display: block;
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+body.admin-body .team-permission-option input[type="checkbox"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 2px 0 0;
+  accent-color: #5268db;
+  cursor: pointer;
+}
+body.admin-body .team-permission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+body.admin-body .team-permission-actions .button {
+  min-height: 40px;
+  padding: 9px 13px;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: normal;
+}
+body.admin-body #fiverr-demo-guest-setup {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+body.admin-body #fiverr-demo-guest-setup > p {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+body.admin-body .fiverr-demo-create-user-form {
+  width: 100%;
+  max-width: 620px;
+}
+body.admin-body .fiverr-demo-create-user-form label {
+  gap: 7px;
+  line-height: 1.4;
+}
+body.admin-body .team-permissions-status {
+  min-height: 1.35em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Consistent secondary, outline and quiet actions in both color schemes. */
+html[data-theme="light"] body.admin-body .button-secondary {
+  border: 1px solid #c7d2e5 !important;
+  color: #2b3d61 !important;
+  background: #edf2fb !important;
+  box-shadow: 0 2px 0 #d6deed !important;
+}
+html[data-theme="light"] body.admin-body .button-secondary:hover,
+html[data-theme="light"] body.admin-body .button-secondary:focus-visible {
+  border-color: #8fa4d1 !important;
+  color: #1d315d !important;
+  background: #e2eafe !important;
+}
+html[data-theme="light"] body.admin-body .button-outline {
+  border-color: #c5d0e2 !important;
+  color: #314462 !important;
+  background: #f8faff !important;
+}
+html[data-theme="light"] body.admin-body .button-outline:hover,
+html[data-theme="light"] body.admin-body .button-outline:focus-visible {
+  border-color: #8da1cf !important;
+  color: #20355f !important;
+  background: #edf2ff !important;
+}
+html[data-theme="light"] body.admin-body .button-ghost {
+  border: 1px solid transparent !important;
+  color: #455675 !important;
+  background: transparent !important;
+}
+html[data-theme="light"] body.admin-body .button-ghost:hover,
+html[data-theme="light"] body.admin-body .button-ghost:focus-visible {
+  border-color: #d4ddef !important;
+  color: #273d6d !important;
+  background: #f1f5fd !important;
+}
+html[data-theme="dark"] body.admin-body .button-secondary {
+  border: 1px solid #405577 !important;
+  color: #e6edfc !important;
+  background: #1b2948 !important;
+  box-shadow: 0 2px 0 #0b1428 !important;
+}
+html[data-theme="dark"] body.admin-body .button-secondary:hover,
+html[data-theme="dark"] body.admin-body .button-secondary:focus-visible {
+  border-color: #7188bc !important;
+  color: #ffffff !important;
+  background: #293b60 !important;
+}
+html[data-theme="dark"] body.admin-body .button-outline {
+  border-color: #465c80 !important;
+  color: #e0e9fb !important;
+  background: #17243d !important;
+  box-shadow: 0 2px 0 #0a1325 !important;
+}
+html[data-theme="dark"] body.admin-body .button-outline:hover,
+html[data-theme="dark"] body.admin-body .button-outline:focus-visible {
+  border-color: #8096c8 !important;
+  color: #ffffff !important;
+  background: #223451 !important;
+}
+html[data-theme="dark"] body.admin-body .button-ghost {
+  border: 1px solid transparent !important;
+  color: #c2d0e8 !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] body.admin-body .button-ghost:hover,
+html[data-theme="dark"] body.admin-body .button-ghost:focus-visible {
+  border-color: #344968 !important;
+  color: #f1f5ff !important;
+  background: #17243c !important;
+}
+
+/* Destructive icon actions must remain distinguishable from neutral buttons. */
+html[data-theme="light"] body.admin-body .admin-product-buttons .admin-icon-button.danger,
+html[data-theme="light"] body.admin-body .admin-mini-button.danger,
+html[data-theme="light"] body.admin-body .variant-config-body .danger,
+html[data-theme="light"] body.admin-body .variant-config-body .btn-danger {
+  border-color: #f0b8c1 !important;
+  color: #a51f35 !important;
+  background: #fff1f3 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-product-buttons .admin-icon-button.danger,
+html[data-theme="dark"] body.admin-body .admin-mini-button.danger,
+html[data-theme="dark"] body.admin-body .variant-config-body .danger,
+html[data-theme="dark"] body.admin-body .variant-config-body .btn-danger {
+  border-color: #875065 !important;
+  color: #ffd0d8 !important;
+  background: #402430 !important;
+}
+body.admin-body .admin-product-buttons .admin-icon-button,
+body.admin-body .admin-mini-button,
+body.admin-body .team-permission-actions .button {
+  transition: color .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+body.admin-body button:focus-visible,
+body.admin-body a.button:focus-visible,
+body.admin-body input:focus-visible,
+body.admin-body select:focus-visible,
+body.admin-body textarea:focus-visible {
+  outline: 3px solid rgba(89, 125, 235, .48);
+  outline-offset: 2px;
+}
+html[data-theme="dark"] body.admin-body button:focus-visible,
+html[data-theme="dark"] body.admin-body input:focus-visible,
+html[data-theme="dark"] body.admin-body select:focus-visible,
+html[data-theme="dark"] body.admin-body textarea:focus-visible {
+  outline-color: rgba(126, 164, 255, .66);
+}
+
+/* Form controls: explicit foreground/background and native control scheme. */
+html[data-theme="light"] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+html[data-theme="light"] body.admin-body .admin-form select,
+html[data-theme="light"] body.admin-body .admin-form textarea {
+  color: #1d2a43 !important;
+  background-color: #ffffff !important;
+  border-color: #c4cfdf !important;
+  color-scheme: light;
+}
+html[data-theme="dark"] body.admin-body .admin-form input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+html[data-theme="dark"] body.admin-body .admin-form select,
+html[data-theme="dark"] body.admin-body .admin-form textarea {
+  color: #edf3ff !important;
+  background-color: #0d172b !important;
+  border-color: #465b7c !important;
+  color-scheme: dark;
+}
+html[data-theme="dark"] body.admin-body .admin-form select option {
+  color: #edf3ff;
+  background: #0d172b;
+}
+html[data-theme="light"] body.admin-body .team-permission-member {
+  color: #26354f;
+  border-color: #d8e0ed;
+  background: #ffffff;
+}
+html[data-theme="light"] body.admin-body .team-permission-member-heading h3,
+html[data-theme="light"] body.admin-body .team-permission-copy strong {
+  color: #25334c;
+}
+html[data-theme="light"] body.admin-body .team-permission-role {
+  color: #41568a;
+  border-color: #cdd8ee;
+  background: #f0f4ff;
+}
+html[data-theme="light"] body.admin-body .team-permission-note,
+html[data-theme="light"] body.admin-body .team-permission-copy small {
+  color: #586780;
+}
+html[data-theme="light"] body.admin-body .team-permission-option {
+  border-color: #dce3ef;
+  background: #f8faff;
+}
+html[data-theme="light"] body.admin-body .team-permission-option:hover {
+  border-color: #a8b8dd;
+  background: #f0f4ff;
+}
+html[data-theme="dark"] body.admin-body .team-permission-member {
+  color: #e7eefc;
+  border-color: #354968;
+  background: #101d33;
+}
+html[data-theme="dark"] body.admin-body .team-permission-member-heading h3,
+html[data-theme="dark"] body.admin-body .team-permission-copy strong {
+  color: #eff4ff;
+}
+html[data-theme="dark"] body.admin-body .team-permission-role {
+  color: #d2ddff;
+  border-color: #465b83;
+  background: #1c2a49;
+}
+html[data-theme="dark"] body.admin-body .team-permission-note,
+html[data-theme="dark"] body.admin-body .team-permission-copy small {
+  color: #afc0dc;
+}
+html[data-theme="dark"] body.admin-body .team-permission-option {
+  border-color: #344968;
+  background: #15243d;
+}
+html[data-theme="dark"] body.admin-body .team-permission-option:hover {
+  border-color: #627ca9;
+  background: #1a2c4a;
+}
+
+@media (max-width: 760px) {
+  body.admin-body .team-permission-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body.admin-body .team-permission-member {
+    padding: 13px;
+  }
+  body.admin-body .team-permission-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body.admin-body .team-permission-actions .button {
+    width: 100%;
+  }
+  body.admin-body .team-preview-heading > .button,
+  body.admin-body #team-permissions-refresh {
+    width: 100%;
+    min-height: 40px;
+  }
+}

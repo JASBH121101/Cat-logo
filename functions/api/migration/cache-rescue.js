@@ -1,4 +1,4 @@
-import { jsonResponse, requireCatalogAdmin, validObjectPath, storageUnavailable } from "../../_shared/neon-admin.js";
+import { jsonResponse, requireCatalogAdmin, validObjectPath, storageUnavailable, isFiverrDemoRequest } from "../../_shared/neon-admin.js";
 
 const PRODUCTION_HOST = "jb-collections.pages.dev";
 const DEMO_HOST = "fiverr-demo.jb-collections.pages.dev";
@@ -208,6 +208,7 @@ async function processPath(bucket, path, action) {
 }
 
 export async function onRequest(context) {
+  if (!isFiverrDemoRequest(context.request)) return jsonResponse(404, { error: "not_found" });
   if (context.request.method !== "POST") {
     return jsonResponse(405, { error: "Método no permitido." });
   }

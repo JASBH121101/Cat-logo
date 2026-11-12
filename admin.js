@@ -11,6 +11,57 @@ import { initStorageMigration } from "./admin-storage-migration.js?v=20261112-fi
    ========================================================= */
 
 const CONFIG = window.CATALOG_CONFIG || {};
+
+// Marca con asterisco rojo únicamente los controles realmente obligatorios.
+// También cubre etiquetas que se crean dinámicamente al editar variantes.
+function addRequiredFieldIndicator(label) {
+  if (!(label instanceof HTMLLabelElement)) return;
+  const control = label.querySelector("input[required], select[required], textarea[required]");
+  if (!control || label.querySelector(".required-mark")) return;
+
+  let insertionTarget = control;
+  while (insertionTarget.parentElement && insertionTarget.parentElement !== label) {
+    insertionTarget = insertionTarget.parentElement;
+  }
+  const precedingNodes = [];
+  for (const node of Array.from(label.childNodes)) {
+    if (node === insertionTarget) break;
+    precedingNodes.push(node);
+  }
+  const hasLabelCopy = precedingNodes.some(node => String(node.textContent || "").trim());
+  const marker = document.createElement("span");
+  marker.className = "required-mark";
+  marker.setAttribute("aria-hidden", "true");
+  marker.textContent = "*";
+
+  if (hasLabelCopy) {
+    const copy = document.createElement("span");
+    copy.className = "field-label-copy";
+    label.insertBefore(copy, precedingNodes[0]);
+    precedingNodes.forEach(node => copy.append(node));
+    copy.append(marker);
+  } else {
+    label.insertBefore(marker, insertionTarget);
+  }
+}
+
+function applyRequiredFieldIndicators(root = document) {
+  if (root instanceof HTMLLabelElement) addRequiredFieldIndicator(root);
+  root.querySelectorAll?.("label").forEach(addRequiredFieldIndicator);
+}
+
+applyRequiredFieldIndicators();
+if (typeof MutationObserver !== "undefined" && document.body) {
+  const requiredFieldObserver = new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(node => {
+      if (!(node instanceof Element)) return;
+      const containingLabel = node.closest("label");
+      if (containingLabel) addRequiredFieldIndicator(containingLabel);
+      applyRequiredFieldIndicators(node);
+    }));
+  });
+  requiredFieldObserver.observe(document.body, { childList: true, subtree: true });
+}
 // Custom technology tags are kept as separate chips while editing a product.
 let customProductTags = [];
 
@@ -835,23 +886,18 @@ function updateCategoryVariantVisibility() {
   }
 
   const specsLabel = $("#product-specs-label");
-  const specsField = $("#product-specs");
-  const specsGuidance = category === "Televisores"
+    const specsGuidance = category === "Televisores"
     ? {
         label: "Características del televisor",
-        placeholder: "Tamaño de pantalla, resolución, LED / QLED / OLED, Smart TV, frecuencia y conectividad."
       }
     : category === "Audio"
       ? {
           label: "Características de audio",
-          placeholder: "Tipo de equipo, potencia, Bluetooth / Wi-Fi, autonomía, conectividad y resistencia."
-        }
+          }
       : {
           label: "Características y especificaciones.",
-          placeholder: "Describí las características técnicas más importantes del producto."
-        };
+          };
   if (specsLabel) specsLabel.textContent = specsGuidance.label;
-  if (specsField) specsField.placeholder = specsGuidance.placeholder;
 }
 
 function setActiveCatalogType(value) {
@@ -1289,9 +1335,9 @@ function openColorAssistant(row) {
     '<section class="jb-color-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="jb-color-ai-title">'+
     '<header class="jb-color-ai-header"><div><p class="jb-color-ai-eyebrow">JB COLLECTIONS · COLOR LAB</p><h2 id="jb-color-ai-title">Identificar color con IA</h2></div><button type="button" class="jb-color-ai-close" data-color-ai-close aria-label="Cerrar">×</button></header>'+
     '<p class="jb-color-ai-intro">Consultá por código o referencia, o adjuntá una foto. La sugerencia no confirma un color oficial.</p>'+
-    '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180" placeholder="Ej. Samsung Galaxy S25 Ultra"></label>'+
-    '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320" placeholder="Ej. Titanium Jadegreen, código X..."></label>'+
-    '<label class="jb-color-ai-field">Alias o código exacto para recordar (opcional)<input type="text" data-color-ai-library-alias maxlength="80" placeholder="Ej. SM-S938B Titanium Jadegreen"><span class="jb-color-ai-file-note">Se guardará como referencia de búsqueda solo si pulsás «Guardar en biblioteca».</span></label>'+
+    '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180"></label>'+
+    '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320"></label>'+
+    '<label class="jb-color-ai-field">Alias o código exacto para recordar (opcional)<input type="text" data-color-ai-library-alias maxlength="80"><span class="jb-color-ai-file-note">Se guardará como referencia de búsqueda solo si pulsás «Guardar en biblioteca».</span></label>'+
     '<label class="jb-color-ai-field">Fotografía del producto (opcional)<input type="file" data-color-ai-image accept="image/jpeg,image/png,image/webp,image/avif"><span class="jb-color-ai-file-note" data-color-ai-file-note>La foto solo se usa en esta consulta.</span></label>'+
     '<div class="jb-color-ai-preview" data-color-ai-preview hidden><img alt="Vista previa"><span data-color-ai-file-name></span></div>'+
     '<div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-primary" data-color-ai-analyze>Analizar color</button></div>'+
@@ -1948,7 +1994,7 @@ function variantRowMarkup(variant = {}) {
       <div class="inline-color-main">
         <label class="inline-color-name-field">
           <span>Nombre del color</span>
-          <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color" placeholder="Ej. Gris titanio">
+          <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color">
         </label>
         <label class="inline-color-tone-field" title="Personalizar el tono">
           <span>Tono</span>
@@ -1962,7 +2008,7 @@ function variantRowMarkup(variant = {}) {
         <div class="variant-fields-grid variant-color-fields">
           <div class="variant-color-library-tools">
             <label>Buscar en biblioteca
-              <input data-variant-library-search list="catalog-color-library-options" type="search" autocomplete="off" placeholder="Burgundy, Vino o #800020" aria-label="Buscar color guardado">
+              <input data-variant-library-search list="catalog-color-library-options" type="search" autocomplete="off" aria-label="Buscar color guardado">
             </label>
             <div class="variant-color-library-actions">
               <button class="admin-mini-button" type="button" data-save-color-library aria-pressed="${String(librarySaved)}">${librarySaved ? "✓ Biblioteca" : "＋ Biblioteca"}</button>
@@ -1970,7 +2016,7 @@ function variantRowMarkup(variant = {}) {
               <button class="admin-mini-button jb-color-ai-trigger" type="button" data-ai-color-open aria-label="Identificar color con IA o fotografía" title="Identificar color con IA o fotografía">✦ IA / foto</button>
             </div>
           </div>
-          <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
+          <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" aria-label="Código HEX del color"></label>
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
           <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${visibleColorSwatches(v.color_hex).map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
           <label>Disponibilidad de este color<select data-variant-availability>

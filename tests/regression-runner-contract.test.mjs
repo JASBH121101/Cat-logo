@@ -12,7 +12,7 @@ const requiredTests = [
   "design-authenticity-audit.test.mjs", "design-quality-audit.test.mjs", "ai-reviewer-reliability.test.mjs", "perfume-page-utilization.test.mjs", "personal-experience-qa-profile.test.mjs", "admin-notifications.test.mjs",
   "admin-panel-quality-audit.test.mjs", "jb-manager-ai.test.mjs", "jb-gopartners-scanner.test.mjs", "admin-save-regression.test.mjs", "admin-product-form-workflow.test.mjs",
   "limited-edition-sections.test.mjs", "catalog-tag-category-overlap.test.mjs", "cloudflare-share.test.mjs", "cloudflare-download.test.mjs",
-  "cloudflare-private-chat-push.test.mjs", "web-push.test.mjs", "cloudflare-assistant.test.mjs",
+  "cloudflare-private-chat-push.test.mjs", "web-push.test.mjs", "fiverr-demo-security.test.mjs", "fiverr-demo-ui-contract.test.mjs", "cloudflare-assistant.test.mjs",
   "cloudflare-color-assistant.test.mjs", "admin-color-assistant.test.mjs", "admin-mobile-menu-stability.test.mjs",
   "admin-provider-price-sync.test.mjs", "provider-review-variants.test.mjs", "perfume-card-layout.test.mjs",
   "commercial-description-layout.test.mjs", "catalog-contact-channels.test.mjs", "private-chat-workflow.test.mjs",
