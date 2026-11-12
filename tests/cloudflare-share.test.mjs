@@ -1,10 +1,31 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { onRequest } from "../functions/api/share.js";
+import { onRequest as handleShareRequest } from "../functions/api/share.js";
 
 const PRODUCT_ID = "a39e3b42-2c68-4e60-a0c3-23fd2b0c3dbf";
 const ORIGINAL_FETCH = globalThis.fetch;
 const makeRequest = (path, method = "GET") => new Request("https://jb-collections.pages.dev" + path, { method });
+
+async function onRequest(context) {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/token/anonymous") return Response.json({ token: "test-neon-anonymous-token" });
+    return previousFetch(input, init);
+  };
+  try {
+    return await handleShareRequest({
+      ...context,
+      env: {
+        NEON_AUTH_BASE_URL: "https://neon-auth.example",
+        NEON_DATA_API_URL: "https://db.example/rest/v1",
+        ...(context.env || {})
+      }
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+}
 test.afterEach(() => { globalThis.fetch = ORIGINAL_FETCH; });
 
 test("rejects unsupported methods and invalid IDs", async () => {
