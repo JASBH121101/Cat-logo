@@ -58,9 +58,9 @@ test("JB Parfums desktop hero carousel grows with available viewport space", () 
 
 
 test("JB Parfums final contact section uses the same full page width as the header", () => {
-  assert.match(perfCss, /body\\.perfume-page main > \\.perfume-contact\\s*\\{[\\s\\S]*?width:\\s*100vw/);
-  assert.match(perfCss, /body\\.perfume-page main > \\.perfume-contact\\s*\\{[\\s\\S]*?margin-left:\\s*-50vw/);
-  assert.match(perfCss, /body\\.perfume-page main > \\.perfume-contact\\s*\\{[\\s\\S]*?max-width:\\s*100vw/);
-  assert.match(perfCss, /body\\.perfume-page main > \\.perfume-contact h2\\s*\\{[\\s\\S]*?max-width:\\s*1320px/);
+  assert.match(perfCss, /body\.perfume-page main > \.perfume-contact\s*\{[\s\S]*?width:\s*100vw/);
+  assert.match(perfCss, /body\.perfume-page main > \.perfume-contact\s*\{[\s\S]*?margin-left:\s*-50vw/);
+  assert.match(perfCss, /body\.perfume-page main > \.perfume-contact\s*\{[\s\S]*?max-width:\s*100vw/);
+  assert.match(perfCss, /body\.perfume-page main > \.perfume-contact h2\s*\{[\s\S]*?max-width:\s*1320px/);
   assert.ok(perfumeHtml.includes("perfumeria.css?v=20261112-contact-fullbleed1"));
 });
