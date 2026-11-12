@@ -37,3 +37,19 @@ test("both public catalogs expand beyond 1720px on large desktop and ultrawide s
   assert.ok(techHtml.includes("technology-visual-refresh.css?v=20261112-lightbox-crossbrowser-close2"));
   assert.ok(perfumeHtml.includes("perfumeria.css?v=20261030-desktop-type12"));
 });
+
+
+test("JB Parfums header stays sticky and full-width like JB TECH", () => {
+  assert.match(perfCss, /body\\.perfume-page:not\\(\\.perfume-detail-active\\) \\.site-header\\.perfume-header\\s*\\{[\\s\\S]*?position:\\s*sticky !important/);
+  assert.match(perfCss, /body\\.perfume-page:not\\(\\.perfume-detail-active\\) \\.site-header\\.perfume-header\\s*\\{[\\s\\S]*?top:\\s*0 !important/);
+  assert.match(perfCss, /body\\.perfume-page:not\\(\\.perfume-detail-active\\) \\.site-header\\.perfume-header\\s*\\{[\\s\\S]*?z-index:\\s*1200 !important/);
+  assert.match(perfCss, /body\\.perfume-page:not\\(\\.perfume-detail-active\\) \\.site-header\\.perfume-header\\s*\\{[\\s\\S]*?max-width:\\s*none/);
+  assert.ok(perfumeHtml.includes("perfumeria.css?v=20261112-sticky-hero-viewport1"));
+});
+
+test("JB Parfums desktop hero carousel grows with available viewport space", () => {
+  assert.match(perfCss, /@media\\s*\\(min-width:\\s*1200px\\)[\\s\\S]*?body\\.perfume-page \\.perfume-hero\\s*\\{[\\s\\S]*?min-height:\\s*clamp\\(560px,\\s*64svh,\\s*710px\\)/);
+  assert.match(perfCss, /body\\.perfume-page \\.perfume-hero-carousel\\s*\\{[\\s\\S]*?max-width:\\s*760px/);
+  assert.match(perfCss, /body\\.perfume-page \\.perfume-hero-carousel\\s*\\{[\\s\\S]*?height:\\s*clamp\\(460px,\\s*54svh,\\s*620px\\)/);
+  assert.match(perfCss, /@media\\s*\\(max-width:\\s*640px\\)[\\s\\S]*?body\\.perfume-page \\.perfume-hero-carousel\\s*\\{[\\s\\S]*?height:\\s*clamp\\(310px,94vw,390px\\)/);
+});
