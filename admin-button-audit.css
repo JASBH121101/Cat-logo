@@ -69,3 +69,37 @@ body.admin-body details.variant-config-collapse>summary{min-height:48px!importan
 @media(prefers-reduced-motion:reduce){
  body.admin-body .button,body.admin-body .file-button,body.admin-body .admin-nav-button,body.admin-body .admin-icon-button,body.admin-body .workflow-action{transition:none!important}
 }
+
+
+/* Active navigation, filter chips and utility text actions keep the same visual language. */
+html[data-theme="light"] body.admin-body .admin-nav-button.active {
+  color:#fff!important; border-color:#405ac5!important; background:#405bd0!important;
+  box-shadow:0 1px 3px rgba(42,65,153,.2)!important;
+}
+html[data-theme="dark"] body.admin-body .admin-nav-button.active {
+  color:#fff!important; border-color:#5b73d2!important; background:#344e9f!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.26)!important;
+}
+body.admin-body .private-chat-admin-filter {
+  box-sizing:border-box!important; min-height:38px!important; padding:7px 11px!important;
+  border:1px solid var(--jb-btn-border)!important; border-radius:10px!important;
+  color:var(--jb-btn-muted)!important; background:var(--jb-btn-bg)!important;
+  font:700 12px/1.2 "DM Sans",sans-serif!important; box-shadow:var(--jb-btn-shadow)!important;
+}
+body.admin-body .private-chat-admin-filter.is-active {
+  color:#fff!important; border-color:#405ac5!important; background:#405bd0!important;
+}
+body.admin-body .admin-password-reset-toggle,
+body.admin-body .admin-password-reset-cancel,
+body.admin-body .dashboard-analytics-reset,
+body.admin-body .commission-refresh-button {
+  min-height:38px!important; padding:7px 11px!important; border-radius:10px!important;
+  font:700 13px/1.2 "DM Sans",sans-serif!important; box-shadow:var(--jb-btn-shadow)!important;
+}
+body.admin-body .dashboard-quick-action:focus-visible,
+body.admin-body .dashboard-task-row:focus-visible {
+  outline:3px solid var(--jb-btn-focus)!important; outline-offset:2px!important;
+}
+
+/* Paid AI is intentionally unavailable in the Fiverr demo, including for its owner account. */
+body.fiverr-demo-host #jb-ai-floating-launcher { display:none!important; }
