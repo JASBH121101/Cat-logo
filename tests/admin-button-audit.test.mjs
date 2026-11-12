@@ -10,7 +10,7 @@ const css=readFileSync(new URL("../admin-button-audit.css",import.meta.url),"utf
 const admin=readFileSync(new URL("../admin.js",import.meta.url),"utf8");
 
 test("admin button audit stylesheet is loaded last",()=>{
- assert.match(html,/admin-button-audit\.css\?v=20261112-button-system3/);
+ assert.match(html,/admin-button-audit\.css\?v=20261112-button-system5/);
  assert.ok(html.indexOf("admin-button-audit.css")>html.indexOf("fiverr-demo-ui-polish.css"));
 });
 test("primary, secondary and outline controls share one geometry and accessible states",()=>{
@@ -21,11 +21,13 @@ test("primary, secondary and outline controls share one geometry and accessible 
  assert.match(css,/button:focus-visible/);
  assert.match(css,/button:disabled/);
 });
-test("product step navigation sits below sticky header and has three equal tabs",()=>{
- assert.match(css,/\.product-form-section-nav\{[\s\S]*?top:calc\(76px \+ env\(safe-area-inset-top,0px\) \+ 10px\)!important/);
- assert.match(css,/z-index:15!important/);
- assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
- assert.match(css,/scroll-margin-top:calc\(76px \+ env\(safe-area-inset-top,0px\) \+ 18px\)!important/);
+test("product step navigation uses the measured header offset and three equal tabs",()=>{
+ assert.match(css,/body\\.admin-body \\{ --jb-admin-header-height: 76px; \\}/);
+ assert.match(css,/@media \\(max-width: 760px\\)[\\s\\S]*?--jb-admin-header-height: 88px/);
+ assert.match(css,/\\.product-form-section-nav\\{[\\s\\S]*?top:calc\\(var\\(--jb-admin-header-height,76px\\) \\+ env\\(safe-area-inset-top,0px\\) \\+ 12px\\)!important/);
+ assert.match(css,/z-index:19!important/);
+ assert.match(css,/grid-template-columns:repeat\\(3,minmax\\(0,1fr\\)\\)!important/);
+ assert.match(css,/scroll-margin-top:calc\\(var\\(--jb-admin-header-height,76px\\) \\+ env\\(safe-area-inset-top,0px\\) \\+ 20px\\)!important/);
 });
 test("tabs, variants and workflow actions retain responsive tap targets",()=>{
  assert.match(css,/\.product-form-section-tab\{[\s\S]*?min-height:46px!important/);
