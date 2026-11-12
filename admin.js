@@ -1,4 +1,4 @@
-import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261112-password-min8";
+import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261112-admin-access-help1";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { hasMeaningfulEditorInput } from "./editor-dirty-state.js?v=20261112-meaningful-editor-input1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
@@ -149,6 +149,12 @@ const supabaseAuthStorage = {
 };
 
 let currentUser = null;
+let lastLoginIdentifier = "";
+let adminAccessHelpPollTimer = null;
+let adminAccessHelpLoading = false;
+let adminAccessHelpInitialized = false;
+let adminAccessHelpRequests = [];
+const adminAccessHelpSeenIds = new Set();
 const supabase = configured ? createCatalogClient({ admin: true }) : null;
 
 /* Only the dedicated migration Preview has isolated Neon/R2 resources and may write.
@@ -1677,6 +1683,7 @@ function clearLoginPassword() {
 }
 
 function showLoginScreen(statusText = "", type = "") {
+  stopAdminAccessHelpPolling();
   currentUser = null;
   applyDemoPermissionClasses();
   document.body.classList.remove("demo-viewer-mode");
@@ -3117,6 +3124,8 @@ async function showDashboard(user) {
   const requestedSection = new URLSearchParams(window.location.search).get("open");
   showAdminSection(isDemoViewer ? "home" : (requestedSection === "messages" ? "messages" : "home"));
 
+  startAdminAccessHelpPolling();
+
   const greeting = $("#admin-greeting");
   if (greeting) greeting.textContent = isDemoViewer
     ? "JB Collections · Demostración"
@@ -3500,91 +3509,287 @@ $("#biometric-auth-toggle")?.addEventListener("click", () => {
 });
 
 
-const passwordResetToggle = $("#admin-password-reset-toggle");
-const passwordResetForm = $("#admin-password-reset-form");
-const passwordResetStage = $("#admin-password-reset-code-stage");
-const passwordResetStatus = $("#admin-password-reset-status");
-const passwordResetRequestButton = $("#admin-password-reset-request");
-const passwordResetCompleteButton = $("#admin-password-reset-complete");
+const loginHelpToggle = $("#admin-login-help-toggle");
+const loginHelpForm = $("#admin-login-help-form");
+const loginHelpStatus = $("#admin-login-help-status");
+const loginHelpUsername = $("#admin-login-help-username");
+const loginHelpIssue = $("#admin-login-help-issue");
+const loginHelpSubmit = $("#admin-login-help-submit");
 
-$("#admin-password-reset-cancel")?.addEventListener("click", () => passwordResetToggle?.click());
-
-passwordResetToggle?.addEventListener("click", () => {
-  if (!passwordResetForm) return;
-  const show = passwordResetForm.hidden;
-  passwordResetForm.hidden = !show;
-  passwordResetToggle.setAttribute("aria-expanded", String(show));
-  if (show) {
-    // Do not leave an old "authorized" notice beside the recovery form.
-    message("#login-status", "");
-    const loginEmail = String($("#login-email")?.value || "").trim();
-    const resetEmail = $("#admin-password-reset-email");
-    if (resetEmail && loginEmail.includes("@") && !resetEmail.value) resetEmail.value = loginEmail;
-    resetEmail?.focus();
+loginHelpToggle?.addEventListener("click", () => {
+  if (!loginHelpForm) return;
+  const shouldOpen = loginHelpForm.hidden;
+  loginHelpForm.hidden = !shouldOpen;
+  loginHelpToggle.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) {
+    const currentInput = String($("#login-email")?.value || "").trim();
+    loginHelpUsername.value = currentInput || lastLoginIdentifier || "";
+    if (loginHelpStatus) loginHelpStatus.textContent = "";
+    loginHelpIssue?.focus();
   } else {
-    passwordResetForm.reset();
-    if (passwordResetStage) passwordResetStage.hidden = true;
-    if (passwordResetStatus) passwordResetStatus.textContent = "";
+    loginHelpForm.reset();
+    if (loginHelpStatus) loginHelpStatus.textContent = "";
   }
 });
 
-passwordResetRequestButton?.addEventListener("click", async () => {
-  if (!supabase) {
-    if (passwordResetStatus) passwordResetStatus.textContent = "Neon Auth no está configurado.";
-    return;
-  }
-  const email = String($("#admin-password-reset-email")?.value || "").trim().toLowerCase();
-  passwordResetRequestButton.disabled = true;
-  passwordResetRequestButton.textContent = "Solicitando código…";
-  if (passwordResetStatus) passwordResetStatus.textContent = "Solicitando un código de un solo uso…";
-  try {
-    await requestCatalogPasswordReset(email);
-    if (passwordResetStage) passwordResetStage.hidden = false;
-    if (passwordResetStatus) passwordResetStatus.textContent = "Si el correo corresponde a una cuenta registrada, Neon enviará un código. Revisá también Spam.";
-    $("#admin-password-reset-otp")?.focus();
-  } catch (error) {
-    console.warn("No se pudo solicitar el código de recuperación de Neon.", error);
-    if (passwordResetStatus) passwordResetStatus.textContent = error?.message || "No se pudo solicitar el código. Intentá nuevamente.";
-  } finally {
-    passwordResetRequestButton.disabled = false;
-    passwordResetRequestButton.textContent = "Enviar código al correo";
-  }
+$("#admin-login-help-cancel")?.addEventListener("click", () => {
+  if (!loginHelpForm) return;
+  loginHelpForm.reset();
+  loginHelpForm.hidden = true;
+  loginHelpToggle?.setAttribute("aria-expanded", "false");
+  if (loginHelpStatus) loginHelpStatus.textContent = "";
+  loginHelpToggle?.focus();
 });
 
-passwordResetForm?.addEventListener("submit", async event => {
+loginHelpForm?.addEventListener("submit", async event => {
   event.preventDefault();
-  if (!passwordResetStage || passwordResetStage.hidden) return;
-  const email = String($("#admin-password-reset-email")?.value || "").trim().toLowerCase();
-  const otp = String($("#admin-password-reset-otp")?.value || "").trim();
-  const password = String($("#admin-password-reset-password")?.value || "");
-  const confirm = String($("#admin-password-reset-confirm")?.value || "");
-  if (password !== confirm) {
-    if (passwordResetStatus) passwordResetStatus.textContent = "Las contraseñas no coinciden.";
-    $("#admin-password-reset-confirm")?.focus();
+  if (!supabase) {
+    if (loginHelpStatus) loginHelpStatus.textContent = "No se pudo conectar con el servicio de acceso. Intentá nuevamente.";
     return;
   }
-  passwordResetCompleteButton.disabled = true;
-  passwordResetCompleteButton.textContent = "Guardando contraseña…";
-  if (passwordResetStatus) passwordResetStatus.textContent = "Verificando el código con Neon Auth…";
-  try {
-    await completeCatalogPasswordReset(email, otp, password);
-    passwordResetForm.reset();
-    passwordResetForm.hidden = true;
-    passwordResetStage.hidden = true;
-    if (passwordResetStatus) passwordResetStatus.textContent = "";
-    passwordResetToggle?.setAttribute("aria-expanded", "false");
-    message("#login-status", "Contraseña establecida. Ya podés iniciar sesión con Neon.", "success");
-    
-    $("#login-password")?.focus();
-  } catch (error) {
-    console.warn("No se pudo establecer la contraseña de Neon.", error);
-    if (passwordResetStatus) passwordResetStatus.textContent = error?.message || "No se pudo validar el código. Solicitá uno nuevo.";
-  } finally {
-    passwordResetCompleteButton.disabled = false;
-    passwordResetCompleteButton.textContent = "Guardar contraseña";
-    $("#admin-password-reset-password").value = "";
-    $("#admin-password-reset-confirm").value = "";
+  const username = String(loginHelpUsername?.value || lastLoginIdentifier || "").trim();
+  const issueType = String(loginHelpIssue?.value || "");
+  const honeypot = String($("#admin-login-help-website")?.value || "");
+  if (!["username", "password", "credentials", "other"].includes(issueType)) {
+    if (loginHelpStatus) loginHelpStatus.textContent = "Seleccioná el tipo de inconveniente.";
+    loginHelpIssue?.focus();
+    return;
   }
+
+  loginHelpSubmit.disabled = true;
+  loginHelpSubmit.textContent = "Enviando aviso…";
+  if (loginHelpStatus) loginHelpStatus.textContent = "Enviando una solicitud privada al administrador…";
+  try {
+    const { data, error } = await supabase.rpc("submit_admin_login_help_request", {
+      p_username: username,
+      p_issue_type: issueType,
+      p_honeypot: honeypot
+    });
+    if (error) throw error;
+    if (data?.ok !== true) throw new Error("No se pudo registrar el aviso. Intentá nuevamente.");
+
+    loginHelpForm.reset();
+    loginHelpForm.hidden = true;
+    loginHelpToggle?.setAttribute("aria-expanded", "false");
+    message(
+      "#login-status",
+      "Aviso enviado. El administrador recibió el tipo de problema y revisará tu acceso.",
+      "success"
+    );
+    if (loginHelpStatus) loginHelpStatus.textContent = "";
+  } catch (error) {
+    console.warn("No se pudo enviar el aviso de ayuda de acceso.", error);
+    if (loginHelpStatus) {
+      loginHelpStatus.textContent = error?.message || "No se pudo enviar el aviso. Intentá nuevamente.";
+    }
+  } finally {
+    loginHelpSubmit.disabled = false;
+    loginHelpSubmit.textContent = "Enviar aviso al administrador";
+  }
+});
+
+const adminAccessNotifications = $("#admin-access-notifications");
+const adminAccessNotificationToggle = $("#admin-access-notification-toggle");
+const adminAccessNotificationPanel = $("#admin-access-notification-panel");
+const adminAccessNotificationCount = $("#admin-access-notification-count");
+const adminAccessNotificationList = $("#admin-access-notification-list");
+const adminAccessNotificationStatus = $("#admin-access-notification-status");
+const adminAccessNotificationRefresh = $("#admin-access-notification-refresh");
+
+const ADMIN_ACCESS_HELP_ISSUE_LABELS = Object.freeze({
+  username: "El usuario no se reconoce / no lo recuerda",
+  password: "Olvidó su contraseña / necesita una nueva",
+  credentials: "No funcionan el usuario ni la contraseña",
+  other: "Otro problema para iniciar sesión"
+});
+
+function formatAdminAccessHelpDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Fecha no disponible";
+  return date.toLocaleString("es-NI", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderAdminAccessHelpRequests() {
+  if (!adminAccessNotificationList || !adminAccessNotificationCount) return;
+  const count = adminAccessHelpRequests.length;
+  adminAccessNotificationCount.textContent = count > 99 ? "99+" : String(count);
+  adminAccessNotificationCount.hidden = count === 0;
+  adminAccessNotificationCount.setAttribute("aria-label", count + " avisos pendientes");
+
+  adminAccessNotificationList.replaceChildren();
+  if (!count) {
+    const empty = document.createElement("p");
+    empty.className = "admin-access-notification-empty";
+    empty.textContent = "No hay avisos de acceso pendientes.";
+    adminAccessNotificationList.appendChild(empty);
+    return;
+  }
+
+  adminAccessHelpRequests.forEach(request => {
+    const item = document.createElement("article");
+    item.className = "admin-access-notification-item";
+
+    const heading = document.createElement("div");
+    heading.className = "admin-access-notification-item-heading";
+    const username = document.createElement("strong");
+    username.textContent = String(request.reported_username || "Usuario no identificado");
+    const time = document.createElement("time");
+    time.dateTime = String(request.created_at || "");
+    time.textContent = formatAdminAccessHelpDate(request.created_at);
+    heading.append(username, time);
+
+    const issue = document.createElement("p");
+    issue.className = "admin-access-notification-issue";
+    issue.textContent = ADMIN_ACCESS_HELP_ISSUE_LABELS[request.issue_type] || "Problema de acceso";
+
+    const resolve = document.createElement("button");
+    resolve.type = "button";
+    resolve.className = "admin-access-notification-resolve";
+    resolve.dataset.adminAccessHelpResolve = String(request.request_id || "");
+    resolve.textContent = "Marcar como atendida";
+
+    item.append(heading, issue, resolve);
+    adminAccessNotificationList.appendChild(item);
+  });
+}
+
+async function loadAdminAccessHelpRequests({ notifyNew = false } = {}) {
+  if (!currentUser?.isOwner || !supabase || adminAccessHelpLoading) return;
+  adminAccessHelpLoading = true;
+  if (adminAccessNotificationRefresh) adminAccessNotificationRefresh.disabled = true;
+  if (adminAccessNotificationStatus) adminAccessNotificationStatus.textContent = "Actualizando avisos…";
+
+  try {
+    const { data, error } = await supabase.rpc("list_admin_login_help_requests", {
+      p_include_resolved: false
+    });
+    if (error) throw error;
+    const requests = Array.isArray(data) ? data : [];
+    const newRequests = requests.filter(request => {
+      const id = String(request.request_id || "");
+      return id && adminAccessHelpInitialized && !adminAccessHelpSeenIds.has(id);
+    });
+
+    requests.forEach(request => {
+      const id = String(request.request_id || "");
+      if (id) adminAccessHelpSeenIds.add(id);
+    });
+    adminAccessHelpRequests = requests;
+    renderAdminAccessHelpRequests();
+    adminAccessHelpInitialized = true;
+    if (adminAccessNotificationStatus) {
+      adminAccessNotificationStatus.textContent = requests.length
+        ? "Los avisos solo son visibles para el propietario."
+        : "";
+    }
+
+    if (notifyNew && newRequests.length) {
+      const newest = newRequests[0];
+      const label = ADMIN_ACCESS_HELP_ISSUE_LABELS[newest.issue_type] || "Problema de acceso";
+      const body = String(newest.reported_username || "Usuario no identificado") + ": " + label;
+      void showAdminNotification(
+        "Solicitud de acceso a JB Manager",
+        body,
+        "login-help-" + String(newest.request_id)
+      );
+    }
+  } catch (error) {
+    console.warn("No se pudieron cargar los avisos de acceso.", error);
+    if (adminAccessNotificationStatus) {
+      adminAccessNotificationStatus.textContent = "No se pudieron actualizar los avisos. Revisá tu conexión e intentá otra vez.";
+    }
+  } finally {
+    adminAccessHelpLoading = false;
+    if (adminAccessNotificationRefresh) adminAccessNotificationRefresh.disabled = false;
+  }
+}
+
+async function resolveAdminAccessHelpRequest(requestId, button) {
+  if (!currentUser?.isOwner || !supabase || !requestId) return;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Actualizando…";
+  }
+  try {
+    const { data, error } = await supabase.rpc("resolve_admin_login_help_request", {
+      p_request_id: requestId
+    });
+    if (error) throw error;
+    if (data?.ok !== true) throw new Error("El aviso ya fue atendido o no está disponible.");
+    if (adminAccessNotificationStatus) adminAccessNotificationStatus.textContent = "Aviso marcado como atendido.";
+    await loadAdminAccessHelpRequests();
+  } catch (error) {
+    console.warn("No se pudo marcar el aviso como atendido.", error);
+    if (adminAccessNotificationStatus) {
+      adminAccessNotificationStatus.textContent = error?.message || "No se pudo actualizar el aviso.";
+    }
+    if (button) button.disabled = false;
+  }
+}
+
+function stopAdminAccessHelpPolling() {
+  if (adminAccessHelpPollTimer !== null) {
+    window.clearInterval(adminAccessHelpPollTimer);
+    adminAccessHelpPollTimer = null;
+  }
+  adminAccessHelpInitialized = false;
+  adminAccessHelpSeenIds.clear();
+  adminAccessHelpRequests = [];
+  renderAdminAccessHelpRequests();
+}
+
+function startAdminAccessHelpPolling() {
+  if (!adminAccessNotifications) return;
+  const isOwner = currentUser?.role === "admin" && currentUser?.isOwner === true;
+  adminAccessNotifications.hidden = !isOwner;
+  if (!isOwner || !supabase) {
+    stopAdminAccessHelpPolling();
+    return;
+  }
+  if (adminAccessHelpPollTimer !== null) window.clearInterval(adminAccessHelpPollTimer);
+  adminAccessHelpInitialized = false;
+  adminAccessHelpSeenIds.clear();
+  void loadAdminAccessHelpRequests();
+  adminAccessHelpPollTimer = window.setInterval(() => {
+    if (!document.hidden && currentUser?.isOwner) void loadAdminAccessHelpRequests({ notifyNew: true });
+  }, 60000);
+}
+
+adminAccessNotificationToggle?.addEventListener("click", event => {
+  event.stopPropagation();
+  const open = adminAccessNotificationPanel?.hidden === true;
+  if (!adminAccessNotificationPanel) return;
+  adminAccessNotificationPanel.hidden = !open;
+  adminAccessNotificationToggle.setAttribute("aria-expanded", String(open));
+  if (open) void loadAdminAccessHelpRequests();
+});
+
+adminAccessNotificationRefresh?.addEventListener("click", () => {
+  void loadAdminAccessHelpRequests();
+});
+
+adminAccessNotificationList?.addEventListener("click", event => {
+  const target = event.target instanceof Element ? event.target.closest("[data-admin-access-help-resolve]") : null;
+  if (!target) return;
+  void resolveAdminAccessHelpRequest(target.dataset.adminAccessHelpResolve, target);
+});
+
+document.addEventListener("click", event => {
+  if (!adminAccessNotifications || adminAccessNotifications.contains(event.target)) return;
+  if (adminAccessNotificationPanel) adminAccessNotificationPanel.hidden = true;
+  adminAccessNotificationToggle?.setAttribute("aria-expanded", "false");
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || adminAccessNotificationPanel?.hidden !== false) return;
+  adminAccessNotificationPanel.hidden = true;
+  adminAccessNotificationToggle?.setAttribute("aria-expanded", "false");
+  adminAccessNotificationToggle?.focus();
 });
 
 $("#login-form")?.addEventListener("submit", async event => {
@@ -3612,6 +3817,7 @@ $("#login-form")?.addEventListener("submit", async event => {
 
   try {
     const loginIdentifier = $("#login-email").value.trim();
+    lastLoginIdentifier = loginIdentifier;
     const loginEmail = resolveCatalogLoginEmail(loginIdentifier);
     const rememberSession = Boolean($("#login-remember-user")?.checked);
     // Remember only the authenticated session. The browser password manager handles credentials.
@@ -3627,6 +3833,7 @@ $("#login-form")?.addEventListener("submit", async event => {
     }
 
     await showDashboard(data.user);
+    lastLoginIdentifier = "";
 
     message(
       "#login-status",
@@ -3650,11 +3857,11 @@ $("#login-form")?.addEventListener("submit", async event => {
     clearLoginPassword();
     $("#login-email").value = "";
 
-    message(
-      "#login-status",
-      error.message || "No se pudo iniciar sesión. Revisá tus datos.",
-      "error"
-    );
+    const rawError = String(error?.message || "");
+    const loginErrorCopy = /invalid email|invalid email or password|incorrect password|invalid credentials/i.test(rawError)
+      ? "No se pudo validar el usuario o la contraseña. Verificá ambos datos o notificá al administrador."
+      : (rawError || "No se pudo iniciar sesión. Revisá tus datos.");
+    message("#login-status", loginErrorCopy, "error");
 
     $("#login-password")?.focus();
   } finally {
