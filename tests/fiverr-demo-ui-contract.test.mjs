@@ -69,6 +69,7 @@ test("paid AI entry points are hidden from Fiverr guests while Android voice sou
   assert.match(demoViewer, /body\.demo-viewer-mode #admin-section-ai/);
   assert.match(demoViewer, /body\.demo-viewer-mode #jb-ai-floating-launcher/);
   assert.match(admin, /initJbManagerAI/);
+  assert.match(admin, /if \(isDemoViewer\) \{[\s\S]*jbManagerAI\?\.clearSession\(\);[\s\S]*\} else \{[\s\S]*jbManagerAI\?\.setAuthenticatedUser\(currentUser\)/);
   assert.match(ai, /nativeVoicePlugin\(\)/);
 });
 
