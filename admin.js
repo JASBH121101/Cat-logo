@@ -886,18 +886,23 @@ function updateCategoryVariantVisibility() {
   }
 
   const specsLabel = $("#product-specs-label");
-    const specsGuidance = category === "Televisores"
+  const specsGuidance = category === "Televisores"
     ? {
         label: "Características del televisor",
+        hint: "Tamaño de pantalla, resolución, LED / QLED / OLED, frecuencia de actualización y puertos disponibles.",
       }
     : category === "Audio"
       ? {
           label: "Características de audio",
-          }
+          hint: "Tipo de equipo, potencia, Bluetooth / Wi-Fi, entradas, batería y compatibilidad.",
+        }
       : {
           label: "Características y especificaciones.",
-          };
+          hint: "Describí las características técnicas relevantes y verificadas del producto.",
+        };
   if (specsLabel) specsLabel.textContent = specsGuidance.label;
+  const specsGuidanceNode = $("#product-specs-guidance");
+  if (specsGuidanceNode) specsGuidanceNode.textContent = specsGuidance.hint;
 }
 
 function setActiveCatalogType(value) {
