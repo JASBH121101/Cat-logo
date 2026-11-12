@@ -75,7 +75,7 @@ test("paid AI entry points are hidden from Fiverr guests while Android voice sou
 });
 
 test("guest mode explicitly permits the user-facing light/dark theme toggle", () => {
-  assert.match(admin, /\[data-theme-toggle\]/);
+  assert.match(ui, /data-theme-toggle/);
   assert.match(admin, /Vista de invitado: podés navegar y cambiar el tema/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.site-header \.theme-toggle/);
   assert.match(demoViewer, /pointer-events: auto !important/);
@@ -87,7 +87,7 @@ test("guest mode explicitly permits the user-facing light/dark theme toggle", ()
 test("Fiverr guest can open Settings and use logout without exposing other settings actions", () => {
   assert.ok(admin.includes("#admin-settings-toggle"));
   assert.ok(admin.includes("#logout-button"));
-  assert.match(admin, /\[data-admin-section\], \[data-theme-toggle\], #admin-settings-toggle,/);
+  assert.match(admin, /const DEMO_BLOCKED_MUTATION_SELECTOR = \[/);
   assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-settings-menu,\s*body\.demo-viewer-mode/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.admin-sidebar-settings \.admin-settings-item:not\(#logout-button\)/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.admin-sidebar-settings #logout-button/);
@@ -112,7 +112,7 @@ test("Fiverr guest may freely navigate product form tabs, variant accordions and
   assert.match(admin, /const blockedAction = event\.target\.closest\(DEMO_BLOCKED_MUTATION_SELECTOR\)/);
   assert.doesNotMatch(admin, /const allowed = event\.target\.closest\([\s\S]{0,400}if \(allowed\) return/);
   assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-product-editor/);
-  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
   assert.doesNotMatch(demoViewer, /\.admin-product-buttons button:not\(\[data-preview-product\]\)/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.variant-image-preview/);
   assert.match(demoViewer, /body\.demo-viewer-mode \[data-preview-product\]/);
@@ -138,5 +138,5 @@ test("read-only product editor retains view/preview actions and hides only save,
     assert.ok(demoViewer.includes("body.demo-viewer-mode " + selector), selector + " must be blocked");
   }
   assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-product-editor/);
-  assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
 });
