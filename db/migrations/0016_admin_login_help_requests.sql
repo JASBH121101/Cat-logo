@@ -199,4 +199,6 @@ INSERT INTO public.schema_migrations(version, name)
 VALUES ('0016', 'admin_login_help_requests')
 ON CONFLICT (version) DO NOTHING;
 
+NOTIFY pgrst, 'reload schema';
+
 COMMIT;
