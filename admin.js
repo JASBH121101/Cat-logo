@@ -3854,14 +3854,14 @@ document.querySelectorAll("[data-admin-section]").forEach(button => button.addEv
 document.addEventListener("click", event => {
   if (currentUser?.role !== "demo_viewer") return;
   const allowed = event.target.closest(
-    "[data-admin-section], #admin-menu-toggle, #admin-sidebar-backdrop, #logout-button, [data-preview-product], .admin-preview-open-button, summary"
+    "[data-admin-section], [data-theme-toggle], #admin-menu-toggle, #admin-sidebar-backdrop, #logout-button, [data-preview-product], .admin-preview-open-button, summary"
   );
   if (allowed) return;
   const action = event.target.closest("button, [role='button'], input[type='submit']");
   if (!action) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  setStatus("Modo vista previa: las acciones administrativas están deshabilitadas.");
+  setStatus("Vista de invitado: podés navegar y cambiar el tema. Las modificaciones del catálogo están deshabilitadas.");
 }, true);
 
 document.addEventListener("submit", event => {
