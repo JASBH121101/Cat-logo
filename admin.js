@@ -783,7 +783,7 @@ function updateProductFormMode() {
 
   // "Ver catálogo" siempre vuelve a la portada dividida JB Collections,
   // desde donde el visitante elige JB Parfums o JB TECH.
-  const publicCatalogLanding = new URL("./", window.location.href).href;
+  const publicCatalogLanding = new URL("/index.html", window.location.origin).href;
   const publicLink = document.querySelector(".dashboard-public-link");
   if (publicLink) publicLink.href = publicCatalogLanding;
   const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
