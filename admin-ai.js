@@ -358,7 +358,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       paragraph.textContent = text;
       article.append(paragraph);
     }
-    if (meta && meta.intent === "add_product" && meta.product_draft &&
+    if (getCurrentUser()?.role !== "demo_viewer" && meta && meta.intent === "add_product" && meta.product_draft &&
         typeof meta.product_draft === "object" && String(meta.product_draft.name || "").trim()) {
       const action = document.createElement("button");
       action.type = "button";
@@ -481,14 +481,22 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
     if (!message || busy) return;
     const supabase = getSupabase();
     if (!authenticatedUser || !supabase) {
-      setStatus("Iniciá sesión como administrador para usar el copiloto.", true);
+      setStatus("Iniciá sesión para usar JB Manager AI.", true);
       return;
     }
+    const isReadOnlyViewer = getCurrentUser()?.role === "demo_viewer";
+    const availableProducts = (Array.isArray(getProducts()) ? getProducts() : []).filter(product =>
+      !isReadOnlyViewer || (
+        product?.is_published === true &&
+        product?.workflow_status === "published" &&
+        !product?.deleted_at
+      )
+    );
     appendMessage("user", message);
     input.value = "";
     const fastQuery = extractFastCatalogQuery(message);
     if (fastQuery) {
-      const fastResult = buildFastCatalogAnswer(getProducts(), fastQuery);
+      const fastResult = buildFastCatalogAnswer(availableProducts, fastQuery);
       if (fastResult) {
         appendMessage("assistant", fastResult.message, { intent: "search_product", local_search: true });
         setStatus("Búsqueda local lista. No se modificó el catálogo.");
@@ -516,7 +524,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
         requestTimedOut = true;
         requestController?.abort();
       }, 45000);
-      const response = await fetch("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      const response = await fetch(new URL("/api/jb-manager-ai", window.location.origin), {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + data.session.access_token,
@@ -525,13 +533,22 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
         signal: requestController.signal,
         body: JSON.stringify({
           message,
-          products: catalogContext(getProducts(), message)
+          products: catalogContext(availableProducts, message)
         })
       });
       let payload;
       try { payload = await response.json(); } catch { payload = {}; }
       if (!response.ok) {
         const errors = {
+          openai_not_configured: "ChatGPT todavía no está conectado en el entorno de demostración. El propietario debe configurar la clave segura de OpenAI en Cloudflare.",
+          openai_quota_exhausted: "ChatGPT alcanzó el límite de uso de la API. Revisá el presupuesto y los límites de OpenAI.",
+          openai_api_access_denied: "OpenAI rechazó la clave o el acceso al modelo. El propietario debe revisar la configuración de la API.",
+          openai_model_unavailable: "El modelo de ChatGPT configurado no está disponible para esta clave.",
+          openai_temporarily_unavailable: "ChatGPT está temporalmente indisponible. Volvé a intentarlo en un momento.",
+          openai_request_failed: "ChatGPT no pudo completar la consulta. No se modificó el catálogo.",
+          openai_invalid_response: "ChatGPT devolvió una respuesta que JB Manager no pudo interpretar.",
+          openai_unstructured_response: "ChatGPT no devolvió el formato esperado. No se hizo ningún cambio.",
+          demo_readonly_ai: "La cuenta invitada puede consultar el catálogo publicado, pero no preparar altas ni modificar precios.",
           gemini_not_configured: "El servicio de Gemini todavía no está configurado en Cloudflare. La consulta no se procesó.",
           gemini_billing_required: "El proyecto de Google AI Studio necesita una cuenta de facturación activa para usar Gemini. Revisá la facturación del proyecto asociado a la clave.",
           gemini_api_access_denied: "Google rechazó el acceso a Gemini. Revisá que la clave siga activa, no esté bloqueada y que Gemini API esté habilitada en el proyecto.",
@@ -558,7 +575,7 @@ export function initJbManagerAI({ getSupabase, getCurrentUser, getProducts, onPr
       }
       const assistant = payload.assistant || {};
       appendMessage("assistant", assistant.message || "No pude interpretar la solicitud.", assistant);
-      setStatus("Respuesta lista. No se realizó ningún cambio en el catálogo.");
+      setStatus(getCurrentUser()?.role === "demo_viewer" ? "Respuesta lista. Acceso de demostración en solo lectura." : "Respuesta lista. No se realizó ningún cambio en el catálogo.");
       speak(assistant.message || "");
     } catch (error) {
       const messageError = requestTimedOut
