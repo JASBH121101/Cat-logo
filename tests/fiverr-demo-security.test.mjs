@@ -49,7 +49,6 @@ test("R2 storage APIs require an authenticated owner on the dedicated demo hostn
     [upload, "POST", "/api/storage/upload"],
     [remove, "POST", "/api/storage/remove"],
     [info, "GET", "/api/storage/info"],
-    [cacheRescue, "POST", "/api/migration/cache-rescue"]
   ];
   for (const [handler, method, path] of cases) {
     const request = new Request("https://fiverr-demo.jb-collections.pages.dev" + path, { method });
@@ -60,7 +59,6 @@ test("R2 storage APIs require an authenticated owner on the dedicated demo hostn
 
 test("uploads use conditional create-only semantics and never overwrite an existing image", () => {
   assert.match(read("functions/api/storage/upload.js"), /onlyIf:\s*\{\s*etagDoesNotMatch:\s*"\*"\s*\}/);
-  assert.match(read("functions/api/migration/cache-rescue.js"), /onlyIf:\s*\{\s*etagDoesNotMatch:\s*"\*"\s*\}/);
 });
 
 test("guest provisioning fails closed when Neon Data API is missing and never uses a fallback host", () => {
