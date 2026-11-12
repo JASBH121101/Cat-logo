@@ -1,4 +1,4 @@
-import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261111-preview-media-host1";
+import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261112-password-min8";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
@@ -3250,8 +3250,8 @@ demoGuestCreateForm?.addEventListener("submit", async event => {
     setDemoGuestStatus("Ingresá un nombre visible de hasta 80 caracteres.", "error");
     return;
   }
-  if (password.length < 12 || password.length > 128) {
-    setDemoGuestStatus("La contraseña debe tener entre 12 y 128 caracteres.", "error");
+  if (password.length < 8 || password.length > 128) {
+    setDemoGuestStatus("La contraseña debe tener entre 8 y 128 caracteres.", "error");
     return;
   }
   if (password !== confirmation) {
