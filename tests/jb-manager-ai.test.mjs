@@ -69,7 +69,7 @@ test("Gemini cannot write to the catalog and all changes remain proposals", () =
 
 test("assistant sends only bounded catalog context and renders model text safely", () => {
   assert.match(assistant, /slice\(0, 80\)/);
-  assert.match(assistant, /products:\s*catalogContext\(getProducts\(\), message\)/);
+  assert.match(assistant, //products:\\s\*catalogContext\\\(availableProducts, message\\\)//);
   assert.match(assistant, /rankCatalogProducts\(rows, message/);
   assert.match(endpoint, /JSON\.stringify\(context\)/);
   assert.match(assistant, /paragraph\.textContent = text/);
