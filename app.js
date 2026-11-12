@@ -1673,6 +1673,19 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
 
     previous.addEventListener("click", () => movePhoto(-1));
     next.addEventListener("click", () => movePhoto(1));
+    // Escape fires the native dialog cancel event. Close explicitly so the
+    // viewer is dismissed consistently across desktop and mobile browsers.
+    lightbox.addEventListener("cancel", event => {
+      event.preventDefault();
+      if (lightbox.open) lightbox.close();
+    });
+    lightbox.addEventListener("close", () => {
+      const returnFocus = lightbox._returnFocus;
+      if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === "function") {
+        try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+      }
+    });
+
     lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", () => {
       if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
       else lightbox.removeAttribute("open");
@@ -1734,6 +1747,7 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
   lightbox._galleryItems = unique;
   lightbox._galleryIndex = startIndex;
   lightbox._renderPhoto();
+  if (!lightbox.open) lightbox._returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
   if (typeof lightbox.showModal === "function") {
     if (!lightbox.open) lightbox.showModal();
