@@ -45,12 +45,13 @@ test("JB Manager AI requests the native Android microphone permission and keeps 
   assert.doesNotMatch(assistant, /native\.addListener\(["']result["'][\s\S]{0,400}sendMessage\(/);
 });
 
-test("Gemini endpoint verifies Supabase identity and admin membership before calling the model", () => {
+test("Gemini endpoint verifies the Neon admin context before calling the model", () => {
   const authCheck = endpoint.indexOf("async function authorizeAdmin");
   const modelCall = endpoint.indexOf("generativelanguage.googleapis.com");
   assert.ok(authCheck >= 0 && modelCall > authCheck);
-  assert.match(endpoint, /\/auth\/v1\/user/);
-  assert.match(endpoint, /\/rest\/v1\/admin_users/);
+  assert.match(endpoint, /requireCatalogAdmin/);
+  assert.match(endpoint, /await requireCatalogAdmin\(request, env\)/);
+  assert.doesNotMatch(endpoint, /\/auth\/v1\/user|\/rest\/v1\/admin_users/);
   assert.match(endpoint, /if \(!user\) return response\(403/);
   assert.match(endpoint, /env\.GEMINI_API_KEY/);
   assert.match(endpoint, /rateLimited\(request\)/);
