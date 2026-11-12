@@ -1,5 +1,6 @@
 import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261112-password-min8";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
+import { hasMeaningfulEditorInput } from "./editor-dirty-state.js?v=20261112-meaningful-editor-input1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261112-openai-readonly-chat1";
 import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-jarvis-timing-breakdown1";
@@ -5635,8 +5636,62 @@ function markEditorClean() {
   editorIsDirty = false;
 }
 
+function hasMeaningfulEditorContent() {
+  if (!form) return false;
+
+  const fields = Array.from(form.querySelectorAll("input, textarea, select")).map(field => {
+    const type = String(field.type || "").toLowerCase();
+    const ignored = (
+      field.disabled ||
+      field.hidden ||
+      type === "hidden" ||
+      ["button", "submit", "reset"].includes(type) ||
+      field.id === "product-catalog-type" ||
+      field.id === "product-type" ||
+      (activeCatalogType !== "perfumery" && Boolean(field.closest("#product-perfume-fields"))) ||
+      (activeCatalogType === "perfumery" && Boolean(field.closest(
+        "#product-category-field, #product-subcategory-field, #product-model-field, #product-warranty-field, #product-specs-field"
+      )))
+    );
+
+    if (ignored) return { kind: "ignored", ignored: true };
+    if (type === "file") return { kind: "file", fileCount: field.files?.length || 0 };
+    if (field.tagName === "TEXTAREA") return { kind: "textarea", value: field.value };
+    if (field.tagName === "SELECT") return {
+      kind: "select",
+      value: field.value,
+      selectedIndex: field.selectedIndex
+    };
+    if (type === "checkbox" || type === "radio") return {
+      kind: type,
+      checked: field.checked,
+      defaultChecked: field.defaultChecked
+    };
+    if (type === "color") return {
+      kind: "color",
+      value: field.value,
+      defaultValue: field.defaultValue || "#000000"
+    };
+    if (["text", "search", "number", "email", "url", "tel", "date", "month", "time"].includes(type)) {
+      return { kind: type, value: field.value };
+    }
+    return { kind: "ignored", ignored: true };
+  });
+
+  const variantImageCount = Array.from(form.querySelectorAll("[data-variant-row]"))
+    .reduce((total, row) => total + (row._variantImageItems?.length || 0), 0);
+  const imageCount = (mainImageItems?.length || 0) + variantImageCount;
+
+  return hasMeaningfulEditorInput(fields, {
+    existingRecord: Boolean(String($("#product-id")?.value || "").trim()),
+    imageCount,
+    customTagCount: Array.isArray(customProductTags) ? customProductTags.length : 0
+  });
+}
+
 function updateEditorDirtyState() {
-  editorIsDirty = getEditorSnapshot() !== editorBaseline;
+  const snapshotChanged = getEditorSnapshot() !== editorBaseline;
+  editorIsDirty = snapshotChanged && hasMeaningfulEditorContent();
 }
 
 form?.addEventListener("input", () => {
@@ -6291,7 +6346,8 @@ activeCatalogSelector?.addEventListener("change", () => {
   if (requested === activeCatalogType) return;
 
   updateEditorDirtyState();
-  if (editorIsDirty) {
+  const hasDiscardableContent = editorIsDirty && hasMeaningfulEditorContent();
+  if (hasDiscardableContent) {
     const requestedLabel = requested === "perfumery" ? "JB Parfums · Perfumería" : "JB TECH · Tecnología";
     const warning = "Hay cambios sin guardar en el formulario. Si cambiás de catálogo, se descartarán. ¿Querés continuar a " + requestedLabel + "?";
 
