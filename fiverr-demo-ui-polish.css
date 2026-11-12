@@ -369,3 +369,37 @@ html[data-theme="dark"] body.admin-body .team-permission-option:hover {
     min-height: 40px;
   }
 }
+
+
+/* Fiverr demo: admin theme toggle stays interactive and readable after dashboard render. */
+body.admin-body .admin-header > [data-theme-toggle] {
+  position:relative !important;
+  z-index:1202 !important;
+  display:inline-flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+  cursor:pointer !important;
+  touch-action:manipulation;
+  flex:0 0 auto !important;
+}
+html[data-theme="light"] body.admin-body .admin-header > [data-theme-toggle] {
+  border:1px solid #b9c8ec !important;
+  color:#344b91 !important;
+  background:#fff !important;
+  box-shadow:0 3px 0 #d7e0f3,0 6px 12px rgba(19,35,80,.07) !important;
+}
+html[data-theme="dark"] body.admin-body .admin-header > [data-theme-toggle] {
+  border:1px solid rgba(89,137,223,.58) !important;
+  color:#eaf1ff !important;
+  background:linear-gradient(135deg,#162746,#202d55) !important;
+  box-shadow:0 3px 0 #0a1530,0 6px 14px rgba(0,0,0,.25) !important;
+}
+body.admin-body .admin-header > [data-theme-toggle]:focus-visible {
+  outline:3px solid #69cfff !important;
+  outline-offset:3px !important;
+}
+body.admin-body .admin-header > [data-theme-toggle] .theme-toggle-icon,
+body.admin-body .admin-header > [data-theme-toggle] .theme-toggle-label {
+  pointer-events:none !important;
+}
