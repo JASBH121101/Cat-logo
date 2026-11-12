@@ -184,7 +184,7 @@ test("private chat dispatch uses Neon and protects server-side push secrets", ()
   assert.equal(privateChatBackend.includes("SUPABASE_PUBLISHABLE_KEY"), false);
   assert.equal(privateChatBackend.includes("/functions/v1/private-chat"), false);
   assert.ok(privateChatBackend.includes("NEON_DATA_API_URL"));
-  assert.ok(privateChatBackend.includes('Authorization: "Bearer " + accessToken') || privateChatBackend.includes('Authorization: "Bearer " + neonAccessToken'));
+  assert.ok(privateChatBackend.includes('"Authorization": "Bearer " + accessToken'));
   assert.ok(privateChatBackend.includes("private_chat_claim_push_delivery"));
   assert.ok(privateChatBackend.includes("private_chat_finish_push_delivery"));
   assert.ok(privateChatBackend.includes("env.PUSH_DISPATCH_SECRET"));
