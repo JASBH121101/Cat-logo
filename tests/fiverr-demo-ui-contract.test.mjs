@@ -120,8 +120,8 @@ test("Fiverr guest may freely navigate product form tabs, variant accordions and
 });
 
 test("Fiverr demo blocks persisted writes and uploads while keeping database and photo reads available", () => {
-  assert.match(admin, /const IS_READ_ONLY_APP = IS_FIVERR_DEMO_HOST \|\| IS_READ_ONLY_PREVIEW/);
-  assert.match(admin, /if \(supabase && IS_READ_ONLY_APP\)/);
+  assert.match(admin, /function isReadOnlySession\(\) \{\s*return IS_READ_ONLY_PREVIEW \|\| currentUser\?\.role === "demo_viewer";\s*\}/);
+  assert.match(admin, /if \(supabase && IS_READ_ONLY_PREVIEW\)/);
   assert.match(admin, /\["insert", "update", "upsert", "delete"\]/);
   assert.match(admin, /\["upload", "update", "move", "copy", "remove", "createSignedUploadUrl"\]/);
   assert.doesNotMatch(admin, /createSignedUrls"\]/);
@@ -139,4 +139,14 @@ test("read-only product editor retains view/preview actions and hides only save,
   }
   assert.doesNotMatch(demoViewer, /body\.demo-viewer-mode \.admin-product-editor/);
   assert.match(demoViewer, /body\.demo-viewer-mode \[data-edit\]/);
+});
+
+
+test("the Fiverr demo owner is not blocked by the demo hostname; only demo_viewer sessions are read-only", () => {
+  assert.match(admin, /const IS_FIVERR_DEMO_HOST = adminHostname === "fiverr-demo\.jb-collections\.pages\.dev"/);
+  assert.match(admin, /const IS_READ_ONLY_PREVIEW =\s*!IS_FIVERR_DEMO_HOST/);
+  assert.match(admin, /function isReadOnlySession\(\) \{\s*return IS_READ_ONLY_PREVIEW \|\| currentUser\?\.role === "demo_viewer";\s*\}/);
+  assert.doesNotMatch(admin, /IS_FIVERR_DEMO_HOST\s*\|\|\s*IS_READ_ONLY_PREVIEW/);
+  assert.match(admin, /if \(supabase && IS_READ_ONLY_PREVIEW\)/);
+  assert.match(admin, /if \(isReadOnlySession\(\)\)/);
 });
