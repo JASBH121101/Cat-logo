@@ -54,7 +54,7 @@ test("JB Parfums has independent exclusive and luxury limited-edition showcases"
   assert.ok(perfumeHtml.indexOf('id="perfume-exclusive-section"') < perfumeHtml.indexOf('id="perfume-limited-edition-section"'));
   assert.ok(perfumeHtml.indexOf('id="perfume-limited-edition-section"') < perfumeHtml.indexOf('id="category-nicho"'));
   assert.match(perfumeHtml, /perfumeria\.js\?v=20261111-preview-media-host1/);
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261030-desktop-type12/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261112-sticky-hero-viewport1/);
   assert.match(perfumeJs, /function normalizedPerfumeProductTags\(product\)/);
   assert.match(perfumeJs, /tags\.includes\("exclusive"\)/);
   assert.match(perfumeJs, /tags\.includes\("limited_edition"\)/);
