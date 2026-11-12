@@ -27,7 +27,7 @@ export function hasMeaningfulEditorInput(fields = [], {
     }
 
     if (kind === "checkbox" || kind === "radio") {
-      return field.checked === true && field.checked !== field.defaultChecked;
+      return field.checked !== field.defaultChecked;
     }
 
     if (kind === "file") {
