@@ -87,10 +87,14 @@ body.demo-viewer-mode .demo-viewer-module-notice strong {
   margin-bottom:3px;
 }
 
-/* Never expose account administration, configuration, or module management. */
-body.demo-viewer-mode .admin-settings-menu,
-body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-button) {
+/* Guests may open Settings to sign out. Only the logout action is exposed. */
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-button),
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-divider,
+body.demo-viewer-mode .admin-sidebar-settings .admin-settings-menu-title {
   display:none !important;
+}
+body.demo-viewer-mode .admin-sidebar-settings #logout-button {
+  display:flex !important;
 }
 @media (max-width:760px) {
   body.demo-viewer-mode .demo-viewer-banner {
