@@ -50,3 +50,13 @@ test("paid AI floating launcher is absent from every Fiverr demo session", () =>
   assert.match(admin, /if \(IS_FIVERR_DEMO_HOST\) document\.body\.classList\.add\("fiverr-demo-host"\)/);
   assert.match(css, /body\.fiverr-demo-host #jb-ai-floating-launcher \{ display:none!important; \}/);
 });
+
+
+test("mobile variant add action is compact and destructive configuration action never wraps", () => {
+  assert.match(css, /#product-form #add-variant-button\s*\{[^}]*width:\s*auto\s*!important;[^}]*max-width:\s*min\(100%, 260px\)\s*!important;[^}]*white-space:\s*nowrap\s*!important;/s);
+  assert.match(css, /\.variant-config-group-heading \[data-remove-group\]\s*\{[^}]*min-height:\s*36px\s*!important;[^}]*white-space:\s*nowrap\s*!important;/s);
+});
+test("sticky section tabs reserve space for the mobile admin header", () => {
+  assert.match(css, /\.product-form-section-nav\s*\{[^}]*top:\s*calc\(var\(--admin-header-height, 92px\) \+ env\(safe-area-inset-top, 0px\) \+ 12px\)\s*!important;/s);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?top:\s*calc\(var\(--admin-header-height, 92px\) \+ env\(safe-area-inset-top, 0px\) \+ 10px\)\s*!important;/);
+});
