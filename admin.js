@@ -1,7 +1,7 @@
 import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261112-password-min8";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
-import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
+import { initJbManagerAI } from "./admin-ai.js?v=20261112-openai-readonly-chat1";
 import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-jarvis-timing-breakdown1";
 
 /* =========================================================
