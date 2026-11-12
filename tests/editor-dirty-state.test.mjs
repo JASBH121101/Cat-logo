@@ -65,3 +65,13 @@ test("blank new product forms are not warned about just because DOM defaults dif
   ];
   assert.equal(hasMeaningfulEditorInput(generatedDefaults), false);
 });
+
+
+test("a deliberate perfume-set selection counts as user input but the default perfume type does not", () => {
+  assert.equal(hasMeaningfulEditorInput([{ kind: "select", value: "perfume", selectedIndex: 0 }]), false);
+  assert.equal(hasMeaningfulEditorInput([{ kind: "select", value: "set", selectedIndex: 1 }]), true);
+});
+
+test("unchecking a control that was checked by default counts as an explicit change", () => {
+  assert.equal(hasMeaningfulEditorInput([{ kind: "checkbox", checked: false, defaultChecked: true }]), true);
+});
