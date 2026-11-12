@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
   <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
-  <link rel="stylesheet" href="admin-accessibility.css?v=20261101-tags-and-variants2">
+  <link rel="stylesheet" href="admin-accessibility.css?v=20261112-fiverr-a11y-fixes1">
   <link rel="stylesheet" href="demo-viewer.css?v=20261111-full-readonly-module-preview4">
   <link rel="stylesheet" href="admin-ai.css?v=20261031-chat-ui1">
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
@@ -285,7 +285,7 @@
           <p id="storage-migration-status" class="form-status" role="status" aria-live="polite">Migración directa deshabilitada en Fiverr demo. Utilizá el mecanismo de rescate desde caché de Cloudflare.</p>
           <progress id="storage-migration-progress" max="1" value="0" aria-label="Progreso de migración"></progress>
           <p id="storage-migration-summary" class="section-subtitle">Primero verificá la conexión y el inventario de origen.</p>
-          <div id="storage-migration-log" class="admin-alert" aria-live="polite" aria-label="Registro de migración"></div>
+          <div id="storage-migration-log" class="admin-alert" role="log" aria-live="polite" aria-label="Registro de migración"></div>
 
           <section class="dashboard-section-card" aria-labelledby="cache-rescue-title">
             <p class="eyebrow">RECUPERACIÓN · CACHÉ CLOUDFLARE</p>
@@ -779,7 +779,7 @@
                 <span class="workflow-action-label">Borrador</span>
               </button>
               <button type="button" id="toggle-product-exclusive" class="workflow-action workflow-action-exclusive"
-                      aria-label="Marcar o desmarcar exclusividad" aria-pressed="false" title="Marcar o desmarcar exclusividad">
+                      aria-label="Destacar: marcar o desmarcar exclusividad" aria-pressed="false" title="Marcar o desmarcar exclusividad">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>
                 <span class="workflow-action-label">Destacar</span>
               </button>
