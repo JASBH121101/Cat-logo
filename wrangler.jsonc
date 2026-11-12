@@ -14,7 +14,7 @@
     }
   ],
   "vars": {
-    "NEON_DATA_API_URL": "https://ep-wandering-scene-beu9tqyd.apirest.c-9.us-east-2.aws.neon.tech/neondb/rest/v1",
-    "NEON_AUTH_BASE_URL": "https://ep-wandering-scene-beu9tqyd.neonauth.c-9.us-east-2.aws.neon.tech/neondb/auth"
+    "NEON_DATA_API_URL": "https://ep-steep-rain-bei5dxk1.apirest.c-9.us-east-2.aws.neon.tech/neondb/rest/v1",
+    "NEON_AUTH_BASE_URL": "https://ep-steep-rain-bei5dxk1.neonauth.c-9.us-east-2.aws.neon.tech/fiverr_auth/auth"
   }
 }
