@@ -112,7 +112,7 @@ jobs:
 
           root = Path(".")
           required = {
-              "config.js": 'publicCatalogUrl: "https://jb-collections.pages.dev"',
+              "config.js": "publicCatalogUrl: window.location.origin",
               "index.html": 'href="https://jb-collections.pages.dev/"',
               "tecnologia/index.html": 'href="https://jb-collections.pages.dev/tecnologia/"',
               "perfumeria/index.html": 'href="https://jb-collections.pages.dev/perfumeria/"',
