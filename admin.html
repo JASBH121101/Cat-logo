@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="admin-button-audit.css?v=20261112-button-system5">
 
   <script src="config.js?v=20261112-fiverr-data-api-cache1"></script>
-  <script type="module" src="admin.js?v=20261112-button-audit2"></script>
+  <script type="module" src="admin.js?v=20261112-browser-credential-autofill1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -70,6 +70,7 @@
         <label>
           Usuario <span class="required-mark" aria-hidden="true">*</span>
           <input id="login-email"
+                 name="username"
                  type="text"
                  autocomplete="username"
                  autocapitalize="none"
@@ -83,6 +84,7 @@
           Contraseña <span class="required-mark" aria-hidden="true">*</span>
           <span class="password-input-wrap">
             <input id="login-password"
+                   name="password"
                    type="password"
                    autocomplete="current-password"
                    required>
@@ -96,7 +98,7 @@
           <input id="login-remember-user" type="checkbox" autocomplete="off">
           <span class="login-remember-copy">
             <strong>Recordar mi sesión</strong>
-            <small>En este dispositivo no tendrás que iniciar sesión cada vez. Tu contraseña nunca se guarda.</small>
+            <small>La sesión se conserva en este dispositivo. Si tu navegador guardó tus credenciales, podrá completarlas automáticamente; JB Manager no guarda tu contraseña.</small>
           </span>
         </label>
 
