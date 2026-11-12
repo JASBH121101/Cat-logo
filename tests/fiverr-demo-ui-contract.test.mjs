@@ -9,6 +9,8 @@ const polish = read("fiverr-demo-ui-polish.css");
 const demoViewer = read("demo-viewer.css");
 const ai = read("admin-ai.js");
 const ui = read("ui.js");
+const a11y = read("admin-accessibility.css");
+const loginHelpMigration = read("db/migrations/0016_admin_login_help_requests.sql");
 
 test("product editor text fields contain no sample placeholders", () => {
   const productForm = html.split('<form id="product-form"')[1]?.split("</form>")[0] || "";
@@ -42,6 +44,54 @@ test("admin login starts blank but supports browser-managed credential autofill"
   assert.match(admin, /const loginIdentifier = \$\("#login-email"\);[\s\S]*?if \(loginIdentifier\) loginIdentifier\.value = ""/);
 });
 
+test("public login offers owner notification instead of self-service email password reset", () => {
+  const helpForm = html.split('<form id="admin-login-help-form"')[1]?.split("</form>")[0] || "";
+  assert.ok(helpForm, "private access-help form must exist");
+  assert.match(html, /id="admin-login-help-toggle"[\s\S]*aria-expanded="false"[\s\S]*Notificar al administrador/);
+  assert.match(helpForm, /<form[^>]*hidden/);
+  assert.match(helpForm, /id="admin-login-help-username"/);
+  assert.match(helpForm, /id="admin-login-help-issue"/);
+  assert.match(helpForm, /value="username"/);
+  assert.match(helpForm, /value="password"/);
+  assert.match(helpForm, /value="credentials"/);
+  assert.match(helpForm, /id="admin-login-help-website"/);
+  assert.match(helpForm, /Nunca escribás ni envíes tu contraseña/);
+  assert.doesNotMatch(helpForm, /type="password"|one-time-code|admin-password-reset-otp|new-password/i);
+  assert.doesNotMatch(html, /admin-password-reset-form|admin-password-reset-toggle|Crear o recuperar contraseña por correo/);
+  assert.match(admin, /supabase\.rpc\("submit_admin_login_help_request"/);
+  assert.match(admin, /p_username:\s*username[\s\S]*p_issue_type:\s*issueType[\s\S]*p_honeypot:\s*honeypot/);
+  assert.doesNotMatch(admin.slice(admin.indexOf('loginHelpForm?.addEventListener("submit"'), admin.indexOf('const adminAccessNotifications')),
+    /password:\s*|p_password|passwordInput/);
+});
+
+test("owner access bell is hidden by default and only owner sessions can read or resolve reports", () => {
+  assert.match(html, /id="admin-access-notifications"[^>]*hidden/);
+  assert.match(html, /id="admin-access-notification-panel"[^>]*hidden/);
+  assert.match(html, /id="admin-access-notification-count"[^>]*hidden/);
+  assert.match(admin, /const isOwner = currentUser\?\.role === "admin" && currentUser\?\.isOwner === true/);
+  assert.match(admin, /if \(!currentUser\?\.isOwner \|\| !supabase \|\| adminAccessHelpLoading\) return/);
+  assert.match(admin, /supabase\.rpc\("list_admin_login_help_requests"/);
+  assert.match(admin, /supabase\.rpc\("resolve_admin_login_help_request"/);
+  assert.match(admin, /startAdminAccessHelpPolling\(\)/);
+  assert.match(admin, /stopAdminAccessHelpPolling\(\)/);
+  assert.match(loginHelpMigration, /CREATE TABLE IF NOT EXISTS private\.admin_login_help_requests/);
+  assert.match(loginHelpMigration, /REVOKE ALL ON TABLE private\.admin_login_help_requests FROM PUBLIC, anonymous, authenticated/);
+  assert.match(loginHelpMigration, /IF NOT public\.is_catalog_owner_user\(\)/);
+  assert.match(loginHelpMigration, /GRANT EXECUTE ON FUNCTION public\.list_admin_login_help_requests\(boolean\) TO authenticated/);
+  assert.match(loginHelpMigration, /GRANT EXECUTE ON FUNCTION public\.resolve_admin_login_help_request\(uuid\) TO authenticated/);
+});
+
+test("access-help and notification surfaces have explicit light/dark contrast and preserve hidden state", () => {
+  assert.match(html, /admin-accessibility\.css\?v=20261112-login-help-bell1/);
+  assert.match(a11y, /#admin-login-help-form\[hidden\][\s\S]*display:none !important/);
+  assert.match(a11y, /#admin-access-notification-panel\[hidden\][\s\S]*display:none !important/);
+  assert.match(a11y, /html\[data-theme="light"\]/);
+  assert.match(a11y, /html\[data-theme="dark"\]/);
+  assert.match(a11y, /admin-login-help-security/);
+  assert.match(a11y, /admin-access-notification-item/);
+  assert.match(a11y, /@media \(max-width:760px\)/);
+});
+
 test("permissions layout defines readable spacing, wrapping and a mobile single-column grid", () => {
   assert.match(polish, /\.team-permission-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(polish, /\.team-permission-copy\s*\{[\s\S]*display:\s*grid/);
@@ -59,7 +109,7 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
   assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-demo-dual-theme1/);
-  assert.ok(html.includes("admin.js?v=20261112-browser-credential-autofill1"));
+  assert.ok(html.includes("admin.js?v=20261112-admin-access-help-bell1"));
   assert.ok(html.includes("demo-viewer.css?v=20261112-guest-explore-readonly1"));
 });
 
