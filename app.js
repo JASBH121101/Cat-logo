@@ -648,7 +648,9 @@ document.querySelectorAll("#product-grid, #featured-grid, #limited-edition-grid,
   const img = event.target;
   if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
   const container = img.closest(".product-image");
-  img.remove();
+  const zoomButton = img.closest("[data-product-image-zoom]");
+  if (zoomButton) zoomButton.remove();
+  else img.remove();
   if (container && !container.querySelector(".photo-placeholder")) {
     container.insertAdjacentHTML("beforeend", `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Imagen no disponible</span></div>`);
   }
