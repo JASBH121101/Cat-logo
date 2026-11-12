@@ -156,6 +156,7 @@ const supabase = configured ? createCatalogClient({ admin: true }) : null;
    Other ad-hoc preview deployments remain read-only by default. */
 const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
 const IS_FIVERR_DEMO_HOST = adminHostname === "fiverr-demo.jb-collections.pages.dev";
+if (IS_FIVERR_DEMO_HOST) document.body.classList.add("fiverr-demo-host");
 const INTERACTIVE_PREVIEW_HOSTS = new Set([
   "migration-neon-r2.jb-collections.pages.dev"
 ]);
