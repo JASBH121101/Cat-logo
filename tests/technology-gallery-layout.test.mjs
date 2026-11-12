@@ -11,7 +11,7 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261031-limited-edition-vertical-card1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-uniform-section-cards1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
   assert.match(html, /app\.js\?v=20261111-preview-media-host1/);
   assert.match(html, /id="quality-price-section"/);
@@ -56,29 +56,34 @@ test("limited edition showcase uses champagne gold in light mode and keeps its l
   assert.ok(css.includes("white-space:nowrap !important"));
 });
 
-test("main technology showcases share the horizontal desktop layout, while limited editions stay vertical", () => {
-  const start = css.indexOf("JB TECH · distribución uniforme de todas las vitrinas");
-  assert.ok(start >= 0, "shared showcase layout block should exist");
+test("every desktop technology section uses the same vertical product-card geometry", () => {
+  const start = css.indexOf("JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL");
+  assert.ok(start >= 0, "final shared vertical-card layout block should exist");
   const sharedLayout = css.slice(start);
   for (const id of [
     "featured-grid",
+    "limited-edition-grid",
     "high-performance-grid",
     "quality-price-grid",
     "top-gaming-grid",
   ]) {
-    assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the common showcase grid");
+    assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the shared vertical-card layout");
   }
-  assert.ok(sharedLayout.includes("grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr)) !important"));
-  assert.ok(sharedLayout.includes("height:300px !important"));
-  assert.ok(sharedLayout.includes("object-fit:contain !important"));
-  assert.ok(sharedLayout.includes("object-position:center !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 330px)) !important"));
+  assert.ok(sharedLayout.includes("aspect-ratio: 1 / 1 !important"));
+  assert.ok(sharedLayout.includes("max-width: 330px !important"));
+  assert.ok(sharedLayout.includes("flex-direction: column !important"));
+  assert.ok(sharedLayout.includes("object-fit: contain !important"));
+  assert.ok(sharedLayout.includes("justify-content: flex-start !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns: repeat(3, minmax(0, 1fr)) !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns: repeat(2, minmax(0, 1fr)) !important"));
+});
 
-  assert.ok(css.includes("Limited editions use the standard vertical catalog card"));
-  assert.ok(css.includes("#limited-edition-grid.featured-grid {"));
-  assert.ok(css.includes("grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),300px)) !important"));
-  assert.ok(css.includes("max-width:300px !important"));
-  assert.ok(css.includes("aspect-ratio:1 / 1 !important"));
-  assert.ok(css.includes("flex-direction:column !important"));
+test("the old horizontal split is explicitly superseded by the final shared vertical layout", () => {
+  const horizontalRule = css.indexOf("grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) !important");
+  const sharedVertical = css.indexOf("JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL");
+  assert.ok(horizontalRule >= 0, "historical horizontal layout remains traceable");
+  assert.ok(sharedVertical > horizontalRule, "final vertical overrides must win in the cascade");
 });
 
 test("curated showcase typography is easier to read without changing responsive auto-fit", () => {
