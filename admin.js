@@ -3,7 +3,6 @@ import { initProviderTools } from "./admin-provider.js?v=20261031-provider-revie
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
 import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-jarvis-timing-breakdown1";
-import { initStorageMigration } from "./admin-storage-migration.js?v=20261112-fiverr-cache-rescue1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN
@@ -295,10 +294,6 @@ const providerTools = initProviderTools({
   getCurrentUser: () => currentUser,
   getProducts: () => products,
   onRefreshCatalog: button => refreshAdminInventory(button)
-});
-const storageMigration = initStorageMigration({
-  getClient: () => supabase,
-  getCurrentUser: () => currentUser
 });
 const goPartnersScanner = initGoPartnersScanner({
   getSupabase: () => supabase,
@@ -3100,8 +3095,8 @@ async function showDashboard(user) {
     }
   }
 
+  jbManagerAI?.setAuthenticatedUser(currentUser);
   if (!isDemoViewer) {
-    jbManagerAI?.setAuthenticatedUser(user);
     void syncBiometricControls();
   }
   refreshCatalogAdminActivityMarker();
@@ -3793,7 +3788,6 @@ const DEMO_VIEWER_MODULE_NOTES = {
   reviewed: ["Productos revisados", "Vista previa del historial de revisión. Los datos del proveedor están reservados al propietario."],
   ai: ["JB Manager AI", "El módulo se muestra para evaluar su diseño. Las consultas y acciones de IA están deshabilitadas en esta demo."],
   messages: ["Mensajería de clientes", "El módulo se muestra como referencia. Las conversaciones y los datos de clientes no se exponen a la cuenta invitada."],
-  "storage-migration": ["Migración de imágenes", "Vista previa del módulo de infraestructura. Las verificaciones y migraciones están deshabilitadas."],
   updates: ["Importar cambios del proveedor", "Vista previa del importador. No se pueden cargar archivos ni aplicar actualizaciones."]
 };
 
@@ -3822,7 +3816,7 @@ function showAdminSection(section) {
   if (currentUser?.role === "demo_viewer") {
     const visiblePreviewSections = new Set([
       "home", "add", "published", "unpublished", "drafts", "trash",
-      "provider", "reviewed", "ai", "messages", "storage-migration", "updates"
+      "provider", "reviewed", "ai", "messages", "updates"
     ]);
     if (!visiblePreviewSections.has(section)) section = "home";
   }
