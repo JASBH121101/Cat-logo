@@ -103,7 +103,7 @@ test("desktop JB TECH showcases use the same card widths as the main catalog", (
   assert.match(css, /max-width:1580px !important/);
   assert.match(css, /font-size:11\.5px !important/);
   assert.match(css, /grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 270px\), 330px\)\) !important/);
-  assert.match(css, /grid-template-columns: repeat\(auto-fill, min\(100%, 290px\), 350px\) !important/);
+  assert.match(css, /grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 290px\), 350px\)\) !important/);
 });
 
 test("all curated sections keep vertical square product cards at desktop, tablet and mobile sizes", { timeout: 30000 }, async () => {
