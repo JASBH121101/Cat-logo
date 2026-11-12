@@ -147,7 +147,7 @@ function migrationEnv(PRODUCT_IMAGES) {
 }
 
 function migrationRequest(payload) {
-  return new Request("https://jb-collections.pages.dev/api/migration/supabase-r2", {
+  return new Request("https://migration-neon-r2.jb-collections.pages.dev/api/migration/supabase-r2", {
     method: "POST",
     headers: {
       Authorization: "Bearer migration-test-admin",
