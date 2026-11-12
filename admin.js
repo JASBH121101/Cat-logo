@@ -1730,14 +1730,32 @@ function specsText(specs) {
   return "";
 }
 
+function normalizeAdminMediaUrl(value) {
+  const original = String(value || "").trim();
+  if (!original) return "";
+  const host = String(window.location.hostname || "").toLowerCase();
+  const isPreviewHost = host.endsWith(".jb-collections.pages.dev") &&
+    host !== "jb-collections.pages.dev";
+  if (!isPreviewHost) return original;
+
+  try {
+    const parsed = new URL(original, window.location.href);
+    if (parsed.origin === "https://jb-collections.pages.dev" &&
+        parsed.pathname.startsWith("/media/")) {
+      return window.location.origin + parsed.pathname + parsed.search + parsed.hash;
+    }
+  } catch {}
+  return original;
+}
+
 function getImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
 
   return [...list, product?.image_url]
-    .filter(value =>
-      typeof value === "string" && value.trim()
-    );
+    .filter(value => typeof value === "string" && value.trim())
+    .map(normalizeAdminMediaUrl)
+    .filter(Boolean);
 }
 
 /* =========================================================
@@ -1768,9 +1786,9 @@ function normalizeColors(value) {
     return {
       name: String(item.name || item.color || "").trim(),
       type: normalizeVariantAvailability(item.type),
-      image_url: String(
+      image_url: normalizeAdminMediaUrl(
         item.image_url || item.imageUrl || ""
-      ).trim(),
+      ),
       color_hex: validHex(item.color_hex || item.hex)
     };
   }).filter(item => item && item.name);
@@ -1821,8 +1839,11 @@ function normalizeVariants(value) {
       availability: item.availability === "pending" ? "pending" : normalizeVariantAvailability(item.availability),
       configuration_availability: item.configuration_availability === "pending" ? "pending" : normalizeVariantAvailability(item.configuration_availability),
 
-      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
-      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
+      images: (Array.isArray(item.images)
+        ? item.images.filter(url => typeof url === "string" && url.trim())
+        : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean))
+        .map(normalizeAdminMediaUrl).filter(Boolean),
+      image_url: normalizeAdminMediaUrl((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "")
     };
   }).filter(item =>
     item &&
