@@ -219,10 +219,12 @@ test("the Fiverr demo owner is not blocked by the demo hostname; only demo_viewe
 });
 
 
-test("Fiverr demo owner mapping is repaired only to the verified credential identity", () => {
+test("Fiverr demo owner mapping targets the verified credential identity in the active fiverr_auth database", () => {
+  assert.ok(ownerLinkMigration.includes("fiverr_auth.neon_auth.user"));
+  assert.ok(ownerLinkMigration.includes("fiverr_auth.neon_auth.account"));
+  assert.ok(ownerLinkMigration.includes("verified and has a credential password"));
   assert.ok(ownerLinkMigration.includes("8b8977fd-9e4a-4d41-a738-87805fe39eb0"));
-  assert.ok(ownerLinkMigration.includes('AND "emailVerified" IS TRUE'));
-  assert.ok(ownerLinkMigration.includes('AND "providerId" = \'credential\''));
+  assert.doesNotMatch(ownerLinkMigration, /8889c812-8c63-4ce2-b9ee-fde676b85031/);
   assert.ok(ownerLinkMigration.includes("WHERE username = 'JaredBH'"));
   assert.ok(ownerLinkMigration.includes("AND role = 'admin'"));
   assert.ok(ownerLinkMigration.includes("AND is_owner IS TRUE"));
