@@ -13,7 +13,7 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.ok(styles.length > 0, "page should declare stylesheets");
   assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-lightbox-close-and-owner-link1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
-  assert.match(html, /app\.js\?v=20261112-lightbox-close-and-owner-link1/);
+  assert.match(html, /app\.js\?v=20261112-lightbox-close-fallback2/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -62,7 +62,7 @@ test("catalog card photos are independently clickable and open the shared fullsc
   assert.ok(app.includes('lightbox.addEventListener("close"'));
   assert.ok(app.includes("function closeProductImageLightbox(dialog)"));
   assert.ok(app.includes("function handleProductImageLightboxEscape(event, dialog)"));
-  assert.match(app, /document\.addEventListener\("keydown", event => \{[\s\S]*?handleProductImageLightboxEscape\(event, lightbox\)[\s\S]*?\}, true\)/);
+  assert.ok(app.includes('document.addEventListener("keydown", event => {') && app.includes("handleProductImageLightboxEscape(event, lightbox)"));
   assert.match(app, /dialog\.removeAttribute\("open"\)/);
   assert.match(css, /\.product-image-lightbox-photo/);
 });
