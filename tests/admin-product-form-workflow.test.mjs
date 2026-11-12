@@ -437,3 +437,12 @@ test("APK build refreshes and verifies the shared admin accessibility stylesheet
   assert.match(androidWorkflow, /admin-accessibility\.css/);
   assert.match(androidWorkflow, /node --test[\s\S]*tests\/admin-product-form-workflow\.test\.mjs/);
 });
+
+
+test("variant photo galleries shrink to their cards and upload progress stays inside each thumbnail", () => {
+  assert.match(workflowCss, /html body\\.admin-body form#product-form \\.inline-color-details \\.variant-image-preview\\s*\\{[^}]*width:\\s*fit-content;[^}]*max-width:\\s*100%;[^}]*box-sizing:\\s*border-box;/);
+  assert.match(workflowCss, /html body\\.admin-body form#product-form \\.inline-color-details \\.variant-image-preview > \\.variant-gallery-item\\s*\\{[^}]*width:\\s*112px;[^}]*max-width:\\s*100%;[^}]*box-sizing:\\s*border-box;/);
+  assert.match(workflowCss, /html body\\.admin-body form#product-form \\.admin-photo-upload-progress\\s*\\{[^}]*grid-template-columns:\\s*minmax\\(0, 1fr\\);[^}]*min-width:\\s*0;[^}]*max-width:\\s*100%;/);
+  assert.match(workflowCss, /html body\\.admin-body form#product-form \\.admin-photo-progress-track\\s*\\{[^}]*width:\\s*100%;[^}]*min-width:\\s*0;[^}]*max-width:\\s*100%;/);
+  assert.match(workflowCss, /html body\\.admin-body form#product-form \\.admin-photo-progress-label\\s*\\{[^}]*min-width:\\s*0;[^}]*white-space:\\s*normal;/);
+});
