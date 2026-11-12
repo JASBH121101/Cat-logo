@@ -49,6 +49,7 @@ test("catalog card photos are independently clickable and open the shared fullsc
   assert.match(app, /function imageMarkup\(product, imageUrl = getProductImages\(product\)\[0\] \|\| ""\)/);
   assert.match(app, /class="product-image-zoom" data-product-image-zoom=/);
   assert.match(app, /aria-haspopup="dialog"/);
+  assert.match(app, /if \(zoomButton\) zoomButton\.remove\(\)/);
   assert.match(app, /const imageZoom = target\?\.closest\("\[data-product-image-zoom\]"\)/);
   assert.match(app, /const photoUrls = getProductImages\(product\)/);
   assert.match(app, /openProductImageLightbox\([\s\S]*?photoUrls\[0\]/);
@@ -437,6 +438,11 @@ test("catalog fullscreen image viewer is modal, navigable and sized to mobile an
     ]) {
       const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
       await page.setContent('<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}.product-image{width:280px;aspect-ratio:1/1}</style><style>' + css + '</style></head><body class="technology-catalog"><main><div class="product-image"><button class="product-image-zoom" type="button" aria-label="Ampliar fotografías de prueba" aria-haspopup="dialog"><img alt="Producto de prueba" src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27300%27%3E%3Crect width=%27300%27 height=%27300%27 fill=%27%236b86b8%27/%3E%3C/svg%3E"></button></div></main></body></html>');
+      const cardButton = await page.locator(".product-image-zoom").boundingBox();
+      assert.ok(cardButton && Math.abs(cardButton.width - 280) <= 1,
+        viewport.name + ": the photo button must cover the catalog image width");
+      assert.ok(cardButton && Math.abs(cardButton.height - 280) <= 1,
+        viewport.name + ": the photo button must cover the catalog image height");
       await page.addScriptTag({ content: viewerSource });
       const images = await page.evaluate(() => {
         const make = color => "data:image/svg+xml," + encodeURIComponent(
