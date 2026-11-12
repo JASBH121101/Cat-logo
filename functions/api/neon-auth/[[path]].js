@@ -52,9 +52,16 @@ function rewriteDemoIdentityPayload(path, body, env) {
     const payload = JSON.parse(new TextDecoder().decode(body));
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return body;
     const identifier = String(payload.email || "").trim();
-    if (!identifier || identifier.includes("@")) return body;
+    if (!identifier) return body;
 
-    const resolvedEmail = resolveDemoAuthEmail(identifier, env.DEMO_OWNER_AUTH_EMAIL);
+    // The client SDK requires email syntax. Map the private, non-routable
+    // username identifier to the real owner/guest alias only on the server.
+    const username = identifier.toLowerCase().endsWith("@jb-login.invalid")
+      ? identifier.slice(0, -"@jb-login.invalid".length)
+      : identifier;
+    if (username.includes("@")) return body;
+
+    const resolvedEmail = resolveDemoAuthEmail(username, env.DEMO_OWNER_AUTH_EMAIL);
     if (!resolvedEmail) return body;
     payload.email = resolvedEmail;
     return new TextEncoder().encode(JSON.stringify(payload));
