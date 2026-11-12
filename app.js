@@ -623,8 +623,8 @@ function renderColorSummary(product) {
   `;
 }
 
-function imageMarkup(product) {
-  const url = getProductImages(product)[0] || "";
+function imageMarkup(product, imageUrl = getProductImages(product)[0] || "") {
+  const url = imageUrl;
 
   if (url) {
     return `
@@ -644,7 +644,7 @@ function imageMarkup(product) {
 }
 
 // Sustituir imágenes de catálogo rotas por un estado visible, no por un hueco vacío.
-document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
   const container = img.closest(".product-image");
@@ -940,7 +940,6 @@ const PRODUCT_TAG_LABELS = {
 
 
 function renderCard(product) {
-  const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const tags = normalizedProductTags(product);
   const rawTagLabels = new Map(
@@ -974,6 +973,10 @@ function renderCard(product) {
   const brand = String(product.brand || "").trim();
   const model = String(product.model || "").trim();
   const title = brand && model ? `${brand} ${model}` : String(product.name || brand || model || "Producto");
+  const cardPhotoUrls = getProductImages(product);
+  const image = cardPhotoUrls.length
+    ? `<button type="button" class="product-image-zoom" data-product-image-zoom="${escapeHtml(product.id)}" aria-label="Ampliar fotografías de ${escapeHtml(title)}" aria-haspopup="dialog">${imageMarkup(product, cardPhotoUrls[0])}</button>`
+    : imageMarkup(product, "");
   const price = startingPrice(product, "price_usd");
   const cardConfiguration =
     variants
@@ -2038,8 +2041,28 @@ function openProduct(product, requestedVariant = null) {
   if (canonical) canonical.href = productLink(product);
 }
 
-document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const imageZoom = target?.closest("[data-product-image-zoom]");
+  if (imageZoom) {
+    const productId = imageZoom.getAttribute("data-product-image-zoom");
+    const product = products.find(item => String(item.id) === String(productId));
+    if (!product) return;
+    const photoUrls = getProductImages(product);
+    if (!photoUrls.length) return;
+    const title = [String(product.brand || "").trim(), String(product.model || "").trim()]
+      .filter(Boolean).join(" ") || String(product.name || "Producto");
+    const photos = photoUrls.map((src, index) => ({
+      src,
+      alt: title + " — foto " + (index + 1)
+    }));
+    openProductImageLightbox(
+      photoUrls[0],
+      imageZoom.querySelector("img")?.alt || title,
+      photos
+    );
+    return;
+  }
   const link = target?.closest("a[data-details]");
   if (!link) return;
   if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
