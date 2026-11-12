@@ -77,7 +77,7 @@ test("admin hides the floating back-to-top control and forces fresh script URLs"
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
   assert.match(html, /src="admin\.js\?v=\d{8}-[^"]+"/);
   assert.match(html, /admin-private-chat\.css\?v=20261029-chat-reply-theme3/);
-  assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
+  assert.match(html, /ui\.js\?v=20261112-admin-theme-toggle-delegated2/);
 });
 
 test("smart duplicate suggestions compare only the same brand and catalog, and reuse existing product details", () => {
