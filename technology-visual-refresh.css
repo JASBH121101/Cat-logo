@@ -4680,6 +4680,16 @@ body.technology-catalog .product-image-zoom:focus-visible {
 }
 
 /* Shared full-screen viewer for product-detail photos and catalog-card photos. */
+/* A closed native dialog must leave the rendered page as well as the top layer.
+   The explicit display rule above overrides the browser's default closed-dialog
+   rule, so restore the hidden state when the open attribute is removed. */
+body.technology-catalog dialog.product-image-lightbox:not([open]) {
+  display:none !important;
+}
+body.technology-catalog dialog.product-image-lightbox[open] {
+  display:block !important;
+}
+
 body.technology-catalog dialog.product-image-lightbox {
   position:fixed !important;
   inset:0 !important;
