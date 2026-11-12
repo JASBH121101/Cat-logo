@@ -29,7 +29,7 @@
 
   <script src="config.js?v=20261112-fiverr-data-api-cache1"></script>
   <script type="module" src="admin.js?v=20261112-catalog-landing-link2"></script>
-  <script src="ui.js?v=20261112-admin-theme-toggle-delegated2" defer></script>
+  <script src="ui.js?v=20261112-admin-theme-toggle-direct1" defer></script>
 </head>
 
 <body class="admin-body">
@@ -47,6 +47,11 @@
       <strong>Panel de control</strong>
       <small>JB TECH · JB PARFUMS</small>
     </div>
+    <button class="theme-toggle admin-theme-toggle" type="button" data-theme-toggle
+            aria-label="Cambiar tema" title="Cambiar tema" aria-pressed="true">
+      <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+      <span class="theme-toggle-label">Claro</span>
+    </button>
   </header>
 
   <main class="admin-main">
@@ -262,7 +267,7 @@
           </div>
         </div>
 
-        <a href="./" class="admin-sidebar-catalog-link">
+        <a href="/index.html" class="admin-sidebar-catalog-link">
           <span aria-hidden="true">↗</span>
           <span>Ver catálogo</span>
         </a>
