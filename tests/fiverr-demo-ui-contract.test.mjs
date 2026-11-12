@@ -187,7 +187,7 @@ test("admin theme toggle works after dashboard render in both directions", { tim
 });
 
 test("admin catalog links always open the split JB Collections landing page", () => {
-  assert.match(admin, /const publicCatalogLanding = new URL\("\.\/", window\.location\.href\)\.href/);
+  assert.match(admin, /const publicCatalogLanding = new URL\("\/index\.html", window\.location\.origin\)\.href/);
   assert.match(admin, /if \(publicLink\) publicLink\.href = publicCatalogLanding/);
   assert.match(admin, /if \(sidebarCatalogLink\) sidebarCatalogLink\.href = publicCatalogLanding/);
   assert.doesNotMatch(admin, /sidebarCatalogLink\.href = isPerfume \? "\.\/perfumeria\/" : "\.\/tecnologia\//);
