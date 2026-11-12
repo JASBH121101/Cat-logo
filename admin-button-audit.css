@@ -140,3 +140,13 @@ html body.admin-body #product-form .variant-config-group-heading [data-remove-gr
   html body.admin-body #product-form #add-variant-button { min-width: 0 !important; max-width: 100% !important; padding-inline: 12px !important; }
   html body.admin-body #product-form .variant-config-group-heading [data-remove-group] { font-size: 11.5px !important; padding-inline: 9px !important; }
 }
+
+
+/* Final mobile QA correction: the step tabs must never sit underneath the fixed admin header. */
+@media (max-width: 760px) {
+  html body.admin-body #product-form .product-form-section-nav {
+    top: calc(112px + env(safe-area-inset-top, 0px) + 8px) !important;
+    scroll-margin-top: calc(112px + env(safe-area-inset-top, 0px) + 16px) !important;
+    z-index: 12 !important;
+  }
+}
