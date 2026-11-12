@@ -5204,6 +5204,56 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
 const productPreviewDialog = $("#admin-product-preview-dialog");
 const productPreviewContent = $("#admin-product-preview-content");
 
+function closeAdminProductPreviewDialog() {
+  if (!productPreviewDialog) return;
+  const wasOpen = productPreviewDialog.open || productPreviewDialog.hasAttribute("open");
+  try {
+    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") {
+      productPreviewDialog.close();
+    }
+  } catch (error) {
+    console.warn("El navegador no pudo cerrar el diálogo de vista previa de forma nativa.", error);
+  }
+  // Fallback for embedded/mobile browsers where dialog.close() is missing or
+  // leaves the open attribute behind. The CSS also hides every closed dialog.
+  if (productPreviewDialog.open || productPreviewDialog.hasAttribute("open")) {
+    productPreviewDialog.removeAttribute("open");
+  }
+  if (wasOpen && !productPreviewDialog.open && !productPreviewDialog.hasAttribute("open")) {
+    const returnFocus = productPreviewDialog._returnFocus;
+    productPreviewDialog._returnFocus = null;
+    if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+      try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+    }
+  }
+}
+
+function handleAdminProductPreviewEscape(event) {
+  if (event.key !== "Escape" || !productPreviewDialog?.open) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  closeAdminProductPreviewDialog();
+}
+
+document.addEventListener("keydown", handleAdminProductPreviewEscape, true);
+productPreviewDialog?.addEventListener("cancel", event => {
+  event.preventDefault();
+  closeAdminProductPreviewDialog();
+});
+productPreviewDialog?.addEventListener("close", () => {
+  const returnFocus = productPreviewDialog._returnFocus;
+  productPreviewDialog._returnFocus = null;
+  if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+    try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+  }
+});
+productPreviewDialog?.querySelector("[data-close-product-preview]")?.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopPropagation();
+  closeAdminProductPreviewDialog();
+});
+
 function previewMoney(value, currency) {
   if (value === null || value === undefined || value === "") return "Consultar";
   const amount = Number(value);
@@ -5278,7 +5328,10 @@ function previewOpenPerfumeProduct(product) {
       notes("Salida", detail.top_notes) + notes("Corazón", detail.heart_notes) + notes("Fondo", detail.base_notes) +
     '</div></section>';
   if (typeof productPreviewDialog.showModal === "function") {
-    if (!productPreviewDialog.open) productPreviewDialog.showModal();
+    if (!productPreviewDialog.open) {
+      productPreviewDialog._returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      productPreviewDialog.showModal();
+    }
   } else {
     productPreviewDialog.setAttribute("open", "open");
   }
@@ -5419,7 +5472,10 @@ function previewOpenProduct(product) {
     '</section>';
 
   if (typeof productPreviewDialog.showModal === "function") {
-    if (!productPreviewDialog.open) productPreviewDialog.showModal();
+    if (!productPreviewDialog.open) {
+      productPreviewDialog._returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      productPreviewDialog.showModal();
+    }
   } else {
     productPreviewDialog.setAttribute("open", "open");
   }
@@ -5428,13 +5484,11 @@ function previewOpenProduct(product) {
 productPreviewDialog?.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   if (target?.closest("[data-close-product-preview]")) {
-    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") productPreviewDialog.close();
-    else productPreviewDialog.removeAttribute("open");
+    closeAdminProductPreviewDialog();
     return;
   }
   if (event.target === productPreviewDialog) {
-    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") productPreviewDialog.close();
-    else productPreviewDialog.removeAttribute("open");
+    closeAdminProductPreviewDialog();
     return;
   }
   const thumbnail = target?.closest("[data-preview-image]");
