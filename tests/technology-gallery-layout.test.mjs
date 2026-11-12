@@ -86,21 +86,79 @@ test("the old horizontal split is explicitly superseded by the final shared vert
   assert.ok(sharedVertical > horizontalRule, "final vertical overrides must win in the cascade");
 });
 
-test("curated showcase typography is easier to read without changing responsive auto-fit", () => {
+test("curated section identities remain while product-card geometry is shared", () => {
   assert.match(css, /JB TECH · subir la legibilidad de las vitrinas/);
   assert.match(css, /\.section-subtitle\s*\{\s*font-size:clamp\(14px,1vw,16px\) !important;/);
-  assert.match(css, /Limited editions use the standard vertical catalog card/);
-  assert.match(css, /#limited-edition-grid\.featured-grid\s*\{[\s\S]*?grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,260px\),300px\)\) !important/);
-  assert.match(css, /#limited-edition-grid\.featured-grid \.product-badge[\s\S]*?font-size:10px !important/);
-  assert.match(css, /#limited-edition-grid\.featured-grid \.product-view-button[\s\S]*?font-size:13\.5px !important/);
+  assert.match(css, /JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL/);
+  for (const id of ["featured-grid", "limited-edition-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid"]) {
+    assert.ok(css.includes("#" + id + ".featured-grid > .product-card"), id + " must share vertical card geometry");
+  }
+  assert.match(css, /\.product-card > \.product-image[\s\S]*?aspect-ratio: 1 \/ 1 !important/);
+  assert.match(css, /\.product-card > \.product-card-content[\s\S]*?flex-direction: column !important/);
 });
 
-test("desktop JB TECH showcases use the available width and readable compact labels", () => {
+test("desktop JB TECH showcases use the same card widths as the main catalog", () => {
   assert.match(css, /JB TECH · escritorio: más ancho útil y etiquetas legibles/);
   assert.match(css, /width:min\(1580px,calc\(100% - 40px\)\) !important/);
   assert.match(css, /max-width:1580px !important/);
   assert.match(css, /font-size:11\.5px !important/);
-  assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,600px\),1fr\)\) !important/);
+  assert.match(css, /grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 270px\), 330px\)\) !important/);
+  assert.match(css, /grid-template-columns: repeat\(auto-fill, min\(100%, 290px\), 350px\) !important/);
+});
+
+test("all curated sections keep vertical square product cards at desktop, tablet and mobile sizes", { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const sectionIds = ["featured-grid", "limited-edition-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid"];
+    const card = '<article class="product-card"><div class="product-image"><img alt="Equipo" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Crect width=\'300\' height=\'300\' fill=\'%23557799\'/%3E%3C/svg%3E"></div><div class="product-card-content"><div class="product-card-badges"><span class="product-badge">ALTO RENDIMIENTO</span></div><h3>Equipo de prueba</h3><p class="product-card-capacity">12 GB RAM / 256 GB</p><div class="product-price-label">Precio desde</div><div class="product-price">US$460</div><div class="product-actions"><a class="product-view-button">Ver producto</a></div></div></article>';
+    const markup = '<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}' + css + '</style></head><body class="technology-catalog">' +
+      sectionIds.map(id => '<section class="featured-section"><div id="' + id + '" class="featured-grid">' + card + card + '</div></section>').join("") +
+      '</body></html>';
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 1024, height: 768 },
+      { width: 390, height: 844 },
+    ]) {
+      const page = await browser.newPage({ viewport });
+      await page.setContent(markup);
+      const layouts = await page.evaluate(ids => ids.map(id => {
+        const grid = document.getElementById(id);
+        const card = grid.querySelector(".product-card");
+        const image = card.querySelector(".product-image");
+        const content = card.querySelector(".product-card-content");
+        const cardRect = card.getBoundingClientRect();
+        const imageRect = image.getBoundingClientRect();
+        return {
+          id,
+          gridColumns: getComputedStyle(grid).gridTemplateColumns,
+          cardDisplay: getComputedStyle(card).display,
+          cardDirection: getComputedStyle(card).flexDirection,
+          cardWidth: cardRect.width,
+          imageAspect: getComputedStyle(image).aspectRatio,
+          imageWidth: imageRect.width,
+          imageHeight: imageRect.height,
+          contentDisplay: getComputedStyle(content).display,
+          contentDirection: getComputedStyle(content).flexDirection
+        };
+      }), sectionIds);
+      const reference = layouts[0];
+      for (const layout of layouts) {
+        assert.equal(layout.cardDisplay, "flex", viewport.width + "px " + layout.id + ": card must remain flex");
+        assert.equal(layout.cardDirection, "column", viewport.width + "px " + layout.id + ": image must stay above product details");
+        assert.equal(layout.imageAspect, "1 / 1", viewport.width + "px " + layout.id + ": product image must remain square");
+        assert.ok(Math.abs(layout.imageWidth - layout.imageHeight) <= 1, viewport.width + "px " + layout.id + ": image frame must be square");
+        assert.equal(layout.contentDisplay, "flex", viewport.width + "px " + layout.id + ": content area must stay flex");
+        assert.equal(layout.contentDirection, "column", viewport.width + "px " + layout.id + ": details must stack vertically");
+        assert.equal(layout.gridColumns, reference.gridColumns, viewport.width + "px " + layout.id + ": all section grids must use the same column geometry");
+        assert.ok(Math.abs(layout.cardWidth - reference.cardWidth) <= 1, viewport.width + "px " + layout.id + ": all section cards must have equal width");
+      }
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
+        viewport.width + "px: no horizontal page overflow");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
