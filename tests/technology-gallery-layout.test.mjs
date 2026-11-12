@@ -11,9 +11,9 @@ const app = readFileSync("app.js", "utf8");
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-fullscreen-catalog-photos1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-lightbox-close-and-owner-link1/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
-  assert.match(html, /app\.js\?v=20261112-fullscreen-catalog-photos1/);
+  assert.match(html, /app\.js\?v=20261112-lightbox-close-and-owner-link1/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -57,6 +57,9 @@ test("catalog card photos are independently clickable and open the shared fullsc
   assert.match(css, /JB TECH · zoom de fotografía directamente desde las tarjetas del catálogo/);
   assert.match(css, /\.product-image-zoom:focus-visible/);
   assert.match(css, /dialog\.product-image-lightbox/);
+  assert.ok(css.includes("dialog.product-image-lightbox:not([open])"));
+  assert.ok(app.includes('lightbox.addEventListener("cancel"'));
+  assert.ok(app.includes('lightbox.addEventListener("close"'));
   assert.match(css, /\.product-image-lightbox-photo/);
 });
 
