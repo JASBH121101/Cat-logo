@@ -45,6 +45,20 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
 });
 
+test("catalog card photos are independently clickable and open the shared fullscreen gallery", () => {
+  assert.match(app, /function imageMarkup\(product, imageUrl = getProductImages\(product\)\[0\] \|\| ""\)/);
+  assert.match(app, /class="product-image-zoom" data-product-image-zoom=/);
+  assert.match(app, /aria-haspopup="dialog"/);
+  assert.match(app, /const imageZoom = target\?\.closest\("\[data-product-image-zoom\]"\)/);
+  assert.match(app, /const photoUrls = getProductImages\(product\)/);
+  assert.match(app, /openProductImageLightbox\([\s\S]*?photoUrls\[0\]/);
+  assert.match(app, /#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid/);
+  assert.match(css, /JB TECH · zoom de fotografía directamente desde las tarjetas del catálogo/);
+  assert.match(css, /\.product-image-zoom:focus-visible/);
+  assert.match(css, /dialog\.product-image-lightbox/);
+  assert.match(css, /\.product-image-lightbox-photo/);
+});
+
 test("limited edition showcase uses champagne gold in light mode and keeps its label compact", () => {
   assert.ok(css.includes("Ediciones limitadas: champagne gold in light mode"));
   assert.ok(css.includes('html:not([data-theme="dark"]) body.technology-catalog .limited-edition-section'));
@@ -408,3 +422,74 @@ test("technology detail uses separate compact desktop/mobile spacing and keeps n
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?height: clamp\(280px, 38svh, 340px\) !important;/);
   assert.match(css, /\.dialog-main-image\s*\{[^}]*width: auto !important;[^}]*height: auto !important;[^}]*object-fit: contain !important;/);
 });
+
+
+test("catalog fullscreen image viewer is modal, navigable and sized to mobile and desktop viewports", { timeout: 30000 }, async () => {
+  const start = app.indexOf("function openProductImageLightbox(src, alt, galleryItems = []) {");
+  const end = app.indexOf("\nfunction moveTechnologyGallery(", start);
+  assert.ok(start >= 0 && end > start, "the existing shared fullscreen viewer must be extractable for browser testing");
+  const viewerSource = app.slice(start, end) + "\nwindow.openCatalogPhotoViewerForTest = openProductImageLightbox;";
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const viewport of [
+      { name: "mobile", width: 390, height: 844 },
+      { name: "desktop", width: 1365, height: 900 },
+    ]) {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.setContent('<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}.product-image{width:280px;aspect-ratio:1/1}</style><style>' + css + '</style></head><body class="technology-catalog"><main><div class="product-image"><button class="product-image-zoom" type="button" aria-label="Ampliar fotografías de prueba" aria-haspopup="dialog"><img alt="Producto de prueba" src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27300%27%3E%3Crect width=%27300%27 height=%27300%27 fill=%27%236b86b8%27/%3E%3C/svg%3E"></button></div></main></body></html>');
+      await page.addScriptTag({ content: viewerSource });
+      const images = await page.evaluate(() => {
+        const make = color => "data:image/svg+xml," + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="' + color + '"/></svg>'
+        );
+        return [make("#315d9a"), make("#7b4397")];
+      });
+      await page.evaluate(({ images }) => {
+        window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+          { src: images[0], alt: "Producto de prueba — foto 1" },
+          { src: images[1], alt: "Producto de prueba — foto 2" },
+        ]);
+      }, { images });
+      const initial = await page.evaluate(() => {
+        const dialog = document.querySelector("#product-image-lightbox");
+        const photo = dialog?.querySelector(".product-image-lightbox-photo");
+        const rect = dialog?.getBoundingClientRect();
+        const imageRect = photo?.getBoundingClientRect();
+        return {
+          open: Boolean(dialog?.open),
+          modal: Boolean(dialog?.matches(":modal")),
+          dialog: rect && { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+          photo: imageRect && { width: imageRect.width, height: imageRect.height },
+          counter: dialog?.querySelector(".product-image-lightbox-counter")?.textContent,
+          source: photo?.src,
+        };
+      });
+      assert.equal(initial.open, true, viewport.name + ": viewer should open");
+      assert.equal(initial.modal, true, viewport.name + ": viewer should use the native modal layer");
+      assert.ok(initial.dialog.x <= 0 && initial.dialog.y <= 0, viewport.name + ": viewer should cover the viewport origin");
+      assert.ok(initial.dialog.width >= viewport.width - 1, viewport.name + ": viewer should cover full viewport width");
+      assert.ok(initial.dialog.height >= viewport.height - 1, viewport.name + ": viewer should cover full viewport height");
+      assert.ok(initial.photo.width <= viewport.width - 8, viewport.name + ": image must stay inside viewport width");
+      assert.ok(initial.photo.height <= viewport.height - 80, viewport.name + ": image must stay inside viewport height");
+      assert.equal(initial.counter, "1 / 2", viewport.name + ": gallery counter should start at first image");
+
+      await page.locator(".product-image-lightbox-next").click();
+      const nextSource = await page.locator(".product-image-lightbox-photo").getAttribute("src");
+      const nextCounter = await page.locator(".product-image-lightbox-counter").textContent();
+      assert.equal(nextSource, images[1], viewport.name + ": next button should show second photo");
+      assert.equal(nextCounter, "2 / 2", viewport.name + ": counter should follow selected photo");
+
+      await page.keyboard.press("ArrowLeft");
+      const previousSource = await page.locator(".product-image-lightbox-photo").getAttribute("src");
+      assert.equal(previousSource, images[0], viewport.name + ": keyboard arrow should navigate back");
+
+      await page.locator(".product-image-lightbox-close").click();
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), false,
+        viewport.name + ": close button should dismiss the fullscreen viewer");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
