@@ -117,6 +117,17 @@ test("JB Expert QA measures real product-editor tabs and buttons across mobile/d
           }
         }, { theme });
 
+        if (viewport.width === 390 || viewport.width === 1280) {
+          // Capture the full page at scroll origin, then capture the sticky state separately
+          // after the measurements. This avoids fullPage screenshots stitching fixed headers
+          // into the middle of a scrolled document.
+          await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+          await page.screenshot({
+            path: resolve(outputDir, "product-editor-" + viewport.name + "-" + theme + ".png"),
+            fullPage: true
+          });
+        }
+
         const metrics = await page.evaluate(async () => {
           const header = document.querySelector("header.admin-header");
           const nav = document.querySelector("#product-form .product-form-section-nav");
@@ -192,10 +203,10 @@ test("JB Expert QA measures real product-editor tabs and buttons across mobile/d
         assert.ok(metrics.actionButtons.every(button => button.rect.left >= 0 && button.rect.right <= viewport.width + 1), "workflow buttons must stay within the viewport");
 
         report.push({ viewport: viewport.name, theme, ...metrics });
-        if ((viewport.width === 390 || viewport.width === 1280)) {
+        if (viewport.width === 390 || viewport.width === 1280) {
           await page.screenshot({
-            path: resolve(outputDir, "product-editor-" + viewport.name + "-" + theme + ".png"),
-            fullPage: true
+            path: resolve(outputDir, "sticky-tabs-" + viewport.name + "-" + theme + ".png"),
+            fullPage: false
           });
         }
         await page.close();
