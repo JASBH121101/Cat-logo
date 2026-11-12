@@ -54,18 +54,21 @@
     });
   }
 
-  // Delegación en captura: el control sigue respondiendo aunque el encabezado
-  // se reordene o el módulo de administración vuelva a pintar sus elementos.
-  function handleThemeToggleClick(event) {
-    const origin = event.target instanceof Element ? event.target : event.target?.parentElement;
-    const button = origin?.closest("[data-theme-toggle]");
-    if (!button || button.disabled) return;
+  // Cada control recibe su propio listener. Esto evita depender del orden
+  // de propagación global entre módulos del catálogo y del panel administrativo.
+  const boundThemeButtons = new WeakSet();
 
-    event.preventDefault();
-    const current = document.documentElement.dataset.theme || readSavedTheme();
-    const next = current === DARK ? LIGHT : DARK;
-    applyTheme(next);
-    saveTheme(next);
+  function bindThemeToggle(button) {
+    if (!button || boundThemeButtons.has(button)) return;
+    boundThemeButtons.add(button);
+    button.addEventListener("click", event => {
+      if (button.disabled) return;
+      event.preventDefault();
+      const current = document.documentElement.dataset.theme || readSavedTheme();
+      const next = current === DARK ? LIGHT : DARK;
+      applyTheme(next);
+      saveTheme(next);
+    });
   }
 
   /*
@@ -285,12 +288,8 @@
       }
     }
 
-    // Escuchar en captura y a nivel de documento evita perder el evento
-    // cuando otro módulo actualiza o reorganiza el encabezado del admin.
-    if (document.documentElement.dataset.jbThemeDelegation !== "bound") {
-      document.addEventListener("click", handleThemeToggleClick, true);
-      document.documentElement.dataset.jbThemeDelegation = "bound";
-    }
+    // Vincula el evento directamente a cada botón, sea estático o creado aquí.
+    document.querySelectorAll("[data-theme-toggle]").forEach(bindThemeToggle);
 
     // El tema se aplica después de que el botón exista para sincronizar
     // icono, texto y aria-pressed en el encabezado actual.
