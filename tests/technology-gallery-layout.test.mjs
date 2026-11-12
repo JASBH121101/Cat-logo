@@ -500,8 +500,31 @@ test("catalog fullscreen image viewer is modal, navigable and sized to mobile an
       assert.equal(previousSource, images[0], viewport.name + ": keyboard arrow should navigate back");
 
       await page.locator(".product-image-lightbox-close").click();
-      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), false,
-        viewport.name + ": close button should dismiss the fullscreen viewer");
+      const closeState = await page.locator("#product-image-lightbox").evaluate(dialog => ({
+        open: dialog.open,
+        display: getComputedStyle(dialog).display,
+        modal: dialog.matches(":modal")
+      }));
+      assert.equal(closeState.open, false, viewport.name + ": X should close the dialog");
+      assert.equal(closeState.display, "none", viewport.name + ": closed dialog must not remain visible in the document");
+      assert.equal(closeState.modal, false, viewport.name + ": closed dialog must leave the modal top layer");
+
+      await page.evaluate(({ images }) => window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+        { src: images[0], alt: "Producto de prueba — foto 1" },
+        { src: images[1], alt: "Producto de prueba — foto 2" },
+      ]), { images });
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), true,
+        viewport.name + ": viewer should reopen after closing with X");
+
+      await page.keyboard.press("Escape");
+      const escapeState = await page.locator("#product-image-lightbox").evaluate(dialog => ({
+        open: dialog.open,
+        display: getComputedStyle(dialog).display,
+        modal: dialog.matches(":modal")
+      }));
+      assert.equal(escapeState.open, false, viewport.name + ": Escape should close the dialog");
+      assert.equal(escapeState.display, "none", viewport.name + ": Escape must hide the closed dialog from the document");
+      assert.equal(escapeState.modal, false, viewport.name + ": Escape must leave the modal top layer");
       await page.close();
     }
   } finally {
