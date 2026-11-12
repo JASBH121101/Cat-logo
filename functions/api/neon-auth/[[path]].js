@@ -37,7 +37,7 @@ function resolveDemoAuthEmail(identifier, ownerEmail) {
   if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(value)) return null;
 
   const owner = String(ownerEmail || "").trim().toLowerCase();
-  if (!/^[^\\s@]+@gmail\\.com$/.test(owner)) return null;
+  if (!/^[^\s@]+@gmail\.com$/.test(owner)) return null;
   const separator = owner.lastIndexOf("@");
   if (separator <= 0 || separator === owner.length - 1) return null;
 
