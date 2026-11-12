@@ -45,17 +45,16 @@ test("JB Manager AI requests the native Android microphone permission and keeps 
   assert.doesNotMatch(assistant, /native\.addListener\(["']result["'][\s\S]{0,400}sendMessage\(/);
 });
 
-test("AI endpoint authorizes the owner and explicitly granted read-only demo viewers through Neon context", () => {
+test("AI endpoint is owner-only and refuses demo viewer identities", () => {
   const authCheck = endpoint.indexOf("async function authorizeJbAiUser");
   const modelCall = endpoint.indexOf("https://api.openai.com/v1/responses");
   assert.ok(authCheck >= 0 && modelCall > authCheck);
   assert.ok(endpoint.includes("/rpc/catalog_admin_context"));
-  assert.ok(endpoint.includes("is_demo_viewer === true"));
-  assert.ok(endpoint.includes('permissions?.["catalog.view_all"] === true'));
+  assert.ok(endpoint.includes("context.is_admin === true && context.is_owner === true"));
+  assert.doesNotMatch(endpoint, /is_demo_viewer|demo_viewer|isDemoViewer|demo_readonly_ai/);
   assert.ok(endpoint.includes("env.OPENAI_API_KEY"));
   assert.ok(endpoint.includes("rateLimited(request)"));
   assert.ok(endpoint.includes("request_too_large"));
-  assert.doesNotMatch(endpoint, /requireCatalogAdmin/);
 });
 
 test("Gemini cannot write to the catalog and all changes remain proposals", () => {
@@ -778,6 +777,45 @@ test("Fiverr demo AI endpoint returns 410 before auth or provider invocation", a
     assert.equal(result.status, 410);
     assert.equal((await result.json()).error, "assistant_disabled_in_demo");
     assert.equal(externalRequestMade, false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+
+test("demo viewers are rejected by the AI API even when calling the production hostname", async () => {
+  const previousFetch = globalThis.fetch;
+  let openAiCalled = false;
+  globalThis.fetch = async url => {
+    if (String(url).includes("api.openai.com")) openAiCalled = true;
+    throw new Error("Demo viewer access must stop before provider invocation");
+  };
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://jb-collections.pages.dev",
+        Authorization: "Bearer test-demo-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola" })
+    });
+    const result = await callJbAi({
+      request,
+      env: { OPENAI_API_KEY: "test-only-key" },
+      mockNeonContext: {
+        is_admin: false,
+        admin_id: null,
+        role: "demo_viewer",
+        is_owner: false,
+        is_demo_viewer: true,
+        username: "qa-viewer",
+        permissions: { "catalog.view_all": true }
+      }
+    });
+    assert.equal(result.status, 403);
+    assert.equal((await result.json()).error, "admin_only");
+    assert.equal(openAiCalled, false);
   } finally {
     globalThis.fetch = previousFetch;
   }
