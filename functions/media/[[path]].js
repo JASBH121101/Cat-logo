@@ -73,8 +73,14 @@ export async function onRequest(context) {
       }
     }
 
-    // Keep Supabase as a read-only fallback until all 568 source objects
-    // have been copied and checksum-verified in the isolated R2 bucket.
+    // Fiverr demo must never call Supabase Storage on an R2/cache miss.
+    // Production and other configured environments retain their existing fallback.
+    const isFiverrDemo = new URL(request.url).hostname.toLowerCase() === "fiverr-demo.jb-collections.pages.dev";
+    if (!response && isFiverrDemo) {
+      return errorResponse(404, "Image unavailable in isolated Fiverr demo storage.");
+    }
+
+    // Keep the existing read-only Supabase fallback for non-demo environments.
     if (!response) {
       const encodedPath = path.split("/").map(encodeURIComponent).join("/");
       const upstream = await fetch(

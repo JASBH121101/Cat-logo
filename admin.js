@@ -3,7 +3,7 @@ import { initProviderTools } from "./admin-provider.js?v=20261031-provider-revie
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
 import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
 import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-jarvis-timing-breakdown1";
-import { initStorageMigration } from "./admin-storage-migration.js?v=20261109-supabase-r2-migration1";
+import { initStorageMigration } from "./admin-storage-migration.js?v=20261112-fiverr-cache-rescue1";
 
 /* =========================================================
    JB MANAGER · ADMINISTRACIÓN

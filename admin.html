@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
 
   <script src="config.js?v=20261112-fiverr-data-api-cache1"></script>
-  <script type="module" src="admin.js?v=20261112-preview-media-rebase1"></script>
+  <script type="module" src="admin.js?v=20261112-fiverr-cache-rescue1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -269,7 +269,7 @@
       <div id="admin-section-storage-migration" class="admin-nav-panel hidden" data-admin-panel="storage-migration">
         <section class="dashboard-section-card" aria-labelledby="storage-migration-title">
           <p class="eyebrow">INFRAESTRUCTURA · ALMACENAMIENTO</p>
-          <h2 id="storage-migration-title">Migración de imágenes a Cloudflare R2</h2>
+          <h2 id="storage-migration-title">Migración directa desde Supabase (deshabilitada en Fiverr demo)</h2>
           <p class="section-subtitle">Copia las imágenes de Supabase Storage al bucket privado de R2 por lotes pequeños y verifica cada archivo guardado.</p>
 
           <div class="admin-alert" role="note">
@@ -285,6 +285,28 @@
           <progress id="storage-migration-progress" max="1" value="0" aria-label="Progreso de migración"></progress>
           <p id="storage-migration-summary" class="section-subtitle">Primero verificá la conexión y el inventario de origen.</p>
           <div id="storage-migration-log" class="admin-alert" aria-live="polite" aria-label="Registro de migración"></div>
+
+          <section class="dashboard-section-card" aria-labelledby="cache-rescue-title">
+            <p class="eyebrow">RECUPERACIÓN · CACHÉ CLOUDFLARE</p>
+            <h3 id="cache-rescue-title">Rescatar fotografías para Fiverr demo</h3>
+            <p class="section-subtitle">Busca copias que ya estén guardadas en la caché local de Cloudflare y las copia al bucket privado exclusivo de esta demo.</p>
+            <div class="admin-alert" role="note">
+              <strong>Sin acceso a Supabase Storage:</strong> esta ruta no vuelve a descargar imágenes desde Supabase. Solo recupera respuestas que ya existan en caché; valida cada imagen y verifica SHA-256 después de guardarla en R2. Los faltantes quedan identificados para volver a subirlos desde el proveedor.
+            </div>
+            <div class="form-actions">
+              <button id="cache-rescue-probe" class="button button-secondary" type="button">Probar 5 imágenes en caché</button>
+              <button id="cache-rescue-start" class="button button-primary" type="button" disabled>Recuperar imágenes referenciadas</button>
+            </div>
+            <p id="cache-rescue-status" class="form-status" role="status" aria-live="polite">La prueba inicial no escribe archivos. Después podés ejecutar el rescate completo.</p>
+            <progress id="cache-rescue-progress" max="1" value="0" aria-label="Progreso de recuperación desde caché"></progress>
+            <p id="cache-rescue-summary" class="section-subtitle">Todavía no se revisaron las imágenes.</p>
+            <div id="cache-rescue-log" class="admin-alert" aria-live="polite" aria-label="Registro de recuperación desde caché"></div>
+            <div class="form-actions">
+              <button id="cache-rescue-unpublish" class="button button-secondary" type="button" hidden disabled>Pasar productos afectados a No publicados</button>
+              <button id="cache-rescue-report" class="button button-outline" type="button" hidden>Descargar informe de imágenes pendientes</button>
+            </div>
+          </section>
+
         </section>
       </div>
 
