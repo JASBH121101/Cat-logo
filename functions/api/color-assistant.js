@@ -2,7 +2,7 @@ import { requireCatalogAdmin } from "../_shared/neon-admin.js";
 
 const TEXT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
-const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://jasbh121101.github.io", "https://localhost", "http://localhost"]);
+const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://fiverr-demo.jb-collections.pages.dev", "https://jasbh121101.github.io", "https://localhost", "http://localhost"]);
 const MAX_IMAGE_DATA_URL = 5600000;
 const rateBuckets = new Map();
 
