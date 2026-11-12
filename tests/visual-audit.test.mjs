@@ -735,35 +735,20 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               });
               continue;
             }
-            if (gridId === "limited-edition-grid") {
-              const verticalCard = layout.cardDisplay === "flex" &&
-                layout.cardWidth <= 320 &&
-                Math.abs((layout.imageWidth || 0) - (layout.imageHeight || 0)) <= 24 &&
-                layout.contentTop >= layout.imageTop + layout.imageHeight - 8 &&
-                layout.contentWidth >= layout.cardWidth * 0.8;
-              if (!verticalCard) {
-                addFinding({
-                  severity: "high", page: site.name, theme, viewport: viewport.name,
-                  element: "#" + gridId,
-                  message: "La tarjeta de Ediciones limitadas debe conservar el formato vertical compacto",
-                  evidence: `display=${layout.cardDisplay}; ancho=${layout.cardWidth}px; imagen=${layout.imageWidth}×${layout.imageHeight}px; contenido inicia en ${layout.contentTop}.`,
-                  recommendation: "Mantener tarjetas de hasta 300px, fotografía cuadrada completa y detalles debajo de la imagen.",
-                  blocking: true,
-                });
-              }
-              continue;
-            }
-            const horizontalCard = layout.cardDisplay === "grid" && layout.cardColumnCount === 2 &&
-              layout.imageLeft < layout.contentLeft &&
-              layout.imageRight <= layout.contentLeft + 2 &&
-              Math.abs(layout.imageTop - layout.contentTop) <= 30;
-            if (!horizontalCard) {
+            const verticalCard = layout.cardDisplay === "flex" &&
+              layout.cardWidth <= 360 &&
+              (layout.imageWidth || 0) > 0 &&
+              (layout.imageHeight || 0) > 0 &&
+              Math.abs((layout.imageWidth || 0) - (layout.imageHeight || 0)) <= 24 &&
+              layout.contentTop >= layout.imageTop + layout.imageHeight - 8 &&
+              layout.contentWidth >= layout.cardWidth * 0.8;
+            if (!verticalCard) {
               addFinding({
                 severity: "high", page: site.name, theme, viewport: viewport.name,
                 element: "#" + gridId,
-                message: "La tarjeta de la vitrina no comparte el diseño horizontal de Exclusivos",
-                evidence: `display=${layout.cardDisplay}; columnas=${layout.cardGridColumns}; imagen [${layout.imageLeft}, ${layout.imageRight}] y datos empiezan en ${layout.contentLeft}.`,
-                recommendation: "Mantener la estructura horizontal de fotografía a la izquierda e información a la derecha para las vitrinas principales.",
+                message: "La tarjeta de la vitrina no sigue el formato vertical común",
+                evidence: `display=${layout.cardDisplay}; ancho=${layout.cardWidth}px; imagen=${layout.imageWidth}×${layout.imageHeight}px; contenido inicia en ${layout.contentTop}.`,
+                recommendation: "Mantener en todas las vitrinas la misma estructura: fotografía cuadrada arriba, información debajo y ancho adaptable de 270 a 350px.",
                 blocking: true,
               });
             }
