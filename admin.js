@@ -3095,8 +3095,11 @@ async function showDashboard(user) {
     }
   }
 
-  jbManagerAI?.setAuthenticatedUser(currentUser);
-  if (!isDemoViewer) {
+  if (isDemoViewer) {
+    // Paid AI is unavailable in the Fiverr guest experience.
+    jbManagerAI?.clearSession();
+  } else {
+    jbManagerAI?.setAuthenticatedUser(currentUser);
     void syncBiometricControls();
   }
   refreshCatalogAdminActivityMarker();
