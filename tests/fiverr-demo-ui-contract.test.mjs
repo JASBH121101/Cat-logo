@@ -42,7 +42,7 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
   assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-demo-dual-theme1/);
-  assert.match(html, /admin\\.js\\?v=20261112-demo-chat-cleanup1/);
+  assert.ok(html.includes("admin.js?v=20261112-demo-chat-cleanup1"));
 });
 
 
