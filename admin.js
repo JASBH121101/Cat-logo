@@ -5647,8 +5647,9 @@ function hasMeaningfulEditorContent() {
       type === "hidden" ||
       ["button", "submit", "reset"].includes(type) ||
       field.id === "product-catalog-type" ||
-      field.id === "product-type" ||
-      (activeCatalogType !== "perfumery" && Boolean(field.closest("#product-perfume-fields"))) ||
+      (activeCatalogType !== "perfumery" && Boolean(field.closest(
+        "#product-perfume-fields, #product-price-usd-field, #product-price-nio-field"
+      ))) ||
       (activeCatalogType === "perfumery" && Boolean(field.closest(
         "#product-category-field, #product-subcategory-field, #product-model-field, #product-warranty-field, #product-specs-field"
       )))
