@@ -92,3 +92,74 @@ test("Neon Auth proxy is restricted to the demo and isolated migration Preview h
   const migrationUnsupportedMethod = new Request("https://migration-neon-r2.jb-collections.pages.dev/api/neon-auth/get-session", { method: "PATCH" });
   assert.equal((await neonAuthProxy({ request: migrationUnsupportedMethod, env: {} })).status, 405);
 });
+
+
+test("Neon Auth proxy resolves owner and guest usernames to their reserved Gmail aliases", async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded = [];
+  globalThis.fetch = async (url, options = {}) => {
+    forwarded.push({ url: String(url), payload: JSON.parse(new TextDecoder().decode(options.body)) });
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+
+  try {
+    const cases = [
+      ["JaredBH", "owner@gmail.com"],
+      ["ventas_01", "owner+ventas_01@gmail.com"]
+    ];
+    for (const [username, expectedEmail] of cases) {
+      const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/neon-auth/sign-in/email", {
+        method: "POST",
+        headers: {
+          Origin: "https://fiverr-demo.jb-collections.pages.dev",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: username, password: "not-a-real-password" })
+      });
+      const response = await neonAuthProxy({
+        request,
+        env: {
+          DEMO_OWNER_AUTH_EMAIL: "owner@gmail.com",
+          NEON_AUTH_BASE_URL: "https://auth.example.neon.tech/fiverr_auth/auth"
+        }
+      });
+      assert.equal(response.status, 200);
+      assert.equal(forwarded.at(-1).payload.email, expectedEmail);
+      assert.match(forwarded.at(-1).url, /\/fiverr_auth\/auth\/sign-in\/email$/);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Neon Auth proxy fails closed when username-to-email mapping is not configured", async () => {
+  const originalFetch = globalThis.fetch;
+  let upstreamCalled = false;
+  globalThis.fetch = async () => {
+    upstreamCalled = true;
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/neon-auth/sign-in/email", {
+      method: "POST",
+      headers: {
+        Origin: "https://fiverr-demo.jb-collections.pages.dev",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email: "JaredBH", password: "not-a-real-password" })
+    });
+    const response = await neonAuthProxy({
+      request,
+      env: { NEON_AUTH_BASE_URL: "https://auth.example.neon.tech/fiverr_auth/auth" }
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, "demo_username_login_not_configured");
+    assert.equal(upstreamCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
