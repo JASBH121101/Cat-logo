@@ -57,7 +57,8 @@ export async function onRequest({ request, env }) {
   } catch {
     return json(503, { error: "La URL de Neon Data API no es válida." });
   }
-  const owner = await getOwnerContext(token, parsedDataApiUrl.toString().replace(/\\/$/, "")).catch(() => null);
+  const dataApiEndpoint = parsedDataApiUrl.toString();
+  const owner = await getOwnerContext(token, dataApiEndpoint.endsWith("/") ? dataApiEndpoint.slice(0, -1) : dataApiEndpoint).catch(() => null);
   if (owner?.is_owner !== true || owner?.role !== "admin") {
     return json(403, { error: "Solo el propietario puede crear usuarios invitados." });
   }
