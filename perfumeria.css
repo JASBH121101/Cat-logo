@@ -3464,3 +3464,44 @@ body.perfume-page:not(.perfume-detail-active) .site-header.perfume-header::befor
     scroll-padding-top: 112px;
   }
 }
+
+
+/* JB PARFUMS · full-bleed concierge section aligned with the full-width site header.
+   The section lives inside the constrained <main>; break out to the page canvas
+   while keeping its content padded and centered. */
+body.perfume-page main > .perfume-contact {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  box-sizing: border-box;
+  padding-inline: clamp(22px, 5vw, 88px);
+}
+
+body.perfume-page main > .perfume-contact h2 {
+  width: min(100%, 1320px);
+  max-width: 1320px;
+}
+
+body.perfume-page main > .perfume-contact > p:not(.perfume-kicker) {
+  width: min(100%, 760px);
+  max-width: 760px;
+}
+
+@media (max-width: 640px) {
+  body.perfume-page main > .perfume-contact {
+    padding-inline: 18px;
+  }
+
+  body.perfume-page main > .perfume-contact h2 {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body.perfume-page main > .perfume-contact > p:not(.perfume-kicker) {
+    width: 100%;
+    max-width: 100%;
+  }
+}
