@@ -1503,3 +1503,20 @@ html[data-theme="dark"] body.admin-body .admin-access-notification-resolve:hover
     animation:none !important;
   }
 }
+
+
+/* Dialogs must leave the screen and modal layer when closed, including mobile
+   webviews where native dialog dismissal can be inconsistent. */
+html body.admin-body dialog.admin-product-preview-dialog:not([open]) {
+  display: none !important;
+}
+html body.admin-body dialog.admin-product-preview-dialog[open] {
+  visibility: visible !important;
+}
+html body.admin-body dialog.admin-product-preview-dialog .admin-product-preview-close {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  flex: 0 0 auto !important;
+  pointer-events: auto !important;
+}
