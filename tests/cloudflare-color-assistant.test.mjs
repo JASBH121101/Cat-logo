@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { onRequest as handleColorAssistantRequest } from "../functions/api/color-assistant.js";
 
 const ORIGIN = "https://jb-collections.pages.dev";
+const DEMO_ORIGIN = "https://fiverr-demo.jb-collections.pages.dev";
 const ADMIN_ID = "e72a1601-1122-4321-9abc-123456789abc";
 const TOKEN = "Bearer test-admin-access-token";
 
@@ -55,6 +56,21 @@ test("rejects non-POST methods", async () => {
   assert.equal(response.status, 405);
 });
 
+test("answers preflight for the exact Fiverr demo origin", async () => {
+  const response = await onRequest({ request: makeRequest({}, { method: "OPTIONS", origin: DEMO_ORIGIN }), env: {} });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), DEMO_ORIGIN);
+  assert.match(response.headers.get("Access-Control-Allow-Headers") || "", /Authorization/i);
+});
+
+test("does not allow arbitrary Cloudflare Pages preview origins", async () => {
+  const response = await onRequest({
+    request: makeRequest({ query: "blue" }, { origin: "https://untrusted-preview.jb-collections.pages.dev", authorization: TOKEN }),
+    env: { AI: { run: async () => ({}) } }
+  });
+  assert.equal(response.status, 403);
+});
+
 test("answers preflight for the production origin", async () => {
   const response = await onRequest({ request: makeRequest({}, { method: "OPTIONS" }), env: {} });
   assert.equal(response.status, 204);
@@ -78,6 +94,29 @@ test("requires an authenticated administrator before calling AI", async () => {
   });
   assert.equal(response.status, 401);
   assert.equal(called, false);
+});
+
+test("denies read-only demo_viewer sessions even from the allowlisted Fiverr demo origin", async () => {
+  let aiCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async input => {
+    const url = String(input);
+    if (url.endsWith("/rpc/catalog_admin_context")) {
+      return Response.json([{ is_admin: false, role: "demo_viewer", admin_id: ADMIN_ID }]);
+    }
+    throw new Error("Unexpected fetch URL for denied demo viewer: " + url);
+  };
+  try {
+    const response = await onRequest({
+      request: makeRequest({ query: "blue" }, { origin: DEMO_ORIGIN, authorization: TOKEN }),
+      env: { AI: { run: async () => { aiCalled = true; return {}; } } }
+    });
+    assert.equal(response.status, 403);
+    assert.equal(aiCalled, false);
+    assert.equal((await response.json()).error, "admin_only");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("rejects an unsupported image data URL", async () => {
