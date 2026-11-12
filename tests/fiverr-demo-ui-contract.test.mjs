@@ -8,6 +8,7 @@ const admin = read("admin.js");
 const polish = read("fiverr-demo-ui-polish.css");
 const demoViewer = read("demo-viewer.css");
 const ai = read("admin-ai.js");
+const ui = read("ui.js");
 
 test("product editor text fields contain no sample placeholders", () => {
   const productForm = html.split('<form id="product-form"')[1]?.split("</form>")[0] || "";
@@ -63,13 +64,19 @@ test("demo banners and module notices have explicit high-contrast light and dark
   assert.match(demoViewer, /color: #e4edfb/);
 });
 
-test("demo viewers may chat with the AI but cannot run scanner or product-prefill actions", () => {
-  assert.match(admin, /jbManagerAI\?\.setAuthenticatedUser\(currentUser\)/);
-  assert.match(ai, /getCurrentUser\(\)\?\.role === "demo_viewer"/);
-  assert.match(ai, /catalogContext\(availableProducts, message\)/);
-  assert.match(ai, /new URL\("\/api\/jb-manager-ai", window\.location\.origin\)/);
-  assert.match(demoViewer, /\.jb-ai-prefill-action/);
-  assert.match(admin, /ChatGPT responde preguntas sobre el catálogo publicado/);
-  assert.match(demoViewer, /\.jb-gp-scanner/);
-  assert.doesNotMatch(demoViewer, /pointer-events:none !important;[\s\S]{0,80}jb-manager-ai-chat/);
+test("paid AI entry points are hidden from Fiverr guests while Android voice source remains available", () => {
+  assert.match(demoViewer, /body\.demo-viewer-mode \.admin-nav-button\[data-admin-section="ai"\]/);
+  assert.match(demoViewer, /body\.demo-viewer-mode #admin-section-ai/);
+  assert.match(demoViewer, /body\.demo-viewer-mode #jb-ai-floating-launcher/);
+  assert.match(admin, /initJbManagerAI/);
+  assert.match(ai, /nativeVoicePlugin\(\)/);
+});
+
+test("guest mode explicitly permits the user-facing light/dark theme toggle", () => {
+  assert.match(admin, /\[data-theme-toggle\]/);
+  assert.match(admin, /Vista de invitado: podés navegar y cambiar el tema/);
+  assert.match(demoViewer, /body\.demo-viewer-mode \.site-header \.theme-toggle/);
+  assert.match(demoViewer, /pointer-events: auto !important/);
+  assert.match(ui, /button\.addEventListener\("click", \(\) => \{/);
+  assert.match(ui, /applyTheme\(next\);\s*saveTheme\(next\);/);
 });
