@@ -1627,6 +1627,33 @@ function renderLegacyColorOptions(product, selectedColorName = "") {
   `;
 }
 
+function closeProductImageLightbox(dialog) {
+  if (!dialog) return;
+  const wasOpen = dialog.open || dialog.hasAttribute("open");
+  try {
+    if (dialog.open && typeof dialog.close === "function") dialog.close();
+  } catch (error) {
+    console.warn("El navegador no pudo cerrar el visor de fotografías de forma nativa.", error);
+  }
+  // Older embedded/mobile browsers can leave a dialog open after close().
+  if (dialog.open || dialog.hasAttribute("open")) dialog.removeAttribute("open");
+  if (wasOpen && !dialog.open && !dialog.hasAttribute("open")) {
+    const returnFocus = dialog._returnFocus;
+    dialog._returnFocus = null;
+    if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+      try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+    }
+  }
+}
+
+function handleProductImageLightboxEscape(event, dialog) {
+  if (event.key !== "Escape" || !dialog?.open) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  closeProductImageLightbox(dialog);
+}
+
 function openProductImageLightbox(src, alt, galleryItems = []) {
   if (!src) return;
 
@@ -1673,27 +1700,31 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
 
     previous.addEventListener("click", () => movePhoto(-1));
     next.addEventListener("click", () => movePhoto(1));
-    // Escape fires the native dialog cancel event. Close explicitly so the
-    // viewer is dismissed consistently across desktop and mobile browsers.
+    // Support browsers that dispatch the native cancel event and mobile
+    // webviews that only report Escape as a keydown event.
     lightbox.addEventListener("cancel", event => {
       event.preventDefault();
-      if (lightbox.open) lightbox.close();
+      closeProductImageLightbox(lightbox);
     });
     lightbox.addEventListener("close", () => {
       const returnFocus = lightbox._returnFocus;
-      if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === "function") {
+      lightbox._returnFocus = null;
+      if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
         try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
       }
     });
+    document.addEventListener("keydown", event => {
+      handleProductImageLightboxEscape(event, lightbox);
+    }, true);
 
-    lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", () => {
-      if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
-      else lightbox.removeAttribute("open");
+    lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeProductImageLightbox(lightbox);
     });
     lightbox.addEventListener("click", event => {
       if (event.target !== lightbox) return;
-      if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
-      else lightbox.removeAttribute("open");
+      closeProductImageLightbox(lightbox);
     });
     lightbox.addEventListener("keydown", event => {
       if (event.key === "ArrowLeft" && !previous.hidden) {
