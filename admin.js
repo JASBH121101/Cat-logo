@@ -164,8 +164,10 @@ function resolveCatalogLoginEmail(identifier) {
   if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
     throw new Error("El usuario debe tener entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo.");
   }
-  // The auth proxy resolves usernames to private Neon Auth email aliases.
-  return username;
+  // Better Auth validates email syntax in the browser SDK before sending the
+  // request. Use a non-routable internal identifier; the Pages auth proxy maps
+  // it to the owner's private Gmail alias before it reaches Neon Auth.
+  return username + "@jb-login.invalid";
 }
 
 /* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
