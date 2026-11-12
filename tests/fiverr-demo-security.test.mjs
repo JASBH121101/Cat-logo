@@ -150,3 +150,14 @@ test("Neon Auth proxy fails closed when username-to-email mapping is not configu
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("Fiverr demo R2 uploads are server-authorized for the owner, not granted by the demo hostname", () => {
+  const authorization = read("functions/_shared/neon-admin.js");
+  const ownerGuard = read("db/migrations/0012_fiverr_demo_owner_guard_and_guest_lifecycle.sql");
+  const uploadHandler = read("functions/api/storage/upload.js");
+  assert.match(uploadHandler, /requireCatalogAdmin\(context\.request, context\.env\)/);
+  assert.match(authorization, /value\?\.is_admin !== true/);
+  assert.match(ownerGuard, /CREATE OR REPLACE FUNCTION public\.is_catalog_admin_user\(\)[\s\S]*?SELECT public\.is_catalog_owner_user\(\)/);
+  assert.match(ownerGuard, /'is_admin', public\.is_catalog_owner_user\(\)/);
+});
