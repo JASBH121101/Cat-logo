@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="admin-desktop-typography.css?v=20261026-desktop-fonts1">
   <link rel="stylesheet" href="admin-duplicate-detector.css?v=20261028-smart-duplicate-detector1">
   <link rel="stylesheet" href="admin-private-chat.css?v=20261029-chat-reply-theme3">
-  <link rel="stylesheet" href="admin-accessibility.css?v=20261112-fiverr-a11y-fixes1">
+  <link rel="stylesheet" href="admin-accessibility.css?v=20261112-login-help-bell1">
   <link rel="stylesheet" href="demo-viewer.css?v=20261112-guest-explore-readonly1">
   <link rel="stylesheet" href="admin-ai.css?v=20261031-chat-ui1">
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="admin-button-audit.css?v=20261112-button-system5">
 
   <script src="config.js?v=20261112-fiverr-data-api-cache1"></script>
-  <script type="module" src="admin.js?v=20261112-browser-credential-autofill1"></script>
+  <script type="module" src="admin.js?v=20261112-admin-access-help-bell1"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -110,53 +110,46 @@
       </form>
 
       <button
-        id="admin-password-reset-toggle"
-        class="admin-password-reset-toggle"
+        id="admin-login-help-toggle"
+        class="admin-login-help-toggle"
         type="button"
-        aria-controls="admin-password-reset-form"
+        aria-controls="admin-login-help-form"
         aria-expanded="false">
-        Crear o recuperar contraseña por correo
+        ¿No podés ingresar? Notificar al administrador
       </button>
 
-      <form id="admin-password-reset-form" class="admin-form admin-password-reset-form" hidden>
-        <div>
-          <h2>Configurar contraseña de Neon</h2>
-          <p>Usá esta opción solamente si necesitás crear o recuperar una contraseña de una cuenta con correo real. Si ya tenés contraseña, cerrá este apartado y completá usuario y contraseña arriba. Las cuentas de invitado sin correo las restablece el propietario. No existe registro público.</p>
+      <form id="admin-login-help-form" class="admin-form admin-login-help-form" hidden>
+        <div class="admin-login-help-intro">
+          <h2>Solicitar ayuda de acceso</h2>
+          <p>El administrador recibirá el usuario y el tipo de inconveniente. Si hace falta, restablecerá tu contraseña y te entregará una nueva por un canal privado.</p>
+          <p class="admin-login-help-security">Nunca escribás ni envíes tu contraseña en este formulario.</p>
         </div>
 
         <label>
-          Correo autorizado o usuario invitado
-          <input id="admin-password-reset-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required>
+          Usuario o correo que intentaste usar
+          <input id="admin-login-help-username" name="login-username" type="text" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false">
         </label>
 
-        <button id="admin-password-reset-request" class="button button-outline" type="button">
-          Enviar código al correo
-        </button>
+        <label>
+          ¿Qué problema tenés?
+          <select id="admin-login-help-issue" name="issue-type" required>
+            <option value="password">Olvidé mi contraseña / necesito una nueva</option>
+            <option value="username">El usuario no se reconoce / no lo recuerdo</option>
+            <option value="credentials">No funcionan ni el usuario ni la contraseña</option>
+            <option value="other">Otro problema para iniciar sesión</option>
+          </select>
+        </label>
 
-        <div id="admin-password-reset-code-stage" class="admin-password-reset-code-stage" hidden>
-          <label>
-            Código de seis dígitos
-            <input id="admin-password-reset-otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required>
-          </label>
+        <label class="admin-login-help-honeypot" aria-hidden="true">
+          Website
+          <input id="admin-login-help-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </label>
 
-          <label>
-            Nueva contraseña
-            <input id="admin-password-reset-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
-            <small>Usá al menos 8 caracteres. No reutilicés la contraseña de otro servicio.</small>
-          </label>
-
-          <label>
-            Confirmar contraseña
-            <input id="admin-password-reset-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
-          </label>
-
-          <button id="admin-password-reset-complete" class="button button-primary" type="submit">
-            Guardar contraseña
-          </button>
+        <div class="admin-login-help-actions">
+          <button id="admin-login-help-submit" class="button button-primary" type="submit">Enviar aviso al administrador</button>
+          <button id="admin-login-help-cancel" class="button button-outline" type="button">Cancelar</button>
         </div>
-
-        <p id="admin-password-reset-status" class="form-status" role="status" aria-live="polite"></p>
-        <button id="admin-password-reset-cancel" class="admin-password-reset-cancel" type="button">Cancelar</button>
+        <p id="admin-login-help-status" class="form-status" role="status" aria-live="polite"></p>
       </form>
 
       <p class="admin-help">
@@ -176,7 +169,21 @@
           <h1 id="admin-greeting">¡Bienvenido de nuevo!</h1>
           <p id="admin-context-description" class="section-subtitle">Gestioná JB TECH y JB Parfums desde un solo panel, con filtros por catálogo y categoría.</p>
         </div>
-
+        <div class="admin-access-notifications" id="admin-access-notifications" hidden>
+          <button id="admin-access-notification-toggle" class="admin-access-notification-toggle" type="button" aria-label="Abrir avisos de acceso" aria-controls="admin-access-notification-panel" aria-expanded="false" title="Avisos de acceso">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+            <span>Notificaciones</span>
+            <span id="admin-access-notification-count" class="admin-access-notification-count" hidden>0</span>
+          </button>
+          <section id="admin-access-notification-panel" class="admin-access-notification-panel" aria-label="Avisos de inicio de sesión" hidden>
+            <header class="admin-access-notification-heading">
+              <div><strong>Avisos de acceso</strong><small>Solicitudes privadas de ayuda</small></div>
+              <button id="admin-access-notification-refresh" type="button" class="admin-access-notification-refresh" aria-label="Actualizar avisos" title="Actualizar">↻</button>
+            </header>
+            <div id="admin-access-notification-list" class="admin-access-notification-list" aria-live="polite"></div>
+            <p id="admin-access-notification-status" class="admin-access-notification-status" role="status"></p>
+          </section>
+        </div>
       </div>
 
       <div id="admin-status" class="admin-alert" role="status"></div>
