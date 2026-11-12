@@ -100,3 +100,47 @@ export function createCatalogClient({ admin = false } = {}) {
   client.__jbNeonSdkVersion = SDK_VERSION;
   return client;
 }
+
+/**
+ * Request a one-time password-reset code from Neon Auth.
+ * Used by the owner when activating or resetting an invited account.
+ */
+export async function requestCatalogPasswordReset(email) {
+  const address = String(email || "").trim().toLowerCase();
+  if (!address) throw new Error("Ingresá el correo autorizado.");
+  const client = createCatalogClient({ admin: true });
+  const auth = client?.auth?.getBetterAuthInstance?.();
+  if (!auth?.emailOtp?.requestPasswordReset) {
+    throw new Error("El restablecimiento por código no está disponible en este cliente de Neon.");
+  }
+  const result = await auth.emailOtp.requestPasswordReset({ email: address });
+  if (result?.error) throw result.error;
+  return true;
+}
+
+/**
+ * Complete an owner-managed OTP password setup/reset for an invited account.
+ * This is not exposed from the public login form.
+ */
+export async function completeCatalogPasswordReset(email, otp, password) {
+  const address = String(email || "").trim().toLowerCase();
+  const code = String(otp || "").trim();
+  const newPassword = String(password || "");
+  if (!address || !/^\d{6}$/.test(code)) throw new Error("El código de correo debe tener seis dígitos.");
+  if (newPassword.length < 8 || newPassword.length > 128) {
+    throw new Error("La contraseña debe tener entre 8 y 128 caracteres.");
+  }
+  const client = createCatalogClient({ admin: true });
+  const auth = client?.auth?.getBetterAuthInstance?.();
+  if (!auth?.emailOtp?.resetPassword) {
+    throw new Error("El cambio de contraseña por código no está disponible en este cliente de Neon.");
+  }
+  const result = await auth.emailOtp.resetPassword({
+    email: address,
+    otp: code,
+    password: newPassword
+  });
+  if (result?.error) throw result.error;
+  if (result?.data?.success === false) throw new Error("El código no pudo validarse o ya venció.");
+  return true;
+}
