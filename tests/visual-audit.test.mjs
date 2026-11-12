@@ -357,6 +357,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         });
         const gotoResponse = await page.goto(origin + site.path, { waitUntil: "domcontentloaded", timeout: 15000 });
         assert.ok(gotoResponse?.ok(), `${site.path} must serve successfully in the local browser fixture`);
+        // Let admin.js finish its unauthenticated startup before installing the synthetic shell.
+        // This fixture changes only the browser DOM; it never creates a real session or calls a write API.
+        if (site.name === "admin") await page.waitForTimeout(900);
         await page.evaluate(themeValue => {
           document.documentElement.setAttribute("data-theme", themeValue);
           document.body.dataset.visualAuditFixture = "true";
