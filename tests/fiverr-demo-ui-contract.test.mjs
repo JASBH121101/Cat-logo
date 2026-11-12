@@ -11,6 +11,7 @@ const ai = read("admin-ai.js");
 const ui = read("ui.js");
 const a11y = read("admin-accessibility.css");
 const loginHelpMigration = read("db/migrations/0016_admin_login_help_requests.sql");
+const ownerLinkMigration = read("db/migrations/0017_restore_fiverr_demo_owner_auth_link.sql");
 
 test("product editor text fields contain no sample placeholders", () => {
   const productForm = html.split('<form id="product-form"')[1]?.split("</form>")[0] || "";
@@ -215,4 +216,16 @@ test("the Fiverr demo owner is not blocked by the demo hostname; only demo_viewe
   assert.doesNotMatch(admin, /IS_FIVERR_DEMO_HOST\s*\|\|\s*IS_READ_ONLY_PREVIEW/);
   assert.match(admin, /if \(supabase && IS_READ_ONLY_PREVIEW\)/);
   assert.match(admin, /if \(isReadOnlySession\(\)\)/);
+});
+
+
+test("Fiverr demo owner mapping is repaired only to the verified credential identity", () => {
+  assert.ok(ownerLinkMigration.includes("8889c812-8c63-4ce2-b9ee-fde676b85031"));
+  assert.ok(ownerLinkMigration.includes('AND "emailVerified" IS TRUE'));
+  assert.ok(ownerLinkMigration.includes('AND "providerId" = \'credential\''));
+  assert.ok(ownerLinkMigration.includes("WHERE username = 'JaredBH'"));
+  assert.ok(ownerLinkMigration.includes("AND role = 'admin'"));
+  assert.ok(ownerLinkMigration.includes("AND is_owner IS TRUE"));
+  assert.ok(ownerLinkMigration.includes("affected_rows <> 1"));
+  assert.ok(ownerLinkMigration.includes("'0017', 'restore_fiverr_demo_owner_auth_link'"));
 });
