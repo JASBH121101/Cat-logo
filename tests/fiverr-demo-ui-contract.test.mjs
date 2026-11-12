@@ -83,7 +83,7 @@ test("owner access bell is hidden by default and only owner sessions can read or
 });
 
 test("access-help and notification surfaces have explicit light/dark contrast and preserve hidden state", () => {
-  assert.match(html, /admin-accessibility\.css\?v=20261112-login-help-bell1/);
+  assert.match(html, /admin-accessibility\.css\?v=20261112-product-preview-close1/);
   assert.match(a11y, /#admin-login-help-form\[hidden\][\s\S]*display:none !important/);
   assert.match(a11y, /#admin-access-notification-panel\[hidden\][\s\S]*display:none !important/);
   assert.match(a11y, /html\[data-theme="light"\]/);
