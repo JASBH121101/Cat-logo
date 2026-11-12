@@ -152,6 +152,23 @@ test("Neon Auth proxy fails closed when username-to-email mapping is not configu
 });
 
 
+test("access-help requests store no passwords and expose inbox actions only to the catalog owner", () => {
+  const migration = read("db/migrations/0016_admin_login_help_requests.sql");
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS private\.admin_login_help_requests/);
+  assert.match(migration, /reported_username text NOT NULL/);
+  assert.match(migration, /issue_type text NOT NULL CHECK \(issue_type IN \('username','password','credentials','other'\)\)/);
+  assert.doesNotMatch(migration, /password\s+text|password_hash|raw_password/i);
+  assert.match(migration, /REVOKE ALL ON TABLE private\.admin_login_help_requests FROM PUBLIC, anonymous, authenticated/);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.submit_admin_login_help_request\(text, text, text\) TO anonymous, authenticated/);
+  assert.match(migration, /IF NOT public\.is_catalog_owner_user\(\)/);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.list_admin_login_help_requests\(boolean\) FROM PUBLIC, anonymous/);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.resolve_admin_login_help_request\(uuid\) FROM PUBLIC, anonymous/);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.list_admin_login_help_requests\(boolean\) TO authenticated/);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.resolve_admin_login_help_request\(uuid\) TO authenticated/);
+  assert.match(migration, /rate_limited/);
+  assert.match(migration, /NOTIFY pgrst, 'reload schema'/);
+});
+
 test("Fiverr demo R2 uploads are server-authorized for the owner, not granted by the demo hostname", () => {
   const authorization = read("functions/_shared/neon-admin.js");
   const ownerGuard = read("db/migrations/0012_fiverr_demo_owner_guard_and_guest_lifecycle.sql");
