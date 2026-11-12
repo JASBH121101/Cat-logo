@@ -975,6 +975,23 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               const addVariant = page.locator("#add-variant-button");
               assert.equal(await addVariant.isVisible(), true, "variant action must be visible in the editor");
 
+              const mobileGeometry = await page.evaluate(() => {
+                const nav = document.querySelector("#product-form .product-form-section-nav");
+                const header = document.querySelector(".admin-header");
+                const add = document.querySelector("#add-variant-button");
+                const rect = element => {
+                  const r = element.getBoundingClientRect();
+                  const style = getComputedStyle(element);
+                  return { x:r.x, y:r.y, width:r.width, height:r.height, whiteSpace:style.whiteSpace };
+                };
+                return { nav:rect(nav), header:rect(header), add:rect(add), viewportWidth:innerWidth };
+              });
+              assert.ok(mobileGeometry.nav.y >= mobileGeometry.header.y + mobileGeometry.header.height - 2,
+                "sticky step tabs must never be hidden behind the admin header");
+              assert.ok(mobileGeometry.add.width <= Math.min(280, mobileGeometry.viewportWidth * .8),
+                "add-variant action must stay compact instead of spanning the full mobile form");
+              assert.ok(mobileGeometry.add.height <= 52, "add-variant action must not become an oversized banner");
+
               const configurations = [
                 { ram: "8", storage: "256", usd: "199", nio: "6999", color: "Graphite" },
                 { ram: "12", storage: "256", usd: "249", nio: "8749", color: "Titanium Blue" },
@@ -991,6 +1008,14 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   groupsBefore + index + 1, { timeout: 3000 });
                 const group = groups.nth(groupsBefore + index);
                 await group.locator("summary").click();
+
+                const remove = group.locator("[data-remove-group]");
+                const removeRect = await remove.evaluate(el => {
+                  const r = el.getBoundingClientRect();
+                  return { width:r.width, height:r.height, whiteSpace:getComputedStyle(el).whiteSpace };
+                });
+                assert.ok(removeRect.height <= 44, "remove-configuration control must stay compact");
+                assert.equal(removeRect.whiteSpace, "nowrap", "remove-configuration label must remain on one line");
                 for (const selector of ["[data-group-storage]", "[data-group-ram]", "[data-group-price-usd]", "[data-group-price-nio]"]) {
                   assert.equal(await group.locator(selector).count(), 1,
                     "each variant must expose its own RAM, storage and price fields: " + selector);
