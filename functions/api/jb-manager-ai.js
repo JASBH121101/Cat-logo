@@ -207,6 +207,10 @@ function responseSchemaForRequest(includeProductDraft) {
 }
 
 export async function onRequestOptions({ request }) {
+  const requestHost = new URL(request.url).hostname.toLowerCase();
+  if (requestHost === "fiverr-demo.jb-collections.pages.dev") {
+    return new Response(null, { status: 410, headers: { "Cache-Control": "no-store" } });
+  }
   const origin = request.headers.get("Origin") || "";
   if (!ALLOWED_ORIGINS.has(origin)) return new Response(null, { status: 403 });
   return new Response(null, {
@@ -223,6 +227,10 @@ export async function onRequestOptions({ request }) {
 
 export async function onRequestPost({ request, env }) {
   const requestStartedAt = Date.now();
+  const requestHost = new URL(request.url).hostname.toLowerCase();
+  if (requestHost === "fiverr-demo.jb-collections.pages.dev") {
+    return response(410, { ok: false, error: "assistant_disabled_in_demo" }, request.headers.get("Origin") || "");
+  }
   const origin = request.headers.get("Origin") || "";
   if (!ALLOWED_ORIGINS.has(origin)) return response(403, { ok: false, error: "origin_not_allowed" }, origin);
   if (rateLimited(request)) return response(429, { ok: false, error: "rate_limit_exceeded" }, origin);
