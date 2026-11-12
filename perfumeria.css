@@ -3387,3 +3387,80 @@ body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-
   body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-dialog-price small { font-size:13px !important; }
   body.perfume-page.perfume-detail-active #perfume-dialog-content .perfume-note-group li { font-size:13px !important; line-height:1.4 !important; }
 }
+
+
+/* JB PARFUMS · header sticky y portada editorial con mejor uso del viewport.
+   Mantiene la identidad dorada; el comportamiento de navegación coincide con JB TECH. */
+html {
+  scroll-padding-top: 92px;
+}
+
+body.perfume-page:not(.perfume-detail-active) .site-header.perfume-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1200 !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: none;
+  min-height: 76px;
+  height: auto;
+  margin: 0;
+  padding: 14px clamp(20px, 4vw, 64px);
+  box-sizing: border-box;
+  isolation: isolate;
+  border-bottom: 1px solid var(--perfume-border);
+  background: color-mix(in srgb, var(--perfume-paper) 94%, transparent);
+  box-shadow: 0 8px 28px rgba(38, 27, 12, .08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.perfume-page:not(.perfume-detail-active) .site-header.perfume-header::before {
+  z-index: 0;
+  pointer-events: none;
+}
+
+@media (min-width: 1200px) {
+  body.perfume-page .perfume-hero {
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+    align-items: center;
+    gap: clamp(36px, 4.2vw, 76px);
+    min-height: clamp(560px, 64svh, 710px);
+    padding-top: clamp(38px, 4.4svh, 66px);
+    padding-bottom: clamp(34px, 4svh, 58px);
+  }
+
+  body.perfume-page .perfume-hero-copy {
+    max-width: 700px;
+  }
+
+  body.perfume-page .perfume-hero-carousel {
+    width: 100%;
+    max-width: 760px;
+    height: clamp(460px, 54svh, 620px);
+    min-height: 460px;
+  }
+
+  body.perfume-page .perfume-carousel-image {
+    padding: 58px 54px 112px;
+  }
+}
+
+@media (min-width: 1600px) {
+  body.perfume-page .perfume-hero-carousel {
+    max-width: 800px;
+    height: clamp(500px, 56svh, 660px);
+  }
+}
+
+@media (max-width: 640px) {
+  body.perfume-page:not(.perfume-detail-active) .site-header.perfume-header {
+    min-height: 0;
+    padding: 12px 16px 10px;
+  }
+  html {
+    scroll-padding-top: 112px;
+  }
+}
