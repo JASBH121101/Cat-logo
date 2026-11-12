@@ -148,6 +148,28 @@ test("JB Copilot allows the Capacitor Android origin and handles blocked microph
 
 const jbAiEndpoint = await import(new URL("../functions/api/jb-manager-ai.js", import.meta.url));
 
+async function callJbAi(context) {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/rpc/catalog_admin_context")) {
+      return Response.json([{ is_admin: true, admin_id: "test-admin" }]);
+    }
+    return previousFetch(input, init);
+  };
+  try {
+    return await jbAiEndpoint.onRequestPost({
+      ...context,
+      env: {
+        NEON_DATA_API_URL: "https://neon.example.test/rest/v1",
+        ...(context.env || {})
+      }
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+}
+
 test("JB Copilot CORS preflight accepts GitHub Pages and the Android Capacitor origin", async () => {
   for (const origin of ["https://jasbh121101.github.io", "https://localhost"]) {
     const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
@@ -175,7 +197,7 @@ test("JB Copilot POST handler is reached and returns authentication_required, no
     },
     body: JSON.stringify({ message: "diagnostic" })
   });
-  const response = await jbAiEndpoint.onRequestPost({ request, env: {} });
+  const response = await callJbAi({ request, env: {} });
   const payload = await response.json();
   assert.equal(response.status, 401);
   assert.equal(payload.error, "authentication_required");
@@ -233,7 +255,7 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const response = await jbAiEndpoint.onRequestPost({
+    const response = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -306,7 +328,7 @@ test("JB Copilot classifies Gemini upstream access, billing and quota failures",
         },
         body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
       });
-      const response = await jbAiEndpoint.onRequestPost({
+      const response = await callJbAi({
         request,
         env: { GEMINI_API_KEY: "test-only-key" }
       });
@@ -386,7 +408,7 @@ test("JB Copilot retries simple JSON mode when Gemini rejects the full product s
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const response = await jbAiEndpoint.onRequestPost({
+    const response = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -459,7 +481,7 @@ test("JB Copilot fails over from an overloaded Gemini 3.8 model to stable Flash"
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const result = await jbAiEndpoint.onRequestPost({
+    const result = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -520,7 +542,7 @@ test("JB Copilot falls back to Flash-Lite when both primary Flash models are una
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const result = await jbAiEndpoint.onRequestPost({
+    const result = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -556,7 +578,7 @@ test("JB Copilot answers a simple greeting without depending on Gemini availabil
       },
       body: JSON.stringify({ message: "¡Hola bro!" })
     });
-    const result = await jbAiEndpoint.onRequestPost({ request, env: {} });
+    const result = await callJbAi({ request, env: {} });
     const payload = await result.json();
     assert.equal(result.status, 200);
     assert.match(payload.assistant.message, /¡Hola!/);
@@ -592,7 +614,7 @@ test("JB Copilot accepts natural-language text or common reply aliases from Gemi
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const result = await jbAiEndpoint.onRequestPost({ request, env: { GEMINI_API_KEY: "test-only-key" } });
+    const result = await callJbAi({ request, env: { GEMINI_API_KEY: "test-only-key" } });
     const payload = await result.json();
     assert.equal(result.status, 200);
     assert.equal(payload.assistant.message, "Puedo ayudarte con consultas y productos.");
@@ -625,7 +647,7 @@ test("JB Copilot never returns a successful generic answer for malformed model J
       },
       body: JSON.stringify({ message: "Explicame cómo funciona el catálogo." })
     });
-    const result = await jbAiEndpoint.onRequestPost({ request, env: { GEMINI_API_KEY: "test-only-key" } });
+    const result = await callJbAi({ request, env: { GEMINI_API_KEY: "test-only-key" } });
     const payload = await result.json();
     assert.equal(result.status, 502);
     assert.equal(payload.error, "gemini_unstructured_response");
