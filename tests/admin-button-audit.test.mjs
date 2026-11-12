@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const html=readFileSync(new URL("../admin.html",import.meta.url),"utf8");
 const css=readFileSync(new URL("../admin-button-audit.css",import.meta.url),"utf8");
+const admin=readFileSync(new URL("../admin.js",import.meta.url),"utf8");
 
 test("admin button audit stylesheet is loaded last",()=>{
  assert.match(html,/admin-button-audit\.css\?v=20261112-button-system2/);
