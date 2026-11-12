@@ -45,16 +45,17 @@ test("JB Manager AI requests the native Android microphone permission and keeps 
   assert.doesNotMatch(assistant, /native\.addListener\(["']result["'][\s\S]{0,400}sendMessage\(/);
 });
 
-test("AI endpoint authorizes the owner and the explicitly granted read-only demo viewer through Neon context", () => {
+test("AI endpoint authorizes the owner and explicitly granted read-only demo viewers through Neon context", () => {
   const authCheck = endpoint.indexOf("async function authorizeJbAiUser");
   const modelCall = endpoint.indexOf("https://api.openai.com/v1/responses");
   assert.ok(authCheck >= 0 && modelCall > authCheck);
-  assert.match(endpoint, /rpc\\/catalog_admin_context/);
-  assert.match(endpoint, /is_demo_viewer === true/);
-  assert.match(endpoint, /catalog.view_all/);
-  assert.match(endpoint, /env\\.OPENAI_API_KEY/);
-  assert.match(endpoint, /rateLimited\\(request\\)/);
-  assert.match(endpoint, /request_too_large/);
+  assert.ok(endpoint.includes("/rpc/catalog_admin_context"));
+  assert.ok(endpoint.includes("is_demo_viewer === true"));
+  assert.ok(endpoint.includes('permissions?.["catalog.view_all"] === true'));
+  assert.ok(endpoint.includes("env.OPENAI_API_KEY"));
+  assert.ok(endpoint.includes("rateLimited(request)"));
+  assert.ok(endpoint.includes("request_too_large"));
+  assert.doesNotMatch(endpoint, /requireCatalogAdmin/);
 });
 
 test("Gemini cannot write to the catalog and all changes remain proposals", () => {
