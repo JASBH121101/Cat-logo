@@ -29,7 +29,6 @@ body.demo-viewer-mode .admin-product-editor,
 body.demo-viewer-mode #admin-section-add .admin-product-editor,
 body.demo-viewer-mode #technology-import-card,
 body.demo-viewer-mode #perfume-import-card,
-body.demo-viewer-mode #jb-ai-floating-launcher,
 body.demo-viewer-mode [data-edit],
 body.demo-viewer-mode [data-exclusive-product],
 body.demo-viewer-mode [data-restore-product],
@@ -57,19 +56,20 @@ body.demo-viewer-mode #admin-section-reviewed .provider-metrics,
 body.demo-viewer-mode #admin-section-reviewed .provider-list-card,
 body.demo-viewer-mode #admin-section-messages .private-chat-admin-layout,
 body.demo-viewer-mode #admin-section-messages .private-chat-admin-header-actions,
-body.demo-viewer-mode #admin-section-storage-migration .form-actions,
-body.demo-viewer-mode #admin-section-storage-migration #storage-migration-log,
 body.demo-viewer-mode #admin-section-updates .provider-import-controls,
 body.demo-viewer-mode #admin-section-updates .provider-import-options {
   display:none !important;
 }
+/* Guest AI is conversational and read-only: no scanner or product-prefill actions. */
+body.demo-viewer-mode #admin-section-ai .jb-gp-scanner,
+body.demo-viewer-mode #admin-section-ai .jb-ai-prefill-action {
+  display:none !important;
+}
 body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat form,
 body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat textarea,
-body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat input,
-body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat button,
-body.demo-viewer-mode #admin-section-ai .jb-gp-scanner {
-  pointer-events:none !important;
-  opacity:.55;
+body.demo-viewer-mode #admin-section-ai .jb-manager-ai-chat button {
+  pointer-events:auto !important;
+  opacity:1;
 }
 body.demo-viewer-mode .demo-viewer-module-notice {
   display:block;
@@ -140,3 +140,29 @@ body.demo-viewer-mode .admin-sidebar-settings .admin-settings-item:not(#logout-b
   margin-top:10px;
 }
 body.demo-viewer-mode #fiverr-demo-guest-setup { display:none !important; }
+
+
+/* Demo surfaces use opaque theme-aware colors; translucent white-on-light cards
+   were losing contrast over the dashboard background on mobile. */
+html[data-theme="light"] body.demo-viewer-mode .demo-viewer-banner,
+html[data-theme="light"] body.demo-viewer-mode .demo-viewer-module-notice {
+  border-color: #a8bddf;
+  background: #eef4ff;
+  color: #263b5a;
+  box-shadow: 0 4px 14px rgba(27, 53, 91, .06);
+}
+html[data-theme="light"] body.demo-viewer-mode .demo-viewer-banner strong,
+html[data-theme="light"] body.demo-viewer-mode .demo-viewer-module-notice strong {
+  color: #1d3150;
+}
+html[data-theme="dark"] body.demo-viewer-mode .demo-viewer-banner,
+html[data-theme="dark"] body.demo-viewer-mode .demo-viewer-module-notice {
+  border-color: #465f82;
+  background: #17263e;
+  color: #e4edfb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .22);
+}
+html[data-theme="dark"] body.demo-viewer-mode .demo-viewer-banner strong,
+html[data-theme="dark"] body.demo-viewer-mode .demo-viewer-module-notice strong {
+  color: #f5f8ff;
+}
