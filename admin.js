@@ -3851,15 +3851,19 @@ $("#login-form")?.addEventListener("submit", async event => {
     loginPanel.classList.remove("hidden");
 
     /*
-      Conservamos el correo para que no tengás que escribirlo
-      nuevamente, pero borramos la contraseña incorrecta.
+      Conservamos el usuario ingresado para evitar que desaparezca tras un
+      intento fallido; solo limpiamos la contraseña por seguridad.
     */
     clearLoginPassword();
-    $("#login-email").value = "";
 
     const rawError = String(error?.message || "");
-    const loginErrorCopy = /invalid email|invalid email or password|incorrect password|invalid credentials/i.test(rawError)
-      ? "No se pudo validar el usuario o la contraseña. Verificá ambos datos o notificá al administrador."
+    const credentialError = /invalid email|invalid email or password|incorrect password|invalid credentials/i.test(rawError);
+    const attemptedUser = String(lastLoginIdentifier || "").trim().toLowerCase();
+    const isOwnerAlias = attemptedUser === "jaredbh";
+    const loginErrorCopy = credentialError
+      ? (isOwnerAlias
+        ? "Neon Auth no validó las credenciales del propietario. El vínculo de autorización ya está corregido en la base de demostración; verificá la contraseña vigente o ingresá con el correo verificado asociado a tu cuenta."
+        : "No se pudo validar el usuario o la contraseña. Verificá ambos datos o notificá al administrador.")
       : (rawError || "No se pudo iniciar sesión. Revisá tus datos.");
     message("#login-status", loginErrorCopy, "error");
 

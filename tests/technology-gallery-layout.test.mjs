@@ -7,13 +7,14 @@ const html = readFileSync("tecnologia/index.html", "utf8");
 const css = readFileSync("technology-visual-refresh.css", "utf8");
 const contactCss = readFileSync("contact-channels.css", "utf8");
 const app = readFileSync("app.js", "utf8");
+const adminHtml = readFileSync("admin.html", "utf8");
 
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-lightbox-close-and-owner-link1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-lightbox-crossbrowser-close2/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
-  assert.match(html, /app\.js\?v=20261112-lightbox-close-fallback2/);
+  assert.match(html, /app\.js\?v=20261112-lightbox-crossbrowser-close2/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -532,6 +533,26 @@ test("catalog fullscreen image viewer is modal, navigable and sized to mobile an
       assert.equal(escapeState.open, false, viewport.name + ": Escape should close the dialog");
       assert.equal(escapeState.display, "none", viewport.name + ": Escape must hide the closed dialog from the document");
       assert.equal(escapeState.modal, false, viewport.name + ": Escape must leave the modal top layer");
+
+      // Also cover older embedded browsers that report the legacy "Esc" key name.
+      await page.evaluate(({ images }) => window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+        { src: images[0], alt: "Producto de prueba — foto 1" },
+        { src: images[1], alt: "Producto de prueba — foto 2" },
+      ]), { images });
+      await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keyup", {
+        key: "Esc", keyCode: 27, bubbles: true, cancelable: true
+      })));
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), false,
+        viewport.name + ": legacy Esc keyup should close the viewer");
+
+      // Touch browsers can deliver pointerup/touchend differently from click.
+      await page.evaluate(({ images }) => window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+        { src: images[0], alt: "Producto de prueba — foto 1" },
+        { src: images[1], alt: "Producto de prueba — foto 2" },
+      ]), { images });
+      await page.locator(".product-image-lightbox-close").dispatchEvent("pointerup");
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), false,
+        viewport.name + ": close button pointerup must close the viewer");
       await page.close();
     }
   } finally {
@@ -539,3 +560,9 @@ test("catalog fullscreen image viewer is modal, navigable and sized to mobile an
   }
 });
 
+
+test("admin dashboard opens the JB Collections landing page with both catalogs", () => {
+  assert.match(adminHtml, /class="dashboard-public-link" href="\.\/" target="_blank"/);
+  assert.match(adminHtml, /Abrir portada de catálogos/);
+  assert.match(adminHtml, /Abrir el catálogo público|Ver catálogo/);
+});

@@ -35,8 +35,8 @@ test("technology limited editions have a dedicated section immediately after Exc
   assert.match(technologyHtml, /id="limited-edition-count"/);
   assert.ok(technologyHtml.indexOf('id="featured-section"') < technologyHtml.indexOf('id="limited-edition-section"'));
   assert.ok(technologyHtml.indexOf('id="limited-edition-section"') < technologyHtml.indexOf('id="high-performance-section"'));
-  assert.match(technologyHtml, /app\.js\?v=20261112-lightbox-close-fallback2/);
-  assert.match(technologyHtml, /technology-visual-refresh\.css\?v=20261112-lightbox-close-fallback2/);
+  assert.match(technologyHtml, /app\.js\?v=20261112-lightbox-crossbrowser-close2/);
+  assert.match(technologyHtml, /technology-visual-refresh\.css\?v=20261112-lightbox-crossbrowser-close2/);
   assert.match(technologyJs, /limited_edition:\s*"▦ EDICIÓN LIMITADA"/);
   assert.match(technologyHtml, /<rect x="6\.5" y="6\.5" width="11" height="11" rx="2"\/>/);
   assert.match(technologyJs, /normalizedProductTags\(product\)\.includes\("limited_edition"\)/);

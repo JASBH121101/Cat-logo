@@ -1629,15 +1629,21 @@ function renderLegacyColorOptions(product, selectedColorName = "") {
 
 function closeProductImageLightbox(dialog) {
   if (!dialog) return;
-  const wasOpen = dialog.open || dialog.hasAttribute("open");
+  const wasOpen = Boolean(dialog.open || dialog.hasAttribute("open"));
   try {
     if (dialog.open && typeof dialog.close === "function") dialog.close();
   } catch (error) {
     console.warn("El navegador no pudo cerrar el visor de fotografías de forma nativa.", error);
   }
-  // Older embedded/mobile browsers can leave a dialog open after close().
+
+  // Some mobile WebViews dispatch the click/key event but fail to complete the
+  // native dialog close sequence. Remove the open state as a deterministic fallback.
   if (dialog.open || dialog.hasAttribute("open")) dialog.removeAttribute("open");
-  if (wasOpen && !dialog.open && !dialog.hasAttribute("open")) {
+  if (dialog.open) {
+    try { dialog.open = false; } catch {}
+  }
+
+  if (wasOpen) {
     const returnFocus = dialog._returnFocus;
     dialog._returnFocus = null;
     if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
@@ -1647,7 +1653,9 @@ function closeProductImageLightbox(dialog) {
 }
 
 function handleProductImageLightboxEscape(event, dialog) {
-  if (event.key !== "Escape" || !dialog?.open) return;
+  const escapePressed = event.key === "Escape" || event.key === "Esc" ||
+    event.keyCode === 27 || event.which === 27;
+  if (!escapePressed || !dialog || !(dialog.open || dialog.hasAttribute("open"))) return;
   event.preventDefault();
   event.stopPropagation();
   event.stopImmediatePropagation();
@@ -1716,12 +1724,20 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
     document.addEventListener("keydown", event => {
       handleProductImageLightboxEscape(event, lightbox);
     }, true);
+    // Legacy desktop/mobile keyboards may report Escape only on keyup.
+    document.addEventListener("keyup", event => {
+      handleProductImageLightboxEscape(event, lightbox);
+    }, true);
 
-    lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", event => {
+    const closeButton = lightbox.querySelector(".product-image-lightbox-close");
+    const closeFromButton = event => {
       event.preventDefault();
       event.stopPropagation();
       closeProductImageLightbox(lightbox);
-    });
+    };
+    closeButton.addEventListener("pointerup", closeFromButton);
+    closeButton.addEventListener("touchend", closeFromButton, {passive:false});
+    closeButton.addEventListener("click", closeFromButton);
     lightbox.addEventListener("click", event => {
       if (event.target !== lightbox) return;
       closeProductImageLightbox(lightbox);
