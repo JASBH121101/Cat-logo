@@ -432,7 +432,7 @@ test("tag groups stay responsive and retain their catalog-specific visibility", 
 });
 
 test("APK build refreshes and verifies the shared admin accessibility stylesheet", () => {
-  assert.match(html, /admin-accessibility\\.css\\?v=20261112-fiverr-a11y-fixes1/);
+  assert.match(html, /admin-accessibility\.css\?v=20261112-fiverr-a11y-fixes1/);
   assert.match(html, /admin-workflow\.css\?v=20261101-category-aware-form1/);
   assert.match(androidWorkflow, /admin-accessibility\.css/);
   assert.match(androidWorkflow, /node --test[\s\S]*tests\/admin-product-form-workflow\.test\.mjs/);
