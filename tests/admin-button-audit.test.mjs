@@ -36,3 +36,16 @@ test("both themes keep semantic publish/cancel states and reduced motion support
  assert.match(css,/workflow-action-cancel/);
  assert.match(css,/prefers-reduced-motion/);
 });
+
+
+test("navigation and filter controls share button geometry and maintain visible active state", () => {
+  assert.match(css, /admin-nav-button\.active/);
+  assert.match(css, /private-chat-admin-filter/);
+  assert.match(css, /dashboard-quick-action:focus-visible/);
+  assert.match(css, /dashboard-task-row:focus-visible/);
+});
+
+test("paid AI floating launcher is absent from every Fiverr demo session", () => {
+  assert.match(admin, /if \(IS_FIVERR_DEMO_HOST\) document\.body\.classList\.add\("fiverr-demo-host"\)/);
+  assert.match(css, /body\.fiverr-demo-host #jb-ai-floating-launcher \{ display:none!important; \}/);
+});
