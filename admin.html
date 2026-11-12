@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="admin-gopartners-scanner.css?v=20261031-jarvis-compact2">
 
   <script src="config.js?v=20261109-neon-auth-proxy4"></script>
-  <script type="module" src="admin.js?v=20261111-fiverr-guest-create-preview4"></script>
+  <script type="module" src="admin.js?v=20261112-password-min8"></script>
   <script src="ui.js?v=20261027-audit-cascade1" defer></script>
 </head>
 
@@ -137,13 +137,13 @@
 
           <label>
             Nueva contraseña
-            <input id="admin-password-reset-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-            <small>Usá al menos 12 caracteres. No reutilicés la contraseña de otro servicio.</small>
+            <input id="admin-password-reset-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+            <small>Usá al menos 8 caracteres. No reutilicés la contraseña de otro servicio.</small>
           </label>
 
           <label>
             Confirmar contraseña
-            <input id="admin-password-reset-confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+            <input id="admin-password-reset-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
           </label>
 
           <button id="admin-password-reset-complete" class="button button-primary" type="submit">
@@ -924,11 +924,11 @@
               <input id="fiverr-demo-guest-username" type="text" maxlength="30" minlength="3" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,29}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ej. comprador01" required>
             </label>
             <label>Contraseña inicial
-              <input id="fiverr-demo-guest-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
-              <small>Mínimo 12 caracteres. No se guarda en la base de datos ni en el navegador.</small>
+              <input id="fiverr-demo-guest-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+              <small>Mínimo 8 caracteres. No se guarda en la base de datos ni en el navegador.</small>
             </label>
             <label>Confirmar contraseña
-              <input id="fiverr-demo-guest-password-confirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+              <input id="fiverr-demo-guest-password-confirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
             </label>
             <button id="fiverr-demo-create-user-submit" class="button button-primary" type="submit">Crear usuario y enviar código</button>
           </form>
