@@ -646,7 +646,8 @@
                 </label>
                 <label id="product-specs-field" class="admin-specs-field">
                   <span id="product-specs-label">Características y especificaciones.</span>
-                  <textarea id="product-specs" rows="2"></textarea>
+                  <textarea id="product-specs" rows="2" aria-describedby="product-specs-guidance"></textarea>
+                  <small id="product-specs-guidance">Detallá únicamente características técnicas confirmadas del producto.</small>
                 </label>
               </div>
 <label id="product-financing-field" class="span-2">
@@ -1140,7 +1141,7 @@
               <div id="private-chat-admin-messages" class="private-chat-admin-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
               <form id="private-chat-admin-reply-form" class="private-chat-admin-reply-form" hidden>
                 <label class="visually-hidden" for="private-chat-admin-reply">Tu respuesta</label>
-                <textarea id="private-chat-admin-reply" rows="2" maxlength="1200" autocomplete="off"></textarea>
+                <textarea id="private-chat-admin-reply" rows="2" maxlength="1200" autocomplete="off" placeholder="Escribí tu respuesta al cliente…"></textarea>
                 <button id="private-chat-admin-send" class="button button-primary" type="submit">Enviar respuesta</button>
               </form>
               <p class="private-chat-admin-security-note">Este chat permite gestionar pedidos y recibir los datos necesarios de Go Partners: nombre completo, cédula y celular. No solicités contraseñas, PIN, códigos de seguridad ni números completos de tarjetas o cuentas bancarias. El historial se conserva hasta 7 días.</p>
