@@ -146,9 +146,7 @@ test("JB Copilot allows the Capacitor Android origin and handles blocked microph
 });
 
 
-const jbAiEndpoint = await import(
-  "data:text/javascript;base64," + Buffer.from(endpoint, "utf8").toString("base64")
-);
+const jbAiEndpoint = await import(new URL("../functions/api/jb-manager-ai.js", import.meta.url));
 
 test("JB Copilot CORS preflight accepts GitHub Pages and the Android Capacitor origin", async () => {
   for (const origin of ["https://jasbh121101.github.io", "https://localhost"]) {
