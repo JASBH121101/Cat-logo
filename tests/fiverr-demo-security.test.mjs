@@ -6,6 +6,7 @@ import { onRequest as upload } from "../functions/api/storage/upload.js";
 import { onRequest as remove } from "../functions/api/storage/remove.js";
 import { onRequest as info } from "../functions/api/storage/info.js";
 import { onRequest as cacheRescue } from "../functions/api/migration/cache-rescue.js";
+import { onRequest as neonAuthProxy } from "../functions/api/neon-auth/[[path]].js";
 import { onRequest as supabaseMigration } from "../functions/api/migration/supabase-r2.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -76,4 +77,18 @@ test("guest provisioning fails closed when Neon Data API is missing and never us
   assert.match(source, /env\.NEON_DATA_API_URL \|\| ""/);
   assert.match(source, /NEON_DATA_API_URL no está configurada/);
   assert.doesNotMatch(source, /DATA_API_FALLBACK|ep-wandering-scene/);
+});
+
+test("Neon Auth proxy is restricted to the demo and isolated migration Preview hosts", async () => {
+  const wrongHost = new Request("https://other-preview.jb-collections.pages.dev/api/neon-auth/get-session", { method: "GET" });
+  assert.equal((await neonAuthProxy({ request: wrongHost, env: {} })).status, 404);
+
+  const insecure = new Request("http://fiverr-demo.jb-collections.pages.dev/api/neon-auth/get-session", { method: "GET" });
+  assert.equal((await neonAuthProxy({ request: insecure, env: {} })).status, 404);
+
+  const demoUnsupportedMethod = new Request("https://fiverr-demo.jb-collections.pages.dev/api/neon-auth/get-session", { method: "PATCH" });
+  assert.equal((await neonAuthProxy({ request: demoUnsupportedMethod, env: {} })).status, 405);
+
+  const migrationUnsupportedMethod = new Request("https://migration-neon-r2.jb-collections.pages.dev/api/neon-auth/get-session", { method: "PATCH" });
+  assert.equal((await neonAuthProxy({ request: migrationUnsupportedMethod, env: {} })).status, 405);
 });

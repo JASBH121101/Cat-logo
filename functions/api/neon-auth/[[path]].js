@@ -1,5 +1,9 @@
 const AUTH_PROXY_PREFIX = "/api/neon-auth";
 const MAX_AUTH_BODY_BYTES = 1024 * 1024;
+const ALLOWED_AUTH_HOSTS = new Set([
+  "fiverr-demo.jb-collections.pages.dev",
+  "migration-neon-r2.jb-collections.pages.dev"
+]);
 
 function proxyJson(status, payload) {
   return new Response(JSON.stringify(payload), {
@@ -64,13 +68,17 @@ function rewriteDemoIdentityPayload(path, body, env) {
 }
 
 export async function onRequest({ request, env }) {
+  const incoming = new URL(request.url);
+  if (incoming.protocol !== "https:" || !ALLOWED_AUTH_HOSTS.has(incoming.hostname)) {
+    return proxyJson(404, { error: "not_found" });
+  }
   const method = request.method.toUpperCase();
   if (!["GET", "POST", "OPTIONS"].includes(method)) {
     return proxyJson(405, { error: "method_not_allowed" });
   }
 
   const baseValue = String(
-    new URL(request.url).hostname === "fiverr-demo.jb-collections.pages.dev"
+    incoming.hostname === "fiverr-demo.jb-collections.pages.dev"
       ? "https://ep-steep-rain-bei5dxk1.neonauth.c-9.us-east-2.aws.neon.tech/fiverr_auth/auth"
       : env.NEON_AUTH_BASE_URL || ""
   ).trim();
@@ -84,7 +92,6 @@ export async function onRequest({ request, env }) {
     return proxyJson(503, { error: "neon_auth_not_configured" });
   }
 
-  const incoming = new URL(request.url);
   if (incoming.pathname !== AUTH_PROXY_PREFIX && !incoming.pathname.startsWith(AUTH_PROXY_PREFIX + "/")) {
     return proxyJson(404, { error: "not_found" });
   }
