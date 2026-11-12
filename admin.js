@@ -781,10 +781,13 @@ function updateProductFormMode() {
   const dashboardQuickAdd = document.querySelector('[data-dashboard-action="add"] .quick-action-icon');
   if (dashboardQuickAdd) dashboardQuickAdd.textContent = "＋";
 
+  // "Ver catálogo" siempre vuelve a la portada dividida JB Collections,
+  // desde donde el visitante elige JB Parfums o JB TECH.
+  const publicCatalogLanding = new URL("./", window.location.href).href;
   const publicLink = document.querySelector(".dashboard-public-link");
-  if (publicLink) publicLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
+  if (publicLink) publicLink.href = publicCatalogLanding;
   const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
-  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
+  if (sidebarCatalogLink) sidebarCatalogLink.href = publicCatalogLanding;
 }
 
 function normalizeTechnologyCategory(value = "") {
