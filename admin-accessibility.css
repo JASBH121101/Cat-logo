@@ -1102,3 +1102,404 @@ html[data-theme="dark"] body.admin-body .admin-help code,
 html[data-theme="dark"] body.admin-body .login-remember-copy > small {
   color: #c9d5e9 !important;
 }
+
+
+/* JB MANAGER · login-help form and owner-only access notification inbox.
+   The access request never asks for or stores a password. Keep explicit contrast
+   in both themes and respect the HTML hidden state even when forms use grid. */
+html body.admin-body #admin-login-help-form[hidden],
+html body.admin-body #admin-access-notifications[hidden],
+html body.admin-body #admin-access-notification-panel[hidden] {
+  display:none !important;
+}
+html body.admin-body .admin-login-help-toggle {
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:42px !important;
+  margin-top:12px !important;
+  padding:8px 4px !important;
+  border:0 !important;
+  color:#334b78 !important;
+  background:transparent !important;
+  font:inherit !important;
+  font-size:13px !important;
+  font-weight:750 !important;
+  text-align:left !important;
+  text-decoration:underline !important;
+  text-underline-offset:3px !important;
+  cursor:pointer !important;
+}
+html body.admin-body .admin-login-help-toggle:hover,
+html body.admin-body .admin-login-help-toggle:focus-visible {
+  color:#1d3e87 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-toggle {
+  color:#dbe7ff !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-toggle:hover,
+html[data-theme="dark"] body.admin-body .admin-login-help-toggle:focus-visible {
+  color:#ffffff !important;
+}
+html body.admin-body .admin-login-help-form {
+  display:grid !important;
+  gap:14px !important;
+  margin-top:12px !important;
+  padding:clamp(14px,2.3vw,20px) !important;
+  border:1px solid #cbd5e4 !important;
+  border-radius:15px !important;
+  color:#17233a !important;
+  background:#f7f9fc !important;
+  box-shadow:0 5px 18px rgba(20,35,62,.08) !important;
+  text-align:left !important;
+}
+html body.admin-body .admin-login-help-intro {
+  display:grid !important;
+  gap:6px !important;
+}
+html body.admin-body .admin-login-help-intro h2 {
+  margin:0 !important;
+  color:#18243a !important;
+  font-size:17px !important;
+  line-height:1.3 !important;
+}
+html body.admin-body .admin-login-help-intro p {
+  margin:0 !important;
+  color:#46566f !important;
+  font-size:12.5px !important;
+  line-height:1.55 !important;
+}
+html body.admin-body .admin-login-help-intro .admin-login-help-security {
+  margin-top:3px !important;
+  color:#8b2c26 !important;
+  font-weight:750 !important;
+}
+html body.admin-body .admin-login-help-form > label {
+  display:grid !important;
+  gap:6px !important;
+  color:#263651 !important;
+  font-size:13px !important;
+  font-weight:750 !important;
+}
+html body.admin-body .admin-login-help-form input:not([type="hidden"]),
+html body.admin-body .admin-login-help-form select {
+  width:100% !important;
+  min-width:0 !important;
+  min-height:44px !important;
+  padding:10px 12px !important;
+  border:1px solid #aebbd0 !important;
+  border-radius:10px !important;
+  color:#17233a !important;
+  background:#ffffff !important;
+  font:inherit !important;
+  font-size:14px !important;
+  box-shadow:none !important;
+}
+html body.admin-body .admin-login-help-form input:focus-visible,
+html body.admin-body .admin-login-help-form select:focus-visible {
+  outline:3px solid rgba(55,99,211,.26) !important;
+  outline-offset:1px !important;
+  border-color:#315ee8 !important;
+}
+html body.admin-body .admin-login-help-actions {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  flex-wrap:wrap !important;
+  gap:9px !important;
+}
+html body.admin-body .admin-login-help-actions > .button {
+  width:auto !important;
+  min-width:0 !important;
+  min-height:42px !important;
+  margin:0 !important;
+}
+html body.admin-body .admin-login-help-form .form-status {
+  margin:0 !important;
+  color:#3d4f6a !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+html body.admin-body .admin-login-help-honeypot {
+  position:absolute !important;
+  left:-10000px !important;
+  top:auto !important;
+  width:1px !important;
+  height:1px !important;
+  overflow:hidden !important;
+  clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-form {
+  border-color:#3b4d6c !important;
+  color:#edf3ff !important;
+  background:#111d32 !important;
+  box-shadow:0 8px 24px rgba(0,0,0,.2) !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-intro h2,
+html[data-theme="dark"] body.admin-body .admin-login-help-form > label {
+  color:#eef4ff !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-intro p,
+html[data-theme="dark"] body.admin-body .admin-login-help-form .form-status {
+  color:#c4d1e6 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-intro .admin-login-help-security {
+  color:#ffc0b5 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-form input:not([type="hidden"]),
+html[data-theme="dark"] body.admin-body .admin-login-help-form select {
+  border-color:#526582 !important;
+  color:#f2f6ff !important;
+  background:#1b2b45 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-login-help-form input:focus-visible,
+html[data-theme="dark"] body.admin-body .admin-login-help-form select:focus-visible {
+  outline-color:rgba(135,169,255,.35) !important;
+  border-color:#91aaff !important;
+}
+
+html body.admin-body .admin-access-notifications {
+  position:relative !important;
+  flex:0 0 auto !important;
+  margin-left:auto !important;
+}
+html body.admin-body .admin-access-notification-toggle {
+  position:relative !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  min-height:44px !important;
+  padding:8px 13px !important;
+  border:1px solid #cbd5e4 !important;
+  border-radius:12px !important;
+  color:#253652 !important;
+  background:#ffffff !important;
+  font-size:13px !important;
+  font-weight:750 !important;
+  box-shadow:0 2px 7px rgba(20,35,62,.06) !important;
+}
+html body.admin-body .admin-access-notification-toggle svg {
+  width:18px !important;
+  height:18px !important;
+  flex:0 0 18px !important;
+  fill:none !important;
+  stroke:currentColor !important;
+  stroke-width:1.8 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+}
+html body.admin-body .admin-access-notification-toggle:hover,
+html body.admin-body .admin-access-notification-toggle:focus-visible {
+  border-color:#7893d2 !important;
+  background:#f1f5ff !important;
+}
+html body.admin-body .admin-access-notification-count {
+  display:inline-grid !important;
+  place-items:center !important;
+  min-width:20px !important;
+  height:20px !important;
+  padding:0 5px !important;
+  border-radius:999px !important;
+  color:#ffffff !important;
+  background:#b42318 !important;
+  font-size:11px !important;
+  font-weight:850 !important;
+  line-height:1 !important;
+  font-variant-numeric:tabular-nums !important;
+}
+html body.admin-body .admin-access-notification-count[hidden] {
+  display:none !important;
+}
+html body.admin-body .admin-access-notification-panel {
+  position:absolute !important;
+  top:calc(100% + 10px) !important;
+  right:0 !important;
+  z-index:90 !important;
+  display:grid !important;
+  gap:10px !important;
+  width:min(390px,calc(100vw - 24px)) !important;
+  max-height:min(520px,calc(100dvh - 120px)) !important;
+  padding:14px !important;
+  overflow:hidden !important;
+  border:1px solid #cbd5e4 !important;
+  border-radius:15px !important;
+  color:#1d2a42 !important;
+  background:#ffffff !important;
+  box-shadow:0 18px 48px rgba(18,31,54,.18) !important;
+}
+html body.admin-body .admin-access-notification-panel[hidden] {
+  display:none !important;
+}
+html body.admin-body .admin-access-notification-heading {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px !important;
+  padding-bottom:10px !important;
+  border-bottom:1px solid #e0e6ef !important;
+}
+html body.admin-body .admin-access-notification-heading > div {
+  display:grid !important;
+  gap:2px !important;
+}
+html body.admin-body .admin-access-notification-heading strong {
+  color:#19263d !important;
+  font-size:15px !important;
+}
+html body.admin-body .admin-access-notification-heading small {
+  color:#52617a !important;
+  font-size:11px !important;
+}
+html body.admin-body .admin-access-notification-refresh {
+  display:grid !important;
+  place-items:center !important;
+  flex:0 0 36px !important;
+  width:36px !important;
+  height:36px !important;
+  border:1px solid #ccd6e5 !important;
+  border-radius:9px !important;
+  color:#253652 !important;
+  background:#f7f9fc !important;
+  font-size:21px !important;
+  font-weight:750 !important;
+}
+html body.admin-body .admin-access-notification-list {
+  display:grid !important;
+  gap:9px !important;
+  min-height:0 !important;
+  max-height:370px !important;
+  overflow-y:auto !important;
+  overscroll-behavior:contain !important;
+}
+html body.admin-body .admin-access-notification-item {
+  display:grid !important;
+  gap:7px !important;
+  padding:11px !important;
+  border:1px solid #d9e1ed !important;
+  border-radius:11px !important;
+  background:#f7f9fc !important;
+}
+html body.admin-body .admin-access-notification-item-heading {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  align-items:start !important;
+  gap:8px !important;
+}
+html body.admin-body .admin-access-notification-item-heading strong {
+  min-width:0 !important;
+  color:#1b2941 !important;
+  font-size:13px !important;
+  overflow-wrap:anywhere !important;
+}
+html body.admin-body .admin-access-notification-item-heading time {
+  color:#53637c !important;
+  font-size:10px !important;
+  font-weight:650 !important;
+  white-space:nowrap !important;
+}
+html body.admin-body .admin-access-notification-issue {
+  margin:0 !important;
+  color:#3d4e67 !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+html body.admin-body .admin-access-notification-resolve {
+  justify-self:start !important;
+  min-height:34px !important;
+  padding:6px 10px !important;
+  border:1px solid #aebdd3 !important;
+  border-radius:8px !important;
+  color:#243e70 !important;
+  background:#ffffff !important;
+  font-size:11px !important;
+  font-weight:750 !important;
+}
+html body.admin-body .admin-access-notification-resolve:hover {
+  border-color:#5474c5 !important;
+  background:#edf3ff !important;
+}
+html body.admin-body .admin-access-notification-empty,
+html body.admin-body .admin-access-notification-status {
+  margin:0 !important;
+  color:#52617a !important;
+  font-size:11px !important;
+  line-height:1.45 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-toggle {
+  border-color:#3b4d6c !important;
+  color:#e7efff !important;
+  background:#182740 !important;
+  box-shadow:none !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-toggle:hover,
+html[data-theme="dark"] body.admin-body .admin-access-notification-toggle:focus-visible {
+  border-color:#758ebd !important;
+  background:#213654 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-panel {
+  border-color:#3e506d !important;
+  color:#eaf1ff !important;
+  background:#111d32 !important;
+  box-shadow:0 20px 54px rgba(0,0,0,.42) !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-heading {
+  border-color:#354965 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-heading strong,
+html[data-theme="dark"] body.admin-body .admin-access-notification-item-heading strong {
+  color:#eef4ff !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-heading small,
+html[data-theme="dark"] body.admin-body .admin-access-notification-item-heading time,
+html[data-theme="dark"] body.admin-body .admin-access-notification-issue,
+html[data-theme="dark"] body.admin-body .admin-access-notification-empty,
+html[data-theme="dark"] body.admin-body .admin-access-notification-status {
+  color:#c5d2e8 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-refresh {
+  border-color:#4b607f !important;
+  color:#edf3ff !important;
+  background:#1e314d !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-item {
+  border-color:#3a4e6e !important;
+  background:#182740 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-resolve {
+  border-color:#58709a !important;
+  color:#edf3ff !important;
+  background:#243a5c !important;
+}
+html[data-theme="dark"] body.admin-body .admin-access-notification-resolve:hover {
+  border-color:#94a9d0 !important;
+  background:#304a70 !important;
+}
+@media (max-width:760px) {
+  html body.admin-body .dashboard-top {
+    align-items:flex-start !important;
+    flex-wrap:wrap !important;
+  }
+  html body.admin-body .admin-access-notifications {
+    margin-left:0 !important;
+  }
+  html body.admin-body .admin-access-notification-panel {
+    position:fixed !important;
+    top:max(88px,calc(env(safe-area-inset-top,0px) + 78px)) !important;
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
+    max-width:480px !important;
+    max-height:calc(100dvh - 112px) !important;
+    margin-inline:auto !important;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  html body.admin-body .admin-login-help-toggle,
+  html body.admin-body .admin-access-notification-toggle,
+  html body.admin-body .admin-access-notification-panel {
+    transition:none !important;
+    animation:none !important;
+  }
+}
