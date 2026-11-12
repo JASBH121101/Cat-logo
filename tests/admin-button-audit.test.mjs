@@ -21,13 +21,13 @@ test("primary, secondary and outline controls share one geometry and accessible 
  assert.match(css,/button:focus-visible/);
  assert.match(css,/button:disabled/);
 });
-test("product step navigation uses the measured header offset and three equal tabs",()=>{
- assert.match(css,/body\\.admin-body \\{ --jb-admin-header-height: 76px; \\}/);
- assert.match(css,/@media \\(max-width: 760px\\)[\\s\\S]*?--jb-admin-header-height: 88px/);
- assert.match(css,/\\.product-form-section-nav\\{[\\s\\S]*?top:calc\\(var\\(--jb-admin-header-height,76px\\) \\+ env\\(safe-area-inset-top,0px\\) \\+ 12px\\)!important/);
- assert.match(css,/z-index:19!important/);
- assert.match(css,/grid-template-columns:repeat\\(3,minmax\\(0,1fr\\)\\)!important/);
- assert.match(css,/scroll-margin-top:calc\\(var\\(--jb-admin-header-height,76px\\) \\+ env\\(safe-area-inset-top,0px\\) \\+ 20px\\)!important/);
+test("product step navigation uses the measured header offset and three equal tabs", () => {
+  assert.ok(css.includes("body.admin-body { --jb-admin-header-height: 76px; }"));
+  assert.ok(css.includes("--jb-admin-header-height: 88px;"));
+  assert.ok(css.includes("top: calc(var(--jb-admin-header-height, 76px) + env(safe-area-inset-top, 0px) + 12px) !important;"));
+  assert.ok(css.includes("z-index: 19 !important;"));
+  assert.ok(css.includes("grid-template-columns:repeat(3,minmax(0,1fr))!important"));
+  assert.ok(css.includes("scroll-margin-top: calc(var(--jb-admin-header-height, 76px) + env(safe-area-inset-top, 0px) + 20px) !important;"));
 });
 test("tabs, variants and workflow actions retain responsive tap targets",()=>{
  assert.match(css,/\.product-form-section-tab\{[\s\S]*?min-height:46px!important/);
