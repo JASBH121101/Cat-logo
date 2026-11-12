@@ -2,6 +2,7 @@ const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
 const ALLOWED_ORIGINS = new Set([
   "https://jb-collections.pages.dev",
+  "https://fiverr-demo.jb-collections.pages.dev",
   "https://jasbh121101.github.io",
   "https://localhost",
   "http://localhost:8788",
