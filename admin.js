@@ -1695,6 +1695,8 @@ function showLoginScreen(statusText = "", type = "") {
 
   clearEditor();
 
+  const loginIdentifier = $("#login-email");
+  if (loginIdentifier) loginIdentifier.value = "";
   clearLoginPassword();
   syncRememberControls();
 
