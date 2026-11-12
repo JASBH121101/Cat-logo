@@ -1,0 +1,181 @@
+/*
+ * JB Collections — acabado visual del selector claro/oscuro.
+ * Solo afecta el botón público de tema de JB TECH y JB PARFUMS.
+ * La interacción y persistencia siguen a cargo de ui.js.
+ */
+
+body.technology-catalog {
+  --theme-switch-border: #d5e2f3;
+  --theme-switch-text: #294568;
+  --theme-switch-surface: rgba(255, 255, 255, .96);
+  --theme-switch-icon-surface: linear-gradient(145deg, #edf3ff, #dce8ff);
+  --theme-switch-icon-color: #315fd0;
+  --theme-switch-shadow: rgba(36, 70, 120, .11);
+  --theme-switch-hover-border: #8faee8;
+  --theme-switch-focus: #4777df;
+  --theme-switch-hover-shadow: rgba(49, 94, 232, .16);
+}
+
+html[data-theme="dark"] body.technology-catalog {
+  --theme-switch-border: rgba(91, 175, 220, .42);
+  --theme-switch-text: #eaf7ff;
+  --theme-switch-surface: rgba(12, 27, 47, .97);
+  --theme-switch-icon-surface: linear-gradient(145deg, #173a54, #29264f);
+  --theme-switch-icon-color: #a9edff;
+  --theme-switch-shadow: rgba(0, 0, 0, .25);
+  --theme-switch-hover-border: #63cee9;
+  --theme-switch-focus: #75def5;
+  --theme-switch-hover-shadow: rgba(38, 182, 218, .19);
+}
+
+body.perfume-page {
+  --theme-switch-border: #d8c7a8;
+  --theme-switch-text: #614b2c;
+  --theme-switch-surface: rgba(255, 251, 243, .98);
+  --theme-switch-icon-surface: linear-gradient(145deg, #fbf3e2, #ecdfc5);
+  --theme-switch-icon-color: #8d6a32;
+  --theme-switch-shadow: rgba(79, 57, 28, .10);
+  --theme-switch-hover-border: #b99b65;
+  --theme-switch-focus: #a78345;
+  --theme-switch-hover-shadow: rgba(153, 117, 54, .16);
+}
+
+html[data-theme="dark"] body.perfume-page {
+  --theme-switch-border: rgba(203, 171, 111, .48);
+  --theme-switch-text: #f3e9d7;
+  --theme-switch-surface: rgba(32, 28, 23, .98);
+  --theme-switch-icon-surface: linear-gradient(145deg, #4a3a24, #30271d);
+  --theme-switch-icon-color: #f0d49a;
+  --theme-switch-shadow: rgba(0, 0, 0, .30);
+  --theme-switch-hover-border: #d3b578;
+  --theme-switch-focus: #d9bd82;
+  --theme-switch-hover-shadow: rgba(197, 155, 80, .17);
+}
+
+/* Contenedor compacto, alineado y con ancho estable entre "Claro" y "Oscuro". */
+body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle],
+body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 96px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  width: 96px;
+  min-width: 96px;
+  min-height: 42px;
+  padding: 5px 9px 5px 5px;
+  border: 1px solid var(--theme-switch-border);
+  border-radius: 999px;
+  color: var(--theme-switch-text);
+  background: var(--theme-switch-surface);
+  box-shadow:
+    0 3px 10px var(--theme-switch-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, .42);
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-shadow: none;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform .16s ease,
+    color .18s ease,
+    background-color .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease;
+}
+
+body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle] .theme-toggle-icon,
+body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] .theme-toggle-icon {
+  box-sizing: border-box;
+  display: inline-grid;
+  flex: 0 0 28px;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--theme-switch-icon-color);
+  background: var(--theme-switch-icon-surface);
+  font-family: "Segoe UI Symbol", "Apple Symbols", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle] .theme-toggle-label,
+body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] .theme-toggle-label {
+  display: inline-block;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle]:focus-visible,
+body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle]:focus-visible {
+  outline: 3px solid var(--theme-switch-focus);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle]:hover,
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle]:hover {
+    transform: translateY(-1px);
+    border-color: var(--theme-switch-hover-border);
+    box-shadow:
+      0 6px 14px var(--theme-switch-hover-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, .48);
+  }
+}
+
+body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle]:active,
+body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle]:active {
+  transform: scale(.98);
+}
+
+@media (max-width: 640px) {
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle],
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] {
+    flex-basis: 94px;
+    width: 94px;
+    min-width: 94px;
+    min-height: 38px;
+    padding: 4px 8px 4px 5px;
+    gap: 6px;
+  }
+
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle] .theme-toggle-icon,
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] .theme-toggle-icon {
+    flex-basis: 26px;
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle] .theme-toggle-label,
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] .theme-toggle-label {
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle],
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle] {
+    transition: none;
+  }
+
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle]:hover,
+  body.technology-catalog .site-header > button.theme-toggle[data-theme-toggle]:active,
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle]:hover,
+  body.perfume-page .site-header.perfume-header > button.theme-toggle[data-theme-toggle]:active {
+    transform: none;
+  }
+}
