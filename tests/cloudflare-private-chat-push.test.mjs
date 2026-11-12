@@ -55,6 +55,10 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
     if (target.startsWith(NEON_ENDPOINT + "/")) {
       assert.equal(options.headers.Authorization, "Bearer " + PUBLIC_ACCESS_TOKEN);
     }
+    if (target.startsWith("https://push.example.test/")) {
+      calls.push({ kind: "push", options });
+      return new Response(null, { status: 201 });
+    }
     const params = options.body ? JSON.parse(options.body) : {};
     if (target.endsWith("/rpc/private_chat_record_consent")) {
       calls.push({ kind: "consent", params });
@@ -72,10 +76,6 @@ test("customer purchase consent dispatches encrypted Web Push and records delive
       finishDelivered = params.p_delivered;
       calls.push({ kind: "finish", params });
       return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
-    }
-    if (target.startsWith("https://push.example.test/")) {
-      calls.push({ kind: "push", options });
-      return new Response(null, { status: 201 });
     }
     throw new Error("Unexpected network request: " + target);
   };
@@ -107,6 +107,7 @@ test("push server failure does not block successful customer consent", async () 
   let finishDelivered = true;
   globalThis.fetch = async (url, options = {}) => {
     const target = String(url);
+    if (target.startsWith("https://push.example.test/")) return new Response(null, { status: 410 });
     const params = JSON.parse(options.body);
     if (target.endsWith("/rpc/private_chat_record_consent")) {
       return new Response(JSON.stringify({ ok: true, status: "pending_advisor" }), { status: 200 });
@@ -122,7 +123,6 @@ test("push server failure does not block successful customer consent", async () 
       finishDelivered = params.p_delivered;
       return new Response(JSON.stringify({ ok: true, delivered: finishDelivered }), { status: 200 });
     }
-    if (target.startsWith("https://push.example.test/")) return new Response(null, { status: 410 });
     throw new Error("Unexpected network request: " + target);
   };
 
@@ -184,7 +184,7 @@ test("private chat dispatch uses Neon and protects server-side push secrets", ()
   assert.equal(privateChatBackend.includes("SUPABASE_PUBLISHABLE_KEY"), false);
   assert.equal(privateChatBackend.includes("/functions/v1/private-chat"), false);
   assert.ok(privateChatBackend.includes("NEON_DATA_API_URL"));
-  assert.ok(privateChatBackend.includes('Authorization: "Bearer " + accessToken'));
+  assert.ok(privateChatBackend.includes('Authorization: "Bearer " + accessToken') || privateChatBackend.includes('Authorization: "Bearer " + neonAccessToken'));
   assert.ok(privateChatBackend.includes("private_chat_claim_push_delivery"));
   assert.ok(privateChatBackend.includes("private_chat_finish_push_delivery"));
   assert.ok(privateChatBackend.includes("env.PUSH_DISPATCH_SECRET"));
