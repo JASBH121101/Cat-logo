@@ -76,7 +76,7 @@ test("paid AI entry points are hidden from Fiverr guests while Android voice sou
 
 test("guest mode explicitly permits the user-facing light/dark theme toggle", () => {
   assert.match(ui, /data-theme-toggle/);
-  assert.match(admin, /Vista de invitado: podés navegar y cambiar el tema/);
+  assert.match(admin, /Vista de invitado: podés explorar módulos, variantes y fotografías/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.site-header \.theme-toggle/);
   assert.match(demoViewer, /pointer-events: auto !important/);
   assert.match(ui, /button\.addEventListener\("click", \(\) => \{/);
