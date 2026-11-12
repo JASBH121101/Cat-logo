@@ -433,7 +433,7 @@ test("technology detail uses separate compact desktop/mobile spacing and keeps n
 
 
 test("catalog fullscreen image viewer is modal, navigable and sized to mobile and desktop viewports", { timeout: 30000 }, async () => {
-  const start = app.indexOf("function openProductImageLightbox(src, alt, galleryItems = []) {");
+  const start = app.indexOf("function closeProductImageLightbox(dialog) {");
   const end = app.indexOf("\nfunction moveTechnologyGallery(", start);
   assert.ok(start >= 0 && end > start, "the existing shared fullscreen viewer must be extractable for browser testing");
   const viewerSource = app.slice(start, end) + "\nwindow.openCatalogPhotoViewerForTest = openProductImageLightbox;";
