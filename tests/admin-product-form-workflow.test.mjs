@@ -341,8 +341,8 @@ test("manual tags are grouped in aligned responsive grids on all device widths",
 });
 
 
-test("authenticated startup initializes the blank product form baseline before enabling reload protection", () => {
-  assert.match(admin, /await loadProducts\(\);\s*\/\/ Establish the initial empty editor baseline[\s\S]*?markEditorClean\(\);\s*await checkLocalRecoveryDraft\(\);/);
+test("authenticated startup loads products before establishing the owner-only editor baseline", () => {
+  assert.match(admin, /await loadProducts\(\);\s*if \(currentUser\?\.isOwner\) await loadTeamPermissions\(\);\s*if \(!isDemoViewer\) \{\s*\/\/ Establish the initial empty editor baseline after catalog\/form setup\.\s*markEditorClean\(\);\s*await checkLocalRecoveryDraft\(\);\s*\}/);
   assert.match(admin, /function markEditorClean\(\)\s*\{\s*editorBaseline = getEditorSnapshot\(\);\s*editorIsDirty = false;/);
 });
 
