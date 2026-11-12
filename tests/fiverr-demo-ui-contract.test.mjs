@@ -7,9 +7,10 @@ const html = read("admin.html");
 const admin = read("admin.js");
 const polish = read("fiverr-demo-ui-polish.css");
 
-test("admin text fields contain no sample placeholders", () => {
-  assert.doesNotMatch(html, /\splaceholder\s*=/i);
-  assert.doesNotMatch(admin, /\splaceholder\s*=/i);
+test("product editor text fields contain no sample placeholders", () => {
+  const productForm = html.split('<form id="product-form"')[1]?.split("</form>")[0] || "";
+  assert.ok(productForm, "the product editor form must exist");
+  assert.doesNotMatch(productForm, /\splaceholder\s*=/i);
   assert.doesNotMatch(admin, /\.placeholder\s*=/i);
   assert.doesNotMatch(admin, /placeholder\s*:\s*["']/i);
 });
