@@ -63,7 +63,7 @@ test("catalog card photos are independently clickable and open the shared fullsc
   assert.ok(app.includes("function closeProductImageLightbox(dialog)"));
   assert.ok(app.includes("function handleProductImageLightboxEscape(event, dialog)"));
   assert.ok(app.includes('document.addEventListener("keydown", event => {') && app.includes("handleProductImageLightboxEscape(event, lightbox)"));
-  assert.match(app, /dialog\.removeAttribute\("open"\)/);
+  assert.ok(app.includes('dialog.removeAttribute("open")'));
   assert.match(css, /\.product-image-lightbox-photo/);
 });
 
