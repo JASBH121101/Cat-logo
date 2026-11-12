@@ -5,9 +5,7 @@ import { onRequest as guests } from "../functions/api/admin/guests.js";
 import { onRequest as upload } from "../functions/api/storage/upload.js";
 import { onRequest as remove } from "../functions/api/storage/remove.js";
 import { onRequest as info } from "../functions/api/storage/info.js";
-import { onRequest as cacheRescue } from "../functions/api/migration/cache-rescue.js";
 import { onRequest as neonAuthProxy } from "../functions/api/neon-auth/[[path]].js";
-import { onRequest as supabaseMigration } from "../functions/api/migration/supabase-r2.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -31,13 +29,12 @@ test("guest provisioning requires the dedicated HTTPS demo host and same-origin 
   });
 });
 
-test("R2 storage and cache recovery mutation APIs reject every non-demo hostname before auth or storage", async () => {
+test("R2 storage APIs reject every non-demo hostname before auth or storage", async () => {
   const env = { PRODUCT_IMAGES: { put() {}, head() {}, get() {}, delete() {} } };
   const cases = [
     [upload, "POST", "/api/storage/upload"],
     [remove, "POST", "/api/storage/remove"],
     [info, "GET", "/api/storage/info"],
-    [cacheRescue, "POST", "/api/migration/cache-rescue"]
   ];
   for (const [handler, method, path] of cases) {
     const request = new Request("https://random-preview.jb-collections.pages.dev" + path, { method });
@@ -66,12 +63,6 @@ test("uploads use conditional create-only semantics and never overwrite an exist
   assert.match(read("functions/api/migration/cache-rescue.js"), /onlyIf:\s*\{\s*etagDoesNotMatch:\s*"\*"\s*\}/);
 });
 
-test("Supabase-to-R2 migration is isolated to its dedicated migration Preview, never the Fiverr demo", async () => {
-  const wrongHost = new Request("https://fiverr-demo.jb-collections.pages.dev/api/migration/supabase-r2", { method: "POST" });
-  assert.equal((await supabaseMigration({ request: wrongHost, env: {} })).status, 404);
-  assert.match(read("functions/api/migration/supabase-r2.js"), /migration-neon-r2\.jb-collections\.pages\.dev/);
-});
-
 test("guest provisioning fails closed when Neon Data API is missing and never uses a fallback host", () => {
   const source = read("functions/api/admin/guests.js");
   assert.match(source, /env\.NEON_DATA_API_URL \|\| ""/);
@@ -79,7 +70,7 @@ test("guest provisioning fails closed when Neon Data API is missing and never us
   assert.doesNotMatch(source, /DATA_API_FALLBACK|ep-wandering-scene/);
 });
 
-test("Neon Auth proxy is restricted to the demo and isolated migration Preview hosts", async () => {
+test("Neon Auth proxy is restricted to the dedicated Fiverr demo host", async () => {
   const wrongHost = new Request("https://other-preview.jb-collections.pages.dev/api/neon-auth/get-session", { method: "GET" });
   assert.equal((await neonAuthProxy({ request: wrongHost, env: {} })).status, 404);
 
@@ -89,8 +80,6 @@ test("Neon Auth proxy is restricted to the demo and isolated migration Preview h
   const demoUnsupportedMethod = new Request("https://fiverr-demo.jb-collections.pages.dev/api/neon-auth/get-session", { method: "PATCH" });
   assert.equal((await neonAuthProxy({ request: demoUnsupportedMethod, env: {} })).status, 405);
 
-  const migrationUnsupportedMethod = new Request("https://migration-neon-r2.jb-collections.pages.dev/api/neon-auth/get-session", { method: "PATCH" });
-  assert.equal((await neonAuthProxy({ request: migrationUnsupportedMethod, env: {} })).status, 405);
 });
 
 
