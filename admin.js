@@ -6549,6 +6549,8 @@ function setProductFormStep(step, options = {}) {
 
 function syncProductFormSectionAvailability() {
   const isPerfume = activeCatalogType === "perfumery";
+  const sectionNav = form?.querySelector(".product-form-section-nav");
+  sectionNav?.classList.toggle("is-two-step", isPerfume);
   const variantsTab = document.querySelector('[data-product-form-step="2"]');
   const variantsPanel = form?.querySelector('[data-product-form-panel="2"]');
   const photosTab = document.querySelector('[data-product-form-step="3"]');
