@@ -48,7 +48,7 @@ test("public login offers owner notification instead of self-service email passw
   const helpForm = html.split('<form id="admin-login-help-form"')[1]?.split("</form>")[0] || "";
   assert.ok(helpForm, "private access-help form must exist");
   assert.match(html, /id="admin-login-help-toggle"[\s\S]*aria-expanded="false"[\s\S]*Notificar al administrador/);
-  assert.match(helpForm, /<form[^>]*hidden/);
+  assert.match(helpForm, /class="admin-form admin-login-help-form" hidden/);
   assert.match(helpForm, /id="admin-login-help-username"/);
   assert.match(helpForm, /id="admin-login-help-issue"/);
   assert.match(helpForm, /value="username"/);
