@@ -24,31 +24,52 @@ body.demo-viewer-mode #team-permissions-card {
   display:none !important;
 }
 
-/* Keep navigation and product previews; remove all write or destructive controls. */
-body.demo-viewer-mode .admin-product-editor,
-body.demo-viewer-mode #admin-section-add .admin-product-editor,
-body.demo-viewer-mode #technology-import-card,
-body.demo-viewer-mode #perfume-import-card,
-body.demo-viewer-mode [data-edit],
+/* Browsing stays interactive. Only persisted write/destructive controls are hidden. */
+body.demo-viewer-mode #save-product-button,
+body.demo-viewer-mode #publish-product-button,
+body.demo-viewer-mode #save-draft-button,
+body.demo-viewer-mode button[data-save-action],
+body.demo-viewer-mode #toggle-product-exclusive,
 body.demo-viewer-mode [data-exclusive-product],
-body.demo-viewer-mode [data-restore-product],
 body.demo-viewer-mode [data-trash-product],
+body.demo-viewer-mode [data-restore-product],
 body.demo-viewer-mode [data-delete-product],
-body.demo-viewer-mode [data-publish-product],
-body.demo-viewer-mode [data-unpublish-product],
-body.demo-viewer-mode [data-admin-action],
-body.demo-viewer-mode .admin-product-buttons button:not([data-preview-product]) {
-  display:none !important;
-}
-body.demo-viewer-mode .admin-preview-open-button,
-body.demo-viewer-mode [data-preview-product] {
-  display:inline-flex !important;
-}
-body.demo-viewer-mode #admin-section-published [data-refresh-inventory],
-body.demo-viewer-mode #admin-section-published .admin-list-refresh-control {
+body.demo-viewer-mode #commission-save-button,
+body.demo-viewer-mode [data-commission-delete],
+body.demo-viewer-mode #provider-import-apply,
+body.demo-viewer-mode #provider-review-save,
+body.demo-viewer-mode #provider-review-sync-catalog-availability,
+body.demo-viewer-mode #publish-review-confirm,
+body.demo-viewer-mode #add-variant-button,
+body.demo-viewer-mode [data-add-group-color],
+body.demo-viewer-mode [data-remove-group],
+body.demo-viewer-mode [data-remove-variant],
+body.demo-viewer-mode [data-main-image-remove],
+body.demo-viewer-mode [data-variant-image-remove],
+body.demo-viewer-mode [data-save-color-library],
+body.demo-viewer-mode [data-toggle-color-favorite],
+body.demo-viewer-mode [data-ai-color-open],
+body.demo-viewer-mode [data-color-ai-analyze],
+body.demo-viewer-mode [data-color-ai-save],
+body.demo-viewer-mode #retry-main-image-uploads,
+body.demo-viewer-mode #product-images,
+body.demo-viewer-mode .variant-image-label input[type="file"],
+body.demo-viewer-mode .variant-image-label .admin-file-picker,
+body.demo-viewer-mode label.file-button {
   display:none !important;
 }
 
+/* Existing product/variant photos remain visible; upload affordances are removed. */
+body.demo-viewer-mode .admin-image-preview-grid,
+body.demo-viewer-mode .variant-image-preview {
+  display:grid;
+  visibility:visible;
+}
+body.demo-viewer-mode [data-preview-product],
+body.demo-viewer-mode .admin-preview-open-button,
+body.demo-viewer-mode [data-edit] {
+  display:inline-flex !important;
+}
 /* A buyer may see the module shell, but private or operational data stays hidden. */
 body.demo-viewer-mode #admin-section-provider .provider-metrics,
 body.demo-viewer-mode #admin-section-provider .provider-list-card,
