@@ -76,7 +76,7 @@ const configured = Boolean(
   sessionStorage y una recarga vuelve a pedir autenticación.
 */
 const REMEMBER_SESSION_KEY = "cat-logo-remember-admin-session-v1";
-const REMEMBER_LOGIN_KEY = "cat-logo-remember-admin-email-v1";
+const REMEMBER_LOGIN_KEY = "cat-logo-remember-admin-email-v1"; // Legacy key: cleanup only, never write.
 
 function isRememberedSessionEnabled() {
   try {
@@ -86,13 +86,12 @@ function isRememberedSessionEnabled() {
   }
 }
 
-function getRememberedAdminLogin() {
-  if (!isRememberedSessionEnabled()) return "";
-  try {
-    return window.localStorage.getItem(REMEMBER_LOGIN_KEY) || "";
-  } catch {
-    return "";
-  }
+// Clear the previous app-managed username value. The browser password manager
+// remains responsible for credential autofill; the app never stores the password.
+try {
+  window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
+} catch (error) {
+  console.warn("No se pudo limpiar el usuario guardado por una versión anterior.", error);
 }
 
 const isPageReload = (() => {
@@ -1539,9 +1538,8 @@ function syncRememberControls() {
   if (label) label.textContent = enabled ? "Desactivar recordar sesión" : "Recordar sesión en este dispositivo";
 }
 
-function setRememberedSession(enabled, identifier = "") {
+function setRememberedSession(enabled) {
   const key = authStorageKey();
-  const normalizedIdentifier = String(identifier || "").trim();
   try {
     const currentToken = key
       ? (window.sessionStorage.getItem(key) || window.localStorage.getItem(key))
@@ -1549,7 +1547,6 @@ function setRememberedSession(enabled, identifier = "") {
 
     if (enabled) {
       window.localStorage.setItem(REMEMBER_SESSION_KEY, "true");
-      if (normalizedIdentifier) window.localStorage.setItem(REMEMBER_LOGIN_KEY, normalizedIdentifier);
       if (key && currentToken) {
         window.localStorage.setItem(key, currentToken);
         window.sessionStorage.removeItem(key);
@@ -1559,8 +1556,10 @@ function setRememberedSession(enabled, identifier = "") {
       if (key && currentToken) window.sessionStorage.setItem(key, currentToken);
       if (key) window.localStorage.removeItem(key);
       window.localStorage.removeItem(REMEMBER_SESSION_KEY);
-      window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
     }
+    // Remove usernames saved by older versions. Credential autofill belongs to
+    // the browser's password manager, not to application localStorage.
+    window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
   } catch (error) {
     console.warn("No se pudo actualizar la preferencia para recordar la sesión.", error);
     message("#login-status", "No se pudo actualizar esta preferencia en el dispositivo. Revisá el almacenamiento disponible.", "error");
@@ -1568,11 +1567,7 @@ function setRememberedSession(enabled, identifier = "") {
   syncRememberControls();
 }
 
-// Restore the saved username (or legacy owner email) when the session is remembered.
-const rememberedLoginIdentifier = $("#login-email");
-if (rememberedLoginIdentifier && isRememberedSessionEnabled()) {
-  rememberedLoginIdentifier.value = getRememberedAdminLogin();
-}
+// Leave the credential fields empty; the browser may autofill credentials it saved.
 syncRememberControls();
 
 function nativeBiometricApi() {
@@ -1652,7 +1647,7 @@ async function handleBiometricSettingsToggle() {
     }
     await api.enable();
     if (!isRememberedSessionEnabled()) {
-      setRememberedSession(true, currentUser?.email || "");
+      setRememberedSession(true);
       if (!isRememberedSessionEnabled()) {
         await api.disable();
         throw new Error("No se pudo recordar la sesión en este dispositivo. No se activó la huella.");
@@ -1700,7 +1695,6 @@ function showLoginScreen(statusText = "", type = "") {
 
   clearEditor();
 
-  $("#login-email").value = getRememberedAdminLogin();
   clearLoginPassword();
   syncRememberControls();
 
@@ -3469,7 +3463,7 @@ $("#delete-local-draft")?.addEventListener("click", () => { void deleteLocalReco
 
 $("#login-remember-user")?.addEventListener("change", event => {
   const enabled = Boolean(event.currentTarget.checked);
-  setRememberedSession(enabled, $("#login-email")?.value || "");
+  setRememberedSession(enabled);
   message(
     "#login-status",
     enabled
@@ -3490,7 +3484,7 @@ $("#remember-user-toggle")?.addEventListener("click", async () => {
       console.warn("No se pudo desactivar el desbloqueo biométrico al dejar de recordar la sesión.", error);
     }
   }
-  setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminLogin());
+  setRememberedSession(nextEnabled);
   setStatus(
     nextEnabled
       ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
@@ -3578,7 +3572,7 @@ passwordResetForm?.addEventListener("submit", async event => {
     if (passwordResetStatus) passwordResetStatus.textContent = "";
     passwordResetToggle?.setAttribute("aria-expanded", "false");
     message("#login-status", "Contraseña establecida. Ya podés iniciar sesión con Neon.", "success");
-    if ($("#login-email")) $("#login-email").value = email;
+    
     $("#login-password")?.focus();
   } catch (error) {
     console.warn("No se pudo establecer la contraseña de Neon.", error);
@@ -3618,8 +3612,8 @@ $("#login-form")?.addEventListener("submit", async event => {
     const loginIdentifier = $("#login-email").value.trim();
     const loginEmail = resolveCatalogLoginEmail(loginIdentifier);
     const rememberSession = Boolean($("#login-remember-user")?.checked);
-    // Store only the username/email identifier, never the password.
-    setRememberedSession(rememberSession, loginIdentifier);
+    // Remember only the authenticated session. The browser password manager handles credentials.
+    setRememberedSession(rememberSession);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
@@ -3652,6 +3646,7 @@ $("#login-form")?.addEventListener("submit", async event => {
       nuevamente, pero borramos la contraseña incorrecta.
     */
     clearLoginPassword();
+    $("#login-email").value = "";
 
     message(
       "#login-status",
