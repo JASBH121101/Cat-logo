@@ -129,7 +129,10 @@ test("JB Expert QA measures real product-editor tabs and buttons across mobile/d
             return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
           };
           if (!header || !nav || !addVariant || !removeGroup || !actionBar) return { missing: true };
-          nav.scrollIntoView({ block: "start", behavior: "instant" });
+          // Scroll beyond the nav's natural position to activate the real sticky state
+          // that can be covered by the fixed mobile admin header during user scrolling.
+          const naturalTop = nav.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: naturalTop + 240, behavior: "instant" });
           await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
           const rect = element => {
             const r = element.getBoundingClientRect();
