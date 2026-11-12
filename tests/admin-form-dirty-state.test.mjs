@@ -17,7 +17,7 @@ test("catalog switching prompts only when meaningful content would be discarded"
 
 test("the form switcher and auto-generated product selectors are excluded from meaningful input", () => {
   assert.match(admin, /field\.id === "product-catalog-type"/);
-  assert.match(admin, /field\.id === "product-type"/);
+  assert.match(admin, /#product-perfume-fields, #product-price-usd-field, #product-price-nio-field/);
   assert.match(admin, /activeCatalogType !== "perfumery"[\s\S]*#product-perfume-fields/);
   assert.match(admin, /activeCatalogType === "perfumery"[\s\S]*#product-category-field/);
 });
