@@ -1069,3 +1069,56 @@ html[data-theme="dark"] body.admin-body form#product-form .form-actions.workflow
     backdrop-filter: none;
   }
 }
+
+
+/* Keep each color gallery sized to its photo cards; a single photo must not
+   leave a full-width empty outline that looks like a loading bar. */
+html body.admin-body form#product-form .inline-color-details .variant-image-preview {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+html body.admin-body form#product-form .inline-color-details .variant-image-preview > .variant-gallery-item {
+  flex: 0 0 112px;
+  width: 112px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* The progress track uses the thumbnail width, with its status on a second
+   line. This prevents the label's minimum width from pushing the track out. */
+html body.admin-body form#product-form .admin-photo-upload-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+html body.admin-body form#product-form .admin-photo-progress-track {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+html body.admin-body form#product-form .admin-photo-progress-fill {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+html body.admin-body form#product-form .admin-photo-progress-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
