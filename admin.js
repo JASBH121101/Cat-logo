@@ -3786,7 +3786,7 @@ const DEMO_VIEWER_MODULE_NOTES = {
   trash: ["Papelera", "La papelera se muestra como módulo, pero la restauración y eliminación están bloqueadas para la cuenta invitada."],
   provider: ["Productos por revisar", "Vista previa del seguimiento de proveedores. Los precios, notas e historiales internos permanecen privados."],
   reviewed: ["Productos revisados", "Vista previa del historial de revisión. Los datos del proveedor están reservados al propietario."],
-  ai: ["JB Manager AI", "El módulo se muestra para evaluar su diseño. Las consultas y acciones de IA están deshabilitadas en esta demo."],
+  ai: ["JB Manager AI", "ChatGPT responde preguntas sobre el catálogo publicado. La cuenta invitada solo puede consultar; no puede preparar productos ni modificar precios o datos."],
   messages: ["Mensajería de clientes", "El módulo se muestra como referencia. Las conversaciones y los datos de clientes no se exponen a la cuenta invitada."],
   updates: ["Importar cambios del proveedor", "Vista previa del importador. No se pueden cargar archivos ni aplicar actualizaciones."]
 };
