@@ -753,88 +753,12 @@ test("Copilot uses a smaller JSON schema and output budget for normal questions 
 });
 
 
-test("ChatGPT uses the OpenAI Responses API, a bounded context and structured JSON output", async () => {
-  const originalFetch = globalThis.fetch;
-  let openAiRequest = null;
-  const assistantResult = {
-    message: "Puedo ayudarte con el catálogo publicado.",
-    intent: "question",
-    product_query: "",
-    provider_price_usd: null,
-    provider_price_nio: null,
-    catalog_type: "unknown",
-    missing_fields: [],
-    product_draft: null
-  };
-  globalThis.fetch = async (input, init = {}) => {
-    const url = String(input);
-    if (url.includes("api.openai.com/v1/responses")) {
-      openAiRequest = { url, headers: init.headers, body: JSON.parse(init.body) };
-      return Response.json({
-        status: "completed",
-        output: [{
-          type: "message",
-          content: [{ type: "output_text", text: JSON.stringify(assistantResult) }]
-        }]
-      });
-    }
-    throw new Error("Unexpected model request: " + url);
-  };
-
-  try {
-    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/jb-manager-ai", {
-      method: "POST",
-      headers: {
-        Origin: "https://fiverr-demo.jb-collections.pages.dev",
-        Authorization: "Bearer test-admin-token",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: "Mostrame los productos publicados",
-        products: [
-          { id: "public-1", name: "Producto visible", is_published: true, workflow_status: "published" },
-          { id: "private-1", name: "Secreto interno", is_published: false, workflow_status: "unpublished" }
-        ]
-      })
-    });
-    const response = await callJbAi({
-      request,
-      env: { OPENAI_API_KEY: "test-only-key", OPENAI_MODEL: "gpt-6-luna" },
-      mockNeonContext: {
-        is_admin: false,
-        admin_id: null,
-        role: "demo_viewer",
-        is_owner: false,
-        is_demo_viewer: true,
-        username: "stevenb",
-        permissions: { "catalog.view_all": true }
-      }
-    });
-    const payload = await response.json();
-    assert.equal(response.status, 200);
-    assert.equal(payload.assistant.model_used, "gpt-6-luna");
-    assert.equal(payload.assistant.message, assistantResult.message);
-    assert.equal(openAiRequest.url, "https://api.openai.com/v1/responses");
-    assert.equal(openAiRequest.headers.Authorization, "Bearer test-only-key");
-    assert.equal(openAiRequest.body.model, "gpt-6-luna");
-    assert.equal(openAiRequest.body.reasoning.effort, "low");
-    assert.equal(openAiRequest.body.text.format.type, "json_schema");
-    assert.match(openAiRequest.body.input, /Producto visible/);
-    assert.doesNotMatch(openAiRequest.body.input, /Secreto interno/);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
-test("read-only demo viewers cannot ask the AI to create products or change provider prices", async () => {
-  const originalFetch = globalThis.fetch;
-  let modelCalled = false;
-  globalThis.fetch = async url => {
-    if (String(url).includes("api.openai.com/v1/responses")) {
-      modelCalled = true;
-      return Response.json({ output: [] });
-    }
-    throw new Error("Unexpected model request: " + String(url));
+test("Fiverr demo AI endpoint returns 410 before auth or provider invocation", async () => {
+  const previousFetch = globalThis.fetch;
+  let externalRequestMade = false;
+  globalThis.fetch = async () => {
+    externalRequestMade = true;
+    throw new Error("The Fiverr demo must never call a paid AI provider");
   };
 
   try {
@@ -845,63 +769,16 @@ test("read-only demo viewers cannot ask the AI to create products or change prov
         Authorization: "Bearer test-demo-token",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: "Prepará un producto nuevo, una laptop" })
+      body: JSON.stringify({ message: "Hola, asistente" })
     });
-    const response = await callJbAi({
+    const result = await jbAiEndpoint.onRequestPost({
       request,
-      env: { OPENAI_API_KEY: "test-only-key" },
-      mockNeonContext: {
-        is_admin: false,
-        admin_id: null,
-        role: "demo_viewer",
-        is_owner: false,
-        is_demo_viewer: true,
-        username: "stevenb",
-        permissions: { "catalog.view_all": true }
-      }
+      env: { OPENAI_API_KEY: "test-only-key", GEMINI_API_KEY: "test-only-key" }
     });
-    assert.equal(response.status, 403);
-    assert.equal((await response.json()).error, "demo_readonly_ai");
-    assert.equal(modelCalled, false);
+    assert.equal(result.status, 410);
+    assert.equal((await result.json()).error, "assistant_disabled_in_demo");
+    assert.equal(externalRequestMade, false);
   } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
-test("the read-only demo AI fails closed until the OpenAI API secret is configured", async () => {
-  const originalFetch = globalThis.fetch;
-  let modelCalled = false;
-  globalThis.fetch = async url => {
-    if (String(url).includes("api.openai.com")) modelCalled = true;
-    throw new Error("No model API should be called without OPENAI_API_KEY");
-  };
-  try {
-    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/jb-manager-ai", {
-      method: "POST",
-      headers: {
-        Origin: "https://fiverr-demo.jb-collections.pages.dev",
-        Authorization: "Bearer test-demo-token",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: "Explicame cómo comprar un producto publicado" })
-    });
-    const response = await callJbAi({
-      request,
-      env: {},
-      mockNeonContext: {
-        is_admin: false,
-        admin_id: null,
-        role: "demo_viewer",
-        is_owner: false,
-        is_demo_viewer: true,
-        username: "stevenb",
-        permissions: { "catalog.view_all": true }
-      }
-    });
-    assert.equal(response.status, 503);
-    assert.equal((await response.json()).error, "openai_not_configured");
-    assert.equal(modelCalled, false);
-  } finally {
-    globalThis.fetch = originalFetch;
+    globalThis.fetch = previousFetch;
   }
 });
