@@ -3663,6 +3663,11 @@ $("#login-form")?.addEventListener("submit", async event => {
 });
 
 $("#logout-button")?.addEventListener("click", async event => {
+  const settingsMenu = $("#admin-settings-menu");
+  if (settingsMenu) settingsMenu.hidden = true;
+  $("#admin-settings-toggle")?.setAttribute("aria-expanded", "false");
+  setMobileSidebarOpen(false);
+
   await saveLocalRecoveryDraft();
   const button = event.currentTarget;
 
@@ -3858,7 +3863,7 @@ document.querySelectorAll("[data-admin-section]").forEach(button => button.addEv
 document.addEventListener("click", event => {
   if (currentUser?.role !== "demo_viewer") return;
   const allowed = event.target.closest(
-    "[data-admin-section], [data-theme-toggle], #admin-menu-toggle, #admin-sidebar-backdrop, #logout-button, [data-preview-product], .admin-preview-open-button, summary"
+    "[data-admin-section], [data-theme-toggle], #admin-settings-toggle, #admin-menu-toggle, #admin-sidebar-backdrop, #logout-button, [data-preview-product], .admin-preview-open-button, summary"
   );
   if (allowed) return;
   const action = event.target.closest("button, [role='button'], input[type='submit']");
