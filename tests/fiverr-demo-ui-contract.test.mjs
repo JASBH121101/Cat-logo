@@ -26,6 +26,21 @@ test("required labels receive red asterisks while optional fields remain unmarke
   assert.match(polish, /html\[data-theme="dark"\][\s\S]*\.required-mark[\s\S]*color:\s*#ff8293/i);
 });
 
+test("admin login starts blank but supports browser-managed credential autofill", () => {
+  const loginForm = html.split('<form id="login-form"')[1]?.split("</form>")[0] || "";
+  assert.ok(loginForm, "login form must exist");
+  assert.match(loginForm, /id="login-email"[^>]*name="username"[^>]*type="text"[^>]*autocomplete="username"/s);
+  assert.match(loginForm, /id="login-password"[^>]*name="password"[^>]*type="password"[^>]*autocomplete="current-password"/s);
+  assert.doesNotMatch(loginForm, /id="login-email"[^>]*value\s*=/s);
+  assert.doesNotMatch(loginForm, /id="login-password"[^>]*value\s*=/s);
+  assert.match(loginForm, /La sesión se conserva en este dispositivo[\s\S]*tu navegador guardó tus credenciales[\s\S]*JB Manager no guarda tu contraseña/);
+  assert.match(admin, /function setRememberedSession\(enabled\)/);
+  assert.match(admin, /localStorage\.removeItem\(REMEMBER_LOGIN_KEY\)/);
+  assert.doesNotMatch(admin, /function getRememberedAdminLogin/);
+  assert.doesNotMatch(admin, /localStorage\.setItem\(REMEMBER_LOGIN_KEY/);
+  assert.doesNotMatch(admin, /login-email["']\)\.value\s*=\s*getRemembered/);
+});
+
 test("permissions layout defines readable spacing, wrapping and a mobile single-column grid", () => {
   assert.match(polish, /\.team-permission-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(polish, /\.team-permission-copy\s*\{[\s\S]*display:\s*grid/);
@@ -43,7 +58,7 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
   assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-demo-dual-theme1/);
-  assert.ok(html.includes("admin.js?v=20261112-button-audit2"));
+  assert.ok(html.includes("admin.js?v=20261112-browser-credential-autofill1"));
   assert.ok(html.includes("demo-viewer.css?v=20261112-guest-explore-readonly1"));
 });
 
