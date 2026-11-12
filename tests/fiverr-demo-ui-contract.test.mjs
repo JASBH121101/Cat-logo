@@ -69,6 +69,7 @@ test("demo viewers may chat with the AI but cannot run scanner or product-prefil
   assert.match(ai, /catalogContext\(availableProducts, message\)/);
   assert.match(ai, /new URL\("\/api\/jb-manager-ai", window\.location\.origin\)/);
   assert.match(demoViewer, /\.jb-ai-prefill-action/);
+  assert.match(admin, /ChatGPT responde preguntas sobre el catálogo publicado/);
   assert.match(demoViewer, /\.jb-gp-scanner/);
   assert.doesNotMatch(demoViewer, /pointer-events:none !important;[\s\S]{0,80}jb-manager-ai-chat/);
 });
