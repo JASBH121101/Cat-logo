@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { chromium } from "playwright";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const html = read("admin.html");
@@ -146,10 +147,54 @@ test("guest mode explicitly permits the user-facing light/dark theme toggle", ()
   assert.match(admin, /Vista de invitado: podés explorar módulos, variantes y fotografías/);
   assert.match(demoViewer, /body\.demo-viewer-mode \.site-header \.theme-toggle/);
   assert.match(demoViewer, /pointer-events: auto !important/);
-  assert.match(ui, /button\.addEventListener\("click", \(\) => \{/);
+  assert.match(ui, /document\.addEventListener\("click", handleThemeToggleClick, true\)/);
+  assert.match(ui, /function handleThemeToggleClick\(event\)/);
   assert.match(ui, /applyTheme\(next\);\s*saveTheme\(next\);/);
 });
 
+
+test("admin theme toggle works after dashboard render and persists both directions", { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      const page = await browser.newPage({ viewport });
+      await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body class="admin-body"><header class="site-header admin-header"><button id="admin-menu-toggle" type="button">Menu</button><a class="brand" href="./">JB Manager</a><div class="admin-header-context">Panel de control</div></header><main id="dashboard"></main></body></html>');
+      await page.addScriptTag({ content: ui });
+
+      const toggle = page.locator(".admin-header [data-theme-toggle]");
+      assert.equal(await toggle.count(), 1, "exactly one theme toggle should be present");
+      assert.equal(await toggle.isVisible(), true, "theme toggle should be visible");
+
+      assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+      // Click the nested icon to make sure delegated handling works for child targets.
+      await toggle.locator(".theme-toggle-icon").click();
+      assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
+      assert.equal(await toggle.locator(".theme-toggle-label").textContent(), "Oscuro");
+      assert.equal(await toggle.getAttribute("aria-pressed"), "false");
+      assert.equal(await page.evaluate(() => localStorage.getItem("ct-catalog-theme")), "light");
+
+      await toggle.click();
+      assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+      assert.equal(await toggle.locator(".theme-toggle-label").textContent(), "Claro");
+      assert.equal(await toggle.getAttribute("aria-pressed"), "true");
+      assert.equal(await page.evaluate(() => localStorage.getItem("ct-catalog-theme")), "dark");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test("admin catalog links always open the split JB Collections landing page", () => {
+  assert.match(admin, /const publicCatalogLanding = new URL\("\.\/", window\.location\.href\)\.href/);
+  assert.match(admin, /if \(publicLink\) publicLink\.href = publicCatalogLanding/);
+  assert.match(admin, /if \(sidebarCatalogLink\) sidebarCatalogLink\.href = publicCatalogLanding/);
+  assert.doesNotMatch(admin, /sidebarCatalogLink\.href = isPerfume \? "\.\/perfumeria\/" : "\.\/tecnologia\//);
+  assert.ok(html.includes('href="./" class="admin-sidebar-catalog-link"'));
+});
 
 test("Fiverr guest can open Settings and use logout without exposing other settings actions", () => {
   assert.ok(admin.includes("#admin-settings-toggle"));
