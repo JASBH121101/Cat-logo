@@ -39,6 +39,7 @@ test("admin login starts blank but supports browser-managed credential autofill"
   assert.doesNotMatch(admin, /function getRememberedAdminLogin/);
   assert.doesNotMatch(admin, /localStorage\.setItem\(REMEMBER_LOGIN_KEY/);
   assert.doesNotMatch(admin, /login-email["']\)\.value\s*=\s*getRemembered/);
+  assert.match(admin, /const loginIdentifier = \$\("#login-email"\);[\s\S]*?if \(loginIdentifier\) loginIdentifier\.value = ""/);
 });
 
 test("permissions layout defines readable spacing, wrapping and a mobile single-column grid", () => {
