@@ -22,7 +22,7 @@ test("JB Manager AI is a reachable authenticated admin workspace", () => {
   assert.match(html, /id="jb-ai-floating-launcher"/);
   assert.match(html, /id="jb-ai-voice"/);
   assert.match(admin, /initJbManagerAI/);
-  assert.match(admin, /jbManagerAI\\?\\.setAuthenticatedUser\\(currentUser\\)/);
+  assert.ok(admin.includes("jbManagerAI?.setAuthenticatedUser(currentUser)"));
   assert.match(admin, /jbManagerAI\?\.clearSession\(\)/);
   assert.match(css, /\.jb-manager-ai-workspace/);
   assert.match(css, /\.jb-ai-floating-launcher/);
