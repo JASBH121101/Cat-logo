@@ -21,7 +21,7 @@ body.admin-body .admin-nav-button{box-sizing:border-box!important;min-height:42p
 body.admin-body .admin-nav-button:hover{transform:translateY(-1px)!important;box-shadow:0 3px 8px rgba(22,39,76,.1)!important}
 
 /* Keep step tabs below the 76px sticky header; the old top:8px/z-index:80 caused overlap. */
-html body.admin-body #product-form .product-form-section-nav{position:sticky!important;top:calc(76px + env(safe-area-inset-top,0px) + 10px)!important;z-index:15!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:8px!important;min-width:0!important;padding:8px!important;margin:0 0 16px!important;border-radius:13px!important;scroll-margin-top:calc(76px + env(safe-area-inset-top,0px) + 18px)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html body.admin-body #product-form .product-form-section-nav{position:sticky!important;top:calc(var(--jb-admin-header-height,76px) + env(safe-area-inset-top,0px) + 12px)!important;z-index:19!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:8px!important;min-width:0!important;padding:8px!important;margin:0 0 16px!important;border-radius:13px!important;scroll-margin-top:calc(var(--jb-admin-header-height,76px) + env(safe-area-inset-top,0px) + 20px)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 html[data-theme="light"] body.admin-body #product-form .product-form-section-nav{border:1px solid #d5deef!important;background:rgba(248,250,255,.97)!important;box-shadow:0 2px 8px rgba(28,48,92,.08)!important}
 html[data-theme="dark"] body.admin-body #product-form .product-form-section-nav{border:1px solid #3b5072!important;background:rgba(15,28,49,.97)!important;box-shadow:0 2px 8px rgba(0,0,0,.22)!important}
 html body.admin-body #product-form .product-form-section-tab{box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;min-width:0!important;min-height:46px!important;padding:8px 10px!important;border:1px solid transparent!important;border-radius:10px!important;color:var(--jb-btn-muted)!important;background:transparent!important;font-family:"DM Sans",sans-serif!important;font-size:13px!important;font-weight:700!important;line-height:1.2!important;letter-spacing:0!important;white-space:normal!important;box-shadow:none!important;transform:none!important}
@@ -53,7 +53,7 @@ body.admin-body .admin-list-refresh-control .admin-inventory-refresh-button,body
 body.admin-body details.variant-config-collapse>summary{min-height:48px!important;padding:10px 12px!important;border-radius:11px!important}
 
 @media(max-width:760px){
- html body.admin-body #product-form .product-form-section-nav{top:calc(76px + env(safe-area-inset-top,0px) + 8px)!important;z-index:15!important;gap:6px!important;padding:6px!important}
+ html body.admin-body #product-form .product-form-section-nav{top:calc(var(--jb-admin-header-height,76px) + env(safe-area-inset-top,0px) + 12px)!important;z-index:19!important;gap:6px!important;padding:6px!important}
  html body.admin-body #product-form .product-form-section-tab{min-height:44px!important;gap:5px!important;padding:7px 5px!important;font-size:12px!important}
  body.admin-body #product-form .product-form-section-tab .product-form-section-number{flex-basis:23px!important;width:23px!important;height:23px!important;min-width:23px!important;border-radius:7px!important;font-size:11px!important}
  html body.admin-body form#product-form .form-actions.workflow-form-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;padding:9px!important}
@@ -142,11 +142,14 @@ html body.admin-body #product-form .variant-config-group-heading [data-remove-gr
 }
 
 
-/* Final mobile QA correction: the step tabs must never sit underneath the fixed admin header. */
+/* Single authoritative sticky offset, aligned to the actual admin header on each breakpoint. */
+body.admin-body { --jb-admin-header-height: 76px; }
 @media (max-width: 760px) {
-  html body.admin-body #product-form .product-form-section-nav {
-    top: calc(112px + env(safe-area-inset-top, 0px) + 8px) !important;
-    scroll-margin-top: calc(112px + env(safe-area-inset-top, 0px) + 16px) !important;
-    z-index: 12 !important;
-  }
+  body.admin-body { --jb-admin-header-height: 88px; }
 }
+html body.admin-body #product-form .product-form-section-nav {
+  top: calc(var(--jb-admin-header-height, 76px) + env(safe-area-inset-top, 0px) + 12px) !important;
+  scroll-margin-top: calc(var(--jb-admin-header-height, 76px) + env(safe-area-inset-top, 0px) + 20px) !important;
+  z-index: 19 !important;
+}
+
