@@ -42,6 +42,22 @@ test("rejects non-POST methods", async () => {
   assert.equal(response.status, 405);
 });
 
+test("answers preflight for the exact Fiverr demo origin", async () => {
+  const demoOrigin = "https://fiverr-demo.jb-collections.pages.dev";
+  const response = await onRequest({ request: makeRequest({}, { method: "OPTIONS", origin: demoOrigin }), env: {} });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), demoOrigin);
+  assert.match(response.headers.get("Access-Control-Allow-Headers") || "", /Authorization/i);
+});
+
+test("does not allow arbitrary Cloudflare Pages preview origins", async () => {
+  const response = await onRequest({
+    request: makeRequest({ query: "blue" }, { origin: "https://untrusted-preview.jb-collections.pages.dev", authorization: TOKEN }),
+    env: { AI: { run: async () => ({}) } }
+  });
+  assert.equal(response.status, 403);
+});
+
 test("answers preflight for the production origin", async () => {
   const response = await onRequest({ request: makeRequest({}, { method: "OPTIONS" }), env: {} });
   assert.equal(response.status, 204);
