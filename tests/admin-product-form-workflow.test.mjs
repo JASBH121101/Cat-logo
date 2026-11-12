@@ -303,7 +303,7 @@ test("native reload warning is restricted to the active visible Add Product pane
 });
 
 test("switching catalogs does not prompt for a clean form or an unchanged open product", () => {
-  assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change", \(\) => \{\s*const requested = normalizeCatalogType\(activeCatalogSelector\.value\);\s*if \(requested === activeCatalogType\) return;\s*updateEditorDirtyState\(\);\s*if \(editorIsDirty\)/);
+  assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change", \(\) => \{\s*const requested = normalizeCatalogType\(activeCatalogSelector\.value\);\s*if \(requested === activeCatalogType\) return;\s*updateEditorDirtyState\(\);\s*const hasDiscardableContent = editorIsDirty && hasMeaningfulEditorContent\(\);\s*if \(hasDiscardableContent\)/);
   assert.doesNotMatch(admin, /const hasOpenProduct = Boolean\(\$\("#product-id"\)\?\.value\);\s*if \(hasOpenProduct \|\| editorIsDirty\)/);
 });
 
