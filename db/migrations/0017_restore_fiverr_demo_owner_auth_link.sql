@@ -29,7 +29,7 @@ BEGIN
   END IF;
 
   UPDATE public.admin_users
-  SET neon_auth_user_id = '8889c812-8c63-4ce2-b9ee-fde676b85031'::uuid
+  SET neon_auth_user_id = '8889c812-8c63-4ce2-b9ee-fde676b85031'
   WHERE username = 'JaredBH'
     AND role = 'admin'
     AND is_owner IS TRUE;
@@ -42,7 +42,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM public.admin_users au
-    JOIN neon_auth."user" nu ON nu.id = au.neon_auth_user_id
+    JOIN neon_auth."user" nu ON nu.id::text = au.neon_auth_user_id
     WHERE au.username = 'JaredBH'
       AND au.role = 'admin'
       AND au.is_owner IS TRUE
