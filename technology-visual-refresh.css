@@ -4418,3 +4418,233 @@ html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid .pro
     min-height:42px !important;
   }
 }
+
+
+/* JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL.
+   Las vitrinas conservan su paleta y sus insignias, pero no una geometría
+   distinta: misma foto cuadrada, misma jerarquía y mismo flujo de información. */
+@media (min-width: 761px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 330px)) !important;
+    justify-content: center !important;
+    align-content: start !important;
+    align-items: stretch !important;
+    gap: clamp(14px, 1.6vw, 22px) !important;
+    width: 100% !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 330px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image {
+    display: grid !important;
+    place-items: center !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1 !important;
+    overflow: hidden !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    transform: none !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-card-content {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 12px 13px 13px !important;
+    gap: 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-card h3,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-card h3,
+  body.technology-catalog #high-performance-grid.featured-grid .product-card h3,
+  body.technology-catalog #quality-price-grid.featured-grid .product-card h3,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-card h3 {
+    font-size: clamp(14px, 1.12vw, 17px) !important;
+    line-height: 1.32 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-price,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-price,
+  body.technology-catalog #high-performance-grid.featured-grid .product-price,
+  body.technology-catalog #quality-price-grid.featured-grid .product-price,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-price {
+    font-size: clamp(20px, 1.55vw, 25px) !important;
+    line-height: 1.12 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-actions,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-actions,
+  body.technology-catalog #high-performance-grid.featured-grid .product-actions,
+  body.technology-catalog #quality-price-grid.featured-grid .product-actions,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    margin-top: auto !important;
+    padding-top: 5px !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-view-button,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-view-button,
+  body.technology-catalog #high-performance-grid.featured-grid .product-view-button,
+  body.technology-catalog #quality-price-grid.featured-grid .product-view-button,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1199px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 2560px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 350px)) !important;
+    gap: 24px !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    max-width: 350px !important;
+  }
+}
+
+/* Mobile: every showcase retains the same two-column product-card scan. */
+@media (max-width: 760px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-card-content {
+    width: 100% !important;
+    min-height: 0 !important;
+    padding: 10px 9px 10px !important;
+    gap: 4px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    gap: 8px !important;
+  }
+}
