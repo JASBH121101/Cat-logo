@@ -72,6 +72,6 @@ test("contact channel controls are responsive, keyboard-focusable and styled con
   assert.ok(channelCss.includes("@media (max-width: 560px)"));
   assert.ok(technologyHtml.includes("contact-channels.css?v=20261029-theme-contrast1"));
   assert.ok(perfumeryHtml.includes("contact-channels.css?v=20261029-theme-contrast1"));
-  assert.match(technologyHtml, /<script type="module" src="[^"]*app\.js\?v=20261112-lightbox-close-and-owner-link1"/);
+  assert.match(technologyHtml, /<script type="module" src="[^"]*app\.js\?v=20261112-lightbox-close-fallback2"/);
   assert.ok(perfumeryHtml.includes("perfumeria.js?v=20261111-preview-media-host1"));
 });
