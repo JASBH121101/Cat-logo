@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
 
 const admin = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
@@ -76,7 +77,7 @@ test("admin hides the floating back-to-top control and forces fresh script URLs"
   assert.match(ui, /querySelectorAll\("\[data-back-to-top\]"\)\.forEach\(button => button\.remove\(\)\)/);
   assert.match(html, /src="admin\.js\?v=\d{8}-[^"]+"/);
   assert.match(html, /admin-private-chat\.css\?v=20261029-chat-reply-theme3/);
-  assert.match(html, /ui\.js\?v=20261027-audit-cascade1/);
+  assert.match(html, /ui\.js\?v=20261112-admin-theme-toggle-direct1/);
 });
 
 test("smart duplicate suggestions compare only the same brand and catalog, and reuse existing product details", () => {
@@ -303,7 +304,7 @@ test("native reload warning is restricted to the active visible Add Product pane
 });
 
 test("switching catalogs does not prompt for a clean form or an unchanged open product", () => {
-  assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change", \(\) => \{\s*const requested = normalizeCatalogType\(activeCatalogSelector\.value\);\s*if \(requested === activeCatalogType\) return;\s*updateEditorDirtyState\(\);\s*if \(editorIsDirty\)/);
+  assert.match(admin, /activeCatalogSelector\?\.addEventListener\("change", \(\) => \{\s*const requested = normalizeCatalogType\(activeCatalogSelector\.value\);\s*if \(requested === activeCatalogType\) return;\s*updateEditorDirtyState\(\);\s*const hasDiscardableContent = editorIsDirty && hasMeaningfulEditorContent\(\);\s*if \(hasDiscardableContent\)/);
   assert.doesNotMatch(admin, /const hasOpenProduct = Boolean\(\$\("#product-id"\)\?\.value\);\s*if \(hasOpenProduct \|\| editorIsDirty\)/);
 });
 
@@ -341,8 +342,8 @@ test("manual tags are grouped in aligned responsive grids on all device widths",
 });
 
 
-test("authenticated startup initializes the blank product form baseline before enabling reload protection", () => {
-  assert.match(admin, /await loadProducts\(\);\s*\/\/ Establish the initial empty editor baseline[\s\S]*?markEditorClean\(\);\s*await checkLocalRecoveryDraft\(\);/);
+test("authenticated startup loads products before establishing the owner-only editor baseline", () => {
+  assert.match(admin, /await loadProducts\(\);\s*if \(currentUser\?\.isOwner\) await loadTeamPermissions\(\);\s*if \(!isDemoViewer\) \{\s*\/\/ Establish the initial empty editor baseline after catalog\/form setup\.\s*markEditorClean\(\);\s*await checkLocalRecoveryDraft\(\);\s*\}/);
   assert.match(admin, /function markEditorClean\(\)\s*\{\s*editorBaseline = getEditorSnapshot\(\);\s*editorIsDirty = false;/);
 });
 
@@ -432,8 +433,63 @@ test("tag groups stay responsive and retain their catalog-specific visibility", 
 });
 
 test("APK build refreshes and verifies the shared admin accessibility stylesheet", () => {
-  assert.match(html, /admin-accessibility\.css\?v=20261101-tags-and-variants2/);
+  assert.match(html, /admin-accessibility\.css\?v=20261112-product-preview-close1/);
   assert.match(html, /admin-workflow\.css\?v=20261101-category-aware-form1/);
   assert.match(androidWorkflow, /admin-accessibility\.css/);
   assert.match(androidWorkflow, /node --test[\s\S]*tests\/admin-product-form-workflow\.test\.mjs/);
+});
+
+
+test("admin product preview dialog closes with X and Escape on mobile and desktop", { timeout: 30000 }, async () => {
+  const start = admin.indexOf("function closeAdminProductPreviewDialog() {");
+  const end = admin.indexOf("\nfunction previewMoney(", start);
+  assert.ok(start >= 0 && end > start, "admin preview close handlers must be extractable");
+  const previewCloseSource =
+    'const productPreviewDialog = document.querySelector("#admin-product-preview-dialog");\n' +
+    'const productPreviewContent = document.querySelector("#admin-product-preview-content");\n' +
+    admin.slice(start, end);
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const viewport of [
+      { name: "mobile", width: 390, height: 844 },
+      { name: "desktop", width: 1365, height: 900 },
+    ]) {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.setContent(
+        '<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1">' +
+        '<style>' + accessibilityCss + '</style></head><body class="admin-body">' +
+        '<button id="preview-trigger" type="button">Vista previa</button>' +
+        '<dialog id="admin-product-preview-dialog" class="admin-product-preview-dialog">' +
+        '<header><h2>Vista de consulta</h2><button class="admin-product-preview-close" type="button" data-close-product-preview aria-label="Cerrar vista del producto">×</button></header>' +
+        '<div id="admin-product-preview-content">Contenido de prueba</div></dialog></body></html>'
+      );
+      await page.addScriptTag({ content: previewCloseSource });
+
+      await page.evaluate(() => document.querySelector("#admin-product-preview-dialog").showModal());
+      assert.equal(await page.locator("#admin-product-preview-dialog").evaluate(dialog => dialog.open), true,
+        viewport.name + ": preview should open");
+      await page.locator("[data-close-product-preview]").click();
+      const xState = await page.locator("#admin-product-preview-dialog").evaluate(dialog => ({
+        open: dialog.open,
+        modal: dialog.matches(":modal"),
+        display: getComputedStyle(dialog).display
+      }));
+      assert.deepEqual(xState, { open: false, modal: false, display: "none" },
+        viewport.name + ": X must close and hide the preview dialog");
+
+      await page.evaluate(() => document.querySelector("#admin-product-preview-dialog").showModal());
+      await page.keyboard.press("Escape");
+      const escapeState = await page.locator("#admin-product-preview-dialog").evaluate(dialog => ({
+        open: dialog.open,
+        modal: dialog.matches(":modal"),
+        display: getComputedStyle(dialog).display
+      }));
+      assert.deepEqual(escapeState, { open: false, modal: false, display: "none" },
+        viewport.name + ": Escape must close and hide the preview dialog");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
 });

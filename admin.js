@@ -1,7 +1,8 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createCatalogClient, requestCatalogPasswordReset, completeCatalogPasswordReset } from "./db-client.js?v=20261112-admin-access-help1";
 import { initProviderTools } from "./admin-provider.js?v=20261031-provider-review4";
+import { hasMeaningfulEditorInput } from "./editor-dirty-state.js?v=20261112-meaningful-editor-input1";
 import { detectPrivateChatNotificationEvents, enableAdminNotifications, showAdminNotification } from "./admin-notifications.mjs?v=20261029-native-local-notifications1";
-import { initJbManagerAI } from "./admin-ai.js?v=20261031-fast-copilot2";
+import { initJbManagerAI } from "./admin-ai.js?v=20261112-openai-readonly-chat1";
 import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-jarvis-timing-breakdown1";
 
 /* =========================================================
@@ -10,23 +11,72 @@ import { initGoPartnersScanner } from "./admin-gopartners-scanner.js?v=20261031-
    ========================================================= */
 
 const CONFIG = window.CATALOG_CONFIG || {};
+
+// Marca con asterisco rojo únicamente los controles realmente obligatorios.
+// También cubre etiquetas que se crean dinámicamente al editar variantes.
+function addRequiredFieldIndicator(label) {
+  if (!(label instanceof HTMLLabelElement)) return;
+  const control = label.querySelector("input[required], select[required], textarea[required]");
+  if (!control || label.querySelector(".required-mark")) return;
+
+  let insertionTarget = control;
+  while (insertionTarget.parentElement && insertionTarget.parentElement !== label) {
+    insertionTarget = insertionTarget.parentElement;
+  }
+  const precedingNodes = [];
+  for (const node of Array.from(label.childNodes)) {
+    if (node === insertionTarget) break;
+    precedingNodes.push(node);
+  }
+  const hasLabelCopy = precedingNodes.some(node => String(node.textContent || "").trim());
+  const marker = document.createElement("span");
+  marker.className = "required-mark";
+  marker.setAttribute("aria-hidden", "true");
+  marker.textContent = "*";
+
+  if (hasLabelCopy) {
+    const copy = document.createElement("span");
+    copy.className = "field-label-copy";
+    label.insertBefore(copy, precedingNodes[0]);
+    precedingNodes.forEach(node => copy.append(node));
+    copy.append(marker);
+  } else {
+    label.insertBefore(marker, insertionTarget);
+  }
+}
+
+function applyRequiredFieldIndicators(root = document) {
+  if (root instanceof HTMLLabelElement) addRequiredFieldIndicator(root);
+  root.querySelectorAll?.("label").forEach(addRequiredFieldIndicator);
+}
+
+applyRequiredFieldIndicators();
+if (typeof MutationObserver !== "undefined" && document.body) {
+  const requiredFieldObserver = new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(node => {
+      if (!(node instanceof Element)) return;
+      const containingLabel = node.closest("label");
+      if (containingLabel) addRequiredFieldIndicator(containingLabel);
+      applyRequiredFieldIndicators(node);
+    }));
+  });
+  requiredFieldObserver.observe(document.body, { childList: true, subtree: true });
+}
 // Custom technology tags are kept as separate chips while editing a product.
 let customProductTags = [];
 
 const configured = Boolean(
-  CONFIG.supabaseUrl &&
-  CONFIG.supabaseAnonKey &&
-  !String(CONFIG.supabaseUrl).includes("PON_AQUI") &&
-  !String(CONFIG.supabaseAnonKey).includes("PON_AQUI")
+  CONFIG.neonAuthUrl &&
+  CONFIG.neonDataApiUrl
 );
 
 /*
-  «Recordar mi sesión» conserva la sesión autenticada de Supabase en este
+  «Recordar mi sesión» conserva la sesión autenticada de Neon en este
   dispositivo, sin guardar la contraseña. Si está desactivado, se usa
   sessionStorage y una recarga vuelve a pedir autenticación.
 */
 const REMEMBER_SESSION_KEY = "cat-logo-remember-admin-session-v1";
-const REMEMBER_EMAIL_KEY = "cat-logo-remember-admin-email-v1";
+const REMEMBER_LOGIN_KEY = "cat-logo-remember-admin-email-v1"; // Legacy key: cleanup only, never write.
 
 function isRememberedSessionEnabled() {
   try {
@@ -36,13 +86,12 @@ function isRememberedSessionEnabled() {
   }
 }
 
-function getRememberedAdminEmail() {
-  if (!isRememberedSessionEnabled()) return "";
-  try {
-    return window.localStorage.getItem(REMEMBER_EMAIL_KEY) || "";
-  } catch {
-    return "";
-  }
+// Clear the previous app-managed username value. The browser password manager
+// remains responsible for credential autofill; the app never stores the password.
+try {
+  window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
+} catch (error) {
+  console.warn("No se pudo limpiar el usuario guardado por una versión anterior.", error);
 }
 
 const isPageReload = (() => {
@@ -55,12 +104,11 @@ const isPageReload = (() => {
 
 if (isPageReload && !isRememberedSessionEnabled()) {
   try {
-    const projectRef = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
-    const key = `sb-${projectRef}-auth-token`;
-    window.sessionStorage.removeItem(key);
-    window.localStorage.removeItem(key);
+    const legacyKey = "sb-uwqnoadelnnplcvqqlyz-auth-token";
+    window.sessionStorage.removeItem(legacyKey);
+    window.localStorage.removeItem(legacyKey);
   } catch (error) {
-    console.warn("No se pudo limpiar la sesión temporal durante la recarga.", error);
+    console.warn("No se pudo limpiar una sesión antigua de autenticación.", error);
   }
 }
 
@@ -100,22 +148,33 @@ const supabaseAuthStorage = {
   }
 };
 
-const supabase = configured
-  ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
-      auth: {
-        storage: supabaseAuthStorage,
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
-  : null;
+let currentUser = null;
+let lastLoginIdentifier = "";
+let adminAccessHelpPollTimer = null;
+let adminAccessHelpLoading = false;
+let adminAccessHelpInitialized = false;
+let adminAccessHelpRequests = [];
+const adminAccessHelpSeenIds = new Set();
+const supabase = configured ? createCatalogClient({ admin: true }) : null;
 
-/* Preview deployments are read-only: protect production data while testing Vercel/Cloudflare previews. */
+/* Only the dedicated migration Preview has isolated Neon/R2 resources and may write.
+   Other ad-hoc preview deployments remain read-only by default. */
 const adminHostname = String(window.location.hostname || "").toLocaleLowerCase();
+const IS_FIVERR_DEMO_HOST = adminHostname === "fiverr-demo.jb-collections.pages.dev";
+if (IS_FIVERR_DEMO_HOST) document.body.classList.add("fiverr-demo-host");
+const INTERACTIVE_PREVIEW_HOSTS = new Set([
+  "migration-neon-r2.jb-collections.pages.dev"
+]);
 const IS_READ_ONLY_PREVIEW =
-  /\.vercel\.app$/i.test(adminHostname) ||
-  (/\.pages\.dev$/i.test(adminHostname) && adminHostname !== "jb-collections.pages.dev");
+  !IS_FIVERR_DEMO_HOST && (
+    /\.vercel\.app$/i.test(adminHostname) ||
+    (/\.pages\.dev$/i.test(adminHostname) &&
+      adminHostname !== "jb-collections.pages.dev" &&
+      !INTERACTIVE_PREVIEW_HOSTS.has(adminHostname))
+  );
+function isReadOnlySession() {
+  return IS_READ_ONLY_PREVIEW || currentUser?.role === "demo_viewer";
+}
 if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalFrom = supabase.from.bind(supabase);
   supabase.from = table => {
@@ -132,7 +191,7 @@ if (supabase && IS_READ_ONLY_PREVIEW) {
   const originalStorageFrom = supabase.storage.from.bind(supabase.storage);
   supabase.storage.from = bucket => {
     const storageApi = originalStorageFrom(bucket);
-    for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl", "createSignedUrls"]) {
+    for (const method of ["upload", "update", "move", "copy", "remove", "createSignedUploadUrl"]) {
       if (typeof storageApi[method] === "function") {
         storageApi[method] = async () => {
           throw new Error("Vista previa segura: no se permiten subir, mover ni borrar fotografías desde un despliegue de prueba.");
@@ -144,6 +203,31 @@ if (supabase && IS_READ_ONLY_PREVIEW) {
 }
 
 const $ = selector => document.querySelector(selector);
+
+/*
+  Neon Auth administrado utiliza email/contraseña. Para no pedirle al comprador
+  un correo personal, la cuenta invitada usa un alias Gmail del propietario.
+  Gmail entrega esos mensajes en la misma bandeja; el comprador solo utiliza
+  su nombre de usuario. El alias se reserva por invitación y no abre el registro.
+*/
+function resolveCatalogLoginEmail(identifier) {
+  const value = String(identifier || "").trim();
+  if (!value) throw new Error("Ingresá tu usuario y contraseña.");
+
+  if (value.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      throw new Error("Ingresá un usuario válido o un correo electrónico válido.");
+    }
+    return value.toLowerCase();
+  }
+
+  const username = value.normalize("NFKC").toLowerCase();
+  if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
+    throw new Error("El usuario debe tener entre 3 y 30 caracteres: letras, números, punto, guion o guion bajo.");
+  }
+  // The Pages auth proxy resolves usernames to private Neon Auth email aliases.
+  return username;
+}
 
 /* Mostrar u ocultar la contraseña sin modificar el valor del campo. */
 const passwordInput = $("#login-password");
@@ -164,8 +248,34 @@ passwordVisibilityButton?.addEventListener("click", () => {
 const loginPanel = $("#login-panel");
 const dashboard = $("#dashboard");
 const form = $("#product-form");
+const loginCredentialForm = $("#login-form");
 
-let currentUser = null;
+// A browser validation bubble can stop form submission before the submit
+// handler runs. Clear any previous success message as soon as credentials
+// change, and replace it with a direct hint when a required field is missing.
+loginCredentialForm?.addEventListener("input", () => {
+  const status = $("#login-status");
+  if (status?.textContent) message(status, "");
+});
+loginCredentialForm?.addEventListener("invalid", event => {
+  if (event.target?.matches("#login-email, #login-password")) {
+    message("#login-status", "Completá tu usuario y contraseña para ingresar.", "error");
+  }
+}, true);
+
+function hasCatalogPermission(permission) {
+  if (currentUser?.role === "admin" && currentUser?.isOwner === true) return true;
+  return currentUser?.role === "demo_viewer" && currentUser?.permissions?.[permission] === true;
+}
+function applyDemoPermissionClasses() {
+  const viewer = currentUser?.role === "demo_viewer";
+  document.body.classList.toggle("demo-viewer-can-view-all", viewer && hasCatalogPermission("catalog.view_all"));
+  document.body.classList.toggle("demo-viewer-can-create", viewer && hasCatalogPermission("products.create"));
+  document.body.classList.toggle("demo-viewer-can-edit", viewer && hasCatalogPermission("products.edit"));
+  document.body.classList.toggle("demo-viewer-can-delete", viewer && hasCatalogPermission("products.delete"));
+  document.body.classList.toggle("demo-viewer-can-publish", viewer && hasCatalogPermission("products.publish"));
+  document.body.classList.toggle("demo-viewer-can-write", viewer && (hasCatalogPermission("products.create") || hasCatalogPermission("products.edit")));
+}
 let products = [];
 let inventoryRefreshPromise = null;
 const CATALOG_ADMIN_ACTIVITY_KEY = "cat-logo-admin-activity-v1";
@@ -671,10 +781,13 @@ function updateProductFormMode() {
   const dashboardQuickAdd = document.querySelector('[data-dashboard-action="add"] .quick-action-icon');
   if (dashboardQuickAdd) dashboardQuickAdd.textContent = "＋";
 
+  // "Ver catálogo" siempre vuelve a la portada dividida JB Collections,
+  // desde donde el visitante elige JB Parfums o JB TECH.
+  const publicCatalogLanding = new URL("/index.html", window.location.origin).href;
   const publicLink = document.querySelector(".dashboard-public-link");
-  if (publicLink) publicLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
+  if (publicLink) publicLink.href = publicCatalogLanding;
   const sidebarCatalogLink = document.querySelector(".admin-sidebar-catalog-link");
-  if (sidebarCatalogLink) sidebarCatalogLink.href = isPerfume ? "./perfumeria/" : "./tecnologia/";
+  if (sidebarCatalogLink) sidebarCatalogLink.href = publicCatalogLanding;
 }
 
 function normalizeTechnologyCategory(value = "") {
@@ -781,23 +894,23 @@ function updateCategoryVariantVisibility() {
   }
 
   const specsLabel = $("#product-specs-label");
-  const specsField = $("#product-specs");
   const specsGuidance = category === "Televisores"
     ? {
         label: "Características del televisor",
-        placeholder: "Tamaño de pantalla, resolución, LED / QLED / OLED, Smart TV, frecuencia y conectividad."
+        hint: "Tamaño de pantalla, resolución, LED / QLED / OLED, frecuencia de actualización y puertos disponibles.",
       }
     : category === "Audio"
       ? {
           label: "Características de audio",
-          placeholder: "Tipo de equipo, potencia, Bluetooth / Wi-Fi, autonomía, conectividad y resistencia."
+          hint: "Tipo de equipo, potencia, Bluetooth / Wi-Fi, entradas, batería y compatibilidad.",
         }
       : {
           label: "Características y especificaciones.",
-          placeholder: "Describí las características técnicas más importantes del producto."
+          hint: "Describí las características técnicas relevantes y verificadas del producto.",
         };
   if (specsLabel) specsLabel.textContent = specsGuidance.label;
-  if (specsField) specsField.placeholder = specsGuidance.placeholder;
+  const specsGuidanceNode = $("#product-specs-guidance");
+  if (specsGuidanceNode) specsGuidanceNode.textContent = specsGuidance.hint;
 }
 
 function setActiveCatalogType(value) {
@@ -1235,9 +1348,9 @@ function openColorAssistant(row) {
     '<section class="jb-color-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="jb-color-ai-title">'+
     '<header class="jb-color-ai-header"><div><p class="jb-color-ai-eyebrow">JB COLLECTIONS · COLOR LAB</p><h2 id="jb-color-ai-title">Identificar color con IA</h2></div><button type="button" class="jb-color-ai-close" data-color-ai-close aria-label="Cerrar">×</button></header>'+
     '<p class="jb-color-ai-intro">Consultá por código o referencia, o adjuntá una foto. La sugerencia no confirma un color oficial.</p>'+
-    '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180" placeholder="Ej. Samsung Galaxy S25 Ultra"></label>'+
-    '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320" placeholder="Ej. Titanium Jadegreen, código X..."></label>'+
-    '<label class="jb-color-ai-field">Alias o código exacto para recordar (opcional)<input type="text" data-color-ai-library-alias maxlength="80" placeholder="Ej. SM-S938B Titanium Jadegreen"><span class="jb-color-ai-file-note">Se guardará como referencia de búsqueda solo si pulsás «Guardar en biblioteca».</span></label>'+
+    '<label class="jb-color-ai-field">Marca y modelo<input type="text" data-color-ai-product maxlength="180"></label>'+
+    '<label class="jb-color-ai-field">Código del fabricante o consulta<input type="text" data-color-ai-query maxlength="320"></label>'+
+    '<label class="jb-color-ai-field">Alias o código exacto para recordar (opcional)<input type="text" data-color-ai-library-alias maxlength="80"><span class="jb-color-ai-file-note">Se guardará como referencia de búsqueda solo si pulsás «Guardar en biblioteca».</span></label>'+
     '<label class="jb-color-ai-field">Fotografía del producto (opcional)<input type="file" data-color-ai-image accept="image/jpeg,image/png,image/webp,image/avif"><span class="jb-color-ai-file-note" data-color-ai-file-note>La foto solo se usa en esta consulta.</span></label>'+
     '<div class="jb-color-ai-preview" data-color-ai-preview hidden><img alt="Vista previa"><span data-color-ai-file-name></span></div>'+
     '<div class="jb-color-ai-actions"><button type="button" class="jb-color-ai-primary" data-color-ai-analyze>Analizar color</button></div>'+
@@ -1353,23 +1466,12 @@ function normalizeVariantAvailability(value) {
    ========================================================= */
 
 /*
-  Supabase utiliza por defecto una clave parecida a:
-  sb-<project-ref>-auth-token
-
-  Eliminamos una posible sesión antigua almacenada en localStorage
-  por una versión anterior del panel.
+  Elimina únicamente la sesión local antigua de Supabase que pudiera
+  quedar en este navegador después del cambio a Neon Auth.
 */
 
 function authStorageKey() {
-  try {
-    const projectRef = new URL(CONFIG.supabaseUrl)
-      .hostname
-      .split(".")[0];
-
-    return `sb-${projectRef}-auth-token`;
-  } catch {
-    return null;
-  }
+  return "sb-uwqnoadelnnplcvqqlyz-auth-token";
 }
 
 function clearLegacyPersistentAuth() {
@@ -1423,7 +1525,7 @@ async function signOutLocalSafely() {
     }
   } catch (error) {
     console.warn(
-      "No se pudo completar el cierre de sesión.",
+      "No se pudo completar el cierre de sesión de Neon.",
       error
     );
   } finally {
@@ -1445,9 +1547,8 @@ function syncRememberControls() {
   if (label) label.textContent = enabled ? "Desactivar recordar sesión" : "Recordar sesión en este dispositivo";
 }
 
-function setRememberedSession(enabled, email = "") {
+function setRememberedSession(enabled) {
   const key = authStorageKey();
-  const normalizedEmail = String(email || "").trim();
   try {
     const currentToken = key
       ? (window.sessionStorage.getItem(key) || window.localStorage.getItem(key))
@@ -1455,7 +1556,6 @@ function setRememberedSession(enabled, email = "") {
 
     if (enabled) {
       window.localStorage.setItem(REMEMBER_SESSION_KEY, "true");
-      if (normalizedEmail) window.localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
       if (key && currentToken) {
         window.localStorage.setItem(key, currentToken);
         window.sessionStorage.removeItem(key);
@@ -1465,8 +1565,10 @@ function setRememberedSession(enabled, email = "") {
       if (key && currentToken) window.sessionStorage.setItem(key, currentToken);
       if (key) window.localStorage.removeItem(key);
       window.localStorage.removeItem(REMEMBER_SESSION_KEY);
-      window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
     }
+    // Remove usernames saved by older versions. Credential autofill belongs to
+    // the browser's password manager, not to application localStorage.
+    window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
   } catch (error) {
     console.warn("No se pudo actualizar la preferencia para recordar la sesión.", error);
     message("#login-status", "No se pudo actualizar esta preferencia en el dispositivo. Revisá el almacenamiento disponible.", "error");
@@ -1474,11 +1576,7 @@ function setRememberedSession(enabled, email = "") {
   syncRememberControls();
 }
 
-// Restore the saved email and visible state whenever the admin module loads.
-const rememberedLoginEmail = $("#login-email");
-if (rememberedLoginEmail && isRememberedSessionEnabled()) {
-  rememberedLoginEmail.value = getRememberedAdminEmail();
-}
+// Leave the credential fields empty; the browser may autofill credentials it saved.
 syncRememberControls();
 
 function nativeBiometricApi() {
@@ -1558,7 +1656,7 @@ async function handleBiometricSettingsToggle() {
     }
     await api.enable();
     if (!isRememberedSessionEnabled()) {
-      setRememberedSession(true, currentUser?.email || "");
+      setRememberedSession(true);
       if (!isRememberedSessionEnabled()) {
         await api.disable();
         throw new Error("No se pudo recordar la sesión en este dispositivo. No se activó la huella.");
@@ -1588,7 +1686,10 @@ function clearLoginPassword() {
 }
 
 function showLoginScreen(statusText = "", type = "") {
+  stopAdminAccessHelpPolling();
   currentUser = null;
+  applyDemoPermissionClasses();
+  document.body.classList.remove("demo-viewer-mode");
   jbManagerAI?.clearSession();
   products = [];
   clearCatalogAdminActivityMarker();
@@ -1604,7 +1705,8 @@ function showLoginScreen(statusText = "", type = "") {
 
   clearEditor();
 
-  $("#login-email").value = getRememberedAdminEmail();
+  const loginIdentifier = $("#login-email");
+  if (loginIdentifier) loginIdentifier.value = "";
   clearLoginPassword();
   syncRememberControls();
 
@@ -1685,14 +1787,32 @@ function specsText(specs) {
   return "";
 }
 
+function normalizeAdminMediaUrl(value) {
+  const original = String(value || "").trim();
+  if (!original) return "";
+  const host = String(window.location.hostname || "").toLowerCase();
+  const isPreviewHost = host.endsWith(".jb-collections.pages.dev") &&
+    host !== "jb-collections.pages.dev";
+  if (!isPreviewHost) return original;
+
+  try {
+    const parsed = new URL(original, window.location.href);
+    if (parsed.origin === "https://jb-collections.pages.dev" &&
+        parsed.pathname.startsWith("/media/")) {
+      return window.location.origin + parsed.pathname + parsed.search + parsed.hash;
+    }
+  } catch {}
+  return original;
+}
+
 function getImages(product) {
   const images = parseJSON(product?.images, []);
   const list = Array.isArray(images) ? images : [];
 
   return [...list, product?.image_url]
-    .filter(value =>
-      typeof value === "string" && value.trim()
-    );
+    .filter(value => typeof value === "string" && value.trim())
+    .map(normalizeAdminMediaUrl)
+    .filter(Boolean);
 }
 
 /* =========================================================
@@ -1723,9 +1843,9 @@ function normalizeColors(value) {
     return {
       name: String(item.name || item.color || "").trim(),
       type: normalizeVariantAvailability(item.type),
-      image_url: String(
+      image_url: normalizeAdminMediaUrl(
         item.image_url || item.imageUrl || ""
-      ).trim(),
+      ),
       color_hex: validHex(item.color_hex || item.hex)
     };
   }).filter(item => item && item.name);
@@ -1776,8 +1896,11 @@ function normalizeVariants(value) {
       availability: item.availability === "pending" ? "pending" : normalizeVariantAvailability(item.availability),
       configuration_availability: item.configuration_availability === "pending" ? "pending" : normalizeVariantAvailability(item.configuration_availability),
 
-      images: Array.isArray(item.images) ? item.images.filter(url => typeof url === "string" && url.trim()) : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean),
-      image_url: String((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "").trim()
+      images: (Array.isArray(item.images)
+        ? item.images.filter(url => typeof url === "string" && url.trim())
+        : [String(item.image_url || item.imageUrl || "").trim()].filter(Boolean))
+        .map(normalizeAdminMediaUrl).filter(Boolean),
+      image_url: normalizeAdminMediaUrl((Array.isArray(item.images) && item.images[0]) || item.image_url || item.imageUrl || "")
     };
   }).filter(item =>
     item &&
@@ -1882,7 +2005,7 @@ function variantRowMarkup(variant = {}) {
       <div class="inline-color-main">
         <label class="inline-color-name-field">
           <span>Nombre del color</span>
-          <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color" placeholder="Ej. Gris titanio">
+          <input data-variant-color maxlength="60" required value="${escapeHtml(v.color)}" aria-label="Nombre del color">
         </label>
         <label class="inline-color-tone-field" title="Personalizar el tono">
           <span>Tono</span>
@@ -1896,7 +2019,7 @@ function variantRowMarkup(variant = {}) {
         <div class="variant-fields-grid variant-color-fields">
           <div class="variant-color-library-tools">
             <label>Buscar en biblioteca
-              <input data-variant-library-search list="catalog-color-library-options" type="search" autocomplete="off" placeholder="Burgundy, Vino o #800020" aria-label="Buscar color guardado">
+              <input data-variant-library-search list="catalog-color-library-options" type="search" autocomplete="off" aria-label="Buscar color guardado">
             </label>
             <div class="variant-color-library-actions">
               <button class="admin-mini-button" type="button" data-save-color-library aria-pressed="${String(librarySaved)}">${librarySaved ? "✓ Biblioteca" : "＋ Biblioteca"}</button>
@@ -1904,7 +2027,7 @@ function variantRowMarkup(variant = {}) {
               <button class="admin-mini-button jb-color-ai-trigger" type="button" data-ai-color-open aria-label="Identificar color con IA o fotografía" title="Identificar color con IA o fotografía">✦ IA / foto</button>
             </div>
           </div>
-          <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" placeholder="#0833A2" aria-label="Código HEX del color"></label>
+          <label>Código HEX del color<input data-variant-hex-text type="text" inputmode="text" maxlength="7" pattern="#[0-9a-fA-F]{6}" value="${v.color_hex}" aria-label="Código HEX del color"></label>
           <label>Paleta de colores<select data-variant-palette>${colorPaletteOptions(v)}</select></label>
           <div class="variant-swatch-palette" role="group" aria-label="Muestras de colores">${visibleColorSwatches(v.color_hex).map(item => `<button type="button" class="variant-swatch ${item.hex.toLowerCase() === v.color_hex.toLowerCase() ? "is-selected" : ""}" data-variant-swatch="${item.hex}" data-variant-swatch-name="${escapeHtml(item.name)}" title="${escapeHtml(item.name)} · ${item.hex}" aria-label="${escapeHtml(item.name)} ${item.hex}" aria-pressed="${String(item.hex.toLowerCase() === v.color_hex.toLowerCase())}" style="--swatch-color:${item.hex}"></button>`).join("")}</div>
           <label>Disponibilidad de este color<select data-variant-availability>
@@ -2329,7 +2452,7 @@ function photoEntryIsCurrent(entry,token){
 function queueBackgroundPhotoUpload(entry,{retryFailed=false}={}){
   const item=entry?.item;
   if(!item||item.kind!=="new"||!item.file)return Promise.resolve({ok:item?.kind==="existing"});
-  if (IS_READ_ONLY_PREVIEW) {
+  if (isReadOnlySession()) {
     item.uploadState = "";
     item.uploadStage = "preview-only";
     item.uploadProgress = 0;
@@ -2443,7 +2566,7 @@ mainImagesInput?.addEventListener("change",()=>{
   added.forEach(item=>void queueBackgroundPhotoUpload({source:"main",item}));
 });
 retryMainImagesButton?.addEventListener("click",async()=>{
-  if (IS_READ_ONLY_PREVIEW) {
+  if (isReadOnlySession()) {
     message("#product-form-status", "Vista previa segura: la subida a Storage está deshabilitada en Vercel.", "error");
     return;
   }
@@ -2922,31 +3045,74 @@ async function confirmAdmin(user) {
     throw new Error("No se pudo verificar la sesión.");
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
+    .select("user_id,role,username,is_owner,permissions")
+    .eq("neon_auth_user_id", user.id)
     .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (error) throw error;
+  if (!data && IS_FIVERR_DEMO_HOST) {
+    const { error: registerError } = await supabase.rpc("register_fiverr_demo_identity");
+    if (registerError) throw new Error(registerError.message || "No se pudo habilitar la cuenta de demostración.");
+    const refreshed = await supabase
+      .from("admin_users")
+      .select("user_id,role,username,is_owner,permissions")
+      .eq("neon_auth_user_id", user.id)
+      .maybeSingle();
+    if (refreshed.error) throw refreshed.error;
+    data = refreshed.data;
+  }
+  const role = String(data?.role || "");
+  const isOwner = data?.is_owner === true;
+  if (!data || !["admin", "demo_viewer"].includes(role) ||
+      (role === "admin" && !isOwner) ||
+      (role === "demo_viewer" && isOwner)) {
+    throw new Error("Tu usuario no tiene permisos para acceder a este panel.");
   }
 
-  if (!data) {
-    throw new Error(
-      "Tu usuario inició sesión, pero no está autorizado para administrar el catálogo."
-    );
-  }
-
-  return true;
+  return {
+    userId: data.user_id,
+    role,
+    username: data.username || "",
+    isOwner: data.is_owner === true,
+    permissions: data.permissions && typeof data.permissions === "object" ? data.permissions : {}
+  };
 }
 
 async function showDashboard(user) {
-  await confirmAdmin(user);
+  const access = await confirmAdmin(user);
+  const isDemoViewer = access.role === "demo_viewer";
 
-  currentUser = user;
-  jbManagerAI?.setAuthenticatedUser(user);
-  void syncBiometricControls();
+  currentUser = {
+    ...user,
+    id: access.userId,
+    neonAuthUserId: user.id,
+    role: access.role,
+    username: access.username,
+    isOwner: access.isOwner,
+    permissions: access.permissions
+  };
+  document.body.classList.toggle("demo-viewer-mode", isDemoViewer);
+  applyDemoPermissionClasses();
+  const demoBanner = $("#demo-viewer-banner");
+  if (demoBanner) {
+    demoBanner.hidden = !isDemoViewer;
+    const copy = demoBanner.querySelector("span:last-child");
+    if (copy) {
+      copy.textContent = hasCatalogPermission("products.edit") || hasCatalogPermission("products.create")
+        ? "Acceso de demostración · Permisos asignados por el propietario."
+        : "Explorá los catálogos publicados en modo de solo lectura.";
+    }
+  }
+
+  if (isDemoViewer) {
+    // Paid AI is unavailable in the Fiverr guest experience.
+    jbManagerAI?.clearSession();
+  } else {
+    jbManagerAI?.setAuthenticatedUser(currentUser);
+    void syncBiometricControls();
+  }
   refreshCatalogAdminActivityMarker();
 
   loginPanel.classList.add("hidden");
@@ -2959,30 +3125,315 @@ async function showDashboard(user) {
     setDesktopSidebarCollapsed(false);
   }
   const requestedSection = new URLSearchParams(window.location.search).get("open");
-  showAdminSection(requestedSection === "messages" ? "messages" : "home");
+  showAdminSection(isDemoViewer ? "home" : (requestedSection === "messages" ? "messages" : "home"));
+
+  startAdminAccessHelpPolling();
 
   const greeting = $("#admin-greeting");
-  if (greeting) greeting.textContent = "¡Bienvenido de nuevo, Steven! 👋";
+  if (greeting) greeting.textContent = isDemoViewer
+    ? "JB Collections · Demostración"
+    : "¡Bienvenido de nuevo, Steven! 👋";
 
-  setStatus("Sesión iniciada");
-  window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
-
-  await syncSharedColorLibrary({ migrateLocal: true });
+  setStatus(isDemoViewer
+    ? (hasCatalogPermission("products.edit") || hasCatalogPermission("products.create")
+      ? "Modo demostración · Permisos limitados"
+      : "Modo demostración · Solo lectura")
+    : "Sesión iniciada");
+  if (!isDemoViewer) {
+    window.setTimeout(() => { const status = $("#admin-status"); if (status?.textContent === "Sesión iniciada") status.textContent = ""; }, 4500);
+    await syncSharedColorLibrary({ migrateLocal: true });
+  }
   await loadProducts();
+  if (currentUser?.isOwner) await loadTeamPermissions();
 
-  // Establish the initial empty editor baseline after catalog/form setup.
-  // Without this, editorBaseline stays "" and the first snapshot is always
-  // interpreted as a user change, even when every field is blank.
-  markEditorClean();
-
-  await checkLocalRecoveryDraft();
+  if (!isDemoViewer) {
+    // Establish the initial empty editor baseline after catalog/form setup.
+    markEditorClean();
+    await checkLocalRecoveryDraft();
+  }
 }
+
+const TEAM_PERMISSION_DEFINITIONS = [
+  { key: "catalog.view_all", label: "Ver inventario completo", description: "Incluye borradores y productos no publicados." },
+  { key: "products.create", label: "Crear productos", description: "Permite registrar nuevos productos y fragancias." },
+  { key: "products.edit", label: "Editar productos", description: "Permite modificar fichas y variantes existentes." },
+  { key: "products.delete", label: "Eliminar productos", description: "Permite mover productos a papelera y eliminarlos definitivamente." },
+  { key: "products.publish", label: "Publicar productos", description: "Permite cambiar el estado de publicación." }
+];
+
+async function loadTeamPermissions() {
+  const card = document.getElementById("team-permissions-card");
+  const list = document.getElementById("team-permissions-list");
+  const status = document.getElementById("team-permissions-status");
+  const refresh = document.getElementById("team-permissions-refresh");
+  if (!card || !list || !status || !currentUser?.isOwner || !supabase) return;
+  card.hidden = false;
+  if (refresh) refresh.disabled = true;
+  status.textContent = "Cargando usuarios y permisos…";
+  list.replaceChildren();
+
+  try {
+    const { data, error } = await supabase.rpc("list_fiverr_demo_team");
+    if (error) throw error;
+    const members = Array.isArray(data) ? data : [];
+    if (!members.length) {
+      status.textContent = "No hay cuentas de equipo registradas todavía. Primero se debe crear la cuenta de demostración.";
+      return;
+    }
+
+    members.forEach(member => {
+      const article = document.createElement("article");
+      article.className = "team-permission-member";
+      const heading = document.createElement("div");
+      heading.className = "team-permission-member-heading";
+      const title = document.createElement("h3");
+      title.textContent = member.is_owner ? "Propietario · " + (member.username || "JaredBH") : (member.username || "Usuario demo");
+      const role = document.createElement("span");
+      role.className = "team-permission-role";
+      role.textContent = member.is_owner ? "CONTROL TOTAL" : "CUENTA DE DEMOSTRACIÓN";
+      heading.append(title, role);
+      article.append(heading);
+
+      if (member.is_owner) {
+        const note = document.createElement("p");
+        note.className = "team-permission-note";
+        note.textContent = "Esta cuenta conserva el control total y no puede ser degradada desde la lista de invitados.";
+        article.append(note);
+        list.append(article);
+        return;
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "team-permission-grid";
+      TEAM_PERMISSION_DEFINITIONS.forEach(definition => {
+        const label = document.createElement("label");
+        label.className = "team-permission-option";
+        const copy = document.createElement("span");
+        copy.className = "team-permission-copy";
+        const strong = document.createElement("strong");
+        strong.textContent = definition.label;
+        const small = document.createElement("small");
+        small.textContent = definition.description;
+        copy.append(strong, small);
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.permission = definition.key;
+        checkbox.checked = member.permissions?.[definition.key] === true;
+        label.append(copy, checkbox);
+        grid.append(label);
+      });
+      article.append(grid);
+
+      const actions = document.createElement("div");
+      actions.className = "team-permission-actions";
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "button button-primary";
+      save.textContent = "Guardar permisos";
+      save.addEventListener("click", async () => {
+        save.disabled = true;
+        const requestedPermissions = Object.fromEntries(
+          Array.from(grid.querySelectorAll("input[data-permission]"))
+            .map(input => [input.dataset.permission, input.checked])
+        );
+        try {
+          const result = await supabase.rpc("set_fiverr_demo_user_permissions", {
+            target_user_id: member.user_id,
+            requested_permissions: requestedPermissions
+          });
+          if (result.error) throw result.error;
+          status.textContent = "Permisos actualizados para " + (member.username || "la cuenta demo") + ".";
+          status.dataset.state = "success";
+        } catch (error) {
+          status.textContent = error?.message || "No se pudieron guardar los permisos.";
+          status.dataset.state = "error";
+        } finally {
+          save.disabled = false;
+        }
+      });
+      actions.append(save);
+
+      const revoke = document.createElement("button");
+      revoke.type = "button";
+      revoke.className = "button button-outline";
+      revoke.textContent = "Revocar acceso";
+      revoke.addEventListener("click", async () => {
+        if (!window.confirm("¿Revocar el acceso de " + (member.username || "esta cuenta") + "? La cuenta dejará de entrar al administrador, aunque su identidad de Neon permanecerá registrada.")) return;
+        revoke.disabled = true;
+        try {
+          const result = await supabase.rpc("revoke_fiverr_demo_guest", {
+            target_user_id: member.user_id
+          });
+          if (result.error) throw result.error;
+          status.textContent = "Acceso revocado para " + (member.username || "la cuenta invitada") + ".";
+          status.dataset.state = "success";
+          await loadTeamPermissions();
+        } catch (error) {
+          status.textContent = error?.message || "No se pudo revocar el acceso.";
+          status.dataset.state = "error";
+          revoke.disabled = false;
+        }
+      });
+      actions.append(revoke);
+      article.append(actions);
+      list.append(article);
+    });
+    if (!status.textContent || status.textContent === "Cargando usuarios y permisos…") {
+      status.textContent = "Los cambios se aplican desde la base de datos y se pueden revocar en cualquier momento.";
+      status.dataset.state = "success";
+    }
+  } catch (error) {
+    status.textContent = error?.message || "No se pudo cargar el equipo.";
+    status.dataset.state = "error";
+  } finally {
+    if (refresh) refresh.disabled = false;
+  }
+}
+
+document.getElementById("team-permissions-refresh")?.addEventListener("click", () => {
+  void loadTeamPermissions();
+});
+
+/* Owner-managed demo accounts. The guest password remains in page memory only
+   and is sent directly to Neon Auth after the owner enters the emailed OTP. */
+let pendingDemoGuestCredential = null;
+const demoGuestCreateForm = document.getElementById("fiverr-demo-create-user-form");
+const demoGuestOtpForm = document.getElementById("fiverr-demo-guest-otp-form");
+const demoGuestCreateStatus = document.getElementById("fiverr-demo-create-user-status");
+const demoGuestCreateButton = document.getElementById("fiverr-demo-create-user-submit");
+const demoGuestOtpButton = document.getElementById("fiverr-demo-guest-otp-submit");
+const demoGuestResendButton = document.getElementById("fiverr-demo-guest-otp-resend");
+
+function setDemoGuestStatus(text, kind = "") {
+  if (!demoGuestCreateStatus) return;
+  demoGuestCreateStatus.textContent = text || "";
+  demoGuestCreateStatus.dataset.state = kind;
+}
+
+demoGuestCreateForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser?.isOwner || !supabase) {
+    setDemoGuestStatus("Solo el propietario puede crear cuentas invitadas.", "error");
+    return;
+  }
+
+  const username = String(document.getElementById("fiverr-demo-guest-username")?.value || "")
+    .trim().normalize("NFKC").toLowerCase();
+  const displayName = String(document.getElementById("fiverr-demo-guest-name")?.value || "").trim();
+  const password = String(document.getElementById("fiverr-demo-guest-password")?.value || "");
+  const confirmation = String(document.getElementById("fiverr-demo-guest-password-confirm")?.value || "");
+
+  if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username) || username === "jaredbh") {
+    setDemoGuestStatus("Usá entre 3 y 30 caracteres válidos. No se puede reutilizar JaredBH.", "error");
+    return;
+  }
+  if (!displayName || displayName.length > 80) {
+    setDemoGuestStatus("Ingresá un nombre visible de hasta 80 caracteres.", "error");
+    return;
+  }
+  if (password.length < 8 || password.length > 128) {
+    setDemoGuestStatus("La contraseña debe tener entre 8 y 128 caracteres.", "error");
+    return;
+  }
+  if (password !== confirmation) {
+    setDemoGuestStatus("Las contraseñas no coinciden.", "error");
+    return;
+  }
+
+  demoGuestCreateButton.disabled = true;
+  demoGuestCreateButton.textContent = "Creando cuenta…";
+  setDemoGuestStatus("Validando propietario y creando la identidad privada…");
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    const token = sessionData?.session?.access_token;
+    if (!token) throw new Error("La sesión expiró. Iniciá sesión nuevamente como propietario.");
+
+    const response = await fetch("/api/admin/guests", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      },
+      body: JSON.stringify({ username, display_name: displayName })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "No se pudo crear la cuenta invitada.");
+
+    pendingDemoGuestCredential = { username, password };
+    demoGuestCreateForm.hidden = true;
+    if (demoGuestOtpForm) demoGuestOtpForm.hidden = false;
+    const otpCopy = document.getElementById("fiverr-demo-guest-otp-copy");
+    if (otpCopy) otpCopy.textContent = "La cuenta " + username + " ya está vinculada. Solicitá el código y confirmá la contraseña que acabás de elegir.";
+    try {
+      await requestCatalogPasswordReset(username);
+      setDemoGuestStatus("Cuenta " + username + " creada. El código de un solo uso fue enviado a tu Gmail.", "success");
+    } catch (emailError) {
+      setDemoGuestStatus("La cuenta " + username + " fue creada, pero no se pudo enviar el código. Usá «Reenviar código» para intentarlo otra vez. " + (emailError?.message || ""), "error");
+    }
+    await loadTeamPermissions();
+  } catch (error) {
+    setDemoGuestStatus(error?.message || "No se pudo crear la cuenta invitada.", "error");
+  } finally {
+    demoGuestCreateButton.disabled = false;
+    demoGuestCreateButton.textContent = "Crear usuario y enviar código";
+  }
+});
+
+demoGuestResendButton?.addEventListener("click", async () => {
+  if (!pendingDemoGuestCredential || !currentUser?.isOwner) return;
+  demoGuestResendButton.disabled = true;
+  try {
+    await requestCatalogPasswordReset(pendingDemoGuestCredential.username);
+    setDemoGuestStatus("Código reenviado a tu Gmail para " + pendingDemoGuestCredential.username + ".", "success");
+  } catch (error) {
+    setDemoGuestStatus(error?.message || "No se pudo reenviar el código.", "error");
+  } finally {
+    demoGuestResendButton.disabled = false;
+  }
+});
+
+demoGuestOtpForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser?.isOwner || !pendingDemoGuestCredential) {
+    setDemoGuestStatus("No hay una cuenta pendiente de activar.", "error");
+    return;
+  }
+  const otp = String(document.getElementById("fiverr-demo-guest-otp")?.value || "").trim();
+  if (!/^\d{6}$/.test(otp)) {
+    setDemoGuestStatus("Ingresá el código de seis dígitos.", "error");
+    return;
+  }
+  demoGuestOtpButton.disabled = true;
+  demoGuestOtpButton.textContent = "Guardando contraseña…";
+  try {
+    await completeCatalogPasswordReset(
+      pendingDemoGuestCredential.username,
+      otp,
+      pendingDemoGuestCredential.password
+    );
+    const completedUsername = pendingDemoGuestCredential.username;
+    pendingDemoGuestCredential = null;
+    demoGuestOtpForm.reset();
+    demoGuestOtpForm.hidden = true;
+    demoGuestCreateForm.reset();
+    demoGuestCreateForm.hidden = false;
+    setDemoGuestStatus("Cuenta " + completedUsername + " creada y contraseña configurada. Ya podés compartir el usuario y la contraseña con el comprador.", "success");
+    await loadTeamPermissions();
+  } catch (error) {
+    setDemoGuestStatus(error?.message || "No se pudo activar la contraseña. Verificá el código e intentá nuevamente.", "error");
+  } finally {
+    demoGuestOtpButton.disabled = false;
+    demoGuestOtpButton.textContent = "Guardar contraseña y finalizar";
+  }
+});
 
 async function handleSession() {
   if (!configured) {
     message(
       "#login-status",
-      "Falta configurar la URL y la clave publicable de Supabase en config.js.",
+      "Falta configurar Neon Auth y Neon Data API en config.js.",
       "error"
     );
 
@@ -3026,7 +3477,7 @@ $("#delete-local-draft")?.addEventListener("click", () => { void deleteLocalReco
 
 $("#login-remember-user")?.addEventListener("change", event => {
   const enabled = Boolean(event.currentTarget.checked);
-  setRememberedSession(enabled, $("#login-email")?.value || "");
+  setRememberedSession(enabled);
   message(
     "#login-status",
     enabled
@@ -3047,7 +3498,7 @@ $("#remember-user-toggle")?.addEventListener("click", async () => {
       console.warn("No se pudo desactivar el desbloqueo biométrico al dejar de recordar la sesión.", error);
     }
   }
-  setRememberedSession(nextEnabled, currentUser?.email || getRememberedAdminEmail());
+  setRememberedSession(nextEnabled);
   setStatus(
     nextEnabled
       ? "Se recordará la sesión en este dispositivo hasta que lo desactives o cierres sesión."
@@ -3060,13 +3511,297 @@ $("#biometric-auth-toggle")?.addEventListener("click", () => {
   void handleBiometricSettingsToggle();
 });
 
+
+const loginHelpToggle = $("#admin-login-help-toggle");
+const loginHelpForm = $("#admin-login-help-form");
+const loginHelpStatus = $("#admin-login-help-status");
+const loginHelpUsername = $("#admin-login-help-username");
+const loginHelpIssue = $("#admin-login-help-issue");
+const loginHelpSubmit = $("#admin-login-help-submit");
+
+loginHelpToggle?.addEventListener("click", () => {
+  if (!loginHelpForm) return;
+  const shouldOpen = loginHelpForm.hidden;
+  loginHelpForm.hidden = !shouldOpen;
+  loginHelpToggle.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) {
+    const currentInput = String($("#login-email")?.value || "").trim();
+    loginHelpUsername.value = currentInput || lastLoginIdentifier || "";
+    if (loginHelpStatus) loginHelpStatus.textContent = "";
+    loginHelpIssue?.focus();
+  } else {
+    loginHelpForm.reset();
+    if (loginHelpStatus) loginHelpStatus.textContent = "";
+  }
+});
+
+$("#admin-login-help-cancel")?.addEventListener("click", () => {
+  if (!loginHelpForm) return;
+  loginHelpForm.reset();
+  loginHelpForm.hidden = true;
+  loginHelpToggle?.setAttribute("aria-expanded", "false");
+  if (loginHelpStatus) loginHelpStatus.textContent = "";
+  loginHelpToggle?.focus();
+});
+
+loginHelpForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!supabase) {
+    if (loginHelpStatus) loginHelpStatus.textContent = "No se pudo conectar con el servicio de acceso. Intentá nuevamente.";
+    return;
+  }
+  const username = String(loginHelpUsername?.value || lastLoginIdentifier || "").trim();
+  const issueType = String(loginHelpIssue?.value || "");
+  const honeypot = String($("#admin-login-help-website")?.value || "");
+  if (!["username", "password", "credentials", "other"].includes(issueType)) {
+    if (loginHelpStatus) loginHelpStatus.textContent = "Seleccioná el tipo de inconveniente.";
+    loginHelpIssue?.focus();
+    return;
+  }
+
+  loginHelpSubmit.disabled = true;
+  loginHelpSubmit.textContent = "Enviando aviso…";
+  if (loginHelpStatus) loginHelpStatus.textContent = "Enviando una solicitud privada al administrador…";
+  try {
+    const { data, error } = await supabase.rpc("submit_admin_login_help_request", {
+      p_username: username,
+      p_issue_type: issueType,
+      p_honeypot: honeypot
+    });
+    if (error) throw error;
+    if (data?.ok !== true) throw new Error("No se pudo registrar el aviso. Intentá nuevamente.");
+
+    loginHelpForm.reset();
+    loginHelpForm.hidden = true;
+    loginHelpToggle?.setAttribute("aria-expanded", "false");
+    message(
+      "#login-status",
+      "Aviso enviado. El administrador recibió el tipo de problema y revisará tu acceso.",
+      "success"
+    );
+    if (loginHelpStatus) loginHelpStatus.textContent = "";
+  } catch (error) {
+    console.warn("No se pudo enviar el aviso de ayuda de acceso.", error);
+    if (loginHelpStatus) {
+      loginHelpStatus.textContent = error?.message || "No se pudo enviar el aviso. Intentá nuevamente.";
+    }
+  } finally {
+    loginHelpSubmit.disabled = false;
+    loginHelpSubmit.textContent = "Enviar aviso al administrador";
+  }
+});
+
+const adminAccessNotifications = $("#admin-access-notifications");
+const adminAccessNotificationToggle = $("#admin-access-notification-toggle");
+const adminAccessNotificationPanel = $("#admin-access-notification-panel");
+const adminAccessNotificationCount = $("#admin-access-notification-count");
+const adminAccessNotificationList = $("#admin-access-notification-list");
+const adminAccessNotificationStatus = $("#admin-access-notification-status");
+const adminAccessNotificationRefresh = $("#admin-access-notification-refresh");
+
+const ADMIN_ACCESS_HELP_ISSUE_LABELS = Object.freeze({
+  username: "El usuario no se reconoce / no lo recuerda",
+  password: "Olvidó su contraseña / necesita una nueva",
+  credentials: "No funcionan el usuario ni la contraseña",
+  other: "Otro problema para iniciar sesión"
+});
+
+function formatAdminAccessHelpDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Fecha no disponible";
+  return date.toLocaleString("es-NI", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderAdminAccessHelpRequests() {
+  if (!adminAccessNotificationList || !adminAccessNotificationCount) return;
+  const count = adminAccessHelpRequests.length;
+  adminAccessNotificationCount.textContent = count > 99 ? "99+" : String(count);
+  adminAccessNotificationCount.hidden = count === 0;
+  adminAccessNotificationCount.setAttribute("aria-label", count + " avisos pendientes");
+
+  adminAccessNotificationList.replaceChildren();
+  if (!count) {
+    const empty = document.createElement("p");
+    empty.className = "admin-access-notification-empty";
+    empty.textContent = "No hay avisos de acceso pendientes.";
+    adminAccessNotificationList.appendChild(empty);
+    return;
+  }
+
+  adminAccessHelpRequests.forEach(request => {
+    const item = document.createElement("article");
+    item.className = "admin-access-notification-item";
+
+    const heading = document.createElement("div");
+    heading.className = "admin-access-notification-item-heading";
+    const username = document.createElement("strong");
+    username.textContent = String(request.reported_username || "Usuario no identificado");
+    const time = document.createElement("time");
+    time.dateTime = String(request.created_at || "");
+    time.textContent = formatAdminAccessHelpDate(request.created_at);
+    heading.append(username, time);
+
+    const issue = document.createElement("p");
+    issue.className = "admin-access-notification-issue";
+    issue.textContent = ADMIN_ACCESS_HELP_ISSUE_LABELS[request.issue_type] || "Problema de acceso";
+
+    const resolve = document.createElement("button");
+    resolve.type = "button";
+    resolve.className = "admin-access-notification-resolve";
+    resolve.dataset.adminAccessHelpResolve = String(request.request_id || "");
+    resolve.textContent = "Marcar como atendida";
+
+    item.append(heading, issue, resolve);
+    adminAccessNotificationList.appendChild(item);
+  });
+}
+
+async function loadAdminAccessHelpRequests({ notifyNew = false } = {}) {
+  if (!currentUser?.isOwner || !supabase || adminAccessHelpLoading) return;
+  adminAccessHelpLoading = true;
+  if (adminAccessNotificationRefresh) adminAccessNotificationRefresh.disabled = true;
+  if (adminAccessNotificationStatus) adminAccessNotificationStatus.textContent = "Actualizando avisos…";
+
+  try {
+    const { data, error } = await supabase.rpc("list_admin_login_help_requests", {
+      p_include_resolved: false
+    });
+    if (error) throw error;
+    const requests = Array.isArray(data) ? data : [];
+    const newRequests = requests.filter(request => {
+      const id = String(request.request_id || "");
+      return id && adminAccessHelpInitialized && !adminAccessHelpSeenIds.has(id);
+    });
+
+    requests.forEach(request => {
+      const id = String(request.request_id || "");
+      if (id) adminAccessHelpSeenIds.add(id);
+    });
+    adminAccessHelpRequests = requests;
+    renderAdminAccessHelpRequests();
+    adminAccessHelpInitialized = true;
+    if (adminAccessNotificationStatus) {
+      adminAccessNotificationStatus.textContent = requests.length
+        ? "Los avisos solo son visibles para el propietario."
+        : "";
+    }
+
+    if (notifyNew && newRequests.length) {
+      const newest = newRequests[0];
+      const label = ADMIN_ACCESS_HELP_ISSUE_LABELS[newest.issue_type] || "Problema de acceso";
+      const body = String(newest.reported_username || "Usuario no identificado") + ": " + label;
+      void showAdminNotification(
+        "Solicitud de acceso a JB Manager",
+        body,
+        "login-help-" + String(newest.request_id)
+      );
+    }
+  } catch (error) {
+    console.warn("No se pudieron cargar los avisos de acceso.", error);
+    if (adminAccessNotificationStatus) {
+      adminAccessNotificationStatus.textContent = "No se pudieron actualizar los avisos. Revisá tu conexión e intentá otra vez.";
+    }
+  } finally {
+    adminAccessHelpLoading = false;
+    if (adminAccessNotificationRefresh) adminAccessNotificationRefresh.disabled = false;
+  }
+}
+
+async function resolveAdminAccessHelpRequest(requestId, button) {
+  if (!currentUser?.isOwner || !supabase || !requestId) return;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Actualizando…";
+  }
+  try {
+    const { data, error } = await supabase.rpc("resolve_admin_login_help_request", {
+      p_request_id: requestId
+    });
+    if (error) throw error;
+    if (data?.ok !== true) throw new Error("El aviso ya fue atendido o no está disponible.");
+    if (adminAccessNotificationStatus) adminAccessNotificationStatus.textContent = "Aviso marcado como atendido.";
+    await loadAdminAccessHelpRequests();
+  } catch (error) {
+    console.warn("No se pudo marcar el aviso como atendido.", error);
+    if (adminAccessNotificationStatus) {
+      adminAccessNotificationStatus.textContent = error?.message || "No se pudo actualizar el aviso.";
+    }
+    if (button) button.disabled = false;
+  }
+}
+
+function stopAdminAccessHelpPolling() {
+  if (adminAccessHelpPollTimer !== null) {
+    window.clearInterval(adminAccessHelpPollTimer);
+    adminAccessHelpPollTimer = null;
+  }
+  adminAccessHelpInitialized = false;
+  adminAccessHelpSeenIds.clear();
+  adminAccessHelpRequests = [];
+  renderAdminAccessHelpRequests();
+}
+
+function startAdminAccessHelpPolling() {
+  if (!adminAccessNotifications) return;
+  const isOwner = currentUser?.role === "admin" && currentUser?.isOwner === true;
+  adminAccessNotifications.hidden = !isOwner;
+  if (!isOwner || !supabase) {
+    stopAdminAccessHelpPolling();
+    return;
+  }
+  if (adminAccessHelpPollTimer !== null) window.clearInterval(adminAccessHelpPollTimer);
+  adminAccessHelpInitialized = false;
+  adminAccessHelpSeenIds.clear();
+  void loadAdminAccessHelpRequests();
+  adminAccessHelpPollTimer = window.setInterval(() => {
+    if (!document.hidden && currentUser?.isOwner) void loadAdminAccessHelpRequests({ notifyNew: true });
+  }, 60000);
+}
+
+adminAccessNotificationToggle?.addEventListener("click", event => {
+  event.stopPropagation();
+  const open = adminAccessNotificationPanel?.hidden === true;
+  if (!adminAccessNotificationPanel) return;
+  adminAccessNotificationPanel.hidden = !open;
+  adminAccessNotificationToggle.setAttribute("aria-expanded", String(open));
+  if (open) void loadAdminAccessHelpRequests();
+});
+
+adminAccessNotificationRefresh?.addEventListener("click", () => {
+  void loadAdminAccessHelpRequests();
+});
+
+adminAccessNotificationList?.addEventListener("click", event => {
+  const target = event.target instanceof Element ? event.target.closest("[data-admin-access-help-resolve]") : null;
+  if (!target) return;
+  void resolveAdminAccessHelpRequest(target.dataset.adminAccessHelpResolve, target);
+});
+
+document.addEventListener("click", event => {
+  if (!adminAccessNotifications || adminAccessNotifications.contains(event.target)) return;
+  if (adminAccessNotificationPanel) adminAccessNotificationPanel.hidden = true;
+  adminAccessNotificationToggle?.setAttribute("aria-expanded", "false");
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || adminAccessNotificationPanel?.hidden !== false) return;
+  adminAccessNotificationPanel.hidden = true;
+  adminAccessNotificationToggle?.setAttribute("aria-expanded", "false");
+  adminAccessNotificationToggle?.focus();
+});
+
 $("#login-form")?.addEventListener("submit", async event => {
   event.preventDefault();
 
   if (!supabase) {
     message(
       "#login-status",
-      "Configurá primero Supabase en config.js.",
+      "Configurá primero Neon Auth y Neon Data API en config.js.",
       "error"
     );
 
@@ -3084,10 +3819,12 @@ $("#login-form")?.addEventListener("submit", async event => {
   message("#login-status", "Comprobando acceso…");
 
   try {
-    const loginEmail = $("#login-email").value.trim();
+    const loginIdentifier = $("#login-email").value.trim();
+    lastLoginIdentifier = loginIdentifier;
+    const loginEmail = resolveCatalogLoginEmail(loginIdentifier);
     const rememberSession = Boolean($("#login-remember-user")?.checked);
-    // Select session storage before Supabase persists the successful login.
-    setRememberedSession(rememberSession, loginEmail);
+    // Remember only the authenticated session. The browser password manager handles credentials.
+    setRememberedSession(rememberSession);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
@@ -3099,6 +3836,7 @@ $("#login-form")?.addEventListener("submit", async event => {
     }
 
     await showDashboard(data.user);
+    lastLoginIdentifier = "";
 
     message(
       "#login-status",
@@ -3116,16 +3854,21 @@ $("#login-form")?.addEventListener("submit", async event => {
     loginPanel.classList.remove("hidden");
 
     /*
-      Conservamos el correo para que no tengás que escribirlo
-      nuevamente, pero borramos la contraseña incorrecta.
+      Conservamos el usuario ingresado para evitar que desaparezca tras un
+      intento fallido; solo limpiamos la contraseña por seguridad.
     */
     clearLoginPassword();
 
-    message(
-      "#login-status",
-      error.message || "No se pudo iniciar sesión. Revisá tus datos.",
-      "error"
-    );
+    const rawError = String(error?.message || "");
+    const credentialError = /invalid email|invalid email or password|incorrect password|invalid credentials/i.test(rawError);
+    const attemptedUser = String(lastLoginIdentifier || "").trim().toLowerCase();
+    const isOwnerAlias = attemptedUser === "jaredbh";
+    const loginErrorCopy = credentialError
+      ? (isOwnerAlias
+        ? "Neon Auth no validó las credenciales del propietario. El vínculo de autorización ya está corregido en la base de demostración; verificá la contraseña vigente o ingresá con el correo verificado asociado a tu cuenta."
+        : "No se pudo validar el usuario o la contraseña. Verificá ambos datos o notificá al administrador.")
+      : (rawError || "No se pudo iniciar sesión. Revisá tus datos.");
+    message("#login-status", loginErrorCopy, "error");
 
     $("#login-password")?.focus();
   } finally {
@@ -3135,6 +3878,11 @@ $("#login-form")?.addEventListener("submit", async event => {
 });
 
 $("#logout-button")?.addEventListener("click", async event => {
+  const settingsMenu = $("#admin-settings-menu");
+  if (settingsMenu) settingsMenu.hidden = true;
+  $("#admin-settings-toggle")?.setAttribute("aria-expanded", "false");
+  setMobileSidebarOpen(false);
+
   await saveLocalRecoveryDraft();
   const button = event.currentTarget;
 
@@ -3255,7 +4003,47 @@ window.addEventListener("resize", () => {
   }
 });
 
+const DEMO_VIEWER_MODULE_NOTES = {
+  add: ["Añadir productos", "Módulo disponible para evaluación visual. Los formularios de creación y guardado están deshabilitados."],
+  unpublished: ["Productos no publicados", "Podés revisar la estructura del módulo. Los registros internos y borradores no se comparten con la cuenta invitada."],
+  drafts: ["Borradores", "Vista previa del módulo. Los borradores y sus datos internos permanecen reservados al propietario."],
+  trash: ["Papelera", "La papelera se muestra como módulo, pero la restauración y eliminación están bloqueadas para la cuenta invitada."],
+  provider: ["Productos por revisar", "Vista previa del seguimiento de proveedores. Los precios, notas e historiales internos permanecen privados."],
+  reviewed: ["Productos revisados", "Vista previa del historial de revisión. Los datos del proveedor están reservados al propietario."],
+  ai: ["JB Manager AI", "ChatGPT responde preguntas sobre el catálogo publicado. La cuenta invitada solo puede consultar; no puede preparar productos ni modificar precios o datos."],
+  messages: ["Mensajería de clientes", "El módulo se muestra como referencia. Las conversaciones y los datos de clientes no se exponen a la cuenta invitada."],
+  updates: ["Importar cambios del proveedor", "Vista previa del importador. No se pueden cargar archivos ni aplicar actualizaciones."]
+};
+
+function showDemoViewerModuleNotice(section) {
+  const panel = document.querySelector('[data-admin-panel="' + section + '"]');
+  if (!panel) return;
+  let notice = panel.querySelector(".demo-viewer-module-notice");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.className = "demo-viewer-module-notice";
+    notice.setAttribute("role", "note");
+    panel.prepend(notice);
+  }
+  const copy = DEMO_VIEWER_MODULE_NOTES[section];
+  if (copy) {
+    notice.replaceChildren();
+    const title = document.createElement("strong");
+    title.textContent = copy[0] + " · Solo vista previa";
+    const description = document.createElement("span");
+    description.textContent = copy[1];
+    notice.append(title, description);
+  }
+}
+
 function showAdminSection(section) {
+  if (currentUser?.role === "demo_viewer") {
+    const visiblePreviewSections = new Set([
+      "home", "add", "published", "unpublished", "drafts", "trash",
+      "provider", "reviewed", "ai", "messages", "updates"
+    ]);
+    if (!visiblePreviewSections.has(section)) section = "home";
+  }
   document.body.dataset.adminActiveSection = section;
   if (!window.matchMedia("(max-width: 760px)").matches) {
     const toggle = document.getElementById("admin-menu-toggle");
@@ -3275,9 +4063,72 @@ function showAdminSection(section) {
   // Navigation can be triggered while the page is scrolled far down. Reset the
   // document scroll so the sticky admin header never covers the selected panel title.
   window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  if (section === "messages") void loadPrivateChatInbox();
+  if (currentUser?.role === "demo_viewer") {
+    showDemoViewerModuleNotice(section);
+    if (section === "messages") {
+      privateChatSetStatus("La mensajería está disponible como vista previa; las conversaciones reales están protegidas.", "info");
+    }
+  } else if (section === "messages") {
+    void loadPrivateChatInbox();
+  }
 }
 document.querySelectorAll("[data-admin-section]").forEach(button => button.addEventListener("click", () => showAdminSection(button.dataset.adminSection)));
+
+/* Fiverr guest mode: allow browsing, tabs, accordions, previews and local-only navigation.
+   Stop only controls that would persist, upload, publish, or delete data. */
+const DEMO_BLOCKED_MUTATION_SELECTOR = [
+  "#save-product-button",
+  "#publish-product-button",
+  "#save-draft-button",
+  "button[data-save-action]",
+  "#toggle-product-exclusive",
+  "[data-exclusive-product]",
+  "[data-trash-product]",
+  "[data-restore-product]",
+  "[data-delete-product]",
+  "#commission-save-button",
+  "[data-commission-delete]",
+  "#provider-import-apply",
+  "#provider-review-save",
+  "#provider-review-sync-catalog-availability",
+  "#publish-review-confirm",
+  "#add-variant-button",
+  "[data-add-group-color]",
+  "[data-remove-group]",
+  "[data-remove-variant]",
+  "[data-main-image-remove]",
+  "[data-variant-image-remove]",
+  "[data-save-color-library]",
+  "[data-toggle-color-favorite]",
+  "[data-ai-color-open]",
+  "[data-color-ai-analyze]",
+  "[data-color-ai-save]",
+  "#retry-main-image-uploads",
+  "input[type='file']",
+  "label.file-button",
+  "label.variant-image-label"
+].join(", ");
+
+document.addEventListener("click", event => {
+  if (currentUser?.role !== "demo_viewer") return;
+  const blockedAction = event.target.closest(DEMO_BLOCKED_MUTATION_SELECTOR);
+  if (!blockedAction) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  setStatus("Vista de invitado: podés explorar módulos, variantes y fotografías. Guardar, subir o eliminar datos está deshabilitado.");
+}, true);
+
+document.addEventListener("submit", event => {
+  if (currentUser?.role !== "demo_viewer") return;
+  const mutationForm = event.target.closest(
+    "#product-form, #commission-form, #provider-review-form, #fiverr-demo-create-user-form, #fiverr-demo-guest-otp-form, #private-chat-admin-reply-form"
+  );
+  if (!mutationForm) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  setStatus("Vista de invitado: el formulario se puede explorar, pero no se pueden guardar cambios.");
+}, true);
 
 
 /* =========================================================
@@ -3850,12 +4701,16 @@ async function loadProducts() {
     }
   }
 
-  await providerTools.refresh();
+  if (currentUser?.role !== "demo_viewer") {
+    await providerTools.refresh();
+  }
 
   updateProductFormMode();
   renderAdminList();
   renderDashboardOverview();
-  await loadCatalogAnalytics();
+  if (currentUser?.role !== "demo_viewer") {
+    await loadCatalogAnalytics();
+  }
   return true;
 }
 
@@ -4356,6 +5211,56 @@ document.querySelectorAll("[data-dashboard-action]").forEach(button => {
 const productPreviewDialog = $("#admin-product-preview-dialog");
 const productPreviewContent = $("#admin-product-preview-content");
 
+function closeAdminProductPreviewDialog() {
+  if (!productPreviewDialog) return;
+  const wasOpen = productPreviewDialog.open || productPreviewDialog.hasAttribute("open");
+  try {
+    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") {
+      productPreviewDialog.close();
+    }
+  } catch (error) {
+    console.warn("El navegador no pudo cerrar el diálogo de vista previa de forma nativa.", error);
+  }
+  // Fallback for embedded/mobile browsers where dialog.close() is missing or
+  // leaves the open attribute behind. The CSS also hides every closed dialog.
+  if (productPreviewDialog.open || productPreviewDialog.hasAttribute("open")) {
+    productPreviewDialog.removeAttribute("open");
+  }
+  if (wasOpen && !productPreviewDialog.open && !productPreviewDialog.hasAttribute("open")) {
+    const returnFocus = productPreviewDialog._returnFocus;
+    productPreviewDialog._returnFocus = null;
+    if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+      try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+    }
+  }
+}
+
+function handleAdminProductPreviewEscape(event) {
+  if (event.key !== "Escape" || !productPreviewDialog?.open) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  closeAdminProductPreviewDialog();
+}
+
+document.addEventListener("keydown", handleAdminProductPreviewEscape, true);
+productPreviewDialog?.addEventListener("cancel", event => {
+  event.preventDefault();
+  closeAdminProductPreviewDialog();
+});
+productPreviewDialog?.addEventListener("close", () => {
+  const returnFocus = productPreviewDialog._returnFocus;
+  productPreviewDialog._returnFocus = null;
+  if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+    try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+  }
+});
+productPreviewDialog?.querySelector("[data-close-product-preview]")?.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopPropagation();
+  closeAdminProductPreviewDialog();
+});
+
 function previewMoney(value, currency) {
   if (value === null || value === undefined || value === "") return "Consultar";
   const amount = Number(value);
@@ -4430,7 +5335,10 @@ function previewOpenPerfumeProduct(product) {
       notes("Salida", detail.top_notes) + notes("Corazón", detail.heart_notes) + notes("Fondo", detail.base_notes) +
     '</div></section>';
   if (typeof productPreviewDialog.showModal === "function") {
-    if (!productPreviewDialog.open) productPreviewDialog.showModal();
+    if (!productPreviewDialog.open) {
+      productPreviewDialog._returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      productPreviewDialog.showModal();
+    }
   } else {
     productPreviewDialog.setAttribute("open", "open");
   }
@@ -4571,7 +5479,10 @@ function previewOpenProduct(product) {
     '</section>';
 
   if (typeof productPreviewDialog.showModal === "function") {
-    if (!productPreviewDialog.open) productPreviewDialog.showModal();
+    if (!productPreviewDialog.open) {
+      productPreviewDialog._returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      productPreviewDialog.showModal();
+    }
   } else {
     productPreviewDialog.setAttribute("open", "open");
   }
@@ -4580,13 +5491,11 @@ function previewOpenProduct(product) {
 productPreviewDialog?.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
   if (target?.closest("[data-close-product-preview]")) {
-    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") productPreviewDialog.close();
-    else productPreviewDialog.removeAttribute("open");
+    closeAdminProductPreviewDialog();
     return;
   }
   if (event.target === productPreviewDialog) {
-    if (productPreviewDialog.open && typeof productPreviewDialog.close === "function") productPreviewDialog.close();
-    else productPreviewDialog.removeAttribute("open");
+    closeAdminProductPreviewDialog();
     return;
   }
   const thumbnail = target?.closest("[data-preview-image]");
@@ -4602,18 +5511,24 @@ productPreviewDialog?.addEventListener("click", event => {
 });
 
 function collectProductStoragePaths(product) {
-  const bucket = String(CONFIG.storageBucket || "product-images").trim();
-  let storageOrigin = "";
-  try { storageOrigin = new URL(CONFIG.supabaseUrl).origin; } catch { return []; }
-  const publicPrefix = "/storage/v1/object/public/" + bucket + "/";
+  const publicPrefix = "/storage/v1/object/public/" + String(CONFIG.storageBucket || "product-images").trim() + "/";
+  let supabaseOrigin = "https://uwqnoadelnnplcvqqlyz.supabase.co";
+  let catalogOrigin = "";
+  try { catalogOrigin = new URL(CONFIG.publicCatalogUrl || window.location.origin).origin; } catch { /* usar solo URLs Supabase conocidas */ }
   const paths = new Set();
   const visit = value => {
     if (typeof value === "string") {
       if (!value.startsWith("https://") && !value.startsWith("http://")) return;
       try {
         const imageUrl = new URL(value);
-        if (imageUrl.origin !== storageOrigin || !imageUrl.pathname.startsWith(publicPrefix)) return;
-        const encodedPath = imageUrl.pathname.slice(publicPrefix.length);
+        let encodedPath = "";
+        if (imageUrl.origin === supabaseOrigin && imageUrl.pathname.startsWith(publicPrefix)) {
+          encodedPath = imageUrl.pathname.slice(publicPrefix.length);
+        } else if (catalogOrigin && imageUrl.origin === catalogOrigin && imageUrl.pathname.startsWith("/media/")) {
+          encodedPath = imageUrl.pathname.slice("/media/".length);
+        } else {
+          return;
+        }
         const path = encodedPath.split("/").map(part => {
           try { return decodeURIComponent(part); } catch { return part; }
         }).join("/");
@@ -4654,14 +5569,26 @@ async function deleteProductFromDatabase(product) {
 
   const imagePaths = collectProductStoragePaths(product);
   const storageErrors = [];
-  const bucket = String(CONFIG.storageBucket || "product-images");
-  for (let offset = 0; offset < imagePaths.length; offset += 100) {
-    try {
-      const { error: storageError } = await supabase.storage.from(bucket).remove(imagePaths.slice(offset, offset + 100));
-      if (storageError) storageErrors.push(storageError.message || "Error de Storage sin detalle.");
-    } catch (storageError) {
-      storageErrors.push(storageError && storageError.message ? storageError.message : "Error de Storage sin detalle.");
+  try {
+    const token = await getCatalogAccessToken();
+    for (let offset = 0; offset < imagePaths.length; offset += 100) {
+      const response = await fetch("/api/storage/remove", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({ paths: imagePaths.slice(offset, offset + 100) })
+      });
+      if (!response.ok) {
+        let detail = "";
+        try { detail = String((await response.json())?.error || ""); } catch {}
+        storageErrors.push(detail || "Cloudflare R2 respondió HTTP " + response.status + ".");
+      }
     }
+  } catch (storageError) {
+    storageErrors.push(storageError?.message || "No se pudo contactar Cloudflare R2.");
   }
   if (storageErrors.length) {
     throw new Error("El producto permanece protegido en la papelera; la limpieza de Storage falló y puede reintentarse: " + storageErrors.slice(0, 2).join(" · "));
@@ -5018,8 +5945,63 @@ function markEditorClean() {
   editorIsDirty = false;
 }
 
+function hasMeaningfulEditorContent() {
+  if (!form) return false;
+
+  const fields = Array.from(form.querySelectorAll("input, textarea, select")).map(field => {
+    const type = String(field.type || "").toLowerCase();
+    const ignored = (
+      field.disabled ||
+      field.hidden ||
+      type === "hidden" ||
+      ["button", "submit", "reset"].includes(type) ||
+      field.id === "product-catalog-type" ||
+      (activeCatalogType !== "perfumery" && Boolean(field.closest(
+        "#product-perfume-fields, #product-price-usd-field, #product-price-nio-field"
+      ))) ||
+      (activeCatalogType === "perfumery" && Boolean(field.closest(
+        "#product-category-field, #product-subcategory-field, #product-model-field, #product-warranty-field, #product-specs-field"
+      )))
+    );
+
+    if (ignored) return { kind: "ignored", ignored: true };
+    if (type === "file") return { kind: "file", fileCount: field.files?.length || 0 };
+    if (field.tagName === "TEXTAREA") return { kind: "textarea", value: field.value };
+    if (field.tagName === "SELECT") return {
+      kind: "select",
+      value: field.value,
+      selectedIndex: field.selectedIndex
+    };
+    if (type === "checkbox" || type === "radio") return {
+      kind: type,
+      checked: field.checked,
+      defaultChecked: field.defaultChecked
+    };
+    if (type === "color") return {
+      kind: "color",
+      value: field.value,
+      defaultValue: field.defaultValue || "#000000"
+    };
+    if (["text", "search", "number", "email", "url", "tel", "date", "month", "time"].includes(type)) {
+      return { kind: type, value: field.value };
+    }
+    return { kind: "ignored", ignored: true };
+  });
+
+  const variantImageCount = Array.from(form.querySelectorAll("[data-variant-row]"))
+    .reduce((total, row) => total + (row._variantImageItems?.length || 0), 0);
+  const imageCount = (mainImageItems?.length || 0) + variantImageCount;
+
+  return hasMeaningfulEditorInput(fields, {
+    existingRecord: Boolean(String($("#product-id")?.value || "").trim()),
+    imageCount,
+    customTagCount: Array.isArray(customProductTags) ? customProductTags.length : 0
+  });
+}
+
 function updateEditorDirtyState() {
-  editorIsDirty = getEditorSnapshot() !== editorBaseline;
+  const snapshotChanged = getEditorSnapshot() !== editorBaseline;
+  editorIsDirty = snapshotChanged && hasMeaningfulEditorContent();
 }
 
 form?.addEventListener("input", () => {
@@ -5674,7 +6656,8 @@ activeCatalogSelector?.addEventListener("change", () => {
   if (requested === activeCatalogType) return;
 
   updateEditorDirtyState();
-  if (editorIsDirty) {
+  const hasDiscardableContent = editorIsDirty && hasMeaningfulEditorContent();
+  if (hasDiscardableContent) {
     const requestedLabel = requested === "perfumery" ? "JB Parfums · Perfumería" : "JB TECH · Tecnología";
     const warning = "Hay cambios sin guardar en el formulario. Si cambiás de catálogo, se descartarán. ¿Querés continuar a " + requestedLabel + "?";
 
@@ -5822,33 +6805,47 @@ function waitBeforeRetry(milliseconds) {
   return new Promise(resolve => window.setTimeout(resolve, milliseconds));
 }
 
+function getR2MediaUrl(path) {
+  const base = String(CONFIG.publicCatalogUrl || window.location.origin).replace(/\/+$/, "");
+  return base + "/media/" + String(path || "").split("/").map(encodeURIComponent).join("/");
+}
+
+async function getCatalogAccessToken() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const token = data?.session?.access_token;
+  if (!token) throw new Error("La sesión administrativa expiró. Volvé a iniciar sesión.");
+  return token;
+}
+
 async function recoverUploadedImageUrl(bucket, path) {
   try {
-    const { data, error } = await supabase.storage.from(bucket).info(path);
-    if (error || !data) return "";
-    return supabase.storage.from(bucket).getPublicUrl(path)?.data?.publicUrl || "";
+    const token = await getCatalogAccessToken();
+    const response = await fetch("/api/storage/info?path=" + encodeURIComponent(String(path)), {
+      method: "GET",
+      headers: { Authorization: "Bearer " + token, Accept: "application/json" },
+      cache: "no-store"
+    });
+    if (!response.ok) return "";
+    const body = await response.json();
+    return body?.data?.path ? getR2MediaUrl(body.data.path) : "";
   } catch {
     return "";
   }
 }
 
 async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onProgress){
-  if (IS_READ_ONLY_PREVIEW) {
-    throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían a Supabase.");
+  if (isReadOnlySession()) {
+    throw new Error("Vista previa segura: las fotografías permanecen en este navegador y no se envían al servidor.");
   }
   const {data,error:sessionError}=await supabase.auth.getSession();
   if(sessionError)throw sessionError;
   const accessToken=data?.session?.access_token;
   if(!accessToken)throw new Error("La sesión administrativa expiró. Volvé a iniciar sesión antes de subir fotografías.");
-  const baseUrl=String(CONFIG.supabaseUrl||"").replace(/\/+$/,"");
-  if(!baseUrl||!CONFIG.supabaseAnonKey)throw new Error("Falta la configuración pública de Supabase para subir fotografías.");
-  const encodedBucket=encodeURIComponent(bucket);
-  const encodedPath=String(path).split("/").map(part=>encodeURIComponent(part)).join("/");
-  const endpoint=baseUrl+"/storage/v1/object/"+encodedBucket+"/"+encodedPath;
+  const endpoint="/api/storage/upload?bucket="+encodeURIComponent(bucket)+"&path="+encodeURIComponent(String(path));
   return new Promise((resolve,reject)=>{
     const xhr=new XMLHttpRequest();
     xhr.open("POST",endpoint,true);
-    xhr.setRequestHeader("apikey",CONFIG.supabaseAnonKey);
     xhr.setRequestHeader("Authorization","Bearer "+accessToken);
     xhr.setRequestHeader("Content-Type",contentType);
     xhr.setRequestHeader("x-upsert","false");
@@ -5865,7 +6862,7 @@ async function uploadStorageObjectWithProgress(bucket,path,file,contentType,onPr
         const body=JSON.parse(xhr.responseText||"{}");
         detail=String(body.message||body.error||body.error_description||"");
       }catch{}
-      const message=detail||("Supabase Storage respondió HTTP "+xhr.status+".");
+      const message=detail||("Cloudflare R2 respondió HTTP "+xhr.status+".");
       const uploadError=new Error(message);
       uploadError.status=xhr.status;
       uploadError.responseText=xhr.responseText||"";
@@ -5914,8 +6911,7 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
     try {
       await uploadStorageObjectWithProgress(bucket, path, uploadFile, uploadMime, onProgress);
       if (typeof onProgress === "function") onProgress(100);
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-      return data.publicUrl;
+      return getR2MediaUrl(path);
     } catch (error) {
       lastError = error;
       if (isTransientImageUploadError(error)) {
@@ -5923,8 +6919,9 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
         if (recoveredUrl) return recoveredUrl;
       }
       if (attempt > 0 && /already exists|duplicate|resource exists/i.test(String(error?.message || ""))) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return data.publicUrl;
+        const recoveredUrl = await recoverUploadedImageUrl(bucket, path);
+        if (recoveredUrl) return recoveredUrl;
+        throw error;
       }
       if (!isTransientImageUploadError(error) || attempt === maxAttempts - 1) break;
     }
@@ -5941,8 +6938,8 @@ async function uploadImage(productId, file, subfolder = "", onProgress = null) {
   const connectionAdvice = navigator.onLine === false
     ? "El teléfono aparece sin conexión."
     : isTransientImageUploadError(lastError)
-      ? "El navegador no recibió una respuesta de Supabase Storage. Puede ser una interrupción de red o un bloqueo de la solicitud; probá de nuevo cuando la conexión esté estable."
-      : "Supabase Storage respondió con un error. Revisá el detalle técnico que aparece al final.";
+      ? "El navegador no recibió una respuesta de Cloudflare R2. Puede ser una interrupción de red o un bloqueo de la solicitud; probá de nuevo cuando la conexión esté estable."
+      : "Cloudflare R2 respondió con un error. Revisá el detalle técnico que aparece al final.";
   throw new Error(
     `No se pudo subir ${file.name} después de ${maxAttempts} intentos. ${connectionAdvice} El archivo se conserva en el formulario para reintentar. Detalle técnico: ${detail}`
   );
@@ -6625,8 +7622,8 @@ form?.addEventListener("click", event => {
 form?.setAttribute("novalidate","novalidate");
 form?.addEventListener("submit", async event => {
   event.preventDefault();
-  if (IS_READ_ONLY_PREVIEW) {
-    message("#product-form-status", "Vista previa segura de Vercel: los cambios no se guardan. Usá esta vista para probar el importador sin modificar producción.", "error");
+  if (isReadOnlySession()) {
+    message("#product-form-status", "Esta vista previa es de solo lectura.", "error");
     return;
   }
   if (productSaveInProgress) return;

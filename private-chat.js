@@ -1,6 +1,19 @@
+import { createCatalogClient } from "./db-client.js";
+
 const config = window.CATALOG_CONFIG || {};
 const apiBase = String(config.publicCatalogUrl || "https://jb-collections.pages.dev").replace(/\/+$/, "");
 const API_URL = apiBase + "/api/private-chat";
+const neonPublicClient = createCatalogClient({ admin: false });
+
+async function getAnonymousAccessToken() {
+  if (!neonPublicClient?.auth?.getAnonymousToken) {
+    throw new Error("No se pudo inicializar la autenticación pública de Neon.");
+  }
+  const result = await neonPublicClient.auth.getAnonymousToken();
+  const token = String(result?.token || result?.data?.token || "");
+  if (!token) throw new Error("Neon no entregó un token público válido.");
+  return token;
+}
 const SESSION_KEY = "jb-private-chat-session-token-v1";
 const PRIVACY_NOTICE_VERSION = "2026-10-29-v3";
 const $ = selector => document.querySelector(selector);
@@ -85,9 +98,13 @@ function updateStatus(message, kind = "") {
   statusLine.className = "private-chat-status" + (kind ? " is-" + kind : "");
 }
 async function api(action, payload = {}) {
+  const accessToken = await getAnonymousAccessToken();
   const response = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + accessToken
+    },
     cache: "no-store",
     credentials: "omit",
     body: JSON.stringify({ action, ...payload })

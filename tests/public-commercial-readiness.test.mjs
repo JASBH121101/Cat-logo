@@ -10,7 +10,7 @@ const perfumeHtml = readFileSync(new URL("../perfumeria/index.html", import.meta
 const homeHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 test("all JB TECH product grids use the same detail and broken-image handlers", () => {
-  assert.match(app, /querySelectorAll\("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid"\)/);
+  assert.match(app, /querySelectorAll\("#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid"\)/);
   assert.match(app, /data-product-image/);
   assert.match(techHtml, /id="high-performance-grid"/);
   assert.match(techHtml, /id="quality-price-grid"/);
@@ -55,7 +55,7 @@ test("configuration availability affects public variant choices, status, and Wha
   assert.match(app, /const selectedAvailability = effectiveVariantAvailability\(selected\);[\s\S]*?colorStatusLabel\(selectedAvailability\)/);
   assert.match(app, /Disponibilidad de esta variante:.*effectiveVariantAvailability\(variant\)/);
   assert.match(app, /variant-choice-status status-/);
-  assert.match(techHtml, /app\.js\?v=20261102-cdn-media-cache1/);
+  assert.match(techHtml, /app\.js\?v=20261112-lightbox-crossbrowser-close2/);
 });
 
 const sitemapXml = readFileSync(new URL("../sitemap.xml", import.meta.url), "utf8");

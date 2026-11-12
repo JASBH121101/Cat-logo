@@ -22,7 +22,7 @@ test("JB Manager AI is a reachable authenticated admin workspace", () => {
   assert.match(html, /id="jb-ai-floating-launcher"/);
   assert.match(html, /id="jb-ai-voice"/);
   assert.match(admin, /initJbManagerAI/);
-  assert.match(admin, /jbManagerAI\?\.setAuthenticatedUser\(user\)/);
+  assert.ok(admin.includes("jbManagerAI?.setAuthenticatedUser(currentUser)"));
   assert.match(admin, /jbManagerAI\?\.clearSession\(\)/);
   assert.match(css, /\.jb-manager-ai-workspace/);
   assert.match(css, /\.jb-ai-floating-launcher/);
@@ -45,16 +45,16 @@ test("JB Manager AI requests the native Android microphone permission and keeps 
   assert.doesNotMatch(assistant, /native\.addListener\(["']result["'][\s\S]{0,400}sendMessage\(/);
 });
 
-test("Gemini endpoint verifies Supabase identity and admin membership before calling the model", () => {
-  const authCheck = endpoint.indexOf("async function authorizeAdmin");
-  const modelCall = endpoint.indexOf("generativelanguage.googleapis.com");
+test("AI endpoint is owner-only and refuses demo viewer identities", () => {
+  const authCheck = endpoint.indexOf("async function authorizeJbAiUser");
+  const modelCall = endpoint.indexOf("https://api.openai.com/v1/responses");
   assert.ok(authCheck >= 0 && modelCall > authCheck);
-  assert.match(endpoint, /\/auth\/v1\/user/);
-  assert.match(endpoint, /\/rest\/v1\/admin_users/);
-  assert.match(endpoint, /if \(!user\) return response\(403/);
-  assert.match(endpoint, /env\.GEMINI_API_KEY/);
-  assert.match(endpoint, /rateLimited\(request\)/);
-  assert.match(endpoint, /request_too_large/);
+  assert.ok(endpoint.includes("/rpc/catalog_admin_context"));
+  assert.ok(endpoint.includes("context.is_admin === true && context.is_owner === true"));
+  assert.doesNotMatch(endpoint, /is_demo_viewer|demo_viewer|isDemoViewer|demo_readonly_ai/);
+  assert.ok(endpoint.includes("env.OPENAI_API_KEY"));
+  assert.ok(endpoint.includes("rateLimited(request)"));
+  assert.ok(endpoint.includes("request_too_large"));
 });
 
 test("Gemini cannot write to the catalog and all changes remain proposals", () => {
@@ -68,7 +68,7 @@ test("Gemini cannot write to the catalog and all changes remain proposals", () =
 
 test("assistant sends only bounded catalog context and renders model text safely", () => {
   assert.match(assistant, /slice\(0, 80\)/);
-  assert.match(assistant, /products:\s*catalogContext\(getProducts\(\), message\)/);
+  assert.match(assistant, /products:\s*catalogContext\(availableProducts, message\)/);
   assert.match(assistant, /rankCatalogProducts\(rows, message/);
   assert.match(endpoint, /JSON\.stringify\(context\)/);
   assert.match(assistant, /paragraph\.textContent = text/);
@@ -145,12 +145,41 @@ test("JB Copilot allows the Capacitor Android origin and handles blocked microph
 });
 
 
-const jbAiEndpoint = await import(
-  "data:text/javascript;base64," + Buffer.from(endpoint, "utf8").toString("base64")
-);
+const jbAiEndpoint = await import(new URL("../functions/api/jb-manager-ai.js", import.meta.url));
+
+async function callJbAi(context) {
+  const previousFetch = globalThis.fetch;
+  const neonContext = context.mockNeonContext || {
+    is_admin: true,
+    admin_id: "test-admin",
+    role: "admin",
+    is_owner: true,
+    is_demo_viewer: false,
+    permissions: {}
+  };
+  const { mockNeonContext, ...requestContext } = context;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/rpc/catalog_admin_context")) {
+      return Response.json([neonContext]);
+    }
+    return previousFetch(input, init);
+  };
+  try {
+    return await jbAiEndpoint.onRequestPost({
+      ...requestContext,
+      env: {
+        NEON_DATA_API_URL: "https://neon.example.test/rest/v1",
+        ...(requestContext.env || {})
+      }
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+}
 
 test("JB Copilot CORS preflight accepts GitHub Pages and the Android Capacitor origin", async () => {
-  for (const origin of ["https://jasbh121101.github.io", "https://localhost"]) {
+  for (const origin of ["https://jasbh121101.github.io", "https://localhost", "https://fiverr-demo.jb-collections.pages.dev"]) {
     const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
       method: "OPTIONS",
       headers: {
@@ -176,7 +205,7 @@ test("JB Copilot POST handler is reached and returns authentication_required, no
     },
     body: JSON.stringify({ message: "diagnostic" })
   });
-  const response = await jbAiEndpoint.onRequestPost({ request, env: {} });
+  const response = await callJbAi({ request, env: {} });
   const payload = await response.json();
   assert.equal(response.status, 401);
   assert.equal(payload.error, "authentication_required");
@@ -234,7 +263,7 @@ test("JB Copilot migrates to Gemini 3.8 Flash using header-based API key authent
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const response = await jbAiEndpoint.onRequestPost({
+    const response = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -307,7 +336,7 @@ test("JB Copilot classifies Gemini upstream access, billing and quota failures",
         },
         body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
       });
-      const response = await jbAiEndpoint.onRequestPost({
+      const response = await callJbAi({
         request,
         env: { GEMINI_API_KEY: "test-only-key" }
       });
@@ -387,7 +416,7 @@ test("JB Copilot retries simple JSON mode when Gemini rejects the full product s
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const response = await jbAiEndpoint.onRequestPost({
+    const response = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -460,7 +489,7 @@ test("JB Copilot fails over from an overloaded Gemini 3.8 model to stable Flash"
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const result = await jbAiEndpoint.onRequestPost({
+    const result = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -521,7 +550,7 @@ test("JB Copilot falls back to Flash-Lite when both primary Flash models are una
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const result = await jbAiEndpoint.onRequestPost({
+    const result = await callJbAi({
       request,
       env: { GEMINI_API_KEY: "test-only-key" }
     });
@@ -557,7 +586,7 @@ test("JB Copilot answers a simple greeting without depending on Gemini availabil
       },
       body: JSON.stringify({ message: "¡Hola bro!" })
     });
-    const result = await jbAiEndpoint.onRequestPost({ request, env: {} });
+    const result = await callJbAi({ request, env: {} });
     const payload = await result.json();
     assert.equal(result.status, 200);
     assert.match(payload.assistant.message, /¡Hola!/);
@@ -593,7 +622,7 @@ test("JB Copilot accepts natural-language text or common reply aliases from Gemi
       },
       body: JSON.stringify({ message: "Contame qué podés hacer en JB Manager." })
     });
-    const result = await jbAiEndpoint.onRequestPost({ request, env: { GEMINI_API_KEY: "test-only-key" } });
+    const result = await callJbAi({ request, env: { GEMINI_API_KEY: "test-only-key" } });
     const payload = await result.json();
     assert.equal(result.status, 200);
     assert.equal(payload.assistant.message, "Puedo ayudarte con consultas y productos.");
@@ -626,7 +655,7 @@ test("JB Copilot never returns a successful generic answer for malformed model J
       },
       body: JSON.stringify({ message: "Explicame cómo funciona el catálogo." })
     });
-    const result = await jbAiEndpoint.onRequestPost({ request, env: { GEMINI_API_KEY: "test-only-key" } });
+    const result = await callJbAi({ request, env: { GEMINI_API_KEY: "test-only-key" } });
     const payload = await result.json();
     assert.equal(result.status, 502);
     assert.equal(payload.error, "gemini_unstructured_response");
@@ -720,4 +749,74 @@ test("Copilot uses a smaller JSON schema and output budget for normal questions 
   assert.ok(endpoint.includes('const systemInstructionText = systemInstruction.join(" ")'));
   assert.ok(endpoint.includes("text: systemInstructionText"));
   assert.ok(endpoint.includes("model;dur="));
+});
+
+
+test("Fiverr demo AI endpoint returns 410 before auth or provider invocation", async () => {
+  const previousFetch = globalThis.fetch;
+  let externalRequestMade = false;
+  globalThis.fetch = async () => {
+    externalRequestMade = true;
+    throw new Error("The Fiverr demo must never call a paid AI provider");
+  };
+
+  try {
+    const request = new Request("https://fiverr-demo.jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://fiverr-demo.jb-collections.pages.dev",
+        Authorization: "Bearer test-demo-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola, asistente" })
+    });
+    const result = await jbAiEndpoint.onRequestPost({
+      request,
+      env: { OPENAI_API_KEY: "test-only-key", GEMINI_API_KEY: "test-only-key" }
+    });
+    assert.equal(result.status, 410);
+    assert.equal((await result.json()).error, "assistant_disabled_in_demo");
+    assert.equal(externalRequestMade, false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+
+test("demo viewers are rejected by the AI API even when calling the production hostname", async () => {
+  const previousFetch = globalThis.fetch;
+  let openAiCalled = false;
+  globalThis.fetch = async url => {
+    if (String(url).includes("api.openai.com")) openAiCalled = true;
+    throw new Error("Demo viewer access must stop before provider invocation");
+  };
+  try {
+    const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+      method: "POST",
+      headers: {
+        Origin: "https://jb-collections.pages.dev",
+        Authorization: "Bearer test-demo-token",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: "Hola" })
+    });
+    const result = await callJbAi({
+      request,
+      env: { OPENAI_API_KEY: "test-only-key" },
+      mockNeonContext: {
+        is_admin: false,
+        admin_id: null,
+        role: "demo_viewer",
+        is_owner: false,
+        is_demo_viewer: true,
+        username: "qa-viewer",
+        permissions: { "catalog.view_all": true }
+      }
+    });
+    assert.equal(result.status, 403);
+    assert.equal((await result.json()).error, "admin_only");
+    assert.equal(openAiCalled, false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
 });

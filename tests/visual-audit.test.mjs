@@ -357,6 +357,9 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
         });
         const gotoResponse = await page.goto(origin + site.path, { waitUntil: "domcontentloaded", timeout: 15000 });
         assert.ok(gotoResponse?.ok(), `${site.path} must serve successfully in the local browser fixture`);
+        // Let admin.js finish its unauthenticated startup before installing the synthetic shell.
+        // This fixture changes only the browser DOM; it never creates a real session or calls a write API.
+        if (site.name === "admin") await page.waitForTimeout(900);
         await page.evaluate(themeValue => {
           document.documentElement.setAttribute("data-theme", themeValue);
           document.body.dataset.visualAuditFixture = "true";
@@ -732,35 +735,20 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               });
               continue;
             }
-            if (gridId === "limited-edition-grid") {
-              const verticalCard = layout.cardDisplay === "flex" &&
-                layout.cardWidth <= 320 &&
-                Math.abs((layout.imageWidth || 0) - (layout.imageHeight || 0)) <= 24 &&
-                layout.contentTop >= layout.imageTop + layout.imageHeight - 8 &&
-                layout.contentWidth >= layout.cardWidth * 0.8;
-              if (!verticalCard) {
-                addFinding({
-                  severity: "high", page: site.name, theme, viewport: viewport.name,
-                  element: "#" + gridId,
-                  message: "La tarjeta de Ediciones limitadas debe conservar el formato vertical compacto",
-                  evidence: `display=${layout.cardDisplay}; ancho=${layout.cardWidth}px; imagen=${layout.imageWidth}×${layout.imageHeight}px; contenido inicia en ${layout.contentTop}.`,
-                  recommendation: "Mantener tarjetas de hasta 300px, fotografía cuadrada completa y detalles debajo de la imagen.",
-                  blocking: true,
-                });
-              }
-              continue;
-            }
-            const horizontalCard = layout.cardDisplay === "grid" && layout.cardColumnCount === 2 &&
-              layout.imageLeft < layout.contentLeft &&
-              layout.imageRight <= layout.contentLeft + 2 &&
-              Math.abs(layout.imageTop - layout.contentTop) <= 30;
-            if (!horizontalCard) {
+            const verticalCard = layout.cardDisplay === "flex" &&
+              layout.cardWidth <= 360 &&
+              (layout.imageWidth || 0) > 0 &&
+              (layout.imageHeight || 0) > 0 &&
+              Math.abs((layout.imageWidth || 0) - (layout.imageHeight || 0)) <= 24 &&
+              layout.contentTop >= layout.imageTop + layout.imageHeight - 8 &&
+              layout.contentWidth >= layout.cardWidth * 0.8;
+            if (!verticalCard) {
               addFinding({
                 severity: "high", page: site.name, theme, viewport: viewport.name,
                 element: "#" + gridId,
-                message: "La tarjeta de la vitrina no comparte el diseño horizontal de Exclusivos",
-                evidence: `display=${layout.cardDisplay}; columnas=${layout.cardGridColumns}; imagen [${layout.imageLeft}, ${layout.imageRight}] y datos empiezan en ${layout.contentLeft}.`,
-                recommendation: "Mantener la estructura horizontal de fotografía a la izquierda e información a la derecha para las vitrinas principales.",
+                message: "La tarjeta de la vitrina no sigue el formato vertical común",
+                evidence: `display=${layout.cardDisplay}; ancho=${layout.cardWidth}px; imagen=${layout.imageWidth}×${layout.imageHeight}px; contenido inicia en ${layout.contentTop}.`,
+                recommendation: "Mantener en todas las vitrinas la misma estructura: fotografía cuadrada arriba, información debajo y ancho adaptable de 270 a 350px.",
                 blocking: true,
               });
             }
@@ -972,6 +960,23 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
               const addVariant = page.locator("#add-variant-button");
               assert.equal(await addVariant.isVisible(), true, "variant action must be visible in the editor");
 
+              const mobileGeometry = await page.evaluate(() => {
+                const nav = document.querySelector("#product-form .product-form-section-nav");
+                const header = document.querySelector(".admin-header");
+                const add = document.querySelector("#add-variant-button");
+                const rect = element => {
+                  const r = element.getBoundingClientRect();
+                  const style = getComputedStyle(element);
+                  return { x:r.x, y:r.y, width:r.width, height:r.height, whiteSpace:style.whiteSpace };
+                };
+                return { nav:rect(nav), header:rect(header), add:rect(add), viewportWidth:innerWidth };
+              });
+              assert.ok(mobileGeometry.nav.y >= mobileGeometry.header.y + mobileGeometry.header.height - 2,
+                "sticky step tabs must never be hidden behind the admin header");
+              assert.ok(mobileGeometry.add.width <= Math.min(280, mobileGeometry.viewportWidth * .8),
+                "add-variant action must stay compact instead of spanning the full mobile form");
+              assert.ok(mobileGeometry.add.height <= 52, "add-variant action must not become an oversized banner");
+
               const configurations = [
                 { ram: "8", storage: "256", usd: "199", nio: "6999", color: "Graphite" },
                 { ram: "12", storage: "256", usd: "249", nio: "8749", color: "Titanium Blue" },
@@ -988,6 +993,14 @@ test("visual audit measures responsive layouts in both themes and emits diagnost
                   groupsBefore + index + 1, { timeout: 3000 });
                 const group = groups.nth(groupsBefore + index);
                 await group.locator("summary").click();
+
+                const remove = group.locator("[data-remove-group]");
+                const removeRect = await remove.evaluate(el => {
+                  const r = el.getBoundingClientRect();
+                  return { width:r.width, height:r.height, whiteSpace:getComputedStyle(el).whiteSpace };
+                });
+                assert.ok(removeRect.height <= 44, "remove-configuration control must stay compact");
+                assert.equal(removeRect.whiteSpace, "nowrap", "remove-configuration label must remain on one line");
                 for (const selector of ["[data-group-storage]", "[data-group-ram]", "[data-group-price-usd]", "[data-group-price-nio]"]) {
                   assert.equal(await group.locator(selector).count(), 1,
                     "each variant must expose its own RAM, storage and price fields: " + selector);

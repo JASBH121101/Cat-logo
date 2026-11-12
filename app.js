@@ -1,8 +1,8 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createCatalogClient } from "./db-client.js";
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
-const CATALOG_MEDIA_SUPABASE_ORIGIN = stripCatalogTrailingSlashes(CONFIG.supabaseUrl || "");
+const CATALOG_MEDIA_SUPABASE_ORIGIN = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const CATALOG_MEDIA_BUCKET = String(CONFIG.storageBucket || "product-images");
 function stripCatalogTrailingSlashes(value) {
   let text = String(value || "");
@@ -19,9 +19,22 @@ function catalogMediaBaseUrl() {
 
 function catalogMediaUrl(value) {
   const original = String(value || "").trim();
-  if (!original || !CATALOG_MEDIA_SUPABASE_ORIGIN) return original;
+  if (!original) return original;
   try {
     const parsed = new URL(original, window.location.href);
+    const currentHost = String(window.location.hostname || "").toLowerCase();
+    const isPreviewHost = currentHost.endsWith(".jb-collections.pages.dev") &&
+      currentHost !== "jb-collections.pages.dev";
+
+    // Migrated product rows still contain absolute Production media URLs.
+    // Rebase them to this Preview deployment so images resolve only against
+    // the Preview R2 binding (and its explicitly configured source fallback).
+    if (isPreviewHost &&
+        parsed.origin === "https://jb-collections.pages.dev" &&
+        parsed.pathname.startsWith("/media/")) {
+      return window.location.origin + parsed.pathname + parsed.search + parsed.hash;
+    }
+
     if (parsed.origin !== CATALOG_MEDIA_SUPABASE_ORIGIN || parsed.search || parsed.hash) return original;
     const prefix = "/storage/v1/object/public/" + CATALOG_MEDIA_BUCKET + "/";
     if (!parsed.pathname.startsWith(prefix)) return original;
@@ -164,10 +177,10 @@ async function recordCatalogPageVisit(catalogType) {
   }
 }
 
-const hasSupabaseConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+const hasNeonConfig = Boolean(CONFIG.neonAuthUrl && CONFIG.neonDataApiUrl);
 
-if (hasSupabaseConfig) {
-  supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+if (hasNeonConfig) {
+  supabase = createCatalogClient({ admin: false });
 }
 
 document.querySelector("#brand-name").textContent =
@@ -610,8 +623,8 @@ function renderColorSummary(product) {
   `;
 }
 
-function imageMarkup(product) {
-  const url = getProductImages(product)[0] || "";
+function imageMarkup(product, imageUrl = getProductImages(product)[0] || "") {
+  const url = imageUrl;
 
   if (url) {
     return `
@@ -631,11 +644,13 @@ function imageMarkup(product) {
 }
 
 // Sustituir imágenes de catálogo rotas por un estado visible, no por un hueco vacío.
-document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(catalogGrid => catalogGrid.addEventListener("error", event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement) || !img.matches("[data-product-image]")) return;
   const container = img.closest(".product-image");
-  img.remove();
+  const zoomButton = img.closest("[data-product-image-zoom]");
+  if (zoomButton) zoomButton.remove();
+  else img.remove();
   if (container && !container.querySelector(".photo-placeholder")) {
     container.insertAdjacentHTML("beforeend", `<div class="photo-placeholder"><span class="placeholder-icon">▧</span><span>Imagen no disponible</span></div>`);
   }
@@ -927,7 +942,6 @@ const PRODUCT_TAG_LABELS = {
 
 
 function renderCard(product) {
-  const image = imageMarkup(product);
   const variants = getProductVariants(product);
   const tags = normalizedProductTags(product);
   const rawTagLabels = new Map(
@@ -961,6 +975,10 @@ function renderCard(product) {
   const brand = String(product.brand || "").trim();
   const model = String(product.model || "").trim();
   const title = brand && model ? `${brand} ${model}` : String(product.name || brand || model || "Producto");
+  const cardPhotoUrls = getProductImages(product);
+  const image = cardPhotoUrls.length
+    ? `<button type="button" class="product-image-zoom" data-product-image-zoom="${escapeHtml(product.id)}" aria-label="Ampliar fotografías de ${escapeHtml(title)}" aria-haspopup="dialog">${imageMarkup(product, cardPhotoUrls[0])}</button>`
+    : imageMarkup(product, "");
   const price = startingPrice(product, "price_usd");
   const cardConfiguration =
     variants
@@ -1609,6 +1627,41 @@ function renderLegacyColorOptions(product, selectedColorName = "") {
   `;
 }
 
+function closeProductImageLightbox(dialog) {
+  if (!dialog) return;
+  const wasOpen = Boolean(dialog.open || dialog.hasAttribute("open"));
+  try {
+    if (dialog.open && typeof dialog.close === "function") dialog.close();
+  } catch (error) {
+    console.warn("El navegador no pudo cerrar el visor de fotografías de forma nativa.", error);
+  }
+
+  // Some mobile WebViews dispatch the click/key event but fail to complete the
+  // native dialog close sequence. Remove the open state as a deterministic fallback.
+  if (dialog.open || dialog.hasAttribute("open")) dialog.removeAttribute("open");
+  if (dialog.open) {
+    try { dialog.open = false; } catch {}
+  }
+
+  if (wasOpen) {
+    const returnFocus = dialog._returnFocus;
+    dialog._returnFocus = null;
+    if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+      try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+    }
+  }
+}
+
+function handleProductImageLightboxEscape(event, dialog) {
+  const escapePressed = event.key === "Escape" || event.key === "Esc" ||
+    event.keyCode === 27 || event.which === 27;
+  if (!escapePressed || !dialog || !(dialog.open || dialog.hasAttribute("open"))) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  closeProductImageLightbox(dialog);
+}
+
 function openProductImageLightbox(src, alt, galleryItems = []) {
   if (!src) return;
 
@@ -1655,14 +1708,39 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
 
     previous.addEventListener("click", () => movePhoto(-1));
     next.addEventListener("click", () => movePhoto(1));
-    lightbox.querySelector(".product-image-lightbox-close").addEventListener("click", () => {
-      if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
-      else lightbox.removeAttribute("open");
+    // Support browsers that dispatch the native cancel event and mobile
+    // webviews that only report Escape as a keydown event.
+    lightbox.addEventListener("cancel", event => {
+      event.preventDefault();
+      closeProductImageLightbox(lightbox);
     });
+    lightbox.addEventListener("close", () => {
+      const returnFocus = lightbox._returnFocus;
+      lightbox._returnFocus = null;
+      if (returnFocus?.isConnected && typeof returnFocus.focus === "function") {
+        try { returnFocus.focus({ preventScroll: true }); } catch { returnFocus.focus(); }
+      }
+    });
+    document.addEventListener("keydown", event => {
+      handleProductImageLightboxEscape(event, lightbox);
+    }, true);
+    // Legacy desktop/mobile keyboards may report Escape only on keyup.
+    document.addEventListener("keyup", event => {
+      handleProductImageLightboxEscape(event, lightbox);
+    }, true);
+
+    const closeButton = lightbox.querySelector(".product-image-lightbox-close");
+    const closeFromButton = event => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeProductImageLightbox(lightbox);
+    };
+    closeButton.addEventListener("pointerup", closeFromButton);
+    closeButton.addEventListener("touchend", closeFromButton, {passive:false});
+    closeButton.addEventListener("click", closeFromButton);
     lightbox.addEventListener("click", event => {
       if (event.target !== lightbox) return;
-      if (typeof lightbox.close === "function" && lightbox.open) lightbox.close();
-      else lightbox.removeAttribute("open");
+      closeProductImageLightbox(lightbox);
     });
     lightbox.addEventListener("keydown", event => {
       if (event.key === "ArrowLeft" && !previous.hidden) {
@@ -1716,6 +1794,7 @@ function openProductImageLightbox(src, alt, galleryItems = []) {
   lightbox._galleryItems = unique;
   lightbox._galleryIndex = startIndex;
   lightbox._renderPhoto();
+  if (!lightbox.open) lightbox._returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
   if (typeof lightbox.showModal === "function") {
     if (!lightbox.open) lightbox.showModal();
@@ -2025,8 +2104,28 @@ function openProduct(product, requestedVariant = null) {
   if (canonical) canonical.href = productLink(product);
 }
 
-document.querySelectorAll("#product-grid, #featured-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
+document.querySelectorAll("#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid").forEach(productGrid => productGrid.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : null;
+  const imageZoom = target?.closest("[data-product-image-zoom]");
+  if (imageZoom) {
+    const productId = imageZoom.getAttribute("data-product-image-zoom");
+    const product = products.find(item => String(item.id) === String(productId));
+    if (!product) return;
+    const photoUrls = getProductImages(product);
+    if (!photoUrls.length) return;
+    const title = [String(product.brand || "").trim(), String(product.model || "").trim()]
+      .filter(Boolean).join(" ") || String(product.name || "Producto");
+    const photos = photoUrls.map((src, index) => ({
+      src,
+      alt: title + " — foto " + (index + 1)
+    }));
+    openProductImageLightbox(
+      photoUrls[0],
+      imageZoom.querySelector("img")?.alt || title,
+      photos
+    );
+    return;
+  }
   const link = target?.closest("a[data-details]");
   if (!link) return;
   if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;

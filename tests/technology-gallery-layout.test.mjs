@@ -7,13 +7,14 @@ const html = readFileSync("tecnologia/index.html", "utf8");
 const css = readFileSync("technology-visual-refresh.css", "utf8");
 const contactCss = readFileSync("contact-channels.css", "utf8");
 const app = readFileSync("app.js", "utf8");
+const adminHtml = readFileSync("admin.html", "utf8");
 
 test("technology page loads the gallery fix after legacy style sheets", () => {
   const styles = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+>/g)].map(match => match[0]);
   assert.ok(styles.length > 0, "page should declare stylesheets");
-  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261031-limited-edition-vertical-card1/);
+  assert.match(styles.at(-2), /technology-visual-refresh\.css\?v=20261112-lightbox-crossbrowser-close2/);
   assert.match(styles.at(-1), /contact-channels\.css\?v=20261029-theme-contrast1/);
-  assert.match(html, /app\.js\?v=20261102-cdn-media-cache1/);
+  assert.match(html, /app\.js\?v=20261112-lightbox-crossbrowser-close2/);
   assert.match(html, /id="quality-price-section"/);
   assert.match(app, /quality_price: "💎 CALIDAD-PRECIO"/);
   assert.doesNotMatch(app, /const PRODUCT_TAG_ICONS/);
@@ -45,6 +46,28 @@ test("technology page loads the gallery fix after legacy style sheets", () => {
   assert.match(app, /\["Consolas", \["consola", "consolas", "console", "consoles"/);
 });
 
+test("catalog card photos are independently clickable and open the shared fullscreen gallery", () => {
+  assert.match(app, /function imageMarkup\(product, imageUrl = getProductImages\(product\)\[0\] \|\| ""\)/);
+  assert.match(app, /class="product-image-zoom" data-product-image-zoom=/);
+  assert.match(app, /aria-haspopup="dialog"/);
+  assert.match(app, /if \(zoomButton\) zoomButton\.remove\(\)/);
+  assert.match(app, /const imageZoom = target\?\.closest\("\[data-product-image-zoom\]"\)/);
+  assert.match(app, /const photoUrls = getProductImages\(product\)/);
+  assert.match(app, /openProductImageLightbox\([\s\S]*?photoUrls\[0\]/);
+  assert.match(app, /#product-grid, #featured-grid, #limited-edition-grid, #high-performance-grid, #quality-price-grid, #top-gaming-grid/);
+  assert.match(css, /JB TECH · zoom de fotografía directamente desde las tarjetas del catálogo/);
+  assert.match(css, /\.product-image-zoom:focus-visible/);
+  assert.match(css, /dialog\.product-image-lightbox/);
+  assert.ok(css.includes("dialog.product-image-lightbox:not([open])"));
+  assert.ok(app.includes('lightbox.addEventListener("cancel"'));
+  assert.ok(app.includes('lightbox.addEventListener("close"'));
+  assert.ok(app.includes("function closeProductImageLightbox(dialog)"));
+  assert.ok(app.includes("function handleProductImageLightboxEscape(event, dialog)"));
+  assert.ok(app.includes('document.addEventListener("keydown", event => {') && app.includes("handleProductImageLightboxEscape(event, lightbox)"));
+  assert.ok(app.includes('dialog.removeAttribute("open")'));
+  assert.match(css, /\.product-image-lightbox-photo/);
+});
+
 test("limited edition showcase uses champagne gold in light mode and keeps its label compact", () => {
   assert.ok(css.includes("Ediciones limitadas: champagne gold in light mode"));
   assert.ok(css.includes('html:not([data-theme="dark"]) body.technology-catalog .limited-edition-section'));
@@ -56,46 +79,109 @@ test("limited edition showcase uses champagne gold in light mode and keeps its l
   assert.ok(css.includes("white-space:nowrap !important"));
 });
 
-test("main technology showcases share the horizontal desktop layout, while limited editions stay vertical", () => {
-  const start = css.indexOf("JB TECH · distribución uniforme de todas las vitrinas");
-  assert.ok(start >= 0, "shared showcase layout block should exist");
+test("every desktop technology section uses the same vertical product-card geometry", () => {
+  const start = css.indexOf("JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL");
+  assert.ok(start >= 0, "final shared vertical-card layout block should exist");
   const sharedLayout = css.slice(start);
   for (const id of [
     "featured-grid",
+    "limited-edition-grid",
     "high-performance-grid",
     "quality-price-grid",
     "top-gaming-grid",
   ]) {
-    assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the common showcase grid");
+    assert.ok(sharedLayout.includes("#" + id + ".featured-grid"), id + " must use the shared vertical-card layout");
   }
-  assert.ok(sharedLayout.includes("grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr)) !important"));
-  assert.ok(sharedLayout.includes("height:300px !important"));
-  assert.ok(sharedLayout.includes("object-fit:contain !important"));
-  assert.ok(sharedLayout.includes("object-position:center !important"));
-
-  assert.ok(css.includes("Limited editions use the standard vertical catalog card"));
-  assert.ok(css.includes("#limited-edition-grid.featured-grid {"));
-  assert.ok(css.includes("grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),300px)) !important"));
-  assert.ok(css.includes("max-width:300px !important"));
-  assert.ok(css.includes("aspect-ratio:1 / 1 !important"));
-  assert.ok(css.includes("flex-direction:column !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 330px)) !important"));
+  assert.ok(sharedLayout.includes("aspect-ratio: 1 / 1 !important"));
+  assert.ok(sharedLayout.includes("max-width: 330px !important"));
+  assert.ok(sharedLayout.includes("flex-direction: column !important"));
+  assert.ok(sharedLayout.includes("object-fit: contain !important"));
+  assert.ok(sharedLayout.includes("justify-content: flex-start !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns: repeat(3, minmax(0, 1fr)) !important"));
+  assert.ok(sharedLayout.includes("grid-template-columns: repeat(2, minmax(0, 1fr)) !important"));
 });
 
-test("curated showcase typography is easier to read without changing responsive auto-fit", () => {
+test("the old horizontal split is explicitly superseded by the final shared vertical layout", () => {
+  const horizontalRule = css.indexOf("grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) !important");
+  const sharedVertical = css.indexOf("JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL");
+  assert.ok(horizontalRule >= 0, "historical horizontal layout remains traceable");
+  assert.ok(sharedVertical > horizontalRule, "final vertical overrides must win in the cascade");
+});
+
+test("curated section identities remain while product-card geometry is shared", () => {
   assert.match(css, /JB TECH · subir la legibilidad de las vitrinas/);
   assert.match(css, /\.section-subtitle\s*\{\s*font-size:clamp\(14px,1vw,16px\) !important;/);
-  assert.match(css, /Limited editions use the standard vertical catalog card/);
-  assert.match(css, /#limited-edition-grid\.featured-grid\s*\{[\s\S]*?grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,260px\),300px\)\) !important/);
-  assert.match(css, /#limited-edition-grid\.featured-grid \.product-badge[\s\S]*?font-size:10px !important/);
-  assert.match(css, /#limited-edition-grid\.featured-grid \.product-view-button[\s\S]*?font-size:13\.5px !important/);
+  assert.match(css, /JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL/);
+  for (const id of ["featured-grid", "limited-edition-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid"]) {
+    assert.ok(css.includes("#" + id + ".featured-grid > .product-card"), id + " must share vertical card geometry");
+  }
+  assert.match(css, /\.product-card > \.product-image[\s\S]*?aspect-ratio: 1 \/ 1 !important/);
+  assert.match(css, /\.product-card > \.product-card-content[\s\S]*?flex-direction: column !important/);
 });
 
-test("desktop JB TECH showcases use the available width and readable compact labels", () => {
+test("desktop JB TECH showcases use the same card widths as the main catalog", () => {
   assert.match(css, /JB TECH · escritorio: más ancho útil y etiquetas legibles/);
   assert.match(css, /width:min\(1580px,calc\(100% - 40px\)\) !important/);
   assert.match(css, /max-width:1580px !important/);
   assert.match(css, /font-size:11\.5px !important/);
-  assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,600px\),1fr\)\) !important/);
+  assert.match(css, /grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 270px\), 330px\)\) !important/);
+  assert.match(css, /grid-template-columns: repeat\(auto-fill, minmax\(min\(100%, 290px\), 350px\)\) !important/);
+});
+
+test("all curated sections keep vertical square product cards at desktop, tablet and mobile sizes", { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const sectionIds = ["featured-grid", "limited-edition-grid", "high-performance-grid", "quality-price-grid", "top-gaming-grid"];
+    const card = '<article class="product-card"><div class="product-image"><img alt="Equipo" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Crect width=\'300\' height=\'300\' fill=\'%23557799\'/%3E%3C/svg%3E"></div><div class="product-card-content"><div class="product-card-badges"><span class="product-badge">ALTO RENDIMIENTO</span></div><h3>Equipo de prueba</h3><p class="product-card-capacity">12 GB RAM / 256 GB</p><div class="product-price-label">Precio desde</div><div class="product-price">US$460</div><div class="product-actions"><a class="product-view-button">Ver producto</a></div></div></article>';
+    const markup = '<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}' + css + '</style></head><body class="technology-catalog">' +
+      sectionIds.map(id => '<section class="featured-section"><div id="' + id + '" class="featured-grid">' + card + card + '</div></section>').join("") +
+      '</body></html>';
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 1024, height: 768 },
+      { width: 390, height: 844 },
+    ]) {
+      const page = await browser.newPage({ viewport });
+      await page.setContent(markup);
+      const layouts = await page.evaluate(ids => ids.map(id => {
+        const grid = document.getElementById(id);
+        const card = grid.querySelector(".product-card");
+        const image = card.querySelector(".product-image");
+        const content = card.querySelector(".product-card-content");
+        const cardRect = card.getBoundingClientRect();
+        const imageRect = image.getBoundingClientRect();
+        return {
+          id,
+          gridColumns: getComputedStyle(grid).gridTemplateColumns,
+          cardDisplay: getComputedStyle(card).display,
+          cardDirection: getComputedStyle(card).flexDirection,
+          cardWidth: cardRect.width,
+          imageAspect: getComputedStyle(image).aspectRatio,
+          imageWidth: imageRect.width,
+          imageHeight: imageRect.height,
+          contentDisplay: getComputedStyle(content).display,
+          contentDirection: getComputedStyle(content).flexDirection
+        };
+      }), sectionIds);
+      const reference = layouts[0];
+      for (const layout of layouts) {
+        assert.equal(layout.cardDisplay, "flex", viewport.width + "px " + layout.id + ": card must remain flex");
+        assert.equal(layout.cardDirection, "column", viewport.width + "px " + layout.id + ": image must stay above product details");
+        assert.equal(layout.imageAspect, "1 / 1", viewport.width + "px " + layout.id + ": product image must remain square");
+        assert.ok(Math.abs(layout.imageWidth - layout.imageHeight) <= 1, viewport.width + "px " + layout.id + ": image frame must be square");
+        assert.equal(layout.contentDisplay, "flex", viewport.width + "px " + layout.id + ": content area must stay flex");
+        assert.equal(layout.contentDirection, "column", viewport.width + "px " + layout.id + ": details must stack vertically");
+        assert.equal(layout.gridColumns, reference.gridColumns, viewport.width + "px " + layout.id + ": all section grids must use the same column geometry");
+        assert.ok(Math.abs(layout.cardWidth - reference.cardWidth) <= 1, viewport.width + "px " + layout.id + ": all section cards must have equal width");
+      }
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
+        viewport.width + "px: no horizontal page overflow");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
 });
 
 test("featured descriptions use typography tailored to each section badge", () => {
@@ -165,7 +251,7 @@ test("hero CTAs are removed while the useful trust notes and catalog links remai
 test("perfume hero caption gradient stays subtle and title remains readable", () => {
   const perfumeHtml = readFileSync("perfumeria/index.html", "utf8");
   const perfumeCss = readFileSync("perfumeria.css", "utf8");
-  assert.match(perfumeHtml, /perfumeria\.css\?v=20261030-desktop-type12/);
+  assert.match(perfumeHtml, /perfumeria\.css\?v=20261112-contact-fullbleed1/);
   assert.match(perfumeCss, /Softer editorial caption gradient/);
   assert.match(perfumeCss, /rgba\(32,24,14,\.24\)/);
   assert.match(perfumeCss, /\.perfume-carousel-title\s*\{\s*color:#342a1d !important/);
@@ -344,4 +430,139 @@ test("technology detail uses separate compact desktop/mobile spacing and keeps n
   assert.match(css, /@media \(min-width: 761px\)[\s\S]*?body\.technology-catalog\.product-detail-active #product-detail-page #dialog-content\s*\{[^}]*max-width: 1760px !important;/);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?height: clamp\(280px, 38svh, 340px\) !important;/);
   assert.match(css, /\.dialog-main-image\s*\{[^}]*width: auto !important;[^}]*height: auto !important;[^}]*object-fit: contain !important;/);
+});
+
+
+test("catalog fullscreen image viewer is modal, navigable and sized to mobile and desktop viewports", { timeout: 30000 }, async () => {
+  const start = app.indexOf("function closeProductImageLightbox(dialog) {");
+  const end = app.indexOf("\nfunction moveTechnologyGallery(", start);
+  assert.ok(start >= 0 && end > start, "the existing shared fullscreen viewer must be extractable for browser testing");
+  const viewerSource = app.slice(start, end) + "\nwindow.openCatalogPhotoViewerForTest = openProductImageLightbox;";
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const viewport of [
+      { name: "mobile", width: 390, height: 844 },
+      { name: "desktop", width: 1365, height: 900 },
+    ]) {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.setContent('<!doctype html><html data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0}.product-image{width:280px;aspect-ratio:1/1}</style><style>' + css + '</style></head><body class="technology-catalog"><main><div class="product-image"><button class="product-image-zoom" type="button" aria-label="Ampliar fotografías de prueba" aria-haspopup="dialog"><img alt="Producto de prueba" src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27300%27%3E%3Crect width=%27300%27 height=%27300%27 fill=%27%236b86b8%27/%3E%3C/svg%3E"></button></div></main></body></html>');
+      const cardGeometry = await page.locator(".product-image-zoom").evaluate(button => {
+        const buttonRect = button.getBoundingClientRect();
+        const frameRect = button.parentElement.getBoundingClientRect();
+        return {
+          button: { left: buttonRect.left, top: buttonRect.top, width: buttonRect.width, height: buttonRect.height },
+          frame: { left: frameRect.left, top: frameRect.top, width: frameRect.width, height: frameRect.height }
+        };
+      });
+      assert.ok(Math.abs(cardGeometry.button.width - cardGeometry.frame.width) <= 1,
+        viewport.name + ": the photo button must cover the catalog image width");
+      assert.ok(Math.abs(cardGeometry.button.height - cardGeometry.frame.height) <= 1,
+        viewport.name + ": the photo button must cover the catalog image height");
+      assert.ok(Math.abs(cardGeometry.button.left - cardGeometry.frame.left) <= 1 &&
+        Math.abs(cardGeometry.button.top - cardGeometry.frame.top) <= 1,
+        viewport.name + ": the photo button must cover the full image frame");
+      await page.addScriptTag({ content: viewerSource });
+      const images = await page.evaluate(() => {
+        const make = color => "data:image/svg+xml," + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="' + color + '"/></svg>'
+        );
+        return [make("#315d9a"), make("#7b4397")];
+      });
+      await page.evaluate(({ images }) => {
+        window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+          { src: images[0], alt: "Producto de prueba — foto 1" },
+          { src: images[1], alt: "Producto de prueba — foto 2" },
+        ]);
+      }, { images });
+      const initial = await page.evaluate(() => {
+        const dialog = document.querySelector("#product-image-lightbox");
+        const photo = dialog?.querySelector(".product-image-lightbox-photo");
+        const rect = dialog?.getBoundingClientRect();
+        const imageRect = photo?.getBoundingClientRect();
+        return {
+          open: Boolean(dialog?.open),
+          modal: Boolean(dialog?.matches(":modal")),
+          dialog: rect && { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+          photo: imageRect && { width: imageRect.width, height: imageRect.height },
+          counter: dialog?.querySelector(".product-image-lightbox-counter")?.textContent,
+          source: photo?.src,
+        };
+      });
+      assert.equal(initial.open, true, viewport.name + ": viewer should open");
+      assert.equal(initial.modal, true, viewport.name + ": viewer should use the native modal layer");
+      assert.ok(initial.dialog.x <= 0 && initial.dialog.y <= 0, viewport.name + ": viewer should cover the viewport origin");
+      assert.ok(initial.dialog.width >= viewport.width - 1, viewport.name + ": viewer should cover full viewport width");
+      assert.ok(initial.dialog.height >= viewport.height - 1, viewport.name + ": viewer should cover full viewport height");
+      assert.ok(initial.photo.width <= viewport.width - 8, viewport.name + ": image must stay inside viewport width");
+      assert.ok(initial.photo.height <= viewport.height - 80, viewport.name + ": image must stay inside viewport height");
+      assert.equal(initial.counter, "1 / 2", viewport.name + ": gallery counter should start at first image");
+
+      await page.locator(".product-image-lightbox-next").click();
+      const nextSource = await page.locator(".product-image-lightbox-photo").getAttribute("src");
+      const nextCounter = await page.locator(".product-image-lightbox-counter").textContent();
+      assert.equal(nextSource, images[1], viewport.name + ": next button should show second photo");
+      assert.equal(nextCounter, "2 / 2", viewport.name + ": counter should follow selected photo");
+
+      await page.keyboard.press("ArrowLeft");
+      const previousSource = await page.locator(".product-image-lightbox-photo").getAttribute("src");
+      assert.equal(previousSource, images[0], viewport.name + ": keyboard arrow should navigate back");
+
+      await page.locator(".product-image-lightbox-close").click();
+      const closeState = await page.locator("#product-image-lightbox").evaluate(dialog => ({
+        open: dialog.open,
+        display: getComputedStyle(dialog).display,
+        modal: dialog.matches(":modal")
+      }));
+      assert.equal(closeState.open, false, viewport.name + ": X should close the dialog");
+      assert.equal(closeState.display, "none", viewport.name + ": closed dialog must not remain visible in the document");
+      assert.equal(closeState.modal, false, viewport.name + ": closed dialog must leave the modal top layer");
+
+      await page.evaluate(({ images }) => window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+        { src: images[0], alt: "Producto de prueba — foto 1" },
+        { src: images[1], alt: "Producto de prueba — foto 2" },
+      ]), { images });
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), true,
+        viewport.name + ": viewer should reopen after closing with X");
+
+      await page.keyboard.press("Escape");
+      const escapeState = await page.locator("#product-image-lightbox").evaluate(dialog => ({
+        open: dialog.open,
+        display: getComputedStyle(dialog).display,
+        modal: dialog.matches(":modal")
+      }));
+      assert.equal(escapeState.open, false, viewport.name + ": Escape should close the dialog");
+      assert.equal(escapeState.display, "none", viewport.name + ": Escape must hide the closed dialog from the document");
+      assert.equal(escapeState.modal, false, viewport.name + ": Escape must leave the modal top layer");
+
+      // Also cover older embedded browsers that report the legacy "Esc" key name.
+      await page.evaluate(({ images }) => window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+        { src: images[0], alt: "Producto de prueba — foto 1" },
+        { src: images[1], alt: "Producto de prueba — foto 2" },
+      ]), { images });
+      await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keyup", {
+        key: "Esc", keyCode: 27, bubbles: true, cancelable: true
+      })));
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), false,
+        viewport.name + ": legacy Esc keyup should close the viewer");
+
+      // Touch browsers can deliver pointerup/touchend differently from click.
+      await page.evaluate(({ images }) => window.openCatalogPhotoViewerForTest(images[0], "Producto de prueba", [
+        { src: images[0], alt: "Producto de prueba — foto 1" },
+        { src: images[1], alt: "Producto de prueba — foto 2" },
+      ]), { images });
+      await page.locator(".product-image-lightbox-close").dispatchEvent("pointerup");
+      assert.equal(await page.locator("#product-image-lightbox").evaluate(dialog => dialog.open), false,
+        viewport.name + ": close button pointerup must close the viewer");
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+
+test("admin dashboard opens the JB Collections landing page with both catalogs", () => {
+  assert.match(adminHtml, /class="dashboard-public-link" href="\.\/" target="_blank"/);
+  assert.match(adminHtml, /Abrir portada de catálogos/);
+  assert.match(adminHtml, /Abrir el catálogo público|Ver catálogo/);
 });

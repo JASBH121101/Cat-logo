@@ -1,6 +1,17 @@
-const SUPABASE_URL = String(process.env.SUPABASE_URL || "https://uwqnoadelnnplcvqqlyz.supabase.co").replace(/\/+$/, "");
-const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
-const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "product-images";
+const NEON_AUTH_BASE_URL = String(process.env.NEON_AUTH_BASE_URL || "https://ep-wandering-scene-beu9tqyd.neonauth.c-9.us-east-2.aws.neon.tech/neondb/auth").replace(/\/+$/, "");
+const NEON_DATA_API_URL = String(process.env.NEON_DATA_API_URL || "https://ep-wandering-scene-beu9tqyd.apirest.c-9.us-east-2.aws.neon.tech/neondb/rest/v1").replace(/\/+$/, "");
+
+async function getAnonymousAccessToken() {
+  const response = await fetch(NEON_AUTH_BASE_URL + "/token/anonymous", {
+    method: "GET",
+    headers: { Accept: "application/json", "Cache-Control": "no-store" }
+  });
+  if (!response.ok) throw new Error("Neon anonymous token unavailable.");
+  const payload = await response.json().catch(() => null);
+  const token = String(payload?.token || "");
+  if (!token) throw new Error("Neon anonymous token invalid.");
+  return token;
+}
 
 function htmlEscape(value) {
   return String(value == null ? "" : value)
@@ -72,21 +83,21 @@ function money(value, currency) {
   return (currency === "USD" ? "US$" : "NIO ") + formatted;
 }
 
-async function getRows(table, filters) {
-  const url = new URL(SUPABASE_URL + "/rest/v1/" + table);
+async function getRows(table, filters, accessToken) {
+  const url = new URL(NEON_DATA_API_URL + "/" + encodeURIComponent(table));
   url.searchParams.set("select", "*");
   for (const [key, value] of Object.entries(filters)) url.searchParams.set(key, value);
   url.searchParams.set("limit", "1");
   const response = await fetch(url.href, {
     method: "GET",
     headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      Authorization: "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-      Accept: "application/json"
+      Authorization: "Bearer " + accessToken,
+      Accept: "application/json",
+      "Cache-Control": "no-store"
     }
   });
   if (!response.ok) {
-    const error = new Error("Supabase public catalog query failed.");
+    const error = new Error("Neon public catalog query failed.");
     error.status = response.status;
     throw error;
   }
@@ -142,10 +153,13 @@ module.exports = async function handler(req, res) {
   res.setHeader("Vary", "Host");
 
   try {
+    const accessToken = await getAnonymousAccessToken();
     const products = await getRows("products", {
       id: "eq." + productId,
-      is_published: "eq.true"
-    });
+      is_published: "eq.true",
+      workflow_status: "eq.published",
+      deleted_at: "is.null"
+    }, accessToken);
     const product = products[0];
     if (!product || normalizeCatalogType(product.catalog_type) !== requestedCatalog) {
       res.statusCode = 404;
@@ -155,7 +169,7 @@ module.exports = async function handler(req, res) {
     let perfumeDetail = {};
     if (requestedCatalog === "perfumery") {
       try {
-        const details = await getRows("perfume_details", { product_id: "eq." + productId });
+        const details = await getRows("perfume_details", { product_id: "eq." + productId }, accessToken);
         perfumeDetail = details[0] || {};
       } catch {
         perfumeDetail = {};

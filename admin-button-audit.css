@@ -1,0 +1,155 @@
+/* JB Manager admin button audit: consistent geometry, touch targets and theme states. */
+html[data-theme="light"] body.admin-body{--jb-btn-bg:#fff;--jb-btn-soft:#f4f7fd;--jb-btn-hover:#edf2fb;--jb-btn-text:#2b3b59;--jb-btn-muted:#52627e;--jb-btn-border:#cbd5e5;--jb-btn-border-hover:#9aabca;--jb-btn-focus:rgba(49,94,232,.28);--jb-btn-shadow:0 1px 2px rgba(24,43,83,.07)}
+html[data-theme="dark"] body.admin-body{--jb-btn-bg:#172640;--jb-btn-soft:#1b2c49;--jb-btn-hover:#243a5d;--jb-btn-text:#e8eefb;--jb-btn-muted:#bac8df;--jb-btn-border:#405577;--jb-btn-border-hover:#7188ad;--jb-btn-focus:rgba(116,153,255,.38);--jb-btn-shadow:0 1px 2px rgba(0,0,0,.2)}
+
+body.admin-body .button,body.admin-body .file-button{box-sizing:border-box!important;min-height:42px!important;padding:9px 14px!important;border:1px solid var(--jb-btn-border)!important;border-radius:11px!important;font-family:"DM Sans",sans-serif!important;font-size:14px!important;font-weight:700!important;line-height:1.25!important;letter-spacing:0!important;text-align:center;box-shadow:var(--jb-btn-shadow)!important;transition:color .16s ease,background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease!important}
+body.admin-body .button:hover,body.admin-body .file-button:hover{transform:translateY(-1px)!important;box-shadow:0 3px 8px rgba(22,39,76,.11)!important}
+body.admin-body .button:active,body.admin-body .file-button:active{transform:none!important;box-shadow:var(--jb-btn-shadow)!important}
+html[data-theme="light"] body.admin-body .button-primary{color:#fff!important;border-color:#3155c7!important;background:linear-gradient(115deg,#315ee8,#5547cf)!important;box-shadow:0 1px 3px rgba(44,70,173,.2)!important}
+html[data-theme="dark"] body.admin-body .button-primary{color:#fff!important;border-color:#536fe2!important;background:linear-gradient(115deg,#355fda,#5b4aca)!important;box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
+html[data-theme] body.admin-body .button-secondary,html[data-theme] body.admin-body .button-outline,html[data-theme] body.admin-body .file-button{color:var(--jb-btn-text)!important;border-color:var(--jb-btn-border)!important;background:var(--jb-btn-bg)!important}
+body.admin-body .button-secondary:hover,body.admin-body .button-outline:hover,body.admin-body .file-button:hover{border-color:var(--jb-btn-border-hover)!important;background:var(--jb-btn-hover)!important}
+body.admin-body .button-ghost{min-height:38px!important;padding:7px 10px!important;border-color:transparent!important;color:var(--jb-btn-muted)!important;background:transparent!important;box-shadow:none!important}
+body.admin-body .button-ghost:hover{border-color:var(--jb-btn-border)!important;color:var(--jb-btn-text)!important;background:var(--jb-btn-hover)!important}
+body.admin-body button:focus-visible,body.admin-body a.button:focus-visible,body.admin-body .file-button:focus-within{outline:3px solid var(--jb-btn-focus)!important;outline-offset:2px!important}
+body.admin-body button:disabled,body.admin-body .button:disabled{opacity:.52!important;cursor:not-allowed!important;transform:none!important;box-shadow:none!important}
+
+body.admin-body .admin-icon-button,body.admin-body .admin-mini-button.admin-icon-button,body.admin-body .admin-menu-toggle,body.admin-body .theme-toggle,body.admin-body .dashboard-widget-icon,body.admin-body .admin-product-preview-close{box-sizing:border-box!important;width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;padding:0!important;border-radius:11px!important;box-shadow:var(--jb-btn-shadow)!important}
+body.admin-body .admin-mini-button:not(.admin-icon-button){min-height:34px!important;padding:7px 10px!important;border-radius:9px!important;font-size:12px!important;font-weight:700!important;box-shadow:var(--jb-btn-shadow)!important}
+body.admin-body .admin-settings-toggle{min-height:44px!important;padding:9px 12px!important;border-radius:11px!important;font-size:14px!important;font-weight:700!important;box-shadow:var(--jb-btn-shadow)!important}
+body.admin-body .admin-nav-button{box-sizing:border-box!important;min-height:42px!important;padding:9px 12px!important;border:1px solid var(--jb-btn-border)!important;border-radius:11px!important;font-size:13px!important;font-weight:700!important;line-height:1.2!important;letter-spacing:0!important;box-shadow:var(--jb-btn-shadow)!important;transition:color .16s ease,background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease!important}
+body.admin-body .admin-nav-button:hover{transform:translateY(-1px)!important;box-shadow:0 3px 8px rgba(22,39,76,.1)!important}
+
+/* Keep step tabs below the 76px sticky header; the old top:8px/z-index:80 caused overlap. */
+html body.admin-body #product-form .product-form-section-nav{position:sticky!important;top:calc(var(--jb-admin-header-height,76px) + env(safe-area-inset-top,0px) + 12px)!important;z-index:19!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:8px!important;min-width:0!important;padding:8px!important;margin:0 0 16px!important;border-radius:13px!important;scroll-margin-top:calc(var(--jb-admin-header-height,76px) + env(safe-area-inset-top,0px) + 20px)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html[data-theme="light"] body.admin-body #product-form .product-form-section-nav{border:1px solid #d5deef!important;background:rgba(248,250,255,.97)!important;box-shadow:0 2px 8px rgba(28,48,92,.08)!important}
+html[data-theme="dark"] body.admin-body #product-form .product-form-section-nav{border:1px solid #3b5072!important;background:rgba(15,28,49,.97)!important;box-shadow:0 2px 8px rgba(0,0,0,.22)!important}
+html body.admin-body #product-form .product-form-section-tab{box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;min-width:0!important;min-height:46px!important;padding:8px 10px!important;border:1px solid transparent!important;border-radius:10px!important;color:var(--jb-btn-muted)!important;background:transparent!important;font-family:"DM Sans",sans-serif!important;font-size:13px!important;font-weight:700!important;line-height:1.2!important;letter-spacing:0!important;white-space:normal!important;box-shadow:none!important;transform:none!important}
+html[data-theme="light"] body.admin-body #product-form .product-form-section-tab.is-active{color:#2946a4!important;border-color:#b9c8ee!important;background:#eaf0ff!important}
+html[data-theme="dark"] body.admin-body #product-form .product-form-section-tab.is-active{color:#eaf0ff!important;border-color:#526da8!important;background:#263b60!important}
+body.admin-body #product-form .product-form-section-tab .product-form-section-number{display:inline-grid!important;place-items:center!important;flex:0 0 25px!important;width:25px!important;height:25px!important;min-width:25px!important;padding:0!important;border-radius:8px!important;font-size:12px!important;line-height:1!important}
+html[data-theme="light"] body.admin-body #product-form .product-form-section-tab .product-form-section-number{color:#52627e!important;background:#e8edf7!important}
+html[data-theme="dark"] body.admin-body #product-form .product-form-section-tab .product-form-section-number{color:#dce7fd!important;background:#334a70!important}
+html[data-theme] body.admin-body #product-form .product-form-section-tab.is-active .product-form-section-number{color:#fff!important;background:#425dcb!important}
+
+html body.admin-body #product-form .product-form-section-actions{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:10px!important}
+html body.admin-body #product-form .product-form-section-actions>.button{flex:1 1 180px!important;min-width:0!important;min-height:42px!important}
+html body.admin-body .variants-editor-actions>.button{min-height:42px!important;padding:9px 14px!important;border-radius:11px!important;box-shadow:var(--jb-btn-shadow)!important}
+
+html body.admin-body form#product-form .form-actions.workflow-form-actions{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:9px!important;padding:10px!important;border-radius:13px!important;box-shadow:none!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>button.workflow-action{box-sizing:border-box!important;width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:44px!important;max-height:none!important;padding:8px 10px!important;border-width:1px!important;border-radius:10px!important;font-family:"DM Sans",sans-serif!important;font-size:13px!important;font-weight:700!important;line-height:1.2!important;letter-spacing:0!important;box-shadow:0 1px 2px rgba(18,36,78,.1)!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>button.workflow-action:hover{transform:translateY(-1px)!important;box-shadow:0 3px 8px rgba(18,36,78,.13)!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>button.workflow-action:active{transform:none!important;box-shadow:0 1px 2px rgba(18,36,78,.1)!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>button.workflow-action svg{flex:0 0 18px!important;width:18px!important;min-width:18px!important;height:18px!important;min-height:18px!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-save{color:#fff!important;background:#315ee8!important;border-color:#3155c7!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-publish{color:#fff!important;background:#16834e!important;border-color:#137143!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-draft{color:#fff!important;background:#6d4dd0!important;border-color:#5e42bb!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-exclusive{color:#75500d!important;background:#fff4cf!important;border-color:#e6c56a!important}
+html body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-cancel{color:#a83242!important;background:#fff1f2!important;border-color:#e9b4bd!important}
+html[data-theme="dark"] body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-exclusive{color:#f4dda2!important;background:#453a25!important;border-color:#75603a!important}
+html[data-theme="dark"] body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-cancel{color:#ffbdc6!important;background:#442733!important;border-color:#75404d!important}
+
+body.admin-body .admin-list-refresh-control .admin-inventory-refresh-button,body.admin-body .admin-inventory-refresh-button,body.admin-body .admin-list-refresh-control button{min-height:38px!important;padding:7px 11px!important;border-radius:10px!important;font-size:13px!important;font-weight:700!important;box-shadow:var(--jb-btn-shadow)!important}
+body.admin-body details.variant-config-collapse>summary{min-height:48px!important;padding:10px 12px!important;border-radius:11px!important}
+
+@media(max-width:760px){
+ html body.admin-body #product-form .product-form-section-nav{top:calc(var(--jb-admin-header-height,76px) + env(safe-area-inset-top,0px) + 12px)!important;z-index:19!important;gap:6px!important;padding:6px!important}
+ html body.admin-body #product-form .product-form-section-tab{min-height:44px!important;gap:5px!important;padding:7px 5px!important;font-size:12px!important}
+ body.admin-body #product-form .product-form-section-tab .product-form-section-number{flex-basis:23px!important;width:23px!important;height:23px!important;min-width:23px!important;border-radius:7px!important;font-size:11px!important}
+ html body.admin-body form#product-form .form-actions.workflow-form-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;padding:9px!important}
+ html body.admin-body form#product-form .form-actions.workflow-form-actions>button.workflow-action{min-height:44px!important;padding:8px 7px!important;font-size:12px!important}
+ html body.admin-body form#product-form .form-actions.workflow-form-actions>.workflow-action-cancel{grid-column:1/-1!important;justify-self:center!important;width:min(100%,240px)!important}
+ html body.admin-body .variants-editor-actions>.button{min-height:42px!important;width:auto!important}
+}
+@media(max-width:390px){
+ html body.admin-body #product-form .product-form-section-nav{gap:4px!important;padding:5px!important}
+ html body.admin-body #product-form .product-form-section-tab{gap:4px!important;padding:6px 3px!important;font-size:11.5px!important}
+ body.admin-body #product-form .product-form-section-tab .product-form-section-number{flex-basis:21px!important;width:21px!important;height:21px!important;min-width:21px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.admin-body .button,body.admin-body .file-button,body.admin-body .admin-nav-button,body.admin-body .admin-icon-button,body.admin-body .workflow-action{transition:none!important}
+}
+
+
+/* Active navigation, filter chips and utility text actions keep the same visual language. */
+html[data-theme="light"] body.admin-body .admin-nav-button.active {
+  color:#fff!important; border-color:#405ac5!important; background:#405bd0!important;
+  box-shadow:0 1px 3px rgba(42,65,153,.2)!important;
+}
+html[data-theme="dark"] body.admin-body .admin-nav-button.active {
+  color:#fff!important; border-color:#5b73d2!important; background:#344e9f!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.26)!important;
+}
+body.admin-body .private-chat-admin-filter {
+  box-sizing:border-box!important; min-height:38px!important; padding:7px 11px!important;
+  border:1px solid var(--jb-btn-border)!important; border-radius:10px!important;
+  color:var(--jb-btn-muted)!important; background:var(--jb-btn-bg)!important;
+  font:700 12px/1.2 "DM Sans",sans-serif!important; box-shadow:var(--jb-btn-shadow)!important;
+}
+body.admin-body .private-chat-admin-filter.is-active {
+  color:#fff!important; border-color:#405ac5!important; background:#405bd0!important;
+}
+body.admin-body .admin-password-reset-toggle,
+body.admin-body .admin-password-reset-cancel,
+body.admin-body .dashboard-analytics-reset,
+body.admin-body .commission-refresh-button {
+  min-height:38px!important; padding:7px 11px!important; border-radius:10px!important;
+  font:700 13px/1.2 "DM Sans",sans-serif!important; box-shadow:var(--jb-btn-shadow)!important;
+}
+body.admin-body .dashboard-quick-action:focus-visible,
+body.admin-body .dashboard-task-row:focus-visible {
+  outline:3px solid var(--jb-btn-focus)!important; outline-offset:2px!important;
+}
+
+/* Paid AI is intentionally unavailable in the Fiverr demo, including for its owner account. */
+body.fiverr-demo-host #jb-ai-floating-launcher { display:none!important; }
+
+
+/* Deterministic visual QA correction: compact variant actions and keep tabs clear of the mobile header. */
+html body.admin-body #product-form .product-form-section-nav {
+  top: calc(var(--admin-header-height, 92px) + env(safe-area-inset-top, 0px) + 12px) !important;
+  scroll-margin-top: calc(var(--admin-header-height, 92px) + env(safe-area-inset-top, 0px) + 20px) !important;
+}
+@media (max-width: 760px) {
+  html body.admin-body #product-form .product-form-section-nav {
+    top: calc(var(--admin-header-height, 92px) + env(safe-area-inset-top, 0px) + 10px) !important;
+  }
+}
+html body.admin-body #product-form .variants-editor-actions {
+  display: flex !important; align-items: center !important; justify-content: flex-start !important;
+  flex-wrap: wrap !important; gap: 8px !important;
+}
+html body.admin-body #product-form #add-variant-button {
+  display: inline-flex !important; flex: 0 1 auto !important; width: auto !important;
+  min-width: 176px !important; max-width: min(100%, 260px) !important; min-height: 44px !important;
+  align-items: center !important; justify-content: center !important; padding: 9px 16px !important;
+  white-space: nowrap !important;
+}
+html body.admin-body #product-form .variant-config-group-heading {
+  display: flex !important; align-items: center !important; justify-content: flex-end !important;
+  min-width: 0 !important; margin: 0 0 8px !important;
+}
+html body.admin-body #product-form .variant-config-group-heading [data-remove-group] {
+  display: inline-flex !important; flex: 0 1 auto !important; width: auto !important;
+  min-width: 0 !important; max-width: 100% !important; min-height: 36px !important;
+  align-items: center !important; justify-content: center !important; padding: 7px 12px !important;
+  border-radius: 9px !important; font-size: 12px !important; line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+@media (max-width: 390px) {
+  html body.admin-body #product-form #add-variant-button { min-width: 0 !important; max-width: 100% !important; padding-inline: 12px !important; }
+  html body.admin-body #product-form .variant-config-group-heading [data-remove-group] { font-size: 11.5px !important; padding-inline: 9px !important; }
+}
+
+
+/* Single authoritative sticky offset, aligned to the actual admin header on each breakpoint. */
+body.admin-body { --jb-admin-header-height: 76px; }
+@media (max-width: 760px) {
+  body.admin-body { --jb-admin-header-height: 88px; }
+}
+html body.admin-body #product-form .product-form-section-nav {
+  top: calc(var(--jb-admin-header-height, 76px) + env(safe-area-inset-top, 0px) + 12px) !important;
+  scroll-margin-top: calc(var(--jb-admin-header-height, 76px) + env(safe-area-inset-top, 0px) + 20px) !important;
+  z-index: 19 !important;
+}
+

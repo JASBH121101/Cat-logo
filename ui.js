@@ -32,30 +32,43 @@
 
   function applyTheme(theme) {
     const normalized = theme === LIGHT ? LIGHT : DARK;
-
     document.documentElement.dataset.theme = normalized;
 
-    const button = document.querySelector("[data-theme-toggle]");
-    if (!button) return;
+    document.querySelectorAll("[data-theme-toggle]").forEach(button => {
+      const icon = button.querySelector(".theme-toggle-icon");
+      const label = button.querySelector(".theme-toggle-label");
 
-    const icon = button.querySelector(".theme-toggle-icon");
-    const label = button.querySelector(".theme-toggle-label");
+      if (normalized === DARK) {
+        if (icon) icon.textContent = "☀";
+        if (label) label.textContent = "Claro";
+        button.setAttribute("aria-label", "Cambiar al tema claro");
+        button.setAttribute("title", "Cambiar al tema claro");
+        button.setAttribute("aria-pressed", "true");
+      } else {
+        if (icon) icon.textContent = "☾";
+        if (label) label.textContent = "Oscuro";
+        button.setAttribute("aria-label", "Cambiar al tema oscuro");
+        button.setAttribute("title", "Cambiar al tema oscuro");
+        button.setAttribute("aria-pressed", "false");
+      }
+    });
+  }
 
-    if (normalized === DARK) {
-      if (icon) icon.textContent = "☀";
-      if (label) label.textContent = "Claro";
+  // Cada control recibe su propio listener. Esto evita depender del orden
+  // de propagación global entre módulos del catálogo y del panel administrativo.
+  const boundThemeButtons = new WeakSet();
 
-      button.setAttribute("aria-label", "Cambiar al tema claro");
-      button.setAttribute("title", "Cambiar al tema claro");
-      button.setAttribute("aria-pressed", "true");
-    } else {
-      if (icon) icon.textContent = "☾";
-      if (label) label.textContent = "Oscuro";
-
-      button.setAttribute("aria-label", "Cambiar al tema oscuro");
-      button.setAttribute("title", "Cambiar al tema oscuro");
-      button.setAttribute("aria-pressed", "false");
-    }
+  function bindThemeToggle(button) {
+    if (!button || boundThemeButtons.has(button)) return;
+    boundThemeButtons.add(button);
+    button.addEventListener("click", event => {
+      if (button.disabled) return;
+      event.preventDefault();
+      const current = document.documentElement.dataset.theme || readSavedTheme();
+      const next = current === DARK ? LIGHT : DARK;
+      applyTheme(next);
+      saveTheme(next);
+    });
   }
 
   /*
@@ -87,14 +100,6 @@
       <span class="theme-toggle-icon" aria-hidden="true">☀</span>
       <span class="theme-toggle-label">Claro</span>
     `;
-
-    button.addEventListener("click", () => {
-      const current = document.documentElement.dataset.theme || DARK;
-      const next = current === DARK ? LIGHT : DARK;
-
-      applyTheme(next);
-      saveTheme(next);
-    });
 
     return button;
   }
@@ -268,22 +273,12 @@
     // Limpia un fragmento de sección si la página se abrió con uno.
     cleanSectionHash();
 
-    // Aplica el tema recordado.
-    const initialTheme = readSavedTheme();
-    applyTheme(initialTheme);
-
-    // Añade el control de tema al encabezado existente.
+    // Añade el control de tema al encabezado existente si aún no existe.
     const header = document.querySelector(".site-header");
-
-    if (
-      header &&
-      !header.querySelector("[data-theme-toggle]")
-    ) {
+    if (header && !header.querySelector("[data-theme-toggle]")) {
       const themeButton = createThemeButton();
       const nav = header.querySelector(".header-nav");
       const backLink = header.querySelector(".back-link");
-
-      /* Mantener el selector como hijo directo del encabezado en móvil. */
       if (nav) {
         header.insertBefore(themeButton, nav);
       } else if (backLink) {
@@ -293,7 +288,12 @@
       }
     }
 
-    // Sincroniza icono y texto del control.
+    // Vincula el evento directamente a cada botón, sea estático o creado aquí.
+    document.querySelectorAll("[data-theme-toggle]").forEach(bindThemeToggle);
+
+    // El tema se aplica después de que el botón exista para sincronizar
+    // icono, texto y aria-pressed en el encabezado actual.
+    const initialTheme = readSavedTheme();
     applyTheme(initialTheme);
 
     // El panel de administración no necesita el botón flotante "Volver arriba".

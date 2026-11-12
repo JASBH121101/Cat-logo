@@ -4418,3 +4418,418 @@ html:not([data-theme="dark"]) body.technology-catalog #limited-edition-grid .pro
     min-height:42px !important;
   }
 }
+
+
+/* JB TECH · TODAS LAS SECCIONES USAN LA MISMA TARJETA VERTICAL.
+   Las vitrinas conservan su paleta y sus insignias, pero no una geometría
+   distinta: misma foto cuadrada, misma jerarquía y mismo flujo de información. */
+@media (min-width: 761px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 330px)) !important;
+    justify-content: center !important;
+    align-content: start !important;
+    align-items: stretch !important;
+    gap: clamp(14px, 1.6vw, 22px) !important;
+    width: 100% !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 330px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image {
+    display: grid !important;
+    place-items: center !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1 !important;
+    overflow: hidden !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image img,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    transform: none !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-card-content {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 12px 13px 13px !important;
+    gap: 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-card h3,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-card h3,
+  body.technology-catalog #high-performance-grid.featured-grid .product-card h3,
+  body.technology-catalog #quality-price-grid.featured-grid .product-card h3,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-card h3 {
+    font-size: clamp(14px, 1.12vw, 17px) !important;
+    line-height: 1.32 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-price,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-price,
+  body.technology-catalog #high-performance-grid.featured-grid .product-price,
+  body.technology-catalog #quality-price-grid.featured-grid .product-price,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-price {
+    font-size: clamp(20px, 1.55vw, 25px) !important;
+    line-height: 1.12 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-actions,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-actions,
+  body.technology-catalog #high-performance-grid.featured-grid .product-actions,
+  body.technology-catalog #quality-price-grid.featured-grid .product-actions,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    margin-top: auto !important;
+    padding-top: 5px !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid .product-view-button,
+  body.technology-catalog #limited-edition-grid.featured-grid .product-view-button,
+  body.technology-catalog #high-performance-grid.featured-grid .product-view-button,
+  body.technology-catalog #quality-price-grid.featured-grid .product-view-button,
+  body.technology-catalog #top-gaming-grid.featured-grid .product-view-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1199px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 2560px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 350px)) !important;
+    gap: 24px !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    max-width: 350px !important;
+  }
+}
+
+/* Mobile: every showcase retains the same two-column product-card scan. */
+@media (max-width: 760px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-image,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-image {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  body.technology-catalog #featured-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #limited-edition-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #high-performance-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #quality-price-grid.featured-grid > .product-card > .product-card-content,
+  body.technology-catalog #top-gaming-grid.featured-grid > .product-card > .product-card-content {
+    width: 100% !important;
+    min-height: 0 !important;
+    padding: 10px 9px 10px !important;
+    gap: 4px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body.technology-catalog #featured-grid.featured-grid,
+  body.technology-catalog #limited-edition-grid.featured-grid,
+  body.technology-catalog #high-performance-grid.featured-grid,
+  body.technology-catalog #quality-price-grid.featured-grid,
+  body.technology-catalog #top-gaming-grid.featured-grid {
+    gap: 8px !important;
+  }
+}
+
+
+/* JB TECH · zoom de fotografía directamente desde las tarjetas del catálogo. */
+body.technology-catalog .product-image-zoom {
+  display:grid !important;
+  place-items:center !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:inherit !important;
+  color:inherit !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  cursor:zoom-in !important;
+  appearance:none !important;
+  -webkit-appearance:none !important;
+}
+body.technology-catalog .product-image-zoom > img {
+  display:block !important;
+  pointer-events:none !important;
+}
+body.technology-catalog .product-image-zoom:focus-visible {
+  outline:3px solid var(--tech-cyan,#35d9ff) !important;
+  outline-offset:-4px !important;
+  border-radius:inherit !important;
+}
+
+/* Shared full-screen viewer for product-detail photos and catalog-card photos. */
+/* A closed native dialog must leave the rendered page as well as the top layer.
+   The explicit display rule above overrides the browser's default closed-dialog
+   rule, so restore the hidden state when the open attribute is removed. */
+body.technology-catalog dialog.product-image-lightbox:not([open]) {
+  display:none !important;
+}
+body.technology-catalog dialog.product-image-lightbox[open] {
+  display:block !important;
+}
+
+body.technology-catalog dialog.product-image-lightbox {
+  position:fixed !important;
+  inset:0 !important;
+  z-index:9999 !important;
+  display:block !important;
+  width:100vw !important;
+  height:100vh !important;
+  height:100dvh !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  border:0 !important;
+  border-radius:0 !important;
+  color:#f5f8ff !important;
+  background:rgba(4,9,20,.97) !important;
+  isolation:isolate !important;
+}
+body.technology-catalog dialog.product-image-lightbox::backdrop {
+  background:rgba(3,8,18,.94) !important;
+}
+body.technology-catalog .product-image-lightbox-photo {
+  position:absolute !important;
+  top:50% !important;
+  left:50% !important;
+  display:block !important;
+  width:auto !important;
+  height:auto !important;
+  max-width:calc(100vw - 48px) !important;
+  max-height:calc(100dvh - 116px) !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:8px !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  transform:translate(-50%,-50%) !important;
+  box-shadow:0 18px 70px rgba(0,0,0,.38) !important;
+  user-select:none !important;
+  -webkit-user-drag:none !important;
+}
+body.technology-catalog .product-image-lightbox-close,
+body.technology-catalog .product-image-lightbox-nav {
+  position:absolute !important;
+  z-index:2 !important;
+  display:grid !important;
+  place-items:center !important;
+  width:48px !important;
+  height:48px !important;
+  min-width:48px !important;
+  min-height:48px !important;
+  padding:0 !important;
+  border:1px solid rgba(205,225,255,.25) !important;
+  border-radius:50% !important;
+  color:#f7faff !important;
+  background:rgba(23,39,65,.82) !important;
+  box-shadow:0 7px 24px rgba(0,0,0,.26) !important;
+  font-family:Arial,sans-serif !important;
+  font-size:30px !important;
+  font-weight:500 !important;
+  line-height:1 !important;
+  cursor:pointer !important;
+  -webkit-tap-highlight-color:transparent;
+}
+body.technology-catalog .product-image-lightbox-close {
+  top:max(14px,env(safe-area-inset-top,0px) + 10px) !important;
+  right:max(14px,env(safe-area-inset-right,0px) + 10px) !important;
+  font-size:32px !important;
+}
+body.technology-catalog .product-image-lightbox-prev {
+  top:50% !important;
+  left:max(12px,env(safe-area-inset-left,0px) + 8px) !important;
+  transform:translateY(-50%) !important;
+}
+body.technology-catalog .product-image-lightbox-next {
+  top:50% !important;
+  right:max(12px,env(safe-area-inset-right,0px) + 8px) !important;
+  transform:translateY(-50%) !important;
+}
+body.technology-catalog .product-image-lightbox-counter {
+  position:absolute !important;
+  z-index:2 !important;
+  right:16px !important;
+  bottom:max(14px,env(safe-area-inset-bottom,0px) + 10px) !important;
+  left:16px !important;
+  color:#e7efff !important;
+  font-size:13px !important;
+  font-weight:700 !important;
+  line-height:1.3 !important;
+  text-align:center !important;
+  font-variant-numeric:tabular-nums !important;
+  text-shadow:0 2px 8px rgba(0,0,0,.7) !important;
+}
+body.technology-catalog .product-image-lightbox-close:hover,
+body.technology-catalog .product-image-lightbox-nav:hover {
+  border-color:rgba(91,224,255,.72) !important;
+  background:rgba(33,59,94,.96) !important;
+}
+body.technology-catalog .product-image-lightbox-close:focus-visible,
+body.technology-catalog .product-image-lightbox-nav:focus-visible {
+  outline:3px solid #58defd !important;
+  outline-offset:3px !important;
+}
+body.technology-catalog .product-image-lightbox-close[hidden],
+body.technology-catalog .product-image-lightbox-nav[hidden],
+body.technology-catalog .product-image-lightbox-counter[hidden] {
+  display:none !important;
+}
+@media (max-width:600px) {
+  body.technology-catalog .product-image-lightbox-photo {
+    max-width:calc(100vw - 20px) !important;
+    max-height:calc(100dvh - 108px) !important;
+    border-radius:5px !important;
+  }
+  body.technology-catalog .product-image-lightbox-close,
+  body.technology-catalog .product-image-lightbox-nav {
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    min-height:44px !important;
+    font-size:27px !important;
+  }
+  body.technology-catalog .product-image-lightbox-close {
+    top:max(10px,env(safe-area-inset-top,0px) + 6px) !important;
+    right:max(10px,env(safe-area-inset-right,0px) + 6px) !important;
+  }
+  body.technology-catalog .product-image-lightbox-prev {
+    left:max(8px,env(safe-area-inset-left,0px) + 4px) !important;
+  }
+  body.technology-catalog .product-image-lightbox-next {
+    right:max(8px,env(safe-area-inset-right,0px) + 4px) !important;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.technology-catalog .product-image-zoom,
+  body.technology-catalog .product-image-lightbox-close,
+  body.technology-catalog .product-image-lightbox-nav {
+    transition:none !important;
+    animation:none !important;
+  }
+}

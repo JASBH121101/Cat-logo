@@ -1,8 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { onRequest } from "../functions/api/assistant.js";
+import { onRequest as handleAssistantRequest } from "../functions/api/assistant.js";
 
 const ORIGIN = "https://jb-collections.pages.dev";
+
+async function onRequest(context) {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/token/anonymous") return Response.json({ token: "test-neon-anonymous-token" });
+    return previousFetch(input, init);
+  };
+  try {
+    return await handleAssistantRequest({
+      ...context,
+      env: {
+        NEON_AUTH_BASE_URL: "https://neon-auth.example",
+        NEON_DATA_API_URL: "https://neon.example/rest/v1",
+        ...(context.env || {})
+      }
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+}
 
 function makeRequest(body, options = {}) {
   const headers = new Headers({

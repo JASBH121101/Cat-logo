@@ -381,11 +381,8 @@ test("scanner uses current Gemini 3.8 structured output and retries without sche
   };
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
-    if (url.includes("/auth/v1/user")) {
-      return new Response(JSON.stringify({ id: "scanner-admin" }), { status: 200 });
-    }
-    if (url.includes("/rest/v1/admin_users")) {
-      return new Response(JSON.stringify([{ user_id: "scanner-admin" }]), { status: 200 });
+    if (url.includes("/rpc/catalog_admin_context")) {
+      return Response.json([{ is_admin: true, admin_id: "scanner-admin" }]);
     }
     if (url.includes("generativelanguage.googleapis.com")) {
       attempts.push({ url, headers: init.headers, body: JSON.parse(init.body) });
@@ -412,7 +409,7 @@ test("scanner uses current Gemini 3.8 structured output and retries without sche
       },
       body: JSON.stringify({ observations: [{ index: 1, capturedAt: "2026-10-31T14:00:00Z", text: evidence }] })
     });
-    const response = await handleScannerPost({ request, env: { GEMINI_API_KEY: "scanner-test-key" } });
+    const response = await handleScannerPost({ request, env: { NEON_DATA_API_URL: "https://neon.example.test/neondb/rest/v1", GEMINI_API_KEY: "scanner-test-key" } });
     const payload = await response.json();
     assert.equal(response.status, 200);
     assert.equal(payload.ok, true);
@@ -436,11 +433,8 @@ test("scanner falls back to Gemini 3.6 when Gemini 3.8 is temporarily unavailabl
   const generated = { products: [], session_notes: [] };
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
-    if (url.includes("/auth/v1/user")) {
-      return new Response(JSON.stringify({ id: "scanner-admin" }), { status: 200 });
-    }
-    if (url.includes("/rest/v1/admin_users")) {
-      return new Response(JSON.stringify([{ user_id: "scanner-admin" }]), { status: 200 });
+    if (url.includes("/rpc/catalog_admin_context")) {
+      return Response.json([{ is_admin: true, admin_id: "scanner-admin" }]);
     }
     if (url.includes("generativelanguage.googleapis.com")) {
       calls.push({ url, body: JSON.parse(init.body) });
@@ -466,7 +460,7 @@ test("scanner falls back to Gemini 3.6 when Gemini 3.8 is temporarily unavailabl
       },
       body: JSON.stringify({ observations: [{ index: 1, text: evidence }] })
     });
-    const response = await handleScannerPost({ request, env: { GEMINI_API_KEY: "scanner-test-key" } });
+    const response = await handleScannerPost({ request, env: { NEON_DATA_API_URL: "https://neon.example.test/neondb/rest/v1", GEMINI_API_KEY: "scanner-test-key" } });
     const payload = await response.json();
     assert.equal(response.status, 200);
     assert.equal(payload.ok, true);
@@ -482,11 +476,8 @@ test("scanner classifies Gemini access failures and returns a safe diagnostic", 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async input => {
     const url = String(input);
-    if (url.includes("/auth/v1/user")) {
-      return new Response(JSON.stringify({ id: "scanner-admin" }), { status: 200 });
-    }
-    if (url.includes("/rest/v1/admin_users")) {
-      return new Response(JSON.stringify([{ user_id: "scanner-admin" }]), { status: 200 });
+    if (url.includes("/rpc/catalog_admin_context")) {
+      return Response.json([{ is_admin: true, admin_id: "scanner-admin" }]);
     }
     if (url.includes("generativelanguage.googleapis.com")) {
       return new Response(JSON.stringify({
@@ -506,7 +497,7 @@ test("scanner classifies Gemini access failures and returns a safe diagnostic", 
       },
       body: JSON.stringify({ observations: [{ index: 1, text: "POCO X8 Pro Max 12 GB RAM 256 GB" }] })
     });
-    const response = await handleScannerPost({ request, env: { GEMINI_API_KEY: "scanner-test-key" } });
+    const response = await handleScannerPost({ request, env: { NEON_DATA_API_URL: "https://neon.example.test/neondb/rest/v1", GEMINI_API_KEY: "scanner-test-key" } });
     const payload = await response.json();
     assert.equal(response.status, 503);
     assert.equal(payload.error, "gemini_api_access_denied");

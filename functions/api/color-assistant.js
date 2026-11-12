@@ -1,8 +1,8 @@
-const SUPABASE_URL = "https://uwqnoadelnnplcvqqlyz.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ml5eoKXvotG4ZfoG6P19FA_57YQ8t2p";
+import { requireCatalogAdmin } from "../_shared/neon-admin.js";
+
 const TEXT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
-const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://jasbh121101.github.io", "https://localhost", "http://localhost"]);
+const ALLOWED_ORIGINS = new Set(["https://jb-collections.pages.dev", "https://fiverr-demo.jb-collections.pages.dev", "https://jasbh121101.github.io", "https://localhost", "http://localhost"]);
 const MAX_IMAGE_DATA_URL = 5600000;
 const rateBuckets = new Map();
 
@@ -50,29 +50,10 @@ function rateLimited(ip) {
   current.count += 1;
   return false;
 }
-async function verifyAdmin(request) {
-  const authorization = request.headers.get("Authorization") || "";
-  if (!/^Bearer\s+\S+$/i.test(authorization) || authorization.length > 6000) return { ok: false, status: 401 };
-  let userResponse;
-  try {
-    userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", {
-      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: authorization, Accept: "application/json" }, cache: "no-store"
-    });
-  } catch { return { ok: false, status: 503 }; }
-  if (!userResponse.ok) return { ok: false, status: 401 };
-  let user;
-  try { user = await userResponse.json(); } catch { return { ok: false, status: 401 }; }
-  if (!user || !/^[0-9a-f-]{36}$/i.test(String(user.id || ""))) return { ok: false, status: 401 };
-  const url = new URL(SUPABASE_URL + "/rest/v1/admin_users");
-  url.searchParams.set("select", "user_id"); url.searchParams.set("user_id", "eq." + user.id); url.searchParams.set("limit", "1");
-  try {
-    const adminResponse = await fetch(url, {
-      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: authorization, Accept: "application/json" }, cache: "no-store"
-    });
-    if (!adminResponse.ok) return { ok: false, status: 503 };
-    const rows = await adminResponse.json();
-    return { ok: Array.isArray(rows) && rows.some(row => String(row.user_id) === String(user.id)), status: 403 };
-  } catch { return { ok: false, status: 503 }; }
+async function verifyAdmin(request, env) {
+  const result = await requireCatalogAdmin(request, env);
+  if (!result.ok) return { ok: false, status: result.response.status };
+  return { ok: true, status: 200, adminId: result.adminId };
 }
 
 function normalizeLibraryValue(value) {
@@ -103,14 +84,13 @@ function cleanLibraryEntry(value) {
   };
 }
 
-async function loadSharedColorLibrary(authorization) {
-  const url = new URL(SUPABASE_URL + "/rest/v1/color_library");
+async function loadSharedColorLibrary(authorization, env) {
+  const url = new URL(String(env.NEON_DATA_API_URL || "").replace(/\/+$/, "") + "/color_library");
   url.searchParams.set("select", "name,name_key,hex,aliases,is_favorite,updated_at");
   url.searchParams.set("order", "updated_at.desc");
   url.searchParams.set("limit", "500");
   const response = await fetch(url, {
     headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
       Authorization: authorization,
       Accept: "application/json"
     },
@@ -275,7 +255,7 @@ export async function onRequest({ request, env }) {
   }
   const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("x-forwarded-for") || "unknown";
   if (rateLimited(ip)) return respond(429, { error: "rate_limited", message: "Llegaste al límite temporal de consultas. Esperá un minuto y volvé a intentar." }, origin);
-  const auth = await verifyAdmin(request);
+  const auth = await verifyAdmin(request, env);
   if (!auth.ok) {
     const message = auth.status === 401 ? "Volvé a iniciar sesión como administrador." :
       auth.status === 403 ? "Esta función solo está disponible para administradores autorizados." :
@@ -286,7 +266,7 @@ export async function onRequest({ request, env }) {
   const authorization = request.headers.get("Authorization") || "";
   let sharedColors;
   try {
-    sharedColors = await loadSharedColorLibrary(authorization);
+    sharedColors = await loadSharedColorLibrary(authorization, env);
   } catch (error) {
     console.error("Could not read shared color library:", error instanceof Error ? error.message : "unknown error");
     return respond(503, { error: "color_library_unavailable", message: "No se pudo consultar la biblioteca compartida de colores. Intentá nuevamente para evitar omitir referencias guardadas." }, origin);

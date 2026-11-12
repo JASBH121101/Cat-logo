@@ -1,8 +1,8 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createCatalogClient } from "../db-client.js";
 
 const CONFIG = window.CATALOG_CONFIG || {};
 
-const CATALOG_MEDIA_SUPABASE_ORIGIN = stripCatalogTrailingSlashes(CONFIG.supabaseUrl || "");
+const CATALOG_MEDIA_SUPABASE_ORIGIN = "https://uwqnoadelnnplcvqqlyz.supabase.co";
 const CATALOG_MEDIA_BUCKET = String(CONFIG.storageBucket || "product-images");
 function stripCatalogTrailingSlashes(value) {
   let text = String(value || "");
@@ -19,9 +19,22 @@ function catalogMediaBaseUrl() {
 
 function catalogMediaUrl(value) {
   const original = String(value || "").trim();
-  if (!original || !CATALOG_MEDIA_SUPABASE_ORIGIN) return original;
+  if (!original) return original;
   try {
     const parsed = new URL(original, window.location.href);
+    const currentHost = String(window.location.hostname || "").toLowerCase();
+    const isPreviewHost = currentHost.endsWith(".jb-collections.pages.dev") &&
+      currentHost !== "jb-collections.pages.dev";
+
+    // Migrated product rows still contain absolute Production media URLs.
+    // Rebase them to this Preview deployment so images resolve only against
+    // the Preview R2 binding (and its explicitly configured source fallback).
+    if (isPreviewHost &&
+        parsed.origin === "https://jb-collections.pages.dev" &&
+        parsed.pathname.startsWith("/media/")) {
+      return window.location.origin + parsed.pathname + parsed.search + parsed.hash;
+    }
+
     if (parsed.origin !== CATALOG_MEDIA_SUPABASE_ORIGIN || parsed.search || parsed.hash) return original;
     const prefix = "/storage/v1/object/public/" + CATALOG_MEDIA_BUCKET + "/";
     if (!parsed.pathname.startsWith(prefix)) return original;
@@ -84,8 +97,8 @@ const selectedAudiences = new Set();
 const selectedProductTypes = new Set();
 let selectedBrand = "";
 
-const hasConfig = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
-if (hasConfig) supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+const hasNeonConfig = Boolean(CONFIG.neonAuthUrl && CONFIG.neonDataApiUrl);
+if (hasNeonConfig) supabase = createCatalogClient({ admin: false });
 
 const yearNode = $("#perfume-year");
 if (yearNode) yearNode.textContent = new Date().getFullYear();
