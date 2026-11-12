@@ -37,6 +37,7 @@ function resolveDemoAuthEmail(identifier, ownerEmail) {
   if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(value)) return null;
 
   const owner = String(ownerEmail || "").trim().toLowerCase();
+  if (!/^[^\\s@]+@gmail\\.com$/.test(owner)) return null;
   const separator = owner.lastIndexOf("@");
   if (separator <= 0 || separator === owner.length - 1) return null;
 
@@ -50,21 +51,34 @@ function rewriteDemoIdentityPayload(path, body, env) {
     "email-otp/request-password-reset",
     "email-otp/reset-password"
   ]);
-  if (!identityPaths.has(path) || !body || !env.DEMO_OWNER_AUTH_EMAIL) return body;
+  if (!identityPaths.has(path) || !body) return { body, error: null };
 
+  let payload;
   try {
-    const payload = JSON.parse(new TextDecoder().decode(body));
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return body;
-    const identifier = String(payload.email || "").trim();
-    if (!identifier || identifier.includes("@")) return body;
-
-    const resolvedEmail = resolveDemoAuthEmail(identifier, env.DEMO_OWNER_AUTH_EMAIL);
-    if (!resolvedEmail) return body;
-    payload.email = resolvedEmail;
-    return new TextEncoder().encode(JSON.stringify(payload));
+    payload = JSON.parse(new TextDecoder().decode(body));
   } catch {
-    return body;
+    return { body: null, error: "invalid_auth_payload" };
   }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return { body: null, error: "invalid_auth_payload" };
+  }
+
+  const identifier = String(payload.email || "").trim();
+  if (!identifier || identifier.includes("@")) return { body, error: null };
+
+  const resolvedEmail = resolveDemoAuthEmail(identifier, env.DEMO_OWNER_AUTH_EMAIL);
+  if (!resolvedEmail) {
+    // Never forward a username as an email address: that produces Neon Auth's
+    // misleading "Invalid email address format" response and hides a Preview
+    // configuration problem from the owner.
+    return { body: null, error: "demo_username_auth_not_configured" };
+  }
+
+  payload.email = resolvedEmail;
+  return {
+    body: new TextEncoder().encode(JSON.stringify(payload)),
+    error: null
+  };
 }
 
 export async function onRequest({ request, env }) {
@@ -126,7 +140,17 @@ export async function onRequest({ request, env }) {
     }
   }
 
-  body = rewriteDemoIdentityPayload(decodedPath, body, env);
+  const rewrittenIdentity = rewriteDemoIdentityPayload(decodedPath, body, env);
+  if (rewrittenIdentity.error === "demo_username_auth_not_configured") {
+    return proxyJson(503, {
+      error: "demo_username_login_not_configured",
+      message: "El acceso con nombre de usuario no está configurado en el entorno Preview. Contactá al propietario."
+    });
+  }
+  if (rewrittenIdentity.error) {
+    return proxyJson(400, { error: "invalid_auth_request" });
+  }
+  body = rewrittenIdentity.body;
 
   const upstreamPath = upstreamBase.pathname.replace(/\/+$/, "");
   const target = new URL(upstreamBase.toString());
