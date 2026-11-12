@@ -99,18 +99,7 @@ async function authorizeJbAiUser(token, env) {
     return {
       id: context.admin_id,
       role: "admin",
-      isDemoViewer: false,
       permissions: context.permissions && typeof context.permissions === "object" ? context.permissions : {}
-    };
-  }
-
-  if (context.is_demo_viewer === true && context.role === "demo_viewer" &&
-      context.is_owner === false && context.permissions?.["catalog.view_all"] === true) {
-    return {
-      id: String(context.username || "demo-viewer").slice(0, 80),
-      role: "demo_viewer",
-      isDemoViewer: true,
-      permissions: context.permissions
     };
   }
 
@@ -266,9 +255,6 @@ export async function onRequestPost({ request, env }) {
   const productSearchRequested = /(?:\b(?:busca|buscá|buscar|mostrame|mostrá|mostrar|encontra|encontrá|lista|listar)\b|\b(?:tenemos|tenés|hay)\b.{0,60}\b(?:producto|celular|iphone|samsung|laptop|tablet|perfume)\b)/i.test(prompt);
   const complexRequest = /\b(?:detallad|paso a paso|compara|compará|analiza|analizá|audita|investiga|investigá|desarrolla|desarrollá|plan completo)\w*\b/i.test(prompt);
   const responseTokenBudget = prepareProductRequested || complexRequest ? 1800 : providerPriceRequested ? 1200 : productSearchRequested ? 900 : 1200;
-  if (user.isDemoViewer && (prepareProductRequested || providerPriceRequested)) {
-    return response(403, { ok: false, error: "demo_readonly_ai" }, origin);
-  }
 
   // Greetings are a core chat interaction and should not depend on model
   // availability, quotas, or schema support.
@@ -278,11 +264,7 @@ export async function onRequestPost({ request, env }) {
     ), origin);
   }
 
-  const submittedProducts = Array.isArray(body?.products) ? body.products : [];
-  const availableProducts = user.isDemoViewer
-    ? submittedProducts.filter(item => item?.is_published === true &&
-        item?.workflow_status === "published" && !item?.deleted_at)
-    : submittedProducts;
+  const availableProducts = Array.isArray(body?.products) ? body.products : [];
   const context = availableProducts.slice(0, 80).map(item => ({
     id: cleanText(item?.id, 80),
     name: cleanText(item?.name, 140),
@@ -335,11 +317,6 @@ export async function onRequestPost({ request, env }) {
     "Para celulares, agrupá cada configuración RAM/almacenamiento en su propia entrada de variants y mantené sus colores y precios dentro de esa configuración. No mezcles colores, configuraciones ni precios.",
     "Para perfumería, catalog_type debe ser perfumery. Usá únicamente los valores válidos de perfume.family: arabes, nicho o disenador; y de perfume.audience: Masculino, Femenino o Unisex. No deduzcás estos valores solo por el nombre.",
     "El producto preparado no lleva fotografías. No inventés ni asignes imágenes; el administrador las agregará en la sección de fotografías.",
-  );
-  if (user.isDemoViewer) systemInstruction.push(
-    "La cuenta que consulta es un invitado de demostración con permisos estrictos de solo lectura.",
-    "Solo podés explicar y consultar productos ya publicados. No revelés datos de borradores, inventario privado, proveedores ni información interna.",
-    "No preparés altas, no propongás cambios de precios de proveedor, no solicités acciones de escritura y nunca afirmés que podés modificar el catálogo."
   );
   const systemInstructionText = systemInstruction.join(" ");
 
@@ -434,9 +411,6 @@ export async function onRequestPost({ request, env }) {
       }, origin);
     }
   } else {
-    if (user.isDemoViewer) {
-      return response(503, { ok: false, error: "openai_not_configured" }, origin);
-    }
     if (!env.GEMINI_API_KEY) {
       return response(503, { ok: false, error: "gemini_not_configured" }, origin);
     }
@@ -723,9 +697,6 @@ export async function onRequestPost({ request, env }) {
     : parsed.provider_price_usd != null || parsed.provider_price_nio != null ? "provider_price_update"
     : "question";
   const intent = allowedIntents.has(parsed.intent) ? parsed.intent : inferredIntent;
-  if (user.isDemoViewer && (intent === "add_product" || intent === "provider_price_update")) {
-    return response(403, { ok: false, error: "demo_readonly_ai" }, origin);
-  }
   const cleanNullableNumber = value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value))
     ? null
     : Number(value);
