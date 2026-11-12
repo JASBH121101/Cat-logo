@@ -1077,3 +1077,12 @@ html body.admin-body #technology-variants-section.is-color-only #add-variant-but
     grid-column: 1 !important;
   }
 }
+
+
+/* Fiverr demo accessibility: maintain WCAG contrast for the password-reset link in dark mode. */
+html[data-theme="dark"] body.admin-body .admin-password-reset-toggle {
+  color: #e4edff !important;
+}
+html[data-theme="dark"] body.admin-body .admin-password-reset-toggle:hover {
+  color: #ffffff !important;
+}
