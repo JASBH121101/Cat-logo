@@ -74,7 +74,7 @@ function rateLimited(request) {
 }
 
 async function authorizeJbAiUser(token, env) {
-  const dataApiUrl = String(env.NEON_DATA_API_URL || "").trim().replace(/\\/+$/, "");
+  const dataApiUrl = String(env.NEON_DATA_API_URL || "").trim().replace(/\/+$/, "");
   if (!dataApiUrl) throw new Error("Neon Data API is not configured");
 
   const response = await fetch(dataApiUrl + "/rpc/catalog_admin_context", {
