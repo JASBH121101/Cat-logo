@@ -1,6 +1,11 @@
--- Fiverr demo only: restore the owner row to the verified Neon Auth identity.
--- The admin_users row had drifted to an auth id that no longer exists.
--- Apply only to Neon branch fiverr-demo; never run against Production.
+-- Fiverr demo only: link the owner to the identity used by this branch's
+-- active Neon Auth integration. Never apply this migration to Production.
+--
+-- IMPORTANT: this Pages Preview authenticates against Neon Auth database
+-- "fiverr_auth", not the older neon_auth.user mirror in "neondb".
+-- The owner identity below was verified directly in fiverr_auth.neon_auth.user
+-- and neon_auth.account (credential provider, verified email, active session).
+-- Do not replace it with the similarly addressed user ID in neondb.
 
 BEGIN;
 
@@ -10,26 +15,16 @@ DECLARE
 BEGIN
   IF NOT EXISTS (
     SELECT 1
-    FROM neon_auth."user"
-    WHERE id = '8889c812-8c63-4ce2-b9ee-fde676b85031'::uuid
-      AND "emailVerified" IS TRUE
+    FROM public.admin_users
+    WHERE username = 'JaredBH'
+      AND role = 'admin'
+      AND is_owner IS TRUE
   ) THEN
-    RAISE EXCEPTION 'The expected verified demo-owner Auth identity is missing; refusing to relink.';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1
-    FROM neon_auth.account
-    WHERE "userId" = '8889c812-8c63-4ce2-b9ee-fde676b85031'::uuid
-      AND "providerId" = 'credential'
-      AND password IS NOT NULL
-      AND length(password) > 0
-  ) THEN
-    RAISE EXCEPTION 'The expected owner credential record is missing; refusing to relink.';
+    RAISE EXCEPTION 'Fiverr demo owner admin_users record is missing; refusing to relink.';
   END IF;
 
   UPDATE public.admin_users
-  SET neon_auth_user_id = '8889c812-8c63-4ce2-b9ee-fde676b85031'
+  SET neon_auth_user_id = '8b8977fd-9e4a-4d41-a738-87805fe39eb0'
   WHERE username = 'JaredBH'
     AND role = 'admin'
     AND is_owner IS TRUE;
@@ -41,21 +36,22 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1
-    FROM public.admin_users au
-    JOIN neon_auth."user" nu ON nu.id::text = au.neon_auth_user_id
-    WHERE au.username = 'JaredBH'
-      AND au.role = 'admin'
-      AND au.is_owner IS TRUE
-      AND nu.id = '8889c812-8c63-4ce2-b9ee-fde676b85031'::uuid
-      AND nu."emailVerified" IS TRUE
+    FROM public.admin_users
+    WHERE username = 'JaredBH'
+      AND role = 'admin'
+      AND is_owner IS TRUE
+      AND neon_auth_user_id = '8b8977fd-9e4a-4d41-a738-87805fe39eb0'
   ) THEN
-    RAISE EXCEPTION 'Owner auth identity link verification failed.';
+    RAISE EXCEPTION 'Fiverr demo owner auth identity link verification failed.';
   END IF;
 END
 $migration$;
 
 INSERT INTO public.schema_migrations(version, name)
 VALUES ('0017', 'restore_fiverr_demo_owner_auth_link')
-ON CONFLICT (version) DO NOTHING;
+ON CONFLICT (version) DO UPDATE
+SET name = EXCLUDED.name;
+
+NOTIFY pgrst, 'reload schema';
 
 COMMIT;
