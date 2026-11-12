@@ -1,7 +1,6 @@
-import { requireCatalogAdmin } from "../_shared/neon-admin.js";
-
 const ALLOWED_ORIGINS = new Set([
   "https://jb-collections.pages.dev",
+  "https://fiverr-demo.jb-collections.pages.dev",
   "https://jasbh121101.github.io",
   "https://localhost",
   "http://localhost:8788",
@@ -74,13 +73,48 @@ function rateLimited(request) {
   return current.count > 18;
 }
 
-async function authorizeAdmin(token, env) {
-  const request = new Request("https://jb-collections.pages.dev/api/jb-manager-ai", {
+async function authorizeJbAiUser(token, env) {
+  const dataApiUrl = String(env.NEON_DATA_API_URL || "").trim().replace(/\\/+$/, "");
+  if (!dataApiUrl) throw new Error("Neon Data API is not configured");
+
+  const response = await fetch(dataApiUrl + "/rpc/catalog_admin_context", {
     method: "POST",
-    headers: { Authorization: "Bearer " + token }
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "Accept-Profile": "public",
+      "Content-Profile": "public",
+      "Cache-Control": "no-store"
+    },
+    body: "{}"
   });
-  const result = await requireCatalogAdmin(request, env);
-  return result.ok ? { id: result.adminId } : null;
+  if (!response.ok) throw new Error("Neon access context unavailable");
+  const payload = await response.json().catch(() => null);
+  const context = Array.isArray(payload) ? payload[0] : payload;
+  if (!context || typeof context !== "object") return null;
+
+  if (context.is_admin === true && context.is_owner === true &&
+      context.role === "admin" && typeof context.admin_id === "string" && context.admin_id) {
+    return {
+      id: context.admin_id,
+      role: "admin",
+      isDemoViewer: false,
+      permissions: context.permissions && typeof context.permissions === "object" ? context.permissions : {}
+    };
+  }
+
+  if (context.is_demo_viewer === true && context.role === "demo_viewer" &&
+      context.is_owner === false && context.permissions?.["catalog.view_all"] === true) {
+    return {
+      id: String(context.username || "demo-viewer").slice(0, 80),
+      role: "demo_viewer",
+      isDemoViewer: true,
+      permissions: context.permissions
+    };
+  }
+
+  return null;
 }
 
 const productDraftSchema = {
@@ -200,7 +234,7 @@ export async function onRequestPost({ request, env }) {
   const authStartedAt = Date.now();
   let user;
   try {
-    user = await authorizeAdmin(token, env);
+    user = await authorizeJbAiUser(token, env);
   } catch {
     return response(503, { ok: false, error: "admin_verification_unavailable" }, origin);
   }
@@ -224,6 +258,9 @@ export async function onRequestPost({ request, env }) {
   const productSearchRequested = /(?:\b(?:busca|buscá|buscar|mostrame|mostrá|mostrar|encontra|encontrá|lista|listar)\b|\b(?:tenemos|tenés|hay)\b.{0,60}\b(?:producto|celular|iphone|samsung|laptop|tablet|perfume)\b)/i.test(prompt);
   const complexRequest = /\b(?:detallad|paso a paso|compara|compará|analiza|analizá|audita|investiga|investigá|desarrolla|desarrollá|plan completo)\w*\b/i.test(prompt);
   const responseTokenBudget = prepareProductRequested || complexRequest ? 1800 : providerPriceRequested ? 1200 : productSearchRequested ? 900 : 1200;
+  if (user.isDemoViewer && (prepareProductRequested || providerPriceRequested)) {
+    return response(403, { ok: false, error: "demo_readonly_ai" }, origin);
+  }
 
   // Greetings are a core chat interaction and should not depend on model
   // availability, quotas, or schema support.
@@ -233,9 +270,12 @@ export async function onRequestPost({ request, env }) {
     ), origin);
   }
 
-  if (!env.GEMINI_API_KEY) return response(503, { ok: false, error: "gemini_not_configured" }, origin);
-
-  const context = Array.isArray(body?.products) ? body.products.slice(0, 80).map(item => ({
+  const submittedProducts = Array.isArray(body?.products) ? body.products : [];
+  const availableProducts = user.isDemoViewer
+    ? submittedProducts.filter(item => item?.is_published === true &&
+        item?.workflow_status === "published" && !item?.deleted_at)
+    : submittedProducts;
+  const context = availableProducts.slice(0, 80).map(item => ({
     id: cleanText(item?.id, 80),
     name: cleanText(item?.name, 140),
     brand: cleanText(item?.brand, 80),
@@ -288,8 +328,110 @@ export async function onRequestPost({ request, env }) {
     "Para perfumería, catalog_type debe ser perfumery. Usá únicamente los valores válidos de perfume.family: arabes, nicho o disenador; y de perfume.audience: Masculino, Femenino o Unisex. No deduzcás estos valores solo por el nombre.",
     "El producto preparado no lleva fotografías. No inventés ni asignes imágenes; el administrador las agregará en la sección de fotografías.",
   );
+  if (user.isDemoViewer) systemInstruction.push(
+    "La cuenta que consulta es un invitado de demostración con permisos estrictos de solo lectura.",
+    "Solo podés explicar y consultar productos ya publicados. No revelés datos de borradores, inventario privado, proveedores ni información interna.",
+    "No preparés altas, no propongás cambios de precios de proveedor, no solicités acciones de escritura y nunca afirmés que podés modificar el catálogo."
+  );
   const systemInstructionText = systemInstruction.join(" ");
 
+  const modelStartedAt = Date.now();
+  let selectedModel = "";
+  let result = null;
+  let candidate = null;
+  let generated = "";
+  let finishReason = "";
+
+  if (env.OPENAI_API_KEY) {
+    selectedModel = cleanText(env.OPENAI_MODEL || "gpt-6-luna", 80);
+    let openAiResponse;
+    try {
+      openAiResponse = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + env.OPENAI_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          instructions: systemInstructionText + "\\nDevolvé exclusivamente un objeto JSON válido.",
+          input: "Catálogo publicado disponible (datos limitados): " + JSON.stringify(context) +
+            "\\n\\nSolicitud del usuario: " + prompt,
+          reasoning: { effort: "low" },
+          max_output_tokens: responseTokenBudget,
+          text: {
+            format: {
+              type: "json_schema",
+              name: "jb_manager_ai_response",
+              schema: responseSchemaForRequest(prepareProductRequested),
+              strict: false
+            }
+          }
+        })
+      });
+    } catch (error) {
+      console.error("[JB Copilot] OpenAI network request failed:", cleanText(error?.message, 200));
+      return response(503, { ok: false, error: "openai_temporarily_unavailable" }, origin);
+    }
+
+    if (!openAiResponse.ok) {
+      const errorPayload = await openAiResponse.json().catch(() => ({}));
+      const errorMessage = cleanText(errorPayload?.error?.message || "", 360);
+      let error = "openai_request_failed";
+      let status = 502;
+      if (openAiResponse.status === 429) {
+        error = "openai_quota_exhausted";
+        status = 429;
+      } else if ([401, 403].includes(openAiResponse.status)) {
+        error = "openai_api_access_denied";
+        status = 503;
+      } else if (openAiResponse.status === 404) {
+        error = "openai_model_unavailable";
+        status = 503;
+      } else if ([408, 500, 502, 503, 504].includes(openAiResponse.status)) {
+        error = "openai_temporarily_unavailable";
+        status = 503;
+      }
+      console.error("[JB Copilot] OpenAI request failed:", JSON.stringify({
+        model: selectedModel, status: openAiResponse.status, message: errorMessage.slice(0, 200)
+      }));
+      return response(status, {
+        ok: false,
+        error,
+        detail: errorMessage.slice(0, 320)
+      }, origin);
+    }
+
+    let openAiPayload;
+    try {
+      openAiPayload = await openAiResponse.json();
+    } catch {
+      return response(502, { ok: false, error: "openai_invalid_response" }, origin);
+    }
+    generated = Array.isArray(openAiPayload?.output)
+      ? openAiPayload.output
+          .flatMap(item => Array.isArray(item?.content) ? item.content : [])
+          .filter(item => item?.type === "output_text" && typeof item.text === "string")
+          .map(item => item.text)
+          .join("\\n")
+          .trim()
+      : "";
+    finishReason = cleanText(openAiPayload?.status || "", 80);
+    candidate = { finishReason };
+    if (!generated) {
+      return response(502, {
+        ok: false,
+        error: "openai_unstructured_response",
+        detail: "La API no devolvió contenido de texto utilizable."
+      }, origin);
+    }
+  } else {
+    if (user.isDemoViewer) {
+      return response(503, { ok: false, error: "openai_not_configured" }, origin);
+    }
+    if (!env.GEMINI_API_KEY) {
+      return response(503, { ok: false, error: "gemini_not_configured" }, origin);
+    }
   const geminiHeaders = {
     "Content-Type": "application/json",
     "x-goog-api-key": env.GEMINI_API_KEY
@@ -324,14 +466,12 @@ export async function onRequestPost({ request, env }) {
     return { ...geminiContents, generationConfig };
   }
 
-  const modelStartedAt = Date.now();
   const modelPlan = [
     { name: "gemini-3.8-flash", useSchema: true },
     { name: "gemini-3.6-flash", useSchema: false },
     { name: "gemini-3.5-flash-lite", useSchema: false }
   ];
   let geminiResponse = null;
-  let selectedModel = "";
   let lastGeminiError = null;
   let attempts = 0;
   const attemptedModels = [];
@@ -431,13 +571,13 @@ export async function onRequestPost({ request, env }) {
       ].filter(Boolean).join(": ").slice(0, 480)
     }, origin);
   }
-  let result;
-  try { result = await geminiResponse.json(); } catch {
+  let geminiResult;
+  try { geminiResult = await geminiResponse.json(); } catch {
     console.error("[JB Copilot] Gemini returned a non-JSON response", geminiResponse.status);
     return response(502, { ok: false, error: "gemini_invalid_response" }, origin);
   }
   if (!geminiResponse.ok) {
-    const apiError = result?.error && typeof result.error === "object" ? result.error : {};
+    const apiError = geminiResult?.error && typeof geminiResult.error === "object" ? geminiResult.error : {};
     const apiStatus = cleanText(apiError.status, 80) || lastGeminiError?.apiStatus || "";
     const apiMessage = cleanText(apiError.message, 500) || lastGeminiError?.message || "";
     const normalizedMessage = apiMessage.toLowerCase();
@@ -486,12 +626,18 @@ export async function onRequestPost({ request, env }) {
     }, origin);
   }
 
-  const candidate = result?.candidates?.[0] || null;
-  const generated = candidate?.content?.parts
+  result = geminiResult;
+  candidate = result?.candidates?.[0] || null;
+  generated = candidate?.content?.parts
     ?.filter(part => typeof part?.text === "string" && !part.thought)
     .map(part => part.text)
     .join("")
     .trim() || "";
+  finishReason = cleanText(candidate?.finishReason || result?.promptFeedback?.blockReason || "", 80);
+
+  }
+
+  // Provider output is normalized below; no model receives permissions to write catalog data.
   let parsed = null;
   let parseError = null;
 
@@ -525,7 +671,7 @@ export async function onRequestPost({ request, env }) {
       parsed = { message: generated, intent: "question" };
     } else {
       const reason = cleanText(candidate?.finishReason || result?.promptFeedback?.blockReason || "", 80);
-      console.error("[JB Copilot] Gemini response could not be parsed", JSON.stringify({
+      console.error("[JB Copilot] AI response could not be parsed", JSON.stringify({
         model: selectedModel,
         finishReason: reason,
         generatedLength: generated.length,
@@ -534,7 +680,7 @@ export async function onRequestPost({ request, env }) {
       return response(502, {
         ok: false,
         error: "gemini_unstructured_response",
-        detail: [reason, "Google no devolvió un objeto interpretable."].filter(Boolean).join(": ")
+        detail: [reason, "El proveedor de IA no devolvió un objeto interpretable."].filter(Boolean).join(": ")
       }, origin);
     }
   }
@@ -547,7 +693,7 @@ export async function onRequestPost({ request, env }) {
   if (!assistantMessage) {
     const reason = cleanText(candidate?.finishReason || "", 80);
     const keys = Object.keys(parsed).slice(0, 20).join(", ");
-    console.error("[JB Copilot] Gemini JSON was missing the assistant message", JSON.stringify({
+    console.error("[JB Copilot] AI JSON was missing the assistant message", JSON.stringify({
       model: selectedModel,
       keys,
       finishReason: reason
@@ -569,6 +715,9 @@ export async function onRequestPost({ request, env }) {
     : parsed.provider_price_usd != null || parsed.provider_price_nio != null ? "provider_price_update"
     : "question";
   const intent = allowedIntents.has(parsed.intent) ? parsed.intent : inferredIntent;
+  if (user.isDemoViewer && (intent === "add_product" || intent === "provider_price_update")) {
+    return response(403, { ok: false, error: "demo_readonly_ai" }, origin);
+  }
   const cleanNullableNumber = value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value))
     ? null
     : Number(value);
