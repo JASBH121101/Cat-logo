@@ -166,3 +166,22 @@ html[data-theme="dark"] body.demo-viewer-mode .demo-viewer-banner strong,
 html[data-theme="dark"] body.demo-viewer-mode .demo-viewer-module-notice strong {
   color: #f5f8ff;
 }
+
+
+/* A Fiverr guest cannot use the paid AI assistant. Hide every entry point in viewer mode. */
+body.demo-viewer-mode .admin-nav-button[data-admin-section="ai"],
+body.demo-viewer-mode #admin-section-ai,
+body.demo-viewer-mode #jb-ai-floating-launcher {
+  display: none !important;
+}
+
+/* Theme switching is a personal display preference, never an admin write action. */
+body.demo-viewer-mode .site-header [data-theme-toggle],
+body.demo-viewer-mode .site-header .theme-toggle {
+  display: inline-flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  touch-action: manipulation;
+}
