@@ -1086,3 +1086,19 @@ html[data-theme="dark"] body.admin-body .admin-password-reset-toggle {
 html[data-theme="dark"] body.admin-body .admin-password-reset-toggle:hover {
   color: #ffffff !important;
 }
+
+
+/* Fiverr demo accessibility: readable secondary copy on the public admin sign-in screen. */
+html[data-theme="light"] body.admin-body .admin-password-reset-form p,
+html[data-theme="light"] body.admin-body .admin-password-reset-cancel,
+html[data-theme="light"] body.admin-body .admin-help code,
+html[data-theme="light"] body.admin-body .login-remember-copy > small {
+  color: #455675 !important;
+}
+html[data-theme="dark"] body.admin-body .admin-password-reset-form p,
+html[data-theme="dark"] body.admin-body .admin-password-reset-cancel,
+html[data-theme="dark"] body.admin-body .admin-password-reset-form label .field-label-copy,
+html[data-theme="dark"] body.admin-body .admin-help code,
+html[data-theme="dark"] body.admin-body .login-remember-copy > small {
+  color: #c9d5e9 !important;
+}
