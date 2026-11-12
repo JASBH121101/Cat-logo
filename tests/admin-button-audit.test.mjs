@@ -60,3 +60,10 @@ test("sticky section tabs reserve space for the mobile admin header", () => {
   assert.match(css, /\.product-form-section-nav\s*\{[^}]*top:\s*calc\(var\(--admin-header-height, 92px\) \+ env\(safe-area-inset-top, 0px\) \+ 12px\)\s*!important;/s);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?top:\s*calc\(var\(--admin-header-height, 92px\) \+ env\(safe-area-inset-top, 0px\) \+ 10px\)\s*!important;/);
 });
+
+
+test("mobile section tabs stay fully below the fixed admin header on narrow screens", () => {
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?top: calc\(112px \+ env\(safe-area-inset-top, 0px\) \+ 8px\) !important/);
+  assert.match(css, /scroll-margin-top: calc\(112px \+ env\(safe-area-inset-top, 0px\) \+ 16px\) !important/);
+  assert.match(css, /z-index: 12 !important/);
+});
