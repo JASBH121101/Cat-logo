@@ -321,6 +321,8 @@ jobs:
             visual-audit-report.md
             visual-audit-report.json
             artifacts/visual-audit/*.png
+            artifacts/admin-button-audit/*.png
+            artifacts/admin-button-audit/admin-button-audit-report.json
           if-no-files-found: warn
           retention-days: 14
           compression-level: 6
