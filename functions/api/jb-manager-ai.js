@@ -300,7 +300,7 @@ export async function onRequestPost({ request, env }) {
       price_usd: variant?.price_usd == null || variant.price_usd === "" ? null : Number.isFinite(Number(variant.price_usd)) ? Number(variant.price_usd) : null,
       price_nio: variant?.price_nio == null || variant.price_nio === "" ? null : Number.isFinite(Number(variant.price_nio)) ? Number(variant.price_nio) : null
     })) : []
-  })) : [];
+  }));
 
   const systemInstruction = [
     "Sos JB Copilot, el asistente conversacional y operativo de JB Collections, precursor de JARVIS.",
