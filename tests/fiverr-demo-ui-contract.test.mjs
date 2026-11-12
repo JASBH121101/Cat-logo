@@ -110,7 +110,7 @@ test("secondary and destructive buttons have explicit colors in light and dark t
 
 test("the dedicated theme polish stylesheet loads after the existing admin CSS", () => {
   assert.match(html, /admin-gopartners-scanner\.css[\s\S]*fiverr-demo-ui-polish\.css\?v=20261112-demo-dual-theme1/);
-  assert.ok(html.includes("admin.js?v=20261112-admin-access-help-bell1"));
+  assert.ok(html.includes("admin.js?v=20261112-product-preview-close1"));
   assert.ok(html.includes("demo-viewer.css?v=20261112-guest-explore-readonly1"));
 });
 
@@ -228,4 +228,16 @@ test("Fiverr demo owner mapping is repaired only to the verified credential iden
   assert.ok(ownerLinkMigration.includes("AND is_owner IS TRUE"));
   assert.ok(ownerLinkMigration.includes("affected_rows <> 1"));
   assert.ok(ownerLinkMigration.includes("'0018', 'restore_fiverr_demo_owner_auth_link'"));
+});
+
+
+test("admin product preview closes reliably with its X, Escape and native cancel event", () => {
+  assert.match(html, /id="admin-product-preview-dialog"/);
+  assert.match(html, /class="admin-product-preview-close"[^>]*data-close-product-preview/);
+  assert.match(admin, /function closeAdminProductPreviewDialog\(\)/);
+  assert.match(admin, /function handleAdminProductPreviewEscape\(event\)/);
+  assert.match(admin, /document\.addEventListener\("keydown", handleAdminProductPreviewEscape, true\)/);
+  assert.match(admin, /productPreviewDialog\?\.addEventListener\("cancel"/);
+  assert.match(admin, /querySelector\("\[data-close-product-preview\]"\)\?\.addEventListener\("click"/);
+  assert.match(a11y, /dialog\.admin-product-preview-dialog:not\(\[open\]\)[\s\S]*display:\s*none !important/);
 });
